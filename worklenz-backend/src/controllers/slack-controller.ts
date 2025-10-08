@@ -13,13 +13,14 @@ export default class SlackController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async connectWorkspace(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const organizationId = req.user?.organization_id;
+    const userId = req.user?.id;
     const slackData = req.body;
 
     if (!organizationId) {
-      return res.status(400).send(new ServerResponse(false, null, "Organization ID is required"));
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized: Organization ID is required"));
     }
 
-    const workspace = await SlackService.connectWorkspace(organizationId, slackData);
+    const workspace = await SlackService.connectWorkspace(organizationId, slackData, userId);
     return res.status(200).send(new ServerResponse(true, workspace, "Slack workspace connected successfully"));
   }
 
@@ -31,7 +32,7 @@ export default class SlackController extends WorklenzControllerBase {
     const organizationId = req.user?.organization_id;
 
     if (!organizationId) {
-      return res.status(400).send(new ServerResponse(false, null, "Organization ID is required"));
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized: Organization ID is required"));
     }
 
     const workspace = await SlackService.getWorkspaceByOrganization(organizationId);
@@ -44,12 +45,23 @@ export default class SlackController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async disconnectWorkspace(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { workspaceId } = req.params;
+    const organizationId = req.user?.organization_id;
 
     if (!workspaceId) {
       return res.status(400).send(new ServerResponse(false, null, "Workspace ID is required"));
     }
 
-    await SlackService.disconnectWorkspace(workspaceId);
+    if (!organizationId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
+    }
+
+    // Verify user owns this workspace
+    const hasAccess = await SlackService.verifyWorkspaceOwnership(workspaceId, organizationId);
+    if (!hasAccess) {
+      return res.status(403).send(new ServerResponse(false, null, "Forbidden: You do not have access to this workspace"));
+    }
+
+    await SlackService.disconnectWorkspace(workspaceId, req.user?.id, organizationId);
     return res.status(200).send(new ServerResponse(true, null, "Slack workspace disconnected successfully"));
   }
 
@@ -60,13 +72,20 @@ export default class SlackController extends WorklenzControllerBase {
   public static async syncChannels(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { workspaceId } = req.params;
     const { channels } = req.body;
+    const organizationId = req.user?.organization_id;
 
     if (!workspaceId) {
       return res.status(400).send(new ServerResponse(false, null, "Workspace ID is required"));
     }
 
-    if (!Array.isArray(channels)) {
-      return res.status(400).send(new ServerResponse(false, null, "Channels must be an array"));
+    if (!organizationId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
+    }
+
+    // Verify user owns this workspace
+    const hasAccess = await SlackService.verifyWorkspaceOwnership(workspaceId, organizationId);
+    if (!hasAccess) {
+      return res.status(403).send(new ServerResponse(false, null, "Forbidden: You do not have access to this workspace"));
     }
 
     await SlackService.syncChannels(workspaceId, channels);
@@ -79,13 +98,26 @@ export default class SlackController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getChannels(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { workspaceId } = req.params;
+    const organizationId = req.user?.organization_id;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 100, 500); // Max 500 per page
 
     if (!workspaceId) {
       return res.status(400).send(new ServerResponse(false, null, "Workspace ID is required"));
     }
 
-    const channels = await SlackService.getChannelsByWorkspace(workspaceId);
-    return res.status(200).send(new ServerResponse(true, channels));
+    if (!organizationId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
+    }
+
+    // Verify user owns this workspace
+    const hasAccess = await SlackService.verifyWorkspaceOwnership(workspaceId, organizationId);
+    if (!hasAccess) {
+      return res.status(403).send(new ServerResponse(false, null, "Forbidden: You do not have access to this workspace"));
+    }
+
+    const result = await SlackService.getChannelsByWorkspace(workspaceId, page, limit);
+    return res.status(200).send(new ServerResponse(true, result));
   }
 
   /**
@@ -95,10 +127,18 @@ export default class SlackController extends WorklenzControllerBase {
   public static async createChannelConfig(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { projectId, slackChannelId, notificationTypes } = req.body;
     const createdBy = req.user?.id;
+    const organizationId = req.user?.organization_id;
 
     if (!projectId || !slackChannelId) {
       return res.status(400).send(new ServerResponse(false, null, "Project ID and Slack channel ID are required"));
     }
+
+    if (!organizationId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
+    }
+
+    // TODO: Verify user has access to this project
+    // This should be added as a separate service method
 
     const config = await SlackService.createChannelConfig(
       projectId,
@@ -121,6 +161,8 @@ export default class SlackController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null, "Project ID is required"));
     }
 
+    // TODO: Verify user has access to this project
+
     const configs = await SlackService.getChannelConfigsByProject(projectId);
     return res.status(200).send(new ServerResponse(true, configs));
   }
@@ -133,7 +175,7 @@ export default class SlackController extends WorklenzControllerBase {
     const organizationId = req.user?.organization_id;
 
     if (!organizationId) {
-      return res.status(400).send(new ServerResponse(false, null, "Organization ID is required"));
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized: Organization ID is required"));
     }
 
     const configs = await SlackService.getChannelConfigsByOrganization(organizationId);
@@ -146,9 +188,20 @@ export default class SlackController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async deleteChannelConfig(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { configId } = req.params;
+    const organizationId = req.user?.organization_id;
 
     if (!configId) {
       return res.status(400).send(new ServerResponse(false, null, "Config ID is required"));
+    }
+
+    if (!organizationId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
+    }
+
+    // Verify user owns this config
+    const hasAccess = await SlackService.verifyChannelConfigOwnership(configId, organizationId);
+    if (!hasAccess) {
+      return res.status(403).send(new ServerResponse(false, null, "Forbidden: You do not have access to this configuration"));
     }
 
     await SlackService.deleteChannelConfig(configId);
@@ -162,9 +215,20 @@ export default class SlackController extends WorklenzControllerBase {
   public static async sendTestNotification(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { configId } = req.params;
     const { message } = req.body;
+    const organizationId = req.user?.organization_id;
 
     if (!configId) {
       return res.status(400).send(new ServerResponse(false, null, "Config ID is required"));
+    }
+
+    if (!organizationId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
+    }
+
+    // Verify user owns this config
+    const hasAccess = await SlackService.verifyChannelConfigOwnership(configId, organizationId);
+    if (!hasAccess) {
+      return res.status(403).send(new ServerResponse(false, null, "Forbidden: You do not have access to this configuration"));
     }
 
     const testMessage = message || {
@@ -180,14 +244,18 @@ export default class SlackController extends WorklenzControllerBase {
       ]
     };
 
-    await SlackService.sendNotification(
-      configId,
-      "test",
-      "test",
-      "test-notification",
-      testMessage
-    );
+    try {
+      await SlackService.sendNotification(
+        configId,
+        "test",
+        "test",
+        "test-notification",
+        testMessage
+      );
 
-    return res.status(200).send(new ServerResponse(true, null, "Test notification sent successfully"));
+      return res.status(200).send(new ServerResponse(true, null, "Test notification sent successfully"));
+    } catch (error) {
+      return res.status(500).send(new ServerResponse(false, null, "Failed to send test notification. Please check your Slack configuration."));
+    }
   }
 }

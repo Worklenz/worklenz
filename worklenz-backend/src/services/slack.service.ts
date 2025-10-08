@@ -1,17 +1,17 @@
 import db from "../config/db";
 import { log_error } from "../shared/utils";
+import { EncryptionService } from "./encryption.service";
+import { PoolClient } from "pg";
+import { ActivityLoggingService } from "./activity-logging.service";
 
 interface SlackWorkspace {
   id: string;
   organization_id: string;
   team_id: string;
   team_name: string;
-  access_token: string;
-  bot_user_id?: string;
-  bot_access_token?: string;
-  scope?: string;
-  authed_user_id?: string;
   is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 interface SlackChannel {
@@ -50,43 +50,66 @@ export class SlackService {
 
   /**
    * Create or update Slack workspace connection
+   * Tokens are encrypted before storage
    */
   public static async connectWorkspace(
     organizationId: string,
-    slackData: SlackOAuthResponse
+    slackData: SlackOAuthResponse,
+    userId?: string
   ): Promise<SlackWorkspace> {
     try {
+      // Encrypt sensitive tokens
+      const encryptedAccessToken = EncryptionService.encrypt(slackData.access_token);
+      const encryptedBotToken = slackData.bot?.bot_access_token
+        ? EncryptionService.encrypt(slackData.bot.bot_access_token)
+        : null;
+
       const q = `
         INSERT INTO slack_workspaces (
-          organization_id, team_id, team_name, access_token,
-          bot_user_id, bot_access_token, scope, authed_user_id
+          organization_id, team_id, team_name, access_token_encrypted,
+          bot_user_id, bot_access_token_encrypted, scope, authed_user_id, created_by
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         ON CONFLICT (organization_id, team_id)
         DO UPDATE SET
           team_name = EXCLUDED.team_name,
-          access_token = EXCLUDED.access_token,
+          access_token_encrypted = EXCLUDED.access_token_encrypted,
           bot_user_id = EXCLUDED.bot_user_id,
-          bot_access_token = EXCLUDED.bot_access_token,
+          bot_access_token_encrypted = EXCLUDED.bot_access_token_encrypted,
           scope = EXCLUDED.scope,
           authed_user_id = EXCLUDED.authed_user_id,
           is_active = true,
           updated_at = CURRENT_TIMESTAMP
-        RETURNING *;
+        RETURNING id, organization_id, team_id, team_name, is_active, created_at, updated_at;
       `;
 
       const result = await db.query(q, [
         organizationId,
         slackData.team_id,
         slackData.team_name,
-        slackData.access_token,
+        encryptedAccessToken,
         slackData.bot_user_id,
-        slackData.bot?.bot_access_token,
+        encryptedBotToken,
         slackData.scope,
-        slackData.authed_user?.id
+        slackData.authed_user?.id,
+        userId
       ]);
 
-      return result.rows[0];
+      const workspace = result.rows[0];
+
+      // Audit log the connection
+      await this.logAuditEvent(
+        'SLACK_WORKSPACE_CONNECTED',
+        userId || null,
+        organizationId,
+        {
+          workspace_id: workspace.id,
+          team_id: slackData.team_id,
+          team_name: slackData.team_name
+        }
+      );
+
+      return workspace;
     } catch (error) {
       log_error(error);
       throw error;
@@ -94,13 +117,18 @@ export class SlackService {
   }
 
   /**
-   * Get workspace by organization ID
+   * Get workspace by organization ID (without decrypted tokens)
    */
   public static async getWorkspaceByOrganization(
     organizationId: string
   ): Promise<SlackWorkspace | null> {
     try {
-      const q = `SELECT * FROM slack_workspaces WHERE organization_id = $1 AND is_active = true LIMIT 1;`;
+      const q = `
+        SELECT id, organization_id, team_id, team_name, is_active, created_at, updated_at
+        FROM slack_workspaces
+        WHERE organization_id = $1 AND is_active = true
+        LIMIT 1;
+      `;
       const result = await db.query(q, [organizationId]);
       return result.rows[0] || null;
     } catch (error) {
@@ -110,50 +138,78 @@ export class SlackService {
   }
 
   /**
-   * Disconnect Slack workspace
+   * Get decrypted bot token for sending messages
+   * ONLY use this internally for API calls
    */
-  public static async disconnectWorkspace(workspaceId: string): Promise<void> {
+  private static async getDecryptedBotToken(workspaceId: string): Promise<string | null> {
     try {
-      const q = `UPDATE slack_workspaces SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1;`;
-      await db.query(q, [workspaceId]);
+      const q = `
+        SELECT bot_access_token_encrypted
+        FROM slack_workspaces
+        WHERE id = $1 AND is_active = true;
+      `;
+      const result = await db.query(q, [workspaceId]);
+
+      if (result.rows.length === 0 || !result.rows[0].bot_access_token_encrypted) {
+        return null;
+      }
+
+      return EncryptionService.decrypt(result.rows[0].bot_access_token_encrypted);
     } catch (error) {
       log_error(error);
-      throw error;
+      throw new Error('Failed to retrieve bot token');
     }
   }
 
   /**
-   * Sync Slack channels for a workspace
+   * Verify workspace belongs to organization (for authorization checks)
    */
-  public static async syncChannels(
+  public static async verifyWorkspaceOwnership(
     workspaceId: string,
-    channels: Array<{ id: string; name: string; is_private?: boolean; is_archived?: boolean }>
+    organizationId: string
+  ): Promise<boolean> {
+    try {
+      const q = `
+        SELECT COUNT(*) as count
+        FROM slack_workspaces
+        WHERE id = $1 AND organization_id = $2;
+      `;
+      const result = await db.query(q, [workspaceId, organizationId]);
+      return parseInt(result.rows[0].count) > 0;
+    } catch (error) {
+      log_error(error);
+      return false;
+    }
+  }
+
+  /**
+   * Disconnect Slack workspace
+   */
+  public static async disconnectWorkspace(
+    workspaceId: string,
+    userId?: string,
+    organizationId?: string
   ): Promise<void> {
     try {
-      // Delete existing channels for this workspace
-      await db.query(`DELETE FROM slack_channels WHERE slack_workspace_id = $1;`, [workspaceId]);
+      const q = `
+        UPDATE slack_workspaces
+        SET is_active = false, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+        RETURNING team_name;
+      `;
+      const result = await db.query(q, [workspaceId]);
 
-      // Insert new channels
-      if (channels.length > 0) {
-        const values = channels.map((channel, index) => {
-          const offset = index * 5;
-          return `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5})`;
-        }).join(', ');
-
-        const params = channels.flatMap(channel => [
-          workspaceId,
-          channel.id,
-          channel.name,
-          channel.is_private || false,
-          channel.is_archived || false
-        ]);
-
-        const q = `
-          INSERT INTO slack_channels (slack_workspace_id, channel_id, channel_name, is_private, is_archived)
-          VALUES ${values};
-        `;
-
-        await db.query(q, params);
+      // Audit log the disconnection
+      if (result.rows.length > 0) {
+        await this.logAuditEvent(
+          'SLACK_WORKSPACE_DISCONNECTED',
+          userId || null,
+          organizationId || null,
+          {
+            workspace_id: workspaceId,
+            team_name: result.rows[0].team_name
+          }
+        );
       }
     } catch (error) {
       log_error(error);
@@ -162,19 +218,78 @@ export class SlackService {
   }
 
   /**
-   * Get all channels for a workspace
+   * Sync Slack channels for a workspace using proper transaction
+   */
+  public static async syncChannels(
+    workspaceId: string,
+    channels: Array<{ id: string; name: string; is_private?: boolean; is_archived?: boolean }>
+  ): Promise<void> {
+    const client: PoolClient = await db.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      // Delete existing channels
+      await client.query(
+        'DELETE FROM slack_channels WHERE slack_workspace_id = $1',
+        [workspaceId]
+      );
+
+      // Insert new channels one by one (safer than dynamic SQL)
+      for (const channel of channels) {
+        await client.query(
+          `INSERT INTO slack_channels (slack_workspace_id, channel_id, channel_name, is_private, is_archived)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [
+            workspaceId,
+            channel.id,
+            channel.name,
+            channel.is_private || false,
+            channel.is_archived || false
+          ]
+        );
+      }
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      log_error(error);
+      throw new Error('Failed to sync channels');
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get all channels for a workspace with pagination
    */
   public static async getChannelsByWorkspace(
-    workspaceId: string
-  ): Promise<SlackChannel[]> {
+    workspaceId: string,
+    page: number = 1,
+    limit: number = 100
+  ): Promise<{ channels: SlackChannel[]; total: number }> {
     try {
-      const q = `
-        SELECT * FROM slack_channels
-        WHERE slack_workspace_id = $1 AND is_archived = false
-        ORDER BY channel_name;
-      `;
-      const result = await db.query(q, [workspaceId]);
-      return result.rows;
+      const offset = (page - 1) * limit;
+
+      const [channelsResult, countResult] = await Promise.all([
+        db.query(
+          `SELECT * FROM slack_channels
+           WHERE slack_workspace_id = $1 AND is_archived = false
+           ORDER BY channel_name
+           LIMIT $2 OFFSET $3`,
+          [workspaceId, limit, offset]
+        ),
+        db.query(
+          `SELECT COUNT(*) as total FROM slack_channels
+           WHERE slack_workspace_id = $1 AND is_archived = false`,
+          [workspaceId]
+        )
+      ]);
+
+      return {
+        channels: channelsResult.rows,
+        total: parseInt(countResult.rows[0].total)
+      };
     } catch (error) {
       log_error(error);
       throw error;
@@ -207,6 +322,29 @@ export class SlackService {
     } catch (error) {
       log_error(error);
       throw error;
+    }
+  }
+
+  /**
+   * Verify channel config belongs to organization
+   */
+  public static async verifyChannelConfigOwnership(
+    configId: string,
+    organizationId: string
+  ): Promise<boolean> {
+    try {
+      const q = `
+        SELECT COUNT(*) as count
+        FROM slack_channel_configs scc
+        JOIN slack_channels sc ON scc.slack_channel_id = sc.id
+        JOIN slack_workspaces sw ON sc.slack_workspace_id = sw.id
+        WHERE scc.id = $1 AND sw.organization_id = $2;
+      `;
+      const result = await db.query(q, [configId, organizationId]);
+      return parseInt(result.rows[0].count) > 0;
+    } catch (error) {
+      log_error(error);
+      return false;
     }
   }
 
@@ -271,7 +409,11 @@ export class SlackService {
    */
   public static async deleteChannelConfig(configId: string): Promise<void> {
     try {
-      const q = `UPDATE slack_channel_configs SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1;`;
+      const q = `
+        UPDATE slack_channel_configs
+        SET is_active = false, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1;
+      `;
       await db.query(q, [configId]);
     } catch (error) {
       log_error(error);
@@ -281,6 +423,7 @@ export class SlackService {
 
   /**
    * Send notification to Slack
+   * NOTE: This is a placeholder - implement actual Slack Web API integration
    */
   public static async sendNotification(
     channelConfigId: string,
@@ -295,7 +438,7 @@ export class SlackService {
         SELECT
           scc.*,
           sc.channel_id,
-          sw.bot_access_token
+          sw.id as workspace_id
         FROM slack_channel_configs scc
         JOIN slack_channels sc ON scc.slack_channel_id = sc.id
         JOIN slack_workspaces sw ON sc.slack_workspace_id = sw.id
@@ -309,22 +452,67 @@ export class SlackService {
 
       const config = configResult.rows[0];
 
-      // Here you would integrate with Slack Web API to send the message
-      // This is a placeholder for the actual Slack API call
-      // const slackResponse = await fetch('https://slack.com/api/chat.postMessage', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Authorization': `Bearer ${config.bot_access_token}`,
-      //     'Content-Type': 'application/json'
-      //   },
-      //   body: JSON.stringify({
-      //     channel: config.channel_id,
-      //     ...message
-      //   })
+      // Get decrypted bot token
+      const botToken = await this.getDecryptedBotToken(config.workspace_id);
+
+      if (!botToken) {
+        throw new Error('Bot token not found');
+      }
+
+      // TODO: Implement actual Slack Web API call
+      // Example:
+      // const { WebClient } = require('@slack/web-api');
+      // const slack = new WebClient(botToken);
+      // const result = await slack.chat.postMessage({
+      //   channel: config.channel_id,
+      //   ...message
       // });
 
-      // Log the notification
-      const logQuery = `
+      // For now, log the notification as sent
+      await this.logNotification(
+        channelConfigId,
+        notificationType,
+        entityType,
+        entityId,
+        message,
+        'sent',
+        null,
+        null
+      );
+    } catch (error) {
+      log_error(error);
+
+      // Log failed notification
+      await this.logNotification(
+        channelConfigId,
+        notificationType,
+        entityType,
+        entityId,
+        message,
+        'failed',
+        error instanceof Error ? error.message : 'Unknown error',
+        null
+      );
+
+      throw error;
+    }
+  }
+
+  /**
+   * Log notification attempt
+   */
+  private static async logNotification(
+    channelConfigId: string,
+    notificationType: string,
+    entityType: string,
+    entityId: string,
+    message: any,
+    status: 'sent' | 'failed' | 'pending',
+    errorMessage: string | null,
+    slackMessageTs: string | null
+  ): Promise<void> {
+    try {
+      const q = `
         INSERT INTO slack_notifications (
           slack_channel_config_id,
           notification_type,
@@ -332,46 +520,64 @@ export class SlackService {
           worklenz_entity_id,
           message_payload,
           status,
+          error_message,
+          slack_message_ts,
           sent_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, ${status === 'sent' ? 'CURRENT_TIMESTAMP' : 'NULL'});
+      `;
+
+      await db.query(q, [
+        channelConfigId,
+        notificationType,
+        entityType,
+        entityId,
+        JSON.stringify(message),
+        status,
+        errorMessage,
+        slackMessageTs
+      ]);
+    } catch (error) {
+      log_error(error);
+      // Don't throw - logging failure shouldn't break the main flow
+    }
+  }
+
+  /**
+   * Log audit events for Slack operations
+   * This creates an audit trail for security and compliance
+   */
+  private static async logAuditEvent(
+    action: string,
+    userId: string | null,
+    organizationId: string | null,
+    details: Record<string, any>
+  ): Promise<void> {
+    try {
+      const q = `
+        INSERT INTO slack_audit_log (
+          action,
+          user_id,
+          organization_id,
+          details,
+          ip_address,
+          user_agent,
+          created_at
         )
         VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP);
       `;
 
-      await db.query(logQuery, [
-        channelConfigId,
-        notificationType,
-        entityType,
-        entityId,
-        JSON.stringify(message),
-        'sent' // or 'failed' based on Slack API response
+      await db.query(q, [
+        action,
+        userId,
+        organizationId,
+        JSON.stringify(details),
+        null, // IP address would need to be passed from controller
+        null  // User agent would need to be passed from controller
       ]);
     } catch (error) {
+      // Log but don't throw - audit logging failure shouldn't break operations
       log_error(error);
-      // Log failed notification
-      const failQuery = `
-        INSERT INTO slack_notifications (
-          slack_channel_config_id,
-          notification_type,
-          worklenz_entity_type,
-          worklenz_entity_id,
-          message_payload,
-          status,
-          error_message
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7);
-      `;
-
-      await db.query(failQuery, [
-        channelConfigId,
-        notificationType,
-        entityType,
-        entityId,
-        JSON.stringify(message),
-        'failed',
-        error instanceof Error ? error.message : 'Unknown error'
-      ]);
-
-      throw error;
     }
   }
 }

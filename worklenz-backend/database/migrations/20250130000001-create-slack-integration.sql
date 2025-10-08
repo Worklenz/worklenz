@@ -1,17 +1,19 @@
 -- Create slack_workspaces table to store connected Slack workspaces
 CREATE TABLE IF NOT EXISTS slack_workspaces (
-    id              UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    organization_id UUID                                                NOT NULL,
-    team_id         TEXT                                                NOT NULL, -- Slack team/workspace ID
-    team_name       TEXT                                                NOT NULL,
-    access_token    TEXT                                                NOT NULL,
-    bot_user_id     TEXT,
-    bot_access_token TEXT,
-    scope           TEXT,
-    authed_user_id  TEXT,
-    is_active       BOOLEAN                  DEFAULT TRUE               NOT NULL,
-    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
-    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
+    id                      UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    organization_id         UUID                                                NOT NULL,
+    team_id                 TEXT                                                NOT NULL, -- Slack team/workspace ID
+    team_name               TEXT                                                NOT NULL,
+    access_token_encrypted  TEXT                                                NOT NULL, -- Encrypted with AES-256-GCM
+    bot_user_id             TEXT,
+    bot_access_token_encrypted TEXT,                                                     -- Encrypted with AES-256-GCM
+    scope                   TEXT,
+    authed_user_id          TEXT,
+    is_active               BOOLEAN                  DEFAULT TRUE               NOT NULL,
+    created_at              TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
+    updated_at              TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
+    created_by              UUID,
+    last_verified_at        TIMESTAMP WITH TIME ZONE
 );
 
 ALTER TABLE slack_workspaces
@@ -22,6 +24,11 @@ ALTER TABLE slack_workspaces
     ADD CONSTRAINT slack_workspaces_organization_id_fk
         FOREIGN KEY (organization_id) REFERENCES organizations
             ON DELETE CASCADE;
+
+ALTER TABLE slack_workspaces
+    ADD CONSTRAINT slack_workspaces_created_by_fk
+        FOREIGN KEY (created_by) REFERENCES users
+            ON DELETE SET NULL;
 
 ALTER TABLE slack_workspaces
     ADD CONSTRAINT slack_workspaces_organization_team_unique
@@ -152,3 +159,35 @@ CREATE INDEX IF NOT EXISTS idx_slack_channel_configs_project_id ON slack_channel
 CREATE INDEX IF NOT EXISTS idx_slack_notifications_config_id ON slack_notifications(slack_channel_config_id);
 CREATE INDEX IF NOT EXISTS idx_slack_notifications_status ON slack_notifications(status);
 CREATE INDEX IF NOT EXISTS idx_slack_notifications_entity ON slack_notifications(worklenz_entity_type, worklenz_entity_id);
+
+-- Create slack_audit_log table for security and compliance
+CREATE TABLE IF NOT EXISTS slack_audit_log (
+    id              UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    action          TEXT                                                NOT NULL,
+    user_id         UUID,
+    organization_id UUID,
+    details         JSONB,
+    ip_address      INET,
+    user_agent      TEXT,
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
+);
+
+ALTER TABLE slack_audit_log
+    ADD CONSTRAINT slack_audit_log_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE slack_audit_log
+    ADD CONSTRAINT slack_audit_log_user_id_fk
+        FOREIGN KEY (user_id) REFERENCES users
+            ON DELETE SET NULL;
+
+ALTER TABLE slack_audit_log
+    ADD CONSTRAINT slack_audit_log_organization_id_fk
+        FOREIGN KEY (organization_id) REFERENCES organizations
+            ON DELETE CASCADE;
+
+-- Create indexes for audit log queries
+CREATE INDEX IF NOT EXISTS idx_slack_audit_log_user_id ON slack_audit_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_slack_audit_log_organization_id ON slack_audit_log(organization_id);
+CREATE INDEX IF NOT EXISTS idx_slack_audit_log_action ON slack_audit_log(action);
+CREATE INDEX IF NOT EXISTS idx_slack_audit_log_created_at ON slack_audit_log(created_at DESC);
