@@ -1314,7 +1314,8 @@ BEGIN
             t.user_id AS owner_id,
             o.subscription_status,
             o.license_type_id,
-            o.trial_expire_date
+            o.trial_expire_date,
+            o.id AS organization_id
         FROM user_team_data utd
         INNER JOIN teams t ON t.id = utd.team_id
         LEFT JOIN organizations o ON o.user_id = t.user_id

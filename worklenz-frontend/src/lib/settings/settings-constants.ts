@@ -15,6 +15,7 @@ import {
   BulbOutlined,
   DeleteOutlined,
   DollarCircleOutlined,
+  SlackOutlined,
 } from '@/shared/antd-imports';
 import React, { ReactNode, lazy } from 'react';
 const ProfileSettings = lazy(() => import('../../pages/settings/profile/profile-settings'));
@@ -43,6 +44,7 @@ const LanguageAndRegionSettings = lazy(
 );
 const AppearanceSettings = lazy(() => import('@/pages/settings/appearance/appearance-settings'));
 const AccountDeletion = lazy(() => import('@/pages/settings/account-deletion/AccountDeletion'));
+const SlackIntegration = lazy(() => import('@/pages/settings/slack-integration/slack-integration'));
 
 // type of menu item in settings sidebar
 type SettingMenuItems = {
@@ -164,6 +166,14 @@ export const settingsItems: SettingMenuItems[] = [
     endpoint: 'teams',
     icon: React.createElement(BankOutlined),
     element: React.createElement(TeamsSettings),
+    adminOnly: true,
+  },
+  {
+    key: 'slack-integration',
+    name: 'slack-integration',
+    endpoint: 'slack-integration',
+    icon: React.createElement(SlackOutlined),
+    element: React.createElement(SlackIntegration),
     adminOnly: true,
   },
   // Danger zone - always at the bottom
