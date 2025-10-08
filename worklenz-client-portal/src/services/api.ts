@@ -218,7 +218,7 @@ class ClientPortalAPI {
         _skipRetry: true
       } as any);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       // If it's a 401, return a structured error instead of throwing
       if (error.response?.status === 401) {
         return {
