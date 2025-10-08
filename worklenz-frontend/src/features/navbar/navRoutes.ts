@@ -5,6 +5,7 @@ export type NavRoutesType = {
   freePlanFeature?: boolean;
   businessPlanRequired?: boolean;
   selfHostedExcluded?: boolean;
+  teamLeadOnly?: boolean;
 };
 
 export const navRoutes: NavRoutesType[] = [
@@ -31,6 +32,13 @@ export const navRoutes: NavRoutesType[] = [
     path: '/worklenz/reporting/overview',
     adminOnly: true,
     freePlanFeature: false,
+  },
+  {
+    name: 'my-team-reports',
+    path: '/worklenz/team-lead-reports',
+    adminOnly: false,
+    freePlanFeature: true,
+    teamLeadOnly: true,
   },
   {
     name: 'client-portal',

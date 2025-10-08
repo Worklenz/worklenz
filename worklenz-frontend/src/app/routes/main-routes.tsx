@@ -11,6 +11,7 @@ import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallba
 const HomePage = lazy(() => import('@/pages/home/HomePage'));
 const ProjectList = lazy(() => import('@/pages/projects/project-list'));
 const Schedule = lazy(() => import('@/pages/schedule/schedule'));
+const TeamLeadReports = lazy(() => import('@/pages/team-lead-reports/team-lead-reports'));
 
 const ProjectView = lazy(() => import('@/pages/projects/projectView/project-view'));
 const Unauthorized = lazy(() => import('@/pages/unauthorized/unauthorized'));
@@ -48,6 +49,38 @@ const AdminGuard = ({ children }: { children: React.ReactNode }) => {
   }
 };
 
+// Define TeamLeadGuard component
+const TeamLeadGuard = ({ children }: { children: React.ReactNode }) => {
+  const authService = useAuthService();
+  const location = useLocation();
+
+  try {
+    if (!authService || typeof authService.isAuthenticated !== 'function') {
+      return <>{children}</>;
+    }
+
+    if (!authService.isAuthenticated()) {
+      return <Navigate to="/auth" state={{ from: location }} replace />;
+    }
+
+    const currentSession = authService.getCurrentSession();
+    const isOwnerOrAdmin = authService.isOwnerOrAdmin();
+    
+    // For now, allow access to all non-admin users as a temporary fix
+    // TODO: Implement proper Team Lead role detection in session
+    const isTeamLead = !isOwnerOrAdmin && currentSession && !currentSession.owner && !currentSession.is_admin;
+
+    if (!isTeamLead) {
+      return <Navigate to="/worklenz/unauthorized" replace />;
+    }
+
+    return <>{children}</>;
+  } catch (error) {
+    console.error('Error in TeamLeadGuard (main-routes):', error);
+    return <>{children}</>;
+  }
+};
+
 const mainRoutes: RouteObject[] = [
   {
     path: '/worklenz',
@@ -67,6 +100,16 @@ const mainRoutes: RouteObject[] = [
         element: (
           <Suspense fallback={<SuspenseFallback />}>
             <ProjectList />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'team-lead-reports',
+        element: (
+          <Suspense fallback={<SuspenseFallback />}>
+            <TeamLeadGuard>
+              <TeamLeadReports />
+            </TeamLeadGuard>
           </Suspense>
         ),
       },

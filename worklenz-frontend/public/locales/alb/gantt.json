@@ -19,5 +19,12 @@
   "common": {
     "noStart": "Pa fillim",
     "noEnd": "Pa fund"
+  },
+  "businessPlan": {
+    "phaseCreationRestricted": "Krijimi i fazave është i disponueshëm vetëm për përdoruesit e planët Business",
+    "taskCreationRestricted": "Krijimi i detyrave është i disponueshëm vetëm për përdoruesit e planët Business",
+    "phaseEditingRestricted": "Redaktimi i fazave është i disponueshëm vetëm për përdoruesit e planët Business",
+    "taskEditingRestricted": "Redaktimi i detyrave është i disponueshëm vetëm për përdoruesit e planët Business",
+    "phaseReorderingRestricted": "Riorganizimi i fazave është i disponueshëm vetëm për përdoruesit e planët Business"
   }
 }

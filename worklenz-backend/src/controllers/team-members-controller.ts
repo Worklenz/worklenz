@@ -249,6 +249,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
                                   FROM email_invitations
                                   WHERE team_member_id = team_members.id
                                     AND email_invitations.team_id = team_members.team_id) AS pending_invitation,
+                           team_members.reports_to_member_id,
+                           (SELECT name FROM team_member_info_view 
+                            WHERE team_member_info_view.team_member_id = team_members.reports_to_member_id) AS current_team_lead_name,
                             active
                     FROM team_members
                            LEFT JOIN users u ON team_members.user_id = u.id

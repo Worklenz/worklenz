@@ -259,7 +259,7 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
       </div>
 
       <div>
-        <label style={{ display: 'block', marginBottom: 8 }}>Working Hours per Day</label>
+        <label style={{ display: 'block', marginBottom: 8 }}>{t('filters.workingHoursPerDay')}</label>
         <InputNumber
           value={workingHoursPerDay}
           onChange={value => dispatch(setWorkingHoursPerDay(value || 8))}
@@ -267,7 +267,7 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
           min={1}
           max={24}
           step={0.5}
-          addonAfter="hours"
+          addonAfter={t('table.hours')}
         />
       </div>
 

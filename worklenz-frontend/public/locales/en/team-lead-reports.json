@@ -1,0 +1,76 @@
+{
+  "title": "My Team Reports",
+  "subtitle": "Time tracking and performance insights for your team members",
+  
+  "dateRange": {
+    "label": "Date Range",
+    "showing": "Showing",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "thisWeek": "This Week",
+    "lastWeek": "Last Week",
+    "last7Days": "Last 7 Days",
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month",
+    "last30Days": "Last 30 Days",
+    "last90Days": "Last 90 Days",
+    "custom": "Custom Range",
+    "apply": "Apply"
+  },
+
+  "summary": {
+    "totalMembers": "Total Members",
+    "totalTimeLogged": "Total Time Logged",
+    "activeProjects": "Active Projects",
+    "avgCompletionRate": "Avg Completion Rate",
+    "hours": "hours"
+  },
+
+  "timeTracking": {
+    "title": "Time Tracking Summary",
+    "member": "Member",
+    "totalHours": "Total Hours",
+    "manualLogs": "Manual Logs",
+    "timerLogs": "Timer Logs",
+    "projects": "Projects",
+    "viewDetails": "View Details",
+    "noData": "No time logs found for the selected period"
+  },
+
+  "performance": {
+    "title": "Team Performance",
+    "member": "Member",
+    "tasksCompleted": "Tasks Completed",
+    "tasksOverdue": "Tasks Overdue",
+    "completionRate": "Completion Rate",
+    "projectsInvolved": "Projects Involved",
+    "noData": "No performance data available"
+  },
+
+  "detailedLogs": {
+    "title": "Detailed Time Logs",
+    "for": "for",
+    "date": "Date",
+    "project": "Project",
+    "task": "Task",
+    "duration": "Duration",
+    "description": "Description",
+    "type": "Type",
+    "manual": "Manual",
+    "timer": "Timer",
+    "noLogs": "No detailed logs found",
+    "close": "Close"
+  },
+
+  "errors": {
+    "failedToLoad": "Failed to load team reports",
+    "tryAgain": "Please try again",
+    "noTeamMembers": "No team members found",
+    "loadingError": "Error loading data"
+  },
+
+  "loading": {
+    "fetchingData": "Loading team reports...",
+    "fetchingLogs": "Loading detailed logs..."
+  }
+}

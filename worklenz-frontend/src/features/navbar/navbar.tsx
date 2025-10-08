@@ -81,11 +81,27 @@ const Navbar = () => {
     const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
     const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
     const isSelfHosted = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED;
+    
+    // For now, show Team Lead reports to all non-admin users as a temporary fix
+    // TODO: Implement proper Team Lead role detection in session
+    const isTeamLead = !isOwnerOrAdmin && currentSession && !currentSession.owner && !currentSession.is_admin;
+
+    // Debug logging
+    console.log('Navbar Debug:', {
+      isTeamLead,
+      isOwnerOrAdmin,
+      navRoutesList: navRoutesList.length,
+      currentSession: !!currentSession,
+      owner: currentSession?.owner,
+      is_admin: currentSession?.is_admin,
+      is_member: currentSession?.is_member
+    });
 
     return navRoutesList
       .filter(route => {
         if (route.adminOnly && !isOwnerOrAdmin) return false;
         if (route.selfHostedExcluded && isSelfHosted) return false;
+        if (route.teamLeadOnly && !isTeamLead) return false;
         return true;
       })
       .map((route, index) => {

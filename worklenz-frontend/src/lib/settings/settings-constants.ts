@@ -36,6 +36,9 @@ const TaskTemplatesSettings = lazy(
 const TeamMembersSettings = lazy(
   () => import('@/pages/settings/team-members/team-members-settings')
 );
+const TeamHierarchy = lazy(
+  () => import('@/components/settings/team-hierarchy/team-hierarchy')
+);
 const TeamsSettings = lazy(() => import('../../pages/settings/teams/teams-settings'));
 const ChangePassword = lazy(() => import('@/pages/settings/change-password/change-password'));
 const LanguageAndRegionSettings = lazy(
@@ -148,6 +151,14 @@ export const settingsItems: SettingMenuItems[] = [
     endpoint: 'team-members',
     icon: React.createElement(TeamOutlined),
     element: React.createElement(TeamMembersSettings),
+    adminOnly: true,
+  },
+  {
+    key: 'team-hierarchy',
+    name: 'team-hierarchy',
+    endpoint: 'team-hierarchy',
+    icon: React.createElement(TeamOutlined),
+    element: React.createElement(TeamHierarchy),
     adminOnly: true,
   },
   {

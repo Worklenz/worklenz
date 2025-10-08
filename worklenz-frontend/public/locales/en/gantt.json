@@ -19,5 +19,12 @@
   "common": {
     "noStart": "No start",
     "noEnd": "No end"
+  },
+  "businessPlan": {
+    "phaseCreationRestricted": "Phase creation is available for Business plan users only",
+    "taskCreationRestricted": "Task creation is available for Business plan users only",
+    "phaseEditingRestricted": "Phase editing is available for Business plan users only",
+    "taskEditingRestricted": "Task editing is available for Business plan users only",
+    "phaseReorderingRestricted": "Phase reordering is available for Business plan users only"
   }
 }

@@ -12,6 +12,7 @@ const MembersTimeReports = lazy(() => import('@/pages/reporting/timeReports/memb
 const EstimatedVsActualTimeReports = lazy(
   () => import('@/pages/reporting/timeReports/estimated-vs-actual-time-reports')
 );
+const TimeLogsReports = lazy(() => import('@/pages/reporting/timeReports/time-logs'));
 
 // Type definition for a menu item
 export type ReportingMenuItems = {
@@ -71,6 +72,12 @@ export const reportingsItems: ReportingMenuItems[] = [
         name: 'estimateVsActual',
         endpoint: 'time-sheet-estimate-vs-actual',
         element: React.createElement(EstimatedVsActualTimeReports),
+      },
+      {
+        key: 'time-sheet-logs',
+        name: 'logs',
+        endpoint: 'time-sheet-logs',
+        element: React.createElement(TimeLogsReports),
       },
     ],
   },

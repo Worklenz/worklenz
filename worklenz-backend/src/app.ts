@@ -180,6 +180,7 @@ app.get("/csrf-token", (req: Request, res: Response) => {
 // Webhook endpoints (no CSRF required)
 app.post("/webhook/emails/bounce", safeControllerFunction(AwsSesController.handleBounceResponse));
 app.post("/webhook/emails/complaints", safeControllerFunction(AwsSesController.handleComplaintResponse));
+app.post("/webhook/emails/delivery", safeControllerFunction(AwsSesController.handleDeliveryEvents));
 app.post("/webhook/emails/reply", safeControllerFunction(AwsSesController.handleReplies));
 
 // Static file serving

@@ -26,7 +26,7 @@ Successfully implemented a Team Lead role that provides admin access scoped to a
 - ✅ Added Team Lead role types and constants
 - ✅ Updated invite team members modal to include Team Lead option
 - ✅ Enhanced team member creation interface with role selection
-- ✅ Updated finance permissions to include Team Lead access
+- ✅ Updated finance permissions to exclude Team Lead access
 - ✅ Updated permission comments throughout the application
 
 ## Key Features
@@ -35,7 +35,6 @@ Successfully implemented a Team Lead role that provides admin access scoped to a
 - **Admin access within assigned team**: Full management capabilities for team members, projects, and settings
 - **Team-scoped access**: Cannot access other teams or organization-wide settings
 - **Project-specific management**: Can only manage projects they are assigned to as members
-- **Finance access**: Can view and edit project finance data for their assigned projects only
 - **Settings access**: Full access to team-specific settings (team members, labels, categories, etc.)
 - **Project-scoped reporting**: Can only view reporting and analytics for projects they're assigned to and team members working on those projects
 
@@ -77,13 +76,13 @@ WHERE team_id = 'YOUR_TEAM_ID';
 Test that Team Lead can:
 - ✅ Access Admin Center
 - ✅ Manage team members  
-- ✅ View and edit project finance data for their assigned projects only
 - ✅ Access team settings (labels, categories, etc.)
 - ✅ Manage projects they are assigned to as members
 - ✅ Access reporting and analytics for their assigned projects and relevant team members
 
 Test that Team Lead cannot:
 - ❌ Access billing information (Owner only)
+- ❌ Access project finance data (Admin/Owner/Project Manager only)
 - ❌ Manage members in other teams
 - ❌ Access organization-wide admin functions
 - ❌ View projects they are not assigned to as members

@@ -1285,6 +1285,85 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     return res.status(200).send(new ServerResponse(true, body));
   }
 
+  @HandleExceptions()
+  public static async getTimelogsFlat(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { team_member_id, duration, date_range, billable, search } = req.body || {};
+
+    // Get user timezone and date clauses
+    const userTimezone = await this.getUserTimezone(req.user?.id as string);
+    const durationClause = this.getDateRangeClauseWithTimezone(duration || DATE_RANGES.LAST_WEEK, date_range, userTimezone);
+
+    const billableQuery = this.buildBillableQuery(billable || { billable: true, nonBillable: true });
+
+    // Optional member filter
+    const memberFilter = team_member_id ? `AND u.id = (SELECT user_id FROM team_members WHERE id = $2)` : '';
+
+    // Optional search filter (task, project, member, description)
+    const searchFilter = search ? `AND (
+      LOWER(t.name) LIKE LOWER($${team_member_id ? 3 : 2}) OR
+      LOWER(p.name) LIKE LOWER($${team_member_id ? 3 : 2}) OR
+      LOWER(u.name) LIKE LOWER($${team_member_id ? 3 : 2}) OR
+      LOWER(COALESCE(twl.description, '')) LIKE LOWER($${team_member_id ? 3 : 2})
+    )` : '';
+
+    // Params: [viewer_timezone, optional team_member_id, optional searchLike]
+    const params: any[] = [userTimezone];
+    if (team_member_id) {
+      params.push(team_member_id);
+    }
+    if (search) {
+      params.push(`%${search}%`);
+    }
+
+    const q = `
+      SELECT
+        (twl.created_at AT TIME ZONE 'UTC' AT TIME ZONE $1)::DATE AS log_day,
+        u.name AS user_name,
+        p.name AS project_name,
+        t.name AS task_name,
+        twl.time_spent,
+        twl.description
+      FROM task_work_log twl
+      JOIN tasks t ON t.id = twl.task_id
+      JOIN projects p ON p.id = t.project_id
+      JOIN users u ON u.id = twl.user_id
+      WHERE 1=1
+        ${memberFilter}
+        ${durationClause}
+        ${billableQuery}
+        ${searchFilter}
+      ORDER BY log_day DESC, user_name ASC`;
+
+    const rows = await db.query(q, params);
+
+    // Group rows by day
+    const groups: any[] = [];
+    const byDay: Record<string, any[]> = {};
+    for (const r of rows.rows) {
+      if (!byDay[r.log_day]) byDay[r.log_day] = [];
+      byDay[r.log_day].push({
+        user_name: r.user_name,
+        project_name: r.project_name,
+        task_name: r.task_name,
+        time_spent_string: this.secondsToReadable(r.time_spent || 0),
+        description: r.description || null,
+      });
+    }
+    for (const day of Object.keys(byDay).sort((a, b) => (a < b ? 1 : -1))) {
+      groups.push({ log_day: day, logs: byDay[day] });
+    }
+
+    return res.status(200).send(new ServerResponse(true, groups));
+  }
+
+  private static secondsToReadable(totalSeconds: number): string {
+    const sec = Math.max(0, Math.floor(totalSeconds || 0));
+    const hours = Math.floor(sec / 3600);
+    const minutes = Math.floor((sec % 3600) / 60);
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  }
+
   private static updateTaskProperties(tasks: any[]) {
     for (const task of tasks) {
         task.project_color = getColor(task.project_name);
