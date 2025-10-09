@@ -1,0 +1,89 @@
+{
+  "title": "Slack 集成",
+  "connectWorkspace": "连接 Slack 工作区",
+  "addChannelConfig": "添加频道配置",
+  "manageConfigurations": "管理",
+  "defaultWorkspaceName": "Slack 工作区",
+  "connectedDescription": "您团队的 Slack 工作区已连接。配置哪些频道接收每个项目的通知。",
+  "status": {
+    "connected": "已连接"
+  },
+  "disconnect": {
+    "title": "断开 Slack 连接？",
+    "content": "这将删除所有 Slack 配置并停止向您的团队发送通知。",
+    "okText": "断开连接"
+  },
+  "deleteConfig": {
+    "title": "删除配置？",
+    "content": "您确定要删除此频道配置吗？",
+    "okText": "删除"
+  },
+  "notConnected": {
+    "title": "连接您的 Slack 工作区",
+    "description": "将 Slack 与您的 Worklenz 团队集成，以接收实时通知、从 Slack 创建任务，并保持您的团队在两个平台上同步。"
+  },
+  "features": {
+    "notifications": {
+      "title": "实时通知",
+      "description": "获取任务更新、评论和截止日期的通知"
+    },
+    "createTasks": {
+      "title": "从 Slack 创建任务",
+      "description": "使用斜杠命令快速创建任务，无需离开 Slack"
+    },
+    "collaboration": {
+      "title": "团队协作",
+      "description": "保持您的整个团队在 Worklenz 和 Slack 之间同步"
+    }
+  },
+  "table": {
+    "project": "项目",
+    "slackChannel": "Slack 频道",
+    "notifications": "通知",
+    "active": "活跃",
+    "actions": "操作",
+    "channelConfigs": "Slack 频道配置",
+    "toggleStatus": "切换 {{channel}} 的状态",
+    "editConfig": "编辑 {{channel}} 的配置",
+    "deleteConfig": "删除 {{channel}} 的配置"
+  },
+  "modal": {
+    "configureChannel": "配置 Slack 频道",
+    "editChannel": "编辑 Slack 频道",
+    "project": "项目",
+    "selectProject": "选择项目",
+    "slackChannel": "Slack 频道",
+    "selectSlackChannel": "选择 Slack 频道",
+    "notificationTypes": "通知类型",
+    "selectNotificationTypes": "选择通知类型",
+    "addConfiguration": "添加配置",
+    "updateConfiguration": "更新配置"
+  },
+  "validation": {
+    "selectProject": "请选择一个项目",
+    "selectChannel": "请选择一个 Slack 频道",
+    "selectNotifications": "请至少选择一种通知类型"
+  },
+  "messages": {
+    "connectedSuccess": "Slack 工作区连接成功！",
+    "installationCancelled": "Slack 安装已取消",
+    "disconnectedSuccess": "Slack 工作区断开连接成功",
+    "configAdded": "频道配置添加成功",
+    "configUpdated": "频道配置更新成功",
+    "statusUpdated": "频道状态更新成功",
+    "configRemoved": "频道配置删除成功"
+  },
+  "errors": {
+    "connectionCheckFailed": "检查 Slack 连接失败",
+    "loadConfigsFailed": "加载频道配置失败",
+    "loadChannelsFailed": "加载可用频道失败",
+    "loadProjectsFailed": "加载项目失败",
+    "initiateConnectionFailed": "启动 Slack 连接失败",
+    "connectionFailed": "连接 Slack 工作区失败",
+    "disconnectFailed": "断开 Slack 工作区连接失败",
+    "addConfigFailed": "添加频道配置失败",
+    "updateConfigFailed": "更新频道配置失败",
+    "updateStatusFailed": "更新频道状态失败",
+    "removeConfigFailed": "删除频道配置失败"
+  }
+}

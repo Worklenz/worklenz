@@ -66,8 +66,8 @@ function IntegrationsSettings() {
 
   return (
     <div className="space-y-6">
-      {/* First Row - 2 Column Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Integration Cards Grid - Consistent Heights */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Slack Integration - Active */}
         <IntegrationCard
           icon={<SlackIcon />}
@@ -92,7 +92,7 @@ function IntegrationsSettings() {
            available={false}
          />
 
-        {/* GitHub Integration - Full Width */}
+        {/* GitHub Integration - Coming Soon */}
         <IntegrationCard
           icon={<GithubOutlined />}
           title={t('github.title', { defaultValue: 'GitHub' })}
