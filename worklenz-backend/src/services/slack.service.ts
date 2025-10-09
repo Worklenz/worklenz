@@ -32,6 +32,15 @@ interface SlackChannelConfig {
   created_by?: string;
 }
 
+interface SlackChannelConfigWithDetails extends SlackChannelConfig {
+  channel_name: string;
+  slack_channel_identifier: string;
+  workspace_name: string;
+  project_name?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface SlackOAuthResponse {
   team_id: string;
   team_name: string;
@@ -222,9 +231,9 @@ export class SlackService {
    */
   public static async syncChannels(
     workspaceId: string,
-    channels: Array<{ id: string; name: string; is_private?: boolean; is_archived?: boolean }>
+    channels: { id: string; name: string; is_private?: boolean; is_archived?: boolean }[]
   ): Promise<void> {
-    const client: PoolClient = await db.connect();
+    const client: PoolClient = await db.pool.connect();
 
     try {
       await client.query('BEGIN');
@@ -353,7 +362,7 @@ export class SlackService {
    */
   public static async getChannelConfigsByProject(
     projectId: string
-  ): Promise<any[]> {
+  ): Promise<SlackChannelConfigWithDetails[]> {
     try {
       const q = `
         SELECT
@@ -380,7 +389,7 @@ export class SlackService {
    */
   public static async getChannelConfigsByOrganization(
     organizationId: string
-  ): Promise<any[]> {
+  ): Promise<SlackChannelConfigWithDetails[]> {
     try {
       const q = `
         SELECT
@@ -430,7 +439,7 @@ export class SlackService {
     notificationType: string,
     entityType: string,
     entityId: string,
-    message: any
+    message: Record<string, unknown>
   ): Promise<void> {
     try {
       // Get the channel config with workspace info
@@ -506,12 +515,14 @@ export class SlackService {
     notificationType: string,
     entityType: string,
     entityId: string,
-    message: any,
+    message: Record<string, unknown>,
     status: 'sent' | 'failed' | 'pending',
     errorMessage: string | null,
     slackMessageTs: string | null
   ): Promise<void> {
     try {
+      const sentAt = status === 'sent' ? new Date().toISOString() : null;
+      
       const q = `
         INSERT INTO slack_notifications (
           slack_channel_config_id,
@@ -524,7 +535,7 @@ export class SlackService {
           slack_message_ts,
           sent_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, ${status === 'sent' ? 'CURRENT_TIMESTAMP' : 'NULL'});
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
       `;
 
       await db.query(q, [
@@ -535,7 +546,8 @@ export class SlackService {
         JSON.stringify(message),
         status,
         errorMessage,
-        slackMessageTs
+        slackMessageTs,
+        sentAt
       ]);
     } catch (error) {
       log_error(error);

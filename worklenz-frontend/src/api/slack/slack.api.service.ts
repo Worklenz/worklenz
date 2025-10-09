@@ -25,14 +25,26 @@ export interface ISlackChannel {
 
 export interface ISlackChannelConfig {
   id: string;
-  project_id: string;
-  slack_channel_id: string;
-  notification_types: string[];
-  is_active: boolean;
-  channel_name?: string;
-  slack_channel_identifier?: string;
-  workspace_name?: string;
-  project_name?: string;
+  projectId: string;
+  projectName: string;
+  slackChannelId: string;
+  slackChannelName: string;
+  notificationTypes: string[];
+  isActive: boolean;
+}
+
+export interface ISlackStatusResponse {
+  connected: boolean;
+  workspace?: {
+    id: string;
+    name: string;
+    team_id: string;
+    is_active: boolean;
+  };
+}
+
+export interface ISlackInstallUrlResponse {
+  url: string;
 }
 
 export interface ISlackOAuthData {
@@ -50,7 +62,22 @@ export interface ISlackOAuthData {
 }
 
 export const slackApiService = {
-  // Workspace operations
+  // Connection status and setup
+  getStatus: async (): Promise<ISlackStatusResponse> => {
+    const response = await apiClient.get<ISlackStatusResponse>(`${rootUrl}/status`);
+    return response.data;
+  },
+
+  getInstallUrl: async (): Promise<ISlackInstallUrlResponse> => {
+    const response = await apiClient.get<ISlackInstallUrlResponse>(`${rootUrl}/install-url`);
+    return response.data;
+  },
+
+  disconnect: async (): Promise<void> => {
+    await apiClient.delete(`${rootUrl}/disconnect`);
+  },
+
+  // Workspace operations (legacy - kept for backward compatibility)
   connectWorkspace: async (data: ISlackOAuthData): Promise<IServerResponse<ISlackWorkspace>> => {
     const response = await apiClient.post<IServerResponse<ISlackWorkspace>>(
       `${rootUrl}/workspace/connect`,
@@ -66,19 +93,24 @@ export const slackApiService = {
     return response.data;
   },
 
-  disconnectWorkspace: async (workspaceId: string): Promise<IServerResponse<any>> => {
-    const response = await apiClient.delete<IServerResponse<any>>(
+  disconnectWorkspace: async (workspaceId: string): Promise<IServerResponse<void>> => {
+    const response = await apiClient.delete<IServerResponse<void>>(
       `${rootUrl}/workspace/${workspaceId}`
     );
     return response.data;
   },
 
   // Channel operations
+  getAvailableChannels: async (): Promise<ISlackChannel[]> => {
+    const response = await apiClient.get<ISlackChannel[]>(`${rootUrl}/channels`);
+    return response.data;
+  },
+
   syncChannels: async (
     workspaceId: string,
     channels: Array<{ id: string; name: string; is_private?: boolean; is_archived?: boolean }>
-  ): Promise<IServerResponse<any>> => {
-    const response = await apiClient.post<IServerResponse<any>>(
+  ): Promise<IServerResponse<void>> => {
+    const response = await apiClient.post<IServerResponse<void>>(
       `${rootUrl}/workspace/${workspaceId}/channels/sync`,
       { channels }
     );
@@ -93,20 +125,29 @@ export const slackApiService = {
   },
 
   // Channel configuration operations
-  createChannelConfig: async (
-    projectId: string,
-    slackChannelId: string,
-    notificationTypes: string[]
-  ): Promise<IServerResponse<ISlackChannelConfig>> => {
-    const response = await apiClient.post<IServerResponse<ISlackChannelConfig>>(
+  getAllChannelConfigs: async (): Promise<ISlackChannelConfig[]> => {
+    const response = await apiClient.get<ISlackChannelConfig[]>(`${rootUrl}/channel-configs`);
+    return response.data;
+  },
+
+  createChannelConfig: async (data: {
+    projectId: string;
+    slackChannelId: string;
+    notificationTypes: string[];
+  }): Promise<ISlackChannelConfig> => {
+    const response = await apiClient.post<ISlackChannelConfig>(
       `${rootUrl}/channel-configs`,
-      {
-        projectId,
-        slackChannelId,
-        notificationTypes
-      }
+      data
     );
     return response.data;
+  },
+
+  updateChannelConfig: async (configId: string, data: { isActive: boolean }): Promise<void> => {
+    await apiClient.patch(`${rootUrl}/channel-configs/${configId}`, data);
+  },
+
+  deleteChannelConfig: async (configId: string): Promise<void> => {
+    await apiClient.delete(`${rootUrl}/channel-configs/${configId}`);
   },
 
   getProjectChannelConfigs: async (projectId: string): Promise<IServerResponse<ISlackChannelConfig[]>> => {
@@ -123,19 +164,12 @@ export const slackApiService = {
     return response.data;
   },
 
-  deleteChannelConfig: async (configId: string): Promise<IServerResponse<any>> => {
-    const response = await apiClient.delete<IServerResponse<any>>(
-      `${rootUrl}/channel-configs/${configId}`
-    );
-    return response.data;
-  },
-
   // Test notification
-  sendTestNotification: async (configId: string, message?: any): Promise<IServerResponse<any>> => {
-    const response = await apiClient.post<IServerResponse<any>>(
+  sendTestNotification: async (configId: string, message?: unknown): Promise<IServerResponse<void>> => {
+    const response = await apiClient.post<IServerResponse<void>>(
       `${rootUrl}/test-notification/${configId}`,
       { message }
     );
     return response.data;
-  }
+  },
 };

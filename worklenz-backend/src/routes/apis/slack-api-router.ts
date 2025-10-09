@@ -29,7 +29,28 @@ const slackRateLimiter = rateLimit({
 // Apply rate limiting to all Slack routes
 slackApiRouter.use(slackRateLimiter);
 
-// Workspace routes
+// Status and setup routes (simple endpoints matching frontend expectations)
+slackApiRouter.get(
+  "/status",
+  safeControllerFunction(SlackController.getStatus)
+);
+
+slackApiRouter.get(
+  "/install-url",
+  safeControllerFunction(SlackController.getInstallUrl)
+);
+
+slackApiRouter.delete(
+  "/disconnect",
+  safeControllerFunction(SlackController.disconnect)
+);
+
+slackApiRouter.get(
+  "/channels",
+  safeControllerFunction(SlackController.getAvailableChannels)
+);
+
+// Workspace routes (legacy - for direct workspace management)
 slackApiRouter.post(
   "/workspace/connect",
   slackOAuthValidator,
@@ -61,13 +82,31 @@ slackApiRouter.get(
   safeControllerFunction(SlackController.getChannels)
 );
 
-// Channel configuration routes
+// Channel configuration routes (simplified for frontend)
+slackApiRouter.get(
+  "/channel-configs",
+  safeControllerFunction(SlackController.getAllChannelConfigs)
+);
+
 slackApiRouter.post(
   "/channel-configs",
   channelConfigValidator,
   safeControllerFunction(SlackController.createChannelConfig)
 );
 
+slackApiRouter.patch(
+  "/channel-configs/:configId",
+  idParamValidator,
+  safeControllerFunction(SlackController.updateChannelConfig)
+);
+
+slackApiRouter.delete(
+  "/channel-configs/:configId",
+  idParamValidator,
+  safeControllerFunction(SlackController.deleteChannelConfig)
+);
+
+// Legacy routes for more specific queries
 slackApiRouter.get(
   "/channel-configs/project/:projectId",
   idParamValidator,
@@ -77,12 +116,6 @@ slackApiRouter.get(
 slackApiRouter.get(
   "/channel-configs/organization",
   safeControllerFunction(SlackController.getOrganizationChannelConfigs)
-);
-
-slackApiRouter.delete(
-  "/channel-configs/:configId",
-  idParamValidator,
-  safeControllerFunction(SlackController.deleteChannelConfig)
 );
 
 // Test notification - extra rate limiting

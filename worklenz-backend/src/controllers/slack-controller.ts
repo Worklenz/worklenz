@@ -8,6 +8,159 @@ import { SlackService } from "../services/slack.service";
 export default class SlackController extends WorklenzControllerBase {
 
   /**
+   * Get Slack connection status for organization
+   */
+  @HandleExceptions()
+  public static async getStatus(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const organizationId = req.user?.organization_id;
+
+    if (!organizationId) {
+      return res.status(200).send({ connected: false });
+    }
+
+    const workspace = await SlackService.getWorkspaceByOrganization(organizationId);
+    
+    if (workspace) {
+      return res.status(200).send({
+        connected: true,
+        workspace: {
+          id: workspace.id,
+          name: workspace.team_name,
+          team_id: workspace.team_id,
+          is_active: workspace.is_active
+        }
+      });
+    }
+
+    return res.status(200).send({ connected: false });
+  }
+
+  /**
+   * Get Slack OAuth installation URL
+   */
+  @HandleExceptions()
+  public static async getInstallUrl(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const organizationId = req.user?.organization_id;
+
+    if (!organizationId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized: Organization ID is required"));
+    }
+
+    // TODO: Generate actual Slack OAuth URL with proper redirect URI and state
+    const clientId = process.env.SLACK_CLIENT_ID;
+    const redirectUri = process.env.SLACK_REDIRECT_URI || `${process.env.APP_URL}/api/slack/oauth/callback`;
+    const scopes = "channels:read,chat:write,commands";
+    
+    const installUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&scope=${scopes}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${organizationId}`;
+
+    return res.status(200).send({ url: installUrl });
+  }
+
+  /**
+   * Disconnect Slack workspace for organization
+   */
+  @HandleExceptions()
+  public static async disconnect(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const organizationId = req.user?.organization_id;
+    const userId = req.user?.id;
+
+    if (!organizationId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized: Organization ID is required"));
+    }
+
+    const workspace = await SlackService.getWorkspaceByOrganization(organizationId);
+    
+    if (!workspace) {
+      return res.status(404).send(new ServerResponse(false, null, "No Slack workspace connected"));
+    }
+
+    await SlackService.disconnectWorkspace(workspace.id, userId, organizationId);
+    return res.status(200).send(new ServerResponse(true, null, "Slack workspace disconnected successfully"));
+  }
+
+  /**
+   * Get available Slack channels for organization
+   */
+  @HandleExceptions()
+  public static async getAvailableChannels(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const organizationId = req.user?.organization_id;
+
+    if (!organizationId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized: Organization ID is required"));
+    }
+
+    const workspace = await SlackService.getWorkspaceByOrganization(organizationId);
+    
+    if (!workspace) {
+      return res.status(404).send(new ServerResponse(false, null, "No Slack workspace connected"));
+    }
+
+    const result = await SlackService.getChannelsByWorkspace(workspace.id);
+    return res.status(200).send(result.channels);
+  }
+
+  /**
+   * Get all channel configs for organization (simplified endpoint)
+   */
+  @HandleExceptions()
+  public static async getAllChannelConfigs(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const organizationId = req.user?.organization_id;
+
+    if (!organizationId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized: Organization ID is required"));
+    }
+
+    const configs = await SlackService.getChannelConfigsByOrganization(organizationId);
+    
+    // Transform to match frontend interface
+    const transformedConfigs = configs.map(config => ({
+      id: config.id,
+      projectId: config.project_id,
+      projectName: config.project_name,
+      slackChannelId: config.slack_channel_id,
+      slackChannelName: config.channel_name,
+      notificationTypes: config.notification_types,
+      isActive: config.is_active
+    }));
+
+    return res.status(200).send(transformedConfigs);
+  }
+
+  /**
+   * Update channel config status
+   */
+  @HandleExceptions()
+  public static async updateChannelConfig(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { configId } = req.params;
+    const { isActive } = req.body;
+    const organizationId = req.user?.organization_id;
+
+    if (!configId) {
+      return res.status(400).send(new ServerResponse(false, null, "Config ID is required"));
+    }
+
+    if (!organizationId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
+    }
+
+    // Verify user owns this config
+    const hasAccess = await SlackService.verifyChannelConfigOwnership(configId, organizationId);
+    if (!hasAccess) {
+      return res.status(403).send(new ServerResponse(false, null, "Forbidden: You do not have access to this configuration"));
+    }
+
+    // TODO: Add updateChannelConfig method to SlackService
+    // For now, we'll use a simple query
+    const db = require("../config/db").default;
+    await db.query(
+      'UPDATE slack_channel_configs SET is_active = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [isActive, configId]
+    );
+
+    return res.status(200).send(new ServerResponse(true, null, "Channel configuration updated successfully"));
+  }
+
+  /**
    * OAuth callback - Connect Slack workspace
    */
   @HandleExceptions()
