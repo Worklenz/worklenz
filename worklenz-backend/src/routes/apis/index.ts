@@ -76,6 +76,7 @@ import subscriptionsApiRouter from "./subscriptions-api-router";
 import plansApiRouter from "./plans-api-router";
 import usersApiRouter from "./users-api-router";
 import clientPortalApiRouter from "./client-portal-api-router";
+import slackApiRouter from "./slack-api-router";
 
 const api = express.Router();
 
@@ -163,5 +164,8 @@ api.use("/users", usersApiRouter);
 
 // Client portal APIs
 api.use("/client-portal", clientPortalApiRouter);
+
+// Slack integration APIs
+api.use("/slack", slackApiRouter);
 
 export default api;

@@ -209,6 +209,7 @@ export {
   SafetyCertificateOutlined,
   CrownOutlined,
   FireOutlined,
+  SlackOutlined,
 } from '@ant-design/icons';
 
 // Re-export all components with React
