@@ -212,11 +212,13 @@ export const initializeAuth = createAsyncThunk(
         };
       } else {
         // Token is invalid, clear auth
+        console.warn('Token validation failed during initialization:', response.message);
         dispatch(clearAuth());
         return { isAuthenticated: false };
       }
-    } catch {
+    } catch (error) {
       // If we get a 401 or any error, clear auth state and return unauthenticated
+      console.error('Error during auth initialization:', error);
       dispatch(clearAuth());
       return { isAuthenticated: false };
     }

@@ -1,0 +1,15 @@
+{
+  "availableSoon": "Available Soon",
+  "slack": {
+    "title": "Slack",
+    "description": "Integrate Slack to receive real-time notifications, create tasks, and sync your team."
+  },
+  "teams": {
+    "title": "Microsoft Teams",
+    "description": "Integrate Microsoft Teams with your Worklenz team to receive real-time notifications, create tasks from Teams, and keep your team synchronized across both platforms."
+  },
+  "github": {
+    "title": "GitHub",
+    "description": "Link GitHub repositories to track commits, pull requests, and issues alongside your tasks."
+  }
+}

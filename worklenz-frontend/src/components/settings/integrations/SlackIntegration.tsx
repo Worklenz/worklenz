@@ -8,6 +8,8 @@ import {
   CheckCircleOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { SlackIcon } from './IntegrationIcons';
+
 import {
   slackApiService,
   type ISlackChannelConfig,
@@ -240,7 +242,7 @@ export function SlackIntegration() {
       title: t('table.slackChannel'),
       dataIndex: 'slackChannelName',
       key: 'slackChannelName',
-      render: (text: string) => <Tag icon={<SlackOutlined />}>{text}</Tag>,
+      render: (text: string) => <Tag icon={<SlackIcon />}>{text}</Tag>,
     },
     {
       title: t('table.notifications'),
@@ -281,18 +283,14 @@ export function SlackIntegration() {
     },
   ], [t, handleToggleChannel, handleDeleteChannel]);
 
-  return (
-    <>
-      {contextHolder}
-      <Card
-        title={
-          <div className="flex items-center gap-2">
-            <SlackOutlined className="text-xl" />
-            <span>{t('title')}</span>
-          </div>
-        }
-        extra={
-          isConnected ? (
+  if (isConnected) {
+    // Connected state - show full management interface
+    return (
+      <>
+        {contextHolder}
+        <Card
+          className="min-h-[320px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+          extra={
             <div className="flex gap-2">
               <Button
                 icon={<PlusOutlined />}
@@ -305,156 +303,143 @@ export function SlackIntegration() {
                 {t('disconnect.okText')}
               </Button>
             </div>
-          ) : (
-            <Button
-              type="primary"
-              onClick={handleConnect}
-              loading={loading}
-              aria-label={t('connectWorkspace')}
-            >
-              {t('connectWorkspace')}
-            </Button>
-          )
-        }
-      >
-        {isConnected ? (
-          <>
-            <div className="mb-4">
-              <div className="flex items-center gap-2">
+          }
+        >
+          <div className="flex items-start gap-4 mb-4">
+            <div className="text-4xl text-green-500 mt-1">
+              <CheckCircleOutlined />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-lg font-semibold dark:text-gray-200 m-0">{t('title')}</h3>
                 <Tag color="success">{t('status.connected')}</Tag>
-                <span className="font-medium dark:text-gray-200">
-                  {workspace?.name || t('defaultWorkspaceName')}
-                </span>
               </div>
-              <p className="text-gray-600 dark:text-gray-400 mt-2">
-                {t('connectedDescription')}
+              <p className="text-gray-600 dark:text-gray-400 mb-0">
+                {workspace?.name && `Connected to ${workspace.name}`}
               </p>
             </div>
+          </div>
 
-            <Table
-              columns={columns}
-              dataSource={channels}
-              rowKey="id"
-              loading={loading}
-              aria-label={t('table.channelConfigs')}
-            />
+          <Table
+            columns={columns}
+            dataSource={channels}
+            rowKey="id"
+            loading={loading}
+            aria-label={t('table.channelConfigs')}
+            size="small"
+          />
 
-            <Modal
-              title={t('modal.configureChannel')}
-              open={modalVisible}
-              onCancel={() => setModalVisible(false)}
-              footer={null}
-              aria-labelledby="slack-channel-config-modal"
-            >
-              <Form form={form} layout="vertical" onFinish={handleAddChannel}>
-                <Form.Item
-                  name="projectId"
-                  label={t('modal.project')}
-                  rules={[{ required: true, message: t('validation.selectProject') }]}
+          <Modal
+            title={t('modal.configureChannel')}
+            open={modalVisible}
+            onCancel={() => setModalVisible(false)}
+            footer={null}
+            aria-labelledby="slack-channel-config-modal"
+          >
+            <Form form={form} layout="vertical" onFinish={handleAddChannel}>
+              <Form.Item
+                name="projectId"
+                label={t('modal.project')}
+                rules={[{ required: true, message: t('validation.selectProject') }]}
+              >
+                <Select
+                  placeholder={t('modal.selectProject')}
+                  showSearch
+                  optionFilterProp="children"
+                  aria-label={t('modal.project')}
                 >
-                  <Select
-                    placeholder={t('modal.selectProject')}
-                    showSearch
-                    optionFilterProp="children"
-                    aria-label={t('modal.project')}
-                  >
-                    {projects.map(project => (
-                      <Select.Option key={project.id} value={project.id}>
-                        {project.name}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
+                  {projects.map(project => (
+                    <Select.Option key={project.id} value={project.id}>
+                      {project.name}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
 
-                <Form.Item
-                  name="slackChannelId"
-                  label={t('modal.slackChannel')}
-                  rules={[{ required: true, message: t('validation.selectChannel') }]}
+              <Form.Item
+                name="slackChannelId"
+                label={t('modal.slackChannel')}
+                rules={[{ required: true, message: t('validation.selectChannel') }]}
+              >
+                <Select
+                  placeholder={t('modal.selectSlackChannel')}
+                  showSearch
+                  optionFilterProp="children"
+                  aria-label={t('modal.slackChannel')}
                 >
-                  <Select
-                    placeholder={t('modal.selectSlackChannel')}
-                    showSearch
-                    optionFilterProp="children"
-                    aria-label={t('modal.slackChannel')}
-                  >
-                    {availableChannels.map(channel => (
-                      <Select.Option key={channel.id} value={channel.id}>
-                        {channel.is_private && '🔒 '} #{channel.channel_name}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
+                  {availableChannels.map(channel => (
+                    <Select.Option key={channel.id} value={channel.id}>
+                      {channel.is_private && '🔒 '} #{channel.channel_name}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
 
-                <Form.Item
-                  name="notificationTypes"
-                  label={t('modal.notificationTypes')}
-                  rules={[{ required: true, message: t('validation.selectNotifications') }]}
-                >
-                  <Select
-                    mode="multiple"
-                    placeholder={t('modal.selectNotificationTypes')}
-                    options={NOTIFICATION_OPTIONS}
-                    aria-label={t('modal.notificationTypes')}
-                  />
-                </Form.Item>
+              <Form.Item
+                name="notificationTypes"
+                label={t('modal.notificationTypes')}
+                rules={[{ required: true, message: t('validation.selectNotifications') }]}
+              >
+                <Select
+                  mode="multiple"
+                  placeholder={t('modal.selectNotificationTypes')}
+                  options={NOTIFICATION_OPTIONS}
+                  aria-label={t('modal.notificationTypes')}
+                />
+              </Form.Item>
 
-                <Form.Item>
-                  <Button type="primary" htmlType="submit" block>
-                    {t('modal.addConfiguration')}
-                  </Button>
-                </Form.Item>
-              </Form>
-            </Modal>
-          </>
-        ) : (
-          <div className="text-center py-8">
-            <SlackOutlined className="text-6xl text-gray-300 dark:text-gray-600 mb-4" />
-            <h3 className="text-lg font-semibold mb-2 dark:text-gray-200">
-              {t('notConnected.title')}
+              <Form.Item>
+                <Button type="primary" htmlType="submit" block>
+                  {t('modal.addConfiguration')}
+                </Button>
+              </Form.Item>
+            </Form>
+          </Modal>
+        </Card>
+      </>
+    );
+  }
+
+  // Disconnected state - show centered card design matching the image
+  return (
+    <>
+      {contextHolder}
+      <Card
+        className="min-h-[320px] text-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200"
+        styles={{ body: { padding: '32px 24px' } }}
+      >
+        <div className="flex flex-col items-center justify-between h-full">
+          {/* Icon */}
+          <div className="text-6xl mb-6">
+            <SlackIcon />
+          </div>
+          
+          {/* Content */}
+          <div className="flex-1 flex flex-col justify-center">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              {t('title', { defaultValue: 'Connect Your Slack Workspace' })}
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
-              {t('notConnected.description')}
+            <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-8 max-w-sm mx-auto">
+              {t('notConnected.description', {
+                defaultValue: 'Integrate Slack with your Worklenz team to receive real-time notifications, create tasks from Slack, and keep your team synchronized across both platforms.'
+              })}
             </p>
-            <div className="space-y-4 max-w-md mx-auto text-left mb-6">
-              <div className="flex items-start gap-3">
-                <CheckCircleOutlined className="text-green-500 mt-1" />
-                <div>
-                  <strong className="dark:text-gray-200">{t('features.notifications.title')}</strong>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {t('features.notifications.description')}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircleOutlined className="text-green-500 mt-1" />
-                <div>
-                  <strong className="dark:text-gray-200">{t('features.createTasks.title')}</strong>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {t('features.createTasks.description')}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircleOutlined className="text-green-500 mt-1" />
-                <div>
-                  <strong className="dark:text-gray-200">{t('features.collaboration.title')}</strong>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {t('features.collaboration.description')}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <Button
-              type="primary"
-              size="large"
+          </div>
+          
+          {/* Action Button */}
+          <div className="w-full">
+            <Button 
+              type="primary" 
+              size="large" 
               onClick={handleConnect}
               loading={loading}
+              className="w-full h-12 text-base font-medium bg-blue-500 hover:bg-blue-600 border-blue-500 hover:border-blue-600"
               aria-label={t('connectWorkspace')}
             >
-              {t('connectWorkspace')}
+              {t('connectWorkspace', { defaultValue: 'Connect Slack Workspace' })}
             </Button>
           </div>
-        )}
+        </div>
       </Card>
     </>
   );

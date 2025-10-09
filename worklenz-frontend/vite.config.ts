@@ -75,6 +75,11 @@ export default defineConfig(({ command, mode }) => {
       hmr: {
         overlay: false,
       },
+      // Allow-list specific dev hosts (e.g., ngrok) to prevent blocked host errors
+      // Add any local tunneling hosts used for development here.
+      allowedHosts: [
+        '4d51ac803dbd.ngrok-free.app'
+      ],
     },
 
     // **Build**

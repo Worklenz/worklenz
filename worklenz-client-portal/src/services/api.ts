@@ -44,7 +44,7 @@ class ClientPortalAPI {
           return Promise.reject(error);
         }
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
           originalRequest._retry = true;
 
           try {
@@ -219,11 +219,11 @@ class ClientPortalAPI {
       } as any);
       return response.data;
     } catch (error: any) {
-      // If it's a 401, return a structured error instead of throwing
-      if (error.response?.status === 401) {
+      // If it's a 401 or 403, return a structured error instead of throwing
+      if (error.response?.status === 401 || error.response?.status === 403) {
         return {
           done: false,
-          message: 'Token invalid',
+          message: 'Token invalid or access forbidden',
           body: null
         } as any;
       }

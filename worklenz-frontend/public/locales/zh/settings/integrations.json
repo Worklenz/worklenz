@@ -1,0 +1,15 @@
+{
+  "availableSoon": "即将推出",
+  "slack": {
+    "title": "Slack",
+    "description": "集成 Slack 以接收实时通知、创建任务并同步您的团队。"
+  },
+  "teams": {
+    "title": "Microsoft Teams",
+    "description": "将 Microsoft Teams 与您的 Worklenz 团队集成，以接收实时通知、从 Teams 创建任务，并保持您的团队在两个平台上同步。"
+  },
+  "github": {
+    "title": "GitHub",
+    "description": "链接 GitHub 仓库以跟踪提交、拉取请求和问题以及您的任务。"
+  }
+}
