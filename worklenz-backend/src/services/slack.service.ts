@@ -108,7 +108,7 @@ export class SlackService {
 
       // Audit log the connection
       await this.logAuditEvent(
-        'SLACK_WORKSPACE_CONNECTED',
+        "SLACK_WORKSPACE_CONNECTED",
         userId || null,
         organizationId,
         {
@@ -166,7 +166,7 @@ export class SlackService {
       return EncryptionService.decrypt(result.rows[0].bot_access_token_encrypted);
     } catch (error) {
       log_error(error);
-      throw new Error('Failed to retrieve bot token');
+      throw new Error("Failed to retrieve bot token");
     }
   }
 
@@ -211,7 +211,7 @@ export class SlackService {
       // Audit log the disconnection
       if (result.rows.length > 0) {
         await this.logAuditEvent(
-          'SLACK_WORKSPACE_DISCONNECTED',
+          "SLACK_WORKSPACE_DISCONNECTED",
           userId || null,
           organizationId || null,
           {
@@ -236,11 +236,11 @@ export class SlackService {
     const client: PoolClient = await db.pool.connect();
 
     try {
-      await client.query('BEGIN');
+      await client.query("BEGIN");
 
       // Delete existing channels
       await client.query(
-        'DELETE FROM slack_channels WHERE slack_workspace_id = $1',
+        "DELETE FROM slack_channels WHERE slack_workspace_id = $1",
         [workspaceId]
       );
 
@@ -259,28 +259,87 @@ export class SlackService {
         );
       }
 
-      await client.query('COMMIT');
+      await client.query("COMMIT");
     } catch (error) {
-      await client.query('ROLLBACK');
+      await client.query("ROLLBACK");
       log_error(error);
-      throw new Error('Failed to sync channels');
+      throw new Error("Failed to sync channels");
     } finally {
       client.release();
     }
   }
 
   /**
+   * Fetch channels from Slack API and sync to database
+   */
+  public static async fetchAndSyncChannels(workspaceId: string): Promise<void> {
+    try {
+      const botToken = await this.getDecryptedBotToken(workspaceId);
+      if (!botToken) {
+        throw new Error("No bot token found for workspace");
+      }
+
+      // Fetch channels from Slack API (including private channels)
+      const url = new URL("https://slack.com/api/conversations.list");
+      url.searchParams.append("types", "public_channel,private_channel");
+      url.searchParams.append("exclude_archived", "false");
+      url.searchParams.append("limit", "1000");
+
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${botToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+
+      if (!data.ok) {
+        log_error(data);
+        throw new Error(`Slack API error: ${data.error}`);
+      }
+
+      // Map and sync channels
+      const channels = data.channels?.map((ch: any) => ({
+        id: ch.id,
+        name: ch.name,
+        is_private: ch.is_private || false,
+        is_archived: ch.is_archived || false,
+      })) || [];
+
+      await this.syncChannels(workspaceId, channels);
+    } catch (error) {
+      log_error(error);
+      throw error;
+    }
+  }
+
+  /**
    * Get all channels for a workspace with pagination
+   * Fetches from Slack API if not in database
    */
   public static async getChannelsByWorkspace(
     workspaceId: string,
-    page: number = 1,
-    limit: number = 100
+    page = 1,
+    limit = 100
   ): Promise<{ channels: SlackChannel[]; total: number }> {
     try {
+      // Check if channels exist in database
+      const countResult = await db.query(
+        `SELECT COUNT(*) as total FROM slack_channels
+         WHERE slack_workspace_id = $1`,
+        [workspaceId]
+      );
+
+      // If no channels in DB, fetch from Slack API
+      if (parseInt(countResult.rows[0].total) === 0) {
+        await this.fetchAndSyncChannels(workspaceId);
+      }
+
       const offset = (page - 1) * limit;
 
-      const [channelsResult, countResult] = await Promise.all([
+      const [channelsResult, totalCountResult] = await Promise.all([
         db.query(
           `SELECT * FROM slack_channels
            WHERE slack_workspace_id = $1 AND is_archived = false
@@ -297,7 +356,7 @@ export class SlackService {
 
       return {
         channels: channelsResult.rows,
-        total: parseInt(countResult.rows[0].total)
+        total: parseInt(totalCountResult.rows[0].total)
       };
     } catch (error) {
       log_error(error);
@@ -456,7 +515,7 @@ export class SlackService {
       const configResult = await db.query(configQuery, [channelConfigId]);
 
       if (configResult.rows.length === 0) {
-        throw new Error('Channel config not found or inactive');
+        throw new Error("Channel config not found or inactive");
       }
 
       const config = configResult.rows[0];
@@ -465,7 +524,7 @@ export class SlackService {
       const botToken = await this.getDecryptedBotToken(config.workspace_id);
 
       if (!botToken) {
-        throw new Error('Bot token not found');
+        throw new Error("Bot token not found");
       }
 
       // TODO: Implement actual Slack Web API call
@@ -484,7 +543,7 @@ export class SlackService {
         entityType,
         entityId,
         message,
-        'sent',
+        "sent",
         null,
         null
       );
@@ -498,8 +557,8 @@ export class SlackService {
         entityType,
         entityId,
         message,
-        'failed',
-        error instanceof Error ? error.message : 'Unknown error',
+        "failed",
+        error instanceof Error ? error.message : "Unknown error",
         null
       );
 
@@ -516,12 +575,12 @@ export class SlackService {
     entityType: string,
     entityId: string,
     message: Record<string, unknown>,
-    status: 'sent' | 'failed' | 'pending',
+    status: "sent" | "failed" | "pending",
     errorMessage: string | null,
     slackMessageTs: string | null
   ): Promise<void> {
     try {
-      const sentAt = status === 'sent' ? new Date().toISOString() : null;
+      const sentAt = status === "sent" ? new Date().toISOString() : null;
       
       const q = `
         INSERT INTO slack_notifications (

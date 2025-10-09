@@ -51,7 +51,7 @@ export default class SlackController extends WorklenzControllerBase {
     // Generate Slack OAuth URL with redirect URI and organization state
     const clientId = process.env.SLACK_CLIENT_ID;
     const redirectUri = process.env.SLACK_REDIRECT_URI || `${process.env.APP_URL}/public/slack/oauth/callback`;
-    const scopes = "channels:read,chat:write,commands";
+    const scopes = "channels:read,groups:read,chat:write,commands";
 
     const installUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&scope=${scopes}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${organizationId}`;
 
