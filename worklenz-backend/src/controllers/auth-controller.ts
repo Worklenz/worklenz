@@ -126,7 +126,7 @@ export default class AuthController extends WorklenzControllerBase {
     const [data] = result.rows;
 
     if (data?.google_id) {
-      return res.status(200).send(new ServerResponse(false, null, "Password reset failed!"));
+      return res.status(200).send(new ServerResponse(false, "oauth_user", "This account uses Google Sign-In. Please sign in with Google instead."));
     }
 
     if (data?.password) {
