@@ -40,6 +40,11 @@ slackApiRouter.get(
   safeControllerFunction(SlackController.getInstallUrl)
 );
 
+slackApiRouter.get(
+  "/oauth/callback",
+  safeControllerFunction(SlackController.oauthCallback)
+);
+
 slackApiRouter.delete(
   "/disconnect",
   safeControllerFunction(SlackController.disconnect)

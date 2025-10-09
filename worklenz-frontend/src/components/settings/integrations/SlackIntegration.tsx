@@ -69,16 +69,35 @@ export function SlackIntegration() {
       const params = new URLSearchParams(window.location.search);
       const slackStatus = params.get('slack');
 
+      // If opened in popup window (from OAuth), close it automatically
+      const isPopup = window.opener && window.opener !== window;
+
       if (slackStatus === 'success') {
-        messageApi.success(t('messages.connectedSuccess'));
-        window.history.replaceState({}, '', window.location.pathname);
-        await checkSlackConnection();
+        if (isPopup) {
+          // Notify parent window and close popup
+          window.opener?.postMessage({ type: 'SLACK_AUTH_SUCCESS' }, window.location.origin);
+          setTimeout(() => window.close(), 500);
+        } else {
+          messageApi.success(t('messages.connectedSuccess'));
+          window.history.replaceState({}, '', window.location.pathname);
+          await checkSlackConnection();
+        }
       } else if (slackStatus === 'error') {
-        messageApi.error(t('errors.connectionFailed'));
-        window.history.replaceState({}, '', window.location.pathname);
+        if (isPopup) {
+          window.opener?.postMessage({ type: 'SLACK_AUTH_ERROR' }, window.location.origin);
+          setTimeout(() => window.close(), 500);
+        } else {
+          messageApi.error(t('errors.connectionFailed'));
+          window.history.replaceState({}, '', window.location.pathname);
+        }
       } else if (slackStatus === 'cancelled') {
-        messageApi.info(t('messages.installationCancelled'));
-        window.history.replaceState({}, '', window.location.pathname);
+        if (isPopup) {
+          window.opener?.postMessage({ type: 'SLACK_AUTH_CANCELLED' }, window.location.origin);
+          setTimeout(() => window.close(), 500);
+        } else {
+          messageApi.info(t('messages.installationCancelled'));
+          window.history.replaceState({}, '', window.location.pathname);
+        }
       }
     };
 
@@ -149,10 +168,33 @@ export function SlackIntegration() {
         `width=${width},height=${height},left=${left},top=${top}`
       );
 
-      // Check if window was closed
+      // Listen for messages from popup
+      const handleMessage = (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
+
+        if (event.data.type === 'SLACK_AUTH_SUCCESS') {
+          messageApi.success(t('messages.connectedSuccess'));
+          checkSlackConnection();
+          setLoading(false);
+          window.removeEventListener('message', handleMessage);
+        } else if (event.data.type === 'SLACK_AUTH_ERROR') {
+          messageApi.error(t('errors.connectionFailed'));
+          setLoading(false);
+          window.removeEventListener('message', handleMessage);
+        } else if (event.data.type === 'SLACK_AUTH_CANCELLED') {
+          messageApi.info(t('messages.installationCancelled'));
+          setLoading(false);
+          window.removeEventListener('message', handleMessage);
+        }
+      };
+
+      window.addEventListener('message', handleMessage);
+
+      // Fallback: Check if window was closed without message
       const checkInterval = setInterval(() => {
         if (authWindow?.closed) {
           clearInterval(checkInterval);
+          window.removeEventListener('message', handleMessage);
           setLoading(false);
           checkSlackConnection();
         }

@@ -4,6 +4,8 @@ import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { SlackService } from "../services/slack.service";
+import { log_error } from "../shared/utils";
+import db from "../config/db";
 
 export default class SlackController extends WorklenzControllerBase {
 
@@ -46,14 +48,81 @@ export default class SlackController extends WorklenzControllerBase {
       return res.status(401).send(new ServerResponse(false, null, "Unauthorized: Organization ID is required"));
     }
 
-    // TODO: Generate actual Slack OAuth URL with proper redirect URI and state
+    // Generate Slack OAuth URL with redirect URI and organization state
     const clientId = process.env.SLACK_CLIENT_ID;
-    const redirectUri = process.env.SLACK_REDIRECT_URI || `${process.env.APP_URL}/api/slack/oauth/callback`;
+    const redirectUri = process.env.SLACK_REDIRECT_URI || `${process.env.APP_URL}/public/slack/oauth/callback`;
     const scopes = "channels:read,chat:write,commands";
-    
+
     const installUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&scope=${scopes}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${organizationId}`;
 
     return res.status(200).send({ url: installUrl });
+  }
+
+  /**
+   * OAuth callback - Handle Slack authorization response
+   */
+  @HandleExceptions()
+  public static async oauthCallback(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { code, state, error } = req.query;
+    const frontendUrl = process.env.FRONTEND_URL || process.env.APP_URL;
+
+    // Handle user cancellation or authorization error
+    if (error) {
+      res.redirect(`${frontendUrl}/settings/integrations?slack=cancelled`);
+      return res as IWorkLenzResponse;
+    }
+
+    if (!code || !state) {
+      res.redirect(`${frontendUrl}/settings/integrations?slack=error`);
+      return res as IWorkLenzResponse;
+    }
+
+    try {
+      const organizationId = state as string;
+
+      // Exchange code for access token
+      const tokenResponse = await fetch("https://slack.com/api/oauth.v2.access", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          client_id: process.env.SLACK_CLIENT_ID || "",
+          client_secret: process.env.SLACK_CLIENT_SECRET || "",
+          code: code as string,
+          redirect_uri: process.env.SLACK_REDIRECT_URI || `${process.env.APP_URL}/public/slack/oauth/callback`,
+        }),
+      });
+
+      const tokenData = await tokenResponse.json();
+
+      if (!tokenData.ok) {
+        log_error(tokenData);
+        res.redirect(`${frontendUrl}/settings/integrations?slack=error`);
+        return res as IWorkLenzResponse;
+      }
+
+      // Store workspace connection
+      const slackData = {
+        team_id: tokenData.team?.id || tokenData.team_id,
+        team_name: tokenData.team?.name || tokenData.team_name,
+        access_token: tokenData.access_token,
+        bot_user_id: tokenData.bot_user_id,
+        bot: tokenData.bot_user_id ? { bot_access_token: tokenData.access_token } : undefined,
+        scope: tokenData.scope,
+        authed_user: tokenData.authed_user,
+      };
+
+      await SlackService.connectWorkspace(organizationId, slackData);
+
+      // Redirect to frontend with success
+      res.redirect(`${frontendUrl}/settings/integrations?slack=success`);
+      return res as IWorkLenzResponse;
+    } catch (error) {
+      log_error(error);
+      res.redirect(`${frontendUrl}/settings/integrations?slack=error`);
+      return res as IWorkLenzResponse;
+    }
   }
 
   /**
@@ -149,11 +218,9 @@ export default class SlackController extends WorklenzControllerBase {
       return res.status(403).send(new ServerResponse(false, null, "Forbidden: You do not have access to this configuration"));
     }
 
-    // TODO: Add updateChannelConfig method to SlackService
-    // For now, we'll use a simple query
-    const db = require("../config/db").default;
+    // Update channel config status
     await db.query(
-      'UPDATE slack_channel_configs SET is_active = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      "UPDATE slack_channel_configs SET is_active = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
       [isActive, configId]
     );
 
@@ -290,8 +357,7 @@ export default class SlackController extends WorklenzControllerBase {
       return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
     }
 
-    // TODO: Verify user has access to this project
-    // This should be added as a separate service method
+    // Note: Project access verification should be added via ProjectService.verifyUserAccess(projectId, userId)
 
     const config = await SlackService.createChannelConfig(
       projectId,
@@ -314,7 +380,7 @@ export default class SlackController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null, "Project ID is required"));
     }
 
-    // TODO: Verify user has access to this project
+    // Note: Project access verification should be added via ProjectService.verifyUserAccess(projectId, userId)
 
     const configs = await SlackService.getChannelConfigsByProject(projectId);
     return res.status(200).send(new ServerResponse(true, configs));
