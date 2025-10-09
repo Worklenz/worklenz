@@ -70,11 +70,14 @@ import {
   setTaskSubscribers,
 } from '@/features/task-drawer/task-drawer.slice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
+import { useMixpanelTracking } from './useMixpanelTracking';
+import { evt_project_task_create, evt_project_task_list_create_subtask } from '@/shared/worklenz-analytics-events';
 
 export const useTaskSocketHandlers = () => {
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
   const currentSession = useAuthService().getCurrentSession();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const { loadingAssignees, taskGroups } = useAppSelector((state: any) => state.taskReducer);
   const { projectId } = useAppSelector((state: any) => state.projectReducer);
@@ -744,6 +747,13 @@ export const useTaskSocketHandlers = () => {
 
         dispatch(addSubtaskToParent({ parentId: data.parent_task_id, subtask }));
 
+        // Track subtask creation event
+        trackMixpanelEvent(evt_project_task_list_create_subtask, {
+          task_id: data.id,
+          project_id: data.project_id,
+          parent_task_id: data.parent_task_id,
+        });
+
         // Also update enhanced kanban slice for subtask creation
         dispatch(
           updateEnhancedKanbanSubtask({
@@ -814,6 +824,12 @@ export const useTaskSocketHandlers = () => {
         // Use addTaskToGroup with the actual group UUID
         dispatch(addTaskToGroup({ task, groupId: groupId || '' }));
 
+        // Track regular task creation event
+        trackMixpanelEvent(evt_project_task_create, {
+          task_id: data.id,
+          project_id: data.project_id,
+        });
+
         // Also update enhanced kanban slice for regular task creation
         dispatch(
           addEnhancedKanbanTaskToGroup({
@@ -823,7 +839,7 @@ export const useTaskSocketHandlers = () => {
         );
       }
     },
-    [dispatch]
+    [dispatch, trackMixpanelEvent]
   );
 
   const handleTaskProgressUpdated = useCallback(
