@@ -202,7 +202,7 @@ const CurrentPlanDetails = () => {
 
   const checkSubscriptionStatus = useCallback(
     (allowedStatuses: string[]) => {
-      if (!billingInfo?.status || billingInfo.is_ltd_user) return false;
+      if (!billingInfo?.status || billingInfo.is_ltd_user || billingInfo.subscription_type === ISUBSCRIPTION_TYPE.TRIAL) return false;
       return allowedStatuses.includes(billingInfo.status);
     },
     [billingInfo?.status, billingInfo?.is_ltd_user]
