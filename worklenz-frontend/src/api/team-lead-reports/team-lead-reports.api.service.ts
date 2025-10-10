@@ -71,12 +71,26 @@ export const teamLeadReportsApiService = {
   getTeamTimeLogsSummary: async (
     startDate?: string,
     endDate?: string
-  ): Promise<IServerResponse<TimeLogsSummary[]>> => {
+  ): Promise<IServerResponse<{
+    filteredRows: TimeLogsSummary[];
+    totals: {
+      total_time_logs: string;
+      total_estimated_hours: string;
+      total_utilization: string;
+    };
+  }>> => {
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
     
-    const response = await apiClient.get<IServerResponse<TimeLogsSummary[]>>(
+    const response = await apiClient.get<IServerResponse<{
+      filteredRows: TimeLogsSummary[];
+      totals: {
+        total_time_logs: string;
+        total_estimated_hours: string;
+        total_utilization: string;
+      };
+    }>>(
       `${rootUrl}/team-time-logs-summary${params.toString() ? '?' + params.toString() : ''}`
     );
     return response.data;
