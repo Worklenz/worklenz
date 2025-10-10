@@ -1,11 +1,16 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { Card, Table, Typography, Spin, Alert, Avatar, Tag, Space, DatePicker, Row, Col, Statistic, Button, Modal, Pagination, Dropdown, List, Divider, Flex, theme, CheckCircleOutlined, Tooltip } from '@/shared/antd-imports';
 import { UserOutlined, ClockCircleOutlined, ProjectOutlined, CalendarOutlined, EyeOutlined, DownOutlined, InfoCircleOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { teamLeadReportsApiService, TeamMember, TimeLogsSummary, DetailedTimeLog, PerformanceStats } from '@/api/team-lead-reports/team-lead-reports.api.service';
 import { getRoleColor } from '@/types/roles/role.types';
+import { formatSecondsToCompactHoursMinutes } from '@/utils/time-format.utils';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
+import TeamLeadTimeChart, { TeamLeadTimeChartRef } from '@/components/team-lead-reports/TeamLeadTimeChart';
+import TotalTimeUtilization from '@/components/reporting/time-reports/total-time-utilization/total-time-utilization';
+import TeamLeadReportsHeader from '@/components/team-lead-reports/TeamLeadReportsHeader';
+import { IRPTTimeTotals } from '@/types/reporting/reporting.types';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -13,6 +18,7 @@ const { RangePicker } = DatePicker;
 const TeamLeadReports: React.FC = () => {
   const { t } = useTranslation('team-lead-reports');
   const { token } = theme.useToken();
+  const chartRef = useRef<TeamLeadTimeChartRef>(null);
   
   // State management
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -22,6 +28,11 @@ const TeamLeadReports: React.FC = () => {
   const [dateRangeLoading, setDateRangeLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
+  const [totals, setTotals] = useState<IRPTTimeTotals>({
+    total_time_logs: '0',
+    total_estimated_hours: '0',
+    total_utilization: '0',
+  });
   
   // Date picker state
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
@@ -61,8 +72,13 @@ const TeamLeadReports: React.FC = () => {
       const endDate = dateRange[1].format('YYYY-MM-DD');
       
       const response = await teamLeadReportsApiService.getTeamTimeLogsSummary(startDate, endDate);
-      if (response.done) {
-        setTimeLogsSummary(response.body);
+      if (response.done && response.body) {
+        // New response format with filteredRows and totals
+        setTimeLogsSummary(response.body.filteredRows || []);
+        // Update totals from the API response
+        if (response.body.totals) {
+          setTotals(response.body.totals);
+        }
       }
     } catch (err) {
       console.error('Error fetching time logs summary:', err);
@@ -286,18 +302,28 @@ const TeamLeadReports: React.FC = () => {
     }
   };
 
-  // Format time duration
-  const formatDuration = (minutes: number | string | null | undefined) => {
-    const numMinutes = typeof minutes === 'number' ? minutes : parseFloat(minutes as string) || 0;
-    const hours = Math.floor(numMinutes / 60);
-    const mins = numMinutes % 60;
-    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  // Format time duration using shared utility
+  const formatDuration = (seconds: number | string | null | undefined) => {
+    const numSeconds = typeof seconds === 'number' ? seconds : parseFloat(seconds as string) || 0;
+    return formatSecondsToCompactHoursMinutes(numSeconds);
   };
+
+  // Handle export
+  const handleExport = useCallback((type: string) => {
+    if (type === 'png') {
+      chartRef.current?.exportChart();
+    }
+  }, []);
+
+  // Handle totals update from chart
+  const handleTotalsUpdate = useCallback((newTotals: IRPTTimeTotals) => {
+    setTotals(newTotals);
+  }, []);
 
   // Time logs summary table columns
   const timeLogsColumns: ColumnsType<TimeLogsSummary> = [
     {
-      title: 'Member',
+      title: t('timeTracking.member'),
       key: 'member',
       render: (_, record) => (
         <Space>
@@ -309,17 +335,17 @@ const TeamLeadReports: React.FC = () => {
     {
       title: (
         <Space>
-          Total Time
-          <Tooltip title="Total time logged by this member during the selected date range. Includes all time entries across all projects and tasks.">
+          {t('timeTracking.totalTime')}
+          <Tooltip title={t('timeTracking.totalTimeTooltip')}>
             <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
           </Tooltip>
         </Space>
       ),
       dataIndex: 'total_time_minutes',
       key: 'total_time',
-      render: (minutes: number | string | null | undefined) => (
+      render: (seconds: number | string | null | undefined) => (
         <Text strong style={{ color: '#1890ff' }}>
-          {formatDuration(minutes)}
+          {formatDuration(seconds)}
         </Text>
       ),
       sorter: (a, b) => (a.total_time_minutes || 0) - (b.total_time_minutes || 0),
@@ -327,8 +353,8 @@ const TeamLeadReports: React.FC = () => {
     {
       title: (
         <Space>
-          Logs Count
-          <Tooltip title="Total number of individual time log entries created by this member during the selected date range.">
+          {t('timeTracking.logsCount')}
+          <Tooltip title={t('timeTracking.logsCountTooltip')}>
             <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
           </Tooltip>
         </Space>
@@ -340,8 +366,8 @@ const TeamLeadReports: React.FC = () => {
     {
       title: (
         <Space>
-          Projects
-          <Tooltip title="Number of distinct projects this member logged time on during the selected date range.">
+          {t('timeTracking.projects')}
+          <Tooltip title={t('timeTracking.projectsTooltip')}>
             <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
           </Tooltip>
         </Space>
@@ -353,8 +379,8 @@ const TeamLeadReports: React.FC = () => {
     {
       title: (
         <Space>
-          Active Days
-          <Tooltip title="Number of distinct days this member logged time during the selected date range.">
+          {t('timeTracking.activeDays')}
+          <Tooltip title={t('timeTracking.activeDaysTooltip')}>
             <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
           </Tooltip>
         </Space>
@@ -364,13 +390,13 @@ const TeamLeadReports: React.FC = () => {
       sorter: (a, b) => a.days_logged - b.days_logged,
     },
     {
-      title: 'Last Activity',
+      title: t('timeTracking.lastActivity'),
       dataIndex: 'last_log_date',
       key: 'last_activity',
       render: (date: string) => date ? dayjs(date).format('MMM DD, YYYY') : '-',
     },
     {
-      title: 'Actions',
+      title: t('timeTracking.actions'),
       key: 'actions',
       render: (_, record) => {
         const member = teamMembers.find(m => m.managed_member_id === record.managed_member_id);
@@ -380,7 +406,7 @@ const TeamLeadReports: React.FC = () => {
             icon={<EyeOutlined />}
             onClick={() => handleViewDetailedLogs(member)}
           >
-            View Details
+            {t('timeTracking.viewDetails')}
           </Button>
         ) : null;
       },
@@ -390,7 +416,7 @@ const TeamLeadReports: React.FC = () => {
   // Performance stats table columns
   const performanceColumns: ColumnsType<PerformanceStats> = [
     {
-      title: 'Member',
+      title: t('performance.member'),
       key: 'member',
       render: (_, record) => (
         <Space>
@@ -406,14 +432,14 @@ const TeamLeadReports: React.FC = () => {
       ),
     },
     {
-      title: 'Tasks',
+      title: t('performance.tasks'),
       key: 'tasks',
       render: (_, record) => (
         <Space direction="vertical" size="small">
-          <Text>{record.assigned_tasks} assigned</Text>
-          <Text type="success">{record.completed_tasks} completed</Text>
+          <Text>{record.assigned_tasks} {t('performance.assigned')}</Text>
+          <Text type="success">{record.completed_tasks} {t('performance.completed')}</Text>
           {record.overdue_tasks > 0 && (
-            <Text type="danger">{record.overdue_tasks} overdue</Text>
+            <Text type="danger">{record.overdue_tasks} {t('performance.overdue')}</Text>
           )}
         </Space>
       ),
@@ -421,8 +447,8 @@ const TeamLeadReports: React.FC = () => {
     {
       title: (
         <Space>
-          Completion Rate
-          <Tooltip title="Percentage of completed tasks out of total assigned tasks. Calculated as: (Completed Tasks ÷ Assigned Tasks) × 100">
+          {t('performance.completionRate')}
+          <Tooltip title={t('performance.completionRateTooltip')}>
             <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
           </Tooltip>
         </Space>
@@ -442,22 +468,22 @@ const TeamLeadReports: React.FC = () => {
     {
       title: (
         <Space>
-          Time Logged
-          <Tooltip title="Total time logged by this member during the selected date range. Includes all time entries across all projects and tasks.">
+          {t('performance.timeLogged')}
+          <Tooltip title={t('performance.timeLoggedTooltip')}>
             <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
           </Tooltip>
         </Space>
       ),
       dataIndex: 'total_time_minutes',
       key: 'time_logged',
-      render: (minutes: number | string | null | undefined) => formatDuration(minutes),
+      render: (seconds: number | string | null | undefined) => formatDuration(seconds),
       sorter: (a, b) => (a.total_time_minutes || 0) - (b.total_time_minutes || 0),
     },
     {
       title: (
         <Space>
-          Active Projects
-          <Tooltip title="Number of distinct projects this member logged time on during the selected date range.">
+          {t('performance.activeProjects')}
+          <Tooltip title={t('performance.activeProjectsTooltip')}>
             <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
           </Tooltip>
         </Space>
@@ -471,7 +497,7 @@ const TeamLeadReports: React.FC = () => {
   // Detailed logs table columns
   const detailedLogsColumns: ColumnsType<DetailedTimeLog> = [
     {
-      title: 'Date & Time',
+      title: t('detailedLogs.dateTime'),
       dataIndex: 'logged_at',
       key: 'logged_at',
       render: (date: string) => (
@@ -485,7 +511,7 @@ const TeamLeadReports: React.FC = () => {
       ),
     },
     {
-      title: 'Duration',
+      title: t('detailedLogs.duration'),
       dataIndex: 'time_spent',
       key: 'duration',
       render: (minutes: number | string | null | undefined) => (
@@ -493,12 +519,12 @@ const TeamLeadReports: React.FC = () => {
       ),
     },
     {
-      title: 'Project',
+      title: t('detailedLogs.project'),
       dataIndex: 'project_name',
       key: 'project',
     },
     {
-      title: 'Task',
+      title: t('detailedLogs.task'),
       dataIndex: 'task_name',
       key: 'task',
       render: (name: string) => (
@@ -508,18 +534,18 @@ const TeamLeadReports: React.FC = () => {
       ),
     },
     {
-      title: 'Description',
+      title: t('detailedLogs.description'),
       dataIndex: 'description',
       key: 'description',
       render: (desc: string) => desc || '-',
     },
     {
-      title: 'Method',
+      title: t('detailedLogs.method'),
       dataIndex: 'logged_by_timer',
       key: 'method',
       render: (byTimer: boolean) => (
         <Tag color={byTimer ? 'green' : 'blue'}>
-          {byTimer ? 'Timer' : 'Manual'}
+          {byTimer ? t('detailedLogs.timer') : t('detailedLogs.manual')}
         </Tag>
       ),
     },
@@ -550,19 +576,31 @@ const TeamLeadReports: React.FC = () => {
 
   // Calculate summary statistics
   const totalTeamMembers = teamMembers.length;
-  const totalTimeLogged = timeLogsSummary.reduce((sum, member) => sum + member.total_time_minutes, 0);
+  
+  // Calculate total time logged (values are in seconds, despite the field name)
+  const totalTimeLogged = timeLogsSummary.reduce((sum, member) => {
+    const timeValue = typeof member.total_time_minutes === 'string' 
+      ? parseFloat(member.total_time_minutes) || 0 
+      : member.total_time_minutes || 0;
+    return sum + timeValue;
+  }, 0);
+  
   const totalProjects = Math.max(...timeLogsSummary.map(m => m.projects_worked_on), 0);
 
   return (
-    <div style={{ padding: 24 }}>
-      <div style={{ marginBottom: 24 }}>
-        <Title level={3}>
-          <ClockCircleOutlined /> {t('title')}
-        </Title>
-        <Text type="secondary">
-          {t('subtitle')}
-        </Text>
-      </div>
+    <Flex vertical>
+      <TeamLeadReportsHeader
+        title={t('title')}
+        exportType={[{ key: 'png', label: 'PNG' }]}
+        export={handleExport}
+      />
+      
+      <TotalTimeUtilization 
+        totals={totals} 
+        dateRange={dateRange ? [dateRange[0].format('YYYY-MM-DD'), dateRange[1].format('YYYY-MM-DD')] : undefined} 
+      />
+
+      <div style={{ padding: 24 }}>
 
       {/* Date Range Filter */}
       <Card size="small" style={{ marginBottom: 16 }}>
@@ -664,6 +702,33 @@ const TeamLeadReports: React.FC = () => {
         </Flex>
       </Card>
 
+      {/* Team Time Chart */}
+      <Card
+        style={{ borderRadius: '4px', marginBottom: 24 }}
+        title={
+          <div style={{ padding: '16px 0' }}>
+            <Title level={4} style={{ margin: 0 }}>
+              <ClockCircleOutlined /> {t('timeTracking.chartTitle', { defaultValue: 'Team Time Tracking Chart' })}
+            </Title>
+          </div>
+        }
+        styles={{
+          body: {
+            maxHeight: 'calc(100vh - 300px)',
+            overflowY: 'auto',
+            padding: '16px',
+          },
+        }}
+      >
+        <TeamLeadTimeChart
+          dateRange={dateRange ? [dateRange[0].format('YYYY-MM-DD'), dateRange[1].format('YYYY-MM-DD')] : null}
+          chartData={timeLogsSummary}
+          loading={loading || dateRangeLoading}
+          onTotalsUpdate={handleTotalsUpdate}
+          ref={chartRef}
+        />
+      </Card>
+
       {/* Summary Statistics */}
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={8}>
@@ -672,7 +737,7 @@ const TeamLeadReports: React.FC = () => {
               title={
                 <Space>
                   {t('summary.totalMembers')}
-                  <Tooltip title="Total number of team members who have logged time during the selected date range.">
+                  <Tooltip title={t('summary.totalMembersTooltip')}>
                     <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
                   </Tooltip>
                 </Space>
@@ -688,7 +753,7 @@ const TeamLeadReports: React.FC = () => {
               title={
                 <Space>
                   {t('summary.totalTimeLogged')}
-                  <Tooltip title="Total time logged by all team members during the selected date range.">
+                  <Tooltip title={t('summary.totalTimeLoggedTooltip')}>
                     <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
                   </Tooltip>
                 </Space>
@@ -704,7 +769,7 @@ const TeamLeadReports: React.FC = () => {
               title={
                 <Space>
                   {t('summary.activeProjects')}
-                  <Tooltip title="Maximum number of projects worked on by any single team member during the selected date range.">
+                  <Tooltip title={t('summary.activeProjectsTooltip')}>
                     <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
                   </Tooltip>
                 </Space>
@@ -772,13 +837,14 @@ const TeamLeadReports: React.FC = () => {
               showSizeChanger
               showQuickJumper
               showTotal={(total, range) => 
-                `${range[0]}-${range[1]} of ${total} time logs`
+                `${range[0]}-${range[1]} ${t('detailedLogs.of', { defaultValue: 'of' })} ${total} ${t('detailedLogs.timeLogsRange')}`
               }
             />
           </div>
         </Spin>
       </Modal>
-    </div>
+      </div>
+    </Flex>
   );
 };
 

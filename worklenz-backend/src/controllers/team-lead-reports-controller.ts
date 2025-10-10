@@ -124,7 +124,92 @@ export default class TeamLeadReportsController {
 
       const result = await db.query(timeLogsSummaryQuery, queryParams);
 
-      return res.send(new ServerResponse(true, result.rows));
+      // Calculate totals similar to members time report
+      const totalTimeLogged = result.rows.reduce((sum, member) => sum + parseFloat(member.total_time_minutes || '0'), 0);
+      
+      // Get organization working settings to calculate expected capacity
+      const workingSettingsQuery = `
+        SELECT 
+          monday, tuesday, wednesday, thursday, friday, saturday, sunday,
+          (SELECT hours_per_day FROM organizations WHERE id = t.organization_id) as hours_per_day
+        FROM organization_working_days owd
+        JOIN teams t ON t.organization_id = owd.organization_id
+        WHERE t.id = $1::UUID
+        LIMIT 1
+      `;
+      
+      const workingSettingsResult = await db.query(workingSettingsQuery, [teamId]);
+      const workingDaysConfig = workingSettingsResult.rows[0] || {
+        monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: false, sunday: false,
+        hours_per_day: 8
+      };
+      
+      // Calculate working days in the date range (excluding weekends based on org settings)
+      let workingDays = 0;
+      if (startDate && endDate) {
+        const start = new Date(startDate as string);
+        const end = new Date(endDate as string);
+        
+        // Set time to midnight to avoid timezone issues
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+        
+        const current = new Date(start);
+        
+        // Include end date by using <= comparison
+        while (current <= end) {
+          const dayOfWeek = current.getDay(); // 0 = Sunday, 1 = Monday, etc.
+          const isWorkingDay = (
+            (dayOfWeek === 1 && workingDaysConfig.monday) ||
+            (dayOfWeek === 2 && workingDaysConfig.tuesday) ||
+            (dayOfWeek === 3 && workingDaysConfig.wednesday) ||
+            (dayOfWeek === 4 && workingDaysConfig.thursday) ||
+            (dayOfWeek === 5 && workingDaysConfig.friday) ||
+            (dayOfWeek === 6 && workingDaysConfig.saturday) ||
+            (dayOfWeek === 0 && workingDaysConfig.sunday)
+          );
+          
+          if (isWorkingDay) {
+            workingDays++;
+          }
+          
+          current.setDate(current.getDate() + 1);
+        }
+      }
+      
+      const hoursPerDay = workingDaysConfig.hours_per_day || 8;
+      
+      // Calculate expected hours based on team members with activity
+      // If no team members have logged time, still show expected capacity for potential team size
+      const teamMemberCount = result.rows.length > 0 ? result.rows.length : 1;
+      const totalExpectedHours = workingDays * hoursPerDay * teamMemberCount;
+      
+      const totalUtilization = totalExpectedHours > 0 
+        ? ((totalTimeLogged / 3600) / totalExpectedHours * 100).toFixed(1)
+        : '0';
+
+      // Debug logging
+      console.log('Team Lead Reports - Capacity Calculation:', {
+        startDate,
+        endDate,
+        workingDays,
+        hoursPerDay,
+        teamMemberCount,
+        totalExpectedHours,
+        totalTimeLogged,
+        totalUtilization
+      });
+
+      const response = {
+        filteredRows: result.rows,
+        totals: {
+          total_time_logs: (totalTimeLogged / 3600).toFixed(1),
+          total_estimated_hours: totalExpectedHours.toFixed(1),
+          total_utilization: totalUtilization
+        }
+      };
+
+      return res.send(new ServerResponse(true, response));
 
     } catch (error) {
       console.error('Error fetching team time logs summary:', error);
