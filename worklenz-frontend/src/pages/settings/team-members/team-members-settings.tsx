@@ -430,7 +430,6 @@ const TeamMembersSettings = () => {
                     disabled={!canManage}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-                      <UserSwitchOutlined />
                       {record.active ? t('deactivateTooltip') : t('activateTooltip')}
                     </div>
                   </Popconfirm>
@@ -445,14 +444,13 @@ const TeamMembersSettings = () => {
                 label: (
                   <Popconfirm
                     title={t('confirmDeleteTitle')}
-                    icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
+                    icon={<ExclamationCircleFilled />}
                     okText={t('okText')}
                     cancelText={t('cancelText')}
                     onConfirm={() => canManage && record.id && handleDeleteMember(record)}
                     disabled={!canManage}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', color: colors.vibrantOrange }}>
-                      <DeleteOutlined />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
                       {t('deleteTooltip')}
                     </div>
                   </Popconfirm>
