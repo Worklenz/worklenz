@@ -13,20 +13,20 @@ export function SlackDisconnectedCard({ loading, onConnect }: SlackDisconnectedC
   return (
     <Card
       className="min-h-[320px] text-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200"
-      styles={{ body: { padding: '32px 24px' } }}
+      styles={{ body: { padding: '32px 24px', height: 'calc(320px - 64px)', display: 'flex', flexDirection: 'column' } }}
     >
-      <div className="flex flex-col items-center justify-between h-full">
+      <div className="flex flex-col h-full">
         {/* Icon */}
         <div className="text-6xl mb-6">
           <SlackIcon />
         </div>
 
-        {/* Content */}
+        {/* Content - Takes up remaining space */}
         <div className="flex-1 flex flex-col justify-center">
           <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
             {t('title', { defaultValue: 'Connect Your Slack Workspace' })}
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-8 max-w-sm mx-auto">
+          <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed max-w-sm mx-auto">
             {t('notConnected.description', {
               defaultValue:
                 'Integrate Slack with your Worklenz team to receive real-time notifications, create tasks from Slack, and keep your team synchronized across both platforms.',
@@ -34,8 +34,8 @@ export function SlackDisconnectedCard({ loading, onConnect }: SlackDisconnectedC
           </p>
         </div>
 
-        {/* Action Button */}
-        <div className="w-full">
+        {/* Action Button - Sticks to bottom */}
+        <div className="w-full mt-8">
           <Button
             type="primary"
             size="large"
