@@ -1311,7 +1311,7 @@ const UpgradePlans = () => {
             )}
 
             {/* Business Plan */}
-            <Col xs={24} >
+            <Col xs={24} lg={isAppSumoUser ? 24 : 6}>
               <PlanCard
                 planType="business"
                 title={isAppSumoUser ? t('pricing-modal:plans.business.namePromo', 'Business (AppSumo Special)') : t('pricing-modal:plans.business.name')}
