@@ -27,6 +27,7 @@ import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { isTeamLeadRole } from '@/types/roles/role.types';
 
 const Navbar = () => {
   const dispatch = useAppDispatch();
@@ -82,20 +83,8 @@ const Navbar = () => {
     const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
     const isSelfHosted = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED;
     
-    // For now, show Team Lead reports to all non-admin users as a temporary fix
-    // TODO: Implement proper Team Lead role detection in session
-    const isTeamLead = !isOwnerOrAdmin && currentSession && !currentSession.owner && !currentSession.is_admin;
-
-    // Debug logging
-    console.log('Navbar Debug:', {
-      isTeamLead,
-      isOwnerOrAdmin,
-      navRoutesList: navRoutesList.length,
-      currentSession: !!currentSession,
-      owner: currentSession?.owner,
-      is_admin: currentSession?.is_admin,
-      is_member: currentSession?.is_member
-    });
+    // Check if user has team lead role
+    const isTeamLead = currentSession?.role_name ? isTeamLeadRole(currentSession.role_name) : false;
 
     return navRoutesList
       .filter(route => {
