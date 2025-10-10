@@ -549,7 +549,15 @@ const TeamLeadReports: React.FC = () => {
 
   // Calculate summary statistics
   const totalTeamMembers = teamMembers.length;
-  const totalTimeLogged = timeLogsSummary.reduce((sum, member) => sum + member.total_time_minutes, 0);
+  
+  // Calculate total time logged (values are in seconds, despite the field name)
+  const totalTimeLogged = timeLogsSummary.reduce((sum, member) => {
+    const timeValue = typeof member.total_time_minutes === 'string' 
+      ? parseFloat(member.total_time_minutes) || 0 
+      : member.total_time_minutes || 0;
+    return sum + timeValue;
+  }, 0);
+  
   const totalProjects = Math.max(...timeLogsSummary.map(m => m.projects_worked_on), 0);
 
   return (
