@@ -2,6 +2,7 @@ import {
   DeleteOutlined,
   EditOutlined,
   ExclamationCircleFilled,
+  MoreOutlined,
   SearchOutlined,
   SyncOutlined,
   UserSwitchOutlined,
@@ -12,8 +13,10 @@ import {
   Badge,
   Button,
   Card,
+  Dropdown,
   Flex,
   Input,
+  MenuProps,
   Popconfirm,
   Table,
   TableProps,
@@ -228,6 +231,52 @@ const TeamMembersSettings = () => {
   );
   const isPrivilegedUser = !!currentUser?.owner || ['admin', 'owner', 'team lead'].includes(effectiveRole);
 
+  const getActionMenuItems = useCallback((record: ITeamMemberViewModel): MenuProps['items'] => {
+    const canManage = canManageUser(record.role_name);
+    
+    return [
+      {
+        key: 'edit',
+        label: t('editTooltip'),
+        icon: <EditOutlined />,
+        disabled: !canManage,
+        onClick: () => canManage && record.id && handleMemberClick(record.id),
+      },
+      {
+        key: 'status',
+        label: record.active ? t('deactivateTooltip') : t('activateTooltip'),
+        icon: <UserSwitchOutlined />,
+        disabled: !canManage,
+        onClick: () => {
+          if (canManage) {
+            // We need to handle the popconfirm separately for this action
+            return;
+          }
+        },
+      },
+      {
+        key: 'assign',
+        label: t('assign_team_lead'),
+        icon: <UsergroupAddOutlined />,
+        disabled: !canManage,
+        onClick: () => canManage && handleAssignManager(record),
+      },
+      {
+        key: 'delete',
+        label: t('deleteTooltip'),
+        icon: <DeleteOutlined />,
+        disabled: !canManage,
+        danger: true,
+        onClick: () => {
+          if (canManage && record.id) {
+            // We need to handle the popconfirm separately for this action
+            return;
+          }
+        },
+      },
+    ];
+  }, [t, canManageUser, handleMemberClick, handleAssignManager]);
+
   const columns: TableProps['columns'] = useMemo(
     () => [
       {
@@ -358,57 +407,80 @@ const TeamMembersSettings = () => {
       },
       {
         key: 'actionBtns',
-        width: 120,
+        width: 60,
         render: (record: ITeamMemberViewModel) => {
           const canManage = canManageUser(record.role_name);
-          return (
-            isPrivilegedUser && (
-              <Flex gap={8} style={{ padding: 0 }} className="action-buttons">
-                <Tooltip title={t('editTooltip')}>
-                  <Button
-                    size="small"
-                    icon={<EditOutlined />}
-                    disabled={!canManage}
-                    onClick={() => canManage && record.id && handleMemberClick(record.id)}
-                  />
-                </Tooltip>
-                <Tooltip title={record.active ? t('deactivateTooltip') : t('activateTooltip')}>
+          
+          if (!isPrivilegedUser) return null;
+          
+          const menuItems = getActionMenuItems(record);
+          
+          // Create custom menu items with popconfirms for status and delete actions
+          const customMenuItems = menuItems?.map(item => {
+            if (item?.key === 'status') {
+              return {
+                ...item,
+                label: (
                   <Popconfirm
                     title={t('confirmActivateTitle')}
                     icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
                     okText={t('okText')}
                     cancelText={t('cancelText')}
                     onConfirm={() => canManage && handleStatusChange(record)}
+                    disabled={!canManage}
                   >
-                    <Button size="small" icon={<UserSwitchOutlined />} disabled={!canManage} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+                      <UserSwitchOutlined />
+                      {record.active ? t('deactivateTooltip') : t('activateTooltip')}
+                    </div>
                   </Popconfirm>
-                </Tooltip>
-                <Tooltip title={t('deleteTooltip')}>
+                ),
+                onClick: undefined,
+              };
+            }
+            
+            if (item?.key === 'delete') {
+              return {
+                ...item,
+                label: (
                   <Popconfirm
                     title={t('confirmDeleteTitle')}
                     icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
                     okText={t('okText')}
                     cancelText={t('cancelText')}
                     onConfirm={() => canManage && record.id && handleDeleteMember(record)}
-                  >
-                    <Button size="small" icon={<DeleteOutlined />} disabled={!canManage} />
-                  </Popconfirm>
-                </Tooltip>
-                <Tooltip title={t('assign_team_lead')}>
-                  <Button
-                    size='small'
-                    icon={<UsergroupAddOutlined />}
-                    onClick={() => handleAssignManager(record)}
                     disabled={!canManage}
-                  />
-                </Tooltip>
-              </Flex>
-            )
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', color: colors.vibrantOrange }}>
+                      <DeleteOutlined />
+                      {t('deleteTooltip')}
+                    </div>
+                  </Popconfirm>
+                ),
+                onClick: undefined,
+              };
+            }
+            
+            return item;
+          }) || [];
+
+          return (
+            <Dropdown
+              menu={{ items: customMenuItems }}
+              trigger={['click']}
+              placement="bottomRight"
+            >
+              <Button
+                size="small"
+                icon={<MoreOutlined />}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </Dropdown>
           );
         },
       },
     ],
-    [t, isPrivilegedUser, effectiveRole, currentUser?.owner]
+    [t, isPrivilegedUser, effectiveRole, currentUser?.owner, getActionMenuItems, canManageUser, handleStatusChange, handleDeleteMember]
   );
 
   return (

@@ -4,6 +4,7 @@ import { UserOutlined, ClockCircleOutlined, ProjectOutlined, CalendarOutlined, E
 import { useTranslation } from 'react-i18next';
 import { teamLeadReportsApiService, TeamMember, TimeLogsSummary, DetailedTimeLog, PerformanceStats } from '@/api/team-lead-reports/team-lead-reports.api.service';
 import { getRoleColor } from '@/types/roles/role.types';
+import { formatSecondsToCompactHoursMinutes } from '@/utils/time-format.utils';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -286,12 +287,10 @@ const TeamLeadReports: React.FC = () => {
     }
   };
 
-  // Format time duration
-  const formatDuration = (minutes: number | string | null | undefined) => {
-    const numMinutes = typeof minutes === 'number' ? minutes : parseFloat(minutes as string) || 0;
-    const hours = Math.floor(numMinutes / 60);
-    const mins = numMinutes % 60;
-    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  // Format time duration using shared utility
+  const formatDuration = (seconds: number | string | null | undefined) => {
+    const numSeconds = typeof seconds === 'number' ? seconds : parseFloat(seconds as string) || 0;
+    return formatSecondsToCompactHoursMinutes(numSeconds);
   };
 
   // Time logs summary table columns
@@ -317,9 +316,9 @@ const TeamLeadReports: React.FC = () => {
       ),
       dataIndex: 'total_time_minutes',
       key: 'total_time',
-      render: (minutes: number | string | null | undefined) => (
+      render: (seconds: number | string | null | undefined) => (
         <Text strong style={{ color: '#1890ff' }}>
-          {formatDuration(minutes)}
+          {formatDuration(seconds)}
         </Text>
       ),
       sorter: (a, b) => (a.total_time_minutes || 0) - (b.total_time_minutes || 0),
@@ -450,7 +449,7 @@ const TeamLeadReports: React.FC = () => {
       ),
       dataIndex: 'total_time_minutes',
       key: 'time_logged',
-      render: (minutes: number | string | null | undefined) => formatDuration(minutes),
+      render: (seconds: number | string | null | undefined) => formatDuration(seconds),
       sorter: (a, b) => (a.total_time_minutes || 0) - (b.total_time_minutes || 0),
     },
     {
