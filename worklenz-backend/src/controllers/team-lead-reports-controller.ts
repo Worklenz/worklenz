@@ -32,7 +32,7 @@ export default class TeamLeadReportsController {
       
       // TODO: Implement proper Team Lead role checking
       // For now, allow access to non-admin users as a temporary fix
-      if (teamLead.role_name !== 'Team Lead' && teamLead.role_name !== 'Member') {
+      if (teamLead.role_name !== "Team Lead" && teamLead.role_name !== "Member") {
         return res.status(403).send(new ServerResponse(false, null, "Access denied: Only Team Leads can access this endpoint"));
       }
 
@@ -55,7 +55,7 @@ export default class TeamLeadReportsController {
       return res.send(new ServerResponse(true, result.rows));
 
     } catch (error) {
-      console.error('Error fetching team members:', error);
+      console.error("Error fetching team members:", error);
       return res.status(500).send(new ServerResponse(false, null, error instanceof Error ? error.message : "Unknown error"));
     }
   }
@@ -88,16 +88,16 @@ export default class TeamLeadReportsController {
       
       // TODO: Implement proper Team Lead role checking
       // For now, allow access to non-admin users as a temporary fix
-      if (teamLead.role_name !== 'Team Lead' && teamLead.role_name !== 'Member') {
+      if (teamLead.role_name !== "Team Lead" && teamLead.role_name !== "Member") {
         return res.status(403).send(new ServerResponse(false, null, "Access denied: Only Team Leads can access this endpoint"));
       }
 
       // Build date filter
-      let dateFilter = '';
+      let dateFilter = "";
       const queryParams = [teamLead.team_member_id];
       
       if (startDate && endDate) {
-        dateFilter = 'AND DATE(tltl.logged_at) BETWEEN $2::DATE AND $3::DATE';
+        dateFilter = "AND DATE(tltl.logged_at) BETWEEN $2::DATE AND $3::DATE";
         queryParams.push(startDate as string, endDate as string);
       }
 
@@ -125,7 +125,7 @@ export default class TeamLeadReportsController {
       const result = await db.query(timeLogsSummaryQuery, queryParams);
 
       // Calculate totals similar to members time report
-      const totalTimeLogged = result.rows.reduce((sum, member) => sum + parseFloat(member.total_time_minutes || '0'), 0);
+      const totalTimeLogged = result.rows.reduce((sum, member) => sum + parseFloat(member.total_time_minutes || "0"), 0);
       
       // Get organization working settings to calculate expected capacity
       const workingSettingsQuery = `
@@ -186,19 +186,7 @@ export default class TeamLeadReportsController {
       
       const totalUtilization = totalExpectedHours > 0 
         ? ((totalTimeLogged / 3600) / totalExpectedHours * 100).toFixed(1)
-        : '0';
-
-      // Debug logging
-      console.log('Team Lead Reports - Capacity Calculation:', {
-        startDate,
-        endDate,
-        workingDays,
-        hoursPerDay,
-        teamMemberCount,
-        totalExpectedHours,
-        totalTimeLogged,
-        totalUtilization
-      });
+        : "0";
 
       const response = {
         filteredRows: result.rows,
@@ -212,7 +200,7 @@ export default class TeamLeadReportsController {
       return res.send(new ServerResponse(true, response));
 
     } catch (error) {
-      console.error('Error fetching team time logs summary:', error);
+      console.error("Error fetching team time logs summary:", error);
       return res.status(500).send(new ServerResponse(false, null, error instanceof Error ? error.message : "Unknown error"));
     }
   }
@@ -246,7 +234,7 @@ export default class TeamLeadReportsController {
       
       // TODO: Implement proper Team Lead role checking
       // For now, allow access to non-admin users as a temporary fix
-      if (teamLead.role_name !== 'Team Lead' && teamLead.role_name !== 'Member') {
+      if (teamLead.role_name !== "Team Lead" && teamLead.role_name !== "Member") {
         return res.status(403).send(new ServerResponse(false, null, "Access denied: Only Team Leads can access this endpoint"));
       }
 
@@ -263,11 +251,11 @@ export default class TeamLeadReportsController {
       }
 
       // Build date filter and pagination
-      let dateFilter = '';
+      let dateFilter = "";
       const queryParams = [teamLead.team_member_id, memberId];
       
       if (startDate && endDate) {
-        dateFilter = 'AND DATE(tltl.logged_at) BETWEEN $3::DATE AND $4::DATE';
+        dateFilter = "AND DATE(tltl.logged_at) BETWEEN $3::DATE AND $4::DATE";
         queryParams.push(startDate as string, endDate as string);
       }
 
@@ -309,7 +297,7 @@ export default class TeamLeadReportsController {
 
       const countParams = queryParams.slice(0, dateFilter ? 4 : 2);
       const countResult = await db.query(countQuery, countParams);
-      const total = parseInt(countResult.rows[0]?.total || '0');
+      const total = parseInt(countResult.rows[0]?.total || "0");
 
       return res.send(new ServerResponse(true, {
         logs: result.rows,
@@ -322,7 +310,7 @@ export default class TeamLeadReportsController {
       }));
 
     } catch (error) {
-      console.error('Error fetching member detailed time logs:', error);
+      console.error("Error fetching member detailed time logs:", error);
       return res.status(500).send(new ServerResponse(false, null, error instanceof Error ? error.message : "Unknown error"));
     }
   }
@@ -355,16 +343,16 @@ export default class TeamLeadReportsController {
       
       // TODO: Implement proper Team Lead role checking
       // For now, allow access to non-admin users as a temporary fix
-      if (teamLead.role_name !== 'Team Lead' && teamLead.role_name !== 'Member') {
+      if (teamLead.role_name !== "Team Lead" && teamLead.role_name !== "Member") {
         return res.status(403).send(new ServerResponse(false, null, "Access denied: Only Team Leads can access this endpoint"));
       }
 
       // Build date filter for performance stats
-      let dateFilter = '';
+      let dateFilter = "";
       const queryParams = [teamLead.team_member_id];
       
       if (startDate && endDate) {
-        dateFilter = 'AND DATE(tltl.logged_at) BETWEEN $2::DATE AND $3::DATE';
+        dateFilter = "AND DATE(tltl.logged_at) BETWEEN $2::DATE AND $3::DATE";
         queryParams.push(startDate as string, endDate as string);
       }
 
@@ -413,7 +401,7 @@ export default class TeamLeadReportsController {
       return res.send(new ServerResponse(true, result.rows));
 
     } catch (error) {
-      console.error('Error fetching team performance stats:', error);
+      console.error("Error fetching team performance stats:", error);
       return res.status(500).send(new ServerResponse(false, null, error instanceof Error ? error.message : "Unknown error"));
     }
   }
