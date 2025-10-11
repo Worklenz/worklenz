@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: worklenz_frontend
     ports:
-      - "5000:5000"
+      - "5050:5000"
     depends_on:
       - backend
     restart: unless-stopped
@@ -20,7 +20,7 @@ services:
       dockerfile: Dockerfile
     container_name: worklenz_backend
     ports:
-      - "3000:3000"
+      - "3030:3000"
     depends_on:
       db:
         condition: service_healthy
@@ -36,8 +36,8 @@ services:
     image: minio/minio:latest
     container_name: worklenz_minio
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9090:9000"
+      - "9091:9001"
     restart: unless-stopped
     environment:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-minioadmin}
@@ -67,6 +67,8 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_DB: ${DB_NAME:-worklenz_db}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+    ports:
+      - 5342:5432
     healthcheck:
       test:
         [

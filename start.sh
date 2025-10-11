@@ -101,7 +101,7 @@ else
 fi
 
 # Check if any of the ports are already in use
-ports=(3000 5000 9000 9001 5432)
+ports=(3030 5005 9090 9091 5342)
 for port in "${ports[@]}"; do
     if lsof -i:"$port" > /dev/null 2>&1; then
         echo -e "${YELLOW}⚠ Warning: Port $port is already in use. This may cause conflicts.${NC}"
