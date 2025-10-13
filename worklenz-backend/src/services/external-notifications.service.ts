@@ -93,6 +93,13 @@ export class ExternalNotificationsService {
                   notificationType === "task_completed" ? "Task Completed" :
                   notificationType === "comment_added" ? "Comment Added" : "Task Status Changed";
 
+    // Color based on notification type
+    const color = notificationType === "task_created" ? "#36a64f" :
+                  notificationType === "task_assigned" ? "#3AA3E3" :
+                  notificationType === "task_completed" ? "#2eb886" :
+                  notificationType === "comment_added" ? "#F2C744" :
+                  taskData.status_color || "#3AA3E3";
+
     const blocks: any[] = [
       {
         type: "header",
@@ -104,14 +111,17 @@ export class ExternalNotificationsService {
       },
       {
         type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `*<${taskData.task_url}|${taskData.task_name}>*`
+        }
+      },
+      {
+        type: "section",
         fields: [
           {
             type: "mrkdwn",
-            text: `*Task:*\n<${taskData.task_url}|${taskData.task_name}>`
-          },
-          {
-            type: "mrkdwn",
-            text: `*Project:*\n${taskData.project_name}`
+            text: `*Project*\n${taskData.project_name}`
           }
         ]
       }
@@ -119,65 +129,67 @@ export class ExternalNotificationsService {
 
     // Add specific fields based on notification type
     if (notificationType === "task_assigned" && taskData.assignee_names && taskData.assignee_names.length > 0) {
+      blocks[2].fields.push({
+        type: "mrkdwn",
+        text: `*Assigned To*\n${taskData.assignee_names.join(", ")}`
+      });
       blocks.push({
-        type: "section",
-        fields: [
+        type: "context",
+        elements: [
           {
             type: "mrkdwn",
-            text: `*Assignees:*\n${taskData.assignee_names.join(", ")}`
-          },
-          {
-            type: "mrkdwn",
-            text: `*Assigned By:*\n${userName}`
+            text: `Assigned by *${userName}*`
           }
         ]
       });
     } else if ((notificationType === "task_status_changed" || notificationType === "task_completed") && taskData.old_status_name && taskData.new_status_name) {
+      blocks[2].fields.push({
+        type: "mrkdwn",
+        text: `*Status*\n${taskData.old_status_name} → ${taskData.new_status_name}`
+      });
       blocks.push({
-        type: "section",
-        fields: [
+        type: "context",
+        elements: [
           {
             type: "mrkdwn",
-            text: `*Status Change:*\n${taskData.old_status_name} → ${taskData.new_status_name}`
-          },
-          {
-            type: "mrkdwn",
-            text: `*Changed By:*\n${userName}`
+            text: `Changed by *${userName}*`
           }
         ]
       });
     } else if (notificationType === "task_created") {
-      const fields: any[] = [
-        {
-          type: "mrkdwn",
-          text: `*Created By:*\n${userName}`
-        }
-      ];
-
       if (taskData.status_name) {
-        fields.push({
+        blocks[2].fields.push({
           type: "mrkdwn",
-          text: `*Status:*\n${taskData.status_name}`
+          text: `*Status*\n${taskData.status_name}`
         });
       }
-
       blocks.push({
-        type: "section",
-        fields: fields
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: `Created by *${userName}*`
+          }
+        ]
       });
     } else if (notificationType === "comment_added") {
       blocks.push({
-        type: "section",
-        fields: [
+        type: "context",
+        elements: [
           {
             type: "mrkdwn",
-            text: `*Commented By:*\n${userName}`
+            text: `💬 Comment by *${userName}*`
           }
         ]
       });
     }
 
-    // Add context with timestamp
+    // Add divider before timestamp
+    blocks.push({
+      type: "divider"
+    });
+
+    // Add timestamp
     blocks.push({
       type: "context",
       elements: [
@@ -190,7 +202,13 @@ export class ExternalNotificationsService {
 
     return {
       blocks: blocks,
-      text: `${title}: ${taskData.task_name}` // Fallback text for notifications
+      text: `${title}: ${taskData.task_name}`, // Fallback text for notifications
+      attachments: [
+        {
+          color: color,
+          blocks: []
+        }
+      ]
     };
   }
 

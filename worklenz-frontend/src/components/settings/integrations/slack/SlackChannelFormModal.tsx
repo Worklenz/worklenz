@@ -27,8 +27,9 @@ interface SlackChannelFormModalProps {
 
 const NOTIFICATION_OPTIONS = [
   { value: 'task_created', label: 'Task Created' },
-  { value: 'task_completed', label: 'Task Completed' },
   { value: 'task_assigned', label: 'Task Assigned' },
+  { value: 'task_status_changed', label: 'Task Status Changed' },
+  { value: 'task_completed', label: 'Task Completed' },
   { value: 'comment_added', label: 'Comment Added' },
 ];
 
