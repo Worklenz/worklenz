@@ -5,9 +5,10 @@ import {NotificationsService} from "../../services/notifications/notifications.s
 import {getColor} from "../../shared/utils";
 import {SocketEvents} from "../events";
 
-import {getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates} from "../util";
+import {getLoggedInUserIdFromSocket, notifyProjectUpdates} from "../util";
 import {logMemberAssignment} from "../../services/activity-logs/activity-logs.service";
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
+import { log_error } from "../../shared/utils";
 
 export interface ITaskAssignee {
   team_member_id?: string;

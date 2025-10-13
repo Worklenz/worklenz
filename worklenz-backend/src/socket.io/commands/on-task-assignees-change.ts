@@ -3,13 +3,13 @@ import { NotificationsService } from "../../services/notifications/notifications
 import { SocketEvents } from "../events";
 import { 
   getLoggedInUserIdFromSocket, 
-  log_error, 
   notifyProjectUpdates 
 } from "../util";
 import { logMemberAssignment } from "../../services/activity-logs/activity-logs.service";
 import { getAssignees, ITaskAssignee, runAssignOrRemove } from "./on-quick-assign-or-remove";
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
 import db from "../../config/db";
+import { log_error } from "../../shared/utils";
 
 interface TaskAssigneesChangeData {
   task_id: string;

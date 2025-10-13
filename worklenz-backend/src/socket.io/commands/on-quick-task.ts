@@ -1,15 +1,16 @@
 import {Server, Socket} from "socket.io";
 import db from "../../config/db";
-import {getColor, toMinutes} from "../../shared/utils";
+import {toMinutes} from "../../shared/utils";
 import {SocketEvents} from "../events";
 
-import {getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates} from "../util";
+import {getLoggedInUserIdFromSocket, notifyProjectUpdates} from "../util";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
-import {TASK_STATUS_COLOR_ALPHA, UNMAPPED} from "../../shared/constants";
+import {UNMAPPED} from "../../shared/constants";
 import moment from "moment";
 import momentTime from "moment-timezone";
 import { logEndDateChange, logStartDateChange, logStatusChange } from "../../services/activity-logs/activity-logs.service";
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
+import { log_error } from "../../shared/utils";
 
 export async function getTaskCompleteInfo(task: any) {
   if (!task) return null;

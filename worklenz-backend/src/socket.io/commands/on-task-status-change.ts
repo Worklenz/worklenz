@@ -4,12 +4,12 @@ import db from "../../config/db";
 import {NotificationsService} from "../../services/notifications/notifications.service";
 import {TASK_STATUS_COLOR_ALPHA} from "../../shared/constants";
 import {SocketEvents} from "../events";
-import {getLoggedInUserIdFromSocket, log, log_error, notifyProjectUpdates} from "../util";
+import {getLoggedInUserIdFromSocket, log, notifyProjectUpdates} from "../util";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
 import {getTaskDetails, logProgressChange, logStatusChange} from "../../services/activity-logs/activity-logs.service";
 import { assignMemberIfNot } from "./on-quick-assign-or-remove";
-import logger from "../../utils/logger";
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
+import { log_error } from "../../shared/utils";
 
 export async function on_task_status_change(_io: Server, socket: Socket, data?: string) {
   try {
