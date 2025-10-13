@@ -3,12 +3,13 @@ import db from "../../config/db";
 import {getColor, toMinutes} from "../../shared/utils";
 import {SocketEvents} from "../events";
 
-import {log_error, notifyProjectUpdates} from "../util";
+import {getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates} from "../util";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
 import {TASK_STATUS_COLOR_ALPHA, UNMAPPED} from "../../shared/constants";
 import moment from "moment";
 import momentTime from "moment-timezone";
 import { logEndDateChange, logStartDateChange, logStatusChange } from "../../services/activity-logs/activity-logs.service";
+import { ExternalNotificationsService } from "../../services/external-notifications.service";
 
 export async function getTaskCompleteInfo(task: any) {
   if (!task) return null;
@@ -112,6 +113,24 @@ export async function on_quick_task(_io: Server, socket: Socket, data?: string) 
         });
 
         notifyProjectUpdates(socket, d.task.id);
+
+        // Send external notifications (Slack, Teams)
+        try {
+          const userId = getLoggedInUserIdFromSocket(socket);
+          const userQuery = `SELECT name FROM users WHERE id = $1`;
+          const userResult = await db.query(userQuery, [userId]);
+          const userName = userResult.rows[0]?.name || "Unknown User";
+          
+          await ExternalNotificationsService.sendExternalNotifications(
+            d.task.project_id,
+            d.task.id,
+            "task_create",
+            userName
+          );
+        } catch (notifError) {
+          log_error("Error sending external notifications:", notifError);
+          // Don't throw - continue even if notifications fail
+        }
       }
     } else {
       // Empty task name, emit null to indicate no task was created

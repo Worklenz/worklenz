@@ -3,6 +3,7 @@ import { log_error } from "../shared/utils";
 import { EncryptionService } from "./encryption.service";
 import { PoolClient } from "pg";
 import { ActivityLoggingService } from "./activity-logging.service";
+import { WebClient } from "@slack/web-api";
 
 interface SlackWorkspace {
   id: string;
@@ -527,16 +528,16 @@ export class SlackService {
         throw new Error("Bot token not found");
       }
 
-      // TODO: Implement actual Slack Web API call
-      // Example:
-      // const { WebClient } = require('@slack/web-api');
-      // const slack = new WebClient(botToken);
-      // const result = await slack.chat.postMessage({
-      //   channel: config.channel_id,
-      //   ...message
-      // });
+      // Send message to Slack using Web API
+      const slack = new WebClient(botToken);
+      const result = await slack.chat.postMessage({
+        channel: config.channel_id,
+        text: message.text as string || "Worklenz Notification",
+        blocks: message.blocks as any[] || undefined,
+        ...message
+      });
 
-      // For now, log the notification as sent
+      // Log the notification as sent with Slack message timestamp
       await this.logNotification(
         channelConfigId,
         notificationType,
@@ -545,7 +546,7 @@ export class SlackService {
         message,
         "sent",
         null,
-        null
+        result.ts as string || null
       );
     } catch (error) {
       log_error(error);
