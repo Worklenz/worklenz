@@ -20,7 +20,14 @@ export function isTeamAdmin(user: IPassportSession | undefined): boolean {
 }
 
 /**
- * Check if user is team lead specifically
+ * Check if user is team lead specifically (from session)
+ */
+export function isTeamLeadFromSession(user: IPassportSession | undefined): boolean {
+  return user?.role_name === "Team Lead";
+}
+
+/**
+ * Check if user is team lead specifically (database query)
  */
 export async function isTeamLead(userId: string, teamId: string): Promise<boolean> {
   if (!userId || !teamId) return false;

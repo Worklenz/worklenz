@@ -11,6 +11,7 @@ export interface IPassportSession extends IUser {
   team_name?: string;
   is_admin?: boolean;
   is_member?: boolean;
+  role_name?: string;
   is_google?: boolean;
   build_v?: string;
   timezone?: string;
