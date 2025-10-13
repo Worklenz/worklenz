@@ -12,8 +12,8 @@ export function SlackDisconnectedCard({ loading, onConnect }: SlackDisconnectedC
 
   return (
     <Card
-      className="min-h-[320px] text-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200"
-      styles={{ body: { padding: '32px 24px', height: 'calc(320px - 64px)', display: 'flex', flexDirection: 'column' } }}
+      className="text-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200"
+      styles={{ body: { padding: '32px 24px', height: '100%', display: 'flex', flexDirection: 'column' } }}
     >
       <div className="flex flex-col h-full">
         {/* Icon */}

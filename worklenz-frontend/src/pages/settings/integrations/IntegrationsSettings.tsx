@@ -25,8 +25,8 @@ function IntegrationCard({ icon, title, description, available, children }: Inte
 
   return (
     <Card
-      className="min-h-[320px] text-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200"
-      styles={{ body: { padding: '32px 24px' } }}
+      className="text-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200"
+      styles={{ body: { padding: '32px 24px', height: '100%' } }}
     >
       <div className="flex flex-col items-center justify-between h-full">
         {/* Icon */}
