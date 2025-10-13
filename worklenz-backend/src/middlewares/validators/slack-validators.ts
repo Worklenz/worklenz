@@ -166,6 +166,23 @@ export function channelConfigValidator(req: IWorkLenzRequest, res: Response, nex
 }
 
 /**
+ * Validates channel config update request
+ */
+export function channelConfigUpdateValidator(req: IWorkLenzRequest, res: Response, next: NextFunction) {
+  const { isActive } = req.body;
+
+  if (isActive === undefined) {
+    return res.status(400).send(new ServerResponse(false, null, "isActive field is required"));
+  }
+
+  if (typeof isActive !== "boolean") {
+    return res.status(400).send(new ServerResponse(false, null, "isActive must be a boolean value"));
+  }
+
+  next();
+}
+
+/**
  * Validates test notification request
  */
 export function testNotificationValidator(req: IWorkLenzRequest, res: Response, next: NextFunction) {

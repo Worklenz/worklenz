@@ -64,7 +64,10 @@ export default class SlackController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async oauthCallback(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { code, state, error } = req.query;
-    const frontendUrl = process.env.FRONTEND_URL || process.env.APP_URL;
+    // Ensure we get a clean frontend URL without any path components
+    // Remove any trailing paths that might have been accidentally included
+    const rawFrontendUrl = process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3000";
+    const frontendUrl = rawFrontendUrl.replace(/\/public\/.*$/, "").replace(/\/api\/.*$/, "").replace(/\/$/, "");
 
     // Handle user cancellation or authorization error
     if (error) {
@@ -203,10 +206,6 @@ export default class SlackController extends WorklenzControllerBase {
     const { configId } = req.params;
     const { isActive } = req.body;
     const organizationId = req.user?.organization_id;
-
-    if (!configId) {
-      return res.status(400).send(new ServerResponse(false, null, "Config ID is required"));
-    }
 
     if (!organizationId) {
       return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
@@ -409,10 +408,6 @@ export default class SlackController extends WorklenzControllerBase {
     const { configId } = req.params;
     const organizationId = req.user?.organization_id;
 
-    if (!configId) {
-      return res.status(400).send(new ServerResponse(false, null, "Config ID is required"));
-    }
-
     if (!organizationId) {
       return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
     }
@@ -435,10 +430,6 @@ export default class SlackController extends WorklenzControllerBase {
     const { configId } = req.params;
     const { message } = req.body;
     const organizationId = req.user?.organization_id;
-
-    if (!configId) {
-      return res.status(400).send(new ServerResponse(false, null, "Config ID is required"));
-    }
 
     if (!organizationId) {
       return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));

@@ -2,11 +2,13 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import SlackController from "../../controllers/slack-controller";
 import idParamValidator from "../../middlewares/validators/id-param-validator";
+import configIdParamValidator from "../../middlewares/validators/config-id-param-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import {
   slackOAuthValidator,
   channelSyncValidator,
   channelConfigValidator,
+  channelConfigUpdateValidator,
   testNotificationValidator
 } from "../../middlewares/validators/slack-validators";
 
@@ -19,7 +21,7 @@ const slackRateLimiter = rateLimit({
   max: 100, // 100 requests per 15 minutes
   message: {
     done: false,
-    message: 'Too many Slack API requests. Please try again later.',
+    message: "Too many Slack API requests. Please try again later.",
     body: null
   },
   standardHeaders: true,
@@ -101,13 +103,14 @@ slackApiRouter.post(
 
 slackApiRouter.patch(
   "/channel-configs/:configId",
-  idParamValidator,
+  configIdParamValidator,
+  channelConfigUpdateValidator,
   safeControllerFunction(SlackController.updateChannelConfig)
 );
 
 slackApiRouter.delete(
   "/channel-configs/:configId",
-  idParamValidator,
+  configIdParamValidator,
   safeControllerFunction(SlackController.deleteChannelConfig)
 );
 
@@ -129,7 +132,7 @@ const testNotificationLimiter = rateLimit({
   max: 5, // 5 test notifications per minute
   message: {
     done: false,
-    message: 'Too many test notification requests. Please wait before trying again.',
+    message: "Too many test notification requests. Please wait before trying again.",
     body: null
   },
   standardHeaders: true,
@@ -139,7 +142,7 @@ const testNotificationLimiter = rateLimit({
 slackApiRouter.post(
   "/test-notification/:configId",
   testNotificationLimiter,
-  idParamValidator,
+  configIdParamValidator,
   testNotificationValidator,
   safeControllerFunction(SlackController.sendTestNotification)
 );
