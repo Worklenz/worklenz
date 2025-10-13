@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Button, Card } from '@/shared/antd-imports';
+import { Button, Card, Steps } from '@/shared/antd-imports';
 import { SlackIcon } from '../IntegrationIcons';
 
 interface SlackDisconnectedCardProps {
@@ -12,21 +12,19 @@ export function SlackDisconnectedCard({ loading, onConnect }: SlackDisconnectedC
 
   return (
     <Card
-      className="text-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200"
-      styles={{ body: { padding: '32px 24px', height: '100%', display: 'flex', flexDirection: 'column' } }}
+      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200"
+      styles={{ body: { padding: '32px 24px' } }}
     >
-      <div className="flex flex-col h-full">
-        {/* Icon */}
-        <div className="text-6xl mb-6">
-          <SlackIcon />
-        </div>
-
-        {/* Content - Takes up remaining space */}
-        <div className="flex-1 flex flex-col justify-center">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+      <div className="flex flex-col">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="text-6xl mb-4 flex justify-center">
+            <SlackIcon />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3">
             {t('title', { defaultValue: 'Connect Your Slack Workspace' })}
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed max-w-sm mx-auto">
+          <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed max-w-2xl mx-auto">
             {t('notConnected.description', {
               defaultValue:
                 'Integrate Slack with your Worklenz team to receive real-time notifications, create tasks from Slack, and keep your team synchronized across both platforms.',
@@ -34,14 +32,59 @@ export function SlackDisconnectedCard({ loading, onConnect }: SlackDisconnectedC
           </p>
         </div>
 
-        {/* Action Button - Sticks to bottom */}
-        <div className="w-full mt-8">
+        {/* Setup Instructions */}
+        <div className="mb-8">
+          <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            {t('setup.title', { defaultValue: 'Setup Instructions' })}
+          </h4>
+          <Steps
+            direction="vertical"
+            current={0}
+            items={[
+              {
+                title: t('setup.step1.title', { defaultValue: '1. Connect Your Workspace' }),
+                description: t('setup.step1.description', {
+                  defaultValue:
+                    "Click the 'Connect Slack Workspace' button below to authorize Worklenz to access your Slack workspace.",
+                }),
+              },
+              {
+                title: t('setup.step2.title', { defaultValue: '2. Invite Bot to Channels' }),
+                description: (
+                  <div>
+                    <p className="mb-2">
+                      {t('setup.step2.description', {
+                        defaultValue: 'In each Slack channel where you want notifications, type:',
+                      })}
+                    </p>
+                    <code className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded text-sm font-mono">
+                      {t('setup.step2.command', { defaultValue: '/invite @Worklenz' })}
+                    </code>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      {t('setup.step2.note', { defaultValue: 'You only need to do this once per channel.' })}
+                    </p>
+                  </div>
+                ),
+              },
+              {
+                title: t('setup.step3.title', { defaultValue: '3. Configure Notifications' }),
+                description: t('setup.step3.description', {
+                  defaultValue:
+                    "After connecting, click 'Manage' to configure which projects send notifications to which channels.",
+                }),
+              },
+            ]}
+          />
+        </div>
+
+        {/* Action Button */}
+        <div className="w-full">
           <Button
             type="primary"
             size="large"
             onClick={onConnect}
             loading={loading}
-            className="w-full h-12 text-base font-medium bg-blue-500 hover:bg-blue-600 border-blue-500 hover:border-blue-600"
+            className="w-full h-12 text-base font-medium"
             aria-label={t('connectWorkspace')}
           >
             {t('connectWorkspace', { defaultValue: 'Connect Slack Workspace' })}

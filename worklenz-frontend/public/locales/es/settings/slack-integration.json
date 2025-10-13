@@ -3,10 +3,37 @@
   "connectWorkspace": "Conectar Espacio de Trabajo de Slack",
   "addChannelConfig": "Agregar Configuración de Canal",
   "manageConfigurations": "Gestionar",
+  "manageTitle": "Gestionar Configuraciones de Slack",
   "defaultWorkspaceName": "Espacio de Trabajo de Slack",
   "connectedDescription": "El espacio de trabajo de Slack de tu equipo está conectado. Configura qué canales reciben notificaciones para cada proyecto.",
   "status": {
     "connected": "Conectado"
+  },
+  "setup": {
+    "title": "Instrucciones de Configuración",
+    "step1": {
+      "title": "1. Conectar tu Espacio de Trabajo",
+      "description": "Haz clic en el botón 'Conectar Espacio de Trabajo de Slack' a continuación para autorizar a Worklenz a acceder a tu espacio de trabajo de Slack."
+    },
+    "step2": {
+      "title": "2. Invitar Bot a los Canales",
+      "description": "En cada canal de Slack donde desees recibir notificaciones, escribe:",
+      "command": "/invite @Worklenz",
+      "note": "Solo necesitas hacer esto una vez por canal."
+    },
+    "step3": {
+      "title": "3. Configurar Notificaciones",
+      "description": "Después de conectar, haz clic en 'Gestionar' para configurar qué proyectos envían notificaciones a qué canales."
+    }
+  },
+  "instructions": {
+    "inviteBot": {
+      "title": "¡No olvides invitar al bot!",
+      "description": "Antes de que puedas recibir notificaciones en un canal de Slack, debes invitar al bot de Worklenz a ese canal.",
+      "step": "En tu canal de Slack, escribe: <code>/invite @Worklenz</code>",
+      "note": "Esto solo necesita hacerse una vez por canal."
+    },
+    "getStarted": "Comienza agregando una configuración de canal para recibir notificaciones de tus proyectos."
   },
   "disconnect": {
     "title": "¿Desconectar Slack?",

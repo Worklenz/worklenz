@@ -3,10 +3,37 @@
   "connectWorkspace": "Lidh Hapësirën e Punës së Slack",
   "addChannelConfig": "Shto Konfigurimin e Kanalit",
   "manageConfigurations": "Menaxho",
+  "manageTitle": "Menaxho Konfigurimet e Slack",
   "defaultWorkspaceName": "Hapësira e Punës së Slack",
   "connectedDescription": "Hapësira e punës së Slack e ekipit tuaj është e lidhur. Konfiguro cilat kanale marrin njoftime për çdo projekt.",
   "status": {
     "connected": "I Lidhur"
+  },
+  "setup": {
+    "title": "Udhëzimet e Konfigurimit",
+    "step1": {
+      "title": "1. Lidh Hapësirën Tuaj të Punës",
+      "description": "Kliko butonin 'Lidh Hapësirën e Punës së Slack' më poshtë për të autorizuar Worklenz të hyjë në hapësirën tuaj të punës së Slack."
+    },
+    "step2": {
+      "title": "2. Fto Bot-in në Kanale",
+      "description": "Në çdo kanal të Slack ku dëshironi të merrni njoftime, shkruani:",
+      "command": "/invite @Worklenz",
+      "note": "Ju duhet ta bëni këtë vetëm një herë për kanal."
+    },
+    "step3": {
+      "title": "3. Konfiguro Njoftimet",
+      "description": "Pas lidhjes, kliko 'Menaxho' për të konfiguruar cilët projekte dërgojnë njoftime në cilat kanale."
+    }
+  },
+  "instructions": {
+    "inviteBot": {
+      "title": "Mos harroni të ftoni bot-in!",
+      "description": "Para se të mund të merrni njoftime në një kanal të Slack, duhet të ftoni bot-in Worklenz në atë kanal.",
+      "step": "Në kanalin tuaj të Slack, shkruani: <code>/invite @Worklenz</code>",
+      "note": "Kjo duhet të bëhet vetëm një herë për kanal."
+    },
+    "getStarted": "Filloni duke shtuar një konfigurim kanali për të marrë njoftime nga projektet tuaja."
   },
   "disconnect": {
     "title": "Shkëput Slack?",

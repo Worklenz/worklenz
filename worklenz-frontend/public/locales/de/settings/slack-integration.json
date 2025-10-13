@@ -3,10 +3,37 @@
   "connectWorkspace": "Slack-Arbeitsbereich verbinden",
   "addChannelConfig": "Kanal-Konfiguration hinzufügen",
   "manageConfigurations": "Verwalten",
+  "manageTitle": "Slack-Konfigurationen verwalten",
   "defaultWorkspaceName": "Slack-Arbeitsbereich",
   "connectedDescription": "Der Slack-Arbeitsbereich Ihres Teams ist verbunden. Konfigurieren Sie, welche Kanäle Benachrichtigungen für jedes Projekt erhalten.",
   "status": {
     "connected": "Verbunden"
+  },
+  "setup": {
+    "title": "Einrichtungsanleitung",
+    "step1": {
+      "title": "1. Arbeitsbereich verbinden",
+      "description": "Klicken Sie auf die Schaltfläche 'Slack-Arbeitsbereich verbinden' unten, um Worklenz den Zugriff auf Ihren Slack-Arbeitsbereich zu autorisieren."
+    },
+    "step2": {
+      "title": "2. Bot zu Kanälen einladen",
+      "description": "Geben Sie in jedem Slack-Kanal, in dem Sie Benachrichtigungen erhalten möchten, ein:",
+      "command": "/invite @Worklenz",
+      "note": "Sie müssen dies nur einmal pro Kanal tun."
+    },
+    "step3": {
+      "title": "3. Benachrichtigungen konfigurieren",
+      "description": "Klicken Sie nach dem Verbinden auf 'Verwalten', um zu konfigurieren, welche Projekte Benachrichtigungen an welche Kanäle senden."
+    }
+  },
+  "instructions": {
+    "inviteBot": {
+      "title": "Vergessen Sie nicht, den Bot einzuladen!",
+      "description": "Bevor Sie Benachrichtigungen in einem Slack-Kanal erhalten können, müssen Sie den Worklenz-Bot zu diesem Kanal einladen.",
+      "step": "Geben Sie in Ihrem Slack-Kanal ein: <code>/invite @Worklenz</code>",
+      "note": "Dies muss nur einmal pro Kanal durchgeführt werden."
+    },
+    "getStarted": "Beginnen Sie, indem Sie eine Kanal-Konfiguration hinzufügen, um Benachrichtigungen von Ihren Projekten zu erhalten."
   },
   "disconnect": {
     "title": "Slack trennen?",
