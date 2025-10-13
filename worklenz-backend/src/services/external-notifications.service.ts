@@ -43,7 +43,7 @@ export class ExternalNotificationsService {
         LEFT JOIN projects p ON t.project_id = p.id
         LEFT JOIN task_statuses ts ON t.status_id = ts.id
         LEFT JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
-        LEFT JOIN task_assignees ta ON t.id = ta.task_id
+        LEFT JOIN tasks_assignees ta ON t.id = ta.task_id
         LEFT JOIN team_members tm ON ta.team_member_id = tm.id
         LEFT JOIN users u ON tm.user_id = u.id
         WHERE t.id = $1
@@ -358,4 +358,3 @@ export class ExternalNotificationsService {
     }
   }
 }
-
