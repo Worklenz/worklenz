@@ -85,7 +85,8 @@ export class ExternalNotificationsService {
   ): any {
     const emoji = notificationType === "task_created" ? "🆕" :
                   notificationType === "task_assigned" ? "👤" :
-                  notificationType === "task_completed" ? "✅" : "🔄";
+                  notificationType === "task_completed" ? "✅" :
+                  notificationType === "comment_added" ? "💬" : "🔄";
 
     const title = notificationType === "task_created" ? "Task Created" :
                   notificationType === "task_assigned" ? "Task Assigned" :
@@ -152,17 +153,27 @@ export class ExternalNotificationsService {
           text: `*Created By:*\n${userName}`
         }
       ];
-      
+
       if (taskData.status_name) {
         fields.push({
           type: "mrkdwn",
           text: `*Status:*\n${taskData.status_name}`
         });
       }
-      
+
       blocks.push({
         type: "section",
         fields: fields
+      });
+    } else if (notificationType === "comment_added") {
+      blocks.push({
+        type: "section",
+        fields: [
+          {
+            type: "mrkdwn",
+            text: `*Commented By:*\n${userName}`
+          }
+        ]
       });
     }
 
@@ -193,7 +204,8 @@ export class ExternalNotificationsService {
   ): any {
     const emoji = notificationType === "task_created" ? "🆕" :
                   notificationType === "task_assigned" ? "👤" :
-                  notificationType === "task_completed" ? "✅" : "🔄";
+                  notificationType === "task_completed" ? "✅" :
+                  notificationType === "comment_added" ? "💬" : "🔄";
 
     const title = notificationType === "task_created" ? "Task Created" :
                   notificationType === "task_assigned" ? "Task Assigned" :
@@ -241,6 +253,11 @@ export class ExternalNotificationsService {
           value: taskData.status_name
         });
       }
+    } else if (notificationType === "comment_added") {
+      facts.push({
+        title: "Commented By:",
+        value: userName
+      });
     }
 
     return {

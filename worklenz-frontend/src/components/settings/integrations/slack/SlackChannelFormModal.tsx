@@ -30,7 +30,6 @@ const NOTIFICATION_OPTIONS = [
   { value: 'task_completed', label: 'Task Completed' },
   { value: 'task_assigned', label: 'Task Assigned' },
   { value: 'comment_added', label: 'Comment Added' },
-  { value: 'due_date_reminder', label: 'Due Date Reminder' },
 ];
 
 export function SlackChannelFormModal({

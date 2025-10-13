@@ -152,16 +152,21 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
       const userQuery = `SELECT name FROM users WHERE id = $1`;
       const userResult = await db.query(userQuery, [userId]);
       const userName = userResult.rows[0]?.name || "Unknown User";
-      
+
       const projectQuery = `SELECT project_id FROM tasks WHERE id = $1`;
       const projectResult = await db.query(projectQuery, [body.task_id]);
       const projectId = projectResult.rows[0]?.project_id;
-      
+
       if (projectId) {
+        // Determine notification type based on whether task is completed
+        const notificationType = changeResponse.status_category?.is_done
+          ? "task_completed"
+          : "task_status_changed";
+
         await ExternalNotificationsService.sendExternalNotifications(
           projectId,
           body.task_id,
-          "task_status_changed",
+          notificationType,
           userName,
           {
             oldStatusId: taskData.status_id,
