@@ -161,7 +161,7 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
         await ExternalNotificationsService.sendExternalNotifications(
           projectId,
           body.task_id,
-          "task_status_change",
+          "task_status_changed",
           userName,
           {
             oldStatusId: taskData.status_id,

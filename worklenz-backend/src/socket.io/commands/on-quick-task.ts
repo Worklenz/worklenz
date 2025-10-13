@@ -125,7 +125,7 @@ export async function on_quick_task(_io: Server, socket: Socket, data?: string) 
           await ExternalNotificationsService.sendExternalNotifications(
             d.task.project_id,
             d.task.id,
-            "task_create",
+            "task_created",
             userName
           );
         } catch (notifError) {

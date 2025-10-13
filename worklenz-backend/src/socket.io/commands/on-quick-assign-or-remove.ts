@@ -104,7 +104,7 @@ export async function on_quick_assign_or_remove(_io: Server, socket: Socket, dat
           await ExternalNotificationsService.sendExternalNotifications(
             projectId,
             body.task_id,
-            "task_assign",
+            "task_assigned",
             userName
           );
         }

@@ -129,7 +129,7 @@ export async function on_task_assignees_change(
         await ExternalNotificationsService.sendExternalNotifications(
           body.project_id,
           body.task_id,
-          "task_assign",
+          "task_assigned",
           userName
         );
       } catch (notifError) {
