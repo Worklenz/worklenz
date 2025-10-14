@@ -68,6 +68,7 @@ import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-k
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
 import { isFreeUser } from '@/utils/subscription-utils';
+import { ProjectIntegrationsButton } from '@/components/projects/integrations/ProjectIntegrationsButton';
 
 const ProjectViewHeader = memo(() => {
   const navigate = useNavigate();
@@ -406,6 +407,17 @@ const ProjectViewHeader = memo(() => {
         <Button shape="circle" icon={<SettingOutlined />} onClick={handleSettingsClick} />
       </Tooltip>
     );
+
+    // Integrations button (owner/admin/team lead/project manager only)
+    if (isOwnerOrAdmin || isProjectManager) {
+      actions.push(
+        <ProjectIntegrationsButton
+          key="integrations"
+          projectId={selectedProject?.id || ''}
+          projectName={selectedProject?.name}
+        />
+      );
+    }
 
     // Subscribe button
     actions.push(
