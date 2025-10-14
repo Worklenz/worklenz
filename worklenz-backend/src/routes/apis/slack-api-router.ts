@@ -147,4 +147,16 @@ slackApiRouter.post(
   safeControllerFunction(SlackController.sendTestNotification)
 );
 
+// Channel joining routes
+slackApiRouter.post(
+  "/channels/join",
+  safeControllerFunction(SlackController.joinChannel)
+);
+
+slackApiRouter.post(
+  "/workspace/:workspaceId/channels/auto-join",
+  idParamValidator,
+  safeControllerFunction(SlackController.autoJoinPublicChannels)
+);
+
 export default slackApiRouter;

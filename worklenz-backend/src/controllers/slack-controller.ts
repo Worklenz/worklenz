@@ -51,7 +51,8 @@ export default class SlackController extends WorklenzControllerBase {
     // Generate Slack OAuth URL with redirect URI and organization state
     const clientId = process.env.SLACK_CLIENT_ID;
     const redirectUri = process.env.SLACK_REDIRECT_URI || `${process.env.APP_URL}/public/slack/oauth/callback`;
-    const scopes = "channels:read,groups:read,chat:write,commands";
+    // Added channels:join for auto-joining public channels and incoming-webhook for better channel selection UX
+    const scopes = "channels:read,groups:read,chat:write,commands,channels:join,incoming-webhook";
 
     const installUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&scope=${scopes}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${organizationId}`;
 
@@ -340,11 +341,11 @@ export default class SlackController extends WorklenzControllerBase {
   }
 
   /**
-   * Create channel configuration for project
+   * Create channel configuration for project with auto-join capability
    */
   @HandleExceptions()
   public static async createChannelConfig(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { projectId, slackChannelId, notificationTypes } = req.body;
+    const { projectId, slackChannelId, notificationTypes, autoJoin = true } = req.body;
     const createdBy = req.user?.id;
     const organizationId = req.user?.organization_id;
 
@@ -362,10 +363,21 @@ export default class SlackController extends WorklenzControllerBase {
       projectId,
       slackChannelId,
       notificationTypes || [],
-      createdBy
+      createdBy,
+      autoJoin
     );
 
-    return res.status(200).send(new ServerResponse(true, config, "Channel configuration created successfully"));
+    // Provide feedback about auto-join result
+    let message = "Channel configuration created successfully";
+    if (config.joinResult) {
+      if (config.joinResult.success) {
+        message += ". Bot automatically joined the channel";
+      } else {
+        message += `. Note: ${config.joinResult.message}`;
+      }
+    }
+
+    return res.status(200).send(new ServerResponse(true, config, message));
   }
 
   /**
@@ -467,5 +479,67 @@ export default class SlackController extends WorklenzControllerBase {
     } catch (error) {
       return res.status(500).send(new ServerResponse(false, null, "Failed to send test notification. Please check your Slack configuration."));
     }
+  }
+
+  /**
+   * Manually join a specific channel
+   */
+  @HandleExceptions()
+  public static async joinChannel(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { workspaceId, channelId } = req.body;
+    const organizationId = req.user?.organization_id;
+
+    if (!workspaceId || !channelId) {
+      return res.status(400).send(new ServerResponse(false, null, "Workspace ID and Channel ID are required"));
+    }
+
+    if (!organizationId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
+    }
+
+    // Verify user owns this workspace
+    const hasAccess = await SlackService.verifyWorkspaceOwnership(workspaceId, organizationId);
+    if (!hasAccess) {
+      return res.status(403).send(new ServerResponse(false, null, "Forbidden: You do not have access to this workspace"));
+    }
+
+    const result = await SlackService.joinChannel(workspaceId, channelId);
+    
+    if (result.success) {
+      return res.status(200).send(new ServerResponse(true, result, result.message));
+    } else {
+      return res.status(400).send(new ServerResponse(false, result, result.message));
+    }
+  }
+
+  /**
+   * Auto-join all public channels for a workspace
+   */
+  @HandleExceptions()
+  public static async autoJoinPublicChannels(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { workspaceId } = req.params;
+    const organizationId = req.user?.organization_id;
+
+    if (!workspaceId) {
+      return res.status(400).send(new ServerResponse(false, null, "Workspace ID is required"));
+    }
+
+    if (!organizationId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
+    }
+
+    // Verify user owns this workspace
+    const hasAccess = await SlackService.verifyWorkspaceOwnership(workspaceId, organizationId);
+    if (!hasAccess) {
+      return res.status(403).send(new ServerResponse(false, null, "Forbidden: You do not have access to this workspace"));
+    }
+
+    const result = await SlackService.autoJoinPublicChannels(workspaceId);
+    
+    return res.status(200).send(new ServerResponse(
+      true, 
+      result, 
+      `Auto-join complete. Successfully joined ${result.joinedCount} channels, ${result.failedCount} failed.`
+    ));
   }
 }

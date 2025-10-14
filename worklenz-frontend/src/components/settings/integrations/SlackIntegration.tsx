@@ -52,6 +52,7 @@ export function SlackIntegration() {
   const [manageModalVisible, setManageModalVisible] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [editingChannel, setEditingChannel] = useState<ISlackChannelConfig | null>(null);
+  const [autoJoinLoading, setAutoJoinLoading] = useState(false);
   const [form] = Form.useForm<ChannelFormValues>();
 
   useEffect(() => {
@@ -256,7 +257,8 @@ export function SlackIntegration() {
       if (!editingChannel) return;
 
       try {
-        await slackApiService.updateChannelConfig(editingChannel.id, values);
+        // Re-create the channel config with updated values (upsert behavior)
+        await slackApiService.createChannelConfig(values);
         messageApi.success(t('messages.configUpdated'));
         setAddModalVisible(false);
         setEditingChannel(null);
@@ -324,6 +326,51 @@ export function SlackIntegration() {
     [editingChannel, handleUpdateChannel, handleAddChannel]
   );
 
+  const handleAutoJoinChannels = useCallback(async () => {
+    if (!workspace?.id) {
+      messageApi.error(t('errors.workspaceNotFound'));
+      return;
+    }
+
+    try {
+      setAutoJoinLoading(true);
+      const result = await slackApiService.autoJoinPublicChannels(workspace.id);
+      
+      const successCount = result.body?.joinedCount || 0;
+      const failedCount = result.body?.failedCount || 0;
+
+      if (successCount > 0) {
+        messageApi.success(
+          t('messages.autoJoinSuccess', {
+            defaultValue: `Successfully joined ${successCount} channel(s). ${failedCount > 0 ? `${failedCount} failed.` : ''}`,
+            successCount,
+            failedCount
+          })
+        );
+      } else if (failedCount > 0) {
+        messageApi.warning(
+          t('messages.autoJoinFailed', {
+            defaultValue: `Failed to join any channels. Most likely the bot is already in all accessible channels or they are private.`,
+          })
+        );
+      } else {
+        messageApi.info(
+          t('messages.autoJoinNoChannels', {
+            defaultValue: 'No channels available to join.',
+          })
+        );
+      }
+
+      // Refresh channel list
+      await loadAvailableChannels();
+    } catch (error) {
+      console.error('Failed to auto-join channels:', error);
+      messageApi.error(t('errors.autoJoinFailed'));
+    } finally {
+      setAutoJoinLoading(false);
+    }
+  }, [workspace, messageApi, t, loadAvailableChannels]);
+
   if (isConnected) {
     return (
       <>
@@ -335,6 +382,8 @@ export function SlackIntegration() {
             availableChannels={availableChannels}
             onManage={() => setManageModalVisible(true)}
             onDisconnect={handleDisconnect}
+            onAutoJoin={handleAutoJoinChannels}
+            autoJoinLoading={autoJoinLoading}
           />
         </div>
 

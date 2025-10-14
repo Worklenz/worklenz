@@ -172,4 +172,36 @@ export const slackApiService = {
     );
     return response.data;
   },
+
+  // Channel joining operations
+  joinChannel: async (workspaceId: string, channelId: string): Promise<IServerResponse<{
+    success: boolean;
+    message: string;
+    alreadyInChannel?: boolean;
+  }>> => {
+    const response = await apiClient.post<IServerResponse<{
+      success: boolean;
+      message: string;
+      alreadyInChannel?: boolean;
+    }>>(
+      `${rootUrl}/channels/join`,
+      { workspaceId, channelId }
+    );
+    return response.data;
+  },
+
+  autoJoinPublicChannels: async (workspaceId: string): Promise<IServerResponse<{
+    joinedCount: number;
+    failedCount: number;
+    results: Array<{ channelName: string; success: boolean; message: string }>;
+  }>> => {
+    const response = await apiClient.post<IServerResponse<{
+      joinedCount: number;
+      failedCount: number;
+      results: Array<{ channelName: string; success: boolean; message: string }>;
+    }>>(
+      `${rootUrl}/workspace/${workspaceId}/channels/auto-join`
+    );
+    return response.data;
+  },
 };

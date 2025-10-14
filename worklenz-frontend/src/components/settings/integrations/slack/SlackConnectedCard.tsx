@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Button, Card, Tag, CheckCircleOutlined, SettingOutlined } from '@/shared/antd-imports';
+import { Button, Card, Tag, CheckCircleOutlined, SettingOutlined, GlobalOutlined } from '@/shared/antd-imports';
 import { SlackIcon } from '../IntegrationIcons';
 import type { ISlackChannelConfig } from '@api/slack/slack.api.service';
 
@@ -14,6 +14,8 @@ interface SlackConnectedCardProps {
   availableChannels: { id: string; channel_name: string }[];
   onManage: () => void;
   onDisconnect: () => void;
+  onAutoJoin?: () => void;
+  autoJoinLoading?: boolean;
 }
 
 export function SlackConnectedCard({
@@ -22,6 +24,8 @@ export function SlackConnectedCard({
   availableChannels,
   onManage,
   onDisconnect,
+  onAutoJoin,
+  autoJoinLoading = false,
 }: SlackConnectedCardProps) {
   const { t } = useTranslation('settings/slack-integration');
   const activeChannels = channels.filter(channel => channel.isActive);
@@ -96,8 +100,8 @@ export function SlackConnectedCard({
           </p>
         </div>
 
-        {/* Action Button - Always at bottom */}
-        <div className="mt-4 pt-4">
+        {/* Action Buttons - Always at bottom */}
+        <div className="mt-4 pt-4 space-y-2">
           <Button
             type="primary"
             icon={<SettingOutlined />}
@@ -107,6 +111,18 @@ export function SlackConnectedCard({
           >
             {t('manageConfigurations', { defaultValue: 'Manage' })}
           </Button>
+          {onAutoJoin && (
+            <Button
+              type="default"
+              icon={<GlobalOutlined />}
+              onClick={onAutoJoin}
+              loading={autoJoinLoading}
+              size="large"
+              className="w-full h-12 text-sm font-medium"
+            >
+              {t('autoJoinChannels', { defaultValue: 'Auto-Join Public Channels' })}
+            </Button>
+          )}
         </div>
       </div>
     </Card>
