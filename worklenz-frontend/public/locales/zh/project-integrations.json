@@ -1,6 +1,7 @@
 {
   "title": "集成",
   "tooltip": "管理项目集成",
+  "upgradeRequired": "集成功能需要 Business 计划",
   "manageAll": "管理所有集成",
   "comingSoon": "即将推出",
   "cancel": "取消",

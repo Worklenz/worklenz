@@ -1,6 +1,7 @@
 {
   "title": "Integrations",
   "tooltip": "Manage project integrations",
+  "upgradeRequired": "Integrations available on Business plan",
   "manageAll": "Manage All Integrations",
   "comingSoon": "Coming Soon",
   "cancel": "Cancel",

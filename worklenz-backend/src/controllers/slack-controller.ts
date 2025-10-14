@@ -409,12 +409,32 @@ export default class SlackController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getProjectChannelConfigs(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { projectId } = req.params;
+    const organizationId = req.user?.organization_id;
 
     if (!projectId) {
       return res.status(400).send(new ServerResponse(false, null, "Project ID is required"));
     }
 
-    // Note: Project access verification should be added via ProjectService.verifyUserAccess(projectId, userId)
+    if (!organizationId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
+    }
+
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(projectId)) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid project ID format"));
+    }
+
+    // Verify project belongs to user's organization
+    const projectQuery = `
+      SELECT id FROM projects 
+      WHERE id = $1 AND organization_id = $2
+    `;
+    const projectResult = await db.query(projectQuery, [projectId, organizationId]);
+    
+    if (projectResult.rows.length === 0) {
+      return res.status(403).send(new ServerResponse(false, null, "Access denied: Project not found or you don't have access"));
+    }
 
     const configs = await SlackService.getChannelConfigsByProject(projectId);
     return res.status(200).send(new ServerResponse(true, configs));

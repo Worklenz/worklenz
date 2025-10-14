@@ -1,8 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Dropdown, Tooltip, Badge, ApiOutlined } from '@/shared/antd-imports';
+import { Button, Dropdown, Tooltip, Badge, ApiOutlined, LockOutlined } from '@/shared/antd-imports';
 import { IntegrationsDropdown } from './IntegrationsDropdown';
 import { slackApiService } from '@api/slack/slack.api.service';
+import { useAuthService } from '@/hooks/useAuth';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import type { ProjectIntegrationStatus } from './integrations.types';
 
 interface ProjectIntegrationsButtonProps {
@@ -15,6 +19,11 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
   projectName
 }) => {
   const { t } = useTranslation('project-integrations');
+  const dispatch = useAppDispatch();
+  const authService = useAuthService();
+  const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
+  const hasBusinessAccess = useMemo(() => hasBusinessFeatureAccess(currentSession), [currentSession]);
+  
   const [open, setOpen] = useState(false);
   const [integrationStatus, setIntegrationStatus] = useState<ProjectIntegrationStatus | null>(null);
   const [loading, setLoading] = useState(false);
@@ -83,6 +92,25 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
   const handleRefresh = useCallback(() => {
     fetchIntegrationStatus();
   }, [fetchIntegrationStatus]);
+
+  const handleUpgradeClick = useCallback(() => {
+    dispatch(toggleUpgradeModal());
+  }, [dispatch]);
+
+  // Show locked button for non-business users
+  if (!hasBusinessAccess) {
+    return (
+      <Tooltip title={t('upgradeRequired', { defaultValue: 'Integrations available on Business plan' })}>
+        <Badge count={<LockOutlined style={{ color: '#faad14' }} />} offset={[-5, 5]}>
+          <Button
+            shape="circle"
+            icon={<ApiOutlined />}
+            onClick={handleUpgradeClick}
+          />
+        </Badge>
+      </Tooltip>
+    );
+  }
 
   return (
     <Dropdown

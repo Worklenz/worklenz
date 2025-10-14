@@ -4,6 +4,7 @@ import SlackController from "../../controllers/slack-controller";
 import idParamValidator from "../../middlewares/validators/id-param-validator";
 import configIdParamValidator from "../../middlewares/validators/config-id-param-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
+import { requireBusinessPlan } from "../../middlewares/subscription-middleware";
 import {
   slackOAuthValidator,
   channelSyncValidator,
@@ -34,11 +35,13 @@ slackApiRouter.use(slackRateLimiter);
 // Status and setup routes (simple endpoints matching frontend expectations)
 slackApiRouter.get(
   "/status",
+  requireBusinessPlan,
   safeControllerFunction(SlackController.getStatus)
 );
 
 slackApiRouter.get(
   "/install-url",
+  requireBusinessPlan,
   safeControllerFunction(SlackController.getInstallUrl)
 );
 
@@ -49,16 +52,19 @@ slackApiRouter.get(
 
 slackApiRouter.delete(
   "/disconnect",
+  requireBusinessPlan,
   safeControllerFunction(SlackController.disconnect)
 );
 
 slackApiRouter.get(
   "/channels",
+  requireBusinessPlan,
   safeControllerFunction(SlackController.getAvailableChannels)
 );
 
 slackApiRouter.post(
   "/channels/refresh",
+  requireBusinessPlan,
   safeControllerFunction(SlackController.refreshChannels)
 );
 
@@ -102,6 +108,7 @@ slackApiRouter.get(
 
 slackApiRouter.post(
   "/channel-configs",
+  requireBusinessPlan,
   channelConfigValidator,
   safeControllerFunction(SlackController.createChannelConfig)
 );
@@ -122,6 +129,7 @@ slackApiRouter.delete(
 // Legacy routes for more specific queries
 slackApiRouter.get(
   "/channel-configs/project/:projectId",
+  requireBusinessPlan,
   idParamValidator,
   safeControllerFunction(SlackController.getProjectChannelConfigs)
 );

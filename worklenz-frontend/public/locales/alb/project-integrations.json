@@ -1,6 +1,7 @@
 {
   "title": "Integrimet",
   "tooltip": "Menaxho integrimet e projektit",
+  "upgradeRequired": "Integrimet janë të disponueshme në planin Business",
   "manageAll": "Menaxho të gjitha integrimet",
   "comingSoon": "Së shpejti",
   "cancel": "Anulo",
