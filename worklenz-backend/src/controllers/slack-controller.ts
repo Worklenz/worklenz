@@ -313,6 +313,29 @@ export default class SlackController extends WorklenzControllerBase {
   }
 
   /**
+   * Refresh channels from Slack API for organization
+   */
+  @HandleExceptions()
+  public static async refreshChannels(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const organizationId = req.user?.organization_id;
+
+    if (!organizationId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized: Organization ID is required"));
+    }
+
+    const workspace = await SlackService.getWorkspaceByOrganization(organizationId);
+    
+    if (!workspace) {
+      return res.status(404).send(new ServerResponse(false, null, "No Slack workspace connected"));
+    }
+
+    await SlackService.fetchAndSyncChannels(workspace.id);
+    const result = await SlackService.getChannelsByWorkspace(workspace.id);
+    
+    return res.status(200).send(new ServerResponse(true, result.channels, "Channels refreshed successfully"));
+  }
+
+  /**
    * Get channels for workspace
    */
   @HandleExceptions()

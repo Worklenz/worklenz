@@ -124,6 +124,12 @@ export const slackApiService = {
     return response.data;
   },
 
+  // Channel operations
+  refreshChannels: async (): Promise<IServerResponse<ISlackChannel[]>> => {
+    const response = await apiClient.post<IServerResponse<ISlackChannel[]>>(`${rootUrl}/channels/refresh`);
+    return response.data;
+  },
+
   // Channel configuration operations
   getAllChannelConfigs: async (): Promise<ISlackChannelConfig[]> => {
     const response = await apiClient.get<ISlackChannelConfig[]>(`${rootUrl}/channel-configs`);

@@ -83,6 +83,7 @@
     "selectSlackChannel": "Select a Slack channel",
     "notificationTypes": "Notification Types",
     "selectNotificationTypes": "Select notification types",
+    "refreshChannels": "Refresh",
     "notificationOptions": {
       "taskCreated": "Task Created",
       "taskUpdated": "Task Updated",
@@ -110,7 +111,8 @@
     "configAdded": "Channel configuration added successfully",
     "configUpdated": "Channel configuration updated successfully",
     "statusUpdated": "Channel status updated successfully",
-    "configRemoved": "Channel configuration removed successfully"
+    "configRemoved": "Channel configuration removed successfully",
+    "channelsRefreshed": "Channels refreshed successfully"
   },
   "errors": {
     "connectionCheckFailed": "Failed to check Slack connection",
@@ -123,7 +125,8 @@
     "addConfigFailed": "Failed to add channel configuration",
     "updateConfigFailed": "Failed to update channel configuration",
     "updateStatusFailed": "Failed to update channel status",
-    "removeConfigFailed": "Failed to remove channel configuration"
+    "removeConfigFailed": "Failed to remove channel configuration",
+    "refreshChannelsFailed": "Failed to refresh channels"
   }
 }
 

@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Form, Modal, Select } from '@/shared/antd-imports';
+import { Button, Form, Modal, Select, message, ReloadOutlined } from '@/shared/antd-imports';
 import type { FormInstance } from '@/shared/antd-imports';
 import type { ISlackChannelConfig, ISlackChannel } from '@api/slack/slack.api.service';
+import { slackApiService } from '@api/slack/slack.api.service';
 
 interface Project {
   id: string;
@@ -23,6 +25,7 @@ interface SlackChannelFormModalProps {
   availableChannels: ISlackChannel[];
   onClose: () => void;
   onSubmit: (values: ChannelFormValues) => void;
+  onRefreshChannels: () => Promise<void>;
 }
 
 const NOTIFICATION_TYPE_DEFINITIONS = [
@@ -86,12 +89,30 @@ export function SlackChannelFormModal({
   availableChannels,
   onClose,
   onSubmit,
+  onRefreshChannels,
 }: SlackChannelFormModalProps) {
   const { t } = useTranslation('settings/slack-integration');
+  const [messageApi, contextHolder] = message.useMessage();
+  const [refreshing, setRefreshing] = useState(false);
+  
   const notificationOptions = NOTIFICATION_TYPE_DEFINITIONS.map(({ value, labelKey, defaultValue }) => ({
     value,
     label: t(labelKey, { defaultValue }),
   }));
+
+  const handleRefreshChannels = async () => {
+    try {
+      setRefreshing(true);
+      await slackApiService.refreshChannels();
+      await onRefreshChannels();
+      messageApi.success(t('messages.channelsRefreshed', { defaultValue: 'Channels refreshed successfully' }));
+    } catch (error) {
+      console.error('Failed to refresh channels:', error);
+      messageApi.error(t('errors.refreshChannelsFailed', { defaultValue: 'Failed to refresh channels' }));
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   return (
     <Modal
@@ -104,6 +125,7 @@ export function SlackChannelFormModal({
       onCancel={onClose}
       footer={null}
     >
+      {contextHolder}
       <Form form={form} layout="vertical" onFinish={onSubmit}>
         <Form.Item
           name="projectId"
@@ -133,7 +155,21 @@ export function SlackChannelFormModal({
 
         <Form.Item
           name="slackChannelId"
-          label={t('modal.slackChannel', { defaultValue: 'Slack Channel' })}
+          label={
+            <div className="flex items-center justify-between w-full">
+              <span>{t('modal.slackChannel', { defaultValue: 'Slack Channel' })}</span>
+              <Button
+                type="link"
+                size="small"
+                icon={<ReloadOutlined />}
+                onClick={handleRefreshChannels}
+                loading={refreshing}
+                className="p-0 h-auto"
+              >
+                {t('modal.refreshChannels', { defaultValue: 'Refresh' })}
+              </Button>
+            </div>
+          }
           rules={[
             {
               required: true,

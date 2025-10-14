@@ -359,6 +359,7 @@ export function SlackIntegration() {
           availableChannels={availableChannels}
           onClose={handleModalClose}
           onSubmit={handleFormSubmit}
+          onRefreshChannels={loadAvailableChannels}
         />
       </>
     );

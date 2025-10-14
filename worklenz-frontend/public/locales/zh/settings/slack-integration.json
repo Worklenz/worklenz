@@ -83,6 +83,7 @@
     "selectSlackChannel": "选择 Slack 频道",
     "notificationTypes": "通知类型",
     "selectNotificationTypes": "选择通知类型",
+    "refreshChannels": "刷新",
     "notificationOptions": {
       "taskCreated": "任务已创建",
       "taskUpdated": "任务已更新",
@@ -110,7 +111,8 @@
     "configAdded": "频道配置添加成功",
     "configUpdated": "频道配置更新成功",
     "statusUpdated": "频道状态更新成功",
-    "configRemoved": "频道配置删除成功"
+    "configRemoved": "频道配置删除成功",
+    "channelsRefreshed": "频道刷新成功"
   },
   "errors": {
     "connectionCheckFailed": "检查 Slack 连接失败",
@@ -123,6 +125,7 @@
     "addConfigFailed": "添加频道配置失败",
     "updateConfigFailed": "更新频道配置失败",
     "updateStatusFailed": "更新频道状态失败",
-    "removeConfigFailed": "删除频道配置失败"
+    "removeConfigFailed": "删除频道配置失败",
+    "refreshChannelsFailed": "刷新频道失败"
   }
 }

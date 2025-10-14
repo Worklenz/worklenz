@@ -83,6 +83,7 @@
     "selectSlackChannel": "Selecionar um canal do Slack",
     "notificationTypes": "Tipos de Notificação",
     "selectNotificationTypes": "Selecionar tipos de notificação",
+    "refreshChannels": "Atualizar",
     "notificationOptions": {
       "taskCreated": "Tarefa criada",
       "taskUpdated": "Tarefa atualizada",
@@ -110,7 +111,8 @@
     "configAdded": "Configuração de canal adicionada com sucesso",
     "configUpdated": "Configuração de canal atualizada com sucesso",
     "statusUpdated": "Status do canal atualizado com sucesso",
-    "configRemoved": "Configuração de canal removida com sucesso"
+    "configRemoved": "Configuração de canal removida com sucesso",
+    "channelsRefreshed": "Canais atualizados com sucesso"
   },
   "errors": {
     "connectionCheckFailed": "Falha ao verificar conexão do Slack",
@@ -123,6 +125,7 @@
     "addConfigFailed": "Falha ao adicionar configuração do canal",
     "updateConfigFailed": "Falha ao atualizar configuração do canal",
     "updateStatusFailed": "Falha ao atualizar status do canal",
-    "removeConfigFailed": "Falha ao remover configuração do canal"
+    "removeConfigFailed": "Falha ao remover configuração do canal",
+    "refreshChannelsFailed": "Falha ao atualizar canais"
   }
 }

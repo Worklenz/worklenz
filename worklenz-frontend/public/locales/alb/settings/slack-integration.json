@@ -83,6 +83,7 @@
     "selectSlackChannel": "Zgjidh një kanal të Slack",
     "notificationTypes": "Llojet e Njoftimeve",
     "selectNotificationTypes": "Zgjidh llojet e njoftimeve",
+    "refreshChannels": "Rifresko",
     "notificationOptions": {
       "taskCreated": "Detyra u krijua",
       "taskUpdated": "Detyra u përditësua",
@@ -110,7 +111,8 @@
     "configAdded": "Konfigurimi i kanalit u shtua me sukses",
     "configUpdated": "Konfigurimi i kanalit u përditësua me sukses",
     "statusUpdated": "Statusi i kanalit u përditësua me sukses",
-    "configRemoved": "Konfigurimi i kanalit u hoq me sukses"
+    "configRemoved": "Konfigurimi i kanalit u hoq me sukses",
+    "channelsRefreshed": "Kanalet u rifreskuan me sukses"
   },
   "errors": {
     "connectionCheckFailed": "Dështoi kontrolli i lidhjes së Slack",
@@ -123,6 +125,7 @@
     "addConfigFailed": "Dështoi shtimi i konfigurimit të kanalit",
     "updateConfigFailed": "Dështoi përditësimi i konfigurimit të kanalit",
     "updateStatusFailed": "Dështoi përditësimi i statusit të kanalit",
-    "removeConfigFailed": "Dështoi heqja e konfigurimit të kanalit"
+    "removeConfigFailed": "Dështoi heqja e konfigurimit të kanalit",
+    "refreshChannelsFailed": "Dështoi rifreskimi i kanaleve"
   }
 }

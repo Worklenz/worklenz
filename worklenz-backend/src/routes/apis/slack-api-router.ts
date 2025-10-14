@@ -57,6 +57,11 @@ slackApiRouter.get(
   safeControllerFunction(SlackController.getAvailableChannels)
 );
 
+slackApiRouter.post(
+  "/channels/refresh",
+  safeControllerFunction(SlackController.refreshChannels)
+);
+
 // Workspace routes (legacy - for direct workspace management)
 slackApiRouter.post(
   "/workspace/connect",
