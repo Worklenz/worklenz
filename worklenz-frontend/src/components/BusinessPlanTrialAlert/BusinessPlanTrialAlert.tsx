@@ -320,8 +320,8 @@ export const BusinessPlanTrialAlert = () => {
         style={{
           width: '100%',
           padding: '8px 48px',
-          background: 'linear-gradient(90deg, rgba(82,196,26,0.08) 0%, rgba(102,126,234,0.08) 100%)',
-          borderBottom: '1px solid rgba(82,196,26,0.3)',
+          background: 'linear-gradient(90deg, rgba(255,165,0,0.08) 0%, rgba(255,193,7,0.08) 100%)',
+          borderBottom: '1px solid rgba(255,165,0,0.3)',
           backdropFilter: 'blur(10px)'
         }}
       >
@@ -329,7 +329,7 @@ export const BusinessPlanTrialAlert = () => {
           message={
             <Space size="large" style={{ width: '100%', justifyContent: 'space-between' }}>
               <Space>
-                <GiftOutlined style={{ color: '#52c41a', fontSize: 18 }} />
+                <GiftOutlined style={{ color: '#ff8c00', fontSize: 18 }} />
                 <span style={{ fontWeight: 600, fontSize: 15 }}>
                   {t('business-trial-offer', { defaultValue: 'Try Business Plan Free for 7 Days' })}
                 </span>
@@ -348,10 +348,10 @@ export const BusinessPlanTrialAlert = () => {
                   onClick={handleStartTrial}
                   icon={<RocketOutlined />}
                   style={{
-                    background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
+                    background: 'linear-gradient(135deg, #ff8c00 0%, #ffc107 100%)',
                     border: 'none',
                     fontWeight: 600,
-                    boxShadow: '0 2px 8px rgba(82,196,26,0.3)'
+                    boxShadow: '0 2px 8px rgba(255,140,0,0.3)'
                   }}
                 >
                   {starting ?
