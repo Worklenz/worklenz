@@ -582,9 +582,12 @@ export class SlackService {
       const q = `
         SELECT COUNT(*) as count
         FROM slack_channel_configs scc
+        JOIN projects p ON scc.project_id = p.id
         JOIN slack_channels sc ON scc.slack_channel_id = sc.id
         JOIN slack_workspaces sw ON sc.slack_workspace_id = sw.id
-        WHERE scc.id = $1 AND sw.organization_id = $2;
+        WHERE scc.id = $1 
+          AND p.organization_id = $2
+          AND sw.organization_id = $2;
       `;
       const result = await db.query(q, [configId, organizationId]);
       return parseInt(result.rows[0].count) > 0;
