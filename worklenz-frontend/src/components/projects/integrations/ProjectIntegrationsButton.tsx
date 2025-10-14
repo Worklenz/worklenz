@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Dropdown, Tooltip, Badge, ApiOutlined, LockOutlined } from '@/shared/antd-imports';
+import { Button, Dropdown, Tooltip, Badge, ApiOutlined, CrownOutlined } from '@/shared/antd-imports';
 import { IntegrationsDropdown } from './IntegrationsDropdown';
 import { slackApiService } from '@api/slack/slack.api.service';
 import { useAuthService } from '@/hooks/useAuth';
@@ -29,7 +29,7 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
   const [loading, setLoading] = useState(false);
 
   const fetchIntegrationStatus = useCallback(async () => {
-    if (!projectId) return;
+    if (!projectId || !hasBusinessAccess) return;
 
     try {
       setLoading(true);
@@ -72,7 +72,7 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, hasBusinessAccess]);
 
   useEffect(() => {
     if (projectId) {
@@ -97,11 +97,11 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
     dispatch(toggleUpgradeModal());
   }, [dispatch]);
 
-  // Show locked button for non-business users
+  // Show premium button for non-business users
   if (!hasBusinessAccess) {
     return (
       <Tooltip title={t('upgradeRequired', { defaultValue: 'Integrations available on Business plan' })}>
-        <Badge count={<LockOutlined style={{ color: '#faad14' }} />} offset={[-5, 5]}>
+        <Badge count={<CrownOutlined style={{ color: '#faad14' }} />} offset={[-5, 5]}>
           <Button
             shape="circle"
             icon={<ApiOutlined />}
