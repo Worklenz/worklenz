@@ -14,8 +14,6 @@ interface SlackConnectedCardProps {
   availableChannels: { id: string; channel_name: string }[];
   onManage: () => void;
   onDisconnect: () => void;
-  onAutoJoin?: () => void;
-  autoJoinLoading?: boolean;
 }
 
 export function SlackConnectedCard({
@@ -24,8 +22,6 @@ export function SlackConnectedCard({
   availableChannels,
   onManage,
   onDisconnect,
-  onAutoJoin,
-  autoJoinLoading = false,
 }: SlackConnectedCardProps) {
   const { t } = useTranslation('settings/slack-integration');
   const activeChannels = channels.filter(channel => channel.isActive);
@@ -111,18 +107,6 @@ export function SlackConnectedCard({
           >
             {t('manageConfigurations', { defaultValue: 'Manage' })}
           </Button>
-          {onAutoJoin && (
-            <Button
-              type="default"
-              icon={<GlobalOutlined />}
-              onClick={onAutoJoin}
-              loading={autoJoinLoading}
-              size="large"
-              className="w-full h-12 text-sm font-medium"
-            >
-              {t('autoJoinChannels', { defaultValue: 'Auto-Join Public Channels' })}
-            </Button>
-          )}
         </div>
       </div>
     </Card>

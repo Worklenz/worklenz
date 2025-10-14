@@ -134,6 +134,7 @@ export const slackApiService = {
     projectId: string;
     slackChannelId: string;
     notificationTypes: string[];
+    autoJoin?: boolean;
   }): Promise<ISlackChannelConfig> => {
     const response = await apiClient.post<ISlackChannelConfig>(
       `${rootUrl}/channel-configs`,

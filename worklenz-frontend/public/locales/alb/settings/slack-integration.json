@@ -83,6 +83,18 @@
     "selectSlackChannel": "Zgjidh një kanal të Slack",
     "notificationTypes": "Llojet e Njoftimeve",
     "selectNotificationTypes": "Zgjidh llojet e njoftimeve",
+    "notificationOptions": {
+      "taskCreated": "Detyra u krijua",
+      "taskUpdated": "Detyra u përditësua",
+      "taskCompleted": "Detyra e përfunduar",
+      "taskAssigned": "Detyra e caktuar",
+      "commentAdded": "Koment i shtuar",
+      "statusChanged": "Statusi i ndryshuar",
+      "dueDateChanged": "Afati i ndryshuar",
+      "dueDateReminder": "Përkujtues për afatin",
+      "assigneeChanged": "Personi i caktuar u ndryshua",
+      "priorityChanged": "Prioriteti i ndryshuar"
+    },
     "addConfiguration": "Shto Konfigurimin",
     "updateConfiguration": "Përditëso Konfigurimin"
   },

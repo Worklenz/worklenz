@@ -83,6 +83,18 @@
     "selectSlackChannel": "Seleccionar un canal de Slack",
     "notificationTypes": "Tipos de Notificación",
     "selectNotificationTypes": "Seleccionar tipos de notificación",
+    "notificationOptions": {
+      "taskCreated": "Tarea creada",
+      "taskUpdated": "Tarea actualizada",
+      "taskCompleted": "Tarea completada",
+      "taskAssigned": "Tarea asignada",
+      "commentAdded": "Comentario agregado",
+      "statusChanged": "Estado cambiado",
+      "dueDateChanged": "Fecha de vencimiento cambiada",
+      "dueDateReminder": "Recordatorio de fecha de vencimiento",
+      "assigneeChanged": "Responsable cambiado",
+      "priorityChanged": "Prioridad cambiada"
+    },
     "addConfiguration": "Agregar Configuración",
     "updateConfiguration": "Actualizar Configuración"
   },

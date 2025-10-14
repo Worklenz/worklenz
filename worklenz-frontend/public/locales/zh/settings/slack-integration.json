@@ -13,7 +13,7 @@
     "title": "设置说明",
     "step1": {
       "title": "1. 连接您的工作区",
-      "description": "点击下面的"连接 Slack 工作区"按钮以授权 Worklenz 访问您的 Slack 工作区。"
+      "description": "点击下面的\"连接 Slack 工作区\"按钮以授权 Worklenz 访问您的 Slack 工作区。"
     },
     "step2": {
       "title": "2. 邀请机器人到频道",
@@ -23,7 +23,7 @@
     },
     "step3": {
       "title": "3. 配置通知",
-      "description": "连接后，点击"管理"以配置哪些项目向哪些频道发送通知。"
+      "description": "连接后，点击\"管理\"以配置哪些项目向哪些频道发送通知。"
     }
   },
   "instructions": {
@@ -83,6 +83,18 @@
     "selectSlackChannel": "选择 Slack 频道",
     "notificationTypes": "通知类型",
     "selectNotificationTypes": "选择通知类型",
+    "notificationOptions": {
+      "taskCreated": "任务已创建",
+      "taskUpdated": "任务已更新",
+      "taskCompleted": "任务已完成",
+      "taskAssigned": "任务已分配",
+      "commentAdded": "评论已添加",
+      "statusChanged": "状态已变更",
+      "dueDateChanged": "截止日期已变更",
+      "dueDateReminder": "截止日期提醒",
+      "assigneeChanged": "负责人已变更",
+      "priorityChanged": "优先级已变更"
+    },
     "addConfiguration": "添加配置",
     "updateConfiguration": "更新配置"
   },

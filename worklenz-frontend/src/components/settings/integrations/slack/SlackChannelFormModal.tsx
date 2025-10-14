@@ -25,12 +25,57 @@ interface SlackChannelFormModalProps {
   onSubmit: (values: ChannelFormValues) => void;
 }
 
-const NOTIFICATION_OPTIONS = [
-  { value: 'task_created', label: 'Task Created' },
-  { value: 'task_assigned', label: 'Task Assigned' },
-  { value: 'task_status_changed', label: 'Task Status Changed' },
-  { value: 'task_completed', label: 'Task Completed' },
-  { value: 'comment_added', label: 'Comment Added' },
+const NOTIFICATION_TYPE_DEFINITIONS = [
+  {
+    value: 'task_created',
+    labelKey: 'modal.notificationOptions.taskCreated',
+    defaultValue: 'Task Created',
+  },
+  {
+    value: 'task_updated',
+    labelKey: 'modal.notificationOptions.taskUpdated',
+    defaultValue: 'Task Updated',
+  },
+  {
+    value: 'task_completed',
+    labelKey: 'modal.notificationOptions.taskCompleted',
+    defaultValue: 'Task Completed',
+  },
+  {
+    value: 'task_assigned',
+    labelKey: 'modal.notificationOptions.taskAssigned',
+    defaultValue: 'Task Assigned',
+  },
+  {
+    value: 'comment_added',
+    labelKey: 'modal.notificationOptions.commentAdded',
+    defaultValue: 'Comment Added',
+  },
+  {
+    value: 'status_changed',
+    labelKey: 'modal.notificationOptions.statusChanged',
+    defaultValue: 'Status Changed',
+  },
+  {
+    value: 'due_date_changed',
+    labelKey: 'modal.notificationOptions.dueDateChanged',
+    defaultValue: 'Due Date Changed',
+  },
+  {
+    value: 'due_date_reminder',
+    labelKey: 'modal.notificationOptions.dueDateReminder',
+    defaultValue: 'Due Date Reminder',
+  },
+  {
+    value: 'assignee_changed',
+    labelKey: 'modal.notificationOptions.assigneeChanged',
+    defaultValue: 'Assignee Changed',
+  },
+  {
+    value: 'priority_changed',
+    labelKey: 'modal.notificationOptions.priorityChanged',
+    defaultValue: 'Priority Changed',
+  },
 ];
 
 export function SlackChannelFormModal({
@@ -43,6 +88,10 @@ export function SlackChannelFormModal({
   onSubmit,
 }: SlackChannelFormModalProps) {
   const { t } = useTranslation('settings/slack-integration');
+  const notificationOptions = NOTIFICATION_TYPE_DEFINITIONS.map(({ value, labelKey, defaultValue }) => ({
+    value,
+    label: t(labelKey, { defaultValue }),
+  }));
 
   return (
     <Modal
@@ -127,7 +176,7 @@ export function SlackChannelFormModal({
             placeholder={t('modal.selectNotificationTypes', {
               defaultValue: 'Select notification types',
             })}
-            options={NOTIFICATION_OPTIONS}
+            options={notificationOptions}
           />
         </Form.Item>
 
