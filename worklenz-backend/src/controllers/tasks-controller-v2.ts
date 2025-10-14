@@ -1280,6 +1280,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
             end: l.end,
             names: l.names,
           })) || [],
+        all_labels: task.all_labels || [],
         dueDate: task.end_date || task.END_DATE,
         startDate: task.start_date,
         timeTracking: {
