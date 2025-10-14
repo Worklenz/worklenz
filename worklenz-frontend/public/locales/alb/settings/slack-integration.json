@@ -9,6 +9,11 @@
   "status": {
     "connected": "I Lidhur"
   },
+  "stats": {
+    "total": "Gjithsej",
+    "active": "Aktiv",
+    "available": "Të disponueshme"
+  },
   "setup": {
     "title": "Udhëzimet e Konfigurimit",
     "step1": {

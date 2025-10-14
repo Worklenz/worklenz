@@ -9,6 +9,11 @@
   "status": {
     "connected": "已连接"
   },
+  "stats": {
+    "total": "总计",
+    "active": "活跃",
+    "available": "可用"
+  },
   "setup": {
     "title": "设置说明",
     "step1": {

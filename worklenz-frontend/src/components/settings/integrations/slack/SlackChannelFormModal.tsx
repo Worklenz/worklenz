@@ -156,7 +156,7 @@ export function SlackChannelFormModal({
         <Form.Item
           name="slackChannelId"
           label={
-            <div className="flex items-center justify-between w-full">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
               <span>{t('modal.slackChannel', { defaultValue: 'Slack Channel' })}</span>
               <Button
                 type="link"
@@ -164,7 +164,7 @@ export function SlackChannelFormModal({
                 icon={<ReloadOutlined />}
                 onClick={handleRefreshChannels}
                 loading={refreshing}
-                className="p-0 h-auto"
+                style={{ padding: 0, height: 'auto', marginLeft: 'auto' }}
               >
                 {t('modal.refreshChannels', { defaultValue: 'Refresh' })}
               </Button>

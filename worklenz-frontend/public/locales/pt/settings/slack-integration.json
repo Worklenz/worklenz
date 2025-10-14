@@ -9,6 +9,11 @@
   "status": {
     "connected": "Conectado"
   },
+  "stats": {
+    "total": "Total",
+    "active": "Ativo",
+    "available": "Disponível"
+  },
   "setup": {
     "title": "Instruções de Configuração",
     "step1": {
