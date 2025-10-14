@@ -14,6 +14,7 @@ import ProfileButton from './user-profile/ProfileButton';
 import SwitchTeamButton from './switch-team/SwitchTeamButton';
 import UpgradePlanButton from './upgrade-plan/UpgradePlanButton';
 import NotificationDrawer from '../../components/navbar/notifications/notifications-drawer/notification/notfication-drawer';
+import { TrialDaysBadge } from './trial-badge/TrialDaysBadge';
 
 import { useResponsive } from '@/hooks/useResponsive';
 import { getJSONFromLocalStorage } from '@/utils/localStorageFunctions';
@@ -224,6 +225,7 @@ const Navbar = () => {
             <ConfigProvider wave={{ disabled: true }}>
               {isDesktop && (
                 <Flex gap={20} align="center">
+                  <TrialDaysBadge />
                   {isOwnerOrAdmin &&
                     showUpgradeTypes.includes(
                       currentSession?.subscription_type as ISUBSCRIPTION_TYPE
@@ -240,6 +242,7 @@ const Navbar = () => {
               )}
               {isTablet && !isDesktop && (
                 <Flex gap={12} align="center">
+                  <TrialDaysBadge />
                   <SwitchTeamButton />
                   <NotificationButton />
                   <ProfileButton isOwnerOrAdmin={isOwnerOrAdmin} />
@@ -248,6 +251,7 @@ const Navbar = () => {
               )}
               {isMobile && (
                 <Flex gap={12} align="center">
+                  <TrialDaysBadge />
                   <NotificationButton />
                   <ProfileButton isOwnerOrAdmin={isOwnerOrAdmin} />
                   <MobileMenuButton />

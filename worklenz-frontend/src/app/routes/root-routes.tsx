@@ -6,6 +6,10 @@ const OrganizationInvitePage = lazy(
   () => import('@/pages/client-view/organization-invite/organization-invite')
 );
 
+const LicenseExpiredPage = lazy(
+  () => import('@/pages/license-expired/license-expired')
+);
+
 const rootRoutes: RouteObject[] = [
   {
     path: '/',
@@ -16,6 +20,14 @@ const rootRoutes: RouteObject[] = [
     element: (
       <Suspense fallback={<SuspenseFallback />}>
         <OrganizationInvitePage />
+      </Suspense>
+    ),
+  },
+  {
+    path: '/worklenz/license-expired',
+    element: (
+      <Suspense fallback={<SuspenseFallback />}>
+        <LicenseExpiredPage />
       </Suspense>
     ),
   },

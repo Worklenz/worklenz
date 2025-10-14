@@ -6250,7 +6250,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION transfer_team_ownership(_team_id UUID, _new_owner_id UUID) RETURNS json
+CREATE OR REPLACE FUNCTION transfer_team_ownership(_team_id uuid, _new_owner_id uuid) RETURNS json
     LANGUAGE plpgsql
 AS
 $$
@@ -6260,32 +6260,29 @@ DECLARE
     _admin_role_id UUID;
     _old_org_id UUID;
     _new_org_id UUID;
-    _has_license BOOLEAN;
     _old_owner_role_id UUID;
     _new_owner_role_id UUID;
     _has_active_coupon BOOLEAN;
     _other_teams_count INTEGER;
-    _new_owner_org_id UUID;
-    _license_type_id UUID;
     _has_valid_license BOOLEAN;
+    _old_org_name TEXT;
+    _new_org_name TEXT;
+    _all_teams_in_old_org INTEGER;
+    _all_teams_in_new_org INTEGER;
+    _temp_uuid UUID := 'a27351a4-94d2-4d0a-9062-6ded6633f274'::UUID; -- Temporary user for swap operation
 BEGIN
     -- Get the current owner's ID and organization
-    SELECT t.user_id, t.organization_id 
-    INTO _old_owner_id, _old_org_id 
-    FROM teams t 
+    SELECT t.user_id, t.organization_id
+    INTO _old_owner_id, _old_org_id
+    FROM teams t
     WHERE t.id = _team_id;
-    
+
     IF _old_owner_id IS NULL THEN
         RAISE EXCEPTION 'Team not found';
     END IF;
 
-    -- Get the new owner's organization
-    SELECT organization_id INTO _new_owner_org_id
-    FROM organizations
-    WHERE user_id = _new_owner_id;
-
-    -- Get the old organization
-    SELECT id INTO _old_org_id
+    -- Get the old organization name
+    SELECT organization_name INTO _old_org_name
     FROM organizations
     WHERE id = _old_org_id;
 
@@ -6293,145 +6290,237 @@ BEGIN
         RAISE EXCEPTION 'Organization not found';
     END IF;
 
-    -- Check if new owner has any valid license type
+    -- Get the new owner's organization (MUST exist)
+    SELECT id, organization_name INTO _new_org_id, _new_org_name
+    FROM organizations
+    WHERE user_id = _new_owner_id;
+
+    IF _new_org_id IS NULL THEN
+        RAISE EXCEPTION 'New owner must have an organization. Please create an organization for user % first.', _new_owner_id;
+    END IF;
+
+    -- Check if at least one of them has a valid license (since licenses will be swapped)
     SELECT EXISTS (
-        SELECT 1 
+        SELECT 1
         FROM (
-            -- Check regular subscriptions
+            -- Check regular subscriptions for BOTH users
             SELECT lus.user_id, lus.status, lus.active
             FROM licensing_user_subscriptions lus
-            WHERE lus.user_id = _new_owner_id 
+            WHERE lus.user_id IN (_old_owner_id, _new_owner_id)
             AND lus.active = TRUE
             AND lus.status IN ('active', 'trialing')
-            
+
             UNION ALL
-            
-            -- Check custom subscriptions
-            SELECT lcs.user_id, lcs.subscription_status as status, TRUE as active
+
+            -- Check custom subscriptions for BOTH users
+            SELECT lcs.user_id, 'active' as status, TRUE as active
             FROM licensing_custom_subs lcs
-            WHERE lcs.user_id = _new_owner_id
+            WHERE lcs.user_id IN (_old_owner_id, _new_owner_id)
             AND lcs.end_date > CURRENT_DATE
-            
+
             UNION ALL
-            
-            -- Check trial status in organizations
+
+            -- Check trial status in organizations table for BOTH users
             SELECT o.user_id, o.subscription_status as status, TRUE as active
             FROM organizations o
-            WHERE o.user_id = _new_owner_id
+            WHERE o.user_id IN (_old_owner_id, _new_owner_id)
             AND o.trial_in_progress = TRUE
             AND o.trial_expire_date > CURRENT_DATE
+
+            UNION ALL
+
+            -- Check trial status in users_data table for BOTH users
+            SELECT ud.user_id, ud.subscription_status as status, TRUE as active
+            FROM users_data ud
+            WHERE ud.user_id IN (_old_owner_id, _new_owner_id)
+            AND ud.trial_in_progress = TRUE
+            AND ud.trial_expire_date > CURRENT_DATE
+
+            UNION ALL
+
+            -- Check plan-specific trials for BOTH users
+            SELECT lpt.user_id, 'active' as status, TRUE as active
+            FROM licensing_plan_trials lpt
+            WHERE lpt.user_id IN (_old_owner_id, _new_owner_id)
+            AND lpt.is_active = TRUE
+            AND lpt.trial_end_date > NOW()
+
+            UNION ALL
+
+            -- Check coupon codes for BOTH users
+            SELECT lcc.redeemed_by as user_id, 'active' as status, TRUE as active
+            FROM licensing_coupon_codes lcc
+            WHERE lcc.redeemed_by IN (_old_owner_id, _new_owner_id)
+            AND lcc.is_redeemed = TRUE
+            AND lcc.is_refunded = FALSE
         ) valid_licenses
     ) INTO _has_valid_license;
 
     IF NOT _has_valid_license THEN
-        RAISE EXCEPTION 'New owner does not have a valid license (subscription, custom subscription, or trial)';
+        RAISE EXCEPTION 'At least one user must have a valid license (subscription, custom subscription, trial, or coupon code) to proceed with the transfer';
     END IF;
 
-    -- Check if new owner has any active coupon codes
+    -- Track if new owner has active coupon codes (for informational purposes)
     SELECT EXISTS (
-        SELECT 1 
+        SELECT 1
         FROM licensing_coupon_codes lcc
-        WHERE lcc.redeemed_by = _new_owner_id 
+        WHERE lcc.redeemed_by = _new_owner_id
         AND lcc.is_redeemed = TRUE
         AND lcc.is_refunded = FALSE
     ) INTO _has_active_coupon;
 
-    IF _has_active_coupon THEN
-        RAISE EXCEPTION 'New owner has active coupon codes that need to be handled before transfer';
-    END IF;
+    -- Count all teams in both organizations
+    SELECT COUNT(*) INTO _all_teams_in_old_org
+    FROM teams
+    WHERE organization_id = _old_org_id;
 
-    -- Count other teams in the organization for information purposes
+    SELECT COUNT(*) INTO _all_teams_in_new_org
+    FROM teams
+    WHERE organization_id = _new_org_id;
+
+    -- Count other teams in the old organization (excluding the current one)
     SELECT COUNT(*) INTO _other_teams_count
     FROM teams
     WHERE organization_id = _old_org_id
     AND id != _team_id;
 
-    -- If new owner has their own organization, move the team to their organization
-    IF _new_owner_org_id IS NOT NULL THEN
-        -- Update the team to use the new owner's organization
-        UPDATE teams 
-        SET user_id = _new_owner_id,
-            organization_id = _new_owner_org_id
-        WHERE id = _team_id;
-        
-        -- Create notification about organization change
-        PERFORM create_notification(
-            _old_owner_id,
-            _team_id,
-            NULL,
-            NULL,
-            CONCAT('Team <b>', (SELECT name FROM teams WHERE id = _team_id), '</b> has been moved to a different organization')
-        );
+    -- ============================================================
+    -- SWAP LICENSES: Switch all licenses between the two users
+    -- ============================================================
 
-        PERFORM create_notification(
-            _new_owner_id,
-            _team_id,
-            NULL,
-            NULL,
-            CONCAT('Team <b>', (SELECT name FROM teams WHERE id = _team_id), '</b> has been moved to your organization')
-        );
-    ELSE
-        -- If new owner doesn't have an organization, transfer the old organization to them
-        UPDATE organizations
-        SET user_id = _new_owner_id
-        WHERE id = _old_org_id;
-        
-        -- Update the team to use the same organization
-        UPDATE teams 
-        SET user_id = _new_owner_id,
-            organization_id = _old_org_id
-        WHERE id = _team_id;
+    -- Step 1: Swap user subscriptions
+    UPDATE licensing_user_subscriptions
+    SET user_id = CASE
+        WHEN user_id = _old_owner_id THEN _new_owner_id
+        WHEN user_id = _new_owner_id THEN _old_owner_id
+        ELSE user_id
+    END
+    WHERE user_id IN (_old_owner_id, _new_owner_id);
 
-        -- Notify both users about organization ownership transfer
-        PERFORM create_notification(
-            _old_owner_id,
-            NULL,
-            NULL,
-            NULL,
-            CONCAT('You are no longer the owner of organization <b>', (SELECT organization_name FROM organizations WHERE id = _old_org_id), '</b>')
-        );
+    -- Step 2: Swap custom subscriptions
+    UPDATE licensing_custom_subs
+    SET user_id = CASE
+        WHEN user_id = _old_owner_id THEN _new_owner_id
+        WHEN user_id = _new_owner_id THEN _old_owner_id
+        ELSE user_id
+    END
+    WHERE user_id IN (_old_owner_id, _new_owner_id);
 
-        PERFORM create_notification(
-            _new_owner_id,
-            NULL,
-            NULL,
-            NULL,
-            CONCAT('You are now the owner of organization <b>', (SELECT organization_name FROM organizations WHERE id = _old_org_id), '</b>')
-        );
-    END IF;
-    
-    -- Get the owner and admin role IDs
+    -- Step 3: Swap coupon codes
+    UPDATE licensing_coupon_codes
+    SET redeemed_by = CASE
+        WHEN redeemed_by = _old_owner_id THEN _new_owner_id
+        WHEN redeemed_by = _new_owner_id THEN _old_owner_id
+        ELSE redeemed_by
+    END
+    WHERE redeemed_by IN (_old_owner_id, _new_owner_id);
+
+    -- Step 4: Swap plan trials
+    UPDATE licensing_plan_trials
+    SET user_id = CASE
+        WHEN user_id = _old_owner_id THEN _new_owner_id
+        WHEN user_id = _new_owner_id THEN _old_owner_id
+        ELSE user_id
+    END
+    WHERE user_id IN (_old_owner_id, _new_owner_id);
+
+    -- ============================================================
+    -- SWAP ORGANIZATIONS: Temporarily drop unique constraint for swap
+    -- ============================================================
+
+    -- Drop the unique constraint temporarily
+    ALTER TABLE organizations DROP CONSTRAINT IF EXISTS organizations_user_id_key;
+    ALTER TABLE organizations DROP CONSTRAINT IF EXISTS organizations_pk_2;
+
+    -- Step 5a: Temporarily set old owner's org to temp UUID
+    UPDATE organizations
+    SET user_id = _temp_uuid
+    WHERE id = _old_org_id;
+
+    -- Step 5b: Set new owner's org to old owner
+    UPDATE organizations
+    SET user_id = _old_owner_id
+    WHERE id = _new_org_id;
+
+    -- Step 5c: Set old owner's org (currently temp) to new owner
+    UPDATE organizations
+    SET user_id = _new_owner_id
+    WHERE id = _old_org_id;
+
+    -- Re-add the unique constraint
+    ALTER TABLE organizations ADD CONSTRAINT organizations_user_id_key UNIQUE (user_id);
+
+    -- ============================================================
+    -- SWAP TEAMS: Update all teams in both organizations
+    -- ============================================================
+
+    -- Step 6: Swap ALL teams in both organizations
+    UPDATE teams
+    SET user_id = CASE
+        WHEN organization_id = _old_org_id THEN _new_owner_id
+        WHEN organization_id = _new_org_id THEN _old_owner_id
+        ELSE user_id
+    END
+    WHERE organization_id IN (_old_org_id, _new_org_id);
+
+    -- ============================================================
+    -- UPDATE TEAM ROLES: Update roles for the specific team
+    -- ============================================================
+
+    -- Get the owner and admin role IDs for the specific team
     SELECT id INTO _owner_role_id FROM roles WHERE team_id = _team_id AND owner = TRUE;
     SELECT id INTO _admin_role_id FROM roles WHERE team_id = _team_id AND admin_role = TRUE;
 
-    -- Get current role IDs for both users
-    SELECT role_id INTO _old_owner_role_id 
-    FROM team_members 
+    -- Get current role IDs for both users in the specific team
+    SELECT role_id INTO _old_owner_role_id
+    FROM team_members
     WHERE team_id = _team_id AND user_id = _old_owner_id;
 
-    SELECT role_id INTO _new_owner_role_id 
-    FROM team_members 
+    SELECT role_id INTO _new_owner_role_id
+    FROM team_members
     WHERE team_id = _team_id AND user_id = _new_owner_id;
-    
-    -- Update the old owner's role to admin if they want to stay in the team
+
+    -- Update the old owner's role to admin if they are a member of this team
     IF _old_owner_role_id IS NOT NULL THEN
-        UPDATE team_members 
-        SET role_id = _admin_role_id 
+        UPDATE team_members
+        SET role_id = _admin_role_id
         WHERE team_id = _team_id AND user_id = _old_owner_id;
     END IF;
-    
+
     -- Update the new owner's role to owner
     IF _new_owner_role_id IS NOT NULL THEN
-        UPDATE team_members 
-        SET role_id = _owner_role_id 
+        UPDATE team_members
+        SET role_id = _owner_role_id
         WHERE team_id = _team_id AND user_id = _new_owner_id;
     ELSE
-        -- If new owner is not a team member yet, add them
+        -- If new owner is not a team member yet, add them as owner
         INSERT INTO team_members (user_id, team_id, role_id)
         VALUES (_new_owner_id, _team_id, _owner_role_id);
     END IF;
 
-    -- Create notification for both users about team ownership
+    -- ============================================================
+    -- NOTIFICATIONS: Notify both users about the swap
+    -- ============================================================
+
+    -- Notify old owner about organization swap
+    PERFORM create_notification(
+        _old_owner_id,
+        NULL,
+        NULL,
+        NULL,
+        CONCAT('Your organization <b>', _old_org_name, '</b> has been swapped with <b>', _new_org_name, '</b>. You are now the owner of <b>', _new_org_name, '</b> with all its teams, projects, and licenses.')
+    );
+
+    -- Notify new owner about organization swap
+    PERFORM create_notification(
+        _new_owner_id,
+        NULL,
+        NULL,
+        NULL,
+        CONCAT('Your organization <b>', _new_org_name, '</b> has been swapped with <b>', _old_org_name, '</b>. You are now the owner of <b>', _old_org_name, '</b> with all its teams, projects, and licenses.')
+    );
+
+    -- Notify old owner about specific team ownership change
     PERFORM create_notification(
         _old_owner_id,
         _team_id,
@@ -6440,6 +6529,7 @@ BEGIN
         CONCAT('You are no longer the owner of team <b>', (SELECT name FROM teams WHERE id = _team_id), '</b>')
     );
 
+    -- Notify new owner about specific team ownership change
     PERFORM create_notification(
         _new_owner_id,
         _team_id,
@@ -6447,21 +6537,25 @@ BEGIN
         NULL,
         CONCAT('You are now the owner of team <b>', (SELECT name FROM teams WHERE id = _team_id), '</b>')
     );
-    
+
+    -- Return detailed information about the swap
     RETURN json_build_object(
         'success', TRUE,
         'old_owner_id', _old_owner_id,
         'new_owner_id', _new_owner_id,
         'team_id', _team_id,
-        'old_org_id', _old_org_id,
-        'new_org_id', COALESCE(_new_owner_org_id, _old_org_id),
-        'old_role_id', _old_owner_role_id,
-        'new_role_id', _new_owner_role_id,
+        'old_organization_id', _old_org_id,
+        'old_organization_name', _old_org_name,
+        'new_organization_id', _new_org_id,
+        'new_organization_name', _new_org_name,
+        'old_owner_now_owns_org', _new_org_name,
+        'new_owner_now_owns_org', _old_org_name,
+        'teams_in_old_org', _all_teams_in_old_org,
+        'teams_in_new_org', _all_teams_in_new_org,
+        'organizations_swapped', TRUE,
+        'licenses_swapped', TRUE,
         'has_valid_license', _has_valid_license,
-        'has_active_coupon', _has_active_coupon,
-        'other_teams_count', _other_teams_count,
-        'org_ownership_transferred', _new_owner_org_id IS NULL,
-        'team_moved_to_new_org', _new_owner_org_id IS NOT NULL
+        'has_active_coupon', _has_active_coupon
     );
 END;
 $$;
