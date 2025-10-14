@@ -30,12 +30,20 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
   const { t } = useTranslation('task-list-table');
 
   const filteredLabels = useMemo(() => {
-    return (
-      (labels as ITaskLabel[])?.filter(label =>
-        label.name?.toLowerCase().includes(searchQuery.toLowerCase())
-      ) || []
-    );
-  }, [labels, searchQuery]);
+    const filtered = (labels as ITaskLabel[])?.filter(label =>
+      label.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
+    
+    // Sort labels: selected ones first, then unselected ones
+    return filtered.sort((a, b) => {
+      const aSelected = task?.all_labels?.some(existingLabel => existingLabel.id === a.id) || false;
+      const bSelected = task?.all_labels?.some(existingLabel => existingLabel.id === b.id) || false;
+      
+      if (aSelected && !bSelected) return -1;
+      if (!aSelected && bSelected) return 1;
+      return 0;
+    });
+  }, [labels, searchQuery, task?.labels]);
 
   // Update dropdown position
   const updateDropdownPosition = useCallback(() => {

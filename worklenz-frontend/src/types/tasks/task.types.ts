@@ -32,7 +32,7 @@ export interface ITask {
   project_id: string;
   team_id: string;
   task_key: string;
-  labels: string[];
+  labels: ITaskLabel[];
   assignees: string[];
   names: string[];
   sub_tasks_count: number;
