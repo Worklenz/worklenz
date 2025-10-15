@@ -5,13 +5,40 @@ import db from "../config/db";
 
 /**
  * Checks if organization has business plan access
+ * Includes active business plan trials
  */
 async function hasBusinessPlanAccess(organizationId: string): Promise<boolean> {
   try {
     const query = `
-      SELECT subscription_type, plan_name, active_plan_trial, plan_trial_end_date
-      FROM organizations
-      WHERE id = $1
+      WITH org_data AS (
+        SELECT 
+          o.id,
+          o.user_id,
+          slt.key AS subscription_type,
+          lpp.name AS plan_name
+        FROM organizations o
+        LEFT JOIN licensing_subscription_types slt ON o.license_type_id = slt.id
+        LEFT JOIN licensing_user_subscriptions lus ON o.user_id = lus.user_id AND lus.active = TRUE
+        LEFT JOIN licensing_pricing_plans lpp ON lus.plan_id = lpp.id
+        WHERE o.id = $1
+      ),
+      trial_data AS (
+        SELECT
+          lpt.tier_name AS active_plan_trial,
+          lpt.trial_end_date AS plan_trial_end_date
+        FROM org_data od
+        INNER JOIN licensing_plan_trials lpt ON od.user_id = lpt.user_id
+        WHERE lpt.is_active = TRUE
+          AND lpt.trial_end_date > NOW()
+        LIMIT 1
+      )
+      SELECT 
+        od.subscription_type,
+        od.plan_name,
+        td.active_plan_trial,
+        td.plan_trial_end_date
+      FROM org_data od
+      LEFT JOIN trial_data td ON TRUE
     `;
     const result = await db.query(query, [organizationId]);
     
@@ -23,17 +50,7 @@ async function hasBusinessPlanAccess(organizationId: string): Promise<boolean> {
     const subscriptionType = org.subscription_type;
     const planName = (org.plan_name || "").toLowerCase();
     
-    // ANNUAL_BUSINESS subscription type qualifies
-    if (subscriptionType === "ANNUAL_BUSINESS") {
-      return true;
-    }
-    
-    // SELF_HOSTED users have business plan privileges
-    if (subscriptionType === "SELF_HOSTED") {
-      return true;
-    }
-    
-    // Check for active Business plan trial
+    // Check for active Business plan trial (BUSINESS_LARGE tier)
     if (org.active_plan_trial === "BUSINESS_LARGE" && org.plan_trial_end_date) {
       const trialEndDate = new Date(org.plan_trial_end_date);
       if (trialEndDate > new Date()) {
@@ -41,8 +58,13 @@ async function hasBusinessPlanAccess(organizationId: string): Promise<boolean> {
       }
     }
     
-    // Check for Business trial subscription type
-    if (subscriptionType === "BUSINESS_TRIAL") {
+    // ANNUAL_BUSINESS subscription type qualifies
+    if (subscriptionType === "ANNUAL_BUSINESS") {
+      return true;
+    }
+    
+    // SELF_HOSTED users have business plan privileges
+    if (subscriptionType === "SELF_HOSTED") {
       return true;
     }
     
@@ -54,6 +76,7 @@ async function hasBusinessPlanAccess(organizationId: string): Promise<boolean> {
     return false;
   } catch (error) {
     // Log error silently - don't expose internal errors
+    console.error("Error checking business plan access:", error);
     return false;
   }
 }
