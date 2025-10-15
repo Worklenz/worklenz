@@ -180,9 +180,8 @@ export const useTaskSocketHandlers = () => {
       await Promise.all([
         dispatch(updateTaskLabel(labels)),
         dispatch(setTaskLabels(labels)),
-        // Remove unnecessary refetches - real-time updates handle this
-        // dispatch(fetchLabels()),
-        // projectId && dispatch(fetchLabelsByProject(projectId)),
+        // Fetch labels when a new label is created to update the global labels list
+        labels.is_new && dispatch(fetchLabels()),
       ]);
 
       // Update enhanced kanban slice
