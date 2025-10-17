@@ -167,23 +167,27 @@ const LicenseExpired = () => {
       onClick={() => handleTeamSelect(team.id)}
       style={{
         cursor: 'pointer',
-        padding: '6px 10px',
+        padding: '8px 12px',
         backgroundColor: isActiveTeam(team.id)
-          ? (themeMode === 'dark' ? '#1f1f1f' : '#f0f9ff')
+          ? (themeMode === 'dark' ? 'rgba(24, 144, 255, 0.15)' : '#e6f7ff')
           : 'transparent',
+        borderRadius: '6px',
+        transition: 'all 0.2s ease',
       }}
-      className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+      className="hover:bg-gray-100 dark:hover:bg-gray-800"
     >
-      <Flex gap={6} align="center" justify="space-between">
-        <Flex gap={6} align="center" style={{ flex: 1, minWidth: 0 }}>
-          <CustomAvatar avatarName={team.name || ''} size={24} />
+      <Flex gap={8} align="center" justify="space-between">
+        <Flex gap={8} align="center" style={{ flex: 1, minWidth: 0 }}>
+          <CustomAvatar avatarName={team.name || ''} size={28} />
           <Flex vertical style={{ flex: 1, minWidth: 0 }}>
             <Typography.Text
               style={{
-                fontSize: 12,
-                fontWeight: isActiveTeam(team.id) ? 500 : 400,
-                color: themeMode === 'dark' ? '#fff' : '#000',
-                lineHeight: '16px',
+                fontSize: 13,
+                fontWeight: isActiveTeam(team.id) ? 600 : 400,
+                color: themeMode === 'dark'
+                  ? isActiveTeam(team.id) ? '#fff' : 'rgba(255, 255, 255, 0.85)'
+                  : isActiveTeam(team.id) ? '#000' : 'rgba(0, 0, 0, 0.85)',
+                lineHeight: '18px',
               }}
               ellipsis
             >
@@ -191,9 +195,9 @@ const LicenseExpired = () => {
             </Typography.Text>
             <Typography.Text
               style={{
-                fontSize: 10,
-                color: '#8c8c8c',
-                lineHeight: '14px',
+                fontSize: 11,
+                color: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.45)',
+                lineHeight: '16px',
               }}
               ellipsis
             >
@@ -204,8 +208,8 @@ const LicenseExpired = () => {
         {isActiveTeam(team.id) && (
           <CheckCircleFilled
             style={{
-              fontSize: 12,
-              color: colors.limeGreen,
+              fontSize: 14,
+              color: '#1890ff',
               flexShrink: 0,
             }}
           />
@@ -222,56 +226,76 @@ const LicenseExpired = () => {
     })) || [];
 
   return (
-    <div className="py-6 px-4 md:px-6 max-w-6xl mx-auto h-[calc(100vh-80px)] flex flex-col">
+    <div className="py-8 px-4 md:px-6 max-w-6xl mx-auto h-[calc(100vh-80px)] flex flex-col">
       {/* Hero Section with Icon and Title */}
-      <div className="text-center mb-6">
+      <div className="text-center mb-8">
         <div
-          className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-3"
+          className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
           style={{
-            backgroundColor: themeMode === 'dark' ? '#faad1433' : '#fff7e6',
-            border: `2px solid ${themeMode === 'dark' ? '#faad14' : '#ffc53d'}`,
+            backgroundColor: themeMode === 'dark' ? 'rgba(250, 173, 20, 0.15)' : '#fff7e6',
+            border: `3px solid ${themeMode === 'dark' ? 'rgba(250, 173, 20, 0.4)' : '#ffc53d'}`,
+            boxShadow: themeMode === 'dark'
+              ? '0 4px 12px rgba(250, 173, 20, 0.1)'
+              : '0 4px 12px rgba(250, 173, 20, 0.15)',
           }}
         >
           <ClockCircleOutlined
             style={{
-              fontSize: 28,
+              fontSize: 32,
               color: '#faad14',
             }}
           />
         </div>
-        <Title level={2} className="mb-2 text-xl md:text-2xl">
+        <Title level={2} className="mb-3 text-2xl md:text-3xl" style={{ fontWeight: 600 }}>
           {getTitle()}
         </Title>
         <Paragraph
-          className="text-sm md:text-base mb-0 max-w-2xl mx-auto"
-          style={{ color: themeMode === 'dark' ? '#bfbfbf' : '#595959' }}
+          className="text-base md:text-lg mb-0 max-w-2xl mx-auto"
+          style={{
+            color: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.65)' : 'rgba(0, 0, 0, 0.65)',
+            lineHeight: '1.6',
+          }}
         >
           {getSubtitle()}
         </Paragraph>
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
         {/* Features Card */}
         <Card
-          bordered={false}
+          variant="borderless"
           className="flex flex-col"
           style={{
-            backgroundColor: themeMode === 'dark' ? undefined : '#f0f9ff',
+            backgroundColor: themeMode === 'dark'
+              ? 'rgba(24, 144, 255, 0.05)'
+              : '#f0f9ff',
             height: '100%',
+            borderRadius: '12px',
+            boxShadow: themeMode === 'dark'
+              ? '0 2px 8px rgba(0, 0, 0, 0.3)'
+              : '0 2px 8px rgba(0, 0, 0, 0.06)',
+          }}
+          styles={{
+            body: {
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+            }
           }}
         >
-          <Space direction="vertical" size="small" style={{ width: '100%' }}>
-            <Flex align="center" gap={8}>
+          <Space direction="vertical" size="middle" style={{ width: '100%', height: '100%' }}>
+            <Flex align="center" gap={10}>
               <div
-                className="flex items-center justify-center w-8 h-8 rounded-lg"
+                className="flex items-center justify-center w-10 h-10 rounded-lg"
                 style={{
-                  backgroundColor: themeMode === 'dark' ? '#1890ff33' : '#e6f7ff',
+                  backgroundColor: themeMode === 'dark' ? 'rgba(24, 144, 255, 0.2)' : '#e6f7ff',
+                  border: themeMode === 'dark' ? '1px solid rgba(24, 144, 255, 0.3)' : 'none',
                 }}
               >
-                <CrownOutlined style={{ fontSize: 16, color: '#1890ff' }} />
+                <CrownOutlined style={{ fontSize: 18, color: '#1890ff' }} />
               </div>
-              <Title level={4} className="mb-0 text-base">
+              <Title level={4} className="mb-0 text-lg" style={{ fontWeight: 600 }}>
                 {getFeaturesTitle()}
               </Title>
             </Flex>
@@ -279,16 +303,23 @@ const LicenseExpired = () => {
               dataSource={features}
               split={false}
               renderItem={(feature) => (
-                <List.Item className="py-2 px-0 border-0">
-                  <Space align="start" size={8}>
+                <List.Item className="py-3 px-0 border-0">
+                  <Space align="start" size={10}>
                     <CheckCircleFilled
                       style={{
                         color: '#52c41a',
-                        fontSize: 14,
-                        marginTop: 2,
+                        fontSize: 16,
+                        marginTop: 3,
                       }}
                     />
-                    <Text className="text-sm leading-relaxed">{feature}</Text>
+                    <Text
+                      className="text-base leading-relaxed"
+                      style={{
+                        color: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)'
+                      }}
+                    >
+                      {feature}
+                    </Text>
                   </Space>
                 </List.Item>
               )}
@@ -298,15 +329,27 @@ const LicenseExpired = () => {
 
         {/* CTA and Action Card */}
         <Card
-          bordered={false}
+          variant="borderless"
           className="flex flex-col justify-between"
           style={{
             height: '100%',
+            borderRadius: '12px',
+            backgroundColor: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#ffffff',
+            boxShadow: themeMode === 'dark'
+              ? '0 2px 8px rgba(0, 0, 0, 0.3)'
+              : '0 2px 8px rgba(0, 0, 0, 0.06)',
+          }}
+          styles={{
+            body: {
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+            }
           }}
         >
-          <Space direction="vertical" size="small" style={{ width: '100%' }}>
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
             {/* Primary CTA */}
-            <div className="text-center mb-2">
+            <div className="text-center">
               <Button
                 type="primary"
                 size="large"
@@ -314,7 +357,11 @@ const LicenseExpired = () => {
                 loading={isContactingSupport && subscriptionType === ISUBSCRIPTION_TYPE.CUSTOM}
                 icon={!isContactingSupport ? getUpgradeIcon() : undefined}
                 block
-                className="h-11 text-base font-semibold"
+                className="h-12 text-base font-semibold"
+                style={{
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 4px rgba(24, 144, 255, 0.2)',
+                }}
               >
                 {subscriptionType === ISUBSCRIPTION_TYPE.CUSTOM
                   ? messageSent
@@ -325,12 +372,16 @@ const LicenseExpired = () => {
                   : getUpgradeText()}
               </Button>
 
-              <Divider className="my-2.5">{t('or')}</Divider>
+              <Divider className="my-4" style={{ margin: '16px 0' }}>{t('or')}</Divider>
 
               <Text
                 type="secondary"
-                style={{ cursor: 'pointer' }}
-                className="text-sm hover:underline inline-block"
+                style={{
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  transition: 'color 0.2s',
+                }}
+                className="hover:underline inline-block"
                 onClick={() => navigate('/worklenz/admin-center/billing')}
               >
                 {t('switch-to-free-plan')}
@@ -340,21 +391,45 @@ const LicenseExpired = () => {
             {/* Team Switcher or Info */}
             {teamsList && teamsList.length > 1 ? (
               <>
-                <Divider className="my-3" />
-                <div className="space-y-2.5">
-                  <Flex align="center" gap={8}>
-                    <BankOutlined style={{ fontSize: 16, color: '#52c41a' }} />
-                    <Title level={5} className="mb-0 text-sm">
+                <Divider style={{ margin: '20px 0' }} />
+                <div className="space-y-3">
+                  <Flex align="center" gap={10}>
+                    <div
+                      className="flex items-center justify-center w-8 h-8 rounded-lg"
+                      style={{
+                        backgroundColor: themeMode === 'dark' ? 'rgba(82, 196, 26, 0.15)' : '#f6ffed',
+                        border: themeMode === 'dark' ? '1px solid rgba(82, 196, 26, 0.3)' : 'none',
+                      }}
+                    >
+                      <BankOutlined style={{ fontSize: 14, color: '#52c41a' }} />
+                    </div>
+                    <Title level={5} className="mb-0 text-base" style={{ fontWeight: 600 }}>
                       {t('switch-team-to-continue')}
                     </Title>
                   </Flex>
 
-                  <Text type="secondary" className="text-xs block">
+                  <Text
+                    type="secondary"
+                    className="text-sm block"
+                    style={{
+                      color: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.45)',
+                    }}
+                  >
                     {t('switch-team-active-subscription')}
                   </Text>
 
-                  <div>
-                    <Text type="secondary" className="text-xs block mb-1">
+                  <div
+                    style={{
+                      padding: '12px',
+                      borderRadius: '8px',
+                      backgroundColor: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#fafafa',
+                    }}
+                  >
+                    <Text
+                      type="secondary"
+                      className="text-xs block mb-1"
+                      style={{ fontWeight: 500 }}
+                    >
                       {t('current-team')}:
                     </Text>
                     <Text strong className="text-sm">
@@ -376,7 +451,15 @@ const LicenseExpired = () => {
                     placement="bottomLeft"
                     overlayStyle={{ maxWidth: '280px' }}
                   >
-                    <Button size="middle" block icon={<BankOutlined />}>
+                    <Button
+                      size="middle"
+                      block
+                      icon={<BankOutlined />}
+                      style={{
+                        height: '40px',
+                        borderRadius: '8px',
+                      }}
+                    >
                       <Flex gap={8} align="center" justify="space-between" style={{ width: '100%' }}>
                         <span className="text-sm">{t('select-team')}</span>
                         <CaretDownFilled />
