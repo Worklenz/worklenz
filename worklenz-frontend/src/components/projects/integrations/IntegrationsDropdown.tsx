@@ -34,7 +34,7 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
       className="integrations-dropdown"
       style={{
         width: 360,
-        backgroundColor: 'var(--component-bg, #ffffff)',
+        backgroundColor: 'var(--component-bg, #1f1f1f)',
         borderRadius: '8px',
         boxShadow: '0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05)'
       }}
@@ -45,7 +45,7 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
           padding: '12px 16px',
           fontWeight: 600,
           fontSize: 14,
-          borderBottom: '1px solid var(--border-color, #f0f0f0)',
+          borderBottom: '1px solid var(--border-color, #434343)',
           display: 'flex',
           alignItems: 'center',
           gap: 8
@@ -86,7 +86,7 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
       <div
         style={{
           padding: '8px 16px',
-          borderTop: '1px solid var(--border-color, #f0f0f0)',
+          borderTop: '1px solid var(--border-color, #434343)',
           textAlign: 'center'
         }}
       >

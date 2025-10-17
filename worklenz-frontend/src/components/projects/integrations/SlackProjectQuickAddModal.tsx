@@ -109,7 +109,7 @@ export const SlackProjectQuickAddModal: React.FC<SlackProjectQuickAddModalProps>
           <div
             style={{
               padding: '12px',
-              backgroundColor: 'var(--info-bg, #e6f7ff)',
+              backgroundColor: 'var(--info-bg, #1a365d)',
               borderRadius: '6px',
               marginBottom: '16px',
               fontSize: '13px'
@@ -176,7 +176,7 @@ export const SlackProjectQuickAddModal: React.FC<SlackProjectQuickAddModalProps>
         <div
           style={{
             padding: '12px',
-            backgroundColor: 'var(--warning-bg, #fffbe6)',
+            backgroundColor: 'var(--warning-bg, #2d3748)',
             borderRadius: '6px',
             marginBottom: '16px',
             fontSize: '12px',

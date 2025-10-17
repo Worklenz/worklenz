@@ -21,12 +21,12 @@ export const IntegrationItem: React.FC<IntegrationItemProps> = ({
         padding: '12px 16px',
         cursor: comingSoon ? 'not-allowed' : 'pointer',
         opacity: comingSoon ? 0.6 : 1,
-        borderBottom: '1px solid var(--border-color, #f0f0f0)',
+        borderBottom: '1px solid var(--border-color, #434343)',
         transition: 'background-color 0.2s'
       }}
       onMouseEnter={(e) => {
         if (!comingSoon) {
-          e.currentTarget.style.backgroundColor = 'var(--hover-bg, #f5f5f5)';
+          e.currentTarget.style.backgroundColor = 'var(--hover-bg, #2a2a2a)';
         }
       }}
       onMouseLeave={(e) => {
@@ -49,7 +49,7 @@ export const IntegrationItem: React.FC<IntegrationItemProps> = ({
               </Tag>
             )}
           </div>
-          <div style={{ fontSize: 12, color: 'var(--text-secondary, #8c8c8c)', lineHeight: 1.4 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary, #bfbfbf)', lineHeight: 1.4 }}>
             {description}
           </div>
           {channels && channels.length > 0 && (
