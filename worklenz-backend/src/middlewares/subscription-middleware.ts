@@ -9,6 +9,8 @@ import db from "../config/db";
  */
 async function hasBusinessPlanAccess(organizationId: string): Promise<boolean> {
   try {
+    console.log("[BUSINESS_PLAN_CHECK] Checking access for organization:", organizationId);
+    
     const query = `
       WITH org_data AS (
         SELECT 
@@ -42,7 +44,10 @@ async function hasBusinessPlanAccess(organizationId: string): Promise<boolean> {
     `;
     const result = await db.query(query, [organizationId]);
     
+    console.log("[BUSINESS_PLAN_CHECK] Query result rows:", result.rows.length);
+    
     if (result.rows.length === 0) {
+      console.log("[BUSINESS_PLAN_CHECK] No organization data found - DENIED");
       return false;
     }
     
@@ -50,34 +55,49 @@ async function hasBusinessPlanAccess(organizationId: string): Promise<boolean> {
     const subscriptionType = org.subscription_type;
     const planName = (org.plan_name || "").toLowerCase();
     
+    console.log("[BUSINESS_PLAN_CHECK] Organization data:", {
+      subscriptionType,
+      planName,
+      activePlanTrial: org.active_plan_trial,
+      planTrialEndDate: org.plan_trial_end_date
+    });
+    
     // Check for active Business plan trial (BUSINESS_LARGE tier)
     if (org.active_plan_trial === "BUSINESS_LARGE" && org.plan_trial_end_date) {
       const trialEndDate = new Date(org.plan_trial_end_date);
       if (trialEndDate > new Date()) {
+        console.log("[BUSINESS_PLAN_CHECK] GRANTED - Active BUSINESS_LARGE trial");
         return true;
       }
+      console.log("[BUSINESS_PLAN_CHECK] BUSINESS_LARGE trial expired");
     }
     
     // Check for Business trial subscription type (from deserialize_user)
     if (subscriptionType === "BUSINESS_TRIAL") {
+      console.log("[BUSINESS_PLAN_CHECK] GRANTED - BUSINESS_TRIAL subscription type");
       return true;
     }
     
     // ANNUAL_BUSINESS subscription type qualifies
     if (subscriptionType === "ANNUAL_BUSINESS") {
+      console.log("[BUSINESS_PLAN_CHECK] GRANTED - ANNUAL_BUSINESS subscription");
       return true;
     }
     
     // SELF_HOSTED users have business plan privileges
     if (subscriptionType === "SELF_HOSTED") {
+      console.log("[BUSINESS_PLAN_CHECK] GRANTED - SELF_HOSTED subscription");
       return true;
     }
     
     // PADDLE subscription type with business or enterprise plan
     if (subscriptionType === "PADDLE") {
-      return planName.includes("business") || planName.includes("enterprise");
+      const hasAccess = planName.includes("business") || planName.includes("enterprise");
+      console.log("[BUSINESS_PLAN_CHECK] PADDLE subscription -", hasAccess ? "GRANTED" : "DENIED");
+      return hasAccess;
     }
     
+    console.log("[BUSINESS_PLAN_CHECK] DENIED - No matching criteria");
     return false;
   } catch (error) {
     // Log error silently - don't expose internal errors
