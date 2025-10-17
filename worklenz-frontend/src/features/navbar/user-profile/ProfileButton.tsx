@@ -94,7 +94,7 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
           variant="borderless"
           style={{ width: 230 }}
         >
-          {isOwnerOrAdmin && !isLicenseExpired && (
+          {isOwnerOrAdmin && (
             <Link to="/worklenz/admin-center/overview" style={getLinkStyle()}>
               {t('adminCenter')}
             </Link>

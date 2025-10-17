@@ -65,6 +65,7 @@
   "or": "or",
   "note": "Note",
   "upgrade-to-continue": "Upgrade to Continue",
+  "switch-to-free-plan": "Switch to Free Plan",
   "license-expiring-soon": "Your license expires in {{days}} day",
   "license-expiring-soon_plural": "Your license expires in {{days}} days",
   "license-expiring-today": "Your license expires today!",

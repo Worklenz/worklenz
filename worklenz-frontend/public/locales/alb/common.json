@@ -55,6 +55,7 @@
   "or": "ose",
   "note": "Shënim",
   "upgrade-to-continue": "Përditëso për të vazhduar",
+  "switch-to-free-plan": "Kalo në planin falas",
   "license-expiring-soon": "Licenca juaj skadon në {{days}} ditë",
   "license-expiring-soon_plural": "Licenca juaj skadon në {{days}} ditë",
   "license-expiring-today": "Licenca juaj skadon sot!",
