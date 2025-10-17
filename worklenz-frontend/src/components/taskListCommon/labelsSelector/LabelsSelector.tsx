@@ -20,6 +20,7 @@ import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { useAuthService } from '@/hooks/useAuth';
 import { SocketEvents } from '@/shared/socket-events';
 import { useSocket } from '@/socket/socketContext';
+import { sortLabelsBySelection, isLabelSelected } from '@/utils/labelUtils';
 
 interface LabelsSelectorProps {
   task: IProjectTask;
@@ -67,17 +68,12 @@ const LabelsSelector = ({ task }: LabelsSelectorProps) => {
 
   // used useMemo hook for re render the list when searching
   const filteredLabelData = useMemo(() => {
-    const filtered = labelList.filter(label => label.name?.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    // Sort labels: selected ones first, then unselected ones
-    return filtered.sort((a, b) => {
-      const aSelected = task?.labels?.some(existingLabel => existingLabel.id === a.id) || false;
-      const bSelected = task?.labels?.some(existingLabel => existingLabel.id === b.id) || false;
-      
-      if (aSelected && !bSelected) return -1;
-      if (!aSelected && bSelected) return 1;
-      return 0;
-    });
+    const filtered = labelList.filter(label =>
+      label.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Sort to show selected labels first using shared utility
+    return sortLabelsBySelection(filtered, task?.labels || []);
   }, [labelList, searchQuery, task?.labels]);
 
   const labelDropdownContent = (
@@ -122,11 +118,7 @@ const LabelsSelector = ({ task }: LabelsSelectorProps) => {
               >
                 <Checkbox
                   id={label.id}
-                  checked={
-                    task?.labels
-                      ? task?.labels.some(existingLabel => existingLabel.id === label.id)
-                      : false
-                  }
+                  checked={isLabelSelected(label.id || '', task?.labels)}
                   onChange={() => handleLabelChange(label)}
                 >
                   <Flex gap={8}>

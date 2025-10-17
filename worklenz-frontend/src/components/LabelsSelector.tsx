@@ -10,6 +10,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';
 import { Button, Checkbox, Tag } from '@/components';
+import { sortLabelsBySelection, isLabelSelected } from '@/utils/labelUtils';
 
 interface LabelsSelectorProps {
   task: IProjectTask;
@@ -33,16 +34,9 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
     const filtered = (labels as ITaskLabel[])?.filter(label =>
       label.name?.toLowerCase().includes(searchQuery.toLowerCase())
     ) || [];
-    
-    // Sort labels: selected ones first, then unselected ones
-    return filtered.sort((a, b) => {
-      const aSelected = task?.all_labels?.some(existingLabel => existingLabel.id === a.id) || false;
-      const bSelected = task?.all_labels?.some(existingLabel => existingLabel.id === b.id) || false;
-      
-      if (aSelected && !bSelected) return -1;
-      if (!aSelected && bSelected) return 1;
-      return 0;
-    });
+
+    // Sort to show selected labels first using shared utility
+    return sortLabelsBySelection(filtered, task?.labels || []);
   }, [labels, searchQuery, task?.labels]);
 
   // Update dropdown position
@@ -157,7 +151,8 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
   };
 
   const checkLabelSelected = (labelId: string) => {
-    return task?.all_labels?.some(existingLabel => existingLabel.id === labelId) || false;
+    // Use task.labels (currently selected labels) instead of all_labels
+    return isLabelSelected(labelId, task?.labels);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

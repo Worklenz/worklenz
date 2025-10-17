@@ -31,6 +31,7 @@ import { setBoardLabels, updateBoardTaskLabel } from '@/features/board/board-sli
 import { updateEnhancedKanbanTaskLabels } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { ILabelsChangeResponse } from '@/types/tasks/taskList.types';
 import { ITaskLabelFilter } from '@/types/tasks/taskLabel.types';
+import { sortLabelsBySelection, isLabelSelected } from '@/utils/labelUtils';
 
 interface TaskDrawerLabelsProps {
   task: ITaskViewModel;
@@ -98,17 +99,12 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
 
   // used useMemo hook for re render the list when searching
   const filteredLabelData = useMemo(() => {
-    const filtered = labelList.filter(label => label.name?.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    // Sort labels: selected ones first, then unselected ones
-    return filtered.sort((a, b) => {
-      const aSelected = task?.labels?.some(existingLabel => existingLabel.id === a.id) || false;
-      const bSelected = task?.labels?.some(existingLabel => existingLabel.id === b.id) || false;
-      
-      if (aSelected && !bSelected) return -1;
-      if (!aSelected && bSelected) return 1;
-      return 0;
-    });
+    const filtered = labelList.filter(label =>
+      label.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Sort to show selected labels first using shared utility
+    return sortLabelsBySelection(filtered, task?.labels || []);
   }, [labelList, searchQuery, task?.labels]);
 
   const labelDropdownContent = (
@@ -153,11 +149,7 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
               >
                 <Checkbox
                   id={label.id}
-                  checked={
-                    task?.labels
-                      ? task?.labels.some(existingLabel => existingLabel.id === label.id)
-                      : false
-                  }
+                  checked={isLabelSelected(label.id || '', task?.labels)}
                   onChange={e => e.preventDefault()}
                 >
                   <Flex gap={8}>
