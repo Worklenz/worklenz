@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Modal, Form, message } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 
@@ -8,6 +8,8 @@ import {
   type ISlackChannel,
 } from '@api/slack/slack.api.service';
 import apiClient from '@api/api-client';
+import { useAuthService } from '@/hooks/useAuth';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 
 import {
   SlackConnectedCard,
@@ -39,6 +41,9 @@ interface ApiResponse<T> {
 export function SlackIntegration() {
   const { t } = useTranslation('settings/slack-integration');
   const [messageApi, contextHolder] = message.useMessage();
+  const authService = useAuthService();
+  const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
+  const hasBusinessAccess = useMemo(() => hasBusinessFeatureAccess(currentSession), [currentSession]);
   const [isConnected, setIsConnected] = useState(false);
   const [workspace, setWorkspace] = useState<{
     id: string;
@@ -57,7 +62,10 @@ export function SlackIntegration() {
 
   useEffect(() => {
     const initialize = async () => {
-      await Promise.all([checkSlackConnection(), loadChannelConfigurations(), loadProjects()]);
+      // Only check connection if user has business access
+      if (hasBusinessAccess) {
+        await Promise.all([checkSlackConnection(), loadChannelConfigurations(), loadProjects()]);
+      }
 
       // Check for OAuth callback params
       const params = new URLSearchParams(window.location.search);
@@ -97,7 +105,7 @@ export function SlackIntegration() {
 
     initialize();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hasBusinessAccess]);
 
   // Memoized API calls
   const checkSlackConnection = useCallback(async () => {
@@ -369,7 +377,11 @@ export function SlackIntegration() {
   return (
     <>
       {contextHolder}
-      <SlackDisconnectedCard loading={loading} onConnect={handleConnect} />
+      <SlackDisconnectedCard 
+        loading={loading} 
+        onConnect={handleConnect}
+        hasBusinessAccess={hasBusinessAccess}
+      />
     </>
   );
 }

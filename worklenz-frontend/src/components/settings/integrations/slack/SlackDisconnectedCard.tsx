@@ -1,14 +1,22 @@
 import { useTranslation } from 'react-i18next';
-import { Button, Card } from '@/shared/antd-imports';
+import { Button, Card, CrownOutlined } from '@/shared/antd-imports';
 import { SlackIcon } from '../IntegrationIcons';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 
 interface SlackDisconnectedCardProps {
   loading: boolean;
   onConnect: () => void;
+  hasBusinessAccess: boolean;
 }
 
-export function SlackDisconnectedCard({ loading, onConnect }: SlackDisconnectedCardProps) {
+export function SlackDisconnectedCard({ loading, onConnect, hasBusinessAccess }: SlackDisconnectedCardProps) {
   const { t } = useTranslation('settings/slack-integration');
+  const dispatch = useAppDispatch();
+
+  const handleUpgradeClick = () => {
+    dispatch(toggleUpgradeModal());
+  };
 
   return (
     <Card
@@ -36,16 +44,29 @@ export function SlackDisconnectedCard({ loading, onConnect }: SlackDisconnectedC
 
         {/* Action Button - Sticks to bottom */}
         <div className="w-full mt-8">
-          <Button
-            type="primary"
-            size="large"
-            onClick={onConnect}
-            loading={loading}
-            className="w-full h-12 text-base font-medium bg-blue-500 hover:bg-blue-600 border-blue-500 hover:border-blue-600"
-            aria-label={t('connectWorkspace')}
-          >
-            {t('connectWorkspace', { defaultValue: 'Connect Slack Workspace' })}
-          </Button>
+          {hasBusinessAccess ? (
+            <Button
+              type="primary"
+              size="large"
+              onClick={onConnect}
+              loading={loading}
+              className="w-full h-12 text-base font-medium bg-blue-500 hover:bg-blue-600 border-blue-500 hover:border-blue-600"
+              aria-label={t('connectWorkspace')}
+            >
+              {t('connectWorkspace', { defaultValue: 'Connect Slack Workspace' })}
+            </Button>
+          ) : (
+            <Button
+              type="primary"
+              size="large"
+              onClick={handleUpgradeClick}
+              icon={<CrownOutlined />}
+              className="w-full h-12 text-base font-medium"
+              aria-label={t('upgradeRequired', { defaultValue: 'Upgrade to Business Plan' })}
+            >
+              {t('upgradeRequired', { defaultValue: 'Upgrade to Business Plan' })}
+            </Button>
+          )}
         </div>
       </div>
     </Card>
