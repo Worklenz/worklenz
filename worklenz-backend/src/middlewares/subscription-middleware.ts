@@ -58,6 +58,11 @@ async function hasBusinessPlanAccess(organizationId: string): Promise<boolean> {
       }
     }
     
+    // Check for Business trial subscription type (from deserialize_user)
+    if (subscriptionType === "BUSINESS_TRIAL") {
+      return true;
+    }
+    
     // ANNUAL_BUSINESS subscription type qualifies
     if (subscriptionType === "ANNUAL_BUSINESS") {
       return true;
