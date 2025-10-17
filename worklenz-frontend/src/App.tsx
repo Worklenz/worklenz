@@ -203,7 +203,7 @@ const App: React.FC = memo(() => {
   return (
     <Suspense fallback={<SuspenseFallback />}>
       <ThemeWrapper>
-        <UpdateNotificationProvider>
+        <UpdateNotificationProvider enableAutoCheck={false}>
           <ModuleErrorBoundary>
             <RouterProvider
               router={router}
