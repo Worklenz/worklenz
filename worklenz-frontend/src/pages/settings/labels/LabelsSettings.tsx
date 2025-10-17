@@ -129,7 +129,12 @@ const LabelsSettings = () => {
               onConfirm={() => deleteLabel(record.id!)}
             >
               <Tooltip title={t('deleteTooltip', 'Delete')}>
-                <Button shape="default" icon={<DeleteOutlined />} size="small" />
+                <Button 
+                  shape="default" 
+                  icon={<DeleteOutlined />} 
+                  size="small"
+                  onClick={(e) => e.stopPropagation()}
+                />
               </Tooltip>
             </Popconfirm>
           </Flex>

@@ -30,12 +30,20 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
   const { t } = useTranslation('task-list-table');
 
   const filteredLabels = useMemo(() => {
-    return (
-      (labels as ITaskLabel[])?.filter(label =>
-        label.name?.toLowerCase().includes(searchQuery.toLowerCase())
-      ) || []
-    );
-  }, [labels, searchQuery]);
+    const filtered = (labels as ITaskLabel[])?.filter(label =>
+      label.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
+    
+    // Sort labels: selected ones first, then unselected ones
+    return filtered.sort((a, b) => {
+      const aSelected = task?.all_labels?.some(existingLabel => existingLabel.id === a.id) || false;
+      const bSelected = task?.all_labels?.some(existingLabel => existingLabel.id === b.id) || false;
+      
+      if (aSelected && !bSelected) return -1;
+      if (!aSelected && bSelected) return 1;
+      return 0;
+    });
+  }, [labels, searchQuery, task?.labels]);
 
   // Update dropdown position
   const updateDropdownPosition = useCallback(() => {
@@ -261,19 +269,24 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
                 >
                   <div className="text-xs">{t('noLabelsFound')}</div>
                   {searchQuery.trim() && (
-                    <button
-                      onClick={handleCreateLabel}
-                      className={`
-                      mt-2 px-3 py-1 text-xs rounded border transition-colors
-                      ${
-                        isDarkMode
-                          ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
-                          : 'border-gray-300 text-gray-600 hover:bg-gray-50'
-                      }
-                    `}
-                    >
-                      {t('createLabelButton', { name: searchQuery.trim() })}
-                    </button>
+                    <>
+                      <button
+                        onClick={handleCreateLabel}
+                        className={`
+                        mt-2 px-3 py-1 text-xs rounded border transition-colors
+                        ${
+                          isDarkMode
+                            ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                            : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                        }
+                      `}
+                      >
+                        {t('createLabelButton', { name: searchQuery.trim() })}
+                      </button>
+                      <div className={`mt-2 text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                        {t('labelsSelectorInputTip')}
+                      </div>
+                    </>
                   )}
                 </div>
               )}
