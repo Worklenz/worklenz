@@ -161,7 +161,7 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
         // Determine notification type based on whether task is completed
         const notificationType = changeResponse.status_category?.is_done
           ? "task_completed"
-          : "task_status_changed";
+          : "status_changed";
 
         await ExternalNotificationsService.sendExternalNotifications(
           projectId,

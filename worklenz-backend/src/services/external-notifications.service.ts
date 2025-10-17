@@ -86,12 +86,20 @@ export class ExternalNotificationsService {
     const emoji = notificationType === "task_created" ? "🆕" :
                   notificationType === "task_assigned" ? "👤" :
                   notificationType === "task_completed" ? "✅" :
-                  notificationType === "comment_added" ? "💬" : "🔄";
+                  notificationType === "comment_added" ? "💬" :
+                  notificationType === "priority_changed" ? "🔺" :
+                  notificationType === "due_date_changed" ? "📅" :
+                  notificationType === "assignee_changed" ? "👥" :
+                  notificationType === "task_updated" ? "✏️" : "🔄";
 
     const title = notificationType === "task_created" ? "Task Created" :
                   notificationType === "task_assigned" ? "Task Assigned" :
                   notificationType === "task_completed" ? "Task Completed" :
-                  notificationType === "comment_added" ? "Comment Added" : "Task Status Changed";
+                  notificationType === "comment_added" ? "Comment Added" :
+                  notificationType === "priority_changed" ? "Priority Changed" :
+                  notificationType === "due_date_changed" ? "Due Date Changed" :
+                  notificationType === "assignee_changed" ? "Assignee Changed" :
+                  notificationType === "task_updated" ? "Task Updated" : "Task Status Changed";
 
     // Color based on notification type
     const color = notificationType === "task_created" ? "#36a64f" :
@@ -142,7 +150,7 @@ export class ExternalNotificationsService {
           }
         ]
       });
-    } else if ((notificationType === "task_status_changed" || notificationType === "task_completed") && taskData.old_status_name && taskData.new_status_name) {
+    } else if ((notificationType === "status_changed" || notificationType === "task_completed") && taskData.old_status_name && taskData.new_status_name) {
       blocks[2].fields.push({
         type: "mrkdwn",
         text: `*Status*\n${taskData.old_status_name} → ${taskData.new_status_name}`
@@ -223,12 +231,20 @@ export class ExternalNotificationsService {
     const emoji = notificationType === "task_created" ? "🆕" :
                   notificationType === "task_assigned" ? "👤" :
                   notificationType === "task_completed" ? "✅" :
-                  notificationType === "comment_added" ? "💬" : "🔄";
+                  notificationType === "comment_added" ? "💬" :
+                  notificationType === "priority_changed" ? "🔺" :
+                  notificationType === "due_date_changed" ? "📅" :
+                  notificationType === "assignee_changed" ? "👥" :
+                  notificationType === "task_updated" ? "✏️" : "🔄";
 
     const title = notificationType === "task_created" ? "Task Created" :
                   notificationType === "task_assigned" ? "Task Assigned" :
                   notificationType === "task_completed" ? "Task Completed" :
-                  notificationType === "comment_added" ? "Comment Added" : "Task Status Changed";
+                  notificationType === "comment_added" ? "Comment Added" :
+                  notificationType === "priority_changed" ? "Priority Changed" :
+                  notificationType === "due_date_changed" ? "Due Date Changed" :
+                  notificationType === "assignee_changed" ? "Assignee Changed" :
+                  notificationType === "task_updated" ? "Task Updated" : "Task Status Changed";
 
     const facts: any[] = [
       {
@@ -251,7 +267,7 @@ export class ExternalNotificationsService {
         title: "Assigned By:",
         value: userName
       });
-    } else if ((notificationType === "task_status_changed" || notificationType === "task_completed") && taskData.old_status_name && taskData.new_status_name) {
+    } else if ((notificationType === "status_changed" || notificationType === "task_completed") && taskData.old_status_name && taskData.new_status_name) {
       facts.push({
         title: "Status Change:",
         value: `${taskData.old_status_name} → ${taskData.new_status_name}`
@@ -337,9 +353,9 @@ export class ExternalNotificationsService {
   public static async sendExternalNotifications(
     projectId: string,
     taskId: string,
-    notificationType: "task_created" | "task_assigned" | "task_status_changed" | "task_completed" | "comment_added",
+    notificationType: "task_created" | "task_assigned" | "status_changed" | "task_completed" | "comment_added" | "task_updated" | "priority_changed" | "due_date_changed" | "assignee_changed",
     userName: string,
-    additionalData?: { oldStatusId?: string; newStatusId?: string }
+    additionalData?: { oldStatusId?: string; newStatusId?: string; oldValue?: string; newValue?: string }
   ): Promise<void> {
     console.log(`[SLACK_DEBUG] sendExternalNotifications called with:`, {
       projectId,

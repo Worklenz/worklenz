@@ -65,11 +65,6 @@ const NOTIFICATION_TYPE_DEFINITIONS = [
     defaultValue: 'Due Date Changed',
   },
   {
-    value: 'due_date_reminder',
-    labelKey: 'modal.notificationOptions.dueDateReminder',
-    defaultValue: 'Due Date Reminder',
-  },
-  {
     value: 'assignee_changed',
     labelKey: 'modal.notificationOptions.assigneeChanged',
     defaultValue: 'Assignee Changed',
