@@ -7,6 +7,8 @@ import {
   Dropdown,
   Divider,
   Tag,
+  Alert,
+  List,
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -27,11 +29,10 @@ import {
   BankOutlined,
   CaretDownFilled,
   CheckCircleFilled,
-  RocketOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons';
 import CustomAvatar from '@/components/CustomAvatar';
 import { colors } from '@/styles/colors';
-import './license-expired.css';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -220,89 +221,170 @@ const LicenseExpired = () => {
     })) || [];
 
   return (
-    <div className="license-expired-page">
-      <div className="license-expired-container">
-        <div className="license-expired-content">
-          {/* Header Section */}
-          <div className="license-expired-header">
-            <div className="icon-wrapper">
-              <ClockCircleOutlined className="main-icon" />
-            </div>
-            <Title level={1} className="page-title">
-              {getTitle()}
-            </Title>
-            <Paragraph className="page-subtitle">
-              {getSubtitle()}
-            </Paragraph>
-          </div>
+    <div className="py-12 px-4 max-w-6xl mx-auto">
+      {/* Hero Section with Icon and Title */}
+      <div className="text-center mb-10">
+        <div
+          className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-6"
+          style={{
+            backgroundColor: themeMode === 'dark' ? '#faad1433' : '#fff7e6',
+            border: `2px solid ${themeMode === 'dark' ? '#faad14' : '#ffc53d'}`,
+          }}
+        >
+          <ClockCircleOutlined
+            style={{
+              fontSize: 40,
+              color: '#faad14',
+            }}
+          />
+        </div>
+        <Title level={2} className="mb-3">
+          {getTitle()}
+        </Title>
+        <Paragraph
+          className="text-lg mb-0"
+          style={{ color: themeMode === 'dark' ? '#bfbfbf' : '#595959' }}
+        >
+          {getSubtitle()}
+        </Paragraph>
+      </div>
 
-          {/* Main Content Grid */}
-          <div className="content-grid">
-            {/* Features Card */}
-            <Card className="features-card" bordered={false}>
-              <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                <Flex align="center" gap={8}>
-                  <RocketOutlined style={{ fontSize: 20, color: '#1890ff' }} />
-                  <Text strong className="features-title">
-                    {getFeaturesTitle()}
-                  </Text>
-                </Flex>
-                <div className="features-list">
-                  {features.map((feature, index) => (
-                    <div key={index} className="feature-item">
-                      <CheckCircleFilled className="feature-icon" />
-                      <Text className="feature-text">{feature}</Text>
-                    </div>
-                  ))}
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Features Card */}
+        <Card
+          bordered
+          style={{
+            borderColor: themeMode === 'dark' ? '#1890ff' : '#91d5ff',
+            backgroundColor: themeMode === 'dark' ? undefined : '#f0f9ff',
+          }}
+        >
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <Flex align="center" gap={12}>
+              <div
+                className="flex items-center justify-center w-10 h-10 rounded-lg"
+                style={{
+                  backgroundColor: themeMode === 'dark' ? '#1890ff33' : '#e6f7ff',
+                }}
+              >
+                <CrownOutlined style={{ fontSize: 20, color: '#1890ff' }} />
+              </div>
+              <Title level={4} className="mb-0">
+                {getFeaturesTitle()}
+              </Title>
+            </Flex>
+            <List
+              dataSource={features}
+              split={false}
+              renderItem={(feature) => (
+                <List.Item className="py-3 px-0 border-0">
+                  <Space align="start" size={12}>
+                    <CheckCircleFilled
+                      style={{
+                        color: '#52c41a',
+                        fontSize: 18,
+                        marginTop: 2,
+                      }}
+                    />
+                    <Text className="text-base">{feature}</Text>
+                  </Space>
+                </List.Item>
+              )}
+            />
+          </Space>
+        </Card>
+
+        {/* Team Switcher Card or Empty State */}
+        {teamsList && teamsList.length > 1 ? (
+          <Card
+            bordered
+            style={{
+              borderColor: themeMode === 'dark' ? '#52c41a' : '#b7eb8f',
+              backgroundColor: themeMode === 'dark' ? undefined : '#f6ffed',
+            }}
+          >
+            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+              <Flex align="center" gap={12}>
+                <div
+                  className="flex items-center justify-center w-10 h-10 rounded-lg"
+                  style={{
+                    backgroundColor: themeMode === 'dark' ? '#52c41a33' : '#d9f7be',
+                  }}
+                >
+                  <BankOutlined style={{ fontSize: 20, color: '#52c41a' }} />
                 </div>
-              </Space>
-            </Card>
+                <Title level={4} className="mb-0">
+                  {t('switch-team-to-continue')}
+                </Title>
+              </Flex>
 
-            {/* Team Switcher Card - Show if multiple teams exist */}
-            {teamsList && teamsList.length > 1 && (
-              <Card className="team-switcher-card" bordered={false}>
-                <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                  <Flex align="center" gap={8}>
-                    <BankOutlined style={{ fontSize: 20, color: '#52c41a' }} />
-                    <Text strong className="card-title">
-                      {t('switch-team-to-continue')}
-                    </Text>
+              <Text type="secondary" className="text-base">
+                {t('switch-team-active-subscription')}
+              </Text>
+
+              <Divider className="my-2" />
+
+              <div>
+                <Text type="secondary" className="text-sm block mb-2">
+                  {t('current-team')}:
+                </Text>
+                <Text strong className="text-base">
+                  {session?.team_name || t('select-team')}
+                </Text>
+              </div>
+
+              <Dropdown
+                menu={{ items: dropdownItems }}
+                trigger={['click']}
+                placement="bottomLeft"
+              >
+                <Button size="large" block icon={<BankOutlined />}>
+                  <Flex gap={8} align="center" justify="space-between" style={{ width: '100%' }}>
+                    <span>{t('select-team')}</span>
+                    <CaretDownFilled />
                   </Flex>
-                  <Text type="secondary" className="card-description">
-                    {t('switch-team-active-subscription')}
-                  </Text>
-                  <div className="team-selector">
-                    <Text type="secondary" className="current-team-label">
-                      {t('current-team')}: <Text strong>{session?.team_name || t('select-team')}</Text>
-                    </Text>
-                    <Dropdown
-                      overlayClassName="team-dropdown-overlay"
-                      menu={{ items: dropdownItems }}
-                      trigger={['click']}
-                      placement="bottomLeft"
-                    >
-                      <Button className="team-dropdown-button" size="large">
-                        <Flex gap={8} align="center" justify="space-between" style={{ width: '100%' }}>
-                          <Text strong>{t('select-team')}</Text>
-                          <CaretDownFilled />
-                        </Flex>
-                      </Button>
-                    </Dropdown>
-                  </div>
-                </Space>
-              </Card>
-            )}
-          </div>
+                </Button>
+              </Dropdown>
+            </Space>
+          </Card>
+        ) : (
+          <Card
+            bordered
+            style={{
+              borderColor: themeMode === 'dark' ? '#d9d9d9' : '#f0f0f0',
+            }}
+          >
+            <Space direction="vertical" size="large" style={{ width: '100%' }} className="text-center py-8">
+              <div
+                className="inline-flex items-center justify-center w-16 h-16 rounded-full mx-auto"
+                style={{
+                  backgroundColor: themeMode === 'dark' ? '#1890ff22' : '#e6f7ff',
+                }}
+              >
+                <InfoCircleOutlined style={{ fontSize: 32, color: '#1890ff' }} />
+              </div>
+              <div>
+                <Title level={5} className="mb-2">
+                  {t('upgrade-to-continue')}
+                </Title>
+                <Text type="secondary">{t('trial-alert-admin-note')}</Text>
+              </div>
+            </Space>
+          </Card>
+        )}
+      </div>
 
-          {/* Action Section */}
-          <div className="action-section">
+      {/* CTA Section */}
+      <Card className="text-center">
+        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <div>
             <Button
               type="primary"
               size="large"
               onClick={handleUpgrade}
               loading={isContactingSupport && subscriptionType === ISUBSCRIPTION_TYPE.CUSTOM}
               icon={!isContactingSupport ? getUpgradeIcon() : undefined}
-              className="upgrade-button"
+              className="px-12 h-12 text-lg font-semibold"
             >
               {subscriptionType === ISUBSCRIPTION_TYPE.CUSTOM
                 ? messageSent
@@ -312,18 +394,24 @@ const LicenseExpired = () => {
                     : getUpgradeText()
                 : getUpgradeText()}
             </Button>
-
-            <div className="admin-note">
-              <Tag color="blue" className="note-tag">
-                {t('note')}
-              </Tag>
-              <Text type="secondary" className="note-text">
-                {t('trial-alert-admin-note')}
-              </Text>
-            </div>
           </div>
-        </div>
-      </div>
+
+          <Alert
+            message={
+              <Space>
+                <InfoCircleOutlined />
+                <Text strong>{t('note')}</Text>
+              </Space>
+            }
+            description={t('trial-alert-admin-note')}
+            type="info"
+            showIcon={false}
+            style={{
+              textAlign: 'left',
+            }}
+          />
+        </Space>
+      </Card>
     </div>
   );
 };

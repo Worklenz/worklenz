@@ -53,6 +53,8 @@
   "owned-by": "Propriedade de",
   "switch-team-active-subscription": "Mude para uma equipe com uma assinatura ativa para continuar trabalhando",
   "or": "ou",
+  "note": "Nota",
+  "upgrade-to-continue": "Atualizar para continuar",
   "license-expiring-soon": "Sua licença expira em {{days}} dia",
   "license-expiring-soon_plural": "Sua licença expira em {{days}} dias",
   "license-expiring-today": "Sua licença expira hoje!",
