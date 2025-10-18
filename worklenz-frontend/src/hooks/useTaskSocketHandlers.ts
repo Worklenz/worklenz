@@ -183,6 +183,7 @@ export const useTaskSocketHandlers = () => {
       await Promise.all([
         dispatch(updateTaskLabel(labels)),
         dispatch(setTaskLabels(labels)),
+        labels.is_new && dispatch(fetchLabels()),
         // Remove unnecessary refetches - real-time updates handle this
         // dispatch(fetchLabels()),
         // projectId && dispatch(fetchLabelsByProject(projectId)),
