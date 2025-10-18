@@ -3,6 +3,7 @@ import rateLimit from "express-rate-limit";
 import SlackController from "../../controllers/slack-controller";
 import idParamValidator from "../../middlewares/validators/id-param-validator";
 import configIdParamValidator from "../../middlewares/validators/config-id-param-validator";
+import projectIdParamValidator from "../../middlewares/validators/project-id-param-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import { requireBusinessPlan } from "../../middlewares/subscription-middleware";
 import {
@@ -130,7 +131,7 @@ slackApiRouter.delete(
 slackApiRouter.get(
   "/channel-configs/project/:projectId",
   requireBusinessPlan,
-  idParamValidator,
+  projectIdParamValidator,
   safeControllerFunction(SlackController.getProjectChannelConfigs)
 );
 
