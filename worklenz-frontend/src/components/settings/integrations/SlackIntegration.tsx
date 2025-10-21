@@ -72,7 +72,7 @@ export function SlackIntegration() {
         if (isPopup) {
           // Notify parent window and close popup immediately - don't make API calls
           window.opener?.postMessage({ type: 'SLACK_AUTH_SUCCESS' }, window.location.origin);
-          setTimeout(() => window.close(), 100);
+          window.close();
           return; // Exit early to prevent API calls
         } else {
           messageApi.success(t('messages.connectedSuccess'));
@@ -82,7 +82,7 @@ export function SlackIntegration() {
       } else if (slackStatus === 'error') {
         if (isPopup) {
           window.opener?.postMessage({ type: 'SLACK_AUTH_ERROR' }, window.location.origin);
-          setTimeout(() => window.close(), 100);
+          window.close();
           return; // Exit early to prevent API calls
         } else {
           messageApi.error(t('errors.connectionFailed'));
@@ -91,7 +91,7 @@ export function SlackIntegration() {
       } else if (slackStatus === 'cancelled') {
         if (isPopup) {
           window.opener?.postMessage({ type: 'SLACK_AUTH_CANCELLED' }, window.location.origin);
-          setTimeout(() => window.close(), 100);
+          window.close();
           return; // Exit early to prevent API calls
         } else {
           messageApi.info(t('messages.installationCancelled'));
@@ -120,7 +120,6 @@ export function SlackIntegration() {
         await loadAvailableChannels();
       }
     } catch (error) {
-      console.error('Failed to check Slack connection:', error);
       messageApi.error(t('errors.connectionCheckFailed'));
     }
   }, [messageApi, t]);
@@ -130,7 +129,6 @@ export function SlackIntegration() {
       const configs = await slackApiService.getAllChannelConfigs();
       setChannels(configs);
     } catch (error) {
-      console.error('Failed to load channel configurations:', error);
       messageApi.error(t('errors.loadConfigsFailed'));
     }
   }, [messageApi, t]);
@@ -140,7 +138,6 @@ export function SlackIntegration() {
       const channels = await slackApiService.getAvailableChannels();
       setAvailableChannels(channels);
     } catch (error) {
-      console.error('Failed to load available channels:', error);
       messageApi.error(t('errors.loadChannelsFailed'));
     }
   }, [messageApi, t]);
@@ -195,7 +192,6 @@ export function SlackIntegration() {
         }
       }, 1000);
     } catch (error) {
-      console.error('Failed to initiate Slack connection:', error);
       messageApi.error(t('errors.initiateConnectionFailed'));
       setLoading(false);
     }
@@ -217,7 +213,6 @@ export function SlackIntegration() {
           setAvailableChannels([]);
           messageApi.success(t('messages.disconnectedSuccess'));
         } catch (error) {
-          console.error('Failed to disconnect Slack workspace:', error);
           messageApi.error(t('errors.disconnectFailed'));
         }
       },
@@ -233,7 +228,6 @@ export function SlackIntegration() {
         form.resetFields();
         await loadChannelConfigurations();
       } catch (error) {
-        console.error('Failed to add channel configuration:', error);
         messageApi.error(t('errors.addConfigFailed'));
       }
     },
@@ -266,7 +260,6 @@ export function SlackIntegration() {
         form.resetFields();
         await loadChannelConfigurations();
       } catch (error) {
-        console.error('Failed to update channel configuration:', error);
         messageApi.error(t('errors.updateConfigFailed'));
       }
     },
@@ -286,7 +279,6 @@ export function SlackIntegration() {
         messageApi.success(t('messages.statusUpdated'));
         await loadChannelConfigurations();
       } catch (error) {
-        console.error('Failed to update channel status:', error);
         messageApi.error(t('errors.updateStatusFailed'));
       }
     },
@@ -307,7 +299,6 @@ export function SlackIntegration() {
             messageApi.success(t('messages.configRemoved'));
             await loadChannelConfigurations();
           } catch (error) {
-            console.error('Failed to remove channel configuration:', error);
             messageApi.error(t('errors.removeConfigFailed'));
           }
         },

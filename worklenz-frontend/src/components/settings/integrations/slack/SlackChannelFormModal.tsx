@@ -123,7 +123,6 @@ export function SlackChannelFormModal({
       setProjects(prev => append ? [...prev, ...newProjects] : newProjects);
       setProjectsTotal(total);
     } catch (error) {
-      console.error('Failed to load projects:', error);
       messageApi.error(t('errors.loadProjectsFailed'));
     } finally {
       setProjectsLoading(false);
@@ -175,7 +174,6 @@ export function SlackChannelFormModal({
       await onRefreshChannels();
       messageApi.success(t('messages.channelsRefreshed', { defaultValue: 'Channels refreshed successfully' }));
     } catch (error) {
-      console.error('Failed to refresh channels:', error);
       messageApi.error(t('errors.refreshChannelsFailed', { defaultValue: 'Failed to refresh channels' }));
     } finally {
       setRefreshing(false);
