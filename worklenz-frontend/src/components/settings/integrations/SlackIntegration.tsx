@@ -53,7 +53,6 @@ export function SlackIntegration() {
   } | null>(null);
   const [channels, setChannels] = useState<ISlackChannelConfig[]>([]);
   const [availableChannels, setAvailableChannels] = useState<ISlackChannel[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [manageModalVisible, setManageModalVisible] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
@@ -102,7 +101,7 @@ export function SlackIntegration() {
 
       // Only check connection if user has business access and NOT in popup
       if (hasBusinessAccess && !isPopup) {
-        await Promise.all([checkSlackConnection(), loadChannelConfigurations(), loadProjects()]);
+        await Promise.all([checkSlackConnection(), loadChannelConfigurations()]);
       }
     };
 
@@ -146,15 +145,6 @@ export function SlackIntegration() {
     }
   }, [messageApi, t]);
 
-  const loadProjects = useCallback(async () => {
-    try {
-      const response = await apiClient.get<ApiResponse<Project[]>>('/api/v1/projects');
-      setProjects(response.data?.body?.data || []);
-    } catch (error) {
-      console.error('Failed to load projects:', error);
-      messageApi.error(t('errors.loadProjectsFailed'));
-    }
-  }, [messageApi, t]);
 
   const handleConnect = useCallback(async () => {
     try {
@@ -366,7 +356,6 @@ export function SlackIntegration() {
           open={addModalVisible}
           form={form}
           editingChannel={editingChannel}
-          projects={projects}
           availableChannels={availableChannels}
           onClose={handleModalClose}
           onSubmit={handleFormSubmit}

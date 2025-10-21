@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Form, Modal, Select, message, ReloadOutlined } from '@/shared/antd-imports';
+import { Button, Form, Modal, Select, message, ReloadOutlined, Spin } from '@/shared/antd-imports';
 import type { FormInstance } from '@/shared/antd-imports';
 import type { ISlackChannelConfig, ISlackChannel } from '@api/slack/slack.api.service';
 import { slackApiService } from '@api/slack/slack.api.service';
+import apiClient from '@api/api-client';
 
 interface Project {
   id: string;
@@ -21,11 +22,17 @@ interface SlackChannelFormModalProps {
   open: boolean;
   form: FormInstance<ChannelFormValues>;
   editingChannel: ISlackChannelConfig | null;
-  projects: Project[];
   availableChannels: ISlackChannel[];
   onClose: () => void;
   onSubmit: (values: ChannelFormValues) => void;
   onRefreshChannels: () => Promise<void>;
+}
+
+interface ApiResponse<T> {
+  body?: {
+    data?: T;
+    total?: number;
+  };
 }
 
 const NOTIFICATION_TYPE_DEFINITIONS = [
@@ -75,7 +82,6 @@ export function SlackChannelFormModal({
   open,
   form,
   editingChannel,
-  projects,
   availableChannels,
   onClose,
   onSubmit,
@@ -85,10 +91,82 @@ export function SlackChannelFormModal({
   const [messageApi, contextHolder] = message.useMessage();
   const [refreshing, setRefreshing] = useState(false);
   
+  // Project search and pagination state
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [projectsTotal, setProjectsTotal] = useState(0);
+  const [projectsPage, setProjectsPage] = useState(1);
+  const [projectsSearch, setProjectsSearch] = useState('');
+  const projectsPageSize = 20;
+  const scrollPositionRef = useRef(0);
+  
   const notificationOptions = NOTIFICATION_TYPE_DEFINITIONS.map(({ value, labelKey, defaultValue }) => ({
     value,
     label: t(labelKey, { defaultValue }),
   }));
+
+  // Load projects with pagination
+  const loadProjects = useCallback(async (page: number, search: string, append = false) => {
+    try {
+      setProjectsLoading(true);
+      const response = await apiClient.get<ApiResponse<Project[]>>('/api/v1/projects', {
+        params: {
+          size: projectsPageSize,
+          index: page,
+          search: search || undefined,
+        },
+      });
+      
+      const newProjects = response.data?.body?.data || [];
+      const total = response.data?.body?.total || 0;
+      
+      setProjects(prev => append ? [...prev, ...newProjects] : newProjects);
+      setProjectsTotal(total);
+    } catch (error) {
+      console.error('Failed to load projects:', error);
+      messageApi.error(t('errors.loadProjectsFailed'));
+    } finally {
+      setProjectsLoading(false);
+    }
+  }, [messageApi, t]);
+
+  // Handle project search
+  const handleProjectSearch = (value: string) => {
+    setProjectsPage(1);
+    setProjectsSearch(value);
+    loadProjects(1, value, false);
+  };
+
+  // Handle scroll to load more projects
+  const handleProjectScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLDivElement;
+    const scrollTop = target.scrollTop;
+    const scrollHeight = target.scrollHeight;
+    const clientHeight = target.clientHeight;
+    
+    // Check if scrolling down and near bottom
+    if (scrollTop > scrollPositionRef.current && scrollTop + clientHeight >= scrollHeight - 50) {
+      const hasMore = projects.length < projectsTotal;
+      if (hasMore && !projectsLoading) {
+        const nextPage = projectsPage + 1;
+        setProjectsPage(nextPage);
+        loadProjects(nextPage, projectsSearch, true);
+      }
+    }
+    
+    scrollPositionRef.current = scrollTop;
+  };
+
+  // Load initial projects when modal opens
+  useEffect(() => {
+    if (open && !editingChannel) {
+      setProjects([]);
+      setProjectsPage(1);
+      setProjectsSearch('');
+      scrollPositionRef.current = 0;
+      loadProjects(1, '', false);
+    }
+  }, [open, editingChannel, loadProjects]);
 
   const handleRefreshChannels = async () => {
     try {
@@ -132,8 +210,27 @@ export function SlackChannelFormModal({
           <Select
             placeholder={t('modal.selectProject', { defaultValue: 'Select a project' })}
             showSearch
-            optionFilterProp="children"
+            filterOption={false}
+            onSearch={handleProjectSearch}
+            onPopupScroll={handleProjectScroll}
             disabled={!!editingChannel}
+            loading={projectsLoading}
+            notFoundContent={projectsLoading ? <Spin size="small" /> : null}
+            dropdownRender={(menu) => (
+              <>
+                {menu}
+                {projectsLoading && projects.length > 0 && (
+                  <div style={{ textAlign: 'center', padding: '8px' }}>
+                    <Spin size="small" />
+                  </div>
+                )}
+                {!projectsLoading && projects.length < projectsTotal && (
+                  <div style={{ textAlign: 'center', padding: '8px', color: '#999', fontSize: '12px' }}>
+                    {t('modal.scrollForMore', { defaultValue: 'Scroll for more...' })}
+                  </div>
+                )}
+              </>
+            )}
           >
             {projects.map(project => (
               <Select.Option key={project.id} value={project.id}>
