@@ -57,7 +57,13 @@ export class ExternalNotificationsService {
       }
 
       const row = result.rows[0];
-      const taskUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/worklenz/projects/${row.project_id}?task=${row.task_id}`;
+      
+      // Ensure URL has protocol - Slack requires absolute URLs with protocol
+      let baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+      if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
+        baseUrl = `https://${baseUrl}`;
+      }
+      const taskUrl = `${baseUrl}/worklenz/projects/${row.project_id}?task=${row.task_id}`;
 
       return {
         task_id: row.task_id,
