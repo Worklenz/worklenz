@@ -153,7 +153,7 @@ const TimeLogsPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMemberId, reporting.dateRange?.[0], reporting.dateRange?.[1], billableFilter.billable, billableFilter.nonBillable, search]);
 
-  const onExport = () => {
+  const onExportExcel = () => {
     if (!selectedMemberId || !reporting.dateRange || reporting.dateRange.length !== 2) return;
     const startDate = dayjs(reporting.dateRange[0]).format('YYYY-MM-DD');
     const endDate = dayjs(reporting.dateRange[1]).format('YYYY-MM-DD');
@@ -170,6 +170,20 @@ const TimeLogsPage: React.FC = () => {
     } as any);
   };
 
+  const onExportCSV = () => {
+    if (!reporting.dateRange || reporting.dateRange.length !== 2) return;
+    const startDate = dayjs(reporting.dateRange[0]).format('YYYY-MM-DD');
+    const endDate = dayjs(reporting.dateRange[1]).format('YYYY-MM-DD');
+
+    reportingExportApiService.exportTimelogsFlatCSV({
+      team_member_id: selectedMemberId || undefined,
+      duration: undefined,
+      date_range: [startDate, endDate],
+      billable: billableFilter,
+      search: search || undefined,
+    });
+  };
+
   const filteredLogs = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return logs;
@@ -183,10 +197,12 @@ const TimeLogsPage: React.FC = () => {
 
   const exportMenu = {
     items: [
-      { key: 'excel', label: t('Export Excel') },
+      { key: 'excel', label: t('Export Excel'), disabled: !selectedMemberId },
+      { key: 'csv', label: t('Export CSV') },
     ],
     onClick: ({ key }: any) => {
-      if (key === 'excel') onExport();
+      if (key === 'excel') onExportExcel();
+      if (key === 'csv') onExportCSV();
     },
   } as any;
 
@@ -240,7 +256,7 @@ const TimeLogsPage: React.FC = () => {
               <Button>{t('Filters')}</Button>
             </Dropdown>
             <Button onClick={fetchLogs}>{t('Refresh')}</Button>
-            <Dropdown menu={exportMenu} disabled={!selectedMemberId}>
+            <Dropdown menu={exportMenu}>
               <Button type="primary" icon={<DownOutlined />} iconPosition="end">
                 {t('Export')}
               </Button>

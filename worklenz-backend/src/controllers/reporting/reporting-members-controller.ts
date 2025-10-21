@@ -1289,28 +1289,40 @@ export default class ReportingMembersController extends ReportingControllerBaseW
   public static async getTimelogsFlat(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { team_member_id, duration, date_range, billable, search } = req.body || {};
 
+    // Get the team_id from request user
+    const teamId = req.user?.team_id;
+
     // Get user timezone and date clauses
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
     const durationClause = this.getDateRangeClauseWithTimezone(duration || DATE_RANGES.LAST_WEEK, date_range, userTimezone);
 
     const billableQuery = this.buildBillableQuery(billable || { billable: true, nonBillable: true });
 
+    // Team filter - only show logs from current team if team_id is available
+    let teamFilter = '';
+    let paramIndex = 2;
+    const params: any[] = [userTimezone];
+
+    if (teamId) {
+      teamFilter = `AND p.team_id = $${paramIndex}`;
+      params.push(teamId);
+      paramIndex++;
+    }
+
     // Optional member filter
-    const memberFilter = team_member_id ? `AND u.id = (SELECT user_id FROM team_members WHERE id = $2)` : '';
+    const memberFilter = team_member_id ? `AND u.id = (SELECT user_id FROM team_members WHERE id = $${paramIndex})` : '';
+    if (team_member_id) {
+      params.push(team_member_id);
+      paramIndex++;
+    }
 
     // Optional search filter (task, project, member, description)
     const searchFilter = search ? `AND (
-      LOWER(t.name) LIKE LOWER($${team_member_id ? 3 : 2}) OR
-      LOWER(p.name) LIKE LOWER($${team_member_id ? 3 : 2}) OR
-      LOWER(u.name) LIKE LOWER($${team_member_id ? 3 : 2}) OR
-      LOWER(COALESCE(twl.description, '')) LIKE LOWER($${team_member_id ? 3 : 2})
+      LOWER(t.name) LIKE LOWER($${paramIndex}) OR
+      LOWER(p.name) LIKE LOWER($${paramIndex}) OR
+      LOWER(u.name) LIKE LOWER($${paramIndex}) OR
+      LOWER(COALESCE(twl.description, '')) LIKE LOWER($${paramIndex})
     )` : '';
-
-    // Params: [viewer_timezone, optional team_member_id, optional searchLike]
-    const params: any[] = [userTimezone];
-    if (team_member_id) {
-      params.push(team_member_id);
-    }
     if (search) {
       params.push(`%${search}%`);
     }
@@ -1328,6 +1340,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       JOIN projects p ON p.id = t.project_id
       JOIN users u ON u.id = twl.user_id
       WHERE 1=1
+        ${teamFilter}
         ${memberFilter}
         ${durationClause}
         ${billableQuery}
@@ -1354,6 +1367,122 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     }
 
     return res.status(200).send(new ServerResponse(true, groups));
+  }
+
+  @HandleExceptions()
+  public static async exportTimelogsFlatCSV(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<void> {
+    let { team_member_id, duration, date_range, billable, search } = req.query;
+
+    // Sanitize parameters - convert string "undefined" to actual undefined
+    if (team_member_id === 'undefined' || team_member_id === 'null') team_member_id = undefined;
+    if (duration === 'undefined' || duration === 'null') duration = undefined;
+    if (search === 'undefined' || search === 'null') search = undefined;
+
+    // Get the team_id from request user
+    const teamId = req.user?.team_id;
+
+    let dateRange: string[] = [];
+    if (typeof date_range === "string") {
+      dateRange = date_range.split(",");
+    }
+
+    // Get user timezone and date clauses
+    const userTimezone = await this.getUserTimezone(req.user?.id as string);
+    const durationClause = this.getDateRangeClauseWithTimezone(duration as string || DATE_RANGES.LAST_WEEK, dateRange, userTimezone);
+
+    // Parse billable filter
+    let billableFilter = { billable: true, nonBillable: true };
+    if (typeof billable === "string") {
+      try {
+        billableFilter = JSON.parse(billable);
+      } catch (e) {
+        // Use default
+      }
+    }
+    const billableQuery = this.buildBillableQuery(billableFilter);
+
+    // Team filter - only show logs from current team if team_id is available
+    let teamFilter = '';
+    let paramIndex = 2;
+    const params: any[] = [userTimezone];
+
+    if (teamId) {
+      teamFilter = `AND p.team_id = $${paramIndex}`;
+      params.push(teamId);
+      paramIndex++;
+    }
+
+    // Optional member filter
+    const memberFilter = team_member_id ? `AND u.id = (SELECT user_id FROM team_members WHERE id = $${paramIndex})` : '';
+    if (team_member_id) {
+      params.push(team_member_id);
+      paramIndex++;
+    }
+
+    // Optional search filter
+    const searchFilter = search ? `AND (
+      LOWER(t.name) LIKE LOWER($${paramIndex}) OR
+      LOWER(p.name) LIKE LOWER($${paramIndex}) OR
+      LOWER(u.name) LIKE LOWER($${paramIndex}) OR
+      LOWER(COALESCE(twl.description, '')) LIKE LOWER($${paramIndex})
+    )` : '';
+    if (search) {
+      params.push(`%${search}%`);
+    }
+
+    const q = `
+      SELECT
+        (twl.created_at AT TIME ZONE 'UTC' AT TIME ZONE $1)::DATE AS log_day,
+        u.name AS user_name,
+        p.name AS project_name,
+        t.name AS task_name,
+        twl.time_spent,
+        twl.description
+      FROM task_work_log twl
+      JOIN tasks t ON t.id = twl.task_id
+      JOIN projects p ON p.id = t.project_id
+      JOIN users u ON u.id = twl.user_id
+      WHERE 1=1
+        ${teamFilter}
+        ${memberFilter}
+        ${durationClause}
+        ${billableQuery}
+        ${searchFilter}
+      ORDER BY log_day DESC, user_name ASC`;
+
+    const rows = await db.query(q, params);
+
+    // Prepare CSV data
+    const exportDate = moment().format("MMM-DD-YYYY");
+    const fileName = `Time-Logs-${exportDate}`;
+
+    // Build CSV content
+    const csvRows: string[] = [];
+
+    // Add headers
+    csvRows.push("Date,Member,Project,Task,Description,Duration");
+
+    // Add data rows
+    for (const row of rows.rows) {
+      const date = row.log_day || "";
+      const member = (row.user_name || "").replace(/"/g, '""'); // Escape quotes
+      const project = (row.project_name || "").replace(/"/g, '""');
+      const task = (row.task_name || "").replace(/"/g, '""');
+      const description = (row.description || "").replace(/"/g, '""');
+      const duration = this.secondsToReadable(row.time_spent || 0);
+
+      csvRows.push(`"${date}","${member}","${project}","${task}","${description}","${duration}"`);
+    }
+
+    const csvContent = csvRows.join("\n");
+
+    // Set response headers for CSV
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}.csv"`);
+
+    // Add BOM for better Excel compatibility
+    res.write('\uFEFF' + csvContent);
+    res.end();
   }
 
   private static secondsToReadable(totalSeconds: number): string {
