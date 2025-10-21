@@ -76,7 +76,7 @@ export class ExternalNotificationsService {
   }
 
   /**
-   * Format Slack message with blocks
+   * Format Slack message with blocks - Redesigned layout
    */
   private static formatSlackMessage(
     notificationType: string,
@@ -89,7 +89,6 @@ export class ExternalNotificationsService {
                   notificationType === "comment_added" ? "💬" :
                   notificationType === "priority_changed" ? "🔺" :
                   notificationType === "due_date_changed" ? "📅" :
-                  notificationType === "assignee_changed" ? "👥" :
                   notificationType === "task_updated" ? "✏️" : "🔄";
 
     const title = notificationType === "task_created" ? "Task Created" :
@@ -98,7 +97,6 @@ export class ExternalNotificationsService {
                   notificationType === "comment_added" ? "Comment Added" :
                   notificationType === "priority_changed" ? "Priority Changed" :
                   notificationType === "due_date_changed" ? "Due Date Changed" :
-                  notificationType === "assignee_changed" ? "Assignee Changed" :
                   notificationType === "task_updated" ? "Task Updated" : "Task Status Changed";
 
     // Color based on notification type
@@ -106,104 +104,142 @@ export class ExternalNotificationsService {
                   notificationType === "task_assigned" ? "#3AA3E3" :
                   notificationType === "task_completed" ? "#2eb886" :
                   notificationType === "comment_added" ? "#F2C744" :
+                  notificationType === "priority_changed" ? "#FF6B6B" :
+                  notificationType === "due_date_changed" ? "#FFA500" :
                   taskData.status_color || "#3AA3E3";
 
-    const blocks: any[] = [
-      {
-        type: "header",
+    const blocks: any[] = [];
+
+    // Main section with task name and action button
+    blocks.push({
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `${emoji} *${title}*\n<${taskData.task_url}|*${taskData.task_name}*>`
+      },
+      accessory: {
+        type: "button",
         text: {
           type: "plain_text",
-          text: `${emoji} ${title}`,
+          text: "View Task",
           emoji: true
-        }
-      },
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: `*<${taskData.task_url}|${taskData.task_name}>*`
-        }
-      },
-      {
-        type: "section",
-        fields: [
-          {
-            type: "mrkdwn",
-            text: `*Project*\n${taskData.project_name}`
-          }
-        ]
+        },
+        url: taskData.task_url,
+        action_id: "view_task"
       }
-    ];
-
-    // Add specific fields based on notification type
-    if (notificationType === "task_assigned" && taskData.assignee_names && taskData.assignee_names.length > 0) {
-      blocks[2].fields.push({
-        type: "mrkdwn",
-        text: `*Assigned To*\n${taskData.assignee_names.join(", ")}`
-      });
-      blocks.push({
-        type: "context",
-        elements: [
-          {
-            type: "mrkdwn",
-            text: `Assigned by *${userName}*`
-          }
-        ]
-      });
-    } else if ((notificationType === "status_changed" || notificationType === "task_completed") && taskData.old_status_name && taskData.new_status_name) {
-      blocks[2].fields.push({
-        type: "mrkdwn",
-        text: `*Status*\n${taskData.old_status_name} → ${taskData.new_status_name}`
-      });
-      blocks.push({
-        type: "context",
-        elements: [
-          {
-            type: "mrkdwn",
-            text: `Changed by *${userName}*`
-          }
-        ]
-      });
-    } else if (notificationType === "task_created") {
-      if (taskData.status_name) {
-        blocks[2].fields.push({
-          type: "mrkdwn",
-          text: `*Status*\n${taskData.status_name}`
-        });
-      }
-      blocks.push({
-        type: "context",
-        elements: [
-          {
-            type: "mrkdwn",
-            text: `Created by *${userName}*`
-          }
-        ]
-      });
-    } else if (notificationType === "comment_added") {
-      blocks.push({
-        type: "context",
-        elements: [
-          {
-            type: "mrkdwn",
-            text: `💬 Comment by *${userName}*`
-          }
-        ]
-      });
-    }
-
-    // Add divider before timestamp
-    blocks.push({
-      type: "divider"
     });
 
-    // Add timestamp
+    // Context section with project info
     blocks.push({
       type: "context",
       elements: [
         {
           type: "mrkdwn",
-          text: `<!date^${Math.floor(Date.now() / 1000)}^{date_short_pretty} at {time}|${new Date().toISOString()}>`
+          text: `📁 *${taskData.project_name}*`
+        }
+      ]
+    });
+
+    // Information fields section
+    const fields: any[] = [];
+
+    // Add specific fields based on notification type
+    if (notificationType === "task_assigned" && taskData.assignee_names && taskData.assignee_names.length > 0) {
+      fields.push({
+        type: "mrkdwn",
+        text: `*👥 Assigned To*\n${taskData.assignee_names.join(", ")}`
+      });
+      fields.push({
+        type: "mrkdwn",
+        text: `*👤 Assigned By*\n${userName}`
+      });
+    } else if ((notificationType === "status_changed" || notificationType === "task_completed") && taskData.old_status_name && taskData.new_status_name) {
+      fields.push({
+        type: "mrkdwn",
+        text: `*📊 Status Change*\n${taskData.old_status_name} → ${taskData.new_status_name}`
+      });
+      fields.push({
+        type: "mrkdwn",
+        text: `*👤 Changed By*\n${userName}`
+      });
+    } else if (notificationType === "task_created") {
+      fields.push({
+        type: "mrkdwn",
+        text: `*👤 Created By*\n${userName}`
+      });
+      if (taskData.status_name) {
+        fields.push({
+          type: "mrkdwn",
+          text: `*📊 Status*\n${taskData.status_name}`
+        });
+      }
+      if (taskData.assignee_names && taskData.assignee_names.length > 0) {
+        fields.push({
+          type: "mrkdwn",
+          text: `*👥 Assignees*\n${taskData.assignee_names.join(", ")}`
+        });
+      }
+    } else if (notificationType === "comment_added") {
+      fields.push({
+        type: "mrkdwn",
+        text: `*💬 Commented By*\n${userName}`
+      });
+      if (taskData.status_name) {
+        fields.push({
+          type: "mrkdwn",
+          text: `*📊 Status*\n${taskData.status_name}`
+        });
+      }
+    } else if (notificationType === "priority_changed") {
+      fields.push({
+        type: "mrkdwn",
+        text: `*🔺 Priority Changed*\nUpdated by ${userName}`
+      });
+    } else if (notificationType === "due_date_changed") {
+      fields.push({
+        type: "mrkdwn",
+        text: `*📅 Due Date Changed*\nUpdated by ${userName}`
+      });
+    } else if (notificationType === "task_updated") {
+      fields.push({
+        type: "mrkdwn",
+        text: `*✏️ Updated By*\n${userName}`
+      });
+      if (taskData.status_name) {
+        fields.push({
+          type: "mrkdwn",
+          text: `*📊 Current Status*\n${taskData.status_name}`
+        });
+      }
+    } else {
+      // Default fields for other notification types
+      fields.push({
+        type: "mrkdwn",
+        text: `*👤 Updated By*\n${userName}`
+      });
+      if (taskData.status_name) {
+        fields.push({
+          type: "mrkdwn",
+          text: `*📊 Status*\n${taskData.status_name}`
+        });
+      }
+    }
+
+    // Add fields section if there are any fields
+    if (fields.length > 0) {
+      blocks.push({
+        type: "section",
+        fields: fields
+      });
+    }
+
+    // Footer with timestamp
+    blocks.push({
+      type: "context",
+      elements: [
+        {
+          type: "mrkdwn",
+          text: `🕐 <!date^${Math.floor(Date.now() / 1000)}^{date_short_pretty} at {time}|${new Date().toISOString()}>`
         }
       ]
     });
@@ -216,7 +252,9 @@ export class ExternalNotificationsService {
           color: color,
           blocks: []
         }
-      ]
+      ],
+      unfurl_links: false,
+      unfurl_media: false
     };
   }
 
@@ -234,7 +272,6 @@ export class ExternalNotificationsService {
                   notificationType === "comment_added" ? "💬" :
                   notificationType === "priority_changed" ? "🔺" :
                   notificationType === "due_date_changed" ? "📅" :
-                  notificationType === "assignee_changed" ? "👥" :
                   notificationType === "task_updated" ? "✏️" : "🔄";
 
     const title = notificationType === "task_created" ? "Task Created" :
@@ -243,7 +280,6 @@ export class ExternalNotificationsService {
                   notificationType === "comment_added" ? "Comment Added" :
                   notificationType === "priority_changed" ? "Priority Changed" :
                   notificationType === "due_date_changed" ? "Due Date Changed" :
-                  notificationType === "assignee_changed" ? "Assignee Changed" :
                   notificationType === "task_updated" ? "Task Updated" : "Task Status Changed";
 
     const facts: any[] = [
@@ -353,7 +389,7 @@ export class ExternalNotificationsService {
   public static async sendExternalNotifications(
     projectId: string,
     taskId: string,
-    notificationType: "task_created" | "task_assigned" | "status_changed" | "task_completed" | "comment_added" | "task_updated" | "priority_changed" | "due_date_changed" | "assignee_changed",
+    notificationType: "task_created" | "task_assigned" | "status_changed" | "task_completed" | "task_updated" | "priority_changed" | "due_date_changed" | "comment_added",
     userName: string,
     additionalData?: { oldStatusId?: string; newStatusId?: string; oldValue?: string; newValue?: string }
   ): Promise<void> {

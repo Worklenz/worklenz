@@ -139,8 +139,6 @@ export function channelConfigValidator(req: IWorkLenzRequest, res: Response, nex
         "comment_added",
         "status_changed",
         "due_date_changed",
-        "due_date_reminder",
-        "assignee_changed",
         "priority_changed"
       ];
 

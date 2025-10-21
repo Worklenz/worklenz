@@ -50,24 +50,19 @@ const NOTIFICATION_TYPE_DEFINITIONS = [
     defaultValue: 'Task Assigned',
   },
   {
-    value: 'comment_added',
-    labelKey: 'modal.notificationOptions.commentAdded',
-    defaultValue: 'Comment Added',
-  },
-  {
     value: 'status_changed',
     labelKey: 'modal.notificationOptions.statusChanged',
     defaultValue: 'Status Changed',
   },
   {
+    value: 'comment_added',
+    labelKey: 'modal.notificationOptions.commentAdded',
+    defaultValue: 'Comment Added',
+  },
+  {
     value: 'due_date_changed',
     labelKey: 'modal.notificationOptions.dueDateChanged',
     defaultValue: 'Due Date Changed',
-  },
-  {
-    value: 'assignee_changed',
-    labelKey: 'modal.notificationOptions.assigneeChanged',
-    defaultValue: 'Assignee Changed',
   },
   {
     value: 'priority_changed',
