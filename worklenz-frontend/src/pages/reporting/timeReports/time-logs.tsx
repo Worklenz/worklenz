@@ -211,20 +211,37 @@ const TimeLogsPage: React.FC = () => {
       {
         key: 'filters',
         label: (
-          <Space size={12}>
-            <Checkbox
-              checked={billableFilter.billable}
-              onChange={e => setBillableFilter(prev => ({ ...prev, billable: e.target.checked }))}
+          <div style={{ padding: '8px 4px', minWidth: 200 }}>
+            <Typography.Text 
+              type="secondary" 
+              style={{ 
+                fontSize: 11, 
+                fontWeight: 500, 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.5px',
+                display: 'block',
+                marginBottom: 12
+              }}
             >
-              {t('Billable')}
-            </Checkbox>
-            <Checkbox
-              checked={billableFilter.nonBillable}
-              onChange={e => setBillableFilter(prev => ({ ...prev, nonBillable: e.target.checked }))}
-            >
-              {t('Non-billable')}
-            </Checkbox>
-          </Space>
+              {t('Task Type')}
+            </Typography.Text>
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              <Checkbox
+                checked={billableFilter.billable}
+                onChange={e => setBillableFilter(prev => ({ ...prev, billable: e.target.checked }))}
+                style={{ width: '100%' }}
+              >
+                <span style={{ fontSize: 14 }}>{t('Billable')}</span>
+              </Checkbox>
+              <Checkbox
+                checked={billableFilter.nonBillable}
+                onChange={e => setBillableFilter(prev => ({ ...prev, nonBillable: e.target.checked }))}
+                style={{ width: '100%' }}
+              >
+                <span style={{ fontSize: 14 }}>{t('Non-billable')}</span>
+              </Checkbox>
+            </Space>
+          </div>
         ),
       },
     ],

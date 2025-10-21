@@ -235,7 +235,7 @@ export class ExternalNotificationsService {
     if (fields.length > 0) {
       blocks.push({
         type: "section",
-        fields: fields
+        fields
       });
     }
 
@@ -251,11 +251,11 @@ export class ExternalNotificationsService {
     });
 
     return {
-      blocks: blocks,
-      text: `${title}: ${taskData.task_name}`, // Fallback text for notifications
+      blocks,
+      text: `${emoji} ${title} - ${taskData.task_name}`, // Fallback text for notifications
       attachments: [
         {
-          color: color,
+          color,
           blocks: []
         }
       ],
@@ -355,7 +355,7 @@ export class ExternalNotificationsService {
               },
               {
                 type: "FactSet",
-                facts: facts,
+                facts,
                 spacing: "Medium"
               },
               {

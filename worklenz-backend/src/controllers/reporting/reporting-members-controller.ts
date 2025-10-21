@@ -1148,7 +1148,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   }
 
-  protected static buildBillableQuery(selectedStatuses: { billable: boolean; nonBillable: boolean }): string {
+  protected static buildBillableQuery(selectedStatuses: { billable: boolean; nonBillable: boolean }, tableAlias = "tasks"): string {
     const { billable, nonBillable } = selectedStatuses;
   
     if (billable && nonBillable) {
@@ -1156,10 +1156,10 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       return "";
     } else if (billable) {
       // Only billable is enabled
-      return " AND tasks.billable IS TRUE";
+      return ` AND ${tableAlias}.billable IS TRUE`;
     } else if (nonBillable) {
       // Only non-billable is enabled
-      return " AND tasks.billable IS FALSE";
+      return ` AND ${tableAlias}.billable IS FALSE`;
     } 
 
     return "";
@@ -1296,7 +1296,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
     const durationClause = this.getDateRangeClauseWithTimezone(duration || DATE_RANGES.LAST_WEEK, date_range, userTimezone);
 
-    const billableQuery = this.buildBillableQuery(billable || { billable: true, nonBillable: true });
+    const billableQuery = this.buildBillableQuery(billable || { billable: true, nonBillable: true }, "t");
 
     // Team filter - only show logs from current team if team_id is available
     let teamFilter = '';
@@ -1399,7 +1399,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
         // Use default
       }
     }
-    const billableQuery = this.buildBillableQuery(billableFilter);
+    const billableQuery = this.buildBillableQuery(billableFilter, "t");
 
     // Team filter - only show logs from current team if team_id is available
     let teamFilter = '';

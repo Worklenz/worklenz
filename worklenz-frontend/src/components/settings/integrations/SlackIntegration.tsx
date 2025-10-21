@@ -62,12 +62,7 @@ export function SlackIntegration() {
 
   useEffect(() => {
     const initialize = async () => {
-      // Only check connection if user has business access
-      if (hasBusinessAccess) {
-        await Promise.all([checkSlackConnection(), loadChannelConfigurations(), loadProjects()]);
-      }
-
-      // Check for OAuth callback params
+      // Check for OAuth callback params first
       const params = new URLSearchParams(window.location.search);
       const slackStatus = params.get('slack');
 
@@ -76,9 +71,10 @@ export function SlackIntegration() {
 
       if (slackStatus === 'success') {
         if (isPopup) {
-          // Notify parent window and close popup
+          // Notify parent window and close popup immediately - don't make API calls
           window.opener?.postMessage({ type: 'SLACK_AUTH_SUCCESS' }, window.location.origin);
-          setTimeout(() => window.close(), 500);
+          setTimeout(() => window.close(), 100);
+          return; // Exit early to prevent API calls
         } else {
           messageApi.success(t('messages.connectedSuccess'));
           window.history.replaceState({}, '', window.location.pathname);
@@ -87,7 +83,8 @@ export function SlackIntegration() {
       } else if (slackStatus === 'error') {
         if (isPopup) {
           window.opener?.postMessage({ type: 'SLACK_AUTH_ERROR' }, window.location.origin);
-          setTimeout(() => window.close(), 500);
+          setTimeout(() => window.close(), 100);
+          return; // Exit early to prevent API calls
         } else {
           messageApi.error(t('errors.connectionFailed'));
           window.history.replaceState({}, '', window.location.pathname);
@@ -95,11 +92,17 @@ export function SlackIntegration() {
       } else if (slackStatus === 'cancelled') {
         if (isPopup) {
           window.opener?.postMessage({ type: 'SLACK_AUTH_CANCELLED' }, window.location.origin);
-          setTimeout(() => window.close(), 500);
+          setTimeout(() => window.close(), 100);
+          return; // Exit early to prevent API calls
         } else {
           messageApi.info(t('messages.installationCancelled'));
           window.history.replaceState({}, '', window.location.pathname);
         }
+      }
+
+      // Only check connection if user has business access and NOT in popup
+      if (hasBusinessAccess && !isPopup) {
+        await Promise.all([checkSlackConnection(), loadChannelConfigurations(), loadProjects()]);
       }
     };
 
