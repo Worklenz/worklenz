@@ -29,6 +29,7 @@ import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { isTeamLeadRole } from '@/types/roles/role.types';
+import { ConnectionStatusIndicator } from '@/components/connection-status/ConnectionStatusIndicator';
 
 const Navbar = () => {
   const dispatch = useAppDispatch();
@@ -232,6 +233,7 @@ const Navbar = () => {
                     ) && <UpgradePlanButton showModal redirectToBilling={false} />}
                   {isOwnerOrAdmin && <InviteButton />}
                   <Flex align="center">
+                    <ConnectionStatusIndicator />
                     <SwitchTeamButton />
                     <NotificationButton />
                     <TimerButton />
