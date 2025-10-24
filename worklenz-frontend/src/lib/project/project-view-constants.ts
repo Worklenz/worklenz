@@ -36,6 +36,7 @@ type TabItems = {
   index: number;
   key: string;
   label: string;
+  defaultLabel: string;
   isPinned?: boolean;
   element: ReactNode;
   disabled?: boolean;
@@ -83,6 +84,7 @@ export const tabItems: TabItems[] = [
   {
     index: 0,
     key: 'tasks-list',
+    defaultLabel: 'Task List',
     label: getTabLabel('taskList'),
     isPinned: true,
     element: React.createElement(TaskListV2),
@@ -90,6 +92,7 @@ export const tabItems: TabItems[] = [
   {
     index: 1,
     key: 'board',
+    defaultLabel: 'Board',
     label: getTabLabel('board'),
     isPinned: true,
     element: React.createElement(ProjectViewEnhancedBoard),
@@ -97,6 +100,7 @@ export const tabItems: TabItems[] = [
   {
     index: 2,
     key: 'project-insights-member-overview',
+    defaultLabel: 'Insights',
     label: getTabLabel('insights'),
     element: React.createElement(
       Suspense,
@@ -107,6 +111,7 @@ export const tabItems: TabItems[] = [
   {
     index: 3,
     key: 'all-attachments',
+    defaultLabel: 'Files',
     label: getTabLabel('files'),
     element: React.createElement(
       Suspense,
@@ -117,6 +122,7 @@ export const tabItems: TabItems[] = [
   {
     index: 4,
     key: 'members',
+    defaultLabel: 'Members',
     label: getTabLabel('members'),
     element: React.createElement(
       Suspense,
@@ -127,6 +133,7 @@ export const tabItems: TabItems[] = [
   {
     index: 5,
     key: 'updates',
+    defaultLabel: 'Updates',
     label: getTabLabel('updates'),
     element: React.createElement(
       Suspense,
@@ -137,6 +144,7 @@ export const tabItems: TabItems[] = [
   {
     index: 6,
     key: 'roadmap',
+    defaultLabel: 'Roadmap',
     label: getTabLabel('roadmap'),
     element: React.createElement(
       Suspense,
@@ -147,6 +155,7 @@ export const tabItems: TabItems[] = [
   {
     index: 7,
     key: 'workload',
+    defaultLabel: 'Workload',
     label: getTabLabel('workload'),
     element: React.createElement(
       Suspense,
@@ -157,6 +166,7 @@ export const tabItems: TabItems[] = [
   {
     index: 8,
     key: 'finance',
+    defaultLabel: 'Finance',
     label: getTabLabel('finance'),
     element: React.createElement(
       Suspense,
