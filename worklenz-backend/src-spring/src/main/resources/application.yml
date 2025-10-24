@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/worklenz_db
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
+
+  mybatis:
+    configuration:
+      log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+      map-underscore-to-camel-case: true    # 开启驼峰命名
+
+  mybatis-plus:
+    type-handlers-package: com.cityu.srcspring.handler
