@@ -19,7 +19,9 @@
   },
   "description": {
     "title": "Përshkrimi",
-    "placeholder": "Shtoni një përshkrim më të detajuar..."
+    "placeholder": "Shtoni një përshkrim më të detajuar...",
+    "clickToAdd": "Kliko për të shtuar përshkrim...",
+    "loadingEditor": "Duke ngarkuar editorin..."
   },
   "subTasks": {
     "title": "Nën-Detyrat",

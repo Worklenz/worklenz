@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import DOMPurify from 'dompurify';
+import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -16,6 +17,7 @@ interface DescriptionEditorProps {
 }
 
 const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEditorProps) => {
+  const { t } = useTranslation('task-drawer/task-drawer-info-tab');
   const { socket } = useSocket();
   const [isHovered, setIsHovered] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
@@ -218,11 +220,11 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
                 color: themeMode === 'dark' ? '#ffffff' : '#000000',
               }}
             >
-              <div>Loading editor...</div>
+              <div>{t('description.loadingEditor', { defaultValue: 'Loading editor...' })}</div>
             </div>
           )}
           {isTinyMCELoaded && (
-            <Suspense fallback={<div>Loading editor...</div>}>
+            <Suspense fallback={<div>{t('description.loadingEditor', { defaultValue: 'Loading editor...' })}</div>}>
               <LazyTinyMCEEditor
                 tinymceScriptSrc="/tinymce/tinymce.min.js"
                 value={content}
@@ -315,7 +317,7 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
                 fontStyle: 'italic',
               }}
             >
-              Click to add description...
+              {t('description.clickToAdd', { defaultValue: 'Click to add description...' })}
             </div>
           )}
         </div>
