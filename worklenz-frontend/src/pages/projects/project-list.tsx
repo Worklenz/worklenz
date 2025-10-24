@@ -262,10 +262,10 @@ const ProjectList: React.FC = () => {
       {
         value: ProjectViewType.LIST,
         label: (
-          <Tooltip title={t('listView')}>
+          <Tooltip title={t('listView', { defaultValue: 'List View' })}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <UnorderedListOutlined />
-              <span>{t('list')}</span>
+              <span>{t('list', { defaultValue: 'List' })}</span>
             </div>
           </Tooltip>
         ),
@@ -273,10 +273,10 @@ const ProjectList: React.FC = () => {
       {
         value: ProjectViewType.GROUP,
         label: (
-          <Tooltip title={t('groupView')}>
+          <Tooltip title={t('groupView', { defaultValue: 'Group View' })}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <AppstoreOutlined />
-              <span>{t('group')}</span>
+              <span>{t('group', { defaultValue: 'Group' })}</span>
             </div>
           </Tooltip>
         ),
@@ -289,11 +289,11 @@ const ProjectList: React.FC = () => {
     () => [
       {
         value: ProjectGroupBy.CATEGORY,
-        label: t('groupBy.category'),
+        label: t('groupBy.category', { defaultValue: 'Category' }),
       },
       {
         value: ProjectGroupBy.CLIENT,
-        label: t('groupBy.client'),
+        label: t('groupBy.client', { defaultValue: 'Client' }),
       },
     ],
     [t]
@@ -416,7 +416,7 @@ const ProjectList: React.FC = () => {
         />
       );
     }
-    return <Empty description={t('noProjects')} />;
+    return <Empty description={t('noProjects', { defaultValue: 'No Projects' })} />;
   }, [errorMessage, handleRefresh, isLoading, t]);
 
   // Memoize the pagination show total function
@@ -835,11 +835,11 @@ const ProjectList: React.FC = () => {
     <div style={{ minHeight: '90vh' }}>
       <PageHeader
         className="site-page-header"
-        title={`${projectCount} ${t('projects')}`}
+        title={`${projectCount} ${t('projects', { defaultValue: 'Projects' })}`}
         style={{ padding: '16px 0' }}
         extra={
           <Flex gap={8} align="center">
-            <Tooltip title={t('refreshProjects')}>
+            <Tooltip title={t('refreshProjects', { defaultValue: 'Refresh projects' })}>
               <Button
                 shape="circle"
                 icon={<SyncOutlined spin={isFetchingProjects} />}
@@ -862,7 +862,7 @@ const ProjectList: React.FC = () => {
               />
             )}
             <Input
-              placeholder={t('placeholder')}
+              placeholder={t('placeholder', { defaultValue: 'Search projects' })}
               suffix={<SearchOutlined />}
               type="text"
               value={searchValue}

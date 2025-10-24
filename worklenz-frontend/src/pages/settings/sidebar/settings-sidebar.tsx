@@ -37,7 +37,7 @@ const SettingSidebar: React.FC = () => {
                 to={`/worklenz/settings/${item.endpoint}`}
                 style={{ color: isDangerous ? '#ff4d4f' : undefined }}
               >
-                {t(item.name)}
+                {t(item.name, { defaultValue: item.defaultValue })}
               </Link>
             </Flex>
             <RightOutlined style={{ fontSize: 12 }} />
