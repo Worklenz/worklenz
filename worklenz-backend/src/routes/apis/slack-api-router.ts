@@ -127,6 +127,12 @@ slackApiRouter.delete(
   safeControllerFunction(SlackController.deleteChannelConfig)
 );
 
+slackApiRouter.post(
+  "/channel-configs/:configId/reactivate",
+  configIdParamValidator,
+  safeControllerFunction(SlackController.reactivateChannelConfig)
+);
+
 // Legacy routes for more specific queries
 slackApiRouter.get(
   "/channel-configs/project/:projectId",

@@ -5,6 +5,7 @@ import type { FormInstance } from '@/shared/antd-imports';
 import type { ISlackChannelConfig, ISlackChannel } from '@api/slack/slack.api.service';
 import { slackApiService } from '@api/slack/slack.api.service';
 import apiClient from '@api/api-client';
+import logger from '@/utils/errorLogger';
 
 interface Project {
   id: string;
@@ -172,9 +173,8 @@ export function SlackChannelFormModal({
       setRefreshing(true);
       await slackApiService.refreshChannels();
       await onRefreshChannels();
-      messageApi.success(t('messages.channelsRefreshed', { defaultValue: 'Channels refreshed successfully' }));
     } catch (error) {
-      messageApi.error(t('errors.refreshChannelsFailed', { defaultValue: 'Failed to refresh channels' }));
+      logger.error('Failed to refresh channels', error);
     } finally {
       setRefreshing(false);
     }

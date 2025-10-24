@@ -583,10 +583,11 @@ export class SlackService {
         SELECT COUNT(*) as count
         FROM slack_channel_configs scc
         JOIN projects p ON scc.project_id = p.id
+        JOIN teams t ON p.team_id = t.id
         JOIN slack_channels sc ON scc.slack_channel_id = sc.id
         JOIN slack_workspaces sw ON sc.slack_workspace_id = sw.id
         WHERE scc.id = $1 
-          AND p.organization_id = $2
+          AND t.organization_id = $2
           AND sw.organization_id = $2;
       `;
       const result = await db.query(q, [configId, organizationId]);
@@ -598,7 +599,7 @@ export class SlackService {
   }
 
   /**
-   * Get channel configs for a project
+   * Get channel configs for a project (includes both active and inactive)
    */
   public static async getChannelConfigsByProject(
     projectId: string
@@ -615,8 +616,8 @@ export class SlackService {
         FROM slack_channel_configs scc
         JOIN slack_channels sc ON scc.slack_channel_id = sc.id
         JOIN slack_workspaces sw ON sc.slack_workspace_id = sw.id
-        WHERE scc.project_id = $1 AND scc.is_active = true
-        ORDER BY scc.created_at DESC;
+        WHERE scc.project_id = $1
+        ORDER BY scc.is_active DESC, scc.created_at DESC;
       `;
 
       console.log(`[SLACK_DEBUG] Executing query to fetch channel configs...`);
@@ -653,7 +654,7 @@ export class SlackService {
   }
 
   /**
-   * Get channel configs by organization
+   * Get channel configs by organization (includes both active and inactive)
    */
   public static async getChannelConfigsByOrganization(
     organizationId: string
@@ -670,8 +671,8 @@ export class SlackService {
         JOIN slack_channels sc ON scc.slack_channel_id = sc.id
         JOIN slack_workspaces sw ON sc.slack_workspace_id = sw.id
         JOIN projects p ON scc.project_id = p.id
-        WHERE sw.organization_id = $1 AND scc.is_active = true
-        ORDER BY scc.created_at DESC;
+        WHERE sw.organization_id = $1
+        ORDER BY scc.is_active DESC, scc.created_at DESC;
       `;
       const result = await db.query(q, [organizationId]);
       return result.rows;
@@ -682,13 +683,30 @@ export class SlackService {
   }
 
   /**
-   * Delete channel config
+   * Delete channel config (soft delete - sets is_active to false)
    */
   public static async deleteChannelConfig(configId: string): Promise<void> {
     try {
       const q = `
         UPDATE slack_channel_configs
         SET is_active = false, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1;
+      `;
+      await db.query(q, [configId]);
+    } catch (error) {
+      log_error(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reactivate a channel config
+   */
+  public static async reactivateChannelConfig(configId: string): Promise<void> {
+    try {
+      const q = `
+        UPDATE slack_channel_configs
+        SET is_active = true, updated_at = CURRENT_TIMESTAMP
         WHERE id = $1;
       `;
       await db.query(q, [configId]);

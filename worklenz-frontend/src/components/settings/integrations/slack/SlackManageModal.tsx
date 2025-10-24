@@ -11,9 +11,9 @@ interface SlackManageModalProps {
   loading: boolean;
   onClose: () => void;
   onAddNew: () => void;
-  onToggle: (channelId: string, isActive: boolean) => void;
   onEdit: (channel: ISlackChannelConfig) => void;
   onDelete: (channelId: string) => void;
+  onReactivate: (channelId: string) => void;
 }
 
 export function SlackManageModal({
@@ -22,9 +22,9 @@ export function SlackManageModal({
   loading,
   onClose,
   onAddNew,
-  onToggle,
   onEdit,
   onDelete,
+  onReactivate,
 }: SlackManageModalProps) {
   const { t } = useTranslation('settings/slack-integration');
 
@@ -86,9 +86,9 @@ export function SlackManageModal({
       <SlackChannelTable
         channels={channels}
         loading={loading}
-        onToggle={onToggle}
         onEdit={onEdit}
         onDelete={onDelete}
+        onReactivate={onReactivate}
       />
 
       {/* Empty State */}

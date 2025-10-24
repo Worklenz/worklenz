@@ -1,23 +1,23 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Switch, Table, Tag, DeleteOutlined, EditOutlined } from '@/shared/antd-imports';
+import { Button, Table, Tag, DeleteOutlined, EditOutlined, ReloadOutlined } from '@/shared/antd-imports';
 import type { TableColumnsType } from '@/shared/antd-imports';
 import type { ISlackChannelConfig } from '@api/slack/slack.api.service';
 
 interface SlackChannelTableProps {
   channels: ISlackChannelConfig[];
   loading: boolean;
-  onToggle: (channelId: string, isActive: boolean) => void;
   onEdit: (channel: ISlackChannelConfig) => void;
   onDelete: (channelId: string) => void;
+  onReactivate: (channelId: string) => void;
 }
 
 export function SlackChannelTable({
   channels,
   loading,
-  onToggle,
   onEdit,
   onDelete,
+  onReactivate,
 }: SlackChannelTableProps) {
   const { t } = useTranslation('settings/slack-integration');
 
@@ -56,15 +56,15 @@ export function SlackChannelTable({
         ),
       },
       {
-        title: t('table.active'),
+        title: t('table.status'),
         dataIndex: 'isActive',
-        key: 'isActive',
-        render: (isActive: boolean, record: ISlackChannelConfig) => (
-          <Switch
-            checked={isActive}
-            onChange={checked => onToggle(record.id, checked)}
-            aria-label={t('table.toggleStatus', { channel: record.slackChannelName })}
-          />
+        key: 'status',
+        render: (isActive: boolean) => (
+          <Tag color={isActive ? 'green' : 'red'} className="m-0">
+            {isActive
+              ? t('table.statusActive', { defaultValue: 'Active' })
+              : t('table.statusInactive', { defaultValue: 'Inactive' })}
+          </Tag>
         ),
       },
       {
@@ -72,24 +72,37 @@ export function SlackChannelTable({
         key: 'actions',
         render: (_: unknown, record: ISlackChannelConfig) => (
           <div className="flex gap-2">
-            <Button
-              type="text"
-              icon={<EditOutlined />}
-              onClick={() => onEdit(record)}
-              aria-label={t('table.editConfig', { channel: record.slackChannelName })}
-            />
-            <Button
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => onDelete(record.id)}
-              aria-label={t('table.deleteConfig', { channel: record.slackChannelName })}
-            />
+            {record.isActive ? (
+              <>
+                <Button
+                  type="text"
+                  icon={<EditOutlined />}
+                  onClick={() => onEdit(record)}
+                  aria-label={t('table.editConfig', { channel: record.slackChannelName })}
+                />
+                <Button
+                  type="text"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => onDelete(record.id)}
+                  aria-label={t('table.deleteConfig', { channel: record.slackChannelName })}
+                />
+              </>
+            ) : (
+              <Button
+                type="link"
+                icon={<ReloadOutlined />}
+                onClick={() => onReactivate(record.id)}
+                aria-label={t('table.reactivateConfig', { channel: record.slackChannelName })}
+              >
+                {t('table.reactivate', { defaultValue: 'Reactivate' })}
+              </Button>
+            )}
           </div>
         ),
       },
     ],
-    [t, onToggle, onEdit, onDelete]
+    [t, onEdit, onDelete, onReactivate]
   );
 
   return (

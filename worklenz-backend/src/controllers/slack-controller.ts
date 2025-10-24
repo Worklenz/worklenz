@@ -69,16 +69,85 @@ export default class SlackController extends WorklenzControllerBase {
     // Remove any trailing paths that might have been accidentally included
     const rawFrontendUrl = process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3000";
     const frontendUrl = rawFrontendUrl.replace(/\/public\/.*$/, "").replace(/\/api\/.*$/, "").replace(/\/$/, "");
+    const frontendOrigin = frontendUrl.match(/^https?:\/\/[^/]+/i)?.[0] || frontendUrl;
+
+    const sendPopupResponse = (status: "success" | "error" | "cancelled") => {
+      const messageType =
+        status === "success"
+          ? "SLACK_AUTH_SUCCESS"
+          : status === "cancelled"
+            ? "SLACK_AUTH_CANCELLED"
+            : "SLACK_AUTH_ERROR";
+      const fallbackUrl = `${frontendUrl}/settings/integrations?slack=${status}`;
+      const html = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Slack Authorization</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f7fafc;
+        color: #1a202c;
+      }
+      .container {
+        text-align: center;
+        padding: 24px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1);
+      }
+      a {
+        color: #2563eb;
+        text-decoration: none;
+        font-weight: 600;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Slack Authorization ${status === "success" ? "Complete" : "Notice"}</h1>
+      <p>You can safely close this window.</p>
+      <p><a href="${fallbackUrl}">Return to Worklenz</a></p>
+    </div>
+    <script>
+      (function() {
+        var payload = { type: ${JSON.stringify(messageType)}, status: ${JSON.stringify(status)} };
+        var targetOrigin = ${JSON.stringify(frontendOrigin)};
+        try {
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage(payload, targetOrigin);
+            window.close();
+            return;
+          }
+        } catch (err) {
+          console.error('Slack OAuth popup could not notify opener', err);
+        }
+        window.location.replace(${JSON.stringify(fallbackUrl)});
+      })();
+    </script>
+  </body>
+</html>`;
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.status(200).send(html);
+      return res as IWorkLenzResponse;
+    };
 
     // Handle user cancellation or authorization error
     if (error) {
-      res.redirect(`${frontendUrl}/settings/integrations?slack=cancelled`);
-      return res as IWorkLenzResponse;
+      return sendPopupResponse("cancelled");
     }
 
     if (!code || !state) {
-      res.redirect(`${frontendUrl}/settings/integrations?slack=error`);
-      return res as IWorkLenzResponse;
+      return sendPopupResponse("error");
     }
 
     try {
@@ -120,12 +189,10 @@ export default class SlackController extends WorklenzControllerBase {
       await SlackService.connectWorkspace(organizationId, slackData);
 
       // Redirect to frontend with success
-      res.redirect(`${frontendUrl}/settings/integrations?slack=success`);
-      return res as IWorkLenzResponse;
+      return sendPopupResponse("success");
     } catch (error) {
       log_error(error);
-      res.redirect(`${frontendUrl}/settings/integrations?slack=error`);
-      return res as IWorkLenzResponse;
+      return sendPopupResponse("error");
     }
   }
 
@@ -332,7 +399,7 @@ export default class SlackController extends WorklenzControllerBase {
     await SlackService.fetchAndSyncChannels(workspace.id);
     const result = await SlackService.getChannelsByWorkspace(workspace.id);
     
-    return res.status(200).send(new ServerResponse(true, result.channels, "Channels refreshed successfully"));
+    return res.status(200).send(new ServerResponse(true, result.channels));
   }
 
   /**
@@ -475,6 +542,28 @@ export default class SlackController extends WorklenzControllerBase {
 
     await SlackService.deleteChannelConfig(configId);
     return res.status(200).send(new ServerResponse(true, null, "Channel configuration deleted successfully"));
+  }
+
+  /**
+   * Reactivate channel config
+   */
+  @HandleExceptions()
+  public static async reactivateChannelConfig(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { configId } = req.params;
+    const organizationId = req.user?.organization_id;
+
+    if (!organizationId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
+    }
+
+    // Verify user owns this config
+    const hasAccess = await SlackService.verifyChannelConfigOwnership(configId, organizationId);
+    if (!hasAccess) {
+      return res.status(403).send(new ServerResponse(false, null, "Forbidden: You do not have access to this configuration"));
+    }
+
+    await SlackService.reactivateChannelConfig(configId);
+    return res.status(200).send(new ServerResponse(true, null, "Channel configuration reactivated successfully"));
   }
 
   /**

@@ -157,6 +157,10 @@ export const slackApiService = {
     await apiClient.delete(`${rootUrl}/channel-configs/${configId}`);
   },
 
+  reactivateChannelConfig: async (configId: string): Promise<void> => {
+    await apiClient.post(`${rootUrl}/channel-configs/${configId}/reactivate`);
+  },
+
   getProjectChannelConfigs: async (projectId: string): Promise<IServerResponse<ISlackChannelConfig[]>> => {
     const response = await apiClient.get<IServerResponse<ISlackChannelConfig[]>>(
       `${rootUrl}/channel-configs/project/${projectId}`

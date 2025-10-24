@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Button, Form, Modal, Select, message, ReloadOutlined } from '@/shared/antd-imports';
 import { slackApiService } from '@api/slack/slack.api.service';
 import type { ISlackChannel } from '@api/slack/slack.api.service';
+import logger from '@/utils/errorLogger';
 
 interface SlackProjectQuickAddModalProps {
   open: boolean;
@@ -55,10 +56,8 @@ export const SlackProjectQuickAddModal: React.FC<SlackProjectQuickAddModalProps>
       setRefreshing(true);
       await slackApiService.refreshChannels();
       await loadAvailableChannels();
-      messageApi.success(t('messages.channelsRefreshed', { defaultValue: 'Channels refreshed successfully' }));
     } catch (error) {
-      console.error('Failed to refresh channels:', error);
-      messageApi.error(t('errors.refreshChannelsFailed', { defaultValue: 'Failed to refresh channels' }));
+      logger.error('Failed to refresh channels', error);
     } finally {
       setRefreshing(false);
     }

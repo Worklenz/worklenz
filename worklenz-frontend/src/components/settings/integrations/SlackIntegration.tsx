@@ -7,7 +7,6 @@ import {
   type ISlackChannelConfig,
   type ISlackChannel,
 } from '@api/slack/slack.api.service';
-import apiClient from '@api/api-client';
 import { useAuthService } from '@/hooks/useAuth';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 
@@ -17,6 +16,7 @@ import {
   SlackManageModal,
   SlackChannelFormModal,
 } from './slack';
+import logger from '@/utils/errorLogger';
 
 // Local type definitions
 interface Project {
@@ -43,7 +43,10 @@ export function SlackIntegration() {
   const [messageApi, contextHolder] = message.useMessage();
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
-  const hasBusinessAccess = useMemo(() => hasBusinessFeatureAccess(currentSession), [currentSession]);
+  const hasBusinessAccess = useMemo(
+    () => hasBusinessFeatureAccess(currentSession),
+    [currentSession]
+  );
   const [isConnected, setIsConnected] = useState(false);
   const [workspace, setWorkspace] = useState<{
     id: string;
@@ -75,7 +78,6 @@ export function SlackIntegration() {
           window.close();
           return; // Exit early to prevent API calls
         } else {
-          messageApi.success(t('messages.connectedSuccess'));
           window.history.replaceState({}, '', window.location.pathname);
           await checkSlackConnection();
         }
@@ -85,7 +87,6 @@ export function SlackIntegration() {
           window.close();
           return; // Exit early to prevent API calls
         } else {
-          messageApi.error(t('errors.connectionFailed'));
           window.history.replaceState({}, '', window.location.pathname);
         }
       } else if (slackStatus === 'cancelled') {
@@ -94,7 +95,6 @@ export function SlackIntegration() {
           window.close();
           return; // Exit early to prevent API calls
         } else {
-          messageApi.info(t('messages.installationCancelled'));
           window.history.replaceState({}, '', window.location.pathname);
         }
       }
@@ -120,28 +120,27 @@ export function SlackIntegration() {
         await loadAvailableChannels();
       }
     } catch (error) {
-      messageApi.error(t('errors.connectionCheckFailed'));
+      logger.error('Failed to check Slack connection', error);
     }
-  }, [messageApi, t]);
+  }, []);
 
   const loadChannelConfigurations = useCallback(async () => {
     try {
       const configs = await slackApiService.getAllChannelConfigs();
       setChannels(configs);
     } catch (error) {
-      messageApi.error(t('errors.loadConfigsFailed'));
+      logger.error('Failed to load channel configurations', error);
     }
-  }, [messageApi, t]);
+  }, []);
 
   const loadAvailableChannels = useCallback(async () => {
     try {
       const channels = await slackApiService.getAvailableChannels();
       setAvailableChannels(channels);
     } catch (error) {
-      messageApi.error(t('errors.loadChannelsFailed'));
+      logger.error('Failed to load available channels', error);
     }
-  }, [messageApi, t]);
-
+  }, []);
 
   const handleConnect = useCallback(async () => {
     try {
@@ -165,16 +164,13 @@ export function SlackIntegration() {
         if (event.origin !== window.location.origin) return;
 
         if (event.data.type === 'SLACK_AUTH_SUCCESS') {
-          messageApi.success(t('messages.connectedSuccess'));
           checkSlackConnection();
           setLoading(false);
           window.removeEventListener('message', handleMessage);
         } else if (event.data.type === 'SLACK_AUTH_ERROR') {
-          messageApi.error(t('errors.connectionFailed'));
           setLoading(false);
           window.removeEventListener('message', handleMessage);
         } else if (event.data.type === 'SLACK_AUTH_CANCELLED') {
-          messageApi.info(t('messages.installationCancelled'));
           setLoading(false);
           window.removeEventListener('message', handleMessage);
         }
@@ -211,9 +207,8 @@ export function SlackIntegration() {
           setWorkspace(null);
           setChannels([]);
           setAvailableChannels([]);
-          messageApi.success(t('messages.disconnectedSuccess'));
         } catch (error) {
-          messageApi.error(t('errors.disconnectFailed'));
+          logger.error('Failed to disconnect Slack workspace', error);
         }
       },
     });
@@ -223,15 +218,14 @@ export function SlackIntegration() {
     async (values: ChannelFormValues) => {
       try {
         await slackApiService.createChannelConfig({ ...values, autoJoin: false });
-        messageApi.success(t('messages.configAdded'));
         setAddModalVisible(false);
         form.resetFields();
         await loadChannelConfigurations();
       } catch (error) {
-        messageApi.error(t('errors.addConfigFailed'));
+        logger.error('Failed to add channel configuration', error);
       }
     },
-    [form, loadChannelConfigurations, messageApi, t]
+    [form, loadChannelConfigurations]
   );
 
   const handleOpenEditModal = useCallback(
@@ -254,13 +248,12 @@ export function SlackIntegration() {
       try {
         // Re-create the channel config with updated values (upsert behavior)
         await slackApiService.createChannelConfig({ ...values, autoJoin: false });
-        messageApi.success(t('messages.configUpdated'));
         setAddModalVisible(false);
         setEditingChannel(null);
         form.resetFields();
         await loadChannelConfigurations();
       } catch (error) {
-        messageApi.error(t('errors.updateConfigFailed'));
+        logger.error('Failed to update channel configuration', error);
       }
     },
     [editingChannel, form, loadChannelConfigurations, messageApi, t]
@@ -272,17 +265,16 @@ export function SlackIntegration() {
     form.resetFields();
   }, [form]);
 
-  const handleToggleChannel = useCallback(
-    async (channelId: string, isActive: boolean) => {
+  const handleReactivateChannel = useCallback(
+    async (channelId: string) => {
       try {
-        await slackApiService.updateChannelConfig(channelId, { isActive });
-        messageApi.success(t('messages.statusUpdated'));
+        await slackApiService.reactivateChannelConfig(channelId);
         await loadChannelConfigurations();
       } catch (error) {
-        messageApi.error(t('errors.updateStatusFailed'));
+        logger.error('Failed to reactivate channel configuration', error);
       }
     },
-    [loadChannelConfigurations, messageApi, t]
+    [loadChannelConfigurations]
   );
 
   const handleDeleteChannel = useCallback(
@@ -291,20 +283,19 @@ export function SlackIntegration() {
         title: t('deleteConfig.title'),
         content: t('deleteConfig.content'),
         okText: t('deleteConfig.okText'),
-        cancelText: t('cancel', { ns: 'common' }),
+        cancelText: t('cancel', { ns: 'common' }),  
         okButtonProps: { danger: true },
         onOk: async () => {
           try {
             await slackApiService.deleteChannelConfig(channelId);
-            messageApi.success(t('messages.configRemoved'));
             await loadChannelConfigurations();
           } catch (error) {
-            messageApi.error(t('errors.removeConfigFailed'));
+            logger.error('Failed to delete channel configuration', error);
           }
         },
       });
     },
-    [loadChannelConfigurations, messageApi, t]
+    [loadChannelConfigurations]
   );
 
   const handleFormSubmit = useCallback(
@@ -338,9 +329,9 @@ export function SlackIntegration() {
           loading={loading}
           onClose={() => setManageModalVisible(false)}
           onAddNew={() => setAddModalVisible(true)}
-          onToggle={handleToggleChannel}
           onEdit={handleOpenEditModal}
           onDelete={handleDeleteChannel}
+          onReactivate={handleReactivateChannel}
         />
 
         <SlackChannelFormModal
@@ -360,8 +351,8 @@ export function SlackIntegration() {
   return (
     <>
       {contextHolder}
-      <SlackDisconnectedCard 
-        loading={loading} 
+      <SlackDisconnectedCard
+        loading={loading}
         onConnect={handleConnect}
         hasBusinessAccess={hasBusinessAccess}
       />
