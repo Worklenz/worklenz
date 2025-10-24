@@ -27,7 +27,7 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
   const wrapperRef = useRef<HTMLDivElement>(null);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
-  // CSS styles for description content links
+  // CSS styles for description content links and mentions
   const descriptionStyles = `
     .description-content a {
       color: ${themeMode === 'dark' ? '#4dabf7' : '#1890ff'} !important;
@@ -37,7 +37,30 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
     .description-content a:hover {
       color: ${themeMode === 'dark' ? '#74c0fc' : '#40a9ff'} !important;
     }
+    .description-content .mentions {
+      font-weight: 500;
+      border-radius: 4px;
+      padding: 1px 4px;
+      margin: 0 1px;
+      background-color: ${themeMode === 'dark' ? '#2a3a4a' : '#f0f2f5'};
+      color: ${themeMode === 'dark' ? '#40a9ff' : '#1890ff'};
+      border: 1px solid ${themeMode === 'dark' ? '#40a9ff' : '#1890ff'};
+    }
   `;
+
+  // Helper function to check if content already has processed mentions
+  const hasProcessedMentions = (content: string): boolean => {
+    return content.includes('class="mentions"');
+  };
+
+  // Helper function to process @mentions in content
+  const processMentions = (content: string): string => {
+    if (!content || hasProcessedMentions(content)) return content;
+
+    // Match @username patterns (letters, numbers, underscores, hyphens)
+    const mentionRegex = /@([\w-]+)/g;
+    return content.replace(mentionRegex, '<span class="mentions">@$1</span>');
+  };
 
   // Load TinyMCE script only when editor is opened
   const loadTinyMCE = async () => {
@@ -113,7 +136,8 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
 
   const handleEditorChange = (content: string) => {
     const sanitizedContent = DOMPurify.sanitize(content);
-    setContent(sanitizedContent);
+    const processedContent = processMentions(sanitizedContent);
+    setContent(processedContent);
     if (editorRef.current) {
       const count = editorRef.current.plugins.wordcount.getCount();
       setWordCount(count);
@@ -280,7 +304,7 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
           {content ? (
             <div
               dangerouslySetInnerHTML={{
-                __html: DOMPurify.sanitize(content),
+                __html: processMentions(DOMPurify.sanitize(content)),
               }}
               className="description-content"
             />
