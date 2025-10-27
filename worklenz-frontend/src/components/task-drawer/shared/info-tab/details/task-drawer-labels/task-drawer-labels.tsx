@@ -31,6 +31,7 @@ import { setBoardLabels, updateBoardTaskLabel } from '@/features/board/board-sli
 import { updateEnhancedKanbanTaskLabels } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { ILabelsChangeResponse } from '@/types/tasks/taskList.types';
 import { ITaskLabelFilter } from '@/types/tasks/taskLabel.types';
+import { sortLabelsBySelection, isLabelSelected } from '@/utils/labelUtils';
 
 interface TaskDrawerLabelsProps {
   task: ITaskViewModel;
@@ -98,8 +99,13 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
 
   // used useMemo hook for re render the list when searching
   const filteredLabelData = useMemo(() => {
-    return labelList.filter(label => label.name?.toLowerCase().includes(searchQuery.toLowerCase()));
-  }, [labelList, searchQuery]);
+    const filtered = labelList.filter(label =>
+      label.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Sort to show selected labels first using shared utility
+    return sortLabelsBySelection(filtered, task?.labels || []);
+  }, [labelList, searchQuery, task?.labels]);
 
   const labelDropdownContent = (
     <Card
@@ -143,11 +149,7 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
               >
                 <Checkbox
                   id={label.id}
-                  checked={
-                    task?.labels
-                      ? task?.labels.some(existingLabel => existingLabel.id === label.id)
-                      : false
-                  }
+                  checked={isLabelSelected(label.id || '', task?.labels)}
                   onChange={e => e.preventDefault()}
                 >
                   <Flex gap={8}>
@@ -186,6 +188,11 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
           <Tag
             key={label.id}
             color={label.color_code + ALPHA_CHANNEL}
+            closable
+            onClose={(e) => {
+              e.preventDefault();
+              handleLabelChange(label);
+            }}
             style={{
               display: 'flex',
               alignItems: 'center',

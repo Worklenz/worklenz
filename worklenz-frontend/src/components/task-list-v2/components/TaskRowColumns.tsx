@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+ import React, { memo } from 'react';
 import { CheckCircleOutlined, HolderOutlined } from '@/shared/antd-imports';
 import { Checkbox } from '@/shared/antd-imports';
 import { Task } from '@/types/task-management.types';
