@@ -98,12 +98,8 @@ class ConsentManager {
   needsConsent(): boolean {
     const consent = this.getConsent();
 
-    // If no consent stored, check if in GDPR region
-    if (!consent) {
-      return this.isGDPRRegion();
-    }
-
-    return false;
+    // Show banner if no consent is stored (for all users globally)
+    return !consent;
   }
 
   /**
@@ -169,17 +165,15 @@ class ConsentManager {
     if (consent) {
       // Apply existing consent
       this.applyClarityConsent(consent.analytics);
-    } else if (!this.isGDPRRegion()) {
-      // Not in GDPR region, grant consent by default
-      this.setConsent(true, 'non-gdpr');
     }
-    // If in GDPR region and no consent, banner will show
+    // If no consent stored, banner will show for all users globally
   }
 
   /**
    * Accept all cookies
    */
   acceptAll(): void {
+    // Detect region for tracking purposes (optional metadata)
     const region = this.isGDPRRegion() ? 'gdpr' : 'non-gdpr';
     this.setConsent(true, region);
   }
@@ -188,6 +182,7 @@ class ConsentManager {
    * Reject all cookies
    */
   rejectAll(): void {
+    // Detect region for tracking purposes (optional metadata)
     const region = this.isGDPRRegion() ? 'gdpr' : 'non-gdpr';
     this.setConsent(false, region);
   }
