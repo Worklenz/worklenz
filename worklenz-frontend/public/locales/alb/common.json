@@ -82,5 +82,14 @@
     "unlockAllFeatures": "Shkyç të gjitha veçoritë",
     "learnMore": "Mëso më shumë",
     "dismiss": "Hidhe"
+  },
+  "consent": {
+    "title": "Ne përdorim cookies",
+    "description": "Ne përdorim cookies analitike për të kuptuar se si e përdorni aplikacionin tonë dhe për të përmirësuar përvojën tuaj. Mund të zgjidhni të pranoni ose refuzoni këto cookies.",
+    "learnMore": "Mëso më shumë rreth politikës sonë të privatësisë",
+    "acceptButton": "Prano",
+    "rejectButton": "Refuzo",
+    "accept": "Prano cookies analitike",
+    "reject": "Refuzo cookies analitike"
   }
 }

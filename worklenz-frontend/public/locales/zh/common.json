@@ -82,5 +82,14 @@
     "unlockAllFeatures": "解锁全部功能",
     "learnMore": "了解更多",
     "dismiss": "关闭"
+  },
+  "consent": {
+    "title": "我们使用 Cookie",
+    "description": "我们使用分析 Cookie 来了解您如何使用我们的应用程序并改善您的体验。您可以选择接受或拒绝这些 Cookie。",
+    "learnMore": "了解更多关于我们的隐私政策",
+    "acceptButton": "接受",
+    "rejectButton": "拒绝",
+    "accept": "接受分析 Cookie",
+    "reject": "拒绝分析 Cookie"
   }
 }

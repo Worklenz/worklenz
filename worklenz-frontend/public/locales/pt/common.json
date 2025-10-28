@@ -82,5 +82,14 @@
     "unlockAllFeatures": "Desbloquear todos os recursos",
     "learnMore": "Saiba mais",
     "dismiss": "Dispensar"
+  },
+  "consent": {
+    "title": "Usamos cookies",
+    "description": "Usamos cookies de análise para entender como você usa nossa aplicação e melhorar sua experiência. Você pode escolher aceitar ou recusar esses cookies.",
+    "learnMore": "Saiba mais sobre nossa política de privacidade",
+    "acceptButton": "Aceitar",
+    "rejectButton": "Recusar",
+    "accept": "Aceitar cookies de análise",
+    "reject": "Recusar cookies de análise"
   }
 }

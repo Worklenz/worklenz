@@ -92,5 +92,14 @@
     "unlockAllFeatures": "Unlock all features",
     "learnMore": "Learn more",
     "dismiss": "Dismiss"
+  },
+  "consent": {
+    "title": "We use cookies",
+    "description": "We use analytics cookies to understand how you use our application and improve your experience. You can choose to accept or decline these cookies.",
+    "learnMore": "Learn more about our privacy policy",
+    "acceptButton": "Accept",
+    "rejectButton": "Reject",
+    "accept": "Accept analytics cookies",
+    "reject": "Reject analytics cookies"
   }
 }
