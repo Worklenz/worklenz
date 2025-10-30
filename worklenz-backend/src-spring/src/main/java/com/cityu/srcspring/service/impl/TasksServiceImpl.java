@@ -130,4 +130,31 @@ public class TasksServiceImpl implements TasksService {
         task.setSprintId(sprintId);
         return tasksMapper.updateById(task) > 0;
     }
+
+    @Override
+    public List<TaskVO> getTasksBySprintId(Integer sprintId) {
+        List<Tasks> tasks = tasksMapper.selectTasksBySprintId(sprintId);
+        return tasks.stream().map(task -> {
+            TaskVO vo = new TaskVO();
+            BeanUtils.copyProperties(task, vo);
+
+            if (task.getStatusId() != null) {
+                vo.setStatus(tasksMapper.selectStatusNameById(task.getStatusId()));
+            }
+            if (task.getPriorityId() != null) {
+                vo.setPriorityName(tasksMapper.selectPriorityNameById(task.getPriorityId()));
+            }
+            if (task.getParentTaskId() != null) {
+                vo.setParentTaskName(tasksMapper.selectTaskNameById(task.getParentTaskId()));
+            }
+            if(task.getReporterId() != null){
+                vo.setReporterName(tasksMapper.selecUserNameById(task.getReporterId()));
+            }
+            if(task.getProjectId()!= null){
+                vo.setProjectName(tasksMapper.selectProjectNameById(task.getProjectId()));
+            }
+
+            return vo;
+        }).toList();
+    }
 }

@@ -1,4 +1,4 @@
-package  com.cityu.srcspring.config;
+package com.cityu.srcspring.config;
 
 import com.baomidou.mybatisplus.autoconfigure.ConfigurationCustomizer;
 import com.cityu.srcspring.handler.UUIDTypeHandler;

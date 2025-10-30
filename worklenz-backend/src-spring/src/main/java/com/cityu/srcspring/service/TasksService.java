@@ -11,6 +11,8 @@ public interface TasksService {
     TaskVO updateTask(UUID id, TaskCreateDTO dto);
     boolean deleteTask(UUID id);
     List<TaskVO> getAllTasks(UUID projectId);
+    // 新增：根据 sprint_id 获取任务列表
+    List<TaskVO> getTasksBySprintId(Integer sprintId);
 
     Boolean updateTaskbysprintId(UUID id, Integer sprintId);
 }

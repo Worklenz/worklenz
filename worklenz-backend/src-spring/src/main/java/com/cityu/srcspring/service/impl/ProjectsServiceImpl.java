@@ -54,7 +54,6 @@ public class ProjectsServiceImpl implements ProjectsService {
         project.setId(UUID.randomUUID());
         project.setCreatedAt(OffsetDateTime.now()); // 默认系统时区
         project.setUpdatedAt(OffsetDateTime.now());
-        project.setProjectTypeId(UUID.fromString("00000000-0000-0000-0000-000000000001")); // 默认 project_type 为 1
         project.setOwnerId(projectsDTO.getProjectManagerId()); // DTO 的 projectManagerId -> 实体的 ownerId
 
         // 3️⃣ 插入数据库
@@ -71,6 +70,17 @@ public class ProjectsServiceImpl implements ProjectsService {
     public Object getProjectsByPage(int page, int size) {
         Page<Projects> pageParam= new Page<>(page, size);
         return projectsMapper.selectPage(pageParam, null);
+
+    }
+
+    @Override
+    public UUID getProject_idByName(String name) {
+        LambdaQueryWrapper<Projects> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.select(Projects::getName, Projects::getId)
+                .eq(Projects::getName, name);
+                Projects project = projectsMapper.selectOne(queryWrapper);
+                return project.getId();
+
 
     }
 

@@ -93,6 +93,6 @@ public class Projects {
     @TableField("use_time_progress")
     private Boolean useTimeProgress;
 
-    @TableField("project_type_id")
-    private UUID projectTypeId;
+    @TableField("project_type")
+    private String projectTypeId;
 }

@@ -1,6 +1,7 @@
 package com.cityu.srcspring.service;
 
 import com.cityu.srcspring.dto.ProjectsDTO;
+import jakarta.persistence.criteria.CriteriaBuilder;
 
 import java.util.UUID;
 
@@ -16,4 +17,6 @@ public interface ProjectsService {
     boolean delete(UUID id);
 
     Object getProjectsByPage(int page, int size);
+
+    UUID getProject_idByName(String name);
 }

@@ -1,10 +1,11 @@
 package com.cityu.srcspring.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.cityu.srcspring.entity.ProjectType;
 import com.cityu.srcspring.entity.Tasks;
 import org.apache.ibatis.annotations.Select;
+import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface TasksMapper extends BaseMapper<Tasks> {
@@ -25,4 +26,8 @@ public interface TasksMapper extends BaseMapper<Tasks> {
 
     @Select("SELECT name FROM projects WHERE id = #{id}")
     String selectProjectNameById(UUID id);
+
+    // 根据 sprint_id 查询任务
+    @Select("SELECT * FROM tasks WHERE sprint_id = #{sprintId}")
+    List<Tasks> selectTasksBySprintId(@Param("sprintId") Integer sprintId);
 }

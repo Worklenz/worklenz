@@ -54,4 +54,11 @@ public class TasksController {
     public List<TaskVO> getAllTasks(@RequestParam(required = false) UUID projectId) {
         return tasksService.getAllTasks(projectId);
     }
+
+    // 根据 sprint_id 获取任务列表
+    @GetMapping("/bysprint")
+    public List<TaskVO> getTasksBySprint(@RequestParam Integer sprintId) {
+        return tasksService.getTasksBySprintId(sprintId);
+    }
+
 }

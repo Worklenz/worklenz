@@ -22,7 +22,7 @@ public class ProjectsController {
     public String getNameById(@RequestParam UUID id) {
         return "name is" + projectsService.getNameById(id);
     }
-
+    //没啥用
     @GetMapping("/projects/getkeybyName")
     public String getkeybyName(@RequestParam String name) {
         String key = projectsService.getKeyByName(name);
@@ -38,6 +38,11 @@ public class ProjectsController {
     public Object getProjectsByPage(@RequestParam(defaultValue = "1") int page,
                                     @RequestParam(defaultValue = "10") int size) {
         return projectsService.getProjectsByPage(page, size);
+    }
+    //根据name找project
+    @GetMapping("/projects/getProjectByName")
+    public UUID getProjectByName(@RequestParam String name) {
+        return  projectsService.getProject_idByName(name);
     }
 
 
