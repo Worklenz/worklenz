@@ -36,10 +36,28 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
 
   // Find current status details
   const currentStatus = useMemo(() => {
-    return statusList.find(
-      status =>
-        status.name?.toLowerCase() === task.status?.toLowerCase() || status.id === task.status
-    );
+    const normalize = (val: string) => (val || '').toLowerCase().replace(/\s|_/g, '');
+
+    // 1) Try to match by id or exact/normalized name
+    const byIdOrName = statusList.find(status => {
+      const taskStatus = task.status || '';
+      return (
+        status.id === taskStatus ||
+        status.name?.toLowerCase() === taskStatus.toLowerCase() ||
+        normalize(status.name || '') === normalize(taskStatus)
+      );
+    });
+    if (byIdOrName) return byIdOrName;
+
+    // 2) Fallback: task.status might be a category string: 'todo' | 'doing' | 'done'
+    const normalized = normalize(task.status || '');
+    if (['todo', 'doing', 'done'].includes(normalized)) {
+      // Look for common names like "To Do", "Doing", "Done" via normalization
+      const byNormalizedName = statusList.find(s => normalize(s.name || '') === normalized);
+      if (byNormalizedName) return byNormalizedName;
+    }
+
+    return undefined;
   }, [statusList, task.status]);
 
   // Handle status change

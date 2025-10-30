@@ -257,9 +257,9 @@ export const useTaskSocketHandlers = () => {
           }
 
           // If still not found, try matching by status name (fallback)
-          if (!targetGroup && response.status) {
+          if (!targetGroup && (response as any).status) {
             targetGroup = groups.find(
-              group => group.title?.toLowerCase() === response.status.toLowerCase()
+              group => group.title?.toLowerCase() === ((response as any).status as string).toLowerCase()
             );
           }
 
@@ -327,7 +327,7 @@ export const useTaskSocketHandlers = () => {
           complete_ratio: data.complete_ratio,
           completed_count: data.completed_count,
           total_tasks_count: data.total_tasks_count,
-          parent_task: data.parent_task,
+          parent_task: data.parent_task || '',
         })
       );
     },
@@ -689,13 +689,14 @@ export const useTaskSocketHandlers = () => {
           task_key: data.task_key || '',
           title: data.name || '',
           description: data.description || '',
-          status: (data.status_category?.is_todo
+          // Prefer concrete status id if provided; fall back to category only if missing
+          status: (data.status || data.status_id || (data.status_category?.is_todo
             ? 'todo'
             : data.status_category?.is_doing
               ? 'doing'
               : data.status_category?.is_done
                 ? 'done'
-                : 'todo') as 'todo' | 'doing' | 'done',
+                : 'todo')) as any,
           priority: (data.priority_value === 3
             ? 'critical'
             : data.priority_value === 2
@@ -770,7 +771,14 @@ export const useTaskSocketHandlers = () => {
           task_key: data.task_key || '',
           title: data.name || '',
           description: data.description || '',
-          status: data.status || 'todo',
+          // Prefer concrete status id if provided; fall back to category only if missing
+          status: (data.status || data.status_id || (data.status_category?.is_todo
+            ? 'todo'
+            : data.status_category?.is_doing
+              ? 'doing'
+              : data.status_category?.is_done
+                ? 'done'
+                : 'todo')) as any,
           priority: (data.priority_value === 3
             ? 'critical'
             : data.priority_value === 2
@@ -1014,7 +1022,7 @@ export const useTaskSocketHandlers = () => {
             if (typeof taskData.status_id !== 'undefined') {
               const found = statusList.find(s => s.id === taskData.status_id);
               if (found) {
-                updatedTask.status = found.name;
+                updatedTask.status = (found.name || found.id) as string;
                 // updatedTask.status_id = found.id; // Only if Task type has status_id
               } else {
                 updatedTask.status = taskData.status_id || '';
