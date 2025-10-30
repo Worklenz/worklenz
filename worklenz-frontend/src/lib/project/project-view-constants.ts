@@ -102,11 +102,7 @@ export const tabItems: TabItems[] = [
     key: 'project-insights-member-overview',
     defaultLabel: 'Insights',
     label: getTabLabel('insights'),
-    element: React.createElement(
-      Suspense,
-      { fallback: React.createElement(InlineSuspenseFallback) },
-      React.createElement(ProjectViewInsights)
-    ),
+    element: React.createElement('div'), // Placeholder, actual element set in getFilteredTabItems
   },
   {
     index: 3,
@@ -146,33 +142,21 @@ export const tabItems: TabItems[] = [
     key: 'roadmap',
     defaultLabel: 'Roadmap',
     label: getTabLabel('roadmap'),
-    element: React.createElement(
-      Suspense,
-      { fallback: React.createElement(InlineSuspenseFallback) },
-      React.createElement(ProjectViewRoadmap)
-    ),
+    element: React.createElement('div'), // Placeholder, actual element set in getFilteredTabItems
   },
   {
     index: 7,
     key: 'workload',
     defaultLabel: 'Workload',
     label: getTabLabel('workload'),
-    element: React.createElement(
-      Suspense,
-      { fallback: React.createElement(InlineSuspenseFallback) },
-      React.createElement(ProjectViewWorkload)
-    ),
+    element: React.createElement('div'), // Placeholder, actual element set in getFilteredTabItems
   },
   {
     index: 8,
     key: 'finance',
     defaultLabel: 'Finance',
     label: getTabLabel('finance'),
-    element: React.createElement(
-      Suspense,
-      { fallback: React.createElement(InlineSuspenseFallback) },
-      React.createElement(ProjectViewFinance)
-    ),
+    element: React.createElement('div'), // Placeholder, actual element set in getFilteredTabItems
   },
 ];
 
@@ -234,12 +218,23 @@ export const getFilteredTabItems = (
             ...item,
             disabled: true,
             disabledReason: i18n.t('common:business-plan-upgrade'),
+            // Keep placeholder element for disabled finance tab to prevent loading
+            element: React.createElement('div'),
           };
         }
         // If user has no finance permission, hide the tab
         if (!hasFinancePermission) {
           return null;
         }
+        // User has finance permission and business access - set actual element
+        return {
+          ...item,
+          element: React.createElement(
+            Suspense,
+            { fallback: React.createElement(InlineSuspenseFallback) },
+            React.createElement(ProjectViewFinance)
+          ),
+        };
       }
 
       // Disable insights, roadmap, and workload tabs for free users
@@ -248,6 +243,42 @@ export const getFilteredTabItems = (
           ...item,
           disabled: true,
           disabledReason: i18n.t('common:upgrade-plan'),
+          // Keep placeholder element for disabled tabs to prevent loading
+          element: React.createElement('div'),
+        };
+      }
+
+      // For premium tabs, set the actual element if not disabled
+      if (item.key === 'roadmap' && !item.disabled) {
+        return {
+          ...item,
+          element: React.createElement(
+            Suspense,
+            { fallback: React.createElement(InlineSuspenseFallback) },
+            React.createElement(ProjectViewRoadmap)
+          ),
+        };
+      }
+
+      if (item.key === 'workload' && !item.disabled) {
+        return {
+          ...item,
+          element: React.createElement(
+            Suspense,
+            { fallback: React.createElement(InlineSuspenseFallback) },
+            React.createElement(ProjectViewWorkload)
+          ),
+        };
+      }
+
+      if (item.key === 'project-insights-member-overview' && !item.disabled) {
+        return {
+          ...item,
+          element: React.createElement(
+            Suspense,
+            { fallback: React.createElement(InlineSuspenseFallback) },
+            React.createElement(ProjectViewInsights)
+          ),
         };
       }
 

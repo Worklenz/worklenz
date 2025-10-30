@@ -29,7 +29,7 @@ const CurrentBill: React.FC = React.memo(() => {
   const isTablet = useMediaQuery({ query: '(min-width: 1025px)' });
   const currentSession = useAuthService().getCurrentSession();
   const { trackMixpanelEvent } = useMixpanelTracking();
-  const { billingInfo } = useAppSelector(state => state.adminCenterReducer);
+  const { billingInfo, storageInfo } = useAppSelector(state => state.adminCenterReducer);
 
   useEffect(() => {
     dispatch(fetchBillingInfo());
@@ -38,7 +38,7 @@ const CurrentBill: React.FC = React.memo(() => {
 
   // Separate effect for tracking events when billing info is available
   useEffect(() => {
-    if (!billingInfo || !currentSession) return;
+    if (!billingInfo || !currentSession || !storageInfo) return;
     
     // Track billing page view
     const getUserType = (): UserType => {
@@ -62,14 +62,14 @@ const CurrentBill: React.FC = React.memo(() => {
       is_appsumo_user: getUserType() === 'appsumo',
       team_size: billingInfo?.total_used,
       subscription_status: billingInfo?.status,
-      storage_usage_percentage: billingInfo?.usedPercentage,
+      storage_usage_percentage: storageInfo?.used_percent,
       has_invoices: false, // Will be updated when invoices load
       has_charges: false, // Will be updated when charges load
     };
     
     trackMixpanelEvent(MixpanelBillingEvents.BILLING_PAGE_VIEWED, eventProps);
     trackMixpanelEvent(MixpanelBillingEvents.CURRENT_PLAN_VIEWED, eventProps);
-  }, [billingInfo, currentSession, trackMixpanelEvent]);
+  }, [billingInfo, currentSession, storageInfo, trackMixpanelEvent]);
 
   const titleStyle = useMemo(
     () => ({

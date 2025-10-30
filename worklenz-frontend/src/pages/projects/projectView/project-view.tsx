@@ -109,10 +109,27 @@ const ProjectView = React.memo(() => {
 
   // Update local state when URL params change
   useEffect(() => {
-    setActiveTab(urlParams.tab);
+    // Validate that the tab from URL is not disabled before setting it
+    const filteredTabItems = getFilteredTabItems(currentSession, selectedProject);
+    const requestedTab = filteredTabItems.find(item => item.key === urlParams.tab);
+    
+    // If tab is disabled, redirect to first available tab and show upgrade modal
+    if (requestedTab?.disabled) {
+      const firstAvailableTab = filteredTabItems.find(item => !item.disabled);
+      if (firstAvailableTab) {
+        setActiveTab(firstAvailableTab.key);
+        // Show upgrade modal after a brief delay to ensure component is mounted
+        setTimeout(() => {
+          dispatch(toggleUpgradeModal());
+        }, 100);
+      }
+    } else {
+      setActiveTab(urlParams.tab);
+    }
+    
     setPinnedTab(urlParams.pinnedTab);
     setTaskId(urlParams.taskId);
-  }, [urlParams]);
+  }, [urlParams, currentSession, selectedProject, dispatch]);
 
   // Remove translation preloading since we're using simple load-as-you-go approach
   useEffect(() => {
@@ -265,6 +282,12 @@ const ProjectView = React.memo(() => {
         return;
       }
 
+      // If tab is disabled, open upgrade modal instead of navigating
+      if (tabItem?.disabled) {
+        dispatch(toggleUpgradeModal());
+        return;
+      }
+
       // Track finance tab clicks
       if (key === 'finance') {
         const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
@@ -282,11 +305,6 @@ const ProjectView = React.memo(() => {
         });
       }
 
-      // If tab is disabled, open upgrade modal instead of navigating
-      if (tabItem?.disabled) {
-        dispatch(toggleUpgradeModal());
-        return;
-      }
       setActiveTab(key);
       dispatch(setProjectView(key === 'board' ? 'kanban' : 'list'));
 
@@ -320,30 +338,16 @@ const ProjectView = React.memo(() => {
       
       return {
         key: item.key,
-        disabled: item.disabled && !isPremiumTab, // Don't disable premium tabs at Ant Design level
+        disabled: false, // Never disable at Ant Design level - we handle clicks manually
         label: (
           <Tooltip title={item.disabled ? item.disabledReason : undefined} placement="bottom">
             <Flex
               align="center"
               gap={6}
               style={{
-                color: item.disabled && !isPremiumTab ? '#8c8c8c' : 'inherit',
-                opacity: item.disabled && !isPremiumTab ? 0.6 : 1,
+                color: 'inherit', // Always use normal color
+                opacity: 1, // Always full opacity
                 cursor: 'pointer',
-              }}
-              onClick={e => {
-                // Handle premium tabs specially - show upgrade modal if disabled but not visually disabled
-                if (item.disabled && isPremiumTab) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  dispatch(toggleUpgradeModal());
-                }
-                // Fallback: Direct click handler for other disabled tabs
-                else if (item.disabled) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  dispatch(toggleUpgradeModal());
-                }
               }}
             >
               <span style={{ fontWeight: 500, fontSize: '13px' }}>{item.label}</span>
@@ -453,12 +457,8 @@ const ProjectView = React.memo(() => {
         className="project-view-tabs"
         activeKey={activeTab}
         onChange={handleTabChange}
-        onTabClick={(key, e) => {
-          // Ant Design sometimes calls onTabClick even for disabled tabs
-          handleTabChange(key);
-        }}
         items={tabMenuItems}
-        destroyOnHidden={true}
+        destroyInactiveTabPane={true}
         animated={{
           inkBar: true,
           tabPane: false,
