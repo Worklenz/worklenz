@@ -258,8 +258,9 @@ export const useTaskSocketHandlers = () => {
 
           // If still not found, try matching by status name (fallback)
           if (!targetGroup && (response as any).status) {
+            const statusName = String((response as any).status || '').toLowerCase();
             targetGroup = groups.find(
-              group => group.title?.toLowerCase() === ((response as any).status as string).toLowerCase()
+              group => group.title?.toLowerCase() === statusName
             );
           }
 
@@ -689,14 +690,16 @@ export const useTaskSocketHandlers = () => {
           task_key: data.task_key || '',
           title: data.name || '',
           description: data.description || '',
-          // Prefer concrete status id if provided; fall back to category only if missing
-          status: (data.status || data.status_id || (data.status_category?.is_todo
-            ? 'todo'
-            : data.status_category?.is_doing
-              ? 'doing'
-              : data.status_category?.is_done
-                ? 'done'
-                : 'todo')) as any,
+          // Prefer canonical status ID if provided; otherwise fall back to category value
+          status: (data.status || (
+            data.status_category?.is_todo
+              ? 'todo'
+              : data.status_category?.is_doing
+                ? 'doing'
+                : data.status_category?.is_done
+                  ? 'done'
+                  : 'todo'
+          )) as string,
           priority: (data.priority_value === 3
             ? 'critical'
             : data.priority_value === 2
@@ -853,23 +856,73 @@ export const useTaskSocketHandlers = () => {
 
   const handleTaskProgressUpdated = useCallback(
     (data: { task_id: string; progress_value?: number; weight?: number }) => {
-      if (!data || !taskGroups) return;
+      if (!data) return;
 
       if (data.progress_value !== undefined) {
-        for (const group of taskGroups) {
-          const task = group.tasks?.find((task: IProjectTask) => task.id === data.task_id);
-          if (task) {
-            dispatch(
-              updateTaskProgress({
-                taskId: data.task_id,
-                progress: data.progress_value,
-                totalTasksCount: task.total_tasks_count || 0,
-                completedCount: task.completed_count || 0,
-              })
-            );
-            break;
+        // Update the old task slice (for backward compatibility)
+        // Always dispatch the update, even if we don't find the task in taskGroups
+        let totalTasksCount = 0;
+        let completedCount = 0;
+        
+        if (taskGroups) {
+          let taskFound = false;
+          for (const group of taskGroups) {
+            const task = group.tasks?.find((task: IProjectTask) => task.id === data.task_id);
+            if (task) {
+              totalTasksCount = task.total_tasks_count || 0;
+              completedCount = task.completed_count || 0;
+              taskFound = true;
+              break;
+            }
+
+            // Also check subtasks
+            for (const parentTask of group.tasks || []) {
+              if (parentTask.sub_tasks) {
+                const subtask = parentTask.sub_tasks.find((st: IProjectTask) => st.id === data.task_id);
+                if (subtask) {
+                  totalTasksCount = subtask.total_tasks_count || 0;
+                  completedCount = subtask.completed_count || 0;
+                  taskFound = true;
+                  break;
+                }
+              }
+            }
+            if (taskFound) break;
           }
         }
+        
+        // Always dispatch the update
+        dispatch(
+          updateTaskProgress({
+            taskId: data.task_id,
+            progress: data.progress_value,
+            totalTasksCount,
+            completedCount,
+          })
+        );
+
+        // Update the task-management slice for task-list-v2 components
+        const currentTask = store.getState().taskManagement.entities[data.task_id];
+        if (currentTask) {
+          const updatedTask: Task = {
+            ...currentTask,
+            progress: data.progress_value,
+            updatedAt: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          dispatch(updateTask(updatedTask));
+        }
+
+        // Update enhanced kanban slice
+        dispatch(
+          updateEnhancedKanbanTaskProgress({
+            id: data.task_id,
+            complete_ratio: data.progress_value,
+            completed_count: 0,
+            total_tasks_count: 0,
+            parent_task: '',
+          })
+        );
       }
     },
     [dispatch, taskGroups]
@@ -1021,13 +1074,8 @@ export const useTaskSocketHandlers = () => {
             }
             if (typeof taskData.status_id !== 'undefined') {
               const found = statusList.find(s => s.id === taskData.status_id);
-              if (found) {
-                updatedTask.status = (found.name || found.id) as string;
-                // updatedTask.status_id = found.id; // Only if Task type has status_id
-              } else {
-                updatedTask.status = taskData.status_id || '';
-                // updatedTask.status_id = taskData.status_id;
-              }
+              // Keep status as the canonical ID for consistency across grouping/color logic
+              updatedTask.status = found?.id || taskData.status_id || '';
             }
 
             dispatch(updateTask(updatedTask));
