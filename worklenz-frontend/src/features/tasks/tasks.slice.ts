@@ -1078,7 +1078,13 @@ const taskSlice = createSlice({
       })
       .addCase(fetchTaskAssignees.fulfilled, (state, action) => {
         state.loadingAssignees = false;
-        state.taskAssignees = action.payload;
+        const existingSelections = new Map(
+          state.taskAssignees.map(assignee => [assignee.id, assignee.selected])
+        );
+        state.taskAssignees = action.payload.map(assignee => ({
+          ...assignee,
+          selected: existingSelections.get(assignee.id) ?? false,
+        }));
       })
       .addCase(fetchTaskAssignees.rejected, (state, action) => {
         state.loadingAssignees = false;
