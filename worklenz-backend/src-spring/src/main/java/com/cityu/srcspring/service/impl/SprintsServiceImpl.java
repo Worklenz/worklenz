@@ -2,11 +2,11 @@ package com.cityu.srcspring.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cityu.srcspring.dto.SprintDTO;
-import com.cityu.srcspring.entity.Projects;
-import com.cityu.srcspring.entity.Sprints;
-import com.cityu.srcspring.mapper.ProjectsMapper;
-import com.cityu.srcspring.mapper.SprintsMapper;
+import com.cityu.srcspring.model.dto.SprintDTO;
+import com.cityu.srcspring.model.entity.Projects;
+import com.cityu.srcspring.model.entity.Sprints;
+import com.cityu.srcspring.dao.mapper.ProjectsMapper;
+import com.cityu.srcspring.dao.mapper.SprintsMapper;
 import com.cityu.srcspring.service.SprintsService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;

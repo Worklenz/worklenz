@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Configuration;
 
 
-@MapperScan("com.cityu.srcspring.mapper")
+@MapperScan("com.cityu.srcspring.dao.mapper")
 @SpringBootApplication
 public class Application {
 

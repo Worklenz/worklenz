@@ -1,4 +1,4 @@
-package com.cityu.srcspring.vo;
+package com.cityu.srcspring.model.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

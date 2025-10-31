@@ -1,7 +1,6 @@
 package com.cityu.srcspring.service;
 
-import com.cityu.srcspring.dto.ProjectsDTO;
-import jakarta.persistence.criteria.CriteriaBuilder;
+import com.cityu.srcspring.model.dto.ProjectsDTO;
 
 import java.util.UUID;
 

@@ -1,7 +1,7 @@
 package com.cityu.srcspring.service;
 
-import com.cityu.srcspring.dto.TaskCreateDTO;
-import com.cityu.srcspring.vo.TaskVO;
+import com.cityu.srcspring.model.dto.TaskCreateDTO;
+import com.cityu.srcspring.model.vo.TaskVO;
 import java.util.List;
 import java.util.UUID;
 

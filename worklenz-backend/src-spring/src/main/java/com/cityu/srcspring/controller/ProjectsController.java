@@ -1,6 +1,6 @@
 package com.cityu.srcspring.controller;
 
-import com.cityu.srcspring.dto.ProjectsDTO;
+import com.cityu.srcspring.model.dto.ProjectsDTO;
 import com.cityu.srcspring.service.ProjectsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

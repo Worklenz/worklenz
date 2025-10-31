@@ -1,10 +1,8 @@
 package com.cityu.srcspring.controller;
 
-import com.cityu.srcspring.dto.TaskCreateDTO;
-import com.cityu.srcspring.vo.TaskVO;
-import com.cityu.srcspring.entity.Tasks;
+import com.cityu.srcspring.model.dto.TaskCreateDTO;
+import com.cityu.srcspring.model.vo.TaskVO;
 import com.cityu.srcspring.service.TasksService;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

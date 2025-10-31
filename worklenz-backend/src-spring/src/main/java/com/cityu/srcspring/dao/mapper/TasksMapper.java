@@ -1,7 +1,7 @@
-package com.cityu.srcspring.mapper;
+package com.cityu.srcspring.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.cityu.srcspring.entity.Tasks;
+import com.cityu.srcspring.model.entity.Tasks;
 import org.apache.ibatis.annotations.Select;
 import org.springframework.data.repository.query.Param;
 

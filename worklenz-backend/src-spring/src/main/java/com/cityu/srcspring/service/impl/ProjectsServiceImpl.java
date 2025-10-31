@@ -1,11 +1,10 @@
 package com.cityu.srcspring.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cityu.srcspring.dto.ProjectsDTO;
-import com.cityu.srcspring.entity.Projects;
-import com.cityu.srcspring.mapper.ProjectsMapper;
+import com.cityu.srcspring.model.dto.ProjectsDTO;
+import com.cityu.srcspring.model.entity.Projects;
+import com.cityu.srcspring.dao.mapper.ProjectsMapper;
 import com.cityu.srcspring.service.ProjectsService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,4 +1,4 @@
-package com.cityu.srcspring.entity;
+package com.cityu.srcspring.model.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

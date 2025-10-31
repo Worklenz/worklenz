@@ -1,7 +1,7 @@
 package com.cityu.srcspring.service;
 
-import com.cityu.srcspring.dto.SprintDTO;
-import com.cityu.srcspring.entity.Sprints;
+import com.cityu.srcspring.model.dto.SprintDTO;
+import com.cityu.srcspring.model.entity.Sprints;
 
 import java.util.List;
 import java.util.UUID;

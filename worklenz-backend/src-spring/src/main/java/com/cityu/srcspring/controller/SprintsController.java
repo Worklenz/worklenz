@@ -1,7 +1,7 @@
 package com.cityu.srcspring.controller;
 
-import com.cityu.srcspring.dto.SprintDTO;
-import com.cityu.srcspring.entity.Sprints;
+import com.cityu.srcspring.model.dto.SprintDTO;
+import com.cityu.srcspring.model.entity.Sprints;
 import com.cityu.srcspring.service.SprintsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

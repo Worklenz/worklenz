@@ -1,4 +1,4 @@
-package com.cityu.srcspring.dto;
+package com.cityu.srcspring.model.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

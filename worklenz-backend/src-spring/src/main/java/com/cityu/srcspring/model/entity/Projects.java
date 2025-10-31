@@ -1,4 +1,4 @@
-package com.cityu.srcspring.entity;
+package com.cityu.srcspring.model.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
