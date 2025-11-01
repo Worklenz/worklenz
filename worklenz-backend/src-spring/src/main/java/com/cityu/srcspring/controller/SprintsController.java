@@ -3,6 +3,7 @@ package com.cityu.srcspring.controller;
 import com.cityu.srcspring.model.dto.SprintDTO;
 import com.cityu.srcspring.model.entity.Sprints;
 import com.cityu.srcspring.service.SprintsService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,9 +26,13 @@ public class SprintsController {
     }
     //查询
     @RequestMapping("/get")
-    public SprintDTO get(@RequestParam Integer id) {
+    public SprintDTO get(@RequestParam Integer id) throws JsonProcessingException {
         return sprintsService.get(id);
     }
+  @RequestMapping("/get1")
+  public Sprints get1(@RequestParam Integer id) {
+    return sprintsService.get1(id);
+  }
 
     //修改
     @RequestMapping("/update")
@@ -47,6 +52,8 @@ public class SprintsController {
     public List<SprintDTO> getByProjectId(@RequestParam UUID project_id) {
         return sprintsService.getByProjectId(project_id);
     }
+
+
 
 
 }

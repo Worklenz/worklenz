@@ -1,9 +1,10 @@
 package com.cityu.srcspring.model.entity;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.TableField;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.ibatis.type.JdbcType;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -11,27 +12,17 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Entity
-@Table(name = "sprints")
 public class Sprints {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // 对应 PostgreSQL integer 自增
-    private Integer id;
+  private Integer id;
+  private UUID projectId;
+  private String name;
+  private LocalDate startDate;
+  private LocalDate endDate;
+  private String goal;
 
-    @Column(name = "project_id", nullable = false)
-    private UUID projectId;
-
-    @Column(name = "name", nullable = false)
-    private String name;
-
-    @Column(name = "start_date")
-    private LocalDate startDate;
-
-    @Column(name = "end_date")
-    private LocalDate endDate;
-
-    @Column(name = "goal")
-    private String goal;
+  // 直接用 String 接收 jsonb
+  @TableField(jdbcType = JdbcType.OTHER)
+  private String subtask;
 
 }

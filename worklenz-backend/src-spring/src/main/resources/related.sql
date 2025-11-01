@@ -53,6 +53,12 @@ EXECUTE 'ALTER TABLE sprint DROP CONSTRAINT ' || quote_ident(r.conname) || ' CAS
 END LOOP;
 END$$;
 
+--sprints
+ALTER TABLE sprints
+    ADD COLUMN subTask JSONB;
+
+
+
 -- 删除对应的非空限制
 DO $$
     DECLARE
@@ -117,3 +123,5 @@ WHERE table_name = 'projects'
     EXECUTE format('ALTER TABLE projects ALTER COLUMN %I DROP NOT NULL;', r.column_name);
 END LOOP;
 END $$;
+ALTER TABLE sprints
+ALTER COLUMN subtask TYPE jsonb USING subtask::jsonb;

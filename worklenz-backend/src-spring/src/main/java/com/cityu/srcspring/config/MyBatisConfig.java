@@ -9,7 +9,9 @@ import org.springframework.context.annotation.Configuration;
 import java.util.UUID;
 
 @Configuration
-@MapperScan("com.cityu.srcspring.mapper")
+@MapperScan("com.cityu.srcspring.dao.mapper")
+
+
 public class MyBatisConfig {
 
     @Bean

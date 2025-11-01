@@ -3,6 +3,7 @@ package com.cityu.srcspring.controller;
 import com.cityu.srcspring.model.dto.TaskCreateDTO;
 import com.cityu.srcspring.model.vo.TaskVO;
 import com.cityu.srcspring.service.TasksService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,7 +38,11 @@ public class TasksController {
     //给任务添加sprint_id
     @PutMapping("/{id}/sprint")
     public Boolean updateTaskbysprintId(@PathVariable UUID id, @RequestParam Integer sprintId) {
+      try {
         return tasksService.updateTaskbysprintId(id, sprintId);
+      } catch (JsonProcessingException e) {
+        throw new RuntimeException(e);
+      }
 
     }
 
