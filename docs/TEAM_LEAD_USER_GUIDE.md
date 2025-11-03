@@ -196,7 +196,7 @@ The system validates role changes based on current user permissions:
 
 1. **Navigate to Team Lead Reports**
    ```
-   Main Navigation → My Team Reports
+   Main Navigation → Reports
    ```
    
    > **Note**: This menu item only appears for Team Leads
@@ -298,7 +298,7 @@ The system validates role changes based on current user permissions:
 3. **Active Members Only**: Ensure members are active (not deactivated)
 
 #### Team Lead Cannot See Analytics
-**Problem**: "My Team Reports" menu not appearing
+**Problem**: "Reports" menu not appearing
 **Solutions**:
 1. **Role Verification**: Confirm user has Team Lead role assigned
 2. **Session Refresh**: Log out and log back in
@@ -350,10 +350,10 @@ The system validates role changes based on current user permissions:
 
 | Action | Navigation | Steps |
 |--------|------------|-------|
-| **View Analytics** | My Team Reports | Access comprehensive team performance data |
+| **View Analytics** | Reports | Access comprehensive team performance data |
 | **Manage Members** | Settings → Team Members | Invite, edit, assign team members |
 | **Create Projects** | Projects → New Project | Automatically gain admin access |
-| **Track Performance** | My Team Reports | Monitor member productivity and progress |
+| **Track Performance** | Reports | Monitor member productivity and progress |
 
 ---
 
