@@ -146,7 +146,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
    */
     if (subscriptionData.subscription_status === "trialing") {
       const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
-      
+
       if (currentTrialMembers + incrementBy > TRIAL_MEMBER_LIMIT) {
         return res.status(200).send(new ServerResponse(false, null, `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`));
       }
@@ -173,7 +173,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
           required_count: requiredSeats,
           current_seat_amount: subscriptionData.quantity
         };
-        return res.status(200).send(new ServerResponse(false, obj, null));
+        return res.status(200).send(new ServerResponse(false, obj, "Insufficient seats available. Please upgrade your subscription to add more team members."));
       }
     }
 
@@ -200,22 +200,22 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
     // Helper function to check for encoded components
     function containsEncodedComponents(x: string) {
-        return decodeURI(x) !== decodeURIComponent(x);
+      return decodeURI(x) !== decodeURIComponent(x);
     }
 
     // Decode search parameter if it contains encoded components
     if (req.query.search && typeof req.query.search === 'string') {
-        if (containsEncodedComponents(req.query.search)) {
-            req.query.search = decodeURIComponent(req.query.search);
-        }
+      if (containsEncodedComponents(req.query.search)) {
+        req.query.search = decodeURIComponent(req.query.search);
+      }
     }
 
     const {
-        searchQuery,
-        sortField,
-        sortOrder,
-        size,
-        offset
+      searchQuery,
+      sortField,
+      sortOrder,
+      size,
+      offset
     } = this.toPaginationOptions(req.query, ["u.name", "u.email"], true);
 
     const paginate = req.query.all === "false" ? `LIMIT ${size} OFFSET ${offset}` : "";
@@ -1098,7 +1098,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
     if (subscriptionData.subscription_status === "trialing") {
       const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
       const emailsToAdd = req.body.emails?.length || 1;
-      
+
       if (currentTrialMembers + emailsToAdd > TRIAL_MEMBER_LIMIT) {
         return res.status(200).send(new ServerResponse(false, null, `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`));
       }
