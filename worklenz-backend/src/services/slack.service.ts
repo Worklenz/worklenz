@@ -404,11 +404,8 @@ export class SlackService {
     alreadyInChannel?: boolean;
   }> {
     try {
-      console.log(`[SLACK_DEBUG] Attempting to join channel: ${channelId} in workspace: ${workspaceId}`);
-      
       const botToken = await this.getDecryptedBotToken(workspaceId);
       if (!botToken) {
-        console.error(`[SLACK_DEBUG] Bot token not found for workspace: ${workspaceId}`);
         return {
           success: false,
           message: "Bot token not found for workspace"
@@ -420,11 +417,6 @@ export class SlackService {
       try {
         const result = await slack.conversations.join({ channel: channelId });
         
-        console.log(`[SLACK_DEBUG] Successfully joined channel: ${channelId}`, {
-          ok: result.ok,
-          channel: result.channel
-        });
-
         return {
           success: true,
           message: "Successfully joined channel"
@@ -432,7 +424,6 @@ export class SlackService {
       } catch (error: any) {
         // Check if bot is already in the channel
         if (error.data?.error === "already_in_channel") {
-          console.log(`[SLACK_DEBUG] Bot already in channel: ${channelId}`);
           return {
             success: true,
             message: "Bot is already in the channel",
@@ -442,7 +433,6 @@ export class SlackService {
 
         // Check if channel is private
         if (error.data?.error === "channel_not_found" || error.data?.error === "is_private") {
-          console.log(`[SLACK_DEBUG] Cannot join private channel: ${channelId}`);
           return {
             success: false,
             message: "Cannot auto-join private channels. Please manually invite the bot using /invite @worklenz in the channel."
@@ -451,21 +441,18 @@ export class SlackService {
 
         // Check for permission errors
         if (error.data?.error === "missing_scope") {
-          console.error(`[SLACK_DEBUG] Missing required scope for joining channel: ${channelId}`);
           return {
             success: false,
             message: "Missing permissions. Please reconnect the Slack workspace."
           };
         }
 
-        console.error(`[SLACK_DEBUG] Error joining channel:`, error.data);
         return {
           success: false,
           message: error.data?.error || "Failed to join channel"
         };
       }
     } catch (error) {
-      console.error(`[SLACK_DEBUG] Unexpected error in joinChannel:`, error);
       log_error(error);
       return {
         success: false,
@@ -483,8 +470,6 @@ export class SlackService {
     results: Array<{ channelName: string; success: boolean; message: string }>;
   }> {
     try {
-      console.log(`[SLACK_DEBUG] Auto-joining public channels for workspace: ${workspaceId}`);
-      
       const { channels } = await this.getChannelsByWorkspace(workspaceId, 1, 500);
       const results: Array<{ channelName: string; success: boolean; message: string }> = [];
       let joinedCount = 0;
@@ -509,8 +494,6 @@ export class SlackService {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
       }
-
-      console.log(`[SLACK_DEBUG] Auto-join complete. Joined: ${joinedCount}, Failed: ${failedCount}`);
       
       return { joinedCount, failedCount, results };
     } catch (error) {
@@ -550,10 +533,8 @@ export class SlackService {
       if (autoJoin) {
         const channelInfo = await this.getChannelInfo(slackChannelId);
         if (channelInfo && !channelInfo.is_private && !channelInfo.is_archived) {
-          console.log(`[SLACK_DEBUG] Attempting auto-join for channel: ${channelInfo.channel_name}`);
           joinResult = await this.joinChannel(channelInfo.workspace_id, channelInfo.channel_id);
         } else if (channelInfo?.is_private) {
-          console.log(`[SLACK_DEBUG] Skipping auto-join for private channel: ${channelInfo.channel_name}`);
           joinResult = {
             success: false,
             message: "Private channel - manual invitation required. Use /invite @worklenz in the channel."
@@ -604,8 +585,6 @@ export class SlackService {
   public static async getChannelConfigsByProject(
     projectId: string
   ): Promise<SlackChannelConfigWithDetails[]> {
-    console.log(`[SLACK_DEBUG] getChannelConfigsByProject called for projectId: ${projectId}`);
-
     try {
       const q = `
         SELECT
@@ -619,35 +598,10 @@ export class SlackService {
         WHERE scc.project_id = $1
         ORDER BY scc.is_active DESC, scc.created_at DESC;
       `;
-
-      console.log(`[SLACK_DEBUG] Executing query to fetch channel configs...`);
+      
       const result = await db.query(q, [projectId]);
-
-      console.log(`[SLACK_DEBUG] Query result: Found ${result.rows.length} channel config(s)`);
-
-      if (result.rows.length > 0) {
-        result.rows.forEach((row, index) => {
-          console.log(`[SLACK_DEBUG] Config ${index + 1}:`, {
-            id: row.id,
-            project_id: row.project_id,
-            slack_channel_id: row.slack_channel_id,
-            channel_name: row.channel_name,
-            workspace_name: row.workspace_name,
-            notification_types: row.notification_types,
-            is_active: row.is_active
-          });
-        });
-      } else {
-        console.warn(`[SLACK_DEBUG] No active channel configs found for project ${projectId}`);
-        console.log(`[SLACK_DEBUG] Possible reasons:`);
-        console.log(`[SLACK_DEBUG] 1. No channel configs created for this project`);
-        console.log(`[SLACK_DEBUG] 2. All channel configs are inactive (is_active = false)`);
-        console.log(`[SLACK_DEBUG] 3. Channel configs exist but the joins are failing (check slack_channels and slack_workspaces)`);
-      }
-
       return result.rows;
     } catch (error) {
-      console.error(`[SLACK_DEBUG] Error in getChannelConfigsByProject:`, error);
       log_error(error);
       throw error;
     }
@@ -727,14 +681,6 @@ export class SlackService {
     entityId: string,
     message: Record<string, unknown>
   ): Promise<void> {
-    console.log(`[SLACK_DEBUG] SlackService.sendNotification called:`, {
-      channelConfigId,
-      notificationType,
-      entityType,
-      entityId,
-      messageKeys: Object.keys(message)
-    });
-
     try {
       // Get the channel config with workspace info
       const configQuery = `
@@ -750,39 +696,22 @@ export class SlackService {
         WHERE scc.id = $1 AND scc.is_active = true;
       `;
 
-      console.log(`[SLACK_DEBUG] Fetching channel config for ID: ${channelConfigId}`);
-
       const configResult = await db.query(configQuery, [channelConfigId]);
 
       if (configResult.rows.length === 0) {
-        console.error(`[SLACK_DEBUG] Channel config not found or inactive for ID: ${channelConfigId}`);
         throw new Error("Channel config not found or inactive");
       }
 
       const config = configResult.rows[0];
 
-      console.log(`[SLACK_DEBUG] Channel config found:`, {
-        config_id: config.id,
-        channel_id: config.channel_id,
-        channel_name: config.channel_name,
-        workspace_id: config.workspace_id,
-        team_name: config.team_name,
-        is_active: config.is_active
-      });
-
       // Get decrypted bot token
-      console.log(`[SLACK_DEBUG] Fetching bot token for workspace: ${config.workspace_id}`);
       const botToken = await this.getDecryptedBotToken(config.workspace_id);
 
       if (!botToken) {
-        console.error(`[SLACK_DEBUG] Bot token not found for workspace: ${config.workspace_id}`);
         throw new Error("Bot token not found");
       }
 
-      console.log(`[SLACK_DEBUG] Bot token retrieved successfully (length: ${botToken.length})`);
-
       // Send message to Slack using Web API
-      console.log(`[SLACK_DEBUG] Initializing Slack WebClient...`);
       const slack = new WebClient(botToken);
 
       const messagePayload = {
@@ -792,25 +721,13 @@ export class SlackService {
         ...message
       };
 
-      console.log(`[SLACK_DEBUG] Sending message to Slack channel: ${config.channel_name} (${config.channel_id})`);
-      console.log(`[SLACK_DEBUG] Message payload:`, JSON.stringify(messagePayload, null, 2));
-
       const result = await slack.chat.postMessage(messagePayload);
 
-      console.log(`[SLACK_DEBUG] Slack API response:`, {
-        ok: result.ok,
-        ts: result.ts,
-        channel: result.channel,
-        message: result.message ? "present" : "missing"
-      });
-
       if (!result.ok) {
-        console.error(`[SLACK_DEBUG] Slack API returned ok: false`);
         throw new Error("Slack API returned error");
       }
 
       // Log the notification as sent with Slack message timestamp
-      console.log(`[SLACK_DEBUG] Logging notification as sent...`);
       await this.logNotification(
         channelConfigId,
         notificationType,
@@ -821,20 +738,10 @@ export class SlackService {
         null,
         result.ts as string || null
       );
-
-      console.log(`[SLACK_DEBUG] Notification sent successfully to channel ${config.channel_name}`);
     } catch (error) {
-      console.error(`[SLACK_DEBUG] Error in sendNotification:`, error);
-      console.error(`[SLACK_DEBUG] Error details:`, {
-        name: error instanceof Error ? error.name : "unknown",
-        message: error instanceof Error ? error.message : "unknown",
-        stack: error instanceof Error ? error.stack : "unknown"
-      });
-
       log_error(error);
 
       // Log failed notification
-      console.log(`[SLACK_DEBUG] Logging notification as failed...`);
       await this.logNotification(
         channelConfigId,
         notificationType,

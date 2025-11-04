@@ -399,72 +399,33 @@ export class ExternalNotificationsService {
     userName: string,
     additionalData?: { oldStatusId?: string; newStatusId?: string; oldValue?: string; newValue?: string }
   ): Promise<void> {
-    console.log(`[SLACK_DEBUG] sendExternalNotifications called with:`, {
-      projectId,
-      taskId,
-      notificationType,
-      userName,
-      additionalData
-    });
-
     try {
       // Get task data
       const taskData = await this.getTaskNotificationData(taskId);
 
       if (!taskData) {
-        console.error(`[SLACK_DEBUG] Task data not found for taskId: ${taskId}`);
         log_error("Task data not found for notification");
         return;
       }
-
-      console.log(`[SLACK_DEBUG] Task data retrieved:`, {
-        task_id: taskData.task_id,
-        task_name: taskData.task_name,
-        project_id: taskData.project_id,
-        project_name: taskData.project_name
-      });
 
       // Add status change data if provided
       if (additionalData?.oldStatusId && additionalData?.newStatusId) {
         taskData.old_status_name = await this.getStatusName(additionalData.oldStatusId) || undefined;
         taskData.new_status_name = await this.getStatusName(additionalData.newStatusId) || undefined;
-        console.log(`[SLACK_DEBUG] Status change data:`, {
-          old_status: taskData.old_status_name,
-          new_status: taskData.new_status_name
-        });
       }
 
       // Get Slack channel configs for this project
       const slackConfigs = await SlackService.getChannelConfigsByProject(projectId);
 
-      console.log(`[SLACK_DEBUG] Found ${slackConfigs.length} Slack channel configs for project ${projectId}`);
-
-      if (slackConfigs.length === 0) {
-        console.warn(`[SLACK_DEBUG] No Slack channel configs found for project ${projectId}. Notification will not be sent.`);
-      }
-
       // Send to Slack channels
       for (const config of slackConfigs) {
-        console.log(`[SLACK_DEBUG] Processing config ${config.id}:`, {
-          channel_name: config.channel_name,
-          notification_types: config.notification_types,
-          is_active: config.is_active
-        });
-
         try {
           // Check if this notification type is enabled for this channel
           if (!config.notification_types || !config.notification_types.includes(notificationType)) {
-            console.log(`[SLACK_DEBUG] Skipping config ${config.id} - notification type '${notificationType}' not enabled. Enabled types:`, config.notification_types);
             continue;
           }
 
-          console.log(`[SLACK_DEBUG] Notification type '${notificationType}' is enabled for config ${config.id}. Preparing message...`);
-
           const slackMessage = this.formatSlackMessage(notificationType, taskData, userName);
-
-          console.log(`[SLACK_DEBUG] Slack message formatted for config ${config.id}:`, JSON.stringify(slackMessage, null, 2));
-
-          console.log(`[SLACK_DEBUG] Calling SlackService.sendNotification for config ${config.id}...`);
 
           await SlackService.sendNotification(
             config.id,
@@ -473,10 +434,7 @@ export class ExternalNotificationsService {
             taskId,
             slackMessage
           );
-
-          console.log(`[SLACK_DEBUG] Successfully sent notification to config ${config.id}`);
         } catch (error) {
-          console.error(`[SLACK_DEBUG] Error sending Slack notification to config ${config.id}:`, error);
           log_error(`Error sending Slack notification to config ${config.id}:`, error);
           // Continue with other channels even if one fails
         }
@@ -485,21 +443,14 @@ export class ExternalNotificationsService {
       // Send to Teams webhook if configured
       const teamsWebhookUrl = process.env.TEAMS_WEBHOOK_URL;
       if (teamsWebhookUrl) {
-        console.log(`[SLACK_DEBUG] Teams webhook configured, sending notification...`);
         try {
           const teamsMessage = this.formatTeamsMessage(notificationType, taskData, userName);
           await TeamsNotificationService.sendTeamsNotification(teamsWebhookUrl, teamsMessage);
-          console.log(`[SLACK_DEBUG] Teams notification sent successfully`);
         } catch (error) {
-          console.error(`[SLACK_DEBUG] Error sending Teams notification:`, error);
           log_error("Error sending Teams notification:", error);
         }
       }
-
-      console.log(`[SLACK_DEBUG] sendExternalNotifications completed`);
-
     } catch (error) {
-      console.error(`[SLACK_DEBUG] Critical error in sendExternalNotifications:`, error);
       log_error("Error in sendExternalNotifications:", error);
       // Don't throw - we don't want notification errors to break task operations
     }

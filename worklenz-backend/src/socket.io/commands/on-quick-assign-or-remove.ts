@@ -138,7 +138,8 @@ export async function assignMemberIfNot(taskId: string, userId: string, teamId: 
     const [data] = result.rows;
 
     if (!data) {
-      log_error(new Error(`No team member found for userId: ${userId}, teamId: ${teamId}`));
+      // User is not a member of this team - this is normal for admins or viewers
+      // Silently return without logging as this is expected behavior
       return;
     }
 
