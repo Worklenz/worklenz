@@ -52,6 +52,7 @@ const ReportingSider = () => {
           className="custom-reporting-sider"
           items={menuItems}
           selectedKeys={[activeKey]}
+          defaultOpenKeys={['time-sheet']}
           mode="inline"
           style={{ width: '100%' }}
         />

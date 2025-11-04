@@ -128,7 +128,7 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
       trigger={['click']}
       placement="bottomRight"
     >
-      <Tooltip title={t('tooltip', { defaultValue: 'Manage project integrations' })}>
+      {/* <Tooltip title={t('tooltip', { defaultValue: 'Manage project integrations' })}>
         <Badge count={activeCount} offset={[-5, 5]} showZero={false}>
           <Button
             shape="circle"
@@ -137,7 +137,7 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
             loading={loading}
           />
         </Badge>
-      </Tooltip>
+      </Tooltip> */}
     </Dropdown>
   );
 };
