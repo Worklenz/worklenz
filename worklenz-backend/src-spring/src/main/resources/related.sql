@@ -54,6 +54,15 @@ END LOOP;
 END$$;
 
 --sprints
+CREATE TABLE sprints (
+                         id SERIAL PRIMARY KEY,
+                         project_id UUID ,
+                         name VARCHAR(100),
+                         start_date DATE ,
+                         end_date DATE ,
+                         goal TEXT
+);
+
 ALTER TABLE sprints
     ADD COLUMN subTask JSONB;
 
