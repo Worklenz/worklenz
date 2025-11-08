@@ -6,9 +6,9 @@ spring:
       continue-on-error: true
       schema-locations: classpath:db/related.sql
   datasource:
-    url: jdbc:postgresql://localhost:5432/worklenz_db
+    url: jdbc:postgresql://localhost:5433/worklenz_db
     username: postgres
-    password: 1234
+    password: password
     driver-class-name: org.postgresql.Driver
 
   mybatis:
