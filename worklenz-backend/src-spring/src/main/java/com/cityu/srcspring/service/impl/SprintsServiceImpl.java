@@ -1,6 +1,8 @@
 package com.cityu.srcspring.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cityu.srcspring.dao.mapper.TasksMapper;
 import com.cityu.srcspring.model.dto.SprintDTO;
@@ -18,7 +20,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.ibatis.type.TypeReference;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.config.Task;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -32,11 +36,21 @@ public class SprintsServiceImpl implements SprintsService {
     @Autowired
     private TasksMapper taskMapper;
 
-    @Override
-    public boolean delete(Integer id) {
-        return sprintsMapper.deleteById(id) > 0;
-    }
-    @Override
+  @Transactional
+  @Override
+  public boolean delete(Integer id) {
+    // 1️⃣ 先把所有属于该 sprint 的任务的 sprint_id 置为空
+    UpdateWrapper<Tasks> updateWrapper = new UpdateWrapper<>();
+    updateWrapper.eq("sprint_id", id)
+      .set("sprint_id", null);
+    taskMapper.update(null, updateWrapper);
+
+    // 2️⃣ 再删除 sprint 本身
+    return sprintsMapper.deleteById(id) > 0;
+  }
+
+
+  @Override
     public boolean add(Sprints sprints) {
         return sprintsMapper.insert(sprints) > 0;
     }

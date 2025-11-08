@@ -46,7 +46,11 @@ public class ProjectsController {
     }
 
 
-
+    //修改project_type （kanban or scrum）
+    @PutMapping("/projects/updateProjectType")
+    public String updateProjectType(@RequestParam UUID id, @RequestParam String project_type) {
+        return projectsService.updateProjectType(id, project_type) ? "修改成功" : "修改失败";
+    }
 
 
 

@@ -1,8 +1,14 @@
 spring:
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8
+      continue-on-error: true
+      schema-locations: classpath:db/related.sql
   datasource:
-    url: jdbc:postgresql://localhost:5433/worklenz_db
+    url: jdbc:postgresql://localhost:5432/worklenz_db
     username: postgres
-    password: password
+    password: 1234
     driver-class-name: org.postgresql.Driver
 
   mybatis:

@@ -18,4 +18,6 @@ public interface ProjectsService {
     Object getProjectsByPage(int page, int size);
 
     UUID getProject_idByName(String name);
+
+    boolean updateProjectType(UUID id, String projectType);
 }

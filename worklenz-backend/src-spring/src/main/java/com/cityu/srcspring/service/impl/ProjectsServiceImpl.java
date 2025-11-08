@@ -1,6 +1,7 @@
 package com.cityu.srcspring.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cityu.srcspring.model.dto.ProjectsDTO;
 import com.cityu.srcspring.model.entity.Projects;
@@ -82,5 +83,14 @@ public class ProjectsServiceImpl implements ProjectsService {
 
 
     }
+
+  @Override
+  public boolean updateProjectType(UUID id, String projectType) {
+    UpdateWrapper<Projects> wrapper = new UpdateWrapper<>();
+    wrapper.eq("id", id)
+      .set("project_type", projectType);
+    return projectsMapper.update(null, wrapper) > 0;
+  }
+
 
 }
