@@ -210,7 +210,7 @@ const TeamInvitePage: React.FC = () => {
         return (
           <Result
             status="error"
-            title="Invitation Error"
+            title={errorMessage}
             subTitle={errorMessage}
             extra={[
               <Button key="home" onClick={() => navigate('/')}>

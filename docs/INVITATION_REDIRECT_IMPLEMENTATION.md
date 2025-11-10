@@ -90,9 +90,44 @@ if (teamInviteMatch) {
 2. Project redirect (`WORKLENZ_REDIRECT_PROJ_KEY`)
 3. Default home page (lowest)
 
+### 6. Signup Page (`signup-page.tsx`)
+**Changes:**
+- Added import for `invitationRedirectService` and `Alert` component
+- Added state to track pending invitations
+- Checks for pending invitation on mount
+- Shows blue info alert when invitation is pending
+- Added console log after successful signup
+- Preserves invitation context through signup flow
+
+**Key Points:**
+- Invitation context persists in sessionStorage during signup
+- User sees visual feedback about pending invitation
+- After signup, redirects to `/auth/authenticating` which handles invitation redirect
+- Works seamlessly with existing URL param invitation flow
+
+### 7. Account Setup Page (`account-setup.tsx`)
+**Changes:**
+- Added import for `invitationRedirectService`
+- Enhanced `completeAccountSetup()` to check for pending invitations
+- Enhanced `completeAccountSetupWithTemplate()` to check for pending invitations
+- Invitation redirect happens AFTER setup completion (not before)
+
+**Key Points:**
+- New users complete account setup first
+- After setup, checks for pending invitation
+- If found, redirects to invitation page instead of default project
+- Provides better UX - users set up their account before joining teams
+
+### 8. Authenticating Page (Updated)
+**Changes:**
+- Updated `handleSuccessRedirect()` to distinguish between new and existing users
+- Existing users: Redirect to invitation immediately
+- New users: Let them complete setup first, then redirect to invitation
+- Added console logs for debugging both flows
+
 ## Testing Scenarios
 
-### Scenario 1: Non-authenticated User with Team Invitation
+### Scenario 1: Non-authenticated User with Team Invitation (Login)
 **Steps:**
 1. Logout from Worklenz
 2. Click team invitation link: `/invite/team/abc123`
@@ -103,7 +138,7 @@ if (teamInviteMatch) {
 7. Click "Join Team"
 8. **Expected:** Successfully joined team, redirected to projects
 
-### Scenario 2: Non-authenticated User with Project Invitation
+### Scenario 2: Non-authenticated User with Project Invitation (Login)
 **Steps:**
 1. Logout from Worklenz
 2. Click project invitation link: `/invite/project/xyz789`
@@ -113,6 +148,30 @@ if (teamInviteMatch) {
 6. **Expected:** Form pre-filled with user details
 7. Click "Join Project"
 8. **Expected:** Successfully joined project, redirected to project page
+
+### Scenario 3: New User with Team Invitation (Signup)
+**Steps:**
+1. Click team invitation link: `/invite/team/abc123`
+2. Observe: Automatically redirected to `/auth/login`
+3. Click "Sign up" link
+4. **Expected:** See blue info alert "Invitation Pending"
+5. Fill in signup form and create account
+6. **Expected:** Redirected back to `/invite/team/abc123`
+7. **Expected:** Form pre-filled with new user details
+8. Click "Join Team"
+9. **Expected:** Successfully joined team, redirected to projects
+
+### Scenario 4: New User with Project Invitation (Signup)
+**Steps:**
+1. Click project invitation link: `/invite/project/xyz789`
+2. Observe: Automatically redirected to `/auth/login`
+3. Click "Sign up" link
+4. **Expected:** See blue info alert "Invitation Pending"
+5. Fill in signup form and create account
+6. **Expected:** Redirected back to `/invite/project/xyz789`
+7. **Expected:** Form pre-filled with new user details
+8. Click "Join Project"
+9. **Expected:** Successfully joined project, redirected to project page
 
 ### Scenario 3: Already Authenticated User
 **Steps:**
@@ -229,6 +288,8 @@ if (teamInviteMatch) {
 3. ✅ `worklenz-frontend/src/pages/invite/team/TeamInvitePage.tsx`
 4. ✅ `worklenz-frontend/src/pages/invite/project/ProjectInvitePage.tsx`
 5. ✅ `worklenz-frontend/src/pages/auth/AuthenticatingPage.tsx`
+6. ✅ `worklenz-frontend/src/pages/auth/signup-page.tsx`
+7. ✅ `worklenz-frontend/src/pages/account-setup/account-setup.tsx`
 
 ## Backend Compatibility
 
