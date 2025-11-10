@@ -4,7 +4,7 @@ import Col from 'antd/es/col';
 import Flex from 'antd/es/flex';
 import Row from 'antd/es/row';
 import Card from 'antd/es/card';
-
+import TaskCompletionCard from '@/pages/home/task-completion-card/task-completion-card';
 import GreetingWithTime from './GreetingWithTime';
 import TasksList from '@/pages/home/task-list/TasksList';
 import ProjectDrawer from '@/components/projects/project-drawer/project-drawer';
@@ -118,6 +118,7 @@ const HomePage = memo(() => {
 
         <Col xs={24} lg={8}>
           <Flex vertical gap={24}>
+            {/* <TaskCompletionCard /> */}
             <TodoList />
 
             <UserActivityFeed />
