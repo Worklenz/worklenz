@@ -103,7 +103,6 @@ const UserActivityFeed: React.FC = () => {
         value: ActivityFeedType.TIME_LOGGED_TASKS,
         label: (
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <ClockCircleOutlined style={{ fontSize: 14 }} />
             {t('tasks.timeLoggedSegment')}
           </span>
         ),
@@ -112,7 +111,6 @@ const UserActivityFeed: React.FC = () => {
         value: ActivityFeedType.RECENT_TASKS,
         label: (
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <UnorderedListOutlined style={{ fontSize: 14 }} />
             {t('tasks.recentTasksSegment')}
           </span>
         ),
@@ -203,8 +201,7 @@ const UserActivityFeed: React.FC = () => {
         options={segmentOptions}
         value={activeTab}
         onChange={handleTabChange}
-        style={{ marginBottom: 16, width: '100%' }}
-        block
+        style={{ marginBottom: 16 }}
       />
       {renderContent()}
     </Card>

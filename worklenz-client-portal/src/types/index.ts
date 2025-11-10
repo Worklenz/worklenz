@@ -1,11 +1,21 @@
 // Client Portal Types
 
+export interface ClientOrganization {
+  id: string;
+  name: string;
+  teamId: string;
+  clientId: string;
+  isDefault: boolean;
+}
+
 export interface ClientUser {
   id: string;
   email: string;
   name: string;
   organizationId: string;
   permissions: string[];
+  organizations?: ClientOrganization[];
+  currentOrganizationId?: string;
 }
 
 export interface ClientToken {

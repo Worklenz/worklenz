@@ -1,4 +1,4 @@
-import { PlusOutlined } from '@/shared/antd-imports';
+import { PlusOutlined, CrownOutlined } from '@/shared/antd-imports';
 import {
   Button,
   Card,
@@ -10,6 +10,7 @@ import {
   InputRef,
   List,
   Typography,
+  Tooltip,
 } from '@/shared/antd-imports';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { TFunction } from 'i18next';
@@ -21,6 +22,8 @@ import { ITaskViewModel } from '@/types/tasks/task.types';
 import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import logger from '@/utils/errorLogger';
+import { isFreeUser } from '@/utils/subscription-utils';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { sortTeamMembers } from '@/utils/sort-team-members';
 import { SocketEvents } from '@/shared/socket-events';
@@ -43,6 +46,7 @@ const NotifyMemberSelector = ({ task, t }: NotifyMemberSelectorProps) => {
   const currentSession = useAuthService().getCurrentSession();
   const dispatch = useAppDispatch();
   const { tab } = useTabSearchParam();
+  const isFree = isFreeUser(currentSession);
 
   const membersInputRef = useRef<InputRef>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -203,6 +207,26 @@ const NotifyMemberSelector = ({ task, t }: NotifyMemberSelectorProps) => {
   useEffect(() => {
     getSubscribers();
   }, [task?.id]);
+
+  if (isFree) {
+    return (
+      <Flex gap={8}>
+        <Avatars members={subscribers || []} />
+        <Tooltip title={t('common:upgrade-plan')} placement="top">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }} onClick={() => dispatch(toggleUpgradeModal())}>
+            <Button
+              type="dashed"
+              shape="circle"
+              size="small"
+              disabled
+              icon={<PlusOutlined style={{ fontSize: 12, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }} />}
+            />
+            <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
+          </div>
+        </Tooltip>
+      </Flex>
+    );
+  }
 
   return (
     <Flex gap={8}>

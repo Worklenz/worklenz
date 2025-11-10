@@ -1,4 +1,4 @@
-import { Tabs } from 'antd';
+import { Tabs } from '@/shared/antd-imports';
 import AddTaskInlineForm from './add-task-inline-form';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';

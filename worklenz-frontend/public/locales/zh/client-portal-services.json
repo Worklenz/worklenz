@@ -1,5 +1,6 @@
 {
   "title": "服务",
+  "description": "管理您的服务和产品",
   "nameColumn": "名称",
   "createdByColumn": "创建者",
   "statusColumn": "状态",

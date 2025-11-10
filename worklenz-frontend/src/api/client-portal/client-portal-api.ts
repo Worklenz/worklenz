@@ -129,6 +129,15 @@ export interface ClientPortalClient {
   status: 'active' | 'inactive' | 'pending';
   created_at: string;
   updated_at: string;
+  // Portal access fields
+  has_portal_access?: boolean;
+  invitation_sent_at?: string;
+  invitation_accepted?: boolean;
+  portal_status?: {
+    status: 'active' | 'invited' | 'not_invited' | 'expired';
+    label: string;
+    color: string;
+  };
 }
 
 export interface ClientPortalTeamMember {
@@ -411,6 +420,23 @@ export const clientPortalApi = createApi({
       providesTags: (result, error, id) => [{ type: 'Chats', id }],
     }),
 
+    createChat: builder.mutation<
+      { chatId: string; message: string },
+      {
+        recipientType: 'client' | 'team';
+        recipientId: string;
+        subject: string;
+        message: string;
+      }
+    >({
+      query: (chatData) => ({
+        url: '/clients/portal/chats',
+        method: 'POST',
+        body: chatData,
+      }),
+      invalidatesTags: ['Chats'],
+    }),
+
     sendMessage: builder.mutation<
       any,
       { chatId: string; messageData: { content: string; attachments?: any[] } }
@@ -495,6 +521,7 @@ export const clientPortalApi = createApi({
         };
       },
     }),
+
 
     // Client Management APIs (Organization-side endpoints)
     getClients: builder.query<
@@ -734,7 +761,15 @@ export const clientPortalApi = createApi({
     }),
 
     getOrganizationServices: builder.query<
-      any,
+      {
+        done: boolean;
+        body: {
+          data: any[];
+          total: number;
+        };
+        title: string | null;
+        message: string | null;
+      },
       {
         page?: number;
         limit?: number;
@@ -744,14 +779,14 @@ export const clientPortalApi = createApi({
       }
     >({
       query: params => ({
-        url: '/client-portal/services/organization/all',
+        url: '/clients/portal/services',
         params,
       }),
       providesTags: ['Services'],
     }),
 
     getOrganizationServiceById: builder.query<any, string>({
-      query: id => `/client-portal/services/organization/${id}`,
+      query: id => `/clients/portal/services/${id}`,
       providesTags: (result, error, id) => [{ type: 'Services', id }],
     }),
 
@@ -763,19 +798,38 @@ export const clientPortalApi = createApi({
         service_data?: any;
         is_public?: boolean;
         allowed_client_ids?: string[];
+        imageData?: string;
+        imageName?: string;
+        imageType?: string;
       }
     >({
       query: serviceData => ({
-        url: '/client-portal/services/organization',
+        url: '/clients/portal/services',
         method: 'POST',
         body: serviceData,
       }),
       invalidatesTags: ['Services'],
     }),
 
-    updateOrganizationService: builder.mutation<any, { id: string; data: any }>({
+    updateOrganizationService: builder.mutation<
+      any, 
+      { 
+        id: string; 
+        data: {
+          name?: string;
+          description?: string;
+          service_data?: any;
+          is_public?: boolean;
+          allowed_client_ids?: string[];
+          status?: string;
+          imageData?: string;
+          imageName?: string;
+          imageType?: string;
+        }
+      }
+    >({
       query: ({ id, data }) => ({
-        url: `/client-portal/services/organization/${id}`,
+        url: `/clients/portal/services/${id}`,
         method: 'PUT',
         body: data,
       }),
@@ -784,7 +838,7 @@ export const clientPortalApi = createApi({
 
     deleteOrganizationService: builder.mutation<void, string>({
       query: id => ({
-        url: `/client-portal/services/organization/${id}`,
+        url: `/clients/portal/services/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['Services'],
@@ -842,6 +896,7 @@ export const {
   // Chat
   useGetChatsQuery,
   useGetChatDetailsQuery,
+  useCreateChatMutation,
   useSendMessageMutation,
   useGetMessagesQuery,
 

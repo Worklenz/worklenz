@@ -34,9 +34,7 @@ export const projectTemplatesApiService = {
     return response.data;
   },
 
-  createCustomTemplate: async (body: {
-    template_id: string;
-  }): Promise<IServerResponse<IProjectTemplate>> => {
+  createCustomTemplate: async (body: ICustomProjectTemplateCreateRequest): Promise<IServerResponse<IProjectTemplate>> => {
     const response = await apiClient.post(`${rootUrl}/custom-template`, body);
     return response.data;
   },

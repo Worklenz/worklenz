@@ -19,5 +19,6 @@ ganttApiRouter.post("/update-task-dates", safeControllerFunction(GanttController
 ganttApiRouter.post("/create-task", safeControllerFunction(GanttController.createTask));
 ganttApiRouter.post("/create-phase", safeControllerFunction(GanttController.createPhase));
 ganttApiRouter.put("/update-phase", safeControllerFunction(GanttController.updatePhase));
+ganttApiRouter.post("/reorder-phases", safeControllerFunction(GanttController.reorderPhases));
 
 export default ganttApiRouter;

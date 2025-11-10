@@ -23,7 +23,7 @@ import { useTranslation } from 'react-i18next';
 import ClientPortalSidebar from './ClientPortalSidebar';
 import { useResponsive } from '@/hooks/useResponsive';
 import NotificationCenter from '../NotificationCenter';
-// import { useGetSettingsQuery } from '@/store/api';
+import OrganizationSwitcher from '../OrganizationSwitcher';
 
 const { Header, Sider, Content } = Layout;
 
@@ -95,29 +95,34 @@ const ClientLayout: React.FC = () => {
     {
       key: 'profile',
       icon: <UserOutlined />,
-      label: t('user.profile', 'Profile'),
-      onClick: () => navigate('/profile'),
-    },
-    {
-      key: 'theme',
-      icon: currentTheme === 'light' ? <MoonOutlined /> : <SunOutlined />,
-      label: t(`theme.${currentTheme === 'light' ? 'dark' : 'light'}`, currentTheme === 'light' ? 'Dark Mode' : 'Light Mode'),
-      onClick: handleThemeToggle,
-    },
-    {
-      key: 'language',
-      icon: <TranslationOutlined />,
       label: (
-        <Select
-          value={currentLanguage}
-          onChange={handleLanguageChange}
-          style={{ width: 120 }}
-          size="small"
-          bordered={false}
-          options={languageOptions}
-          onClick={(e) => e.stopPropagation()}
-        />
+        <div style={{ padding: '8px 0' }}>
+          <div style={{ 
+            fontSize: '14px', 
+            fontWeight: '600',
+            color: token.colorText,
+            marginBottom: '4px',
+          }}>
+            {user?.name || t('user.defaultName', 'Client User')}
+          </div>
+          <div style={{ 
+            fontSize: '12px', 
+            color: token.colorTextSecondary,
+          }}>
+            {user?.email || 'user@example.com'}
+          </div>
+        </div>
       ),
+      disabled: true,
+    },
+    {
+      type: 'divider' as const,
+    },
+    {
+      key: 'settings',
+      icon: <UserOutlined />,
+      label: t('user.profile', 'Profile Settings'),
+      onClick: () => navigate('/profile'),
     },
     {
       type: 'divider' as const,
@@ -127,6 +132,7 @@ const ClientLayout: React.FC = () => {
       icon: <LogoutOutlined />,
       label: t('user.logout', 'Logout'),
       onClick: handleLogout,
+      danger: true,
     },
   ];
 
@@ -171,111 +177,73 @@ const ClientLayout: React.FC = () => {
       >
         <Header
           style={{
-            padding: isMobile ? '0 16px' : '0 24px',
+            padding: 0,
             background: token.colorBgContainer,
             borderBottom: `1px solid ${token.colorBorder}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            height: 72,
+            height: 64,
             zIndex: 1000,
             position: 'sticky',
             top: 0,
+            boxShadow: currentTheme === 'dark' ? '0 2px 8px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.06)',
           }}
         >
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: isMobile ? 8 : 16,
-            background: token.colorBgLayout,
-            padding: isMobile ? '6px 12px' : '8px 16px',
-            borderRadius: '12px',
-            border: `1px solid ${token.colorBorder}`,
+          <div style={{
+            width: '100%',
+            height: '100%',
+            paddingInline: isMobile ? 24 : 48,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
           }}>
-            <Switch
-              checked={currentTheme === 'dark'}
-              onChange={handleThemeToggle}
-              checkedChildren={<MoonOutlined />}
-              unCheckedChildren={<SunOutlined />}
-              size="small"
-              style={{
-                backgroundColor: currentTheme === 'dark' ? '#1890ff' : '#d9d9d9',
-                borderColor: currentTheme === 'dark' ? '#1890ff' : '#d9d9d9',
-              }}
-            />
-            {!isMobile && (
-              <Select
-                value={currentLanguage}
-                onChange={handleLanguageChange}
-                style={{ width: 110 }}
-                size="small"
-                options={languageOptions}
-                suffixIcon={<TranslationOutlined />}
-                bordered={false}
-              />
-            )}
-          </div>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 20 }}>
-            <NotificationCenter />
-            
-            <Dropdown
-              menu={{ items: userMenuItems }}
-              placement="bottomRight"
-              trigger={['click']}
-            >
-              <div style={{ 
-                cursor: 'pointer', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: isMobile ? 8 : 12,
-                padding: isMobile ? '6px 12px' : '8px 16px',
-                borderRadius: '12px',
-                transition: 'all 0.2s ease',
-                border: `1px solid ${token.colorBorder}`,
-                background: token.colorBgContainer,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = token.colorBgTextHover;
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = token.colorBgContainer;
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
+            {/* Actions Section */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+              {/* Theme & Language Controls */}
+              {!isMobile && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Switch
+                    checked={currentTheme === 'dark'}
+                    onChange={handleThemeToggle}
+                    checkedChildren={<MoonOutlined />}
+                    unCheckedChildren={<SunOutlined />}
+                  />
+                  <Select
+                    value={currentLanguage}
+                    onChange={handleLanguageChange}
+                    style={{ width: 120 }}
+                    size="small"
+                    options={languageOptions}
+                    suffixIcon={<TranslationOutlined />}
+                    variant="borderless"
+                  />
+                </div>
+              )}
+              
+              {!isMobile && <OrganizationSwitcher />}
+              <NotificationCenter />
+              
+              <Dropdown
+                menu={{ items: userMenuItems }}
+                placement="bottomRight"
+                trigger={['click']}
               >
-                <Avatar 
-                  icon={<UserOutlined />} 
-                  style={{ 
-                    backgroundColor: token.colorPrimary,
-                    width: isMobile ? 32 : 36,
-                    height: isMobile ? 32 : 36,
-                  }}
-                />
-                {!isMobile && (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                    <span style={{ 
-                      fontSize: '14px', 
-                      fontWeight: '600',
-                      color: token.colorText,
-                      lineHeight: '1.2',
-                    }}>
-                      {user?.name || t('user.defaultName', 'Client User')}
-                    </span>
-                    <span style={{ 
-                      fontSize: '12px', 
-                      color: token.colorTextSecondary,
-                      lineHeight: '1.2',
-                    }}>
-                      {user?.email || 'user@example.com'}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </Dropdown>
+                <div style={{ 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  height: '100%',
+                }}
+                >
+                  <Avatar 
+                    icon={<UserOutlined />} 
+                    style={{ 
+                      backgroundColor: token.colorPrimary,
+                      width: 40,
+                      height: 40,
+                    }}
+                  />
+                </div>
+              </Dropdown>
+            </div>
           </div>
         </Header>
         

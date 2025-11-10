@@ -1,6 +1,6 @@
 import { Col, ConfigProvider, Flex, Layout, Alert, Result, Button } from '@/shared/antd-imports';
 import React, { useState, useEffect } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, Navigate } from 'react-router-dom';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useResponsive } from '../hooks/useResponsive';
 import { colors } from '../styles/colors';
@@ -10,6 +10,8 @@ import { clientPortalItems } from '../lib/client-portal/client-portal-constants'
 import { themeWiseColor } from '../utils/themeWiseColor';
 import { useAuthService } from '@/hooks/useAuth';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_client_portal_viewed } from '@/shared/worklenz-analytics-events';
 
 const ClientPortalLayout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -23,6 +25,16 @@ const ClientPortalLayout = () => {
   const auth = useAuthService();
   const currentSession = auth.getCurrentSession();
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const { trackMixpanelEvent } = useMixpanelTracking();
+
+  // Redirect unauthorized users to main dashboard
+  if (!auth.isAuthenticated()) {
+    return <Navigate to="/auth/signin" replace />;
+  }
+
+  if (!hasBusinessAccess) {
+    return <Navigate to="/worklenz/admin-center/billing" replace />;
+  }
 
   // Auto-collapse sidebar on mobile
   useEffect(() => {
@@ -30,6 +42,11 @@ const ClientPortalLayout = () => {
       setSidebarCollapsed(true);
     }
   }, [isMobile]);
+
+  // Track client portal view
+  useEffect(() => {
+    trackMixpanelEvent(evt_client_portal_viewed);
+  }, [trackMixpanelEvent]);
 
   const sidebarWidth = sidebarCollapsed ? 80 : 280;
   const contentPadding = isDesktop ? 32 : isTablet ? 24 : 16;
@@ -84,14 +101,12 @@ const ClientPortalLayout = () => {
                 background: themeWiseColor('#fff', colors.darkGray, themeMode),
                 borderRight: `1px solid ${themeWiseColor('#f0f0f0', '#303030', themeMode)}`,
                 transition: 'all 0.2s ease',
-                opacity: hasBusinessAccess ? 1 : 0.6,
-                pointerEvents: hasBusinessAccess ? 'auto' : 'none',
               }}
             >
               <ClientPortalSidebar
                 items={clientPortalItems}
                 collapsed={sidebarCollapsed}
-                onToggleCollapse={() => hasBusinessAccess && setSidebarCollapsed(!sidebarCollapsed)}
+                onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
               />
             </Layout.Sider>
           )}
@@ -111,33 +126,7 @@ const ClientPortalLayout = () => {
                 overflowX: 'hidden',
               }}
             >
-              {!hasBusinessAccess && (
-                <Alert
-                  message="Business Plan Required"
-                  description="Client Portal features are available only on Business and Enterprise plans. Upgrade your plan to access these features."
-                  type="warning"
-                  showIcon
-                  style={{ marginBottom: 16 }}
-                  action={
-                    <Button
-                      size="small"
-                      type="primary"
-                      onClick={() => navigate('/worklenz/admin-center/billing')}
-                    >
-                      Upgrade Plan
-                    </Button>
-                  }
-                />
-              )}
-
-              <div
-                style={{
-                  opacity: hasBusinessAccess ? 1 : 0.6,
-                  pointerEvents: hasBusinessAccess ? 'auto' : 'none',
-                }}
-              >
-                <Outlet />
-              </div>
+              <Outlet />
             </div>
           </Layout.Content>
         </Layout>

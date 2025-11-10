@@ -5,8 +5,10 @@ import {NotificationsService} from "../../services/notifications/notifications.s
 import {getColor} from "../../shared/utils";
 import {SocketEvents} from "../events";
 
-import {getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates} from "../util";
+import {getLoggedInUserIdFromSocket, notifyProjectUpdates} from "../util";
 import {logMemberAssignment} from "../../services/activity-logs/activity-logs.service";
+import { ExternalNotificationsService } from "../../services/external-notifications.service";
+import { log_error } from "../../shared/utils";
 
 export interface ITaskAssignee {
   team_member_id?: string;
@@ -86,6 +88,32 @@ export async function on_quick_assign_or_remove(_io: Server, socket: Socket, dat
 
     }
     notifyProjectUpdates(socket, body.task_id);
+
+    // Send external notifications (Slack, Teams) only for assignments
+    if (isAssign) {
+      try {
+        const userQuery = `SELECT name FROM users WHERE id = $1`;
+        const userResult = await db.query(userQuery, [userId]);
+        const userName = userResult.rows[0]?.name || "Unknown User";
+        
+        const projectQuery = `SELECT project_id FROM tasks WHERE id = $1`;
+        const projectResult = await db.query(projectQuery, [body.task_id]);
+        const projectId = projectResult.rows[0]?.project_id;
+        
+        if (projectId) {
+          await ExternalNotificationsService.sendExternalNotifications(
+            projectId,
+            body.task_id,
+            "task_assigned",
+            userName
+          );
+        }
+      } catch (notifError) {
+        log_error("Error sending external notifications:", notifError);
+        // Don't throw - continue even if notifications fail
+      }
+    }
+
     const res = {id: body.task_id, parent_task: body.parent_task, members, assignees, names, mode: body.mode, team_member_id: body.team_member_id};
     socket.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), res);
     return;
@@ -110,7 +138,8 @@ export async function assignMemberIfNot(taskId: string, userId: string, teamId: 
     const [data] = result.rows;
 
     if (!data) {
-      log_error(new Error(`No team member found for userId: ${userId}, teamId: ${teamId}`));
+      // User is not a member of this team - this is normal for admins or viewers
+      // Silently return without logging as this is expected behavior
       return;
     }
 

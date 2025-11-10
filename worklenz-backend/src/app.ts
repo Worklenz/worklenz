@@ -55,11 +55,14 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
 const allowedOrigins = [
   isProduction()
     ? [
-      `http://localhost:5000`,
-      `http://127.0.0.1:5000`,
-      process.env.SERVER_CORS || "",  // Add hostname from env
-      process.env.FRONTEND_URL || ""  // Support FRONTEND_URL as well
-    ].filter(Boolean)  // Remove empty strings
+        `http://localhost:5000`,
+        `http://127.0.0.1:5000`,
+        `https://app.worklenz.com`,
+        `https://www.app.worklenz.com`,
+        `https://clients.worklenz.com`,
+        process.env.SERVER_CORS || "",  // Add hostname from env
+        process.env.FRONTEND_URL || ""  // Support FRONTEND_URL as well
+      ].filter(Boolean)  // Remove empty strings
     : [
       "http://localhost:3000",
       "http://localhost:5173",
@@ -183,6 +186,7 @@ app.get("/csrf-token", (req: Request, res: Response) => {
 // Webhook endpoints (no CSRF required)
 app.post("/webhook/emails/bounce", safeControllerFunction(AwsSesController.handleBounceResponse));
 app.post("/webhook/emails/complaints", safeControllerFunction(AwsSesController.handleComplaintResponse));
+app.post("/webhook/emails/delivery", safeControllerFunction(AwsSesController.handleDeliveryEvents));
 app.post("/webhook/emails/reply", safeControllerFunction(AwsSesController.handleReplies));
 
 // Static file serving

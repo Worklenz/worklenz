@@ -8,9 +8,11 @@
   "project-templates": "Project Templates",
   "task-templates": "Task Templates",
   "team-members": "Team Members",
+  "team-hierarchy": "Team Hierarchy",
   "teams": "Teams",
   "change-password": "Change Password",
   "language-and-region": "Language and Region",
   "appearance": "Appearance",
+  "integrations": "Integrations",
   "account-deletion": "Delete Account"
 }

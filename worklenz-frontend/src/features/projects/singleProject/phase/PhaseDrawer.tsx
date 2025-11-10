@@ -1,4 +1,4 @@
-import { Button, Drawer, Flex, Input, Spin, Typography } from '@/shared/antd-imports';
+import { Button, Drawer, Flex, Input, Spin, Typography, Tooltip } from '@/shared/antd-imports';
 import { useState } from 'react';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { useAppDispatch } from '../../../../hooks/useAppDispatch';
@@ -11,9 +11,12 @@ import {
   updateProjectPhaseLabel,
 } from './phases.slice';
 import { Divider } from 'antd/lib';
-import { PlusOutlined } from '@/shared/antd-imports';
+import { PlusOutlined, CrownOutlined } from '@/shared/antd-imports';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuthService } from '@/hooks/useAuth';
+import { isFreeUser } from '@/utils/subscription-utils';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import PhaseOptionItem from './PhaseOptionItem';
 import {
   DndContext,
@@ -48,11 +51,15 @@ interface UpdateSortOrderBody {
 
 const PhaseDrawer = () => {
   const { t } = useTranslation('phases-drawer');
+  const { t: tCommon } = useTranslation('common');
   const { tab } = useTabSearchParam();
   const isDrawerOpen = useAppSelector(state => state.phaseReducer.isPhaseDrawerOpen);
   const dispatch = useAppDispatch();
   const { projectId } = useParams();
   const { project } = useAppSelector(state => state.projectReducer);
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
+  const isFree = isFreeUser(currentSession);
   const [phaseName, setPhaseName] = useState<string>(project?.phase_label || '');
   const [initialPhaseName, setInitialPhaseName] = useState<string>(project?.phase_label || '');
   const { phaseList, loadingPhases } = useAppSelector(state => state.phaseReducer);
@@ -76,6 +83,11 @@ const PhaseDrawer = () => {
   };
 
   const handleAddOptions = async () => {
+    if (isFree) {
+      dispatch(toggleUpgradeModal());
+      return;
+    }
+
     if (!projectId) return;
 
     await dispatch(addPhaseOption({ projectId: projectId }));
@@ -176,9 +188,20 @@ const PhaseDrawer = () => {
         <Flex align="center" justify="space-between">
           <Typography.Text>{t('phaseOptions')}</Typography.Text>
 
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddOptions}>
-            {t('addOption')}
-          </Button>
+          {isFree ? (
+            <Tooltip title={tCommon('upgrade-plan')} placement="top">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleAddOptions} disabled>
+                  {t('addOption')}
+                </Button>
+                <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
+              </div>
+            </Tooltip>
+          ) : (
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAddOptions}>
+              {t('addOption')}
+            </Button>
+          )}
         </Flex>
 
         <Spin spinning={loadingPhases || sorting}>

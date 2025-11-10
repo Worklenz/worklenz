@@ -1,9 +1,8 @@
 import React, { useEffect, useCallback } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { checkTokenExpiry, refreshToken, logoutUser } from '@/store/slices/authSlice';
+import { refreshToken, logoutUser, initializeAuth } from '@/store/slices/authSlice';
 import { TokenManager } from '@/utils/tokenManager';
-import { clientPortalAPI } from '@/services/api';
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -11,7 +10,7 @@ interface AuthProviderProps {
 
 const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const dispatch = useAppDispatch();
-  const { token, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { token, isAuthenticated, isLoading } = useAppSelector((state) => state.auth);
 
   const handleTokenExpiry = useCallback(() => {
     dispatch(logoutUser());
@@ -23,39 +22,34 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [dispatch, isAuthenticated, token]);
 
-  // Initialize token in API service on mount
+  // Initialize authentication on app load
   useEffect(() => {
-    if (token) {
-      clientPortalAPI.setToken(token);
+    dispatch(initializeAuth());
+  }, [dispatch]);
+
+  // Set up periodic checks after authentication is initialized
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      // Set up periodic token expiry checks
+      const stopExpiryCheck = TokenManager.startTokenExpiryCheck(handleTokenExpiry, 300000); // Check every 5 minutes
+      
+      // Set up periodic token refresh checks
+      const stopRefreshCheck = TokenManager.startTokenRefreshCheck(handleTokenRefresh, 300000); // Check every 5 minutes
+
+      return () => {
+        stopExpiryCheck();
+        stopRefreshCheck();
+      };
     }
-  }, [token]);
-
-  // Check token expiry and set up periodic checks
-  useEffect(() => {
-    // Initial check
-    dispatch(checkTokenExpiry());
-
-    // Set up periodic token expiry checks
-    const stopExpiryCheck = TokenManager.startTokenExpiryCheck(handleTokenExpiry, 30000); // Check every 30 seconds
-    
-    // Set up periodic token refresh checks
-    const stopRefreshCheck = TokenManager.startTokenRefreshCheck(handleTokenRefresh, 60000); // Check every minute
-
-    return () => {
-      stopExpiryCheck();
-      stopRefreshCheck();
-    };
-  }, [dispatch, handleTokenExpiry, handleTokenRefresh]);
+  }, [isLoading, isAuthenticated, handleTokenExpiry, handleTokenRefresh]);
 
   // Set up visibility change listener to check token when tab becomes visible
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && isAuthenticated) {
-        dispatch(checkTokenExpiry());
-        
-        // Check if token should be refreshed
-        if (TokenManager.shouldRefreshToken()) {
-          dispatch(refreshToken());
+        // Only check if token is actually expired, not just close to expiry
+        if (TokenManager.isTokenExpired()) {
+          dispatch(logoutUser());
         }
       }
     };

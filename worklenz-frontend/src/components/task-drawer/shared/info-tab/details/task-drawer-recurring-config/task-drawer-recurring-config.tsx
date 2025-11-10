@@ -11,8 +11,9 @@ import {
   Skeleton,
   Row,
   Col,
+  Tooltip,
 } from '@/shared/antd-imports';
-import { SettingOutlined } from '@/shared/antd-imports';
+import { SettingOutlined, CrownOutlined } from '@/shared/antd-imports';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import {
@@ -29,6 +30,9 @@ import { updateTaskCounts } from '@/features/task-management/task-management.sli
 import { taskRecurringApiService } from '@/api/tasks/task-recurring.api.service';
 import logger from '@/utils/errorLogger';
 import { setTaskRecurringSchedule } from '@/features/task-drawer/task-drawer.slice';
+import { useAuthService } from '@/hooks/useAuth';
+import { isFreeUser } from '@/utils/subscription-utils';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 
 const monthlyDateOptions = Array.from({ length: 28 }, (_, i) => i + 1);
 
@@ -36,6 +40,10 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
   const { socket, connected } = useSocket();
   const dispatch = useAppDispatch();
   const { t } = useTranslation('task-drawer/task-drawer-recurring-config');
+  const { t: tCommon } = useTranslation('common');
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
+  const isFree = isFreeUser(currentSession);
 
   const repeatOptions: IRepeatOption[] = [
     { label: t('daily'), value: ITaskRecurring.Daily },
@@ -82,6 +90,11 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
   const [scheduleData, setScheduleData] = useState<ITaskRecurringSchedule>({});
 
   const handleChange = (checked: boolean) => {
+    if (isFree) {
+      dispatch(toggleUpgradeModal());
+      return;
+    }
+
     if (!task.id) return;
 
     socket?.emit(SocketEvents.TASK_RECURRING_CHANGE.toString(), {
@@ -249,7 +262,16 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
     <div>
       <Form.Item className="w-100 mb-2 align-form-item" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-          <Switch checked={recurring} onChange={handleChange} />
+          {isFree ? (
+            <Tooltip title={tCommon('upgrade-plan')} placement="top">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }} onClick={() => dispatch(toggleUpgradeModal())}>
+                <Switch checked={false} disabled />
+                <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
+              </div>
+            </Tooltip>
+          ) : (
+            <Switch checked={recurring} onChange={handleChange} />
+          )}
           &nbsp;
           {recurring && (
             <Popover

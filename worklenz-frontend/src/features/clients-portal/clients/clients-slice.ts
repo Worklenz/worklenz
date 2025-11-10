@@ -45,7 +45,7 @@ const initialState: ClientsState = {
   // Filter and Pagination State
   filters: {
     search: '',
-    status: 'active', // Default to active clients
+    status: 'all', // Default to all clients
     sortBy: 'name',
     sortOrder: 'asc',
   },
@@ -135,7 +135,7 @@ const clientsSlice = createSlice({
     clearFilters: state => {
       state.filters = {
         search: '',
-        status: 'active', // Keep active as default when clearing filters
+        status: 'all', // Keep all as default when clearing filters
         sortBy: 'name',
         sortOrder: 'asc',
       };

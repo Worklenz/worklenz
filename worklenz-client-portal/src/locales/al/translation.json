@@ -9,5 +9,12 @@
     "signin": "Hyr",
     "signup": "Regjistrohu",
     "no_account": "Nuk keni llogari?"
+  },
+  "organizations": {
+    "switch": "Ndrysho Organizatën",
+    "current": "Organizata Aktuale",
+    "select": "Zgjidh Organizatën",
+    "switch_success": "Organizata u ndërrua me sukses",
+    "switch_error": "Dështoi ndërrimi i organizatës"
   }
 } 

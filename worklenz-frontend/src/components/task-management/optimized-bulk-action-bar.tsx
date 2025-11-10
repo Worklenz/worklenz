@@ -36,6 +36,9 @@ import { InputRef } from 'antd/es/input';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import TaskTemplateDrawer from '@/components/task-templates/task-template-drawer';
 import { useAuthService } from '@/hooks/useAuth';
+import { isFreeUser } from '@/utils/subscription-utils';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { CrownOutlined } from '@/shared/antd-imports';
 
 const { Text } = Typography;
 
@@ -175,6 +178,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     onBulkSetDueDate,
   }) => {
     const { t } = useTranslation(['tasks/task-table-bulk-actions', 'task-management']);
+  const { t: tCommon } = useTranslation('common');
     const dispatch = useDispatch();
     const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
 
@@ -214,7 +218,10 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     const [showDrawer, setShowDrawer] = useState(false);
 
     // Auth service for permissions
-    const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
+    const authService = useAuthService();
+    const isOwnerOrAdmin = authService.isOwnerOrAdmin();
+    const currentSession = authService.getCurrentSession();
+    const isFree = isFreeUser(currentSession);
 
     // Smooth entrance animation
     useEffect(() => {
@@ -363,6 +370,11 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
 
     // Update Redux state when opening template drawer
     const handleOpenTemplateDrawer = useCallback(() => {
+      if (isFree) {
+        dispatch(toggleUpgradeModal());
+        return;
+      }
+
       // Convert Task objects to IProjectTask format for template creation
       const projectTasks: IProjectTask[] = selectedTaskObjects.map((task: any) => ({
         id: task.id,
@@ -399,7 +411,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
       // Update the bulkActionReducer with selected tasks
       dispatch(selectTasks(projectTasks));
       setShowDrawer(true);
-    }, [selectedTaskObjects, dispatch]);
+    }, [selectedTaskObjects, dispatch, isFree]);
 
     // Labels dropdown content
     const labelsDropdownContent = useMemo(
@@ -481,13 +493,18 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     }, [onBulkAssignToMe, updateLoadingState]);
 
     const handleArchive = useCallback(async () => {
+      if (isFree) {
+        dispatch(toggleUpgradeModal());
+        return;
+      }
+
       updateLoadingState('archive', true);
       try {
         await onBulkArchive?.();
       } finally {
         updateLoadingState('archive', false);
       }
-    }, [onBulkArchive, updateLoadingState]);
+    }, [onBulkArchive, updateLoadingState, isFree, dispatch]);
 
     const handleDelete = useCallback(async () => {
       updateLoadingState('delete', true);
@@ -776,13 +793,29 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           </Tooltip>
 
           {/* Archive */}
-          <ActionButton
-            icon={<InboxOutlined />}
-            tooltip={t('ARCHIVE')}
-            onClick={handleArchive}
-            loading={loadingStates.archive}
-            isDarkMode={isDarkMode}
-          />
+          <Tooltip title={isFree ? tCommon('upgrade-plan') : t('ARCHIVE')} placement="top">
+            <Button
+              icon={<InboxOutlined />}
+              style={{
+                background: 'transparent',
+                color: isDarkMode ? '#e5e7eb' : '#374151',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '6px',
+                height: '32px',
+                width: '32px',
+                fontSize: '14px',
+                borderRadius: '6px',
+                transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+              size="small"
+              type="text"
+              loading={loadingStates.archive}
+              onClick={handleArchive}
+            />
+          </Tooltip>
 
           {/* Delete */}
           <Popconfirm
@@ -812,7 +845,12 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
                   items: [
                     {
                       key: '1',
-                      label: t('createTaskTemplate'),
+                      label: (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span>{t('createTaskTemplate')}</span>
+                          {isFree && <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />}
+                        </div>
+                      ),
                       onClick: handleOpenTemplateDrawer,
                     },
                   ],

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Col, ConfigProvider, Flex, Menu, Tooltip, Button } from '@/shared/antd-imports';
@@ -14,6 +14,7 @@ import ProfileButton from './user-profile/ProfileButton';
 import SwitchTeamButton from './switch-team/SwitchTeamButton';
 import UpgradePlanButton from './upgrade-plan/UpgradePlanButton';
 import NotificationDrawer from '../../components/navbar/notifications/notifications-drawer/notification/notfication-drawer';
+import { TrialDaysBadge } from './trial-badge/TrialDaysBadge';
 
 import { useResponsive } from '@/hooks/useResponsive';
 import { getJSONFromLocalStorage } from '@/utils/localStorageFunctions';
@@ -27,22 +28,27 @@ import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { isTeamLeadRole } from '@/types/roles/role.types';
+import { ConnectionStatusIndicator } from '@/components/connection-status/ConnectionStatusIndicator';
 
 const Navbar = () => {
   const dispatch = useAppDispatch();
   const [current, setCurrent] = useState<string>('home');
-  const currentSession = useAuthService().getCurrentSession();
   const [daysUntilExpiry, setDaysUntilExpiry] = useState<number | null>(null);
 
   const location = useLocation();
   const { isDesktop, isMobile, isTablet } = useResponsive();
   const { t } = useTranslation('navbar');
   const { t: tCommon } = useTranslation('common');
+  
+  // Get auth service and memoize derived values
   const authService = useAuthService();
-  const { setIdentity } = useMixpanelTracking();
+  const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
+  const isOwnerOrAdmin = useMemo(() => authService.isOwnerOrAdmin(), [authService]);
+  
+  const { setIdentity, trackMixpanelEvent } = useMixpanelTracking();
   const [navRoutesList, setNavRoutesList] = useState<NavRoutesType[]>(navRoutes);
-  const [isOwnerOrAdmin, setIsOwnerOrAdmin] = useState<boolean>(authService.isOwnerOrAdmin());
-  const showUpgradeTypes = [ISUBSCRIPTION_TYPE.TRIAL];
+  const showUpgradeTypes = useMemo(() => [ISUBSCRIPTION_TYPE.TRIAL], []);
 
   useEffect(() => {
     authApiService
@@ -51,13 +57,13 @@ const Navbar = () => {
         if (authorizeResponse.authenticated) {
           authService.setCurrentSession(authorizeResponse.user);
           setIdentity(authorizeResponse.user);
-          setIsOwnerOrAdmin(!!(authorizeResponse.user.is_admin || authorizeResponse.user.owner));
+          // Remove setIsOwnerOrAdmin since it's now computed
         }
       })
       .catch(error => {
         logger.error('Error during authorization', error);
       });
-  }, []);
+  }, [authService, setIdentity]);
 
   useEffect(() => {
     const storedNavRoutesList: NavRoutesType[] = getJSONFromLocalStorage('navRoutes') || navRoutes;
@@ -77,10 +83,16 @@ const Navbar = () => {
   const navlinkItems = useMemo(() => {
     const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
     const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
+    const isSelfHosted = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED;
+    
+    // Check if user has team lead role
+    const isTeamLead = currentSession?.role_name ? isTeamLeadRole(currentSession.role_name) : false;
 
     return navRoutesList
       .filter(route => {
         if (route.adminOnly && !isOwnerOrAdmin) return false;
+        if (route.selfHostedExcluded && isSelfHosted) return false;
+        if (route.teamLeadOnly && !isTeamLead) return false;
         return true;
       })
       .map((route, index) => {
@@ -93,6 +105,7 @@ const Navbar = () => {
           key: route.path.split('/').pop() || route.name,
           disabled: false, // Don't disable the menu item so click events work
           label: shouldDisable ? (
+            // Show all premium features with normal colors and crown icon
             <Tooltip
               title={
                 isFreePlanRoute && isFreePlan
@@ -102,32 +115,37 @@ const Navbar = () => {
               placement="bottom"
             >
               <span
-                className="disabled-navlink disabled-navlink-with-crown"
                 style={{
                   cursor: 'pointer',
-                  color: '#8c8c8c',
-                  opacity: 0.6,
+                  fontWeight: 600,
                 }}
               >
-                {t(route.name)}
-                <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
+                {t(route.name, { defaultValue: route.name.charAt(0).toUpperCase() + route.name.slice(1) })}
+                <CrownOutlined style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }} />
               </span>
             </Tooltip>
           ) : (
             <Link to={route.path} style={{ fontWeight: 600 }}>
-              {t(route.name)}
+              {t(route.name, { defaultValue: route.name.charAt(0).toUpperCase() + route.name.slice(1) })}
             </Link>
           ),
         };
       });
   }, [navRoutesList, t, isOwnerOrAdmin, currentSession, tCommon, dispatch]);
 
-  useEffect(() => {
+  // Memoize current route calculation to prevent unnecessary rerenders
+  const currentRoute = useMemo(() => {
     const afterWorklenzString = location.pathname.split('/worklenz/')[1];
-    const pathKey = afterWorklenzString.split('/')[0];
+    const pathKey = afterWorklenzString?.split('/')[0];
+    return pathKey ?? 'home';
+  }, [location.pathname]);
 
-    setCurrent(pathKey ?? 'home');
-  }, [location]);
+  // Only update state if the route actually changed
+  useEffect(() => {
+    if (currentRoute !== current) {
+      setCurrent(currentRoute);
+    }
+  }, [currentRoute, current]);
 
   return (
     <Col
@@ -170,7 +188,8 @@ const Navbar = () => {
                 border: 'none',
               }}
               items={navlinkItems}
-              onClick={({ key }) => {
+              onClick={useCallback((menuInfo: { key: string }) => {
+                const { key } = menuInfo;
                 // Handle clicks on disabled items to open upgrade modal
                 const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
                 const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
@@ -181,6 +200,15 @@ const Navbar = () => {
                 });
 
                 if (clickedRoute) {
+                  // Track navigation clicks for client portal
+                  if (clickedRoute.name === 'client-portal') {
+                    trackMixpanelEvent('client_portal_nav_clicked', {
+                      source: 'navbar',
+                      user_type: isFreePlan ? 'free' : currentSession?.subscription_type?.toLowerCase(),
+                      is_admin: isOwnerOrAdmin,
+                    });
+                  }
+                  
                   const isBusinessRoute = clickedRoute.businessPlanRequired;
                   const isFreePlanRoute = !clickedRoute.freePlanFeature;
                   const shouldOpenModal =
@@ -190,7 +218,7 @@ const Navbar = () => {
                     dispatch(toggleUpgradeModal());
                   }
                 }
-              }}
+              }, [currentSession, navRoutesList, trackMixpanelEvent, isOwnerOrAdmin, dispatch])}
             />
           )}
 
@@ -198,12 +226,14 @@ const Navbar = () => {
             <ConfigProvider wave={{ disabled: true }}>
               {isDesktop && (
                 <Flex gap={20} align="center">
+                  <TrialDaysBadge />
                   {isOwnerOrAdmin &&
                     showUpgradeTypes.includes(
                       currentSession?.subscription_type as ISUBSCRIPTION_TYPE
-                    ) && <UpgradePlanButton />}
+                    ) && <UpgradePlanButton showModal redirectToBilling={false} />}
                   {isOwnerOrAdmin && <InviteButton />}
                   <Flex align="center">
+                    <ConnectionStatusIndicator />
                     <SwitchTeamButton />
                     <NotificationButton />
                     <TimerButton />
@@ -214,6 +244,7 @@ const Navbar = () => {
               )}
               {isTablet && !isDesktop && (
                 <Flex gap={12} align="center">
+                  <TrialDaysBadge />
                   <SwitchTeamButton />
                   <NotificationButton />
                   <ProfileButton isOwnerOrAdmin={isOwnerOrAdmin} />
@@ -222,6 +253,7 @@ const Navbar = () => {
               )}
               {isMobile && (
                 <Flex gap={12} align="center">
+                  <TrialDaysBadge />
                   <NotificationButton />
                   <ProfileButton isOwnerOrAdmin={isOwnerOrAdmin} />
                   <MobileMenuButton />
@@ -238,4 +270,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default memo(Navbar);

@@ -11,5 +11,8 @@
   "teams": "Equipos",
   "change-password": "Cambiar contraseña",
   "language-and-region": "Idioma y región",
-  "appearance": "Apariencia"
+  "appearance": "Apariencia",
+  "integrations": "Integraciones",
+  "account-deletion": "Eliminar cuenta",
+  "team-hierarchy": "Jerarquía del equipo"
 }

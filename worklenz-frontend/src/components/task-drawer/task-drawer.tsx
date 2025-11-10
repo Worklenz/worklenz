@@ -25,16 +25,25 @@ import TimeLogForm from './shared/time-log/time-log-form';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import useTaskDrawerUrlSync from '@/hooks/useTaskDrawerUrlSync';
 import InfoTabFooter from './shared/info-tab/info-tab-footer';
-import { Flex } from '@/shared/antd-imports';
+import { Flex, Tooltip } from '@/shared/antd-imports';
+import { CrownOutlined } from '@ant-design/icons';
+import { useAuthService } from '@/hooks/useAuth';
+import { isFreeUser } from '@/utils/subscription-utils';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 
 const TaskDrawer = () => {
   const { t } = useTranslation('task-drawer/task-drawer');
+  const { t: tCommon } = useTranslation('common');
   const [activeTab, setActiveTab] = useState<string>('info');
   const [refreshTimeLogTrigger, setRefreshTimeLogTrigger] = useState(0);
 
   const { showTaskDrawer, timeLogEditing } = useAppSelector(state => state.taskDrawerReducer);
   const { taskFormViewModel, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
   const { projectId } = useAppSelector(state => state.projectReducer);
+  
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
+  const isFree = isFreeUser(currentSession);
   const taskNameInputRef = useRef<InputRef>(null);
   const isClosingManually = useRef(false);
 
@@ -93,6 +102,10 @@ const TaskDrawer = () => {
   };
 
   const handleTabChange = (key: string) => {
+    if (isFree && (key === 'timeLog' || key === 'activityLog')) {
+      dispatch(toggleUpgradeModal());
+      return;
+    }
     setActiveTab(key);
   };
 
@@ -126,6 +139,10 @@ const TaskDrawer = () => {
     refreshTimeLogs();
   };
 
+  const handlePremiumTabClick = () => {
+    dispatch(toggleUpgradeModal());
+  };
+
   const tabItems: TabsProps['items'] = [
     {
       key: 'info',
@@ -134,13 +151,29 @@ const TaskDrawer = () => {
     },
     {
       key: 'timeLog',
-      label: t('taskTimeLogTab.title'),
+      label: isFree ? (
+        <Tooltip title={tCommon('upgrade-plan')} placement="top">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }} onClick={handlePremiumTabClick}>
+            <span>{t('taskTimeLogTab.title')}</span>
+            <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
+          </div>
+        </Tooltip>
+      ) : t('taskTimeLogTab.title'),
       children: <TaskDrawerTimeLog t={t} refreshTrigger={refreshTimeLogTrigger} />,
+      disabled: isFree,
     },
     {
       key: 'activityLog',
-      label: t('taskActivityLogTab.title'),
+      label: isFree ? (
+        <Tooltip title={tCommon('upgrade-plan')} placement="top">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }} onClick={handlePremiumTabClick}>
+            <span>{t('taskActivityLogTab.title')}</span>
+            <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
+          </div>
+        </Tooltip>
+      ) : t('taskActivityLogTab.title'),
       children: <TaskDrawerActivityLog />,
+      disabled: isFree,
     },
   ];
 

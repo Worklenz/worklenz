@@ -542,8 +542,10 @@ const ProjectViewBoard = () => {
 
   // Track analytics event on component mount
   useEffect(() => {
-    trackMixpanelEvent(evt_project_board_visit);
-  }, []);
+    trackMixpanelEvent(evt_project_board_visit, {
+      project_id: projectId || '',
+    });
+  }, [trackMixpanelEvent, projectId]);
 
   // Cleanup debounced function on unmount
   useEffect(() => {

@@ -56,6 +56,7 @@ const transformToWorkloadData = (data: any): IWorkloadData => {
       teamId: member.team_member_id,
       dailyCapacity: dailyHours,
       weeklyCapacity: weeklyCapacity,
+      expectedCapacity: weeklyCapacity, // Alias for compatibility with components
       currentWorkload: calculateMemberWorkload(member, safeTasks),
       utilizationPercentage: calculateUtilization(
         member,
@@ -74,34 +75,52 @@ const transformToWorkloadData = (data: any): IWorkloadData => {
     member.isUnderutilized = member.utilizationPercentage < 50; // This should ideally use Redux state alertThresholds.underutilization
   });
 
-  // Transform tasks to allocations
+  // Transform tasks to allocations - get tasks from member data
   const allocations: ITaskAllocation[] = [];
-  if (Array.isArray(safeTasks)) {
-    safeTasks.forEach((task: any) => {
-      if (task.assignees && Array.isArray(task.assignees)) {
-        task.assignees.forEach((assignee: any) => {
+  safeMembers.forEach((member: any) => {
+    if (Array.isArray(member.tasks)) {
+      member.tasks.forEach((task: any, index: number) => {
+        if (task.start_date && task.end_date) {
+          // Calculate hours based on entry type
+          let hours = 4; // Default estimation
+          if (task.entry_type === 'time_log' && task.logged_hours) {
+            hours = parseFloat(task.logged_hours);
+          }
+
+          const taskName = task.entry_type === 'time_log'
+            ? `${task.task_name || 'Task'} (${hours.toFixed(1)}h logged)`
+            : (task.task_name || `Task ${index + 1}`);
+
+          // Parse dates properly handling timezone
+          const startDateStr = typeof task.start_date === 'string'
+            ? task.start_date.split('T')[0]
+            : new Date(task.start_date).toISOString().split('T')[0];
+          const endDateStr = typeof task.end_date === 'string'
+            ? task.end_date.split('T')[0]
+            : new Date(task.end_date).toISOString().split('T')[0];
+
           allocations.push({
-            id: `${task.id}-${assignee.id}`,
-            taskId: task.id,
-            taskName: task.name,
-            projectId: task.project_id,
-            projectName: task.project_name || 'Project',
-            memberId: assignee.id,
-            memberName: assignee.name,
-            estimatedHours: task.total_minutes ? Math.round(task.total_minutes / 60) : 0,
-            actualHours: 0, // This would need to come from time logs
-            startDate: task.start_date || new Date().toISOString().split('T')[0],
-            endDate: task.end_date || new Date().toISOString().split('T')[0],
-            priority: task.priority_value || 'Medium',
-            priorityColor: task.priority_color,
-            status: task.status_name || 'To Do',
-            statusColor: task.status_color,
-            completionPercentage: task.complete_ratio || 0,
+            id: `${member.project_member_id || member.team_member_id}-task-${task.task_id || index}-${startDateStr}`,
+            taskId: task.task_id || `task-${index}`,
+            taskName: taskName,
+            projectId: member.project_id || 'current-project',
+            projectName: 'Current Project',
+            memberId: member.project_member_id || member.team_member_id || member.user_id,
+            memberName: member.name || 'Unknown',
+            estimatedHours: hours,
+            actualHours: task.entry_type === 'time_log' ? hours : 0,
+            startDate: startDateStr,
+            endDate: endDateStr,
+            priority: task.priority_name || 'Medium',
+            priorityColor: task.priority_color || '#1890ff',
+            status: task.status_name || 'In Progress',
+            statusColor: task.status_color || '#52c41a',
+            completionPercentage: 0,
           });
-        });
-      }
-    });
-  }
+        }
+      });
+    }
+  });
 
   // Generate availability data using organization working days
   const availability: IMemberAvailability[] = [];
@@ -119,6 +138,10 @@ const transformToWorkloadData = (data: any): IWorkloadData => {
       saturday: false,
       sunday: false,
     };
+
+    // Use a default of 8 hours for API service transformation
+    // This will be overridden by the calendar component using filter settings
+    const defaultDailyHours = 8;
 
     // Generate availability for the next 30 days
     for (let i = 0; i < 30; i++) {
@@ -142,9 +165,9 @@ const transformToWorkloadData = (data: any): IWorkloadData => {
       availability.push({
         memberId: member.id,
         date: dateStr,
-        availableHours: isWorkingDay ? member.dailyCapacity : 0,
+        availableHours: isWorkingDay ? defaultDailyHours : 0,
         plannedHours: isWorkingDay
-          ? Math.min(member.dailyCapacity, member.currentWorkload / 30)
+          ? Math.min(defaultDailyHours, member.currentWorkload / 30)
           : 0,
         actualHours: 0,
         isWorkingDay: isWorkingDay,
@@ -163,8 +186,16 @@ const transformToWorkloadData = (data: any): IWorkloadData => {
     summary: {
       totalMembers: workloadMembers.length,
       totalTasks: safeTasks.length,
-      totalEstimatedHours: allocations.reduce((sum, alloc) => sum + alloc.estimatedHours, 0),
-      totalActualHours: allocations.reduce((sum, alloc) => sum + (alloc.actualHours || 0), 0),
+      totalEstimatedHours: Math.round(allocations.reduce((sum, alloc) => {
+        // Only count estimated hours from planned tasks, not time logs
+        // Time logs have actualHours > 0 and estimatedHours = actualHours
+        if (alloc.actualHours > 0 && alloc.estimatedHours === alloc.actualHours) {
+          // This is a time log entry, don't count as estimated work
+          return sum;
+        }
+        return sum + alloc.estimatedHours;
+      }, 0) * 10) / 10,
+      totalActualHours: Math.round(allocations.reduce((sum, alloc) => sum + (alloc.actualHours || 0), 0) * 10) / 10,
       averageUtilization:
         workloadMembers.reduce((sum, member) => sum + member.utilizationPercentage, 0) /
         (workloadMembers.length || 1),
@@ -176,12 +207,22 @@ const transformToWorkloadData = (data: any): IWorkloadData => {
 };
 
 const calculateMemberWorkload = (member: any, tasks: any[]): number => {
-  // Calculate workload based on database schema
-  if (!member || !Array.isArray(tasks)) return 0;
+  // Calculate workload based on actual logged time from logs_date_union
+  if (!member) return 0;
+
+  // Method 1: Use actual logged time if available (preferred method)
+  if (member.logs_date_union && member.logs_date_union.total_time_spent_seconds) {
+    // Convert seconds to hours
+    const totalSeconds = Number(member.logs_date_union.total_time_spent_seconds);
+    if (isNaN(totalSeconds) || !isFinite(totalSeconds)) return 0;
+    const totalHours = totalSeconds / 3600;
+    return Math.round(totalHours * 100) / 100; // Round to 2 decimal places
+  }
+
+  // Method 2: Fallback to task assignments if no logged time
+  if (!Array.isArray(tasks)) return 0;
 
   let totalHours = 0;
-
-  // Method 1: From task assignments (tasks_assignees table)
   tasks.forEach(task => {
     if (task.assignees && Array.isArray(task.assignees)) {
       const isAssigned = task.assignees.some(
@@ -262,28 +303,32 @@ const projectWorkloadApi = createApi({
   }),
   tagTypes: ['ProjectWorkload', 'MemberCapacity', 'TaskAllocations', 'WorkloadAnalytics'],
   endpoints: builder => ({
-    getWorkloadChartDates: builder.query<any, { projectId: string; timeZone?: string }>({
-      query: ({ projectId, timeZone = 'UTC' }) => ({
+    getWorkloadChartDates: builder.query<any, { projectId: string; timeZone?: string; startDate?: string; endDate?: string }>({
+      query: ({ projectId, timeZone = 'UTC', startDate, endDate }) => ({
         url: `/workload-gannt/chart-dates/${projectId}`,
         method: 'GET',
-        params: { timeZone },
+        params: { timeZone, start_date: startDate, end_date: endDate },
       }),
-      providesTags: (result, error, { projectId }) => [
-        { type: 'ProjectWorkload', id: `chart-dates-${projectId}` },
+      providesTags: (result, error, { projectId, startDate, endDate }) => [
+        { type: 'ProjectWorkload', id: `chart-dates-${projectId}-${startDate}-${endDate}` },
       ],
-      keepUnusedDataFor: 10 * 60, // 10 minutes cache
+      keepUnusedDataFor: 0, // No caching - always fetch fresh data
     }),
 
-    getWorkloadMembers: builder.query<any, { projectId: string; expandedMembers?: string[] }>({
-      query: ({ projectId, expandedMembers = [] }) => ({
+    getWorkloadMembers: builder.query<any, { projectId: string; expandedMembers?: string[]; startDate?: string; endDate?: string }>({
+      query: ({ projectId, expandedMembers = [], startDate, endDate }) => ({
         url: `/workload-gannt/workload-members/${projectId}`,
         method: 'GET',
-        params: { expanded_members: expandedMembers },
+        params: { 
+          expanded_members: expandedMembers,
+          start_date: startDate,
+          end_date: endDate 
+        },
       }),
-      providesTags: (result, error, { projectId }) => [
-        { type: 'ProjectWorkload', id: `members-${projectId}` },
+      providesTags: (result, error, { projectId, startDate, endDate }) => [
+        { type: 'ProjectWorkload', id: `members-${projectId}-${startDate}-${endDate}` },
       ],
-      keepUnusedDataFor: 10 * 60, // 10 minutes cache
+      keepUnusedDataFor: 0, // No caching - always fetch fresh data
     }),
 
     getWorkloadTasksByMember: builder.query<any, { projectId: string; params?: any }>({
@@ -292,10 +337,10 @@ const projectWorkloadApi = createApi({
         method: 'GET',
         params,
       }),
-      providesTags: (result, error, { projectId }) => [
-        { type: 'TaskAllocations', id: `tasks-${projectId}` },
+      providesTags: (result, error, { projectId, params }) => [
+        { type: 'TaskAllocations', id: `tasks-${projectId}-${params?.startDate}-${params?.endDate}` },
       ],
-      keepUnusedDataFor: 5 * 60, // 5 minutes cache (tasks change more frequently)
+      keepUnusedDataFor: 0, // No caching - always fetch fresh data
     }),
 
     getMemberOverview: builder.query<any, { projectId: string; teamMemberId: string }>({
@@ -315,34 +360,63 @@ const projectWorkloadApi = createApi({
       IWorkloadData,
       { projectId: string; startDate?: string; endDate?: string }
     >({
-      queryFn: async ({ projectId, startDate, endDate }, { dispatch }) => {
+      queryFn: async ({ projectId, startDate, endDate }, { dispatch, getState }) => {
         try {
-          console.log('Fetching workload data for project:', projectId);
+          console.log('getProjectWorkload called with:', { projectId, startDate, endDate });
+          
+          // Use RTK Query's built-in query dispatching with proper error handling
+          const chartDatesPromise = dispatch(
+            projectWorkloadApi.endpoints.getWorkloadChartDates.initiate({ 
+              projectId,
+              startDate,
+              endDate 
+            })
+          );
+          const membersPromise = dispatch(
+            projectWorkloadApi.endpoints.getWorkloadMembers.initiate({ 
+              projectId,
+              startDate,
+              endDate 
+            })
+          );
+          const tasksPromise = dispatch(
+            projectWorkloadApi.endpoints.getWorkloadTasksByMember.initiate({
+              projectId,
+              params: { startDate, endDate },
+            })
+          );
 
-          // Fetch all required data in parallel
+          // Wait for all promises to resolve
           const [chartDatesResult, membersResult, tasksResult] = await Promise.all([
-            dispatch(projectWorkloadApi.endpoints.getWorkloadChartDates.initiate({ projectId })),
-            dispatch(projectWorkloadApi.endpoints.getWorkloadMembers.initiate({ projectId })),
-            dispatch(
-              projectWorkloadApi.endpoints.getWorkloadTasksByMember.initiate({
-                projectId,
-                params: {
-                  startDate,
-                  endDate,
-                },
-              })
-            ),
+            chartDatesPromise,
+            membersPromise,
+            tasksPromise,
           ]);
 
           console.log('API Results:', {
             chartDates: chartDatesResult,
             members: membersResult,
-            tasks: tasksResult,
+            tasks: tasksResult
           });
 
-          if (chartDatesResult.error || membersResult.error || tasksResult.error) {
-            const error = chartDatesResult.error || membersResult.error || tasksResult.error;
-            console.error('API Error:', error);
+          // Check for errors in any of the requests
+          if (chartDatesResult.error) {
+            console.error('Chart dates API error:', chartDatesResult.error);
+            return { error: chartDatesResult.error };
+          }
+          if (membersResult.error) {
+            console.error('Members API error:', membersResult.error);
+            return { error: membersResult.error };
+          }
+          if (tasksResult.error) {
+            console.error('Tasks API error:', tasksResult.error);
+            return { error: tasksResult.error };
+          }
+
+          // Validate that we have data
+          if (!chartDatesResult.data || !membersResult.data || !tasksResult.data) {
+            const error = { status: 'FETCH_ERROR', error: 'One or more API calls returned no data' };
+            console.error('Missing data error:', error);
             return { error };
           }
 
@@ -353,27 +427,54 @@ const projectWorkloadApi = createApi({
             tasks: tasksResult.data?.body || [],
           };
 
-          console.log('Data for transformation:', transformData);
+          console.log('Transform data:', transformData);
 
           // Transform data to match our interface
           const workloadData = transformToWorkloadData(transformData);
 
           console.log('Transformed workload data:', workloadData);
+
           return { data: workloadData };
         } catch (error) {
           console.error('Error in getProjectWorkload:', error);
-          return { error: { status: 'FETCH_ERROR', error: error.message || 'Unknown error' } };
+          return { 
+            error: { 
+              status: 'FETCH_ERROR', 
+              error: error instanceof Error ? error.message : 'Unknown error occurred' 
+            } 
+          };
         }
       },
-      providesTags: (result, error, { projectId }) => [
-        { type: 'ProjectWorkload', id: projectId },
+      providesTags: (result, error, { projectId, startDate, endDate }) => [
+        { type: 'ProjectWorkload', id: `${projectId}-${startDate}-${endDate}` },
         { type: 'ProjectWorkload', id: 'LIST' },
       ],
-      // Keep cached data for 10 minutes to improve performance
-      keepUnusedDataFor: 10 * 60,
+      // No caching - always fetch fresh data when date range changes
+      keepUnusedDataFor: 0,
     }),
   }),
 });
+
+// Utility function to format time in user-friendly format
+export const formatTime = (hours: number): string => {
+  // Handle NaN, undefined, null, or invalid values
+  if (!hours || isNaN(hours) || !isFinite(hours)) return '0h';
+  
+  if (hours === 0) return '0h';
+  
+  const wholeHours = Math.floor(hours);
+  const minutes = Math.round((hours % 1) * 60);
+  
+  if (wholeHours === 0) {
+    return `${minutes}m`;
+  }
+  
+  if (minutes === 0) {
+    return `${wholeHours}h`;
+  }
+  
+  return `${wholeHours}h ${minutes}m`;
+};
 
 export default projectWorkloadApi;
 

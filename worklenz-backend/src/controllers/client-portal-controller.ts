@@ -6,7 +6,7 @@ import { AuthenticatedClientRequest } from "../middlewares/client-auth-middlewar
 import FileConstants from "../shared/file-constants";
 import { IEmailTemplateType } from "../interfaces/email-template-type";
 import { getBaseUrl, getClientPortalBaseUrl } from "../cron_jobs/helpers";
-import { uploadBase64, getClientPortalLogoKey } from "../shared/storage";
+import { uploadBase64, getClientPortalLogoKey, deleteObject } from "../shared/storage";
 import { log_error } from "../shared/utils";
 import { IO } from "../shared/io";
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
@@ -120,7 +120,9 @@ class ClientPortalController {
         serviceData: row.service_data,
         isPublic: row.is_public,
         createdAt: row.created_at,
-        updatedAt: row.updated_at
+        updatedAt: row.updated_at,
+        price: row.service_data?.price || 0,
+        currency: row.service_data?.currency || "USD"
       }));
 
       return res.json(new ServerResponse(true, services, "Services retrieved successfully"));
@@ -468,8 +470,8 @@ class ClientPortalController {
             requestId: updatedRequest.id,
             requestNumber: updatedRequest.req_no,
             status: updatedRequest.status,
-            clientId: clientId,
-            organizationId: organizationId,
+            clientId,
+            organizationId,
             notes: updatedRequest.notes,
             updatedAt: updatedRequest.updated_at
           });
@@ -556,9 +558,9 @@ class ClientPortalController {
   static async getOrganizationServices(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
       const {organizationId} = req;
-      const { page = 1, limit = 10, search, sortBy = 'name', sortOrder = 'asc' } = req.query;
+      const { page = 1, limit = 10, search, sortBy = "name", sortOrder = "asc" } = req.query;
 
-      let whereClause = 'WHERE s.organization_team_id = $1';
+      let whereClause = "WHERE s.organization_team_id = $1";
       const queryParams = [organizationId];
       let paramCount = 1;
 
@@ -679,12 +681,87 @@ class ClientPortalController {
 
   static async createOrganizationService(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
-      const { name, description, service_data, is_public = false, allowed_client_ids = [] } = req.body;
+      const { 
+        name, 
+        description, 
+        service_data, 
+        is_public = false, 
+        allowed_client_ids = [],
+        // Image upload fields
+        imageData,
+        imageName,
+        imageType
+      } = req.body;
       const {organizationId, clientUserId} = req;
+
+      console.log("Service creation request received:", {
+        name,
+        hasImageData: !!imageData,
+        imageName,
+        imageType,
+        imageDataLength: imageData?.length,
+        organizationId
+      });
 
       if (!name) {
         return res.status(400).json(new ServerResponse(false, null, "Service name is required"));
       }
+
+      let finalServiceData = { ...service_data };
+
+      // Handle image upload if provided
+      if (imageData && imageName && imageType) {
+        console.log("Processing image upload...");
+        
+        // Validate image
+        const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+        if (!allowedImageTypes.includes(imageType)) {
+          return res.status(400).json(new ServerResponse(false, null, "Only JPEG, PNG, GIF, and WebP images are allowed"));
+        }
+
+        // Validate file size (assuming base64 data) - 5MB limit
+        const fileSizeBytes = Math.floor((imageData.length * 3) / 4);
+        const maxSizeBytes = 5 * 1024 * 1024; // 5MB limit
+        
+        if (fileSizeBytes > maxSizeBytes) {
+          return res.status(400).json(new ServerResponse(false, null, "Image size exceeds 5MB limit"));
+        }
+
+        // Generate unique filename and storage key
+        const fileExtension = imageName.substring(imageName.lastIndexOf("."));
+        const uniqueFileName = `service_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
+        const storageKey = `client-portal/service-images/${organizationId}/${uniqueFileName}`;
+
+        try {
+          // Upload to S3
+          const imageUrl = await uploadBase64(imageData, storageKey);
+          
+          if (!imageUrl) {
+            return res.status(500).json(new ServerResponse(false, null, "Failed to upload service image"));
+          }
+
+          // Add image URL to service data
+          finalServiceData = {
+            ...finalServiceData,
+            images: [imageUrl]
+          };
+
+          console.log(`Service image uploaded for organization ${organizationId}:`, {
+            imageName,
+            imageType,
+            storageKey,
+            fileSizeBytes,
+            imageUrl
+          });
+        } catch (uploadError) {
+          console.error("Error uploading service image:", uploadError);
+          return res.status(500).json(new ServerResponse(false, null, "Failed to upload service image"));
+        }
+      } else {
+        console.log("No image data provided in request");
+      }
+
+      console.log("Final service data being stored:", finalServiceData);
 
       const query = `
         INSERT INTO client_portal_services (
@@ -697,7 +774,7 @@ class ClientPortalController {
       const result = await db.query(query, [
         name,
         description,
-        service_data,
+        JSON.stringify(finalServiceData), // Ensure proper JSON stringification
         is_public,
         allowed_client_ids,
         organizationId, // team_id
@@ -706,6 +783,12 @@ class ClientPortalController {
       ]);
 
       const service = result.rows[0];
+
+      console.log("Service created in database:", {
+        id: service.id,
+        name: service.name,
+        serviceData: service.service_data
+      });
 
       return res.status(201).json(new ServerResponse(true, {
         id: service.id,
@@ -727,8 +810,29 @@ class ClientPortalController {
   static async updateOrganizationService(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
       const { id } = req.params;
-      const { name, description, service_data, is_public, allowed_client_ids, status } = req.body;
+      const { 
+        name, 
+        description, 
+        service_data, 
+        is_public, 
+        allowed_client_ids, 
+        status,
+        // Image upload fields
+        imageData,
+        imageName,
+        imageType
+      } = req.body;
       const {organizationId} = req;
+
+      console.log("Service update request received:", {
+        id,
+        name,
+        hasImageData: !!imageData,
+        imageName,
+        imageType,
+        imageDataLength: imageData?.length,
+        organizationId
+      });
 
       // First check if service exists and belongs to organization
       const checkQuery = `SELECT id FROM client_portal_services WHERE id = $1 AND organization_team_id = $2`;
@@ -737,6 +841,96 @@ class ClientPortalController {
       if (checkResult.rows.length === 0) {
         return res.status(404).json(new ServerResponse(false, null, "Service not found"));
       }
+
+      let finalServiceData = service_data ? { ...service_data } : undefined;
+
+      // Handle image upload if provided
+      if (imageData && imageName && imageType) {
+        console.log("Processing image upload for service update...");
+        
+        // Validate image
+        const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+        if (!allowedImageTypes.includes(imageType)) {
+          return res.status(400).json(new ServerResponse(false, null, "Only JPEG, PNG, GIF, and WebP images are allowed"));
+        }
+
+        // Validate file size (assuming base64 data) - 5MB limit
+        const fileSizeBytes = Math.floor((imageData.length * 3) / 4);
+        const maxSizeBytes = 5 * 1024 * 1024; // 5MB limit
+        
+        if (fileSizeBytes > maxSizeBytes) {
+          return res.status(400).json(new ServerResponse(false, null, "Image size exceeds 5MB limit"));
+        }
+
+        // Generate unique filename and storage key
+        const fileExtension = imageName.substring(imageName.lastIndexOf("."));
+        const uniqueFileName = `service_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
+        const storageKey = `client-portal/service-images/${organizationId}/${uniqueFileName}`;
+
+        try {
+          // Upload to S3
+          const imageUrl = await uploadBase64(imageData, storageKey);
+          
+          if (!imageUrl) {
+            return res.status(500).json(new ServerResponse(false, null, "Failed to upload service image"));
+          }
+
+          // Get current service data to check for existing images to clean up
+          const currentServiceQuery = `SELECT service_data FROM client_portal_services WHERE id = $1`;
+          const currentServiceResult = await db.query(currentServiceQuery, [id]);
+          const currentServiceData = currentServiceResult.rows[0]?.service_data || {};
+          const oldImageUrls = currentServiceData?.images || [];
+
+          // Clean up old images from S3 (async, don't wait for completion)
+          if (oldImageUrls.length > 0) {
+            oldImageUrls.forEach(async (oldImageUrl: string) => {
+              try {
+                const urlParts = oldImageUrl.split("/");
+                const storageKey = urlParts.slice(-4).join("/");
+                
+                console.log("Cleaning up old service image:", {
+                  serviceId: id,
+                  oldImageUrl,
+                  storageKey
+                });
+
+                await deleteObject(storageKey);
+                console.log("Successfully deleted old service image:", storageKey);
+              } catch (deleteError) {
+                console.error("Error deleting old service image:", {
+                  oldImageUrl,
+                  error: deleteError
+                });
+              }
+            });
+          }
+
+          // Use current service data as base if finalServiceData wasn't provided
+          if (!finalServiceData) {
+            finalServiceData = currentServiceData;
+          }
+
+          // Add new image URL to service data
+          finalServiceData = {
+            ...finalServiceData,
+            images: [imageUrl]
+          };
+
+          console.log(`Service image uploaded for organization ${organizationId}:`, {
+            serviceId: id,
+            imageName,
+            imageType,
+            storageKey,
+            fileSizeBytes,
+            imageUrl
+          });
+        } catch (uploadError) {
+          console.error("Error uploading service image:", uploadError);
+          return res.status(500).json(new ServerResponse(false, null, "Failed to upload service image"));
+        }
+      }
+
+      console.log("Final service data for update:", finalServiceData);
 
       const updateFields = [];
       const queryParams = [];
@@ -752,10 +946,10 @@ class ClientPortalController {
         updateFields.push(`description = $${paramCount}`);
         queryParams.push(description);
       }
-      if (service_data !== undefined) {
+      if (finalServiceData !== undefined) {
         paramCount++;
         updateFields.push(`service_data = $${paramCount}`);
-        queryParams.push(service_data);
+        queryParams.push(JSON.stringify(finalServiceData)); // Ensure proper JSON stringification
       }
       if (is_public !== undefined) {
         paramCount++;
@@ -790,7 +984,7 @@ class ClientPortalController {
 
       const updateQuery = `
         UPDATE client_portal_services 
-        SET ${updateFields.join(', ')}
+        SET ${updateFields.join(", ")}
         WHERE id = $${paramCount - 1} AND organization_team_id = $${paramCount}
         RETURNING *
       `;
@@ -820,6 +1014,11 @@ class ClientPortalController {
       const { id } = req.params;
       const {organizationId} = req;
 
+      console.log("Service deletion request received:", {
+        serviceId: id,
+        organizationId
+      });
+
       // Check if service has any requests
       const requestsQuery = `SELECT COUNT(*) as count FROM client_portal_requests WHERE service_id = $1`;
       const requestsResult = await db.query(requestsQuery, [id]);
@@ -829,7 +1028,24 @@ class ClientPortalController {
         return res.status(400).json(new ServerResponse(false, null, `Cannot delete service with ${requestsCount} existing requests`));
       }
 
-      // Delete the service
+      // Get service data before deletion to extract image URLs for cleanup
+      const serviceQuery = `
+        SELECT service_data 
+        FROM client_portal_services 
+        WHERE id = $1 AND organization_team_id = $2
+      `;
+      const serviceResult = await db.query(serviceQuery, [id, organizationId]);
+      
+      if (serviceResult.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Service not found"));
+      }
+
+      const serviceData = serviceResult.rows[0].service_data;
+      const imageUrls = serviceData?.images || [];
+
+      console.log("Found images to delete:", imageUrls);
+
+      // Delete the service from database first
       const deleteQuery = `
         DELETE FROM client_portal_services 
         WHERE id = $1 AND organization_team_id = $2
@@ -839,9 +1055,36 @@ class ClientPortalController {
       const result = await db.query(deleteQuery, [id, organizationId]);
       
       if (result.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Service not found"));
+        return res.status(500).json(new ServerResponse(false, null, "Failed to delete service from database"));
       }
 
+      // Clean up images from S3 storage (async, don't wait for completion)
+      if (imageUrls.length > 0) {
+        imageUrls.forEach(async (imageUrl: string) => {
+          try {
+            // Extract storage key from URL
+            // URL format: https://s3-bucket/client-portal/service-images/orgId/filename
+            const urlParts = imageUrl.split("/");
+            const storageKey = urlParts.slice(-4).join("/"); // client-portal/service-images/orgId/filename
+            
+            console.log("Deleting image from S3:", {
+              imageUrl,
+              storageKey
+            });
+
+            await deleteObject(storageKey);
+            console.log("Successfully deleted image from S3:", storageKey);
+          } catch (deleteError) {
+            console.error("Error deleting image from S3:", {
+              imageUrl,
+              error: deleteError
+            });
+            // Don't fail the service deletion if image cleanup fails
+          }
+        });
+      }
+
+      console.log("Service deleted successfully:", id);
       return res.json(new ServerResponse(true, null, "Service deleted successfully"));
     } catch (error) {
       console.error("Error deleting service:", error);
@@ -986,10 +1229,9 @@ class ClientPortalController {
 
       // Get project team members
       const teamQuery = `
-        SELECT 
+        SELECT
           u.id,
-          u.first_name,
-          u.last_name,
+          u.name,
           u.email,
           u.avatar_url,
           pmu.role_id,
@@ -998,15 +1240,14 @@ class ClientPortalController {
         JOIN users u ON pmu.user_id = u.id
         LEFT JOIN roles r ON pmu.role_id = r.id
         WHERE pmu.project_id = $1
-        ORDER BY u.first_name, u.last_name
+        ORDER BY u.name
       `;
 
       const teamResult = await db.query(teamQuery, [id]);
       const teamMembers = teamResult.rows.map((row: any) => ({
         id: row.id,
-        firstName: row.first_name,
-        lastName: row.last_name,
-        fullName: `${row.first_name} ${row.last_name}`,
+        name: row.name,
+        fullName: row.name,
         email: row.email,
         avatarUrl: row.avatar_url,
         roleId: row.role_id,
@@ -1159,7 +1400,7 @@ class ClientPortalController {
         updatedAt: row.updated_at,
         requestNumber: row.request_number,
         serviceName: row.service_name,
-        isOverdue: row.due_date && new Date(row.due_date) < new Date() && row.status !== 'paid'
+        isOverdue: row.due_date && new Date(row.due_date) < new Date() && row.status !== "paid"
       }));
 
       return res.json(new ServerResponse(true, { 
@@ -1203,8 +1444,7 @@ class ClientPortalController {
           c.name as client_name,
           c.company_name,
           c.email as client_email,
-          u.first_name as created_by_first_name,
-          u.last_name as created_by_last_name
+          u.name as created_by_name
         FROM client_portal_invoices i
         LEFT JOIN client_portal_requests r ON i.request_id = r.id
         LEFT JOIN client_portal_services s ON r.service_id = s.id
@@ -1232,7 +1472,7 @@ class ClientPortalController {
         paidAt: invoice.paid_at,
         createdAt: invoice.created_at,
         updatedAt: invoice.updated_at,
-        isOverdue: invoice.due_date && new Date(invoice.due_date) < new Date() && invoice.status !== 'paid',
+        isOverdue: invoice.due_date && new Date(invoice.due_date) < new Date() && invoice.status !== "paid",
         request: invoice.request_id ? {
           id: invoice.request_id,
           requestNumber: invoice.request_number,
@@ -1249,8 +1489,8 @@ class ClientPortalController {
           companyName: invoice.company_name,
           email: invoice.client_email
         },
-        createdBy: invoice.created_by_first_name ? {
-          name: `${invoice.created_by_first_name} ${invoice.created_by_last_name}`
+        createdBy: invoice.created_by_name ? {
+          name: invoice.created_by_name
         } : null
       };
 
@@ -1281,7 +1521,7 @@ class ClientPortalController {
       const invoice = invoiceCheck.rows[0];
 
       // Check if invoice is already paid
-      if (invoice.status === 'paid') {
+      if (invoice.status === "paid") {
         return res.status(400).json(new ServerResponse(false, null, "Invoice is already paid"));
       }
 
@@ -1326,7 +1566,7 @@ class ClientPortalController {
       const { id } = req.params;
       const {clientId} = req;
       const {organizationId} = req;
-      const { format = 'pdf' } = req.query;
+      const { format = "pdf" } = req.query;
 
       // Verify invoice exists and belongs to client
       const invoiceQuery = `
@@ -1461,6 +1701,95 @@ class ClientPortalController {
     }
   }
 
+  static async createChat(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const {clientId} = req;
+      const {organizationId} = req;
+      const {clientEmail} = req;
+      const { recipientType, recipientId, subject, message } = req.body;
+
+      // Validate required fields
+      if (!message || message.trim().length === 0) {
+        return res.status(400).json(new ServerResponse(false, null, "Message content is required"));
+      }
+
+      if (!subject || subject.trim().length === 0) {
+        return res.status(400).json(new ServerResponse(false, null, "Subject is required"));
+      }
+
+      // Get client user ID
+      const clientUserQuery = await db.query(
+        "SELECT id FROM client_users WHERE client_id = $1 AND email = $2",
+        [clientId, clientEmail]
+      );
+
+      if (clientUserQuery.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Client user not found"));
+      }
+
+      const clientUserId = clientUserQuery.rows[0].id;
+
+      // Create the first message with subject in the format "Subject: {subject}\n\n{message}"
+      const fullMessage = `Subject: ${subject.trim()}\n\n${message.trim()}`;
+
+      // Insert message
+      const insertQuery = `
+        INSERT INTO client_portal_chat_messages (
+          client_id, organization_team_id, sender_type, sender_id,
+          message, message_type, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        RETURNING id, sender_type, sender_id, message, message_type, created_at
+      `;
+
+      const result = await db.query(insertQuery, [
+        clientId,
+        organizationId,
+        "client",
+        clientUserId,
+        fullMessage,
+        "text"
+      ]);
+
+      const newMessage = result.rows[0];
+
+      // Emit socket events for real-time updates
+      try {
+        const io = IO.getInstance();
+        if (io) {
+          // Emit to organization team members
+          io.emit(`client_portal:new_message`, {
+            id: newMessage.id,
+            clientId,
+            organizationId,
+            senderName: clientEmail || "Client",
+            senderType: "client",
+            message: newMessage.message,
+            messageType: newMessage.message_type,
+            createdAt: newMessage.created_at
+          });
+
+          // Emit chat message event
+          io.emit("chat:message_received", {
+            clientId,
+            organizationId,
+            message: newMessage
+          });
+        }
+      } catch (socketError) {
+        console.error("Error emitting socket events:", socketError);
+        // Continue execution even if socket fails
+      }
+
+      return res.json(new ServerResponse(true, {
+        chatId: newMessage.id,
+        message: "Chat created successfully"
+      }, "Chat created successfully"));
+    } catch (error) {
+      console.error("Error creating chat:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to create chat"));
+    }
+  }
+
   static async getChatDetails(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
       const { id } = req.params; // This would be the date in format YYYY-MM-DD
@@ -1470,7 +1799,7 @@ class ClientPortalController {
 
       // Get messages for a specific date
       const query = `
-        SELECT 
+        SELECT
           m.id,
           m.sender_type,
           m.sender_id,
@@ -1479,19 +1808,19 @@ class ClientPortalController {
           m.file_url,
           m.read_at,
           m.created_at,
-          CASE 
-            WHEN m.sender_type = 'team_member' THEN u.first_name || ' ' || u.last_name
+          CASE
+            WHEN m.sender_type = 'team_member' THEN u.name
             WHEN m.sender_type = 'client' THEN cu.name
           END as sender_name,
-          CASE 
+          CASE
             WHEN m.sender_type = 'team_member' THEN u.avatar_url
             ELSE NULL
           END as sender_avatar
         FROM client_portal_chat_messages m
         LEFT JOIN users u ON m.sender_type = 'team_member' AND m.sender_id = u.id
         LEFT JOIN client_users cu ON m.sender_type = 'client' AND m.sender_id = cu.id
-        WHERE m.client_id = $1 
-        AND m.organization_team_id = $2 
+        WHERE m.client_id = $1
+        AND m.organization_team_id = $2
         AND DATE(m.created_at) = $3
         ORDER BY m.created_at ASC
         LIMIT $4 OFFSET $5
@@ -1520,7 +1849,7 @@ class ClientPortalController {
         fileUrl: row.file_url,
         readAt: row.read_at,
         createdAt: row.created_at,
-        isFromClient: row.sender_type === 'client'
+        isFromClient: row.sender_type === "client"
       }));
 
       // Mark messages as read (for client user)
@@ -1547,7 +1876,7 @@ class ClientPortalController {
       const {clientId} = req;
       const {organizationId} = req;
       const {clientEmail} = req;
-      const { message, messageType = 'text', fileUrl } = req.body;
+      const { message, messageType = "text", fileUrl } = req.body;
 
       // Validate required fields
       if (!message || message.trim().length === 0) {
@@ -1578,7 +1907,7 @@ class ClientPortalController {
       const result = await db.query(insertQuery, [
         clientId,
         organizationId,
-        'client',
+        "client",
         clientUserId,
         message.trim(),
         messageType,
@@ -1594,10 +1923,10 @@ class ClientPortalController {
           // Emit to organization team members
           io.emit(`client_portal:new_message`, {
             id: newMessage.id,
-            clientId: clientId,
-            organizationId: organizationId,
-            senderName: clientEmail || 'Client',
-            senderType: 'client',
+            clientId,
+            organizationId,
+            senderName: clientEmail || "Client",
+            senderType: "client",
             message: newMessage.message,
             messageType: newMessage.message_type,
             fileUrl: newMessage.file_url,
@@ -1605,12 +1934,12 @@ class ClientPortalController {
           });
 
           // Emit chat message event
-          io.emit('chat:message_received', {
+          io.emit("chat:message_received", {
             id: newMessage.id,
             chatId: `client_${clientId}`,
             senderId: clientUserId,
-            senderName: clientEmail || 'Client',
-            senderType: 'client',
+            senderName: clientEmail || "Client",
+            senderType: "client",
             message: newMessage.message,
             messageType: newMessage.message_type,
             fileUrl: newMessage.file_url,
@@ -1656,8 +1985,8 @@ class ClientPortalController {
           m.file_url,
           m.read_at,
           m.created_at,
-          CASE 
-            WHEN m.sender_type = 'team_member' THEN u.first_name || ' ' || u.last_name
+          CASE
+            WHEN m.sender_type = 'team_member' THEN u.name
             WHEN m.sender_type = 'client' THEN cu.name
           END as sender_name,
           CASE 
@@ -1711,7 +2040,7 @@ class ClientPortalController {
         fileUrl: row.file_url,
         readAt: row.read_at,
         createdAt: row.created_at,
-        isFromClient: row.sender_type === 'client'
+        isFromClient: row.sender_type === "client"
       }));
 
       return res.json(new ServerResponse(true, {
@@ -1729,10 +2058,13 @@ class ClientPortalController {
   // Settings
   static async getSettings(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
-      const organizationTeamId = req.user?.organization_team_id || req.user?.team_id;
-      if (!organizationTeamId) {
-        return res.status(400).json(new ServerResponse(false, null, "Organization team ID not found"));
+      const teamId = req.user?.team_id;
+      if (!teamId) {
+        return res.status(400).json(new ServerResponse(false, null, "Team ID not found"));
       }
+      
+      // For client portal settings, we use the team_id as organization_team_id
+      const organizationTeamId = teamId;
 
       const q = `
         SELECT id, team_id, organization_team_id, logo_url, primary_color, 
@@ -1746,7 +2078,7 @@ class ClientPortalController {
       const settings = result.rows[0] || {
         organization_team_id: organizationTeamId,
         logo_url: null,
-        primary_color: '#3b7ad4',
+        primary_color: "#3b7ad4",
         welcome_message: null,
         contact_email: null,
         contact_phone: null,
@@ -1763,12 +2095,14 @@ class ClientPortalController {
 
   static async updateSettings(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
-      const organizationTeamId = req.user?.organization_team_id || req.user?.team_id;
       const teamId = req.user?.team_id;
       
-      if (!organizationTeamId || !teamId) {
+      if (!teamId) {
         return res.status(400).json(new ServerResponse(false, null, "Team ID not found"));
       }
+      
+      // For client portal settings, we use the team_id as both team_id and organization_team_id
+      const organizationTeamId = teamId;
 
       const {
         logo_url,
@@ -1823,10 +2157,14 @@ class ClientPortalController {
 
   static async uploadLogo(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
-      const organizationTeamId = req.user?.organization_team_id || req.user?.team_id;
-      if (!organizationTeamId) {
-        return res.status(400).json(new ServerResponse(false, null, "Organization team ID not found"));
+      const teamId = req.user?.team_id;
+      if (!teamId) {
+        return res.status(400).json(new ServerResponse(false, null, "Team ID not found"));
       }
+      
+      // For client portal settings, we use the team_id as both team_id and organization_team_id
+      // since client portal settings are organization-wide
+      const organizationTeamId = teamId;
 
       const { logoData } = req.body;
       if (!logoData) {
@@ -1840,7 +2178,7 @@ class ClientPortalController {
       }
 
       const mimeType = mimeMatch[1];
-      const fileExtension = mimeType.split('/')[1];
+      const fileExtension = mimeType.split("/")[1];
       
       // Generate storage key
       const storageKey = getClientPortalLogoKey(organizationTeamId, fileExtension);
@@ -1852,7 +2190,6 @@ class ClientPortalController {
       }
 
       // Update database with logo URL
-      const teamId = req.user?.team_id;
       const checkQ = `SELECT id FROM client_portal_settings WHERE organization_team_id = $1`;
       const existingResult = await db.query(checkQ, [organizationTeamId]);
 
@@ -1880,6 +2217,42 @@ class ClientPortalController {
     } catch (error) {
       log_error(error);
       return res.status(500).json(new ServerResponse(false, null, "Failed to upload logo"));
+    }
+  }
+
+  // Get organization settings for client users
+  static async getOrganizationSettings(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const { organizationId } = req;
+      
+      if (!organizationId) {
+        return res.status(400).json(new ServerResponse(false, null, "Organization ID not found"));
+      }
+
+      const q = `
+        SELECT id, team_id, organization_team_id, logo_url, primary_color, 
+               welcome_message, contact_email, contact_phone, terms_of_service, 
+               privacy_policy, created_at, updated_at
+        FROM client_portal_settings 
+        WHERE organization_team_id = $1
+      `;
+      
+      const result = await db.query(q, [organizationId]);
+      const settings = result.rows[0] || {
+        organization_team_id: organizationId,
+        logo_url: null,
+        primary_color: "#3b7ad4",
+        welcome_message: null,
+        contact_email: null,
+        contact_phone: null,
+        terms_of_service: null,
+        privacy_policy: null
+      };
+
+      return res.json(new ServerResponse(true, settings, null));
+    } catch (error) {
+      log_error(error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve organization settings"));
     }
   }
 
@@ -2035,7 +2408,7 @@ class ClientPortalController {
 
           const clientResult = await db.query(clientUpdateQuery, clientUpdateValues);
           if (clientResult.rows.length > 0) {
-            updates.push('client');
+            updates.push("client");
             clientUpdates.push(clientResult.rows[0]);
           }
         }
@@ -2098,7 +2471,7 @@ class ClientPortalController {
 
           const userResult = await db.query(userUpdateQuery, userUpdateValues);
           if (userResult.rows.length > 0) {
-            updates.push('user');
+            updates.push("user");
             userUpdates.push(userResult.rows[0]);
           }
         }
@@ -2218,14 +2591,14 @@ class ClientPortalController {
 
       // Get new chat messages as notifications
       const chatNotificationsQuery = `
-        SELECT 
+        SELECT
           'new_message' as type,
           m.id as reference_id,
           DATE(m.created_at)::text as reference_number,
           m.message,
           m.created_at,
-          u.first_name || ' ' || u.last_name as sender_name,
-          'New message from ' || u.first_name || ' ' || u.last_name as notification_message,
+          u.name as sender_name,
+          'New message from ' || u.name as notification_message,
           CASE WHEN m.read_at IS NULL THEN false ELSE true END as is_read
         FROM client_portal_chat_messages m
         LEFT JOIN users u ON m.sender_type = 'team_member' AND m.sender_id = u.id
@@ -2261,7 +2634,7 @@ class ClientPortalController {
       notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
       // Filter unread only if requested
-      const filteredNotifications = String(unread_only) === 'true'
+      const filteredNotifications = String(unread_only) === "true"
         ? notifications.filter(n => !n.isRead) 
         : notifications;
 
@@ -2289,7 +2662,7 @@ class ClientPortalController {
       const {organizationId} = req;
 
       // Parse notification ID to determine type and reference
-      const [type, referenceId] = id.split('_');
+      const [type, referenceId] = id.split("_");
 
       if (!type || !referenceId) {
         return res.status(400).json(new ServerResponse(false, null, "Invalid notification ID"));
@@ -2298,7 +2671,7 @@ class ClientPortalController {
       let updateResult;
 
       switch (type) {
-        case 'message':
+        case "message":
           // Mark chat message as read
           updateResult = await db.query(
             "UPDATE client_portal_chat_messages SET read_at = NOW() WHERE id = $1 AND client_id = $2 AND organization_team_id = $3 AND sender_type = 'team_member'",
@@ -2306,8 +2679,8 @@ class ClientPortalController {
           );
           break;
 
-        case 'request':
-        case 'invoice':
+        case "request":
+        case "invoice":
           // For request and invoice notifications, we'll simulate marking as read
           // In a full implementation, you'd have a separate notifications table
           updateResult = { rowCount: 1 }; // Simulate successful update
@@ -2354,7 +2727,7 @@ class ClientPortalController {
       return res.json(new ServerResponse(true, {
         markedCount,
         markedAt: new Date(),
-        types: ['chat_messages']
+        types: ["chat_messages"]
       }, "All notifications marked as read"));
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
@@ -2367,7 +2740,7 @@ class ClientPortalController {
     try {
       const {clientId} = req;
       const {organizationId} = req;
-      const { fileData, fileName, fileType, purpose = 'general' } = req.body;
+      const { fileData, fileName, fileType, purpose = "general" } = req.body;
 
       // Validate required fields
       if (!fileData || !fileName) {
@@ -2384,12 +2757,12 @@ class ClientPortalController {
 
       // Validate file type
       const allowedTypes = [
-        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-        'application/pdf', 'application/msword', 
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'text/plain', 'text/csv'
+        "image/jpeg", "image/png", "image/gif", "image/webp",
+        "application/pdf", "application/msword", 
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "text/plain", "text/csv"
       ];
 
       if (fileType && !allowedTypes.includes(fileType)) {
@@ -2397,7 +2770,7 @@ class ClientPortalController {
       }
 
       // Extract file extension
-      const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
+      const fileExtension = fileName.substring(fileName.lastIndexOf("."));
       
       // Generate unique filename
       const uniqueFileName = `client_${clientId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
@@ -2405,13 +2778,13 @@ class ClientPortalController {
       // Generate storage key based on purpose
       let storageKey;
       switch (purpose) {
-        case 'avatar':
+        case "avatar":
           storageKey = `client-portal/avatars/${organizationId}/${uniqueFileName}`;
           break;
-        case 'document':
+        case "document":
           storageKey = `client-portal/documents/${organizationId}/${clientId}/${uniqueFileName}`;
           break;
-        case 'chat':
+        case "chat":
           storageKey = `client-portal/chat-files/${organizationId}/${clientId}/${uniqueFileName}`;
           break;
         default:
@@ -2453,6 +2826,7 @@ class ClientPortalController {
       return res.status(500).json(new ServerResponse(false, null, "Failed to upload file"));
     }
   }
+
 
   // Client Management Methods
   static async getClients(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
@@ -2645,7 +3019,7 @@ class ClientPortalController {
       }
 
       // Handle organization-level invite
-      if (clientId === 'organization') {
+      if (clientId === "organization") {
         return ClientPortalController.generateOrganizationInvitationLink(req, res);
       }
 
@@ -2672,25 +3046,42 @@ class ClientPortalController {
       const existingUserResult = await db.query(existingUserQuery, [client.email]);
 
       if (existingUserResult.rows.length > 0) {
-        // User already exists in Worklenz - they should use existing login
+        // User already exists in Worklenz - link them to client portal
         const existingUser = existingUserResult.rows[0];
-        
-        // Check if we need to link this user to the client portal
+
+        // Check if this Worklenz user is already linked to the client portal
         const linkCheckQuery = `
-          SELECT id FROM client_users 
+          SELECT id FROM client_users
           WHERE user_id = $1 AND client_id = $2
         `;
         const linkResult = await db.query(linkCheckQuery, [existingUser.id, client.id]);
-        
+
         if (linkResult.rows.length === 0) {
-          // Create the link between existing user and client portal
+          // Create client_users record linking Worklenz user to client portal
+          // Note: password_hash is NULL since they'll authenticate via users table
           const linkUserQuery = `
-            INSERT INTO client_users (user_id, client_id, email, name, role, created_at)
-            VALUES ($1, $2, $3, $4, 'member', NOW())
-            ON CONFLICT (user_id, client_id) DO NOTHING
+            INSERT INTO client_users (id, user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, 'member', $6, 'active', NOW(), NOW())
+            RETURNING id
           `;
-          await db.query(linkUserQuery, [existingUser.id, client.id, client.email, client.name]);
-          
+          const newClientUserId = crypto.randomUUID();
+          await db.query(linkUserQuery, [
+            newClientUserId,
+            existingUser.id,
+            client.id,
+            client.email,
+            client.name,
+            teamId
+          ]);
+
+          // Create organization access record for multi-org support
+          const orgAccessQuery = `
+            INSERT INTO client_user_organizations (client_user_id, team_id, client_id, is_default, created_at, updated_at)
+            VALUES ($1, $2, $3, TRUE, NOW(), NOW())
+            ON CONFLICT (client_user_id, team_id) DO NOTHING
+          `;
+          await db.query(orgAccessQuery, [newClientUserId, teamId, client.id]);
+
           // Update client status to active since user already exists
           const updateClientQuery = `
             UPDATE clients SET status = 'active', updated_at = NOW()
@@ -2698,14 +3089,13 @@ class ClientPortalController {
           `;
           await db.query(updateClientQuery, [client.id, teamId]);
         }
-        
-        // Instead of generating invite token, return a different response
+
+        // Return response indicating user can use existing Worklenz credentials
         return res.json(new ServerResponse(true, {
           isExistingUser: true,
-          message: "This client is already a Worklenz user. They can access the client portal using their existing login credentials. Access has been automatically granted.",
+          message: "This client is already a Worklenz user!",
           clientName: client.name,
           clientEmail: client.email,
-          existingUser: existingUser,
           portalUrl: `${getClientPortalBaseUrl()}/login`
         }, "Client is existing Worklenz user - access granted"));
       }
@@ -2765,7 +3155,7 @@ class ClientPortalController {
       // Generate secure token for organization invitation
       const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
       const inviteToken = TokenService.generateOrganizationInviteToken({
-        teamId: teamId,
+        teamId,
         type: "organization_invite",
         invitedBy: userId,
         expiresAt,
@@ -2788,7 +3178,7 @@ class ClientPortalController {
       await db.query(upsertQuery, [teamId, inviteToken, userId, new Date(expiresAt)]);
 
       // Generate organization portal link with secure token
-      const portalLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `http://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/organization-invite?token=${inviteToken}`;
+      const portalLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/organization-invite?token=${inviteToken}`;
 
       return res.json(new ServerResponse(true, {
         invitationLink: portalLink,
@@ -2848,8 +3238,8 @@ class ClientPortalController {
         if (clientResult.rows.length > 0) {
           // User is already linked to this organization's client portal
           return res.json(new ServerResponse(true, {
-            redirectTo: 'client-portal',
-            message: 'You already have access to this organization\'s client portal'
+            redirectTo: "client-portal",
+            message: "You already have access to this organization's client portal"
           }));
         }
 
@@ -2877,16 +3267,16 @@ class ClientPortalController {
           await db.query(linkUserQuery, [userId, clientId, user.email, user.name]);
 
           return res.json(new ServerResponse(true, {
-            redirectTo: 'client-portal',
-            message: 'Successfully linked to organization\'s client portal'
+            redirectTo: "client-portal",
+            message: "Successfully linked to organization's client portal"
           }));
         }
       }
 
       // User is not authenticated - they need to login/register first
       return res.json(new ServerResponse(true, {
-        redirectTo: 'login',
-        message: 'Please login or create an account to accept the invitation',
+        redirectTo: "login",
+        message: "Please login or create an account to accept the invitation",
         organizationName: invitation.organization_name
       }));
 
@@ -3687,7 +4077,7 @@ class ClientPortalController {
       });
 
       // Generate invitation link
-      const inviteLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `http://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/invitation?token=${inviteToken}`;
+      const inviteLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/invitation?token=${inviteToken}`;
 
       // Generate email HTML
       const emailHtml = ClientPortalController.generateInvitationEmailHTML({
@@ -3796,10 +4186,10 @@ class ClientPortalController {
           email: updatedUser.email,
           role: updatedUser.role,
           status: updatedUser.status,
-          type: 'client_user',
+          type: "client_user",
           updatedAt: updatedUser.updated_at
         }, "Team member updated successfully"));
-      } else {
+      } 
         // Try to find pending invitation
         const invitationCheck = await db.query(
           "SELECT id, email, name, role, status FROM client_invitations WHERE id = $1 AND client_id = $2 AND status = 'pending'",
@@ -3849,9 +4239,9 @@ class ClientPortalController {
           name: updatedInvitation.name,
           role: updatedInvitation.role,
           status: updatedInvitation.status,
-          type: 'invitation'
+          type: "invitation"
         }, "Team invitation updated successfully"));
-      }
+      
     } catch (error) {
       console.error("Error updating team member:", error);
       return res.status(500).json(new ServerResponse(false, null, "Failed to update team member"));
@@ -3897,10 +4287,10 @@ class ClientPortalController {
           name: removedUser.name,
           email: removedUser.email,
           role: removedUser.role,
-          type: 'client_user',
+          type: "client_user",
           removedAt: new Date()
         }, "Team member removed successfully"));
-      } else {
+      } 
         // Try to find and remove pending invitation
         const invitationCheck = await db.query(
           "SELECT id, email, name, role, status FROM client_invitations WHERE id = $1 AND client_id = $2",
@@ -3929,10 +4319,10 @@ class ClientPortalController {
           name: invitation.name,
           role: invitation.role,
           status: invitation.status,
-          type: 'invitation',
+          type: "invitation",
           removedAt: new Date()
         }, "Team invitation removed successfully"));
-      }
+      
     } catch (error) {
       console.error("Error removing team member:", error);
       return res.status(500).json(new ServerResponse(false, null, "Failed to remove team member"));
@@ -3980,7 +4370,7 @@ class ClientPortalController {
       );
 
       // Generate new invitation link
-      const inviteLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `http://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/invitation?token=${newToken}`;
+      const inviteLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https//${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/invitation?token=${newToken}`;
 
       // Generate email HTML
       const emailHtml = ClientPortalController.generateInvitationEmailHTML({
@@ -4104,7 +4494,7 @@ class ClientPortalController {
       const dayFilter = `NOW() - INTERVAL '${Number(days)} days'`;
 
       // Get project activities
-      if (!type || type === 'project') {
+      if (!type || type === "project") {
         const projectActivitiesQuery = `
           SELECT 
             'project_update' as activity_type,
@@ -4125,7 +4515,7 @@ class ClientPortalController {
       }
 
       // Get request activities
-      if (!type || type === 'request') {
+      if (!type || type === "request") {
         const requestActivitiesQuery = `
           SELECT 
             'request_' || r.status as activity_type,
@@ -4145,7 +4535,7 @@ class ClientPortalController {
       }
 
       // Get invoice activities
-      if (!type || type === 'invoice') {
+      if (!type || type === "invoice") {
         const invoiceActivitiesQuery = `
           SELECT 
             'invoice_' || i.status as activity_type,
@@ -4169,16 +4559,16 @@ class ClientPortalController {
       }
 
       // Get chat activities
-      if (!type || type === 'chat') {
+      if (!type || type === "chat") {
         const chatActivitiesQuery = `
           SELECT 
             'chat_message' as activity_type,
             m.id as reference_id,
             DATE(m.created_at)::text as reference_name,
             m.created_at as activity_date,
-            CASE 
+            CASE
               WHEN m.sender_type = 'client' THEN 'You sent a message'
-              ELSE u.first_name || ' ' || u.last_name || ' sent a message'
+              ELSE u.name || ' sent a message'
             END as description,
             'active' as status,
             'chat' as category
@@ -4220,7 +4610,7 @@ class ClientPortalController {
         page: Number(page), 
         limit: Number(limit),
         days: Number(days),
-        filter: type || 'all'
+        filter: type || "all"
       }, "Client activity retrieved successfully"));
     } catch (error) {
       console.error("Error fetching client activity:", error);
@@ -4235,10 +4625,10 @@ class ClientPortalController {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? "s" : ""} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
     return date.toLocaleDateString();
   }
 
@@ -4275,7 +4665,7 @@ class ClientPortalController {
       };
 
       // Include projects if requested
-      if (include === 'all' || (typeof include === 'string' && include.includes('projects'))) {
+      if (include === "all" || (typeof include === "string" && include.includes("projects"))) {
         const projectsQuery = `
           SELECT 
             p.id, p.name, p.notes as description, 
@@ -4293,7 +4683,7 @@ class ClientPortalController {
       }
 
       // Include requests if requested
-      if (include === 'all' || (typeof include === 'string' && include.includes('requests'))) {
+      if (include === "all" || (typeof include === "string" && include.includes("requests"))) {
         const requestsQuery = `
           SELECT 
             r.id, r.req_no, r.status, r.request_data, r.notes,
@@ -4309,7 +4699,7 @@ class ClientPortalController {
       }
 
       // Include invoices if requested
-      if (include === 'all' || (typeof include === 'string' && include.includes('invoices'))) {
+      if (include === "all" || (typeof include === "string" && include.includes("invoices"))) {
         const invoicesQuery = `
           SELECT 
             i.id, i.invoice_no, i.amount, i.currency, i.status,
@@ -4323,13 +4713,13 @@ class ClientPortalController {
       }
 
       // Include chat messages if requested
-      if (include === 'all' || (typeof include === 'string' && include.includes('messages'))) {
+      if (include === "all" || (typeof include === "string" && include.includes("messages"))) {
         const messagesQuery = `
           SELECT 
             m.id, m.sender_type, m.message, m.message_type,
             m.created_at, m.read_at,
-            CASE 
-              WHEN m.sender_type = 'team_member' THEN u.first_name || ' ' || u.last_name
+            CASE
+              WHEN m.sender_type = 'team_member' THEN u.name
               WHEN m.sender_type = 'client' THEN cu.name
             END as sender_name
           FROM client_portal_chat_messages m
@@ -4346,20 +4736,20 @@ class ClientPortalController {
       // Add export metadata
       exportData.exportMetadata = {
         exportedAt: new Date(),
-        exportedBy: (req.user as any)?.email || 'system',
+        exportedBy: (req.user as any)?.email || "system",
         format,
-        includedSections: include === 'all' ? ['client', 'projects', 'requests', 'invoices', 'messages'] : (typeof include === 'string' ? include.split(',') : []),
+        includedSections: include === "all" ? ["client", "projects", "requests", "invoices", "messages"] : (typeof include === "string" ? include.split(",") : []),
         clientId: id,
         clientName: client.name
       };
 
       // For CSV format, flatten the data
-      if (format === 'csv') {
+      if (format === "csv") {
         // In a real implementation, you would convert this to CSV format
         // For now, return instructions for CSV generation
         return res.json(new ServerResponse(true, {
           downloadUrl: `/api/client-portal/clients/${id}/export/download?format=csv&include=${include}`,
-          format: 'csv',
+          format: "csv",
           recordCount: {
             projects: exportData.projects?.length || 0,
             requests: exportData.requests?.length || 0,
@@ -4374,7 +4764,7 @@ class ClientPortalController {
       return res.json(new ServerResponse(true, {
         exportData,
         downloadUrl: `/api/client-portal/clients/${id}/export/download?format=json&include=${include}`,
-        format: 'json'
+        format: "json"
       }, "Client data export completed"));
     } catch (error) {
       console.error("Error exporting client data:", error);
@@ -4462,7 +4852,7 @@ class ClientPortalController {
   }
 
   // Client Portal Authentication Endpoints
-  static async validateInvitation(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async validateInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
       const { token } = req.query;
 
@@ -4497,7 +4887,7 @@ class ClientPortalController {
     }
   }
 
-  static async acceptInvitation(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async acceptInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
       const { token, password, name } = req.body;
 
@@ -4505,41 +4895,127 @@ class ClientPortalController {
         return res.status(400).json(new ServerResponse(false, null, "Token, password, and name are required"));
       }
 
-      // Accept the invitation
+      // Check if this is an organization invite token
+      const orgInvitePayload = TokenService.verifyOrganizationInviteToken(token);
+      
+      if (orgInvitePayload && orgInvitePayload.type === "organization_invite") {
+        
+        // For organization invites, create a new client user account
+        // First, check if user already exists
+        const existingUserCheck = await db.query(
+          "SELECT id FROM client_users WHERE email = $1",
+          [req.body.email || name] // Use email from form if provided
+        );
+
+        if (existingUserCheck.rows.length > 0) {
+          return res.status(400).json(new ServerResponse(false, null, "A user with this email already exists. Please login instead."));
+        }
+
+        // Create a client record for this organization
+        const clientResult = await db.query(
+          `INSERT INTO clients (name, team_id, status, created_at, updated_at)
+           VALUES ($1, $2, 'active', NOW(), NOW())
+           RETURNING id`,
+          [name, orgInvitePayload.teamId]
+        );
+        
+        const clientId = clientResult.rows[0].id;
+        
+        // Create the client user
+        const userResult = await db.query(
+          `INSERT INTO client_users (id, client_id, email, name, password_hash, role, status, created_at)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
+           RETURNING id, email, name, role, client_id`,
+          [
+            clientId,
+            req.body.email || name,
+            name,
+            crypto.createHash("sha256").update(password).digest("hex")
+          ]
+        );
+
+        const newUser = userResult.rows[0];
+
+        // Generate client access token
+        const permissions = await TokenService.getClientPermissions(clientId);
+        const tokenPayload = {
+          clientId,
+          organizationId: orgInvitePayload.teamId,
+          email: newUser.email,
+          permissions,
+          type: "client" as const
+        };
+
+        const accessToken = TokenService.generateClientToken(tokenPayload);
+
+        return res.json(new ServerResponse(true, {
+          token: accessToken,
+          user: {
+            id: newUser.id,
+            email: newUser.email,
+            name: newUser.name,
+            role: newUser.role,
+            clientId,
+            clientName: name,
+            companyName: orgInvitePayload.organizationName
+          },
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        }, "Account created successfully"));
+      }
+
+      // Regular invitation flow
+      const invitation = await TokenService.getInvitationByToken(token);
+
+      if (!invitation) {
+        return res.status(400).json(new ServerResponse(false, null, "Invalid or expired invitation"));
+      }
+
+      // Check if user email exists in Worklenz users table
+      const existingWorklenzUserQuery = `
+        SELECT id, email, name FROM users
+        WHERE LOWER(email) = LOWER($1)
+      `;
+      const existingWorklenzUserResult = await db.query(existingWorklenzUserQuery, [invitation.email]);
+
+      let userId = null;
+      if (existingWorklenzUserResult.rows.length > 0) {
+        // User already exists in Worklenz - link them instead of creating password
+        userId = existingWorklenzUserResult.rows[0].id;
+      }
+
+      // Accept the invitation (will link if userId is provided, otherwise create password)
       const newUser = await TokenService.acceptInvitation(token, {
         password,
-        name
+        name,
+        userId
       });
 
       // Send welcome email
-      const invitation = await TokenService.getInvitationByToken(token);
-      if (invitation) {
-        const portalLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `http://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/login`;
-        
-        // Generate welcome email HTML
-        const emailHtml = ClientPortalController.generateWelcomeEmailHTML({
-          userName: newUser.name,
-          clientName: invitation.client_name,
-          companyName: invitation.company_name,
-          portalLink
-        });
+      const portalLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/login`;
+      
+      const emailHtml = ClientPortalController.generateWelcomeEmailHTML({
+        userName: newUser.name,
+        clientName: invitation.client_name,
+        companyName: invitation.company_name,
+        portalLink
+      });
 
-        // Send welcome email using shared email function
-        const emailRequest = new EmailRequest(
-          [newUser.email],
-          `Welcome to ${invitation.client_name} on Worklenz`,
-          emailHtml
-        );
+      const emailRequest = new EmailRequest(
+        [newUser.email],
+        `Welcome to ${invitation.client_name} on Worklenz`,
+        emailHtml
+      );
 
-        await sendEmail(emailRequest);
-      }
+      await sendEmail(emailRequest);
 
       // Generate client access token for automatic login
+      const permissions = await TokenService.getClientPermissions(newUser.client_id);
+      
       const tokenPayload = {
         clientId: newUser.client_id,
         organizationId: newUser.team_id,
         email: newUser.email,
-        permissions: await TokenService.getClientPermissions(newUser.client_id),
+        permissions,
         type: "client" as const
       };
 
@@ -4570,7 +5046,7 @@ class ClientPortalController {
     }
   }
 
-  static async clientLogin(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async clientLogin(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
       const { email, password } = req.body;
 
@@ -4585,22 +5061,36 @@ class ClientPortalController {
         return res.status(401).json(new ServerResponse(false, null, "Invalid email or password"));
       }
 
-      // Generate client access token
+      // Get all organizations accessible by this user
+      const organizations = await TokenService.getClientUserOrganizations(clientUser.id);
+
+      // Use default organization or first available
+      const defaultOrg = organizations.find(org => org.isDefault) || organizations[0];
+      const organizationId = defaultOrg?.teamId || clientUser.team_id;
+      const clientId = defaultOrg?.clientId || clientUser.client_id;
+
+      // Generate client access token with organization information
       const tokenPayload = {
-        clientId: clientUser.client_id,
-        organizationId: clientUser.team_id,
+        clientId,
+        organizationId,
+        clientUserId: clientUser.id,
         email: clientUser.email,
-        permissions: await TokenService.getClientPermissions(clientUser.client_id),
+        permissions: await TokenService.getClientPermissions(clientId),
+        availableOrganizations: organizations,
         type: "client" as const
       };
 
       const accessToken = TokenService.generateClientToken(tokenPayload);
 
-      // Update last login
+      // Update last login and organization access
       await db.query(
         "UPDATE client_users SET last_login = NOW() WHERE id = $1",
         [clientUser.id]
       );
+
+      if (defaultOrg) {
+        await TokenService.updateOrganizationAccess(clientUser.id, organizationId);
+      }
 
       return res.json(new ServerResponse(true, {
         token: accessToken,
@@ -4609,10 +5099,13 @@ class ClientPortalController {
           email: clientUser.email,
           name: clientUser.name,
           role: clientUser.role,
-          clientId: clientUser.client_id,
+          clientId,
+          organizationId,
           clientName: clientUser.client_name,
-          companyName: clientUser.company_name
-        }
+          companyName: clientUser.company_name,
+          organizations
+        },
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
       }, "Login successful"));
     } catch (error) {
       console.error("Error during client login:", error);
@@ -4620,7 +5113,7 @@ class ClientPortalController {
     }
   }
 
-  static async refreshClientToken(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async refreshClientToken(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
       const { token } = req.body;
 
@@ -4661,6 +5154,82 @@ class ClientPortalController {
     } catch (error) {
       console.error("Error during client logout:", error);
       return res.status(500).json(new ServerResponse(false, null, "Logout failed"));
+    }
+  }
+
+  static async getClientOrganizations(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const {clientUserId} = (req as any);
+
+      if (!clientUserId) {
+        return res.status(400).json(new ServerResponse(false, null, "Client user ID not found"));
+      }
+
+      // Get all organizations accessible by this user
+      const organizations = await TokenService.getClientUserOrganizations(clientUserId);
+
+      return res.json(new ServerResponse(true, { organizations }, "Organizations retrieved successfully"));
+    } catch (error) {
+      console.error("Error fetching client organizations:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve organizations"));
+    }
+  }
+
+  static async switchOrganization(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const {clientUserId} = (req as any);
+      const { organizationId } = req.body;
+
+      if (!clientUserId) {
+        return res.status(400).json(new ServerResponse(false, null, "Client user ID not found"));
+      }
+
+      if (!organizationId) {
+        return res.status(400).json(new ServerResponse(false, null, "Organization ID is required"));
+      }
+
+      // Verify user has access to this organization
+      const hasAccess = await TokenService.hasOrganizationAccess(clientUserId, organizationId);
+
+      if (!hasAccess) {
+        return res.status(403).json(new ServerResponse(false, null, "Access denied to this organization"));
+      }
+
+      // Get client_id for this organization
+      const clientId = await TokenService.getClientIdForOrganization(clientUserId, organizationId);
+
+      if (!clientId) {
+        return res.status(404).json(new ServerResponse(false, null, "Client not found for this organization"));
+      }
+
+      // Get all organizations for token payload
+      const organizations = await TokenService.getClientUserOrganizations(clientUserId);
+
+      // Generate new token with updated organization
+      const tokenPayload = {
+        clientId,
+        organizationId,
+        clientUserId,
+        email: (req as any).clientEmail || "",
+        permissions: await TokenService.getClientPermissions(clientId),
+        availableOrganizations: organizations,
+        type: "client" as const
+      };
+
+      const newToken = TokenService.generateClientToken(tokenPayload);
+
+      // Update last accessed timestamp
+      await TokenService.updateOrganizationAccess(clientUserId, organizationId);
+
+      return res.json(new ServerResponse(true, {
+        token: newToken,
+        organizationId,
+        clientId,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      }, "Organization switched successfully"));
+    } catch (error) {
+      console.error("Error switching organization:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to switch organization"));
     }
   }
 

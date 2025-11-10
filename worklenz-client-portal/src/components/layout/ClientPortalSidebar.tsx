@@ -10,7 +10,7 @@ import { themeWiseColor } from '@/utils/themeWiseColor';
 import { useResponsive } from '@/hooks/useResponsive';
 import worklenzLightLogo from '@/assets/images/worklenz-light-mode.png';
 import worklenzDarkLogo from '@/assets/images/worklenz-dark-mode.png';
-import { useGetSettingsQuery } from '@/store/api';
+import { useGetOrganizationSettingsQuery } from '@/store/api';
 
 interface ClientPortalSidebarProps {
   items?: ClientPortalMenuItems[];
@@ -29,8 +29,8 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
   const { isMobile } = useResponsive();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  // Get client portal settings for custom logo
-  const { data: settingsData } = useGetSettingsQuery();
+  // Get organization settings for custom logo (client-side)
+  const { data: settingsData } = useGetOrganizationSettingsQuery();
   
   // Example: get unread chat count from Redux (replace with real selector)
   const unreadChatsCount = useAppSelector(
@@ -84,7 +84,13 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
   const MobileMenu = () => (
     <Drawer
       title={
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          width: '140px',
+          height: '40px',
+        }}>
           <img
             src={(() => {
               // Check for custom logo from API first
@@ -96,8 +102,8 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
             })()}
             alt="Logo"
             style={{ 
-              maxHeight: '32px', 
-              maxWidth: '140px',
+              width: '100%',
+              height: '100%',
               objectFit: 'contain'
             }}
           />
@@ -152,16 +158,20 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
       {/* Header with title and collapse button */}
       <div
         style={{
-          padding: collapsed ? '17px 16px' : '17px 24px',
-          borderBottom: `1px solid ${themeWiseColor('#e8e8e8', '#2a2a2a', themeMode)}`,
+          padding: collapsed ? '15px 16px' : '15px 24px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: collapsed ? 'center' : 'space-between',
-          minHeight: 72,
-          background: themeWiseColor('#fff', '#262626', themeMode),
+          minHeight: 64,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'flex-start' }}>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          width: collapsed ? '48px' : '160px',
+          height: collapsed ? '40px' : '48px',
+        }}>
           <img
             src={(() => {
               // Check for custom logo from API first
@@ -173,8 +183,8 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
             })()}
             alt="Logo"
             style={{ 
-              maxHeight: collapsed ? '32px' : '36px', 
-              maxWidth: collapsed ? '48px' : '160px',
+              width: '100%',
+              height: '100%',
               objectFit: 'contain'
             }}
           />

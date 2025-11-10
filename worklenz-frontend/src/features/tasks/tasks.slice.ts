@@ -567,7 +567,7 @@ const taskSlice = createSlice({
         const task = group.tasks.find(task => task.id === id);
         if (task) {
           task.name = name;
-          break;
+          return; // Exit early after updating
         }
 
         // Check subtasks
@@ -576,7 +576,7 @@ const taskSlice = createSlice({
             const subTask = task.sub_tasks.find(subtask => subtask.id === id);
             if (subTask) {
               subTask.name = name;
-              break;
+              return; // Exit early after updating
             }
           }
         }
@@ -592,7 +592,7 @@ const taskSlice = createSlice({
         completedCount: number;
       }>
     ) => {
-      const { taskId, progress, totalTasksCount, completedCount } = action.payload;
+      const { taskId, progress, totalTasksCount, completedCount} = action.payload;
 
       // Helper function to find and update a task at any nesting level
       const findAndUpdateTask = (tasks: IProjectTask[]) => {
@@ -600,6 +600,7 @@ const taskSlice = createSlice({
           if (task.id === taskId) {
             task.complete_ratio = progress;
             task.progress_value = progress;
+            task.progress = progress; // Also update progress field
             task.total_tasks_count = totalTasksCount;
             task.completed_count = completedCount;
             return true;
@@ -1078,7 +1079,13 @@ const taskSlice = createSlice({
       })
       .addCase(fetchTaskAssignees.fulfilled, (state, action) => {
         state.loadingAssignees = false;
-        state.taskAssignees = action.payload;
+        const existingSelections = new Map(
+          state.taskAssignees.map(assignee => [assignee.id, assignee.selected])
+        );
+        state.taskAssignees = action.payload.map(assignee => ({
+          ...assignee,
+          selected: existingSelections.get(assignee.id) ?? false,
+        }));
       })
       .addCase(fetchTaskAssignees.rejected, (state, action) => {
         state.loadingAssignees = false;

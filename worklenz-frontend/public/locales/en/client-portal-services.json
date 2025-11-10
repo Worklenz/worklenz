@@ -1,5 +1,6 @@
 {
   "title": "Services",
+  "description": "Manage your services and offerings",
   "nameColumn": "Name",
   "createdByColumn": "Created By",
   "statusColumn": "Status",

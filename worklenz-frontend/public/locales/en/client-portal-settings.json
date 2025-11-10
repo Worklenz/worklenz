@@ -20,5 +20,15 @@
   "enhancedTrustText": "Enhanced client trust and recognition",
   "previewLogoTooltip": "Preview logo",
   "removeLogoTooltip": "Remove logo",
-  "customizePortalText": "Customize your client portal appearance and branding"
+  "customizePortalText": "Customize your client portal appearance and branding",
+  "saveButton": "Save Changes",
+  "cancelButton": "Cancel",
+  "discardButton": "Discard Changes",
+  "pendingChangesText": "You have unsaved changes",
+  "newLogoText": "New Logo (pending)",
+  "logoUploadedText": "Logo selected successfully",
+  "settingsSavedText": "Settings saved successfully",
+  "logoRemovedText": "Logo removed",
+  "savingText": "Saving...",
+  "selectFileButton": "Select Logo"
 }

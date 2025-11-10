@@ -1,5 +1,6 @@
 {
   "title": "Invoices",
+  "description": "Manage and track your invoices",
   "addInvoiceButton": "Add Invoice",
   "createInvoiceDrawerTitle": "Create Invoice",
   "selectRequestLabel": "Select Request",

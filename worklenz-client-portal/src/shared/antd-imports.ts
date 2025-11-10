@@ -38,6 +38,7 @@ export {
   Image,
   Popconfirm,
   List,
+  Modal,
 } from "antd/es";
 
 // Types
@@ -88,4 +89,7 @@ export {
   WarningOutlined,
   InfoCircleOutlined,
   ExclamationCircleOutlined,
+  FilterOutlined,
+  PrinterOutlined,
+  LeftOutlined
 } from "@ant-design/icons";

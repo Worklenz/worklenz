@@ -233,7 +233,8 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
       return [
         {
           id: 'priority',
-          label: t('priorityText'),
+          label: t('priorityText', { defaultValue: 'Priority' }),
+          defaultLabel: 'Priority',
           options: filterData.priorities.map((p: any) => ({
             value: p.id,
             label: p.name,
@@ -246,7 +247,8 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
         },
         {
           id: 'assignees',
-          label: t('membersText'),
+          label: t('membersText', { defaultValue: 'Members' }),
+          defaultLabel: 'Members',
           icon: TeamOutlined,
           multiSelect: true,
           searchable: true,
@@ -263,7 +265,8 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
         },
         {
           id: 'labels',
-          label: t('labelsText'),
+          label: t('labelsText', { defaultValue: 'Labels' }),
+          defaultLabel: 'Labels',
           icon: TagOutlined,
           multiSelect: true,
           searchable: true,
@@ -280,17 +283,18 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
         },
         {
           id: 'groupBy',
-          label: t('groupByText'),
+          label: t('groupByText', { defaultValue: 'Group by' }),
+          defaultLabel: 'Group by',
           icon: GroupOutlined,
           multiSelect: false,
           searchable: false,
           selectedValues: [groupByValue],
           options: [
-            { id: 'status', label: t('statusText'), value: 'status' },
-            { id: 'priority', label: t('priorityText'), value: 'priority' },
+            { id: 'status', label: t('statusText', { defaultValue: 'Status' }), value: 'status' },
+            { id: 'priority', label: t('priorityText', { defaultValue: 'Priority' }), value: 'priority' },
             {
               id: 'phase',
-              label: (kanbanProject as any)?.phase_label || t('phaseText'),
+              label: (kanbanProject as any)?.phase_label || t('phaseText', { defaultValue: 'Phase' }),
               value: 'phase',
             },
           ],
@@ -308,7 +312,8 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
       return [
         {
           id: 'priority',
-          label: t('priorityText'),
+          label: t('priorityText', { defaultValue: 'Priority' }),
+          defaultLabel: 'Priority',
           options: filterData.priorities.map((p: any) => ({
             value: p.id,
             label: p.name,
@@ -321,7 +326,8 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
         },
         {
           id: 'assignees',
-          label: t('membersText'),
+          label: t('membersText', { defaultValue: 'Members' }),
+          defaultLabel: 'Members',
           icon: TeamOutlined,
           multiSelect: true,
           searchable: true,
@@ -338,7 +344,8 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
         },
         {
           id: 'labels',
-          label: t('labelsText'),
+          label: t('labelsText', { defaultValue: 'Labels' }),
+          defaultLabel: 'Labels',
           icon: TagOutlined,
           multiSelect: true,
           searchable: true,
@@ -355,18 +362,20 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
         },
         {
           id: 'groupBy',
-          label: t('groupByText'),
+          label: t('groupByText', { defaultValue: 'Group by' }),
+          defaultLabel: 'Group by',
           icon: GroupOutlined,
           multiSelect: false,
           searchable: false,
           selectedValues: [groupByValue],
           options: [
-            { id: 'status', label: t('statusText'), value: 'status' },
-            { id: 'priority', label: t('priorityText'), value: 'priority' },
+            { id: 'status', label: t('statusText', { defaultValue: 'Status' }), value: 'status', defaultLabel: 'Status' },
+            { id: 'priority', label: t('priorityText', { defaultValue: 'Priority' }), value: 'priority', defaultLabel: 'Priority' },
             {
               id: 'phase',
-              label: filterData.project?.phase_label || t('phaseText'),
+              label: filterData.project?.phase_label || t('phaseText', { defaultValue: 'Phase' }),
               value: 'phase',
+              defaultLabel: 'Phase',
             },
           ],
         },
@@ -518,7 +527,7 @@ const FilterDropdown: React.FC<{
               }`}
             >
               <SettingOutlined className="w-3.5 h-3.5" />
-              {t('manage')} {projectPhaseLabel || t('phasesText')}
+              {t('manage', { defaultValue: 'Manage' })} {projectPhaseLabel || t('phasesText', { defaultValue: 'Phases' })}
             </button>
           )}
           {section.selectedValues[0] === 'status' && (
@@ -531,7 +540,7 @@ const FilterDropdown: React.FC<{
               }`}
             >
               <SettingOutlined className="w-3.5 h-3.5" />
-              {t('manageStatuses')}
+              {t('manageStatuses', { defaultValue: 'Manage Statuses' })}
             </button>
           )}
         </div>
@@ -550,7 +559,7 @@ const FilterDropdown: React.FC<{
                 <input
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  placeholder={`${t('searchPlaceholder')} ${section.label.toLowerCase()}...`}
+                  placeholder={`${t('searchPlaceholder', { defaultValue: 'Search' })} ${section.label.toLowerCase()}...`}
                   className={`w-full pl-8 pr-2 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${
                     isDarkMode
                       ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
@@ -565,7 +574,7 @@ const FilterDropdown: React.FC<{
           <div className="max-h-48 overflow-y-auto">
             {filteredOptions.length === 0 ? (
               <div className={`p-2 text-xs text-center ${themeClasses.secondaryText}`}>
-                {t('noOptionsFound')}
+                {t('noOptionsFound', { defaultValue: 'No options found' })}
               </div>
             ) : (
               <div className="p-0.5">
@@ -701,7 +710,7 @@ const SearchFilter: React.FC<{
           }`}
         >
           <SearchOutlined className="w-3.5 h-3.5" />
-          <span>{t('search')}</span>
+          <span>{t('search', { defaultValue: 'Search' })}</span>
         </button>
       ) : (
         <form onSubmit={handleSubmit} className="flex items-center gap-1.5">
@@ -712,7 +721,7 @@ const SearchFilter: React.FC<{
               type="text"
               value={localValue}
               onChange={e => setLocalValue(e.target.value)}
-              placeholder={placeholder || t('searchTasks') || 'Search tasks by name or key...'}
+              placeholder={placeholder || t('searchTasks', { defaultValue: 'Search tasks by name or key...' })}
               className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-150 ${
                 isDarkMode
                   ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
@@ -741,7 +750,7 @@ const SearchFilter: React.FC<{
                 : 'text-gray-800 bg-gray-200 hover:bg-gray-300'
             }`}
           >
-            {t('search')}
+            {t('search', { defaultValue: 'Search' })}
           </button>
           <button
             type="button"
@@ -754,7 +763,7 @@ const SearchFilter: React.FC<{
               isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
             }`}
           >
-            {t('cancel')}
+            {t('cancel', { defaultValue: 'Cancel' })}
           </button>
         </form>
       )}
@@ -791,14 +800,14 @@ const SortDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
   }, [open]);
 
   const sortFieldsList = [
-    { label: t('taskText'), key: 'name' },
-    { label: t('statusText'), key: 'status' },
-    { label: t('priorityText'), key: 'priority' },
-    { label: t('startDateText'), key: 'start_date' },
-    { label: t('endDateText'), key: 'end_date' },
-    { label: t('completedDateText'), key: 'completed_at' },
-    { label: t('createdDateText'), key: 'created_at' },
-    { label: t('lastUpdatedText'), key: 'updated_at' },
+    { label: t('taskText', { defaultValue: 'Task' }), key: 'name' },
+    { label: t('statusText', { defaultValue: 'Status' }), key: 'status' },
+    { label: t('priorityText', { defaultValue: 'Priority' }), key: 'priority' },
+    { label: t('startDateText', { defaultValue: 'Start Date' }), key: 'start_date' },
+    { label: t('endDateText', { defaultValue: 'End Date' }), key: 'end_date' },
+    { label: t('completedDateText', { defaultValue: 'Completed Date' }), key: 'completed_at' },
+    { label: t('createdDateText', { defaultValue: 'Created Date' }), key: 'created_at' },
+    { label: t('lastUpdatedText', { defaultValue: 'Last Updated' }), key: 'updated_at' },
   ];
 
   const handleSortFieldChange = (fieldKey: string) => {
@@ -827,7 +836,7 @@ const SortDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
 
   const isActive = currentSortField !== '';
   const currentFieldLabel = sortFieldsList.find(f => f.key === currentSortField)?.label;
-  const orderText = currentSortOrder === 'ASC' ? t('ascendingOrder') : t('descendingOrder');
+  const orderText = currentSortOrder === 'ASC' ? t('ascendingOrder', { defaultValue: 'Ascending Order' }) : t('descendingOrder', { defaultValue: 'Descending Order' });
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -837,7 +846,7 @@ const SortDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
         title={
           isActive
             ? t('currentSort', { field: currentFieldLabel, order: orderText })
-            : t('sortText')
+            : t('sortText', { defaultValue: 'Sort' })
         }
         className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
@@ -860,7 +869,7 @@ const SortDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
         ) : (
           <SortDescendingOutlined className="w-3.5 h-3.5" />
         )}
-        <span className="hidden sm:inline">{t('sortText')}</span>
+        <span className="hidden sm:inline">{t('sortText', { defaultValue: 'Sort' })}</span>
         {isActive && currentFieldLabel && (
           <span
             className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} max-w-16 truncate hidden md:inline`}
@@ -885,7 +894,7 @@ const SortDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
                 onClick={clearSort}
                 className={`w-full text-left px-2 py-1.5 text-xs rounded transition-colors duration-150 ${themeClasses.optionText} ${themeClasses.optionHover}`}
               >
-                {t('clearSort')}
+                {t('clearSort', { defaultValue: 'Clear Sort' })}
               </button>
             </div>
           )}
@@ -893,7 +902,7 @@ const SortDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
           {/* Options List */}
           <div className="max-h-48 overflow-y-auto">
             <div className="p-0.5">
-              {sortFieldsList.map(sortField => {
+              {sortFieldsList.map((sortField: any) => {
                 const isSelected = currentSortField === sortField.key;
 
                 return (
@@ -916,8 +925,8 @@ const SortDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
                         ? t('currentSort', {
                             field: sortField.label,
                             order: orderText,
-                          }) + ` - ${t('sortDescending')}`
-                        : t('sortByField', { field: sortField.label }) + ` - ${t('sortAscending')}`
+                          }) + ` - ${t('sortDescending', { defaultValue: 'Sort Descending' })}`
+                        : t('sortByField', { field: sortField.label }) + ` - ${t('sortAscending', { defaultValue: 'Sort Ascending' })}`
                     }
                   >
                     <div className="flex items-center gap-2">
@@ -1053,7 +1062,7 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
         aria-haspopup="true"
       >
         <EyeOutlined className="w-3.5 h-3.5" />
-        <span>{t('fieldsText')}</span>
+        <span>{t('fieldsText', { defaultValue: 'Fields' })}</span>
         {visibleCount > 0 && (
           <span
             className={`inline-flex items-center justify-center w-4 h-4 text-xs font-bold ${isDarkMode ? 'text-white bg-gray-500' : 'text-gray-800 bg-gray-300'} rounded-full`}
@@ -1075,7 +1084,7 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
           <div className="max-h-48 overflow-y-auto">
             {sortedFields.length === 0 ? (
               <div className={`p-2 text-xs text-center ${themeClasses.secondaryText}`}>
-                {t('noOptionsFound')}
+                {t('noOptionsFound', { defaultValue: 'No Options Found' })}
               </div>
             ) : (
               <div className="p-0.5">
@@ -1544,7 +1553,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
               className={`flex items-center gap-2 px-2.5 py-1.5 text-xs ${themeClasses.secondaryText}`}
             >
               <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-gray-500"></div>
-              <span>{t('loadingFilters')}</span>
+              <span>{t('loadingFilters', { defaultValue: 'Loading Filters' })}</span>
             </div>
           )}
         </div>
@@ -1556,7 +1565,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
             <div className="flex items-center gap-1.5">
               <span className={`text-xs ${themeClasses.secondaryText}`}>
                 {activeFiltersCount}{' '}
-                {activeFiltersCount !== 1 ? t('filtersActive') : t('filterActive')}
+                {activeFiltersCount !== 1 ? t('filtersActive', { defaultValue: 'Filters Active' }) : t('filterActive', { defaultValue: 'Filter Active' })}
               </span>
               <button
                 onClick={clearAllFilters}
@@ -1569,7 +1578,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
                       : 'text-gray-600 hover:text-gray-700'
                 }`}
               >
-                {clearingFilters ? t('clearing') : t('clearAll')}
+                {clearingFilters ? t('clearing', { defaultValue: 'Clearing' }) : t('clearAll', { defaultValue: 'Clear All' })}
               </button>
             </div>
           )}
@@ -1587,7 +1596,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
                     : 'border-gray-300 bg-white focus:ring-offset-white'
                 }`}
               />
-              <span className={`text-xs ${themeClasses.optionText}`}>{t('showArchivedText')}</span>
+              <span className={`text-xs ${themeClasses.optionText}`}>{t('showArchivedText', { defaultValue: 'Show Archived' })}</span>
             </label>
           )}
 

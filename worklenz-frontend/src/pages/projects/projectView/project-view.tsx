@@ -49,6 +49,7 @@ import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallba
 import { useTranslation } from 'react-i18next';
 import { useTimerInitialization } from '@/hooks/useTimerInitialization';
 import { useAuthService } from '@/hooks/useAuth';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 // Import critical components synchronously to avoid suspense interruptions
 import TaskDrawer from '@components/task-drawer/task-drawer';
@@ -86,6 +87,7 @@ const ProjectView = React.memo(() => {
   // Get auth service and current session
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   // Memoize URL params to prevent unnecessary state updates
   const urlParams = useMemo(() => {
@@ -107,10 +109,27 @@ const ProjectView = React.memo(() => {
 
   // Update local state when URL params change
   useEffect(() => {
-    setActiveTab(urlParams.tab);
+    // Validate that the tab from URL is not disabled before setting it
+    const filteredTabItems = getFilteredTabItems(currentSession, selectedProject);
+    const requestedTab = filteredTabItems.find(item => item.key === urlParams.tab);
+    
+    // If tab is disabled, redirect to first available tab and show upgrade modal
+    if (requestedTab?.disabled) {
+      const firstAvailableTab = filteredTabItems.find(item => !item.disabled);
+      if (firstAvailableTab) {
+        setActiveTab(firstAvailableTab.key);
+        // Show upgrade modal after a brief delay to ensure component is mounted
+        setTimeout(() => {
+          dispatch(toggleUpgradeModal());
+        }, 100);
+      }
+    } else {
+      setActiveTab(urlParams.tab);
+    }
+    
     setPinnedTab(urlParams.pinnedTab);
     setTaskId(urlParams.taskId);
-  }, [urlParams]);
+  }, [urlParams, currentSession, selectedProject, dispatch]);
 
   // Remove translation preloading since we're using simple load-as-you-go approach
   useEffect(() => {
@@ -268,6 +287,24 @@ const ProjectView = React.memo(() => {
         dispatch(toggleUpgradeModal());
         return;
       }
+
+      // Track finance tab clicks
+      if (key === 'finance') {
+        const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+        const hasFinanceAccess = hasFinanceViewPermission(currentSession, selectedProject);
+        
+        trackMixpanelEvent('finance_tab_clicked', {
+          source: 'project_view_header',
+          project_id: projectId,
+          project_name: selectedProject?.name,
+          user_type: currentSession?.subscription_type?.toLowerCase(),
+          has_business_access: hasBusinessAccess,
+          has_finance_permission: hasFinanceAccess,
+          is_admin: currentSession?.is_admin || currentSession?.owner,
+          tab_disabled: tabItem?.disabled || false,
+        });
+      }
+
       setActiveTab(key);
       dispatch(setProjectView(key === 'board' ? 'kanban' : 'list'));
 
@@ -283,7 +320,7 @@ const ProjectView = React.memo(() => {
         { replace: true }
       );
     },
-    [dispatch, location.pathname, navigate, pinnedTab, currentSession, selectedProject]
+    [dispatch, location.pathname, navigate, pinnedTab, currentSession, selectedProject, projectId, trackMixpanelEvent]
   );
 
   // Memoized tab menu items with enhanced styling
@@ -296,30 +333,25 @@ const ProjectView = React.memo(() => {
     const filteredTabItems = getFilteredTabItems(currentSession, selectedProject);
 
     const menuItems = filteredTabItems.map(item => {
+      const premiumTabs = ['finance', 'project-insights-member-overview', 'roadmap', 'workload'];
+      const isPremiumTab = premiumTabs.includes(item.key);
+      
       return {
         key: item.key,
-        disabled: item.disabled,
+        disabled: false, // Never disable at Ant Design level - we handle clicks manually
         label: (
           <Tooltip title={item.disabled ? item.disabledReason : undefined} placement="bottom">
             <Flex
               align="center"
               gap={6}
               style={{
-                color: item.disabled ? '#8c8c8c' : 'inherit',
-                opacity: item.disabled ? 0.6 : 1,
-                cursor: item.disabled ? 'pointer' : 'pointer',
-              }}
-              onClick={e => {
-                // Fallback: Direct click handler for disabled tabs
-                if (item.disabled) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  dispatch(toggleUpgradeModal());
-                }
+                color: 'inherit', // Always use normal color
+                opacity: 1, // Always full opacity
+                cursor: 'pointer',
               }}
             >
               <span style={{ fontWeight: 500, fontSize: '13px' }}>{item.label}</span>
-              {item.disabled && <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />}
+              {item.disabled && <CrownOutlined style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }} />}
               {(item.key === 'tasks-list' || item.key === 'board') && !item.disabled && (
                 <ConfigProvider wave={{ disabled: true }}>
                   <Button
@@ -432,12 +464,8 @@ const ProjectView = React.memo(() => {
         className="project-view-tabs"
         activeKey={activeTab}
         onChange={handleTabChange}
-        onTabClick={(key, e) => {
-          // Ant Design sometimes calls onTabClick even for disabled tabs
-          handleTabChange(key);
-        }}
         items={tabMenuItems}
-        destroyOnHidden={true}
+        destroyInactiveTabPane={true}
         animated={{
           inkBar: true,
           tabPane: false,

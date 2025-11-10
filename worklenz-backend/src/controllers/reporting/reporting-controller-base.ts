@@ -4,6 +4,7 @@ import db from "../../config/db";
 import moment from "moment";
 import { DATE_RANGES, TASK_PRIORITY_COLOR_ALPHA } from "../../shared/constants";
 import { formatDuration, formatLogText, getColor, int } from "../../shared/utils";
+import { isTeamLead } from "../../shared/team-permissions";
 
 export default abstract class ReportingControllerBase extends WorklenzControllerBase {
   protected static getPercentage(n: number, total: number) {
@@ -12,6 +13,72 @@ export default abstract class ReportingControllerBase extends WorklenzController
 
   protected static getCurrentTeamId(req: IWorkLenzRequest): string | null {
     return req.user?.team_id ?? null;
+  }
+
+  /**
+   * Get projects assigned to Team Lead
+   */
+  public static async getTeamLeadProjects(userId: string, teamId: string): Promise<string[]> {
+    if (!userId || !teamId) return [];
+    
+    const q = `
+      SELECT DISTINCT pm.project_id 
+      FROM project_members pm
+      JOIN team_members tm ON pm.team_member_id = tm.id
+      WHERE tm.user_id = $1::UUID AND tm.team_id = $2::UUID
+    `;
+    const result = await db.query(q, [userId, teamId]);
+    return result.rows.map(r => r.project_id);
+  }
+
+  /**
+   * Check if user has access to specific project (for Team Leads)
+   */
+  public static async canAccessProject(userId: string, teamId: string, projectId: string): Promise<boolean> {
+    if (!userId || !teamId || !projectId) return false;
+    
+    const q = `
+      SELECT EXISTS(
+        SELECT 1 FROM project_members pm
+        JOIN team_members tm ON pm.team_member_id = tm.id
+        WHERE tm.user_id = $1::UUID 
+          AND tm.team_id = $2::UUID 
+          AND pm.project_id = $3::UUID
+      ) AS has_access
+    `;
+    const result = await db.query(q, [userId, teamId, projectId]);
+    return result.rows[0]?.has_access || false;
+  }
+
+  /**
+   * Build project filter clause for Team Leads
+   */
+  public static async buildProjectFilterForTeamLead(req: IWorkLenzRequest): Promise<string> {
+    const userId = req.user?.id;
+    const teamId = req.user?.team_id;
+    
+    if (!userId || !teamId) return "";
+    
+    // Check if user is Team Lead
+    const isUserTeamLead = await isTeamLead(userId, teamId);
+    const isOwner = req.user?.owner;
+    const isAdmin = req.user?.is_admin && !isUserTeamLead; // Admin but not Team Lead
+    
+    // Owners and Admins see all projects
+    if (isOwner || isAdmin) {
+      return "";
+    }
+    
+    // Team Leads see only assigned projects
+    if (isUserTeamLead) {
+      const assignedProjects = await this.getTeamLeadProjects(userId, teamId);
+      if (assignedProjects.length === 0) {
+        return "AND FALSE"; // No projects assigned, block access
+      }
+      return `AND p.id = ANY(ARRAY[${assignedProjects.map(id => `'${id}'::UUID`).join(',')}])`;
+    }
+    
+    return "";
   }
 
   protected static async getTotalTasksCount(projectId: string | null) {

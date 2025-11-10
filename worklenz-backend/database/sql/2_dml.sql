@@ -69,14 +69,15 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION sys_insert_license_types() RETURNS VOID AS
 $$
 BEGIN
-    INSERT INTO public.sys_license_types (name, key)
-        VALUES  ('Custom Subscription', 'CUSTOM'),
-                ('Free Trial', 'TRIAL'),
-                ('Paddle Subscription', 'PADDLE'),
-                ('Credit Subscription', 'CREDIT'),
-                ('Free Plan', 'FREE'),
-                ('Life Time Deal', 'LIFE_TIME_DEAL'),
-                ('Self Hosted', 'SELF_HOSTED');
+    INSERT INTO public.sys_license_types (name, key, description)
+        VALUES  ('Custom Subscription', 'CUSTOM', NULL),
+                ('Free Trial', 'TRIAL', NULL),
+                ('Paddle Subscription', 'PADDLE', NULL),
+                ('Credit Subscription', 'CREDIT', NULL),
+                ('Free Plan', 'FREE', NULL),
+                ('Life Time Deal', 'LIFE_TIME_DEAL', NULL),
+                ('Self Hosted', 'SELF_HOSTED', NULL),
+                ('Annual Business Plan', 'ANNUAL_BUSINESS', 'Annual subscription for business plan features with selected user access');
 END;
 $$ LANGUAGE plpgsql;
 

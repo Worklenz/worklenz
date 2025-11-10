@@ -44,17 +44,17 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
 
       if (user)
         return done(null, user);
-
-    } else { // Register
-      const q2 = `SELECT register_google_user($1) AS user;`;
-      const result2 = await db.query(q2, [JSON.stringify(body)]);
-      const [data] = result2.rows;
-
-      sendWelcomeEmail(data.user.email, body.displayName);
-      return done(null, data.user, {message: "User successfully logged in"});
+      
+      return done(null, false, { message: "User not found" });
     }
+    
+    // Register
+    const q2 = `SELECT register_google_user($1) AS user;`;
+    const result2 = await db.query(q2, [JSON.stringify(body)]);
+    const [data] = result2.rows;
 
-    return done(null);
+    sendWelcomeEmail(data.user.email, body.displayName);
+    return done(null, data.user, {message: "User successfully logged in"});
   } catch (error: any) {
     return done(error);
   }

@@ -1,5 +1,6 @@
 {
   "title": "Faturas",
+  "description": "Gerencie e acompanhe suas faturas",
   "addInvoiceButton": "Adicionar Fatura",
   "createInvoiceDrawerTitle": "Criar Fatura",
   "selectRequestLabel": "Selecionar Solicitação",

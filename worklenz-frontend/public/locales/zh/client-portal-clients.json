@@ -19,6 +19,7 @@
   "teamMembersColumn": "团队成员",
   "actionBtnsColumn": "操作",
   
+  "statusAll": "全部",
   "statusActive": "活跃",
   "statusInactive": "非活跃",
   "statusPending": "待定",
@@ -112,6 +113,7 @@
   "linkActive": "活跃",
   "noClientsTitle": "未找到客户",
   "noClientsDescription": "您还没有添加任何客户。添加您的第一个客户以开始管理门户访问。",
+  "noClientsMatchingFilters": "没有客户符合当前筛选条件。",
   "errorLoadingClients": "加载客户时出错",
   "errorLoadingClientsDescription": "加载您的客户时出现错误。请稍后再试。",
   "inviteTeamMemberLabel": "邀请团队成员",
@@ -189,5 +191,23 @@
   "statusColumn": "状态",
   "removeConfirmationOk": "移除",
   "removeConfirmationCancel": "取消",
-  "removeProjectTooltip": "移除项目"
+  "removeProjectTooltip": "移除项目",
+
+  "portalStatusColumn": "门户状态",
+  "portalStatus": {
+    "active": "活跃",
+    "invited": "已邀请",
+    "not_invited": "未邀请",
+    "expired": "已过期"
+  },
+
+  "inviteToPortalTooltip": "邀请至门户",
+  "resendInvitationTooltip": "重新发送邀请",
+  "copyInviteLinkTooltip": "复制邀请链接",
+
+  "inviteSelectedToPortal": "发送门户邀请",
+  "selectClientsToInvite": "请选择要邀请的客户",
+  "bulkInviteSuccessMessage": "成功生成邀请",
+  "bulkInvitePartialFailMessage": "邀请失败",
+  "bulkInviteErrorMessage": "生成邀请失败"
 }

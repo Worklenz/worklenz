@@ -7,8 +7,8 @@ import {
   CalendarOutlined,
   FolderOpenOutlined,
 } from '@ant-design/icons';
-import { Button, Tooltip, Input, DatePicker, Space, message } from '@/shared/antd-imports';
-import dayjs, { Dayjs } from 'dayjs';
+import { Button, Tooltip, Input, Space, message } from '@/shared/antd-imports';
+import dayjs from 'dayjs';
 import {
   DndContext,
   DragEndEvent,
@@ -25,7 +25,6 @@ import { SocketEvents } from '../../../../../../shared/socket-events';
 import { useAppDispatch } from '../../../../../../hooks/useAppDispatch';
 import { addTask } from '../../../../../../features/task-management/task-management.slice';
 import { useAuthService } from '../../../../../../hooks/useAuth';
-import { useUpdatePhaseMutation } from '../../services/roadmap-api.service';
 import { useTranslation } from 'react-i18next';
 
 // Utility function to add alpha channel to hex color
@@ -128,11 +127,8 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
     const { t } = useTranslation('gantt');
     const [showInlineInput, setShowInlineInput] = useState(false);
     const [taskName, setTaskName] = useState('');
-    const [showDatePickers, setShowDatePickers] = useState(false);
-    const datePickerRef = useRef<HTMLDivElement>(null);
     const { socket, connected } = useSocket();
     const dispatch = useAppDispatch();
-    const [updatePhase] = useUpdatePhaseMutation();
     const formatDateRange = useCallback(() => {
       if (!task.start_date || !task.end_date) {
         return <span className="text-gray-400 dark:text-gray-500">Not scheduled</span>;
@@ -218,8 +214,8 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
         socket.once(SocketEvents.QUICK_TASK.toString(), (response: any) => {
           if (response) {
             // The task will be automatically added to the task management slice
-            // via global socket handlers, but we need to refresh the Gantt data
-            onCreateQuickTask?.(taskName, phaseId);
+            // via global socket handlers, no need to call onCreateQuickTask again
+            // The global socket listener in ProjectViewGantt will handle success messages
           }
         });
 
@@ -246,27 +242,6 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
       setShowInlineInput(true);
     }, []);
 
-    const handlePhaseDateUpdate = useCallback(
-      async (startDate: Date, endDate: Date) => {
-        if (!projectId || !task.phase_id) return;
-
-        try {
-          await updatePhase({
-            project_id: projectId,
-            phase_id: task.phase_id,
-            start_date: startDate.toISOString(),
-            end_date: endDate.toISOString(),
-          }).unwrap();
-
-          message.success('Phase dates updated successfully');
-          setShowDatePickers(false);
-        } catch (error) {
-          console.error('Failed to update phase dates:', error);
-          message.error('Failed to update phase dates');
-        }
-      },
-      [projectId, task.phase_id, updatePhase]
-    );
 
     const isEmpty = isPhase && (!task.children || task.children.length === 0);
 
@@ -312,21 +287,6 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
       [isPhase, onTaskClick, task.id]
     );
 
-    // Handle click outside to close date picker
-    useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-        if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
-          setShowDatePickers(false);
-        }
-      };
-
-      if (showDatePickers) {
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-          document.removeEventListener('mousedown', handleClickOutside);
-        };
-      }
-    }, [showDatePickers]);
 
     return (
       <>
@@ -411,49 +371,27 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
                       <span className="text-xs" style={{ color: task.color, opacity: 0.8 }}>
                         {task.children?.length || 0} tasks
                       </span>
-                      {!showDatePickers && (
-                        <button
-                          onClick={() => setShowDatePickers(true)}
-                          className="text-xs flex items-center gap-1 transition-colors"
-                          style={{ color: task.color, opacity: 0.7 }}
-                        >
-                          <CalendarOutlined className="text-[10px]" />
-                          {task.start_date && task.end_date ? (
-                            <>
-                              {dayjs(task.start_date).format('MMM D')} -{' '}
-                              {dayjs(task.end_date).format('MMM D, YYYY')}
-                            </>
-                          ) : (
-                            'Set dates'
-                          )}
-                        </button>
-                      )}
-                      {showDatePickers && isPhase && (
-                        <div ref={datePickerRef} className="flex items-center gap-1 mt-2 -ml-1">
-                          <DatePicker.RangePicker
-                            size="small"
-                            value={[
-                              task.start_date ? dayjs(task.start_date) : null,
-                              task.end_date ? dayjs(task.end_date) : null,
-                            ]}
-                            onChange={dates => {
-                              if (dates && dates[0] && dates[1]) {
-                                handlePhaseDateUpdate(dates[0].toDate(), dates[1].toDate());
-                              }
-                            }}
-                            onOpenChange={open => {
-                              if (!open) {
-                                setShowDatePickers(false);
-                              }
-                            }}
-                            className="text-xs"
-                            style={{ width: 180 }}
-                            format="MMM D, YYYY"
-                            placeholder={['Start date', 'End date']}
-                            autoFocus
-                          />
-                        </div>
-                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onPhaseClick) {
+                            onPhaseClick(task);
+                          }
+                        }}
+                        className="text-xs flex items-center gap-1 transition-colors hover:opacity-100"
+                        style={{ color: task.color, opacity: 0.7 }}
+                        title={t('task.clickEditPhase', 'Click to edit phase details')}
+                      >
+                        <CalendarOutlined className="text-[10px]" />
+                        {task.start_date && task.end_date ? (
+                          <>
+                            {dayjs(task.start_date).format('MMM D')} -{' '}
+                            {dayjs(task.end_date).format('MMM D, YYYY')}
+                          </>
+                        ) : (
+                          'Set dates'
+                        )}
+                      </button>
                     </div>
                   )}
                 </div>
@@ -521,7 +459,8 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(({ task, projectId, onCreateQ
       socket.once(SocketEvents.QUICK_TASK.toString(), (response: any) => {
         if (response) {
           // Immediately refresh the Gantt data to show the new task
-          onCreateQuickTask?.(taskName, phaseId);
+          // The global socket listener in ProjectViewGantt will handle success messages
+          // No need to call onCreateQuickTask again as it would duplicate the task creation
         }
       });
 

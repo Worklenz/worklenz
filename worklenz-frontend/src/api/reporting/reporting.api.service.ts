@@ -281,6 +281,14 @@ export const reportingApiService = {
     return response.data;
   },
 
+  getTimelogsFlat: async (
+    body: any | null = null
+  ): Promise<IServerResponse<ISingleMemberLogs[]>> => {
+    const url = `${rootUrl}/members/timelogs-flat`;
+    const response = await apiClient.post<IServerResponse<ISingleMemberLogs[]>>(url, body);
+    return response.data;
+  },
+
   getMemberTasksStats: async (
     body: any | null = null
   ): Promise<IServerResponse<IMemberTaskStatGroupResonse>> => {

@@ -167,12 +167,13 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
     if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
       const updatedCount = parseInt(subscriptionData.current_count) + incrementBy;
-      const requiredSeats = updatedCount - subscriptionData.quantity;
-      if (updatedCount > subscriptionData.quantity) {
+      const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
+      const requiredSeats = updatedCount - effectiveUserLimit;
+      if (updatedCount > effectiveUserLimit) {
         const obj = {
           seats_enough: false,
           required_count: requiredSeats,
-          current_seat_amount: subscriptionData.quantity
+          current_seat_amount: effectiveUserLimit
         };
         return res.status(200).send(new ServerResponse(false, obj, "Insufficient seats available. Please upgrade your subscription to add more team members."));
       }
@@ -249,6 +250,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
                                   FROM email_invitations
                                   WHERE team_member_id = team_members.id
                                     AND email_invitations.team_id = team_members.team_id) AS pending_invitation,
+                           team_members.reports_to_member_id,
+                           (SELECT name FROM team_member_info_view 
+                            WHERE team_member_info_view.team_member_id = team_members.reports_to_member_id) AS current_team_lead_name,
                             active
                     FROM team_members
                            LEFT JOIN users u ON team_members.user_id = u.id

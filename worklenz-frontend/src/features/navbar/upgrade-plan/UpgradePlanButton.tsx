@@ -1,5 +1,5 @@
 import { Button, Tooltip, Badge, Modal } from '@/shared/antd-imports';
-import React, { useEffect, useState, useCallback, useMemo, lazy, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { colors } from '../../../styles/colors';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -12,15 +12,19 @@ import {
   ThunderboltOutlined,
   RocketOutlined,
 } from '@ant-design/icons';
-import type {
-  UserPersonalization,
-  PricingCalculation,
-} from '@/components/pricing-modal/PricingModal';
+// Removed PricingModal types as we now use the global UpgradePlans modal
 import { fetchBillingInfo } from '@/features/admin-center/admin-center.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { 
+  MixpanelBillingEvents, 
+  UpgradeButtonEventProps,
+  PricingModalEventProps,
+  UserType 
+} from '@/types/mixpanel-events.types';
 
-// Lazy load the PricingModal to avoid circular dependencies and improve performance
-const PricingModal = lazy(() => import('@/components/pricing-modal/PricingModal'));
+// PricingModal removed in favor of global UpgradePlans modal
 
 interface UpgradePlanButtonProps {
   showModal?: boolean;
@@ -38,17 +42,23 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
   const dispatch = useAppDispatch();
   const authService = useAuthService();
   const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
-  const [showPricingModal, setShowPricingModal] = useState(false);
+  // Local pricing modal state removed; using global UpgradePlans modal
   const [isAppSumoUser, setIsAppSumoUser] = useState(false);
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { billingInfo } = useAppSelector(state => state.adminCenterReducer);
   const currentSession = authService.getCurrentSession();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   // Detect AppSumo user
   const checkAppSumoUser = useCallback(() => {
     const planName = billingInfo?.plan_name?.toLowerCase() || '';
     const subscriptionType = currentSession?.subscription_type?.toLowerCase() || '';
+
+    // First check if user is on trial - trial users should never be considered AppSumo users
+    if (currentSession?.subscription_type === 'TRIAL') {
+      return false;
+    }
 
     return (
       planName.includes('appsumo') ||
@@ -63,7 +73,25 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
     if (!billingInfo) {
       dispatch(fetchBillingInfo());
     }
-  }, [dispatch, billingInfo]);
+  }, [dispatch]);
+
+  // Track upgrade button viewed
+  useEffect(() => {
+    if (!billingInfo) return;
+    const eventProps: UpgradeButtonEventProps = {
+      user_type: getUserType(),
+      current_plan: billingInfo?.plan_name,
+      trial_days_remaining: daysRemaining || undefined,
+      is_appsumo_user: isAppSumoUser,
+      team_size: billingInfo?.total_used,
+      subscription_status: billingInfo?.status,
+      source_location: 'navbar_button',
+      badge_state: getBadgeState() as any,
+      button_style: getButtonStyleType() as any,
+    };
+    trackMixpanelEvent(MixpanelBillingEvents.UPGRADE_BUTTON_VIEWED, eventProps);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [billingInfo, isAppSumoUser, daysRemaining]);
 
   useEffect(() => {
     // Check if AppSumo user
@@ -93,7 +121,7 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
         setDaysRemaining(null);
       }
     }
-  }, [currentSession, checkAppSumoUser]);
+  }, [currentSession, billingInfo]);
 
   const getBadgeColor = () => {
     if (daysRemaining === null) return undefined;
@@ -114,6 +142,32 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
     if (daysRemaining !== null && daysRemaining <= 3) return <ClockCircleOutlined />;
     return <CrownOutlined />;
   };
+
+  // Helper function to get user type for tracking
+  const getUserType = useCallback((): UserType => {
+    if (isAppSumoUser) return 'appsumo';
+    if (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.TRIAL) return 'trial';
+    if (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE) return 'free';
+    return 'paid';
+  }, [isAppSumoUser, currentSession]);
+
+  // Helper function to get badge state for tracking
+  const getBadgeState = useCallback(() => {
+    if (isAppSumoUser) return 'appsumo';
+    if (daysRemaining === 0) return 'last_day';
+    if (daysRemaining !== null && daysRemaining <= 7) return 'trial_expiring';
+    return null;
+  }, [isAppSumoUser, daysRemaining]);
+
+  // Helper function to get button style type for tracking
+  const getButtonStyleType = useCallback(() => {
+    if (isAppSumoUser) return 'appsumo';
+    if (daysRemaining === 0) return 'urgent';
+    if (daysRemaining !== null && daysRemaining <= 3) return 'warning';
+    return 'default';
+  }, [isAppSumoUser, daysRemaining]);
+
+  // Removed local PricingModal handlers; using global modal
 
   const getButtonStyles = () => {
     const isDark = themeMode === 'dark';
@@ -171,8 +225,34 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
       type="primary"
       icon={getButtonIcon()}
       onClick={() => {
+        // Track upgrade button click
+        const eventProps: UpgradeButtonEventProps = {
+          user_type: getUserType(),
+          current_plan: billingInfo?.plan_name,
+          trial_days_remaining: daysRemaining || undefined,
+          is_appsumo_user: isAppSumoUser,
+          team_size: billingInfo?.total_used,
+          subscription_status: billingInfo?.status,
+          source_location: showModal ? 'navbar_modal' : 'navbar_redirect',
+          badge_state: getBadgeState() as any,
+          button_style: getButtonStyleType() as any,
+        };
+        trackMixpanelEvent(MixpanelBillingEvents.UPGRADE_BUTTON_CLICKED, eventProps);
+
         if (showModal) {
-          setShowPricingModal(true);
+          // Open global UpgradePlans modal
+          dispatch(toggleUpgradeModal());
+          const modalProps: PricingModalEventProps = {
+            user_type: getUserType(),
+            current_plan: billingInfo?.plan_name,
+            trial_days_remaining: daysRemaining || undefined,
+            is_appsumo_user: isAppSumoUser,
+            team_size: billingInfo?.total_used,
+            subscription_status: billingInfo?.status,
+            trigger_source: 'upgrade_button',
+            initial_team_size: billingInfo?.total_used,
+          };
+          trackMixpanelEvent(MixpanelBillingEvents.PRICING_MODAL_OPENED, modalProps);
         } else if (redirectToBilling) {
           navigate('/worklenz/admin-center/billing');
         }
@@ -232,98 +312,18 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
     return t('upgradePlanTooltip');
   };
 
-  if (daysRemaining !== null) {
-    return (
-      <Tooltip title={getTooltipContent()} placement="bottom" overlayStyle={{ maxWidth: '280px' }}>
-        <Badge
-          count={getBadgeText()}
-          style={{
-            backgroundColor: getBadgeColor(),
-            fontSize: '11px',
-            height: '20px',
-            lineHeight: '20px',
-            padding: '0 8px',
-            borderRadius: '10px',
-            fontWeight: 600,
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            animation: daysRemaining === 0 ? 'pulse 2s infinite' : undefined,
-          }}
-        >
-          <style>
-            {`
-              @keyframes pulse {
-                0% {
-                  box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.7);
-                }
-                70% {
-                  box-shadow: 0 0 0 10px rgba(255, 77, 79, 0);
-                }
-                100% {
-                  box-shadow: 0 0 0 0 rgba(255, 77, 79, 0);
-                }
-              }
-            `}
-          </style>
-          {button}
-        </Badge>
-      </Tooltip>
-    );
-  }
-
-  // Create user personalization object for pricing modal
-  const userPersonalization: UserPersonalization | undefined = useMemo(() => {
-    if (!billingInfo) return undefined;
-
-    const userType = isAppSumoUser
-      ? 'appsumo'
-      : currentSession?.subscription_type === ISUBSCRIPTION_TYPE.TRIAL
-        ? 'trial'
-        : currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE
-          ? 'free'
-          : 'paid';
-
-    return {
-      userType,
-      currentPlan: billingInfo.plan_name,
-      trialDaysRemaining: daysRemaining || undefined,
-    };
-  }, [billingInfo, isAppSumoUser, currentSession, daysRemaining]);
-
-  const handlePlanSelect = useCallback(
-    (calculation: PricingCalculation) => {
-      console.log('Plan selected:', calculation);
-      setShowPricingModal(false);
-      navigate('/worklenz/admin-center/billing');
-    },
-    [navigate]
-  );
+  // Determine if we should show the badge
+  const shouldShowBadge = daysRemaining !== null;
 
   return (
     <>
-      <Tooltip title={getTooltipContent()} placement="bottom">
-        {button}
-      </Tooltip>
-
-      {/* Pricing Modal with lazy loading */}
-      {showPricingModal && (
-        <Suspense
-          fallback={
-            <Modal visible={true} footer={null} closable={false}>
-              <div style={{ textAlign: 'center', padding: '20px' }}>Loading pricing options...</div>
-            </Modal>
-          }
-        >
-          <PricingModal
-            visible={showPricingModal}
-            onClose={() => setShowPricingModal(false)}
-            onPlanSelect={handlePlanSelect}
-            userPersonalization={userPersonalization}
-            organizationId={currentSession?.team_id}
-            defaultPricingModel={isAppSumoUser ? 'BASE_PLAN' : 'PER_USER'}
-            defaultBillingCycle="YEARLY"
-          />
-        </Suspense>
+      {(
+        <Tooltip title={getTooltipContent()} placement="bottom">
+          {button}
+        </Tooltip>
       )}
+
+      {/* Global UpgradePlans modal is handled in layout; no local modal here */}
     </>
   );
 };

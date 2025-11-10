@@ -16,16 +16,16 @@ const ReportingSider = () => {
         if (item.children) {
           return {
             key: item.key,
-            label: t(`${item.name}`),
+            label: t(`${item.name}`, { defaultValue: item.defaultValue }),
             children: item.children.map(child => ({
               key: child.key,
-              label: <Link to={`/worklenz/reporting/${child.endpoint}`}>{t(`${child.name}`)}</Link>,
+              label: <Link to={`/worklenz/reporting/${child.endpoint}`}>{t(`${child.name}`, { defaultValue: child.defaultValue })}</Link>,
             })),
           };
         }
         return {
           key: item.key,
-          label: <Link to={`/worklenz/reporting/${item.endpoint}`}>{t(`${item.name}`)}</Link>,
+          label: <Link to={`/worklenz/reporting/${item.endpoint}`}>{t(`${item.name}`, { defaultValue: item.defaultValue })}</Link>,
         };
       }),
     [t]
@@ -52,6 +52,7 @@ const ReportingSider = () => {
           className="custom-reporting-sider"
           items={menuItems}
           selectedKeys={[activeKey]}
+          defaultOpenKeys={['time-sheet']}
           mode="inline"
           style={{ width: '100%' }}
         />

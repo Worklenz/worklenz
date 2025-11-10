@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { ApiResponse, ClientSettings, ClientUser, ClientToken } from '@/types';
+import { ApiResponse, ClientSettings, ClientUser, ClientToken, ClientNotification } from '@/types';
 
 class ClientPortalAPI {
   private api: AxiosInstance;
@@ -39,7 +39,12 @@ class ClientPortalAPI {
       async (error) => {
         const originalRequest = error.config;
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // Skip retry if the request has _skipRetry flag (used for initialization)
+        if (originalRequest._skipRetry) {
+          return Promise.reject(error);
+        }
+
+        if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
           originalRequest._retry = true;
 
           try {
@@ -49,9 +54,9 @@ class ClientPortalAPI {
             originalRequest.headers['x-client-token'] = newToken;
             return this.api(originalRequest);
           } catch (refreshError) {
-            // If refresh fails, redirect to login
+            // If refresh fails, clear token and let the app handle the redirect
             this.clearToken();
-            window.location.href = '/auth/login';
+            // Don't force redirect here - let the auth state handle it
             return Promise.reject(refreshError);
           }
         }
@@ -113,13 +118,13 @@ class ClientPortalAPI {
 
   // Authentication endpoints
   async login(credentials: { email: string; password: string }): Promise<ApiResponse<{ user: ClientUser; token: string; expiresAt: string }>> {
-    const response = await this.api.post('/login', credentials);
+    const response = await this.api.post('/auth/login', credentials);
     return response.data;
   }
 
   async logout(): Promise<void> {
     try {
-      await this.api.post('/logout');
+      await this.api.post('/auth/logout');
     } catch (error) {
       // Ignore errors during logout
       console.warn('Logout request failed:', error);
@@ -160,23 +165,8 @@ class ClientPortalAPI {
     name: string; 
     password: string; 
   }): Promise<ApiResponse<{ user: ClientUser; token: string; expiresAt: string }>> {
-    // Check if this is an organization invite token
-    try {
-      const payload = JSON.parse(atob(inviteData.token.split('.')[1]));
-      if (payload.type === 'organization_invite') {
-        // For organization invites, just handle the invite (user should already be authenticated)
-        const response = await this.api.post('/handle-organization-invite', { token: inviteData.token });
-        if (response.data.body.redirectTo === 'login') {
-          // User needs to login first, redirect them
-          window.location.href = '/auth/login';
-          return response.data;
-        }
-        return response.data;
-      }
-    } catch (error) {
-      console.log('Not an organization invite, processing as regular invite');
-    }
-    
+    // Note: Both organization invites and regular invites can now create new accounts
+    // The backend will handle the logic
     const response = await this.api.post('/invitation/accept', inviteData);
     return response.data;
   }
@@ -216,7 +206,39 @@ class ClientPortalAPI {
   }
 
   async getCurrentUser(): Promise<ApiResponse<ClientUser>> {
-    const response = await this.api.get('/auth/me');
+    const response = await this.api.get('/profile');
+    return response.data;
+  }
+
+  // Special method for initialization that bypasses interceptors
+  async validateTokenForInit(): Promise<ApiResponse<ClientUser>> {
+    try {
+      const response = await this.api.get('/profile', {
+        // Add a flag to bypass the retry logic in interceptor
+        _skipRetry: true
+      } as any);
+      return response.data;
+    } catch (error: any) {
+      // If it's a 401 or 403, return a structured error instead of throwing
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        return {
+          done: false,
+          message: 'Token invalid or access forbidden',
+          body: null
+        } as any;
+      }
+      throw error;
+    }
+  }
+
+  // Organizations
+  async getOrganizations(): Promise<ApiResponse<{ organizations: any[] }>> {
+    const response = await this.api.get('/organizations');
+    return response.data;
+  }
+
+  async switchOrganization(organizationId: string): Promise<ApiResponse<{ token: string; organizationId: string; clientId: string; expiresAt: string }>> {
+    const response = await this.api.post('/organizations/switch', { organizationId });
     return response.data;
   }
 
@@ -384,7 +406,7 @@ class ClientPortalAPI {
   }
 
   // Notifications
-  async getNotifications(params?: { page?: number; limit?: number; unread_only?: boolean }): Promise<ApiResponse<any>> {
+  async getNotifications(params?: { page?: number; limit?: number; unread_only?: boolean }): Promise<ApiResponse<{notifications: ClientNotification[], total: number, unreadCount: number, page: number, limit: number}>> {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());

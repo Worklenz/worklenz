@@ -1379,7 +1379,7 @@ const UpgradePlans = () => {
                               marginTop: 4,
                             }}
                           >
-                            50% AppSumo Discount Applied
+                            70% AppSumo Discount Applied
                           </span>
                         )}
                       </>
@@ -1406,7 +1406,7 @@ const UpgradePlans = () => {
                                 fontSize: '12px',
                               }}
                             >
-                              50% AppSumo Discount Applied
+                              70% AppSumo Discount Applied
                             </span>
                           )}
                         </Typography.Text>
@@ -1554,7 +1554,7 @@ const UpgradePlans = () => {
                             marginTop: 4,
                           }}
                         >
-                          50% AppSumo Discount Applied
+                          70% AppSumo Discount Applied
                         </span>
                       )}
                     </>
@@ -1581,7 +1581,7 @@ const UpgradePlans = () => {
                               fontSize: '12px',
                             }}
                           >
-                            50% AppSumo Discount Applied
+                            70% AppSumo Discount Applied
                           </span>
                         )}
                       </Typography.Text>
@@ -1679,7 +1679,7 @@ const UpgradePlans = () => {
                       fontSize: '12px',
                     }}
                   >
-                    50% AppSumo Discount Applied
+                    70% AppSumo Discount Applied
                   </span>
                 )}
               </Typography.Text>
@@ -1803,7 +1803,7 @@ const UpgradePlans = () => {
               })()}
               {isAppSumoUser() && selectedPlanType !== 'free' && (
                 <span style={{ color: '#52c41a', fontWeight: 'bold', display: 'block' }}>
-                  50% AppSumo Discount Applied
+                  70% AppSumo Discount Applied
                 </span>
               )}
             </Typography.Text>
