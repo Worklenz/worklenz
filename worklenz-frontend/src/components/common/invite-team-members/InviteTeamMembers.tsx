@@ -1,13 +1,12 @@
 import {
-  AutoComplete,
   Button,
-  Drawer,
   Flex,
   Form,
+  Input,
   message,
   Modal,
   Select,
-  Spin,
+  Tabs,
   Typography,
 } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -22,7 +21,7 @@ import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.se
 import { IJobTitle } from '@/types/job.types';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { ITeamMemberCreateRequest } from '@/types/teamMembers/team-member-create-request';
-import { LinkOutlined } from '@ant-design/icons';
+import { LinkOutlined, CopyOutlined, CheckOutlined } from '@ant-design/icons';
 import { ROLE_NAMES } from '@/types/roles/role.types';
 
 interface FormValues {
@@ -32,11 +31,20 @@ interface FormValues {
 }
 
 const InviteTeamMembers = () => {
-  const [searching, setSearching] = useState(false);
-  const [jobTitles, setJobTitles] = useState<IJobTitle[]>([]);
+  // Email invitation states
+  // const [searching, setSearching] = useState(false);
+  // const [jobTitles, setJobTitles] = useState<IJobTitle[]>([]);
   const [emails, setEmails] = useState<string[]>([]);
   const [selectedJobTitle, setSelectedJobTitle] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Link invitation states
+  const [activeTab, setActiveTab] = useState<string>('email');
+  const [linkLoading, setLinkLoading] = useState(false);
+  const [invitationLink, setInvitationLink] = useState<string>('');
+  const [linkExpiry, setLinkExpiry] = useState<string>('');
+  const [hasActiveLink, setHasActiveLink] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const [form] = Form.useForm<FormValues>();
 
@@ -44,28 +52,102 @@ const InviteTeamMembers = () => {
   const isDrawerOpen = useAppSelector(state => state.memberReducer.isInviteMemberDrawerOpen);
   const dispatch = useAppDispatch();
 
-  const handleSearch = useCallback(
-    async (value: string) => {
-      try {
-        setSearching(true);
-        const res = await jobTitlesApiService.getJobTitles(1, 10, null, null, value || null);
-        if (res.done) {
-          setJobTitles(res.body.data || []);
-        }
-      } catch (error) {
-        message.error(t('Failed to fetch job titles'));
-      } finally {
-        setSearching(false);
-      }
-    },
-    [t]
-  );
+  // const handleSearch = useCallback(
+  //   async (value: string) => {
+  //     try {
+  //       setSearching(true);
+  //       const res = await jobTitlesApiService.getJobTitles(1, 10, null, null, value || null);
+  //       if (res.done) {
+  //         setJobTitles(res.body.data || []);
+  //       }
+  //     } catch (error) {
+  //       message.error(t('Failed to fetch job titles'));
+  //     } finally {
+  //       setSearching(false);
+  //     }
+  //   },
+  //   [t]
+  // );
 
-  useEffect(() => {
-    if (isDrawerOpen) {
-      handleSearch('');
+  // useEffect(() => {
+  //   if (isDrawerOpen) {
+  //     handleSearch('');
+  //     checkExistingInvitationLink();
+  //   }
+  // }, [isDrawerOpen, handleSearch]);
+
+  const checkExistingInvitationLink = async () => {
+    try {
+      const res = await teamMembersApiService.getInvitationLinkStatus();
+      if (res.done && res.body.has_active_link) {
+        setHasActiveLink(true);
+        setInvitationLink(res.body.invitation_url || '');
+        setLinkExpiry(res.body.expires_at || '');
+      } else {
+        setHasActiveLink(false);
+        setInvitationLink('');
+        setLinkExpiry('');
+      }
+    } catch (error) {
+      console.error('Error checking invitation link status:', error);
     }
-  }, [isDrawerOpen, handleSearch]);
+  };
+
+  const handleCreateInvitationLink = async () => {
+    try {
+      setLinkLoading(true);
+      const linkData = {
+        job_title_id: selectedJobTitle || undefined,
+        role_name: form.getFieldValue('access') === 'team-lead' 
+          ? ROLE_NAMES.TEAM_LEAD 
+          : form.getFieldValue('access') === 'admin' 
+            ? ROLE_NAMES.ADMIN 
+            : ROLE_NAMES.MEMBER,
+        is_admin: form.getFieldValue('access') === 'admin',
+        max_usage: null // Unlimited usage
+      };
+
+      const res = await teamMembersApiService.generateInvitationLink(linkData);
+      if (res.done) {
+        setInvitationLink(res.body.invitation_url);
+        setLinkExpiry(res.body.expires_at);
+        setHasActiveLink(true);
+        message.success(t('Invitation link created successfully'));
+      }
+    } catch (error) {
+      message.error(t('Failed to create invitation link'));
+    } finally {
+      setLinkLoading(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(invitationLink);
+      setLinkCopied(true);
+      message.success(t('Invitation link copied to clipboard'));
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (error) {
+      message.error(t('Failed to copy link'));
+    }
+  };
+
+  const handleDeactivateLink = async () => {
+    try {
+      setLinkLoading(true);
+      const res = await teamMembersApiService.revokeInvitationLink();
+      if (res.done) {
+        setHasActiveLink(false);
+        setInvitationLink('');
+        setLinkExpiry('');
+        message.success(t('Invitation link deactivated'));
+      }
+    } catch (error) {
+      message.error(t('Failed to deactivate link'));
+    } finally {
+      setLinkLoading(false);
+    }
+  };
 
   const handleFormSubmit = async (values: FormValues) => {
     try {
@@ -98,12 +180,173 @@ const InviteTeamMembers = () => {
 
   const handleClose = () => {
     form.resetFields();
+    setEmails([]);
+    setSelectedJobTitle(null);
+    setActiveTab('email');
+    setLinkCopied(false);
     dispatch(toggleInviteMemberDrawer());
   };
 
   const handleEmailChange = (value: string[]) => {
     setEmails(value);
   };
+
+  const formatExpiryDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffTime = date.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays > 0) {
+        return `${diffDays} day${diffDays > 1 ? 's' : ''}`;
+      } else {
+        return 'Expired';
+      }
+    } catch {
+      return 'Unknown';
+    }
+  };
+
+  const tabItems = [
+    {
+      key: 'email',
+      label: t('Invite with Email'),
+      children: (
+        <Form
+          form={form}
+          onFinish={handleFormSubmit}
+          layout="vertical"
+          initialValues={{ access: 'member' }}
+        >
+          <Form.Item
+            name="emails"
+            label={t('memberEmailLabel')}
+            rules={[
+              {
+                type: 'array',
+                required: true,
+                validator: (_, value) => {
+                  if (!value?.length) return Promise.reject(t('memberEmailRequiredError'));
+                  return Promise.resolve();
+                },
+              },
+            ]}
+          >
+            <Flex vertical gap={4}>
+              <Select
+                mode="tags"
+                style={{ width: '100%' }}
+                placeholder={t('memberEmailPlaceholder')}
+                onChange={handleEmailChange}
+                notFoundContent={
+                  <Typography.Text type="secondary">{t('noResultFound')}</Typography.Text>
+                }
+                tokenSeparators={[',', ' ', ';']}
+              />
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {t('addMemberEmailHint')}
+              </Typography.Text>
+            </Flex>
+          </Form.Item>
+
+          {/* <Form.Item label={t('jobTitleLabel')} name="jobTitle">
+            <AutoComplete
+              options={jobTitles.map(job => ({
+                value: job.id,
+                label: job.name,
+              }))}
+              allowClear
+              onSearch={handleSearch}
+              placeholder={t('jobTitlePlaceholder')}
+              onChange={(value, option) => {
+                const selectedOption = Array.isArray(option) ? option[0] : option;
+                form.setFieldsValue({ jobTitle: selectedOption?.label || value });
+              }}
+              onSelect={value => setSelectedJobTitle(value)}
+            />
+            {searching && (
+              <div style={{ textAlign: 'center', padding: '8px' }}>
+                <Spin size="small" />
+              </div>
+            )}
+          </Form.Item> */}
+
+          <Form.Item label={t('memberAccessLabel')} name="access">
+            <Select
+              options={[
+                { value: 'member', label: t('memberText') },
+                { value: 'team-lead', label: 'Team Lead' },
+                { value: 'admin', label: t('adminText') },
+              ]}
+            />
+          </Form.Item>
+        </Form>
+      ),
+    },
+    {
+      key: 'link',
+      label: t('Invite with Link'),
+      children: (
+        <Flex vertical gap={16}>
+          <div>
+            <Typography.Text strong>{t('Your Invite Link')}</Typography.Text>
+            <Input
+              value={invitationLink}
+              disabled
+              placeholder={t('No active invitation link')}
+              style={{ marginTop: 8 }}
+              suffix={
+                invitationLink && (
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={linkCopied ? <CheckOutlined /> : <CopyOutlined />}
+                    onClick={handleCopyLink}
+                    style={{ color: linkCopied ? '#52c41a' : undefined }}
+                  />
+                )
+              }
+            />
+            {linkExpiry && (
+              <Typography.Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+                {t('This link will automatically expire in')} {formatExpiryDate(linkExpiry)}.
+              </Typography.Text>
+            )}
+          </div>
+
+          <Flex gap={8}>
+            {!hasActiveLink ? (
+              <Button
+                type="primary"
+                loading={linkLoading}
+                onClick={handleCreateInvitationLink}
+                icon={<LinkOutlined />}
+              >
+                {t('Create Link')}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  loading={linkLoading}
+                  onClick={handleDeactivateLink}
+                >
+                  {t('Deactivate Link')}
+                </Button>
+                <Button
+                  type="primary"
+                  onClick={handleCopyLink}
+                  icon={linkCopied ? <CheckOutlined /> : <CopyOutlined />}
+                >
+                  {linkCopied ? t('Copied!') : t('Copy Link')}
+                </Button>
+              </>
+            )}
+          </Flex>
+        </Flex>
+      ),
+    },
+  ];
 
   return (
     <Modal
@@ -114,98 +357,26 @@ const InviteTeamMembers = () => {
       }
       open={isDrawerOpen}
       onCancel={handleClose}
-      destroyOnHidden={false}
-      afterOpenChange={visible => visible && handleSearch('')}
-      width={400}
-      loading={loading}
+      destroyOnClose={false}
+      // afterOpenChange={visible => visible && handleSearch('')}
+      width={500}
+      loading={loading && activeTab === 'email'}
       footer={
-        <Flex justify="space-between">
-          {/* <Button
-            style={{ width: 140, fontSize: 12 }}
-            block
-            icon={<LinkOutlined />}
-            disabled
-          >
-            {t('copyTeamLink')}
-          </Button> */}
+        activeTab === 'email' ? (
           <Flex justify="end">
             <Button onClick={form.submit} style={{ fontSize: 12 }}>
               {t('addToTeamButton')}
             </Button>
           </Flex>
-        </Flex>
+        ) : null
       }
     >
-      <Form
-        form={form}
-        onFinish={handleFormSubmit}
-        layout="vertical"
-        initialValues={{ access: 'member' }}
-      >
-        <Form.Item
-          name="emails"
-          label={t('memberEmailLabel')}
-          rules={[
-            {
-              type: 'array',
-              required: true,
-              validator: (_, value) => {
-                if (!value?.length) return Promise.reject(t('memberEmailRequiredError'));
-                return Promise.resolve();
-              },
-            },
-          ]}
-        >
-          <Flex vertical gap={4}>
-            <Select
-              mode="tags"
-              style={{ width: '100%' }}
-              placeholder={t('memberEmailPlaceholder')}
-              onChange={handleEmailChange}
-              notFoundContent={
-                <Typography.Text type="secondary">{t('noResultFound')}</Typography.Text>
-              }
-              tokenSeparators={[',', ' ', ';']}
-            />
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {t('addMemberEmailHint')}
-            </Typography.Text>
-          </Flex>
-        </Form.Item>
-
-        <Form.Item label={t('jobTitleLabel')} name="jobTitle">
-          <AutoComplete
-            options={jobTitles.map(job => ({
-              id: job.id,
-              label: job.name,
-              value: job.name,
-            }))}
-            allowClear
-            onSearch={handleSearch}
-            placeholder={t('jobTitlePlaceholder')}
-            onChange={(value, option) => {
-              form.setFieldsValue({ jobTitle: option?.label || value });
-            }}
-            onSelect={value => setSelectedJobTitle(value)}
-            dropdownRender={menu => (
-              <div>
-                {searching && <Spin size="small" />}
-                {menu}
-              </div>
-            )}
-          />
-        </Form.Item>
-
-        <Form.Item label={t('memberAccessLabel')} name="access">
-          <Select
-            options={[
-              { value: 'member', label: t('memberText') },
-              { value: 'team-lead', label: 'Team Lead' },
-              { value: 'admin', label: t('adminText') },
-            ]}
-          />
-        </Form.Item>
-      </Form>
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={tabItems}
+        size="small"
+      />
     </Modal>
   );
 };

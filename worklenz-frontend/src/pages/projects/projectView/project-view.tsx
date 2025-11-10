@@ -61,8 +61,8 @@ const PhaseDrawer = React.lazy(() => import('@/features/projects/singleProject/p
 const StatusDrawer = React.lazy(
   () => import('@/components/project-task-filters/create-status-drawer/create-status-drawer')
 );
-const ProjectMemberDrawer = React.lazy(
-  () => import('@/components/projects/project-member-invite-drawer/project-member-invite-drawer')
+const InviteProjectMembers = React.lazy(
+  () => import('@/components/common/invite-project-members/InviteProjectMembers')
 );
 
 const ProjectView = React.memo(() => {
@@ -397,7 +397,14 @@ const ProjectView = React.memo(() => {
         {/* Non-critical components - load after delay with suspense fallback */}
         {shouldLoadSecondaryComponents && (
           <Suspense fallback={<SuspenseFallback />}>
-            {createPortal(<ProjectMemberDrawer />, document.body, 'project-member-drawer')}
+            {selectedProject && createPortal(
+              <InviteProjectMembers 
+                projectId={selectedProject.id} 
+                projectName={selectedProject.name} 
+              />, 
+              document.body, 
+              'project-member-drawer'
+            )}
             {createPortal(<PhaseDrawer />, document.body, 'phase-drawer')}
             {createPortal(<StatusDrawer />, document.body, 'status-drawer')}
             {createPortal(<DeleteStatusDrawer />, document.body, 'delete-status-drawer')}

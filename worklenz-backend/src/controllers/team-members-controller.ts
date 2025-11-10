@@ -1,5 +1,6 @@
 import moment from "moment";
 import Excel from "exceljs";
+import crypto from "crypto";
 
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
@@ -1114,5 +1115,427 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
     const newMembers = await this.createOrInviteMembers(req.body, req.user);
     return res.status(200).send(new ServerResponse(true, newMembers, `Your teammates will get an email that gives them access to your team.`).withTitle("Invitations sent"));
+  }
+
+  // Team Invitation Links Methods
+
+  @HandleExceptions()
+  public static async generateTeamInvitationLink(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { job_title_id, role_name = 'MEMBER', is_admin = false, max_usage = null } = req.body;
+    const teamId = req.user?.team_id;
+    const userId = req.user?.id;
+
+    if (!teamId || !userId) {
+      return res.status(200).send(new ServerResponse(false, null, "Required fields are missing."));
+    }
+
+    // Check subscription status
+    const subscriptionData = await checkTeamSubscriptionStatus(teamId);
+
+    // Handle self-hosted subscriptions - allow link generation
+    if (subscriptionData.subscription_type === 'SELF_HOSTED') {
+      // Self-hosted can generate links without restrictions
+    } else {
+      // Check if subscription status is valid
+      if (statusExclude.includes(subscriptionData.subscription_status)) {
+        return res.status(200).send(new ServerResponse(false, null, "Unable to generate invitation link! Please check your subscription status."));
+      }
+
+      // Check trial user limit - warn if close to limit
+      if (subscriptionData.subscription_status === "trialing") {
+        const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
+        if (currentTrialMembers >= TRIAL_MEMBER_LIMIT) {
+          return res.status(200).send(new ServerResponse(false, null, `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`));
+        }
+      }
+
+      // Check seat availability for active subscriptions
+      if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
+        const currentCount = parseInt(subscriptionData.current_count) || 0;
+        if (currentCount >= subscriptionData.quantity) {
+          const requiredSeats = 1; // At least 1 more seat needed
+          const obj = {
+            seats_enough: false,
+            required_count: requiredSeats,
+            current_seat_amount: subscriptionData.quantity
+          };
+          return res.status(200).send(new ServerResponse(false, obj, "Insufficient seats available. Please upgrade your subscription before generating invitation links."));
+        }
+      }
+
+      // Check LTD user limits
+      if (subscriptionData.is_ltd && subscriptionData.current_count) {
+        const currentCount = parseInt(subscriptionData.current_count) || 0;
+        const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
+        if (currentCount >= ltdLimit) {
+          return res.status(200).send(new ServerResponse(false, null, "Cannot exceed the maximum number of lifetime users."));
+        }
+      }
+    }
+
+    try {
+      // Check if an active link already exists
+      const checkQuery = `
+        SELECT id, token, expires_at, created_at, status
+        FROM team_invitation_links
+        WHERE team_id = $1 AND status = 'active'
+        ORDER BY created_at DESC
+        LIMIT 1
+      `;
+      const checkResult = await db.query(checkQuery, [teamId]);
+
+      let invitationLink;
+      let message = "Team invitation link generated successfully";
+
+      if (checkResult.rows.length > 0) {
+        // Active link exists, return it
+        invitationLink = checkResult.rows[0];
+        message = "Active invitation link already exists";
+      } else {
+        // Check if there's an inactive link we can reactivate
+        const inactiveQuery = `
+          SELECT id, token, expires_at, created_at, status
+          FROM team_invitation_links
+          WHERE team_id = $1 AND status != 'active'
+          ORDER BY created_at DESC
+          LIMIT 1
+        `;
+        const inactiveResult = await db.query(inactiveQuery, [teamId]);
+
+        // Generate a secure token
+        const token = crypto.randomBytes(32).toString('hex');
+
+        // Set expiration to 7 days from now
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 7);
+
+        if (inactiveResult.rows.length > 0) {
+          // Update existing inactive link
+          const updateQuery = `
+            UPDATE team_invitation_links 
+            SET token = $2, created_by = $3, expires_at = $4, job_title_id = $5,
+                role_name = $6, is_admin = $7, max_usage = $8, status = 'active',
+                usage_count = 0, updated_at = NOW()
+            WHERE id = $1
+            RETURNING id, token, expires_at, created_at
+          `;
+
+          const result = await db.query(updateQuery, [
+            inactiveResult.rows[0].id, token, userId, expiresAt, job_title_id,
+            role_name, is_admin, max_usage
+          ]);
+
+          invitationLink = result.rows[0];
+          message = "Team invitation link generated successfully";
+        } else {
+          // Create new invitation link
+          const insertQuery = `
+            INSERT INTO team_invitation_links (
+              team_id, token, created_by, expires_at, job_title_id, 
+              role_name, is_admin, max_usage
+            ) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING id, token, expires_at, created_at
+          `;
+
+          const result = await db.query(insertQuery, [
+            teamId, token, userId, expiresAt, job_title_id,
+            role_name, is_admin, max_usage
+          ]);
+
+          invitationLink = result.rows[0];
+        }
+      }
+
+      // Generate the full invitation URL
+      const baseUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
+      const invitationUrl = `${baseUrl}/invite/team/${invitationLink.token}`;
+
+      return res.status(200).send(new ServerResponse(true, {
+        ...invitationLink,
+        invitation_url: invitationUrl,
+        expires_in_days: 7
+      }, message));
+
+    } catch (error) {
+      console.error('Error generating team invitation link:', error);
+      return res.status(200).send(new ServerResponse(false, null, "Failed to generate invitation link. Please try again."));
+    }
+  }
+
+  @HandleExceptions()
+  public static async validateTeamInvitationLink(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(200).send(new ServerResponse(false, null, "Invalid invitation link."));
+    }
+
+    try {
+      const q = `SELECT * FROM validate_invitation_link($1, 'team')`;
+      const result = await db.query(q, [token]);
+      const [validation] = result.rows;
+
+      if (!validation.is_valid) {
+        return res.status(200).send(new ServerResponse(false, null, validation.error_message));
+      }
+
+      // Get team information
+      const teamQuery = `
+        SELECT t.id, t.name, u.name as owner_name
+        FROM teams t
+        JOIN users u ON t.user_id = u.id
+        WHERE t.id = $1
+      `;
+      const teamResult = await db.query(teamQuery, [validation.team_id]);
+      const [team] = teamResult.rows;
+
+      return res.status(200).send(new ServerResponse(true, {
+        team,
+        invitation: {
+          expires_at: validation.expires_at,
+          job_title_id: validation.job_title_id,
+          role_name: validation.role_name,
+          is_admin: validation.is_admin
+        }
+      }));
+
+    } catch (error) {
+      console.error('Error validating team invitation link:', error);
+      return res.status(200).send(new ServerResponse(false, null, "Failed to validate invitation link."));
+    }
+  }
+
+  @HandleExceptions()
+  public static async acceptTeamInvitationByLink(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { token } = req.params;
+    const { name, email } = req.body;
+    const userId = req.user?.id;
+
+    if (!token || !name || !email) {
+      return res.status(200).send(new ServerResponse(false, null, "Required fields are missing."));
+    }
+
+    try {
+      // Validate the invitation link
+      const validationQuery = `SELECT * FROM validate_invitation_link($1, 'team')`;
+      const validationResult = await db.query(validationQuery, [token]);
+      const [validation] = validationResult.rows;
+
+      if (!validation.is_valid) {
+        return res.status(200).send(new ServerResponse(false, null, validation.error_message));
+      }
+
+      const teamId = validation.team_id;
+
+      // Get team owner ID for checking user existence
+      const ownerQuery = `
+        SELECT u.id, u.name, t.name as team_name, t.user_id as owner_id
+        FROM teams t
+        JOIN users u ON t.user_id = u.id
+        WHERE t.id = $1
+      `;
+      const ownerResult = await db.query(ownerQuery, [teamId]);
+      const [owner] = ownerResult.rows;
+
+      // Check if user already exists in any team owned by this owner
+      const userExists = await this.checkIfUserAlreadyExists(owner.owner_id, email);
+      const isUserActive = await this.checkIfUserActiveInOtherTeams(owner.owner_id, email);
+
+      // Determine if this will increment the user count
+      let incrementBy = 0;
+      if (!userExists || !isUserActive) {
+        incrementBy = 1;
+      }
+
+      // Check subscription status for the target team
+      const subscriptionData = await checkTeamSubscriptionStatus(teamId);
+
+      // Handle self-hosted subscriptions
+      if (subscriptionData.subscription_type === 'SELF_HOSTED') {
+        // Self-hosted can accept invitations without restrictions
+      } else {
+        // Check if subscription status is valid
+        if (statusExclude.includes(subscriptionData.subscription_status)) {
+          return res.status(200).send(new ServerResponse(false, null, "Unable to join team! Please check team subscription status."));
+        }
+
+        // Check LTD user limits
+        if (incrementBy > 0 && subscriptionData.is_ltd && subscriptionData.current_count) {
+          const currentCount = parseInt(subscriptionData.current_count) || 0;
+          const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
+          if (currentCount + incrementBy > ltdLimit) {
+            return res.status(200).send(new ServerResponse(false, null, "Cannot exceed the maximum number of lifetime users. Please ask the team owner to upgrade."));
+          }
+        }
+
+        // Check trial member limit
+        if (subscriptionData.subscription_status === "trialing") {
+          const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
+          if (currentTrialMembers + incrementBy > TRIAL_MEMBER_LIMIT) {
+            return res.status(200).send(new ServerResponse(false, null, `Trial teams cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please ask the team owner to upgrade.`));
+          }
+        }
+
+        // Check seat availability for active subscriptions
+        if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
+          const updatedCount = parseInt(subscriptionData.current_count) + incrementBy;
+          const requiredSeats = updatedCount - subscriptionData.quantity;
+          if (updatedCount > subscriptionData.quantity) {
+            const obj = {
+              seats_enough: false,
+              required_count: requiredSeats,
+              current_seat_amount: subscriptionData.quantity
+            };
+            return res.status(200).send(new ServerResponse(false, obj, `Insufficient seats available. The team needs ${requiredSeats} more seat${requiredSeats > 1 ? 's' : ''} to add you. Please ask the team owner to upgrade.`));
+          }
+        }
+      }
+
+      // Check if user already exists in the team
+      if (userId) {
+        const existingMemberQuery = `
+          SELECT id FROM team_members 
+          WHERE user_id = $1 AND team_id = $2
+        `;
+        const existingResult = await db.query(existingMemberQuery, [userId, teamId]);
+        if (existingResult.rows.length > 0) {
+          return res.status(200).send(new ServerResponse(false, null, "You are already a member of this team."));
+        }
+      }
+
+      // Check if email already exists in the team
+      const emailExistsQuery = `
+        SELECT EXISTS(
+          SELECT 1 FROM team_member_info_view 
+          WHERE email = $1 AND team_id = $2
+        )
+      `;
+      const emailResult = await db.query(emailExistsQuery, [email, teamId]);
+      const [emailExists] = emailResult.rows;
+
+      if (emailExists.exists) {
+        return res.status(200).send(new ServerResponse(false, null, "A team member with this email already exists."));
+      }
+
+      // Create team member using the existing function
+      const memberData = {
+        team_id: teamId,
+        emails: [email],
+        names: [name],
+        job_title_id: validation.job_title_id,
+        role_name: validation.role_name,
+        is_admin: validation.is_admin,
+        user_id: userId // If user is logged in
+      };
+
+      const mockUser: IPassportSession = {
+        id: owner.id,
+        name: owner.name,
+        team_id: teamId,
+        team_name: owner.team_name,
+        owner_id: owner.owner_id
+      } as IPassportSession;
+
+      const newMembers = await this.createOrInviteMembers(memberData, mockUser);
+
+      // Record the invitation link usage
+      if (newMembers && newMembers.length > 0) {
+        const member = newMembers[0];
+        const usageQuery = `
+          INSERT INTO invitation_link_usage (
+            team_invitation_link_id, user_id, team_member_id, 
+            email, name, ip_address, user_agent
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `;
+
+        const ipAddress = req.ip || req.connection?.remoteAddress;
+        const userAgent = req.get('User-Agent');
+
+        await db.query(usageQuery, [
+          validation.link_id, userId, member.team_member_id,
+          email, name, ipAddress, userAgent
+        ]);
+      }
+
+      return res.status(200).send(new ServerResponse(true, newMembers, "Successfully joined the team!"));
+
+    } catch (error) {
+      console.error('Error accepting team invitation:', error);
+      return res.status(200).send(new ServerResponse(false, null, "Failed to join team. Please try again."));
+    }
+  }
+
+  @HandleExceptions()
+  public static async revokeTeamInvitationLink(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const userId = req.user?.id;
+
+    if (!teamId || !userId) {
+      return res.status(200).send(new ServerResponse(false, null, "Required fields are missing."));
+    }
+
+    try {
+      const q = `
+        UPDATE team_invitation_links 
+        SET status = 'revoked', updated_at = NOW()
+        WHERE team_id = $1 AND status = 'active'
+        RETURNING id
+      `;
+
+      const result = await db.query(q, [teamId]);
+
+      if (result.rows.length === 0) {
+        return res.status(200).send(new ServerResponse(false, null, "No active invitation link found."));
+      }
+
+      return res.status(200).send(new ServerResponse(true, null, "Invitation link has been deactivated."));
+
+    } catch (error) {
+      console.error('Error revoking team invitation link:', error);
+      return res.status(200).send(new ServerResponse(false, null, "Failed to deactivate invitation link."));
+    }
+  }
+
+  @HandleExceptions()
+  public static async getTeamInvitationLinkStatus(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+
+    if (!teamId) {
+      return res.status(200).send(new ServerResponse(false, null, "Required fields are missing."));
+    }
+
+    try {
+      const q = `
+        SELECT id, token, expires_at, status, usage_count, max_usage, created_at
+        FROM team_invitation_links
+        WHERE team_id = $1 AND status = 'active'
+        ORDER BY created_at DESC
+        LIMIT 1
+      `;
+
+      const result = await db.query(q, [teamId]);
+
+      if (result.rows.length === 0) {
+        return res.status(200).send(new ServerResponse(true, { has_active_link: false }));
+      }
+
+      const [link] = result.rows;
+      const baseUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
+      const invitationUrl = `${baseUrl}/invite/team/${link.token}`;
+
+      return res.status(200).send(new ServerResponse(true, {
+        has_active_link: true,
+        invitation_url: invitationUrl,
+        expires_at: link.expires_at,
+        usage_count: link.usage_count,
+        max_usage: link.max_usage,
+        created_at: link.created_at
+      }));
+
+    } catch (error) {
+      console.error('Error getting team invitation link status:', error);
+      return res.status(200).send(new ServerResponse(false, null, "Failed to get invitation link status."));
+    }
   }
 }
