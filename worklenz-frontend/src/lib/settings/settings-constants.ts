@@ -196,15 +196,15 @@ export const settingsItems: SettingMenuItem[] = [
     element: React.createElement(TeamsSettings),
     adminOnly: true,
   },
-  // {
-  //   key: 'integrations',
-  //   name: 'integrations',
-  //   defaultValue: 'Integrations',
-  //   endpoint: 'integrations',
-  //   icon: React.createElement(ApiOutlined),
-  //   element: React.createElement(IntegrationsSettings),
-  //   adminOnly: true,
-  // },
+  {
+    key: 'integrations',
+    name: 'integrations',
+    defaultValue: 'Integrations',
+    endpoint: 'integrations',
+    icon: React.createElement(ApiOutlined),
+    element: React.createElement(IntegrationsSettings),
+    adminOnly: true,
+  },
   // Danger zone - always at the bottom
   {
     key: 'account-deletion',

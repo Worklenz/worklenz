@@ -11,5 +11,13 @@
   "github": {
     "title": "GitHub",
     "description": "Vincule repositorios de GitHub para rastrear commits, pull requests y problemas junto con sus tareas."
+  },
+  "googleDrive": {
+    "title": "Google Drive",
+    "description": "Conecte Google Drive para adjuntar archivos, compartir documentos y colaborar sin problemas con su equipo en los entregables del proyecto."
+  },
+  "googleCalendar": {
+    "title": "Google Calendar",
+    "description": "Sincronice sus tareas y plazos con Google Calendar para administrar su agenda, establecer recordatorios y nunca perder hitos importantes del proyecto."
   }
 }

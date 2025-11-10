@@ -11,5 +11,13 @@
   "github": {
     "title": "GitHub",
     "description": "Verknüpfen Sie GitHub-Repositories, um Commits, Pull-Requests und Issues neben Ihren Aufgaben zu verfolgen."
+  },
+  "googleDrive": {
+    "title": "Google Drive",
+    "description": "Verbinden Sie Google Drive, um Dateien anzuhängen, Dokumente zu teilen und nahtlos mit Ihrem Team an Projektlieferungen zusammenzuarbeiten."
+  },
+  "googleCalendar": {
+    "title": "Google Kalender",
+    "description": "Synchronisieren Sie Ihre Aufgaben und Fristen mit Google Kalender, um Ihren Zeitplan zu verwalten, Erinnerungen einzustellen und wichtige Projektmeilensteine nicht zu verpassen."
   }
 }

@@ -11,5 +11,13 @@
   "github": {
     "title": "GitHub",
     "description": "Lidhni depo GitHub për të ndjekur komitet, kërkesa pull dhe probleme së bashku me detyrat tuaja."
+  },
+  "googleDrive": {
+    "title": "Google Drive",
+    "description": "Lidhni Google Drive për të bashkangjitur skedarë, për të ndarë dokumente dhe për të bashkëpunuar pa probleme me ekipin tuaj në rezultatet e projektit."
+  },
+  "googleCalendar": {
+    "title": "Google Calendar",
+    "description": "Sinkronizoni detyrat dhe afatet tuaja me Google Calendar për të menaxhuar orarin tuaj, për të vendosur kujtues dhe për të mos humbur asnjëherë pikat kryesore të rëndësishme të projektit."
   }
 }

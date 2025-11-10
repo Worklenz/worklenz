@@ -81,3 +81,47 @@ export const GitHubIcon = () => (
     </g>
   </svg>
 );
+
+// Google Drive icon component
+export const GoogleDriveIcon = () => (
+  <svg
+    viewBox="0 0 87.3 78"
+    xmlns="http://www.w3.org/2000/svg"
+    width="1em"
+    height="1em"
+    style={{ verticalAlign: 'middle' }}
+  >
+    <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
+    <g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round"></g>
+    <g id="SVGRepo_iconCarrier">
+      <path fill="#0066DA" d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H0l6.6 11.45z"></path>
+      <path fill="#00AC47" d="M43.65 25L29.9 1.2C28.6.4 27.1 0 25.6 0L0 52.8h27.5L43.65 25z"></path>
+      <path fill="#EA4335" d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.9 1.2-4.5H59.8L73.55 76.8z"></path>
+      <path fill="#00832D" d="M43.65 25L57.4 1.2C56.1.4 54.6 0 53.1 0H25.6c1.5 0 3 .4 4.3 1.2L43.65 25z"></path>
+      <path fill="#2684FC" d="M59.8 53H27.5L13.75 76.8c1.35.8 2.85 1.2 4.35 1.2h50.8c1.5 0 3-.4 4.35-1.2L59.8 53z"></path>
+      <path fill="#FFBA00" d="M73.4 26.5l-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25 59.8 53h27.5c0-1.6-.4-3.1-1.2-4.5l-12.7-22z"></path>
+    </g>
+  </svg>
+);
+
+// Google Calendar icon component
+export const GoogleCalendarIcon = () => (
+  <svg
+    viewBox="0 0 48 48"
+    xmlns="http://www.w3.org/2000/svg"
+    width="1em"
+    height="1em"
+    style={{ verticalAlign: 'middle' }}
+  >
+    <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
+    <g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round"></g>
+    <g id="SVGRepo_iconCarrier">
+      <path fill="#1976D2" d="M9,16v20c0,2.2,1.8,4,4,4h22c2.2,0,4-1.8,4-4V16H9z"></path>
+      <path fill="#FFF" d="M11.5,18h3v3h-3V18z M16.5,18h3v3h-3V18z M21.5,18h3v3h-3V18z M26.5,18h3v3h-3V18z M31.5,18h3v3h-3V18z M11.5,23h3v3h-3V23z M16.5,23h3v3h-3V23z M21.5,23h3v3h-3V23z M26.5,23h3v3h-3V23z M31.5,23h3v3h-3V23z M11.5,28h3v3h-3V28z M16.5,28h3v3h-3V28z M21.5,28h3v3h-3V28z M26.5,28h3v3h-3V28z M31.5,28h3v3h-3V28z M11.5,33h3v3h-3V33z M16.5,33h3v3h-3V33z M21.5,33h3v3h-3V33z M26.5,33h3v3h-3V33z"></path>
+      <path fill="#1976D2" d="M35,8H13c-2.2,0-4,1.8-4,4v4h30v-4C39,9.8,37.2,8,35,8z"></path>
+      <circle cx="32" cy="10" r="2" fill="#FFF"></circle>
+      <circle cx="16" cy="10" r="2" fill="#FFF"></circle>
+      <path fill="#1976D2" d="M15,6h2v4h-2V6z M31,6h2v4h-2V6z"></path>
+    </g>
+  </svg>
+);

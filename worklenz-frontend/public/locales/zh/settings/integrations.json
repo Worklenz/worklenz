@@ -11,5 +11,13 @@
   "github": {
     "title": "GitHub",
     "description": "链接 GitHub 仓库以跟踪提交、拉取请求和问题以及您的任务。"
+  },
+  "googleDrive": {
+    "title": "Google Drive",
+    "description": "连接 Google Drive 以附加文件、共享文档，并与您的团队无缝协作完成项目交付成果。"
+  },
+  "googleCalendar": {
+    "title": "Google 日历",
+    "description": "将您的任务和截止日期与 Google 日历同步，以管理您的日程安排、设置提醒，并且永远不会错过重要的项目里程碑。"
   }
 }

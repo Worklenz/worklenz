@@ -6,6 +6,8 @@ import {
   MSTeamsIcon,
   SlackIcon,
   GitHubIcon,
+  GoogleDriveIcon,
+  GoogleCalendarIcon,
 } from '@/components/settings/integrations/IntegrationIcons';
 
 interface IntegrationCardProps {
@@ -99,6 +101,28 @@ function IntegrationsSettings() {
           description={t('github.description', {
             defaultValue:
               'Link GitHub repositories to track commits, pull requests, and issues alongside your tasks.',
+          })}
+          available={false}
+        />
+
+        {/* Google Drive Integration - Coming Soon */}
+        <IntegrationCard
+          icon={<GoogleDriveIcon />}
+          title={t('googleDrive.title', { defaultValue: 'Google Drive' })}
+          description={t('googleDrive.description', {
+            defaultValue:
+              'Connect Google Drive to attach files, share documents, and collaborate seamlessly with your team on project deliverables.',
+          })}
+          available={false}
+        />
+
+        {/* Google Calendar Integration - Coming Soon */}
+        <IntegrationCard
+          icon={<GoogleCalendarIcon />}
+          title={t('googleCalendar.title', { defaultValue: 'Google Calendar' })}
+          description={t('googleCalendar.description', {
+            defaultValue:
+              'Sync your tasks and deadlines with Google Calendar to manage your schedule, set reminders, and never miss important project milestones.',
           })}
           available={false}
         />
