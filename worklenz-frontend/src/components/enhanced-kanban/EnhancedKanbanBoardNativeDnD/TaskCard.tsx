@@ -158,7 +158,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
             SocketEvents.TASK_END_DATE_CHANGE.toString(),
             JSON.stringify({
               task_id: task.id,
-              end_date: date,
+              end_date: date ? format(date, 'yyyy-MM-dd') : null,
               parent_task: task.parent_task_id,
               time_zone: getUserSession()?.timezone_name
                 ? getUserSession()?.timezone_name
