@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Card, Spin, Result, Button, Typography, Form, Input, message } from '@/shared/antd-imports';
-import { CheckCircleOutlined, LoadingOutlined, UserAddOutlined } from '@ant-design/icons';
+import { Card, Spin, Result, Button, Typography, Form, Input, message, Tooltip } from '@/shared/antd-imports';
+import { CheckCircleOutlined, LoadingOutlined, UserAddOutlined, CloseOutlined } from '@ant-design/icons';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { invitationRedirectService } from '@/services/invitation-redirect.service';
+import { useTranslation } from 'react-i18next';
 
 const { Title, Paragraph } = Typography;
 
@@ -20,6 +21,7 @@ const TeamInvitePage: React.FC = () => {
   const authService = useAuthService();
   const currentUser = authService.getCurrentSession();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const { t } = useTranslation('invitation');
 
   const [status, setStatus] = useState<'loading' | 'form' | 'success' | 'error' | 'invalid'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
@@ -78,7 +80,7 @@ const TeamInvitePage: React.FC = () => {
       
       if (response.done) {
         setStatus('success');
-        message.success('Successfully joined the team!');
+        message.success(t('successMessage'));
         
         // Clear the stored invitation context since we successfully joined
         invitationRedirectService.clearPendingInvitation();
@@ -91,20 +93,41 @@ const TeamInvitePage: React.FC = () => {
           } else {
             navigate('/auth/login', {
               state: {
-                message: 'Please login to access your new team.',
+                message: t('loginPrompt'),
                 email: values.email
               }
             });
           }
         }, 2000);
       } else {
-        message.error(response.message || 'Failed to join team');
+        message.error(response.message || t('joinFailed'));
+        // Navigate to home page if join failed (using window.location to bypass auth guards)
+        setTimeout(() => {
+          window.location.href = '/worklenz/home';
+        }, 1500);
       }
     } catch (error: any) {
-      message.error(error?.response?.data?.message || 'Failed to join team');
+      message.error(error?.response?.data?.message || t('joinFailed'));
+      // Navigate to home page if join failed (using window.location to bypass auth guards)
+      setTimeout(() => {
+        window.location.href = '/worklenz/home';
+      }, 1500);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleSkipInvitation = async () => {
+    // Clear the stored invitation context
+    invitationRedirectService.clearPendingInvitation();
+    console.log('[TeamInvite] Cleared invitation context after skip');
+    
+    // Clear the session
+    await authService.signOut();
+    console.log('[TeamInvite] Cleared session after skip');
+    
+    // Redirect to authenticating page
+    navigate('/auth/authenticating');
   };
 
   const renderContent = () => {
@@ -113,8 +136,8 @@ const TeamInvitePage: React.FC = () => {
         return (
           <Result
             icon={<Spin indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} />}
-            title="Validating Invitation"
-            subTitle="Please wait while we verify your invitation..."
+            title={t('validatingInvitation')}
+            subTitle={t('validatingSubtitle')}
           />
         );
 
@@ -122,9 +145,9 @@ const TeamInvitePage: React.FC = () => {
         return (
           <div style={{ textAlign: 'center' }}>
             <UserAddOutlined style={{ fontSize: 48, color: '#1890ff', marginBottom: 16 }} />
-            <Title level={3}>Join Team</Title>
+            <Title level={3}>{t('joinTeam')}</Title>
             <Paragraph type="secondary" style={{ marginBottom: 24 }}>
-              You've been invited to join <strong>{teamInfo?.team?.name}</strong> by {teamInfo?.team?.owner_name}
+              {t('invitedToTeam')} <strong>{teamInfo?.team?.name}</strong> {t('invitedBy')} {teamInfo?.team?.owner_name}
             </Paragraph>
             
             {currentUser && (
@@ -139,7 +162,7 @@ const TeamInvitePage: React.FC = () => {
                   fontSize: '12px', 
                   color: themeMode === 'dark' ? '#91d5ff' : '#1890ff' 
                 }}>
-                  You're logged in as {currentUser.name}. Your details are pre-filled.
+                  {t('loggedInAs', { name: currentUser.name })}
                 </Typography.Text>
               </div>
             )}
@@ -152,28 +175,28 @@ const TeamInvitePage: React.FC = () => {
             >
               <Form.Item
                 name="name"
-                label="Full Name"
+                label={t('fullName')}
                 rules={[
-                  { required: true, message: 'Please enter your full name' },
-                  { min: 2, message: 'Name must be at least 2 characters' }
+                  { required: true, message: t('fullNameRequired') },
+                  { min: 2, message: t('fullNameMinLength') }
                 ]}
               >
                 <Input 
-                  placeholder="Enter your full name" 
+                  placeholder={t('fullNamePlaceholder')}
                   disabled={!!currentUser}
                 />
               </Form.Item>
 
               <Form.Item
                 name="email"
-                label="Email Address"
+                label={t('emailAddress')}
                 rules={[
-                  { required: true, message: 'Please enter your email address' },
-                  { type: 'email', message: 'Please enter a valid email address' }
+                  { required: true, message: t('emailRequired') },
+                  { type: 'email', message: t('emailInvalid') }
                 ]}
               >
                 <Input 
-                  placeholder="Enter your email address" 
+                  placeholder={t('emailPlaceholder')}
                   disabled={!!currentUser}
                 />
               </Form.Item>
@@ -184,15 +207,24 @@ const TeamInvitePage: React.FC = () => {
                   htmlType="submit" 
                   loading={submitting}
                   size="large"
-                  style={{ minWidth: 120 }}
+                  style={{ minWidth: 120, marginRight: 8 }}
                 >
-                  Join Team
+                  {t('joinTeamButton')}
                 </Button>
+                <Tooltip title={t('skipInvitationTooltip')}>
+                  <Button 
+                    onClick={handleSkipInvitation}
+                    size="large"
+                    style={{ minWidth: 120 }}
+                  >
+                    {t('skipInvitation')}
+                  </Button>
+                </Tooltip>
               </Form.Item>
             </Form>
 
             <Paragraph type="secondary" style={{ fontSize: 12, marginTop: 16 }}>
-              By joining, you agree to the team's terms and conditions.
+              {t('termsAgreement')}
             </Paragraph>
           </div>
         );
@@ -201,8 +233,8 @@ const TeamInvitePage: React.FC = () => {
         return (
           <Result
             icon={<CheckCircleOutlined style={{ color: '#52c41a', fontSize: 48 }} />}
-            title="Welcome to the Team!"
-            subTitle="You have successfully joined the team. Redirecting you..."
+            title={t('welcomeTeam')}
+            subTitle={t('successTeamSubtitle')}
           />
         );
 
@@ -210,14 +242,14 @@ const TeamInvitePage: React.FC = () => {
         return (
           <Result
             status="error"
-            title={errorMessage}
-            subTitle={errorMessage}
+            title={t('errorNotLoggedIn') || errorMessage}
+            subTitle={ errorMessage }
             extra={[
               <Button key="home" onClick={() => navigate('/')}>
-                Go to Home
+                {t('goToHome')}
               </Button>,
               <Button key="login" type="primary" onClick={() => navigate('/auth/login')}>
-                Go to Login
+                {t('goToLogin')}
               </Button>,
             ]}
           />
@@ -227,11 +259,11 @@ const TeamInvitePage: React.FC = () => {
         return (
           <Result
             status="warning"
-            title="Invalid Invitation"
-            subTitle="No invitation token was provided. Please check your invitation link."
+            title={t('invalidInvitation')}
+            subTitle={t('invalidInvitationSubtitle')}
             extra={
               <Button type="primary" onClick={() => navigate('/auth/login')}>
-                Go to Login
+                {t('goToLogin')}
               </Button>
             }
           />
@@ -262,7 +294,25 @@ const TeamInvitePage: React.FC = () => {
             : '0 4px 12px rgba(0,0,0,0.1)',
           backgroundColor: themeMode === 'dark' ? '#1f1f1f' : '#ffffff',
           border: themeMode === 'dark' ? '1px solid #303030' : undefined,
+          position: 'relative',
         }}
+        extra={
+          status === 'form' && (
+            <Tooltip title={t('skipInvitationTooltip')}>
+              <Button
+                type="text"
+                icon={<CloseOutlined />}
+                onClick={handleSkipInvitation}
+                style={{
+                  position: 'absolute',
+                  top: 16,
+                  right: 16,
+                  zIndex: 1,
+                }}
+              />
+            </Tooltip>
+          )
+        }
       >
         {renderContent()}
       </Card>
