@@ -32,4 +32,11 @@ teamMembersApiRouter.get("/deactivate/:id", teamOwnerOrAdminValidator, idParamVa
 
 teamMembersApiRouter.put("/add-member/:id", teamOwnerOrAdminValidator, teamMembersBodyValidator, safeControllerFunction(TeamMembersController.addTeamMember));
 
+// Team invitation link routes
+teamMembersApiRouter.post("/invitation-link", teamOwnerOrAdminValidator, safeControllerFunction(TeamMembersController.generateTeamInvitationLink));
+teamMembersApiRouter.get("/invitation-link/status", safeControllerFunction(TeamMembersController.getTeamInvitationLinkStatus));
+teamMembersApiRouter.put("/invitation-link/revoke", teamOwnerOrAdminValidator, safeControllerFunction(TeamMembersController.revokeTeamInvitationLink));
+teamMembersApiRouter.get("/invitation-link/validate/:token", safeControllerFunction(TeamMembersController.validateTeamInvitationLink));
+teamMembersApiRouter.post("/invitation-link/accept/:token", safeControllerFunction(TeamMembersController.acceptTeamInvitationByLink));
+
 export default teamMembersApiRouter; 
