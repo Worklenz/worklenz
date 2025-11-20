@@ -1,0 +1,29 @@
+name: Feature Spec
+description: Use this template to document a detailed feature specification.
+title: "[Spec]: "
+labels: ["spec"]
+body:
+  - type: textarea
+    id: overview
+    attributes:
+      label: Overview
+      placeholder: Short summary of the feature.
+    validations:
+      required: true
+  - type: textarea
+    id: goals
+    attributes:
+      label: Goals & Non-goals
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Requirements (Functional & Non-functional)
+  - type: textarea
+    id: flows
+    attributes:
+      label: User Flows / Diagrams
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      placeholder: Bullet points with clear expectations.
