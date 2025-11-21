@@ -11,9 +11,7 @@ export async function on_task_billable_change(_io: Server, socket: Socket, data?
     if (!data?.task_id || (typeof data.billable != "boolean")) return;
     try {
         const q = `UPDATE tasks SET billable = $2 WHERE id = $1`;
-
         await db.query(q, [data?.task_id, data?.billable]);
-
         socket.emit(SocketEvents.TASK_BILLABLE_CHANGE.toString(), {
             id: data?.task_id
         });
