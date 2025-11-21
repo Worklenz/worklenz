@@ -5,6 +5,9 @@ import { SocketEvents } from "../events";
 import { body } from "express-validator";
 
 export async function on_task_billable_change(_io: Server, socket: Socket, data?: {task_id?: string, billable?: boolean}) {
+    if (typeof data == "string") {
+        data = JSON.parse(data as string);
+    };
     if (!data?.task_id || (typeof data.billable != "boolean")) return;
     try {
         const q = `UPDATE tasks SET billable = $2 WHERE id = $1`;
