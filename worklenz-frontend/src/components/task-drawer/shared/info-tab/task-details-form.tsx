@@ -1,20 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import {
   Form,
-  InputNumber,
-  Select,
-  DatePicker,
-  Switch,
-  Typography,
-  Button,
   ConfigProvider,
   Flex,
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import { colors } from '@/styles/colors';
 import { ITaskFormViewModel, ITaskViewModel } from '@/types/tasks/task.types';
-import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { simpleDateFormat } from '@/utils/simpleDateFormat';
 
 import NotifyMemberSelector from './notify-member-selector';
 import TaskDrawerPhaseSelector from './details/task-drawer-phase-selector/task-drawer-phase-selector';
