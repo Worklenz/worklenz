@@ -58,7 +58,7 @@ const RoadmapTable = () => {
       case 'name':
         return <RoadmapTaskCell task={task} isSubtask={isSubtask} />;
       case 'start':
-        const startDayjs = task.start ? dayjs(task.start) : null;
+        const startDayjs = task.start ? dayjs(task.start, 'YYYY-MM-DD') : null;
         return (
           <DatePicker
             placeholder="Set Start Date"
@@ -75,7 +75,7 @@ const RoadmapTable = () => {
           />
         );
       case 'end':
-        const endDayjs = task.end ? dayjs(task.end) : null;
+        const endDayjs = task.end ? dayjs(task.end, 'YYYY-MM-DD') : null;
         return (
           <DatePicker
             placeholder="Set End Date"

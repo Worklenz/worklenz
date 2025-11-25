@@ -28,7 +28,7 @@ const HomeTasksDatePicker = ({ record }: HomeTasksDatePickerProps) => {
 
   // Use useMemo to avoid re-renders when record.end_date is the same
   const initialDate = useMemo(
-    () => (record.end_date ? dayjs(record.end_date) : null),
+    () => (record.end_date ? dayjs(record.end_date, 'YYYY-MM-DD') : null),
     [record.end_date]
   );
 
@@ -85,7 +85,7 @@ const HomeTasksDatePicker = ({ record }: HomeTasksDatePickerProps) => {
     <DatePicker
       allowClear
       disabledDate={
-        record.start_date ? current => current.isBefore(dayjs(record.start_date)) : undefined
+        record.start_date ? current => current.isBefore(dayjs(record.start_date, 'YYYY-MM-DD')) : undefined
       }
       placeholder={t('tasks.dueDatePlaceholder')}
       value={selectedDate}

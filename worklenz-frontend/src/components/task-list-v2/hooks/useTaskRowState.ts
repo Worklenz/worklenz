@@ -71,8 +71,8 @@ export const useTaskRowState = (task: Task) => {
   // Memoize date values for DatePicker
   const dateValues = useMemo(
     () => ({
-      start: task.startDate ? dayjs(task.startDate) : undefined,
-      due: task.dueDate || task.due_date ? dayjs(task.dueDate || task.due_date) : undefined,
+      start: task.startDate ? dayjs(task.startDate, 'YYYY-MM-DD') : undefined,
+      due: task.dueDate || task.due_date ? dayjs(task.dueDate || task.due_date, 'YYYY-MM-DD') : undefined,
     }),
     [task.startDate, task.dueDate, task.due_date]
   );
