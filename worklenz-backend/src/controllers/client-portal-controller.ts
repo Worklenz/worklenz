@@ -3088,6 +3088,14 @@ class ClientPortalController {
             WHERE id = $1 AND team_id = $2
           `;
           await db.query(updateClientQuery, [client.id, teamId]);
+
+          // Create client portal access record with full permissions
+          await db.query(
+            `INSERT INTO client_portal_access (client_id, is_active, created_at, updated_at)
+             VALUES ($1, TRUE, NOW(), NOW())
+             ON CONFLICT (client_id) DO UPDATE SET is_active = TRUE, updated_at = NOW()`,
+            [client.id]
+          );
         }
 
         // Return response indicating user can use existing Worklenz credentials
@@ -4935,6 +4943,14 @@ class ClientPortalController {
         );
 
         const newUser = userResult.rows[0];
+
+        // Create client portal access record with full permissions
+        await db.query(
+          `INSERT INTO client_portal_access (client_id, is_active, created_at, updated_at)
+           VALUES ($1, TRUE, NOW(), NOW())
+           ON CONFLICT (client_id) DO UPDATE SET is_active = TRUE, updated_at = NOW()`,
+          [clientId]
+        );
 
         // Generate client access token
         const permissions = await TokenService.getClientPermissions(clientId);

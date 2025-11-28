@@ -47,12 +47,12 @@ router.get("/invoices/:id", safeControllerFunction(ClientPortalController.getInv
 router.post("/invoices/:id/pay", safeControllerFunction(ClientPortalController.payInvoice));
 router.get("/invoices/:id/download", safeControllerFunction(ClientPortalController.downloadInvoice));
 
-// Chat (requires chat permissions)
-router.get("/chats", requireClientPermission("canChat"), safeControllerFunction(ClientPortalController.getChats));
-router.post("/chats", requireClientPermission("canWriteChat"), safeControllerFunction(ClientPortalController.createChat));
-router.get("/chats/:id", requireClientPermission("canChat"), safeControllerFunction(ClientPortalController.getChatDetails));
-router.post("/chats/:id/messages", requireClientPermission("canWriteChat"), safeControllerFunction(ClientPortalController.sendMessage));
-router.get("/chats/:id/messages", requireClientPermission("canChat"), safeControllerFunction(ClientPortalController.getMessages));
+// Chat
+router.get("/chats", safeControllerFunction(ClientPortalController.getChats));
+router.post("/chats", safeControllerFunction(ClientPortalController.createChat));
+router.get("/chats/:id", safeControllerFunction(ClientPortalController.getChatDetails));
+router.post("/chats/:id/messages", safeControllerFunction(ClientPortalController.sendMessage));
+router.get("/chats/:id/messages", safeControllerFunction(ClientPortalController.getMessages));
 
 // Settings (for organization management - requires team_id)
 router.get("/settings", safeControllerFunction(ClientPortalController.getSettings));

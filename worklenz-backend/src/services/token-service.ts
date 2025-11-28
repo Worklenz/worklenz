@@ -249,6 +249,14 @@ class TokenService {
         ["active", invitation.client_id]
       );
 
+      // Create client portal access record with full permissions
+      const portalAccessQuery = `
+        INSERT INTO client_portal_access (client_id, is_active, created_at, updated_at)
+        VALUES ($1, TRUE, NOW(), NOW())
+        ON CONFLICT (client_id) DO UPDATE SET is_active = TRUE, updated_at = NOW()
+      `;
+      await client.query(portalAccessQuery, [invitation.client_id]);
+
       await client.query("COMMIT");
 
       // Return complete user data with client information
@@ -336,8 +344,24 @@ class TokenService {
       `;
       const accessResult = await db.query(accessQuery, [clientId]);
 
-      // If no active access, return minimal permissions
-      if (!accessResult.rows.length || !accessResult.rows[0].is_active) {
+      // If no record exists, grant full default permissions (new clients)
+      // If record exists but is_active is false, return minimal permissions (disabled clients)
+      if (!accessResult.rows.length) {
+        // No record = new client, grant full access
+        return [
+          "read:services",
+          "create:requests",
+          "read:projects",
+          "read:invoices",
+          "read:chats",
+          "write:chats",
+          "read:profile",
+          "write:profile"
+        ];
+      }
+      
+      if (!accessResult.rows[0].is_active) {
+        // Record exists but disabled = restricted access
         return [
           "read:services",
           "read:profile"

@@ -66,7 +66,7 @@ const ChatsPage: React.FC = () => {
       const response: ApiResponse<any> = await clientPortalAPI.getChats();
       if (response.done && response.body) {
         // Transform the chat data to include IDs and titles
-        const chatList: ChatListItem[] = (response.body as ClientChat[]).map((chat, index) => ({
+        const chatList: ChatListItem[] = (response.body.chats as ClientChat[]).map((chat, index) => ({
           ...chat,
           id: `chat-${index}`,
           title: `Chat - ${new Date(chat.date).toLocaleDateString()}`
@@ -96,7 +96,7 @@ const ChatsPage: React.FC = () => {
         limit: 50
       });
       if (response.done && response.body) {
-        setMessages(response.body as ClientMessage[]);
+        setMessages(response.body.messages as ClientMessage[]);
       } else {
         setError('Failed to load messages');
       }
