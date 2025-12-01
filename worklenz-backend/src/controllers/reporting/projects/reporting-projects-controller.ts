@@ -42,13 +42,17 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
     ? `AND p.id IN(SELECT project_id FROM project_members WHERE team_member_id IN(SELECT id FROM team_members WHERE user_id IN (${this.flatString(req.query.project_managers as string)})) AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'))`
     : "";
 
+    const teamsClause = req.query.teams as string
+      ? `AND p.team_id IN (${this.flatString(req.query.teams as string)})`
+      : "";
+
     const archivedClause = archived
       ? ""
       : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
 
     // Add project filtering for Team Leads
     const projectFilterClause = await this.buildProjectFilterForTeamLead(req);
-    const teamFilterClause = `in_organization(p.team_id, $1) ${projectFilterClause}`;
+    const teamFilterClause = `in_organization(p.team_id, $1) ${projectFilterClause} ${teamsClause}`;
 
     const result = await ReportingControllerBase.getProjectsByTeam(teamId as string, size, offset, searchQuery, sortField, sortOrder, statusesClause, healthsClause, categoriesClause, archivedClause, teamFilterClause, projectManagersClause);
 

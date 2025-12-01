@@ -451,4 +451,5 @@ export interface IGetProjectsRequestBody {
   categories: string[];
   project_managers: string[];
   archived: boolean;
+  teams?: string[];
 }

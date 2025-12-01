@@ -1,6 +1,7 @@
 import { Flex } from '@/shared/antd-imports';
 import { useMemo, useCallback, memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import ProjectTeamFilterDropdown from './project-team-filter-dropdown';
 import ProjectStatusFilterDropdown from './project-status-filter-dropdown';
 import ProjectHealthFilterDropdown from './project-health-filter-dropdown';
 import ProjectCategoriesFilterDropdown from './project-categories-filter-dropdown';
@@ -28,6 +29,7 @@ const ProjectsReportsFilters = () => {
   const filterDropdowns = useMemo(
     () => (
       <Flex gap={8} wrap={'wrap'}>
+        <ProjectTeamFilterDropdown />
         <ProjectStatusFilterDropdown />
         <ProjectHealthFilterDropdown />
         <ProjectCategoriesFilterDropdown />

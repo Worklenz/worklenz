@@ -1,4 +1,5 @@
 import { reportingProjectsApiService } from '@/api/reporting/reporting-projects.api.service';
+import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { DEFAULT_PAGE_SIZE, FILTER_INDEX_KEY } from '@/shared/constants';
 import { IProjectCategory } from '@/types/project/projectCategory.types';
 import { IProjectHealth } from '@/types/project/projectHealth.types';
@@ -9,12 +10,17 @@ import {
   IRPTOverviewProject,
   IRPTOverviewProjectMember,
   IRPTProject,
+  IRPTTeam,
 } from '@/types/reporting/reporting.types';
 import { getFromLocalStorage } from '@/utils/localStorageFunctions';
 import { createAsyncThunk, createSlice, createAction } from '@reduxjs/toolkit';
 
 const filterIndex = () => {
   return +(getFromLocalStorage(FILTER_INDEX_KEY.toString()) || 0);
+};
+
+const selectedTeams = (state: ProjectReportsState) => {
+  return state.teams.filter(team => team.selected).map(team => team.id) as string[];
 };
 
 type ProjectReportsState = {
@@ -37,11 +43,21 @@ type ProjectReportsState = {
   searchQuery: string;
   filterIndex: number;
   archived: boolean;
+  teams: IRPTTeam[];
+  loadingTeams: boolean;
   selectedProjectStatuses: IProjectStatus[];
   selectedProjectHealths: IProjectHealth[];
   selectedProjectCategories: IProjectCategory[];
   selectedProjectManagers: IProjectManager[];
 };
+
+export const fetchReportingTeams = createAsyncThunk(
+  'projectReports/fetchReportingTeams',
+  async () => {
+    const res = await reportingApiService.getOverviewTeams();
+    return res.body;
+  }
+);
 
 export const fetchProjectData = createAsyncThunk(
   'projectReports/fetchProjectData',
@@ -59,6 +75,7 @@ export const fetchProjectData = createAsyncThunk(
       categories: state.selectedProjectCategories.map((c: IProjectCategory) => c.id || ''),
       project_managers: state.selectedProjectManagers.map((m: IProjectManager) => m.id || ''),
       archived: state.archived,
+      teams: selectedTeams(state),
     };
     const response = await reportingProjectsApiService.getProjects(body);
     return response.body;
@@ -95,6 +112,8 @@ const initialState: ProjectReportsState = {
   searchQuery: '',
   filterIndex: filterIndex(),
   archived: false,
+  teams: [],
+  loadingTeams: false,
   selectedProjectStatuses: [],
   selectedProjectHealths: [],
   selectedProjectCategories: [],
@@ -114,6 +133,17 @@ const projectReportsSlice = createSlice({
     setSearchQuery: (state, action) => {
       state.searchQuery = action.payload;
       state.index = 1;
+    },
+    setSelectOrDeselectAllTeams: (state, action) => {
+      state.teams.forEach(team => {
+        team.selected = action.payload;
+      });
+    },
+    setSelectOrDeselectTeam: (state, action) => {
+      const team = state.teams.find(team => team.id === action.payload.id);
+      if (team) {
+        team.selected = action.payload.selected;
+      }
     },
     setSelectedProjectStatuses: (state, action) => {
       state.selectedProjectStatuses = action.payload;
@@ -215,6 +245,20 @@ const projectReportsSlice = createSlice({
   },
   extraReducers: builder => {
     builder
+      .addCase(fetchReportingTeams.fulfilled, (state, action) => {
+        const teams = [];
+        for (const team of action.payload) {
+          teams.push({ selected: true, name: team.name, id: team.id, projects_count: team.projects_count, members: team.members });
+        }
+        state.teams = teams;
+        state.loadingTeams = false;
+      })
+      .addCase(fetchReportingTeams.pending, state => {
+        state.loadingTeams = true;
+      })
+      .addCase(fetchReportingTeams.rejected, state => {
+        state.loadingTeams = false;
+      })
       .addCase(fetchProjectData.pending, state => {
         state.isLoading = true;
         state.error = null;
@@ -255,6 +299,8 @@ export const {
   toggleProjectReportsDrawer,
   toggleProjectReportsMembersTaskDrawer,
   setSearchQuery,
+  setSelectOrDeselectAllTeams,
+  setSelectOrDeselectTeam,
   setSelectedProjectStatuses,
   setSelectedProjectHealths,
   setSelectedProjectCategories,
