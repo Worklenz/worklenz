@@ -268,7 +268,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
              (SELECT use_manual_progress FROM projects WHERE id = t.project_id) AS project_use_manual_progress,
              (SELECT use_weighted_progress FROM projects WHERE id = t.project_id) AS project_use_weighted_progress,
              (SELECT use_time_progress FROM projects WHERE id = t.project_id) AS project_use_time_progress,
-             (SELECT get_task_complete_ratio(t.id)->>'ratio') AS complete_ratio,
+             COALESCE(t.progress_value, 0) AS complete_ratio,
 
              (SELECT phase_id FROM task_phase WHERE task_id = t.id) AS phase_id,
              (SELECT name
@@ -1257,6 +1257,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
         return 0;
       };
 
+      const calculatedProgress = typeof task.complete_ratio === "number" ? task.complete_ratio : 0;
+
       return {
         id: task.id,
         task_key: task.task_key || "",
@@ -1268,8 +1270,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
         priority: priorityMap[task.priority_value?.toString()] || "medium",
         // Use actual phase name from database
         phase: task.phase_name || "Development",
-        progress:
-          typeof task.complete_ratio === "number" ? task.complete_ratio : 0,
+        progress: calculatedProgress,
+        complete_ratio: task.complete_ratio, // Also include original field
+        progress_value: task.progress_value, // Also include original field
         assignees: task.assignees?.map((a: any) => a.team_member_id) || [],
         assignee_names: task.assignee_names || task.names || [],
         labels:
