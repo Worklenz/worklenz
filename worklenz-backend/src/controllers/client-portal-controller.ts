@@ -645,6 +645,9 @@ class ClientPortalController {
           s.service_data,
           s.is_public,
           s.allowed_client_ids,
+          s.price,
+          s.currency,
+          s.category,
           s.created_at,
           s.updated_at,
           u.name as created_by_name
@@ -669,6 +672,9 @@ class ClientPortalController {
         serviceData: service.service_data,
         isPublic: service.is_public,
         allowedClientIds: service.allowed_client_ids,
+        price: service.price,
+        currency: service.currency,
+        category: service.category,
         createdAt: service.created_at,
         updatedAt: service.updated_at,
         createdByName: service.created_by_name
@@ -699,6 +705,9 @@ class ClientPortalController {
 
       console.log("Service creation request received:", {
         name,
+        price,
+        currency,
+        category,
         hasImageData: !!imageData,
         imageName,
         imageType,
@@ -840,6 +849,9 @@ class ClientPortalController {
       console.log("Service update request received:", {
         id,
         name,
+        price,
+        currency,
+        category,
         hasImageData: !!imageData,
         imageName,
         imageType,
@@ -1017,7 +1029,15 @@ class ClientPortalController {
         RETURNING *
       `;
 
+      console.log("Update query:", updateQuery);
+      console.log("Query params:", queryParams);
+
       const result = await db.query(updateQuery, queryParams);
+      
+      console.log("Update result:", {
+        rowCount: result.rowCount,
+        updatedService: result.rows[0]
+      });
       const service = result.rows[0];
 
       return res.json(new ServerResponse(true, {

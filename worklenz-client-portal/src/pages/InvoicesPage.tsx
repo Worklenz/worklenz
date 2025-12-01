@@ -10,6 +10,7 @@ import {
   Empty,
   FileTextOutlined,
 } from "@/shared/antd-imports";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import clientPortalAPI from "@/services/api";
 import { ClientInvoice } from "@/types";
@@ -18,6 +19,7 @@ import type { TableProps } from "antd/lib";
 const { Title, Text } = Typography;
 
 const InvoicesPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<ClientInvoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,10 +41,10 @@ const InvoicesPage: React.FC = () => {
         setInvoices(data.invoices || []);
         setTotalInvoices(data.total || 0);
       } else {
-        setError("Failed to load invoices");
+        setError(t('invoices.errorLoading'));
       }
     } catch (err) {
-      setError("Failed to load invoices. Please try again later.");
+      setError(t('invoices.errorLoadingDescription'));
       console.error("Invoices API error:", err);
     } finally {
       setIsLoading(false);
@@ -67,13 +69,13 @@ const InvoicesPage: React.FC = () => {
   const getStatusText = (status: string) => {
     switch (status?.toLowerCase()) {
       case "paid":
-        return "Paid";
+        return t('invoices.paid');
       case "pending":
-        return "Pending";
+        return t('invoices.pending');
       case "overdue":
-        return "Overdue";
+        return t('invoices.overdue');
       case "cancelled":
-        return "Cancelled";
+        return t('invoices.cancelled');
       default:
         return status;
     }
@@ -92,11 +94,11 @@ const InvoicesPage: React.FC = () => {
           <Flex align="center" gap={12} style={{ marginBottom: 8 }}>
             <FileTextOutlined style={{ fontSize: 20 }} />
             <Title level={4} style={{ margin: 0, fontSize: "20px" }}>
-              Invoices
+              {t('invoices.title')}
             </Title>
           </Flex>
           <Text type="secondary" style={{ fontSize: "16px", lineHeight: 1.5 }}>
-            View and manage your invoices and payments
+            {t('invoices.description')}
           </Text>
         </div>
         <Card style={{ height: "calc(100vh - 280px)" }}>
@@ -128,15 +130,15 @@ const InvoicesPage: React.FC = () => {
           <Flex align="center" gap={12} style={{ marginBottom: 8 }}>
             <FileTextOutlined style={{ fontSize: 20 }} />
             <Title level={4} style={{ margin: 0, fontSize: "20px" }}>
-              Invoices
+              {t('invoices.title')}
             </Title>
           </Flex>
           <Text type="secondary" style={{ fontSize: "16px", lineHeight: 1.5 }}>
-            View and manage your invoices and payments
+            {t('invoices.description')}
           </Text>
         </div>
         <Card style={{ height: "calc(100vh - 280px)" }}>
-          <Alert message="Error loading invoices" description={error} type="error" showIcon />
+          <Alert message={t('invoices.errorLoading')} description={error} type="error" showIcon />
         </Card>
       </div>
     );
@@ -155,11 +157,11 @@ const InvoicesPage: React.FC = () => {
           <Flex align="center" gap={12} style={{ marginBottom: 8 }}>
             <FileTextOutlined style={{ fontSize: 20 }} />
             <Title level={4} style={{ margin: 0, fontSize: "20px" }}>
-              Invoices
+              {t('invoices.title')}
             </Title>
           </Flex>
           <Text type="secondary" style={{ fontSize: "16px", lineHeight: 1.5 }}>
-            View and manage your invoices and payments
+            {t('invoices.description')}
           </Text>
         </div>
         <Card style={{ height: "calc(100vh - 280px)" }}>
@@ -168,9 +170,9 @@ const InvoicesPage: React.FC = () => {
             description={
               <div>
                 <Title level={4} style={{ marginBottom: 8 }}>
-                  No invoices yet
+                  {t('invoices.noInvoicesYet')}
                 </Title>
-                <Text type="secondary">Your invoices will appear here when available</Text>
+                <Text type="secondary">{t('invoices.noInvoicesDescription')}</Text>
               </div>
             }
             style={{
@@ -189,7 +191,7 @@ const InvoicesPage: React.FC = () => {
   const columns: TableProps["columns"] = [
     {
       key: "invoiceNumber",
-      title: "Invoice #",
+      title: t('invoices.invoiceNo'),
       render: (record) => <Text strong>{record.invoiceNumber}</Text>,
       onCell: () => ({
         style: { minWidth: 140 },
@@ -197,7 +199,7 @@ const InvoicesPage: React.FC = () => {
     },
     {
       key: "serviceName",
-      title: "Service",
+      title: t('invoices.service'),
       render: (record) => <Text>{record.serviceName || "-"}</Text>,
       onCell: () => ({
         style: { minWidth: 200 },
@@ -205,7 +207,7 @@ const InvoicesPage: React.FC = () => {
     },
     {
       key: "amount",
-      title: "Amount",
+      title: t('invoices.amount'),
       render: (record) => (
         <Text strong>
           {new Intl.NumberFormat("en-US", {
@@ -220,7 +222,7 @@ const InvoicesPage: React.FC = () => {
     },
     {
       key: "status",
-      title: "Status",
+      title: t('invoices.status'),
       render: (record) => (
         <Tag color={getStatusColor(record.status)}>{getStatusText(record.status)}</Tag>
       ),
@@ -228,7 +230,7 @@ const InvoicesPage: React.FC = () => {
     },
     {
       key: "dueDate",
-      title: "Due Date",
+      title: t('invoices.dueDate'),
       render: (record) => (
         <Text>
           {record.dueDate ? new Date(record.dueDate).toLocaleDateString() : "-"}
@@ -250,11 +252,11 @@ const InvoicesPage: React.FC = () => {
         <Flex align="center" gap={12} style={{ marginBottom: 8 }}>
           <FileTextOutlined style={{ fontSize: 20 }} />
           <Title level={4} style={{ margin: 0, fontSize: "20px" }}>
-            Invoices
+            {t('invoices.title')}
           </Title>
         </Flex>
         <Text type="secondary" style={{ fontSize: "16px", lineHeight: 1.5 }}>
-          View and manage your invoices and payments
+          {t('invoices.description')}
         </Text>
       </div>
 

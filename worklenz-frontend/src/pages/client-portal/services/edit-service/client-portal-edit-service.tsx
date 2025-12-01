@@ -87,6 +87,9 @@ const ClientPortalEditService = () => {
       setService({
         id: fetchedService.id,
         name: fetchedService.name,
+        price: fetchedService.price,
+        currency: fetchedService.currency,
+        category: fetchedService.category,
         service_data: {
           description: fetchedService.service_data?.description || '',
           images: fetchedService.service_data?.images || [],

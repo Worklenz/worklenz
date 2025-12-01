@@ -67,6 +67,13 @@ const ClientLayout: React.FC = () => {
     // }
   }, [notificationsData]);
 
+  // Sync i18n language with Redux state on mount
+  React.useEffect(() => {
+    if (currentLanguage && i18n.language !== currentLanguage) {
+      i18n.changeLanguage(currentLanguage);
+    }
+  }, [currentLanguage, i18n]);
+
   const handleLogout = () => {
     dispatch(logout());
     navigate('/auth/login');
@@ -76,9 +83,13 @@ const ClientLayout: React.FC = () => {
     dispatch(setTheme(currentTheme === 'light' ? 'dark' : 'light'));
   };
 
-  const handleLanguageChange = (language: string) => {
-    dispatch(setLanguage(language));
-    i18n.changeLanguage(language);
+  const handleLanguageChange = async (language: string) => {
+    try {
+      await i18n.changeLanguage(language);
+      dispatch(setLanguage(language));
+    } catch (error) {
+      console.error('Failed to change language:', error);
+    }
   };
 
   const languageOptions = [

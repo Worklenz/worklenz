@@ -15,12 +15,14 @@ import {
   ClockCircleOutlined,
   DollarOutlined,
 } from "@/shared/antd-imports";
+import { useTranslation } from "react-i18next";
 import clientPortalAPI from "@/services/api";
 import { DashboardStats } from "@/types";
 
 const { Title, Paragraph } = Typography;
 
 const DashboardPage: React.FC = () => {
+  const { t } = useTranslation();
   const [dashboardData, setDashboardData] = useState<DashboardStats | null>(
     null
   );
@@ -35,10 +37,10 @@ const DashboardPage: React.FC = () => {
         if (response.done) {
           setDashboardData(response.body as DashboardStats);
         } else {
-          setError("Failed to load dashboard data");
+          setError(t('dashboard.errorLoading'));
         }
       } catch (err) {
-        setError("Failed to load dashboard data. Please try again later.");
+        setError(t('dashboard.errorLoadingDescription'));
         console.error("Dashboard API error:", err);
       } finally {
         setIsLoading(false);
@@ -52,13 +54,13 @@ const DashboardPage: React.FC = () => {
     return (
       <div style={{ textAlign: "center", padding: "50px" }}>
         <Spin size="large" />
-        <div style={{ marginTop: "16px" }}>Loading dashboard...</div>
+        <div style={{ marginTop: "16px" }}>{t('dashboard.loading')}</div>
       </div>
     );
   }
 
   if (error) {
-    return <Alert message="Error" description={error} type="error" showIcon />;
+    return <Alert message={t('dashboard.error')} description={error} type="error" showIcon />;
   }
 
   const stats = dashboardData || {
@@ -80,10 +82,10 @@ const DashboardPage: React.FC = () => {
     <Flex vertical gap={24} style={{ width: "100%" }}>
       <Flex vertical gap={8}>
         <Title level={1} style={{ margin: 0 }}>
-          Dashboard
+          {t('dashboard.title')}
         </Title>
         <Paragraph type="secondary" style={{ margin: 0 }}>
-          Welcome to your client portal dashboard
+          {t('dashboard.welcome')}
         </Paragraph>
       </Flex>
 
@@ -92,7 +94,7 @@ const DashboardPage: React.FC = () => {
         <Col xs={24} sm={12} lg={8}>
           <Card>
             <Statistic
-              title="Total Projects"
+              title={t('dashboard.totalProjects')}
               value={stats.totalProjects}
               prefix={<ProjectOutlined />}
               valueStyle={{ color: "#722ed1" }}
@@ -103,7 +105,7 @@ const DashboardPage: React.FC = () => {
         <Col xs={24} sm={12} lg={8}>
           <Card>
             <Statistic
-              title="Active Projects"
+              title={t('dashboard.activeProjects')}
               value={stats.activeProjects}
               prefix={<ProjectOutlined />}
               valueStyle={{ color: "#1890ff" }}
@@ -114,7 +116,7 @@ const DashboardPage: React.FC = () => {
         <Col xs={24} sm={12} lg={8}>
           <Card>
             <Statistic
-              title="Completed Projects"
+              title={t('dashboard.completedProjects')}
               value={stats.completedProjects}
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: "#3f8600" }}
@@ -128,7 +130,7 @@ const DashboardPage: React.FC = () => {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Total Requests"
+              title={t('dashboard.totalRequests')}
               value={stats.totalRequests}
               prefix={<FileTextOutlined />}
               valueStyle={{ color: "#595959" }}
@@ -139,7 +141,7 @@ const DashboardPage: React.FC = () => {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Pending"
+              title={t('dashboard.pending')}
               value={stats.pendingRequests}
               prefix={<ClockCircleOutlined />}
               valueStyle={{ color: "#faad14" }}
@@ -150,7 +152,7 @@ const DashboardPage: React.FC = () => {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="In Progress"
+              title={t('dashboard.inProgress')}
               value={stats.inProgressRequests}
               prefix={<FileTextOutlined />}
               valueStyle={{ color: "#1890ff" }}
@@ -161,7 +163,7 @@ const DashboardPage: React.FC = () => {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Completed"
+              title={t('dashboard.completed')}
               value={stats.completedRequests}
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: "#52c41a" }}
@@ -175,7 +177,7 @@ const DashboardPage: React.FC = () => {
         <Col xs={24} sm={12} lg={8}>
           <Card>
             <Statistic
-              title="Total Invoices"
+              title={t('dashboard.totalInvoices')}
               value={stats.totalInvoices}
               prefix={<FileDoneOutlined />}
               valueStyle={{ color: "#13c2c2" }}
@@ -186,7 +188,7 @@ const DashboardPage: React.FC = () => {
         <Col xs={24} sm={12} lg={8}>
           <Card>
             <Statistic
-              title="Unpaid Invoices"
+              title={t('dashboard.unpaidInvoices')}
               value={stats.unpaidInvoices}
               prefix={<FileDoneOutlined />}
               valueStyle={{ color: "#cf1322" }}
@@ -197,7 +199,7 @@ const DashboardPage: React.FC = () => {
         <Col xs={24} sm={12} lg={8}>
           <Card>
             <Statistic
-              title="Unpaid Amount"
+              title={t('dashboard.unpaidAmount')}
               value={stats.unpaidAmount}
               prefix={<DollarOutlined />}
               precision={2}

@@ -218,6 +218,7 @@ const ServicesTable = () => {
         onRow={record => {
           return {
             style: { cursor: 'pointer' },
+            onClick: () => handleEdit(record.id),
           };
         }}
       />

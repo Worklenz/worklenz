@@ -19,6 +19,7 @@ import {
   ReloadOutlined,
   MessageOutlined 
 } from '@/shared/antd-imports';
+import { useTranslation } from 'react-i18next';
 import clientPortalAPI from '@/services/api';
 import { ClientMessage, ClientChat, ApiResponse } from '@/types';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -32,6 +33,7 @@ interface ChatListItem extends ClientChat {
 }
 
 const ChatsPage: React.FC = () => {
+  const { t } = useTranslation();
   const [chats, setChats] = useState<ChatListItem[]>([]);
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [messages, setMessages] = useState<ClientMessage[]>([]);
@@ -69,7 +71,7 @@ const ChatsPage: React.FC = () => {
         const chatList: ChatListItem[] = (response.body.chats as ClientChat[]).map((chat, index) => ({
           ...chat,
           id: `chat-${index}`,
-          title: `Chat - ${new Date(chat.date).toLocaleDateString()}`
+          title: t('chats.chatTitle', { date: new Date(chat.date).toLocaleDateString() })
         }));
         setChats(chatList);
         
@@ -78,11 +80,11 @@ const ChatsPage: React.FC = () => {
           setSelectedChat(chatList[0].id);
         }
       } else {
-        setError('Failed to load chats');
+        setError(t('chats.errorLoadingChats'));
       }
     } catch (err) {
       console.error('Error loading chats:', err);
-      setError('Failed to load chats. Please try again later.');
+      setError(t('chats.errorLoadingChatsRetry'));
     } finally {
       setIsLoading(false);
     }
@@ -98,11 +100,11 @@ const ChatsPage: React.FC = () => {
       if (response.done && response.body) {
         setMessages(response.body.messages as ClientMessage[]);
       } else {
-        setError('Failed to load messages');
+        setError(t('chats.errorLoadingMessages'));
       }
     } catch (err) {
       console.error('Error loading messages:', err);
-      setError('Failed to load messages. Please try again later.');
+      setError(t('chats.errorLoadingMessagesRetry'));
     } finally {
       setIsMessagesLoading(false);
     }
@@ -121,13 +123,13 @@ const ChatsPage: React.FC = () => {
       if (response.done && response.body) {
         setMessages(prev => [...prev, response.body as ClientMessage]);
         setNewMessage('');
-        message.success('Message sent successfully');
+        message.success(t('chats.messageSentSuccess'));
       } else {
-        message.error('Failed to send message');
+        message.error(t('chats.messageSendError'));
       }
     } catch (err) {
       console.error('Error sending message:', err);
-      message.error('Failed to send message. Please try again.');
+      message.error(t('chats.messageSendRetry'));
     } finally {
       setIsSending(false);
     }
@@ -149,19 +151,19 @@ const ChatsPage: React.FC = () => {
       const uploadResponse = await clientPortalAPI.uploadFile(file, 'chat');
       if (uploadResponse.done && uploadResponse.body) {
         const messageResponse = await clientPortalAPI.sendMessage({
-          message: `Shared a file: ${file.name}`,
+          message: t('chats.sharedFile', { fileName: file.name }),
           messageType: 'file',
           fileUrl: uploadResponse.body.url
         });
         
         if (messageResponse.done && messageResponse.body) {
           setMessages(prev => [...prev, messageResponse.body as ClientMessage]);
-          message.success('File uploaded and sent successfully');
+          message.success(t('chats.fileUploadSuccess'));
         }
       }
     } catch (err) {
       console.error('Error uploading file:', err);
-      message.error('Failed to upload file');
+      message.error(t('chats.fileUploadError'));
     }
     return false; // Prevent default upload behavior
   };
@@ -218,7 +220,7 @@ const ChatsPage: React.FC = () => {
             {msg.messageType === 'file' && msg.fileUrl && (
               <div style={{ marginTop: 8 }}>
                 <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">
-                  <PaperClipOutlined /> Download File
+                  <PaperClipOutlined /> {t('chats.downloadFile')}
                 </a>
               </div>
             )}
@@ -240,13 +242,13 @@ const ChatsPage: React.FC = () => {
     return (
       <Flex vertical gap={24} style={{ width: '100%' }}>
         <Alert
-          message="Error"
+          message={t('chats.errorLoading')}
           description={error}
           type="error"
           showIcon
           action={
             <Button size="small" onClick={loadChats}>
-              <ReloadOutlined /> Retry
+              <ReloadOutlined /> {t('chats.retry')}
             </Button>
           }
         />
@@ -259,20 +261,20 @@ const ChatsPage: React.FC = () => {
       <Flex vertical gap={8}>
         <Flex align="center" gap={12}>
           <MessageOutlined style={{ fontSize: 20 }} />
-          <Title level={1} style={{ margin: 0 }}>Chats</Title>
+          <Title level={1} style={{ margin: 0 }}>{t('chats.title')}</Title>
           {getTotalUnreadCount() > 0 && (
             <Badge count={getTotalUnreadCount()} style={{ backgroundColor: '#ff4d4f' }} />
           )}
         </Flex>
         <Paragraph type="secondary" style={{ margin: 0 }}>
-          Communicate with your service providers
+          {t('chats.description')}
         </Paragraph>
       </Flex>
       
       <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 248px)' }}>
         {/* Chat List */}
         <Card 
-          title="Conversations" 
+          title={t('chats.conversations')} 
           style={{ width: 320, height: '100%' }}
           bodyStyle={{ padding: 0, height: 'calc(100% - 57px)', overflow: 'auto' }}
           extra={
@@ -314,7 +316,7 @@ const ChatsPage: React.FC = () => {
                       <Text type="secondary" style={{ fontSize: '12px' }}>
                         {chat.lastMessageAt ? 
                           new Date(chat.lastMessageAt).toLocaleDateString() : 
-                          'No messages yet'
+                          t('chats.noMessagesYet')
                         }
                       </Text>
                     }
@@ -327,7 +329,7 @@ const ChatsPage: React.FC = () => {
 
         {/* Chat Messages */}
         <Card 
-          title={selectedChat ? `Chat Messages` : 'Select a conversation'}
+          title={selectedChat ? t('chats.chatMessages') : t('chats.selectConversation')}
           style={{ flex: 1, height: '100%' }}
           bodyStyle={{ 
             padding: 0, 
@@ -355,7 +357,7 @@ const ChatsPage: React.FC = () => {
                     </>
                   ) : (
                     <div style={{ textAlign: 'center', padding: '50px' }}>
-                      <Text type="secondary">No messages yet. Start the conversation!</Text>
+                      <Text type="secondary">{t('chats.noMessagesYet')}</Text>
                     </div>
                   )}
                 </Spin>
@@ -370,7 +372,7 @@ const ChatsPage: React.FC = () => {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="Type your message..."
+                    placeholder={t('chats.typeMessage')}
                     autoSize={{ minRows: 1, maxRows: 4 }}
                     style={{ flex: 1 }}
                   />
@@ -388,7 +390,7 @@ const ChatsPage: React.FC = () => {
                     loading={isSending}
                     disabled={!newMessage.trim()}
                   >
-                    Send
+                    {t('chats.send')}
                   </Button>
                 </Space.Compact>
               </div>
@@ -400,7 +402,7 @@ const ChatsPage: React.FC = () => {
               justifyContent: 'center',
               height: '100%'
             }}>
-              <Text type="secondary">Select a conversation to start chatting</Text>
+              <Text type="secondary">{t('chats.selectToStart')}</Text>
             </div>
           )}
         </Card>

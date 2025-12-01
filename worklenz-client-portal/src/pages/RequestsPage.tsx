@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Typography, Table, Tag, Button, Flex, Empty, Spin, Alert } from '@/shared/antd-imports';
 import { EyeOutlined, PlusOutlined } from '@/shared/antd-imports';
+import { useTranslation } from 'react-i18next';
 import { useGetRequestsQuery } from '@/store/api';
 import { useNavigate } from 'react-router-dom';
 import { ClientRequest } from '@/types';
@@ -8,6 +9,7 @@ import { ClientRequest } from '@/types';
 const { Title, Paragraph } = Typography;
 
 const RequestsPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -30,25 +32,25 @@ const RequestsPage: React.FC = () => {
 
   const columns = [
     {
-      title: 'Request No.',
+      title: t('requests.requestNo'),
       dataIndex: 'req_no',
       key: 'req_no',
       width: 140,
     },
     {
-      title: 'Service',
+      title: t('requests.service'),
       dataIndex: 'service',
       key: 'service',
       ellipsis: true,
     },
     {
-      title: 'Title',
+      title: t('requests.requestTitle'),
       dataIndex: 'title',
       key: 'title',
       ellipsis: true,
     },
     {
-      title: 'Status',
+      title: t('requests.status'),
       dataIndex: 'status',
       key: 'status',
       width: 120,
@@ -59,14 +61,14 @@ const RequestsPage: React.FC = () => {
       ),
     },
     {
-      title: 'Created',
+      title: t('requests.created'),
       dataIndex: 'time',
       key: 'time',
       width: 120,
       render: (date: string) => new Date(date).toLocaleDateString(),
     },
     {
-      title: 'Action',
+      title: t('requests.action'),
       key: 'action',
       width: 100,
       render: (record: ClientRequest) => (
@@ -75,7 +77,7 @@ const RequestsPage: React.FC = () => {
           icon={<EyeOutlined />}
           onClick={() => navigate(`/requests/${record.id}`)}
         >
-          View
+          {t('requests.view')}
         </Button>
       ),
     },
@@ -85,16 +87,16 @@ const RequestsPage: React.FC = () => {
     return (
       <Flex vertical gap={24} style={{ width: '100%' }}>
         <Flex vertical gap={8}>
-          <Title level={1} style={{ margin: 0 }}>Requests</Title>
+          <Title level={1} style={{ margin: 0 }}>{t('requests.title')}</Title>
           <Paragraph type="secondary" style={{ margin: 0 }}>
-            Submit and track your service requests
+            {t('requests.description')}
           </Paragraph>
         </Flex>
         
         <Card>
           <Alert
-            message="Error loading requests"
-            description="Failed to load requests. Please try again."
+            message={t('requests.errorLoading')}
+            description={t('requests.errorLoadingDescription')}
             type="error"
             showIcon
           />
@@ -107,9 +109,9 @@ const RequestsPage: React.FC = () => {
     <Flex vertical gap={24} style={{ width: '100%' }}>
       <Flex justify="space-between" align="center">
         <Flex vertical gap={8}>
-          <Title level={1} style={{ margin: 0 }}>Requests</Title>
+          <Title level={1} style={{ margin: 0 }}>{t('requests.title')}</Title>
           <Paragraph type="secondary" style={{ margin: 0 }}>
-            Submit and track your service requests
+            {t('requests.description')}
           </Paragraph>
         </Flex>
         <Button
@@ -117,7 +119,7 @@ const RequestsPage: React.FC = () => {
           icon={<PlusOutlined />}
           onClick={() => navigate('/requests/new')}
         >
-          New Request
+          {t('requests.newRequest')}
         </Button>
       </Flex>
       
@@ -135,7 +137,7 @@ const RequestsPage: React.FC = () => {
               showSizeChanger: true,
               showQuickJumper: true,
               showTotal: (total: number, range: [number, number]) =>
-                `${range[0]}-${range[1]} of ${total} requests`,
+                t('requests.showingRange', { start: range[0], end: range[1], total }),
               onChange: (newPage: number, newPageSize: number) => {
                 setPage(newPage);
                 setPageSize(newPageSize);
@@ -147,7 +149,7 @@ const RequestsPage: React.FC = () => {
           />
         ) : (
           <Empty
-            description="No requests found"
+            description={t('requests.noRequests')}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           >
             <Button
@@ -155,7 +157,7 @@ const RequestsPage: React.FC = () => {
               icon={<PlusOutlined />}
               onClick={() => navigate('/requests/new')}
             >
-              Create Your First Request
+              {t('requests.createFirst')}
             </Button>
           </Empty>
         )}

@@ -362,6 +362,9 @@ export default class ClientsController extends WorklenzControllerBase {
              s.status,
              s.is_public,
              s.service_data,
+             s.price,
+             s.currency,
+             s.category,
              s.created_at,
              s.updated_at,
              s.created_by,
@@ -393,6 +396,9 @@ export default class ClientsController extends WorklenzControllerBase {
       service_data, 
       is_public, 
       allowed_client_ids,
+      price,
+      currency,
+      category,
       // Image upload fields
       imageData,
       imageName,
@@ -450,9 +456,10 @@ export default class ClientsController extends WorklenzControllerBase {
     const q = `
       INSERT INTO client_portal_services (
         name, description, service_data, is_public, allowed_client_ids, 
+        price, currency, category,
         team_id, organization_team_id, created_by, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active')
-      RETURNING id, name, description, status, is_public, created_at, service_data
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'active')
+      RETURNING id, name, description, status, is_public, created_at, service_data, price, currency, category
     `;
 
     const values = [
@@ -461,6 +468,9 @@ export default class ClientsController extends WorklenzControllerBase {
       finalServiceData ? JSON.stringify(finalServiceData) : null,
       is_public || false,
       allowed_client_ids || null,
+      price || null,
+      currency || null,
+      category || null,
       teamId,
       teamId,
       userId
@@ -483,6 +493,9 @@ export default class ClientsController extends WorklenzControllerBase {
       is_public, 
       allowed_client_ids, 
       status,
+      price,
+      currency,
+      category,
       // Image upload fields
       imageData,
       imageName,
@@ -605,6 +618,24 @@ export default class ClientsController extends WorklenzControllerBase {
       paramIndex++;
     }
 
+    if (price !== undefined) {
+      updateFields.push(`price = $${paramIndex}`);
+      updateValues.push(price);
+      paramIndex++;
+    }
+
+    if (currency !== undefined) {
+      updateFields.push(`currency = $${paramIndex}`);
+      updateValues.push(currency);
+      paramIndex++;
+    }
+
+    if (category !== undefined) {
+      updateFields.push(`category = $${paramIndex}`);
+      updateValues.push(category);
+      paramIndex++;
+    }
+
     if (updateFields.length === 1) {
       return res.status(400).send(new ServerResponse(false, null, "No valid fields to update"));
     }
@@ -613,7 +644,7 @@ export default class ClientsController extends WorklenzControllerBase {
       UPDATE client_portal_services 
       SET ${updateFields.join(", ")}
       WHERE id = $1 AND organization_team_id = $2
-      RETURNING id, name, description, status, is_public, updated_at, service_data
+      RETURNING id, name, description, status, is_public, updated_at, service_data, price, currency, category
     `;
 
     const result = await db.query(q, updateValues);
