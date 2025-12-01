@@ -54,8 +54,10 @@ export const validateInviteToken = createAsyncThunk(
       } else {
         throw new Error(response.message || 'Invalid invite token');
       }
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Invalid invite token');
+    } catch (error: any) {
+      // Extract error message from API response
+      const errorMessage = error?.response?.data?.message || error?.message || 'Invalid invite token';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -80,8 +82,11 @@ export const acceptInvite = createAsyncThunk(
       } else {
         throw new Error(response.message || 'Failed to accept invite');
       }
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to accept invite');
+    } catch (error: any) {
+      // Extract error message from API response
+      const messageKey = error?.response?.data?.messageKey;
+      const message = error?.response?.data?.message || error?.message || 'Failed to accept invite';
+      return rejectWithValue(messageKey || message);
     }
   }
 );

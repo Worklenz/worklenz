@@ -687,6 +687,9 @@ class ClientPortalController {
         service_data, 
         is_public = false, 
         allowed_client_ids = [],
+        price,
+        currency,
+        category,
         // Image upload fields
         imageData,
         imageName,
@@ -766,8 +769,9 @@ class ClientPortalController {
       const query = `
         INSERT INTO client_portal_services (
           name, description, service_data, is_public, allowed_client_ids,
+          price, currency, category,
           team_id, organization_team_id, created_by
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING *
       `;
 
@@ -777,6 +781,9 @@ class ClientPortalController {
         JSON.stringify(finalServiceData), // Ensure proper JSON stringification
         is_public,
         allowed_client_ids,
+        price,
+        currency,
+        category,
         organizationId, // team_id
         organizationId, // organization_team_id
         clientUserId
@@ -798,6 +805,9 @@ class ClientPortalController {
         serviceData: service.service_data,
         isPublic: service.is_public,
         allowedClientIds: service.allowed_client_ids,
+        price: service.price,
+        currency: service.currency,
+        category: service.category,
         createdAt: service.created_at,
         updatedAt: service.updated_at
       }, "Service created successfully"));
@@ -817,6 +827,9 @@ class ClientPortalController {
         is_public, 
         allowed_client_ids, 
         status,
+        price,
+        currency,
+        category,
         // Image upload fields
         imageData,
         imageName,
@@ -966,6 +979,21 @@ class ClientPortalController {
         updateFields.push(`status = $${paramCount}`);
         queryParams.push(status);
       }
+      if (price !== undefined) {
+        paramCount++;
+        updateFields.push(`price = $${paramCount}`);
+        queryParams.push(price);
+      }
+      if (currency !== undefined) {
+        paramCount++;
+        updateFields.push(`currency = $${paramCount}`);
+        queryParams.push(currency);
+      }
+      if (category !== undefined) {
+        paramCount++;
+        updateFields.push(`category = $${paramCount}`);
+        queryParams.push(category);
+      }
 
       if (updateFields.length === 0) {
         return res.status(400).json(new ServerResponse(false, null, "No fields to update"));
@@ -1000,6 +1028,9 @@ class ClientPortalController {
         serviceData: service.service_data,
         isPublic: service.is_public,
         allowedClientIds: service.allowed_client_ids,
+        price: service.price,
+        currency: service.currency,
+        category: service.category,
         createdAt: service.created_at,
         updatedAt: service.updated_at
       }, "Service updated successfully"));
@@ -3649,36 +3680,32 @@ class ClientPortalController {
         return res.status(404).json(new ServerResponse(false, null, "Client not found"));
       }
 
-      // Check if client has any projects
-      const projectCheck = await db.query(
-        "SELECT COUNT(*) as project_count FROM projects WHERE client_id = $1",
-        [id]
-      );
-
-      const projectCount = parseInt(projectCheck.rows[0]?.project_count || "0");
-      if (projectCount > 0) {
-        return res.status(400).json(new ServerResponse(false, null, "Cannot delete client with assigned projects"));
-      }
-
-      // Delete the client
-      const deleteResult = await db.query(
-        "DELETE FROM clients WHERE id = $1 AND team_id = $2",
+      // Deactivate the client instead of deleting (soft delete)
+      const deactivateResult = await db.query(
+        "UPDATE clients SET status = 'inactive', updated_at = NOW() WHERE id = $1 AND team_id = $2",
         [id, teamId]
       );
 
-      if (deleteResult.rowCount === 0) {
+      if (deactivateResult.rowCount === 0) {
         return res.status(404).json(new ServerResponse(false, null, "Client not found"));
       }
 
-      return res.json(new ServerResponse(true, null, "Client deleted successfully"));
+      // Also deactivate all client users for this client
+      await db.query(
+        "UPDATE client_users SET status = 'inactive' WHERE client_id = $1",
+        [id]
+      );
+
+      return res.json(new ServerResponse(true, null, "Client deactivated successfully"));
     } catch (error) {
-      console.error("Error deleting client:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to delete client"));
+      console.error("Error deactivating client:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to deactivate client"));
     }
   }
 
   // Client Projects
   static async getClientProjects(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    // ...
     try {
       const { id } = req.params;
       const { page = 1, limit = 10, status } = req.query;
@@ -4836,26 +4863,22 @@ class ClientPortalController {
         return res.status(400).json(new ServerResponse(false, null, "Some clients not found or not accessible"));
       }
 
-      // Check if any clients have projects
-      const projectCheck = await db.query(
-        "SELECT client_id FROM projects WHERE client_id = ANY($1)",
-        [client_ids]
-      );
-
-      if (projectCheck.rows.length > 0) {
-        return res.status(400).json(new ServerResponse(false, null, "Cannot delete clients with assigned projects"));
-      }
-
-      // Delete all clients
-      const deleteResult = await db.query(
-        "DELETE FROM clients WHERE id = ANY($1) AND team_id = $2",
+      // Deactivate all clients instead of deleting (soft delete)
+      const deactivateResult = await db.query(
+        "UPDATE clients SET status = 'inactive', updated_at = NOW() WHERE id = ANY($1) AND team_id = $2",
         [client_ids, teamId]
       );
 
-      return res.json(new ServerResponse(true, { deleted_count: deleteResult.rowCount }, "Clients deleted successfully"));
+      // Also deactivate all client users for these clients
+      await db.query(
+        "UPDATE client_users SET status = 'inactive' WHERE client_id = ANY($1)",
+        [client_ids]
+      );
+
+      return res.json(new ServerResponse(true, { deactivated_count: deactivateResult.rowCount }, "Clients deactivated successfully"));
     } catch (error) {
-      console.error("Error bulk deleting clients:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to delete clients"));
+      console.error("Error bulk deactivating clients:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to deactivate clients"));
     }
   }
 
@@ -4916,15 +4939,21 @@ class ClientPortalController {
         );
 
         if (existingUserCheck.rows.length > 0) {
-          return res.status(400).json(new ServerResponse(false, null, "A user with this email already exists. Please login instead."));
+          return res.status(400).json({
+            done: false,
+            body: null,
+            title: "Email Already Registered",
+            message: "A user with this email already exists. Please login instead.",
+            messageKey: "errors.email_already_registered_message" // For frontend i18n
+          });
         }
 
         // Create a client record for this organization
         const clientResult = await db.query(
-          `INSERT INTO clients (name, team_id, status, created_at, updated_at)
-           VALUES ($1, $2, 'active', NOW(), NOW())
+          `INSERT INTO clients (name, email, team_id, status, client_portal_enabled, created_at, updated_at)
+           VALUES ($1, $2, $3, 'active', TRUE, NOW(), NOW())
            RETURNING id`,
-          [name, orgInvitePayload.teamId]
+          [name, req.body.email, orgInvitePayload.teamId]
         );
         
         const clientId = clientResult.rows[0].id;
@@ -4943,14 +4972,6 @@ class ClientPortalController {
         );
 
         const newUser = userResult.rows[0];
-
-        // Create client portal access record with full permissions
-        await db.query(
-          `INSERT INTO client_portal_access (client_id, is_active, created_at, updated_at)
-           VALUES ($1, TRUE, NOW(), NOW())
-           ON CONFLICT (client_id) DO UPDATE SET is_active = TRUE, updated_at = NOW()`,
-          [clientId]
-        );
 
         // Generate client access token
         const permissions = await TokenService.getClientPermissions(clientId);

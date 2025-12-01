@@ -31,6 +31,9 @@ export type TempServicesType = {
   name: string;
   status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'rejected';
   created_by?: string;
+  price?: number | null;
+  currency?: string;
+  category?: string;
   service_data?: {
     description?: ReactNode | string;
     images?: string[] | null;

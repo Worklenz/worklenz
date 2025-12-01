@@ -31,14 +31,21 @@
   "settingsTooltip": "Settings",
   "shareTooltip": "Share",
   "deleteTooltip": "Delete",
+  "deactivateTooltip": "Deactivate Client",
 
   "deleteConfirmationTitle": "Delete Client",
   "deleteConfirmationDescription": "Are you sure you want to delete this client? This action cannot be undone.",
   "deleteConfirmationOk": "Delete",
   "deleteConfirmationCancel": "Cancel",
 
+  "deactivateConfirmationTitle": "Deactivate Client",
+  "deactivateConfirmationDescription": "Are you sure you want to deactivate this client? They will lose access to the portal, but all data will be preserved.",
+  "deactivateConfirmationOk": "Deactivate",
+  "deactivateConfirmationCancel": "Cancel",
+
   "searchClientsPlaceholder": "Search clients...",
   "portalStatusFilterPlaceholder": "Filter by portal status",
+  "statusFilterPlaceholder": "Filter by status",
 
   "paginationText": "Showing",
   "ofText": "of",
@@ -77,6 +84,8 @@
   "updateClientErrorMessage": "Failed to update client",
   "deleteClientSuccessMessage": "Client deleted successfully",
   "deleteClientErrorMessage": "Failed to delete client",
+  "deactivateClientSuccessMessage": "Client deactivated successfully",
+  "deactivateClientErrorMessage": "Failed to deactivate client",
 
   "clientPortalAccessTitle": "Client Portal Access",
   "clientPortalAccessDescription": "Share this link with your client to give them access to their portal",
@@ -103,6 +112,7 @@
 
   "closeButton": "Close",
   "deleteButton": "Delete Client",
+  "deactivateButton": "Deactivate Client",
 
   "clientInformationTitle": "Client Information",
   "createdAtLabel": "Created",
@@ -159,9 +169,12 @@
   "markPendingSelected": "Mark Pending",
   "deleteSelected": "Delete Selected",
   "selectClientsToDelete": "Please select clients to delete",
+  "selectClientsToDeactivate": "Please select clients to deactivate",
   "selectClientsToUpdate": "Please select clients to update",
   "bulkDeleteSuccessMessage": "Selected clients deleted successfully",
   "bulkDeleteErrorMessage": "Failed to delete selected clients",
+  "bulkDeactivateSuccessMessage": "Selected clients deactivated successfully",
+  "bulkDeactivateErrorMessage": "Failed to deactivate selected clients",
   "bulkUpdateSuccessMessage": "Selected clients updated successfully",
   "bulkUpdateErrorMessage": "Failed to update selected clients",
 

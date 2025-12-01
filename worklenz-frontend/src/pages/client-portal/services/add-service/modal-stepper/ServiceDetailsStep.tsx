@@ -1,6 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Input,
+  InputNumber,
+  Select,
   Button,
   message,
   Card,
@@ -8,6 +10,8 @@ import {
   Alert,
   Progress,
   Flex,
+  Row,
+  Col,
   theme,
 } from '@/shared/antd-imports';
 import { PlusOutlined, DeleteOutlined, UploadOutlined, CheckCircleOutlined } from '@ant-design/icons';
@@ -15,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { RcFile } from 'antd/es/upload';
 import { getBase64 } from '@/utils/file-utils';
 import RichTextEditor from '@/components/shared/RichTextEditor';
+import { CURRENCY_OPTIONS } from '@/shared/currencies';
 
 interface ServiceDetailsStepProps {
   setCurrent: (step: number) => void;
@@ -312,11 +317,77 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
             </div>
           </Card>
 
+          {/* Pricing and Category Section */}
+          <Card 
+            title={
+              <Flex align="center" gap={8}>
+                <span>3. Pricing & Category</span>
+                <Typography.Text type="secondary" style={{ fontWeight: 'normal', fontSize: 12 }}>
+                  (Optional)
+                </Typography.Text>
+              </Flex>
+            }
+            size="small"
+            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+          >
+            <div style={{ marginBottom: 16 }}>
+              <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+                Set pricing information and categorize your service for better organization.
+              </Typography.Text>
+              
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
+                    Price
+                  </Typography.Text>
+                  <InputNumber
+                    style={{ width: '100%' }}
+                    min={0}
+                    precision={2}
+                    placeholder="e.g., 99.99"
+                    value={service.price}
+                    onChange={value => setService({ ...service, price: value })}
+                  />
+                </Col>
+                <Col span={12}>
+                  <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
+                    Currency
+                  </Typography.Text>
+                  <Select
+                    style={{ width: '100%' }}
+                    placeholder="Select currency"
+                    value={service.currency || 'usd'}
+                    onChange={value => setService({ ...service, currency: value })}
+                    options={CURRENCY_OPTIONS}
+                    showSearch
+                    filterOption={(input, option) =>
+                      (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                    }
+                  />
+                </Col>
+              </Row>
+              
+              <div style={{ marginTop: 16 }}>
+                <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
+                  Category
+                </Typography.Text>
+                <Input
+                  placeholder="e.g., Web Development, Design, Marketing"
+                  value={service.category || ''}
+                  onChange={e => setService({ ...service, category: e.target.value })}
+                />
+                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+                  💡 Categories help organize your services for clients
+                </Typography.Text>
+              </div>
+            </div>
+          </Card>
+
           {/* Service Description Section */}
           <Card 
             title={
               <Flex align="center" gap={8}>
-                <span>3. Service Description</span>
+                <span>4. Service Description</span>
                 {service.service_data?.description?.trim() && <CheckCircleOutlined style={{ color: token.colorSuccess }} />}
               </Flex>
             }

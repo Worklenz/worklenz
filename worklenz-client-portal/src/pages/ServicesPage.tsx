@@ -16,6 +16,19 @@ const ServicesPage: React.FC = () => {
   
   const services = servicesData?.body || [];
 
+  // Helper function to strip HTML tags and truncate text
+  const stripHtmlAndTruncate = (html: string, maxLength: number = 100): string => {
+    if (!html) return '';
+    // Remove HTML tags
+    const text = html.replace(/<[^>]*>/g, '');
+    // Decode HTML entities
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    const decoded = textarea.value;
+    // Truncate if needed
+    return decoded.length > maxLength ? decoded.substring(0, maxLength) + '...' : decoded;
+  };
+
   // Handle loading state
   if (isLoading) {
     return (
@@ -80,13 +93,15 @@ const ServicesPage: React.FC = () => {
             >
               <Card.Meta
                 title={service.name}
-                description={service.description || t('services.noDescription', 'No description available')}
+                description={stripHtmlAndTruncate(service.description) || t('services.noDescription', 'No description available')}
               />
-              <div style={{ marginTop: 12 }}>
-                <Typography.Text type="secondary">
-                  {t('services.price', { price: service.price, currency: service.currency, defaultValue: `${service.currency} ${service.price}` })}
-                </Typography.Text>
-              </div>
+              {(service.price !== null && service.price !== undefined) && (
+                <div style={{ marginTop: 12 }}>
+                  <Typography.Text type="secondary">
+                    {service.currency || 'USD'} {service.price}
+                  </Typography.Text>
+                </div>
+              )}
             </Card>
           ))}
         </Flex>

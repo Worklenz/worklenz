@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { TempServicesType } from '../../../../../types/client-portal/temp-client-portal.types';
 import { useCreateOrganizationServiceMutation } from '../../../../../api/client-portal/client-portal-api';
 import { useNavigate } from 'react-router-dom';
+import { getCurrencyLabel } from '@/shared/currencies';
 
 type PreviewAndSubmitStepProps = {
   setCurrent: (index: number) => void;
@@ -91,6 +92,9 @@ const PreviewAndSubmitStep = ({ setCurrent, service }: PreviewAndSubmitStepProps
           : service.service_data?.description?.toString() || '',
         service_data: serviceDataToSave,
         is_public: false,
+        price: service.price,
+        currency: service.currency,
+        category: service.category,
         // Include image data for single request upload
         imageData,
         imageName,
@@ -177,6 +181,35 @@ const PreviewAndSubmitStep = ({ setCurrent, service }: PreviewAndSubmitStepProps
                     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                   }}
                 />
+              </div>
+            )}
+
+            {/* Pricing and Category */}
+            {(service.price || service.category) && (
+              <div style={{ marginBottom: 20 }}>
+                <Divider style={{ margin: '16px 0' }} />
+                <Flex gap={16} wrap>
+                  {service.price !== null && service.price !== undefined && (
+                    <div>
+                      <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+                        Price
+                      </Typography.Text>
+                      <Typography.Text strong style={{ fontSize: 18, color: token.colorSuccess }}>
+                        {getCurrencyLabel(service.currency || 'usd').split(' - ')[0]} {service.price.toFixed(2)}
+                      </Typography.Text>
+                    </div>
+                  )}
+                  {service.category && (
+                    <div>
+                      <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+                        Category
+                      </Typography.Text>
+                      <Tag color="blue" style={{ fontSize: 13 }}>
+                        {service.category}
+                      </Tag>
+                    </div>
+                  )}
+                </Flex>
               </div>
             )}
 

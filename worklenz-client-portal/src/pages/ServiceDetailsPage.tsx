@@ -15,6 +15,17 @@ const ServiceDetailsPage: React.FC = () => {
 
   const service = serviceData?.body;
 
+  // Helper function to strip HTML tags
+  const stripHtml = (html: string): string => {
+    if (!html) return '';
+    // Remove HTML tags
+    const text = html.replace(/<[^>]*>/g, '');
+    // Decode HTML entities
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value;
+  };
+
   // Handle loading state
   if (isLoading) {
     return (
@@ -83,7 +94,7 @@ const ServiceDetailsPage: React.FC = () => {
               {t('services.description', 'Description')}
             </Typography.Title>
             <Typography.Paragraph>
-              {service.description || t('services.noDescription', 'No description available')}
+              {stripHtml(service.description) || t('services.noDescription', 'No description available')}
             </Typography.Paragraph>
           </div>
 
@@ -92,14 +103,18 @@ const ServiceDetailsPage: React.FC = () => {
               {t('services.details', 'Service Details')}
             </Typography.Title>
             <Flex vertical gap={8}>
-              <Flex justify="space-between">
-                <Typography.Text strong>{t('services.price', 'Price')}:</Typography.Text>
-                <Typography.Text>{service.currency} {service.price}</Typography.Text>
-              </Flex>
-              <Flex justify="space-between">
-                <Typography.Text strong>{t('services.category', 'Category')}:</Typography.Text>
-                <Typography.Text>{service.category}</Typography.Text>
-              </Flex>
+              {(service.price !== null && service.price !== undefined) && (
+                <Flex justify="space-between">
+                  <Typography.Text strong>{t('services.priceLabel', 'Price')}:</Typography.Text>
+                  <Typography.Text>{service.currency || 'USD'} {service.price}</Typography.Text>
+                </Flex>
+              )}
+              {service.category && (
+                <Flex justify="space-between">
+                  <Typography.Text strong>{t('services.categoryLabel', 'Category')}:</Typography.Text>
+                  <Typography.Text>{service.category}</Typography.Text>
+                </Flex>
+              )}
               <Flex justify="space-between">
                 <Typography.Text strong>{t('services.status', 'Status')}:</Typography.Text>
                 <Typography.Text>{service.status}</Typography.Text>

@@ -335,6 +335,27 @@ class TokenService {
   // Get client permissions
   async getClientPermissions(clientId: string): Promise<string[]> {
     try {
+      // Check client status first - inactive clients get read-only access
+      const clientStatusQuery = `
+        SELECT status
+        FROM clients
+        WHERE id = $1
+        LIMIT 1
+      `;
+      const clientStatusResult = await db.query(clientStatusQuery, [clientId]);
+
+      if (clientStatusResult.rows.length > 0 && clientStatusResult.rows[0].status === 'inactive') {
+        // Inactive clients get read-only permissions (can view history but not create new content)
+        return [
+          "read:services",
+          "read:requests",    // Can view past requests
+          "read:projects",
+          "read:invoices",
+          "read:chats",       // Can view chat history
+          "read:profile"
+        ];
+      }
+
       // Check if client has active portal access
       const accessQuery = `
         SELECT is_active
@@ -351,6 +372,7 @@ class TokenService {
         return [
           "read:services",
           "create:requests",
+          "read:requests",
           "read:projects",
           "read:invoices",
           "read:chats",

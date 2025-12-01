@@ -41,6 +41,8 @@
     "title": "Services ({{items}})",
     "noDescription": "No description available",
     "price": "{{currency}} {{price}}",
+    "priceLabel": "Price",
+    "categoryLabel": "Category",
     "noServices": "No services available",
     "errorLoadingServices": "Error loading services",
     "errorLoadingServicesDescription": "Failed to load services. Please try again later.",
@@ -83,5 +85,20 @@
     "select": "Select Organization",
     "switch_success": "Organization switched successfully",
     "switch_error": "Failed to switch organization"
+  },
+  "errors": {
+    "email_already_registered_title": "Email Already Registered",
+    "email_already_registered_message": "A user with this email already exists. Please login instead.",
+    "invalid_credentials": "Invalid email or password",
+    "token_required": "Token is required",
+    "token_invalid": "Invalid or expired token",
+    "invitation_invalid": "Invalid or expired invitation",
+    "invitation_required": "Invitation token is required",
+    "password_required": "Password is required",
+    "name_required": "Name is required",
+    "failed_to_accept_invite": "Failed to accept invitation",
+    "failed_to_validate_invite": "Failed to validate invitation",
+    "network_error": "Network error. Please check your connection.",
+    "server_error": "Server error. Please try again later."
   }
-} 
+}

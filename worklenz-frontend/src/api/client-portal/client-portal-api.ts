@@ -575,7 +575,7 @@ export const clientPortalApi = createApi({
       invalidatesTags: (result, error, { id }) => [{ type: 'Client', id }, 'Clients'],
     }),
 
-    deleteClient: builder.mutation<void, string>({
+    deactivateClient: builder.mutation<void, string>({
       query: id => ({
         url: `/clients/portal/clients/${id}`,
         method: 'DELETE',
@@ -698,7 +698,7 @@ export const clientPortalApi = createApi({
       invalidatesTags: ['Clients'],
     }),
 
-    bulkDeleteClients: builder.mutation<void, BulkDeleteRequest>({
+    bulkDeactivateClients: builder.mutation<void, BulkDeleteRequest>({
       query: bulkData => ({
         url: '/clients/portal/clients/bulk-delete',
         method: 'DELETE',
@@ -798,6 +798,9 @@ export const clientPortalApi = createApi({
         service_data?: any;
         is_public?: boolean;
         allowed_client_ids?: string[];
+        price?: number | null;
+        currency?: string;
+        category?: string;
         imageData?: string;
         imageName?: string;
         imageType?: string;
@@ -822,6 +825,9 @@ export const clientPortalApi = createApi({
           is_public?: boolean;
           allowed_client_ids?: string[];
           status?: string;
+          price?: number | null;
+          currency?: string;
+          category?: string;
           imageData?: string;
           imageName?: string;
           imageType?: string;
@@ -922,7 +928,7 @@ export const {
   useGetClientDetailsQuery,
   useCreateClientMutation,
   useUpdateClientMutation,
-  useDeleteClientMutation,
+  useDeactivateClientMutation,
 
   // Client Projects
   useGetClientProjectsQuery,
@@ -943,7 +949,7 @@ export const {
 
   // Bulk Operations
   useBulkUpdateClientsMutation,
-  useBulkDeleteClientsMutation,
+  useBulkDeactivateClientsMutation,
 
   // Organization-side Client Portal Management
   useGetOrganizationRequestsQuery,
