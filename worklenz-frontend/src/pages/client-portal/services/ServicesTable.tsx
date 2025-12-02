@@ -221,6 +221,7 @@ const ServicesTable = () => {
       <Table
         columns={columns}
         dataSource={servicesData.body.data}
+        rowKey="id"
         pagination={{
           size: 'small',
           total: servicesData.body.total,
