@@ -41,6 +41,7 @@ router.delete("/requests/:id", safeControllerFunction(ClientPortalController.del
 // Projects
 router.get("/projects", safeControllerFunction(ClientPortalController.getProjects));
 router.get("/projects/:id", safeControllerFunction(ClientPortalController.getProjectDetails));
+router.get("/projects/:id/tasks", safeControllerFunction(ClientPortalController.getProjectTasks));
 
 // Invoices
 router.get("/invoices", safeControllerFunction(ClientPortalController.getInvoices));

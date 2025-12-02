@@ -204,6 +204,7 @@ export default class ClientsController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async updateClientRequestStatus(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teamId = req.user?.team_id;
+    const userId = req.user?.id;
     const requestId = req.params.id;
     const {status, notes, assigned_to} = req.body;
 
@@ -213,9 +214,21 @@ export default class ClientsController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null, "Invalid status"));
     }
 
+    // Get current status before update
+    const currentStatusResult = await db.query(
+      "SELECT status FROM client_portal_requests WHERE id = $1 AND organization_team_id = $2",
+      [requestId, teamId]
+    );
+    
+    if (currentStatusResult.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Request not found"));
+    }
+    
+    const previousStatus = currentStatusResult.rows[0].status;
+
     // Build update query
     const updateFields = ["status = $3", "updated_at = NOW()"];
-    const updateValues = [requestId, teamId, status];
+    const updateValues: (string | null)[] = [requestId, teamId, status];
     let paramIndex = 4;
 
     if (notes) {
@@ -230,15 +243,22 @@ export default class ClientsController extends WorklenzControllerBase {
       paramIndex++;
     }
 
-    if (status === "completed") {
+    // Set specific timestamp based on status
+    if (status === "accepted") {
+      updateFields.push("accepted_at = NOW()");
+    } else if (status === "in_progress") {
+      updateFields.push("in_progress_at = NOW()");
+    } else if (status === "completed") {
       updateFields.push("completed_at = NOW()");
+    } else if (status === "rejected") {
+      updateFields.push("rejected_at = NOW()");
     }
 
     const q = `
       UPDATE client_portal_requests 
       SET ${updateFields.join(", ")}
       WHERE id = $1 AND organization_team_id = $2
-      RETURNING id, req_no, status, updated_at, completed_at, assigned_to
+      RETURNING id, req_no, status, updated_at, completed_at, accepted_at, in_progress_at, rejected_at, assigned_to
     `;
 
     const result = await db.query(q, updateValues);
@@ -248,7 +268,53 @@ export default class ClientsController extends WorklenzControllerBase {
       return res.status(404).send(new ServerResponse(false, null, "Request not found"));
     }
 
+    // Log the status change to history (with user who made the change)
+    if (previousStatus !== status) {
+      await db.query(
+        `INSERT INTO client_portal_request_status_history 
+         (request_id, previous_status, new_status, changed_by, notes, changed_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())`,
+        [requestId, previousStatus, status, userId, notes || null]
+      );
+    }
+
     return res.status(200).send(new ServerResponse(true, data, "Request updated successfully"));
+  }
+
+  @HandleExceptions()
+  public static async getClientRequestStatusHistory(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const requestId = req.params.id;
+
+    // Verify request belongs to this team
+    const requestCheck = await db.query(
+      "SELECT id FROM client_portal_requests WHERE id = $1 AND organization_team_id = $2",
+      [requestId, teamId]
+    );
+
+    if (requestCheck.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Request not found"));
+    }
+
+    const q = `
+      SELECT 
+        h.id,
+        h.previous_status,
+        h.new_status,
+        h.notes,
+        h.changed_at,
+        u.name as changed_by_name,
+        cpu.name as changed_by_client_name
+      FROM client_portal_request_status_history h
+      LEFT JOIN users u ON h.changed_by = u.id
+      LEFT JOIN client_users cpu ON h.changed_by_client = cpu.id
+      WHERE h.request_id = $1
+      ORDER BY h.changed_at ASC
+    `;
+
+    const result = await db.query(q, [requestId]);
+
+    return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
   @HandleExceptions()

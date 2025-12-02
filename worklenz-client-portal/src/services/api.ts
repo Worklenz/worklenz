@@ -318,6 +318,16 @@ class ClientPortalAPI {
     return this.request(`/projects/${id}`);
   }
 
+  async getProjectTasks(projectId: string, params?: { page?: number; limit?: number; search?: string }) {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.search) queryParams.append('search', params.search);
+    
+    const queryString = queryParams.toString();
+    return this.request(`/projects/${projectId}/tasks${queryString ? `?${queryString}` : ''}`);
+  }
+
   // Invoices
   async getInvoices(params?: { page?: number; limit?: number; status?: string; search?: string }) {
     const queryParams = new URLSearchParams();

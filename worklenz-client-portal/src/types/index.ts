@@ -54,6 +54,19 @@ export interface ClientService {
   category?: string;
 }
 
+export interface QuestionAnswer {
+  question: string;
+  type: string;
+  answer: string | string[] | null;
+  attachments?: Array<{
+    id?: string;
+    url: string;
+    filename: string;
+    originalName: string;
+    size: number;
+  }>;
+}
+
 export interface ClientRequest {
   id: string;
   req_no: string;
@@ -76,6 +89,7 @@ export interface ClientRequest {
       originalName: string;
     }>;
     attachmentIds?: string[];
+    questionAnswers?: QuestionAnswer[];
     [key: string]: unknown;
   };
   notes?: string;

@@ -1148,10 +1148,10 @@ class ClientPortalController {
   // Projects
   static async getProjects(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
-      const teamId = (req.user as any)?.team_id;
+      const {clientId} = req;
       const { page = 1, limit = 10, status, search } = req.query;
 
-      // Build query with pagination and filtering
+      // Build query with pagination and filtering - only show projects assigned to this client
       let query = `
         SELECT 
           p.id,
@@ -1171,10 +1171,10 @@ class ClientPortalController {
         LEFT JOIN clients c ON p.client_id = c.id
         LEFT JOIN tasks t ON p.id = t.project_id
         LEFT JOIN task_statuses ts ON t.status_id = ts.id
-        WHERE p.team_id = $1
+        WHERE p.client_id = $1
       `;
 
-      const queryParams = [teamId];
+      const queryParams: (string | number)[] = [clientId as string];
       let paramIndex = 2;
 
       // Add status filter if provided
@@ -1198,13 +1198,13 @@ class ClientPortalController {
         SELECT COUNT(*) as total
         FROM projects p
         LEFT JOIN sys_project_statuses sps ON p.status_id = sps.id
-        WHERE p.team_id = $1
+        WHERE p.client_id = $1
         ${status ? "AND sps.name = $2" : ""}
         ${search ? `AND (p.name ILIKE $${status ? 3 : 2} OR p.notes ILIKE $${status ? 3 : 2})` : ""}
       `;
-      const countParams = status && search ? [teamId, status, `%${search}%`] : 
-                         status ? [teamId, status] : 
-                         search ? [teamId, `%${search}%`] : [teamId];
+      const countParams = status && search ? [clientId, status, `%${search}%`] : 
+                         status ? [clientId, status] : 
+                         search ? [clientId, `%${search}%`] : [clientId];
       const countResult = await db.query(countQuery, countParams);
       const total = parseInt(countResult.rows[0]?.total || "0");
 
@@ -1280,69 +1280,6 @@ class ClientPortalController {
 
       const project = result.rows[0];
 
-      // Get project team members
-      const teamQuery = `
-        SELECT
-          u.id,
-          u.name,
-          u.email,
-          u.avatar_url,
-          pmu.role_id,
-          r.name as role_name
-        FROM project_members_users pmu
-        JOIN users u ON pmu.user_id = u.id
-        LEFT JOIN roles r ON pmu.role_id = r.id
-        WHERE pmu.project_id = $1
-        ORDER BY u.name
-      `;
-
-      const teamResult = await db.query(teamQuery, [id]);
-      const teamMembers = teamResult.rows.map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        fullName: row.name,
-        email: row.email,
-        avatarUrl: row.avatar_url,
-        roleId: row.role_id,
-        roleName: row.role_name
-      }));
-
-      // Get recent project tasks (limited view for client)
-      const tasksQuery = `
-        SELECT 
-          t.id,
-          t.name,
-          t.description,
-          ts.name as status,
-          ts.color_code as status_color,
-          t.start_date,
-          t.end_date,
-          t.created_at,
-          t.updated_at,
-          COUNT(tc.id) as comment_count
-        FROM tasks t
-        LEFT JOIN task_statuses ts ON t.status_id = ts.id
-        LEFT JOIN task_comments tc ON t.id = tc.task_id
-        WHERE t.project_id = $1
-        GROUP BY t.id, t.name, t.description, ts.name, ts.color_code, t.start_date, t.end_date, t.created_at, t.updated_at
-        ORDER BY t.created_at DESC
-        LIMIT 20
-      `;
-
-      const tasksResult = await db.query(tasksQuery, [id]);
-      const tasks = tasksResult.rows.map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        description: row.description,
-        status: row.status,
-        statusColor: row.status_color,
-        startDate: row.start_date,
-        endDate: row.end_date,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        commentCount: parseInt(row.comment_count || "0")
-      }));
-
       const projectDetails = {
         id: project.id,
         name: project.name,
@@ -1353,23 +1290,102 @@ class ClientPortalController {
         endDate: project.end_date,
         createdAt: project.created_at,
         updatedAt: project.updated_at,
-        client: {
-          name: project.client_name,
-          companyName: project.company_name
-        },
         statistics: {
           totalTasks: parseInt(project.total_tasks || "0"),
           completedTasks: parseInt(project.completed_tasks || "0"),
           progressPercentage: project.total_tasks > 0 ? Math.round((project.completed_tasks / project.total_tasks) * 100) : 0
-        },
-        teamMembers,
-        recentTasks: tasks
+        }
       };
 
       return res.json(new ServerResponse(true, projectDetails, "Project details retrieved successfully"));
     } catch (error) {
       console.error("Error fetching project details:", error);
       return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve project details"));
+    }
+  }
+
+  static async getProjectTasks(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const { id } = req.params;
+      const { clientId } = req;
+      const { page = 1, limit = 10, search } = req.query;
+
+      // Verify client has access to this project
+      const accessCheck = await db.query(
+        `SELECT id FROM projects WHERE id = $1 AND client_id = $2`,
+        [id, clientId]
+      );
+
+      if (accessCheck.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Project not found or not accessible"));
+      }
+
+      // Build tasks query with pagination
+      let tasksQuery = `
+        SELECT 
+          t.id,
+          t.name,
+          t.description,
+          ts.name as status,
+          stsc.color_code as status_color,
+          t.start_date,
+          t.end_date,
+          t.created_at,
+          t.updated_at
+        FROM tasks t
+        LEFT JOIN task_statuses ts ON t.status_id = ts.id
+        LEFT JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
+        WHERE t.project_id = $1
+      `;
+
+      const queryParams: (string | number)[] = [id as string];
+      let paramIndex = 2;
+
+      // Add search filter if provided
+      if (search) {
+        tasksQuery += ` AND (t.name ILIKE $${paramIndex} OR t.description ILIKE $${paramIndex})`;
+        queryParams.push(`%${search}%`);
+        paramIndex++;
+      }
+
+      // Get total count
+      const countQuery = `
+        SELECT COUNT(*) as total
+        FROM tasks t
+        WHERE t.project_id = $1
+        ${search ? `AND (t.name ILIKE $2 OR t.description ILIKE $2)` : ""}
+      `;
+      const countParams = search ? [id, `%${search}%`] : [id];
+      const countResult = await db.query(countQuery, countParams);
+      const total = parseInt(countResult.rows[0]?.total || "0");
+
+      // Add ordering and pagination - last updated first
+      const offset = (Number(page) - 1) * Number(limit);
+      tasksQuery += ` ORDER BY t.updated_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+      queryParams.push(String(Number(limit)), String(offset));
+
+      const tasksResult = await db.query(tasksQuery, queryParams);
+      const tasks = tasksResult.rows.map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        status: row.status,
+        statusColor: row.status_color,
+        startDate: row.start_date,
+        endDate: row.end_date,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      }));
+
+      return res.json(new ServerResponse(true, {
+        tasks,
+        total,
+        page: Number(page),
+        limit: Number(limit)
+      }, "Project tasks retrieved successfully"));
+    } catch (error) {
+      console.error("Error fetching project tasks:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve project tasks"));
     }
   }
 

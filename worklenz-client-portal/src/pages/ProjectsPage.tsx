@@ -17,8 +17,7 @@ import {
   EyeOutlined, 
   SearchOutlined,
   ProjectOutlined,
-  CalendarOutlined,
-  TeamOutlined
+  CalendarOutlined
 } from '@/shared/antd-imports';
 import { useNavigate } from 'react-router-dom';
 import clientPortalAPI from '@/services/api';
@@ -182,17 +181,6 @@ const ProjectsPage: React.FC = () => {
           </Space>
         );
       },
-    },
-    {
-      title: t('projects.client'),
-      dataIndex: 'client_name',
-      key: 'client_name',
-      render: (text: string) => text ? (
-        <Space size="small">
-          <TeamOutlined />
-          <Text>{text}</Text>
-        </Space>
-      ) : '-',
     },
     {
       title: t('projects.lastUpdated'),

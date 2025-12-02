@@ -175,6 +175,69 @@ const ClientPortalRequestDetails = () => {
               </Flex>
             </Flex>
           )}
+
+          {/* Question Answers */}
+          {requestInfo.questionAnswers && requestInfo.questionAnswers.length > 0 && (
+            <Flex vertical gap={16}>
+              <Typography.Text style={{ fontWeight: 600, fontSize: 16 }}>
+                {t1('serviceQuestionsLabel') || 'Service Questions'}
+              </Typography.Text>
+              {requestInfo.questionAnswers.map((qa: {
+                question: string;
+                type: string;
+                answer: string | string[] | null;
+                attachments?: Array<{
+                  id?: string;
+                  url: string;
+                  filename: string;
+                  originalName: string;
+                  size: number;
+                }>;
+              }, index: number) => (
+                <Flex key={index} vertical gap={4} style={{ 
+                  padding: '12px 16px', 
+                  background: '#fafafa', 
+                  borderRadius: 8,
+                  border: '1px solid #f0f0f0'
+                }}>
+                  <Typography.Text style={{ fontWeight: 500 }}>
+                    {qa.question}
+                  </Typography.Text>
+                  {qa.type === 'attachment' ? (
+                    qa.attachments && qa.attachments.length > 0 ? (
+                      <Flex gap={8} wrap="wrap" style={{ marginTop: 4 }}>
+                        {qa.attachments.map((att, attIndex) => (
+                          <a
+                            key={attIndex}
+                            href={att.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ textDecoration: 'none' }}
+                          >
+                            <Tag icon={<PaperClipOutlined />} style={{ cursor: 'pointer' }}>
+                              {att.originalName}
+                            </Tag>
+                          </a>
+                        ))}
+                      </Flex>
+                    ) : (
+                      <Typography.Text type="secondary" style={{ fontStyle: 'italic' }}>
+                        {t1('noFilesUploaded') || 'No files uploaded'}
+                      </Typography.Text>
+                    )
+                  ) : (
+                    <Typography.Text style={{ whiteSpace: 'pre-wrap' }}>
+                      {qa.answer || (
+                        <Typography.Text type="secondary" style={{ fontStyle: 'italic' }}>
+                          {t1('noAnswer') || 'No answer provided'}
+                        </Typography.Text>
+                      )}
+                    </Typography.Text>
+                  )}
+                </Flex>
+              ))}
+            </Flex>
+          )}
         </Flex>
       ),
     },

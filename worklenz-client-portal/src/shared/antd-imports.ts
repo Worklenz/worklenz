@@ -40,6 +40,7 @@ export {
   List,
   Modal,
   Breadcrumb,
+  Radio,
 } from "antd/es";
 
 // Types
