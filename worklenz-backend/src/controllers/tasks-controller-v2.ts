@@ -1240,12 +1240,14 @@ export default class TasksControllerV2 extends TasksControllerBase {
       TasksControllerV2.updateTaskViewModel(task);
       task.index = index;
 
-      // Convert time values
-      const convertTimeValue = (value: any): number => {
-        if (typeof value === "number") return value;
+      // Convert time values to hours
+      const convertToHours = (value: any, isSeconds: boolean = false): number => {
+        if (typeof value === "number") {
+          return isSeconds ? value / 3600 : value / 60; // Convert seconds or minutes to hours
+        }
         if (typeof value === "string") {
           const parsed = parseFloat(value);
-          return isNaN(parsed) ? 0 : parsed;
+          return isNaN(parsed) ? 0 : (isSeconds ? parsed / 3600 : parsed / 60);
         }
         if (value && typeof value === "object") {
           if ("hours" in value || "minutes" in value) {
@@ -1287,8 +1289,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
         dueDate: task.end_date || task.END_DATE,
         startDate: task.start_date,
         timeTracking: {
-          estimated: convertTimeValue(task.total_time),
-          logged: convertTimeValue(task.time_spent),
+          estimated: convertToHours(task.total_minutes, false), // total_minutes is in minutes
+          logged: convertToHours(task.total_minutes_spent, true), // total_minutes_spent is in seconds
         },
         customFields: {},
         custom_column_values: task.custom_column_values || {}, // Include custom column values
