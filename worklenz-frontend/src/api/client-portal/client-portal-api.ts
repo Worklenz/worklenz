@@ -28,17 +28,35 @@ export interface ClientPortalService {
 
 export interface ClientPortalRequest {
   id: string;
-  requestNumber: string;
-  serviceId: string;
-  serviceName: string;
-  serviceDescription?: string;
+  // snake_case from backend
+  req_no: string;
+  service_id: string;
+  service_name: string;
+  service_description?: string;
+  client_id?: string;
+  client_name: string;
+  client_email?: string;
   status: string;
-  requestData?: any;
+  request_data?: {
+    title?: string;
+    priority?: string;
+    description?: string;
+    attachments?: Array<{
+      id: string;
+      url: string;
+      size: string;
+      filename: string;
+      originalName: string;
+    }>;
+    attachmentIds?: string[];
+    [key: string]: any;
+  };
   notes?: string;
-  createdAt: string;
-  updatedAt: string;
-  completedAt?: string;
-  clientName: string;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string;
+  assigned_to?: string;
+  assigned_to_name?: string;
 }
 
 export interface ClientPortalProject {
@@ -338,7 +356,14 @@ export const clientPortalApi = createApi({
       invalidatesTags: ['Requests', 'Dashboard'],
     }),
 
-    getRequestDetails: builder.query<ClientPortalRequest, string>({
+    getRequestDetails: builder.query<
+      {
+        done: boolean;
+        body: ClientPortalRequest;
+        message: string;
+      },
+      string
+    >({
       query: id => `/clients/portal/requests/${id}`,
       providesTags: (result, error, id) => [{ type: 'Requests', id }],
     }),

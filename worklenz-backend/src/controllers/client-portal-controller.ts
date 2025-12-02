@@ -250,17 +250,17 @@ class ClientPortalController {
       const result = await db.query(query, queryParams);
       const requests = result.rows.map((row: any) => ({
         id: row.id,
-        requestNumber: row.req_no,
-        serviceId: row.service_id,
-        serviceName: row.service_name,
-        serviceDescription: row.service_description,
+        req_no: row.req_no,
+        service_id: row.service_id,
+        service_name: row.service_name,
+        service_description: row.service_description,
         status: row.status,
-        requestData: row.request_data,
+        request_data: row.request_data,
         notes: row.notes,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        completedAt: row.completed_at,
-        clientName: row.client_name
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        completed_at: row.completed_at,
+        client_name: row.client_name
       }));
 
       return res.json(new ServerResponse(true, { 
@@ -382,18 +382,18 @@ class ClientPortalController {
 
       return res.json(new ServerResponse(true, {
         id: request.id,
-        requestNumber: request.req_no,
-        serviceId: request.service_id,
-        serviceName: request.service_name,
-        serviceDescription: request.service_description,
-        serviceConfig: request.service_config,
+        req_no: request.req_no,
+        service_id: request.service_id,
+        service_name: request.service_name,
+        service_description: request.service_description,
+        service_config: request.service_config,
         status: request.status,
-        requestData: request.request_data,
+        request_data: request.request_data,
         notes: request.notes,
-        createdAt: request.created_at,
-        updatedAt: request.updated_at,
-        completedAt: request.completed_at,
-        clientName: request.client_name
+        created_at: request.created_at,
+        updated_at: request.updated_at,
+        completed_at: request.completed_at,
+        client_name: request.client_name
       }, "Request details retrieved successfully"));
     } catch (error) {
       console.error("Error fetching request details:", error);

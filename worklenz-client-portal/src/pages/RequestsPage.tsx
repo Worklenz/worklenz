@@ -39,20 +39,20 @@ const RequestsPage: React.FC = () => {
       title: t('requests.requestNo'),
       dataIndex: 'req_no',
       key: 'req_no',
-      width: 120,
+      width: 220,
       render: (text: string) => <Text strong>{text}</Text>,
     },
     {
       title: t('requests.service'),
-      dataIndex: 'service',
-      key: 'service',
+      dataIndex: 'service_name',
+      key: 'service_name',
       ellipsis: true,
     },
     {
       title: t('requests.requestTitle'),
-      dataIndex: 'title',
       key: 'title',
       ellipsis: true,
+      render: (_: unknown, record: ClientRequest) => record.request_data?.title || '-',
     },
     {
       title: t('requests.status'),
@@ -65,10 +65,10 @@ const RequestsPage: React.FC = () => {
     },
     {
       title: t('requests.created'),
-      dataIndex: 'time',
-      key: 'time',
-      width: 110,
-      render: (date: string) => new Date(date).toLocaleDateString(),
+      dataIndex: 'created_at',
+      key: 'created_at',
+      width: 120,
+      render: (date: string) => date ? new Date(date).toLocaleDateString() : '-',
     },
     {
       title: '',
@@ -79,7 +79,10 @@ const RequestsPage: React.FC = () => {
           type="text"
           size="small"
           icon={<EyeOutlined />}
-          onClick={() => navigate(`/requests/${record.id}`)}
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/requests/${record.id}`);
+          }}
         />
       ),
     },
@@ -127,10 +130,10 @@ const RequestsPage: React.FC = () => {
       
       <Card size="small" styles={{ body: { padding: 0 } }}>
         <Spin spinning={isLoading}>
-          {data?.body?.data && data.body.data.length > 0 ? (
+          {(data?.body?.requests && data.body.requests.length > 0) ? (
             <Table
               columns={columns}
-              dataSource={data.body.data}
+              dataSource={data.body.requests}
               pagination={{
                 current: page,
                 pageSize: pageSize,

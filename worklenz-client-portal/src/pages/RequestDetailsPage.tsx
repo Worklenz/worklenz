@@ -20,6 +20,7 @@ import {
   PaperClipOutlined,
 } from "@/shared/antd-imports";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   useGetRequestDetailsQuery,
   useUpdateRequestMutation,
@@ -29,6 +30,7 @@ const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 const RequestDetailsPage: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -75,11 +77,12 @@ const RequestDetailsPage: React.FC = () => {
     try {
       setAddingComment(true);
       // In a real implementation, this would add a comment to the request
+      const currentNotes = request?.notes || '';
       await updateRequest({
         id: id!,
         data: {
           // Add comment logic here
-          description: `${request?.description}\n\n---\nComment: ${values.comment}`,
+          notes: `${currentNotes}\n\n---\nComment: ${values.comment}`,
         },
       }).unwrap();
 
@@ -162,10 +165,10 @@ const RequestDetailsPage: React.FC = () => {
 
             <Descriptions column={2} bordered>
               <Descriptions.Item label="Service" span={2}>
-                {request.service}
+                {request.service_name}
               </Descriptions.Item>
               <Descriptions.Item label="Title" span={2}>
-                {request.title}
+                {request.request_data?.title || '-'}
               </Descriptions.Item>
               <Descriptions.Item label="Status">
                 <Tag color={getStatusColor(request.status)}>
@@ -174,32 +177,39 @@ const RequestDetailsPage: React.FC = () => {
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Priority">
-                <Tag color={getPriorityColor(request.priority || '')}>
-                  {request.priority ? request.priority.charAt(0).toUpperCase() +
-                    request.priority.slice(1) : 'N/A'}
+                <Tag color={getPriorityColor(request.request_data?.priority || '')}>
+                  {request.request_data?.priority ? request.request_data.priority.charAt(0).toUpperCase() +
+                    request.request_data.priority.slice(1) : 'N/A'}
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Created Date">
-                {request.time ? new Date(request.time).toLocaleDateString() : 'N/A'}
+                {request.created_at ? new Date(request.created_at).toLocaleDateString() : 'N/A'}
               </Descriptions.Item>
               <Descriptions.Item label="Created Time">
-                {request.time ? new Date(request.time).toLocaleTimeString() : 'N/A'}
+                {request.created_at ? new Date(request.created_at).toLocaleTimeString() : 'N/A'}
               </Descriptions.Item>
               <Descriptions.Item label="Description" span={2}>
                 <Text style={{ whiteSpace: "pre-wrap" }}>
-                  {request.description}
+                  {request.request_data?.description || request.notes || '-'}
                 </Text>
               </Descriptions.Item>
-              {request.attachments && request.attachments.length > 0 && (
+              {request.request_data?.attachments && request.request_data.attachments.length > 0 && (
                 <Descriptions.Item label="Attachments" span={2}>
-                  {request.attachments.map((attachment, index) => (
-                    <Tag
-                      key={index}
-                      icon={<PaperClipOutlined />}
-                      style={{ marginBottom: 4 }}
+                  {request.request_data.attachments.map((attachment) => (
+                    <a
+                      key={attachment.id}
+                      href={attachment.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ marginRight: 8 }}
                     >
-                      {attachment}
-                    </Tag>
+                      <Tag
+                        icon={<PaperClipOutlined />}
+                        style={{ marginBottom: 4, cursor: 'pointer' }}
+                      >
+                        {attachment.originalName}
+                      </Tag>
+                    </a>
                   ))}
                 </Descriptions.Item>
               )}
@@ -217,7 +227,7 @@ const RequestDetailsPage: React.FC = () => {
                         <Text strong>Request Created</Text>
                         <br />
                         <Text type="secondary">
-                          {request.time ? new Date(request.time).toLocaleString() : 'N/A'}
+                          {request.created_at ? new Date(request.created_at).toLocaleString() : 'N/A'}
                         </Text>
                       </>
                     ),
@@ -233,7 +243,7 @@ const RequestDetailsPage: React.FC = () => {
                               <Text strong>Request Accepted</Text>
                               <br />
                               <Text type="secondary">
-                                Status changed to accepted
+                                {request.updated_at ? new Date(request.updated_at).toLocaleString() : 'N/A'}
                               </Text>
                             </>
                           ),
@@ -250,7 +260,7 @@ const RequestDetailsPage: React.FC = () => {
                               <Text strong>Work Started</Text>
                               <br />
                               <Text type="secondary">
-                                Status changed to in progress
+                                {request.updated_at ? new Date(request.updated_at).toLocaleString() : 'N/A'}
                               </Text>
                             </>
                           ),
@@ -266,7 +276,7 @@ const RequestDetailsPage: React.FC = () => {
                               <Text strong>Request Completed</Text>
                               <br />
                               <Text type="secondary">
-                                All work has been completed
+                                {request.completed_at ? new Date(request.completed_at).toLocaleString() : (request.updated_at ? new Date(request.updated_at).toLocaleString() : 'N/A')}
                               </Text>
                             </>
                           ),
@@ -282,7 +292,7 @@ const RequestDetailsPage: React.FC = () => {
                               <Text strong>Request Rejected</Text>
                               <br />
                               <Text type="secondary">
-                                Request was not accepted
+                                {request.updated_at ? new Date(request.updated_at).toLocaleString() : 'N/A'}
                               </Text>
                             </>
                           ),

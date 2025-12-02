@@ -23,19 +23,19 @@ const RequestsTable = () => {
     {
       key: 'requestNumber',
       title: t('reqNoColumn'),
-      render: record => <Typography.Text>{record.requestNumber}</Typography.Text>,
+      render: record => <Typography.Text>{record.req_no}</Typography.Text>,
     },
     {
       key: 'serviceName',
       title: t('serviceColumn'),
-      render: record => <Typography.Text>{record.serviceName}</Typography.Text>,
+      render: record => <Typography.Text>{record.service_name}</Typography.Text>,
     },
     {
       key: 'clientName',
       title: t('clientColumn'),
       render: record => (
         <Typography.Text style={{ textTransform: 'capitalize' }}>
-          {record.clientName}
+          {record.client_name}
         </Typography.Text>
       ),
     },
@@ -48,7 +48,7 @@ const RequestsTable = () => {
       key: 'createdAt',
       title: t('timeColumn'),
       render: record => (
-        <Typography.Text>{durationDateFormat(new Date(record.createdAt))}</Typography.Text>
+        <Typography.Text>{durationDateFormat(new Date(record.created_at))}</Typography.Text>
       ),
     },
   ];
@@ -120,6 +120,7 @@ const RequestsTable = () => {
       <Table
         columns={columns}
         dataSource={requests}
+        rowKey="id"
         pagination={{
           size: 'small',
           total: requestsResponse.total || requests.length,
@@ -132,7 +133,7 @@ const RequestsTable = () => {
         onRow={record => {
           return {
             onClick: () => {
-              dispatch(setSelectedRequestNo(record.requestNumber));
+              dispatch(setSelectedRequestNo(record.req_no));
               navigate(`/worklenz/client-portal/requests/${record.id}`);
             },
             style: { cursor: 'pointer' },
