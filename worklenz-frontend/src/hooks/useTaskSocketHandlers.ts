@@ -640,7 +640,8 @@ export const useTaskSocketHandlers = () => {
       // Update task-management slice for task-list-v2 components
       const currentTask = store.getState().taskManagement.entities[data.id];
       if (currentTask) {
-        const estimatedHours = (data.total_hours || 0) + (data.total_minutes || 0) / 60;
+        // total_minutes from backend is the complete value in minutes, not additional minutes
+        const estimatedHours = (data.total_minutes || 0) / 60;
         const updatedTask: Task = {
           ...currentTask,
           timeTracking: {
