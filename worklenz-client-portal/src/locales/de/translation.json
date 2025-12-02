@@ -40,7 +40,8 @@
     "acceptance_error": "Fehler beim Annehmen der Einladung"
   },
   "services": {
-    "title": "Dienstleistungen ({{items}})",
+    "title": "Dienstleistungen",
+    "browseServices": "Durchsuchen Sie unsere verfügbaren Dienstleistungen",
     "noDescription": "Keine Beschreibung verfügbar",
     "price": "{{currency}} {{price}}",
     "priceLabel": "Preis",
@@ -54,7 +55,9 @@
     "description": "Beschreibung",
     "details": "Dienstleistungsdetails",
     "category": "Kategorie",
-    "status": "Status"
+    "status": "Status",
+    "viewDetails": "Anzeigen",
+    "contactForPrice": "Preis auf Anfrage"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -115,11 +118,21 @@
     "completedProjects": "Abgeschlossene Projekte",
     "totalRequests": "Anfragen gesamt",
     "pending": "Ausstehend",
+    "pendingRequests": "Ausstehende Anfragen",
     "inProgress": "In Bearbeitung",
+    "inProgressShort": "In Bearbeitung",
     "completed": "Abgeschlossen",
+    "done": "Erledigt",
     "totalInvoices": "Rechnungen gesamt",
     "unpaidInvoices": "Unbezahlte Rechnungen",
-    "unpaidAmount": "Unbezahlter Betrag"
+    "unpaidAmount": "Unbezahlter Betrag",
+    "amountDue": "Fälliger Betrag",
+    "projectsOverview": "Projekte",
+    "requestsOverview": "Anfragen",
+    "invoicesOverview": "Rechnungen",
+    "viewAll": "Alle anzeigen",
+    "total": "Gesamt",
+    "active": "Aktiv"
   },
   "projects": {
     "title": "Projekte",

@@ -1,15 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Card,
   Typography,
-  Flex,
   Table,
   Tag,
   Spin,
   Alert,
   Empty,
-  FileTextOutlined,
 } from "@/shared/antd-imports";
+import { FileDoneOutlined } from "@/shared/antd-imports";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import clientPortalAPI from "@/services/api";
@@ -26,11 +25,7 @@ const InvoicesPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [totalInvoices, setTotalInvoices] = useState(0);
 
-  useEffect(() => {
-    fetchInvoices();
-  }, []);
-
-  const fetchInvoices = async () => {
+  const fetchInvoices = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -49,7 +44,11 @@ const InvoicesPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices]);
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -84,35 +83,8 @@ const InvoicesPage: React.FC = () => {
   // Handle loading state
   if (isLoading) {
     return (
-      <div
-        style={{
-          maxWidth: "100%",
-          minHeight: "calc(100vh - 120px)",
-        }}
-      >
-        <div style={{ marginBottom: 32 }}>
-          <Flex align="center" gap={12} style={{ marginBottom: 8 }}>
-            <FileTextOutlined style={{ fontSize: 20 }} />
-            <Title level={4} style={{ margin: 0, fontSize: "20px" }}>
-              {t('invoices.title')}
-            </Title>
-          </Flex>
-          <Text type="secondary" style={{ fontSize: "16px", lineHeight: 1.5 }}>
-            {t('invoices.description')}
-          </Text>
-        </div>
-        <Card style={{ height: "calc(100vh - 280px)" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              height: "200px",
-            }}
-          >
-            <Spin size="large" />
-          </div>
-        </Card>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <Spin size="large" />
       </div>
     );
   }
@@ -120,26 +92,15 @@ const InvoicesPage: React.FC = () => {
   // Handle error state
   if (error) {
     return (
-      <div
-        style={{
-          maxWidth: "100%",
-          minHeight: "calc(100vh - 120px)",
-        }}
-      >
-        <div style={{ marginBottom: 32 }}>
-          <Flex align="center" gap={12} style={{ marginBottom: 8 }}>
-            <FileTextOutlined style={{ fontSize: 20 }} />
-            <Title level={4} style={{ margin: 0, fontSize: "20px" }}>
-              {t('invoices.title')}
-            </Title>
-          </Flex>
-          <Text type="secondary" style={{ fontSize: "16px", lineHeight: 1.5 }}>
-            {t('invoices.description')}
-          </Text>
+      <div>
+        <div style={{ marginBottom: 24 }}>
+          <Title level={4} style={{ marginBottom: 4 }}>
+            <FileDoneOutlined style={{ marginRight: 8 }} />
+            {t('invoices.title')}
+          </Title>
+          <Text type="secondary">{t('invoices.description')}</Text>
         </div>
-        <Card style={{ height: "calc(100vh - 280px)" }}>
-          <Alert message={t('invoices.errorLoading')} description={error} type="error" showIcon />
-        </Card>
+        <Alert message={t('invoices.errorLoading')} description={error} type="error" showIcon />
       </div>
     );
   }
@@ -147,41 +108,18 @@ const InvoicesPage: React.FC = () => {
   // Handle empty state
   if (!invoices || invoices.length === 0) {
     return (
-      <div
-        style={{
-          maxWidth: "100%",
-          minHeight: "calc(100vh - 120px)",
-        }}
-      >
-        <div style={{ marginBottom: 32 }}>
-          <Flex align="center" gap={12} style={{ marginBottom: 8 }}>
-            <FileTextOutlined style={{ fontSize: 20 }} />
-            <Title level={4} style={{ margin: 0, fontSize: "20px" }}>
-              {t('invoices.title')}
-            </Title>
-          </Flex>
-          <Text type="secondary" style={{ fontSize: "16px", lineHeight: 1.5 }}>
-            {t('invoices.description')}
-          </Text>
+      <div>
+        <div style={{ marginBottom: 24 }}>
+          <Title level={4} style={{ marginBottom: 4 }}>
+            <FileDoneOutlined style={{ marginRight: 8 }} />
+            {t('invoices.title')}
+          </Title>
+          <Text type="secondary">{t('invoices.description')}</Text>
         </div>
-        <Card style={{ height: "calc(100vh - 280px)" }}>
+        <Card>
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={
-              <div>
-                <Title level={4} style={{ marginBottom: 8 }}>
-                  {t('invoices.noInvoicesYet')}
-                </Title>
-                <Text type="secondary">{t('invoices.noInvoicesDescription')}</Text>
-              </div>
-            }
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              height: "calc(100vh - 320px)",
-            }}
+            description={t('invoices.noInvoicesYet')}
           />
         </Card>
       </div>
@@ -241,45 +179,29 @@ const InvoicesPage: React.FC = () => {
   ];
 
   return (
-    <div
-      style={{
-        maxWidth: "100%",
-        minHeight: "calc(100vh - 120px)",
-      }}
-    >
+    <div>
       {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <Flex align="center" gap={12} style={{ marginBottom: 8 }}>
-          <FileTextOutlined style={{ fontSize: 20 }} />
-          <Title level={4} style={{ margin: 0, fontSize: "20px" }}>
-            {t('invoices.title')}
-          </Title>
-        </Flex>
-        <Text type="secondary" style={{ fontSize: "16px", lineHeight: 1.5 }}>
-          {t('invoices.description')}
-        </Text>
+      <div style={{ marginBottom: 24 }}>
+        <Title level={4} style={{ marginBottom: 4 }}>
+          <FileDoneOutlined style={{ marginRight: 8 }} />
+          {t('invoices.title')}
+        </Title>
+        <Text type="secondary">{t('invoices.description')}</Text>
       </div>
 
       {/* Invoices Table */}
-      <Card
-        style={{
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          borderRadius: 8,
-        }}
-      >
+      <Card size="small" styles={{ body: { padding: 0 } }}>
         <Table
           columns={columns}
           dataSource={invoices}
           rowKey="id"
+          size="small"
           pagination={{
             size: "small",
             total: totalInvoices,
-            current: 1,
-            pageSize: 10,
+            showSizeChanger: true,
           }}
-          scroll={{
-            x: "max-content",
-          }}
+          scroll={{ x: "max-content" }}
           onRow={(record) => ({
             onClick: () => navigate(`/invoices/${record.id}`),
             style: { cursor: "pointer" },

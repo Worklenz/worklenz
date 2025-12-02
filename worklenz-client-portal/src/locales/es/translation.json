@@ -38,7 +38,8 @@
     "acceptance_error": "Error al aceptar la invitación"
   },
   "services": {
-    "title": "Servicios ({{items}})",
+    "title": "Servicios",
+    "browseServices": "Explora nuestros servicios disponibles",
     "noDescription": "No hay descripción disponible",
     "price": "{{currency}} {{price}}",
     "priceLabel": "Precio",
@@ -52,7 +53,9 @@
     "description": "Descripción",
     "details": "Detalles del Servicio",
     "category": "Categoría",
-    "status": "Estado"
+    "status": "Estado",
+    "viewDetails": "Ver",
+    "contactForPrice": "Contactar por precio"
   },
   "navigation": {
     "dashboard": "Panel",
@@ -113,11 +116,21 @@
     "completedProjects": "Proyectos Completados",
     "totalRequests": "Total de Solicitudes",
     "pending": "Pendiente",
+    "pendingRequests": "Solicitudes Pendientes",
     "inProgress": "En Progreso",
+    "inProgressShort": "En Progreso",
     "completed": "Completado",
+    "done": "Hecho",
     "totalInvoices": "Total de Facturas",
     "unpaidInvoices": "Facturas No Pagadas",
-    "unpaidAmount": "Monto No Pagado"
+    "unpaidAmount": "Monto No Pagado",
+    "amountDue": "Monto Adeudado",
+    "projectsOverview": "Proyectos",
+    "requestsOverview": "Solicitudes",
+    "invoicesOverview": "Facturas",
+    "viewAll": "Ver Todo",
+    "total": "Total",
+    "active": "Activo"
   },
   "projects": {
     "title": "Proyectos",

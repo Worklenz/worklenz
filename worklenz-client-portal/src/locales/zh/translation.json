@@ -16,5 +16,54 @@
     "select": "选择组织",
     "switch_success": "组织切换成功",
     "switch_error": "切换组织失败"
+  },
+  "services": {
+    "title": "服务",
+    "browseServices": "浏览我们的可用服务",
+    "noDescription": "暂无描述",
+    "noServices": "暂无可用服务",
+    "viewDetails": "查看",
+    "contactForPrice": "联系获取价格"
+  },
+  "dashboard": {
+    "title": "仪表板",
+    "welcome": "欢迎来到客户门户仪表板",
+    "totalProjects": "项目总数",
+    "activeProjects": "活跃项目",
+    "completedProjects": "已完成项目",
+    "totalRequests": "请求总数",
+    "pending": "待处理",
+    "pendingRequests": "待处理请求",
+    "inProgress": "进行中",
+    "inProgressShort": "进行中",
+    "completed": "已完成",
+    "done": "完成",
+    "totalInvoices": "发票总数",
+    "unpaidInvoices": "未付发票",
+    "unpaidAmount": "未付金额",
+    "amountDue": "应付金额",
+    "projectsOverview": "项目",
+    "requestsOverview": "请求",
+    "invoicesOverview": "发票",
+    "viewAll": "查看全部",
+    "total": "总计",
+    "active": "活跃"
+  },
+  "navigation": {
+    "dashboard": "仪表板",
+    "services": "服务",
+    "requests": "请求",
+    "projects": "项目",
+    "invoices": "发票",
+    "chats": "聊天",
+    "settings": "设置"
+  },
+  "common": {
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功",
+    "save": "保存",
+    "cancel": "取消",
+    "view": "查看"
   }
-} 
+}

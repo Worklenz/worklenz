@@ -103,7 +103,9 @@ class ClientPortalController {
           s.service_data,
           s.is_public,
           s.created_at,
-          s.updated_at
+          s.updated_at,
+          s.price,
+          s.currency
         FROM client_portal_services s
         WHERE s.organization_team_id = $1 
         AND s.status = $2
@@ -121,8 +123,8 @@ class ClientPortalController {
         isPublic: row.is_public,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
-        price: row.service_data?.price || 0,
-        currency: row.service_data?.currency || "USD"
+        price: row.price || 0,
+        currency: row.currency || "USD"
       }));
 
       return res.json(new ServerResponse(true, services, "Services retrieved successfully"));

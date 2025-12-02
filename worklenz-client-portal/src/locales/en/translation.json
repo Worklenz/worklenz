@@ -38,7 +38,8 @@
     "acceptance_error": "Failed to accept invitation"
   },
   "services": {
-    "title": "Services ({{items}})",
+    "title": "Services",
+    "browseServices": "Browse our available services",
     "noDescription": "No description available",
     "price": "{{currency}} {{price}}",
     "priceLabel": "Price",
@@ -52,7 +53,9 @@
     "description": "Description",
     "details": "Service Details",
     "category": "Category",
-    "status": "Status"
+    "status": "Status",
+    "viewDetails": "View",
+    "contactForPrice": "Contact for price"
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -113,11 +116,21 @@
     "completedProjects": "Completed Projects",
     "totalRequests": "Total Requests",
     "pending": "Pending",
+    "pendingRequests": "Pending Requests",
     "inProgress": "In Progress",
+    "inProgressShort": "In Progress",
     "completed": "Completed",
+    "done": "Done",
     "totalInvoices": "Total Invoices",
     "unpaidInvoices": "Unpaid Invoices",
-    "unpaidAmount": "Unpaid Amount"
+    "unpaidAmount": "Unpaid Amount",
+    "amountDue": "Amount Due",
+    "projectsOverview": "Projects",
+    "requestsOverview": "Requests",
+    "invoicesOverview": "Invoices",
+    "viewAll": "View All",
+    "total": "Total",
+    "active": "Active"
   },
   "projects": {
     "title": "Projects",

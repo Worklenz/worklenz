@@ -16,5 +16,54 @@
     "select": "Zgjidh Organizatën",
     "switch_success": "Organizata u ndërrua me sukses",
     "switch_error": "Dështoi ndërrimi i organizatës"
+  },
+  "services": {
+    "title": "Shërbimet",
+    "browseServices": "Shfletoni shërbimet tona të disponueshme",
+    "noDescription": "Nuk ka përshkrim të disponueshëm",
+    "noServices": "Nuk ka shërbime të disponueshme",
+    "viewDetails": "Shiko",
+    "contactForPrice": "Kontaktoni për çmimin"
+  },
+  "dashboard": {
+    "title": "Paneli",
+    "welcome": "Mirë se vini në panelin e portalit të klientit",
+    "totalProjects": "Projekte Totale",
+    "activeProjects": "Projekte Aktive",
+    "completedProjects": "Projekte të Përfunduara",
+    "totalRequests": "Kërkesa Totale",
+    "pending": "Në Pritje",
+    "pendingRequests": "Kërkesa në Pritje",
+    "inProgress": "Në Progres",
+    "inProgressShort": "Në Progres",
+    "completed": "Përfunduar",
+    "done": "Kryer",
+    "totalInvoices": "Fatura Totale",
+    "unpaidInvoices": "Fatura të Papaguara",
+    "unpaidAmount": "Shuma e Papaguar",
+    "amountDue": "Shuma për Pagesë",
+    "projectsOverview": "Projektet",
+    "requestsOverview": "Kërkesat",
+    "invoicesOverview": "Faturat",
+    "viewAll": "Shiko të Gjitha",
+    "total": "Total",
+    "active": "Aktiv"
+  },
+  "navigation": {
+    "dashboard": "Paneli",
+    "services": "Shërbimet",
+    "requests": "Kërkesat",
+    "projects": "Projektet",
+    "invoices": "Faturat",
+    "chats": "Bisedat",
+    "settings": "Cilësimet"
+  },
+  "common": {
+    "loading": "Duke u ngarkuar...",
+    "error": "Gabim",
+    "success": "Sukses",
+    "save": "Ruaj",
+    "cancel": "Anulo",
+    "view": "Shiko"
   }
-} 
+}

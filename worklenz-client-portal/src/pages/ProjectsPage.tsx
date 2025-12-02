@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { 
   Card, 
   Typography, 
@@ -24,9 +24,8 @@ import { useNavigate } from 'react-router-dom';
 import clientPortalAPI from '@/services/api';
 import { ClientProject } from '@/types';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { Search } = Input;
-const { Option } = Select;
 
 const ProjectsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -44,7 +43,7 @@ const ProjectsPage: React.FC = () => {
     status: '',
   });
 
-  const fetchProjects = async (page = 1, pageSize = 10, search = '', status = '') => {
+  const fetchProjects = useCallback(async (page = 1, pageSize = 10, search = '', status = '') => {
     try {
       setIsLoading(true);
       setError(null);
@@ -72,16 +71,16 @@ const ProjectsPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     fetchProjects();
-  }, []);
+  }, [fetchProjects]);
 
-  const handleTableChange = (paginationInfo: any, _filtersInfo: any, _sorter: any) => {
+  const handleTableChange = (paginationInfo: { current?: number; pageSize?: number }) => {
     fetchProjects(
-      paginationInfo.current,
-      paginationInfo.pageSize,
+      paginationInfo.current || 1,
+      paginationInfo.pageSize || 10,
       filters.search,
       filters.status
     );
@@ -188,12 +187,12 @@ const ProjectsPage: React.FC = () => {
       title: t('projects.client'),
       dataIndex: 'client_name',
       key: 'client_name',
-      render: (text: string) => (
-        <Space>
+      render: (text: string) => text ? (
+        <Space size="small">
           <TeamOutlined />
-          {text}
+          <Text>{text}</Text>
         </Space>
-      ),
+      ) : '-',
     },
     {
       title: t('projects.lastUpdated'),
@@ -242,36 +241,42 @@ const ProjectsPage: React.FC = () => {
 
   return (
     <div>
-      <Title level={2}>
-        <ProjectOutlined /> {t('projects.title')}
-      </Title>
-      <p>{t('projects.description')}</p>
+      {/* Page Header */}
+      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <Title level={4} style={{ marginBottom: 4 }}>
+            <ProjectOutlined style={{ marginRight: 8 }} />
+            {t('projects.title')}
+          </Title>
+          <Text type="secondary">{t('projects.description')}</Text>
+        </div>
+      </div>
 
-      <Card>
-        <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
-          <Space>
-            <Search
-              placeholder={t('projects.searchPlaceholder')}
-              allowClear
-              onSearch={handleSearch}
-              style={{ width: 250 }}
-              prefix={<SearchOutlined />}
-            />
-            <Select
-              placeholder={t('projects.filterByStatus')}
-              allowClear
-              style={{ width: 150 }}
-              onChange={handleStatusFilter}
-              value={filters.status || undefined}
-            >
-              <Option value="Active">{t('projects.active')}</Option>
-              <Option value="Completed">{t('projects.completed')}</Option>
-              <Option value="On Hold">{t('projects.onHold')}</Option>
-              <Option value="Cancelled">{t('projects.cancelled')}</Option>
-              <Option value="Planning">{t('projects.planning')}</Option>
-            </Select>
-          </Space>
-        </Space>
+      <Card size="small">
+        {/* Filters */}
+        <div style={{ marginBottom: 16, display: 'flex', gap: 12 }}>
+          <Search
+            placeholder={t('projects.searchPlaceholder')}
+            allowClear
+            onSearch={handleSearch}
+            style={{ width: 240 }}
+            prefix={<SearchOutlined />}
+          />
+          <Select
+            placeholder={t('projects.filterByStatus')}
+            allowClear
+            style={{ width: 140 }}
+            onChange={handleStatusFilter}
+            value={filters.status || undefined}
+            options={[
+              { value: 'Active', label: t('projects.active') },
+              { value: 'Completed', label: t('projects.completed') },
+              { value: 'On Hold', label: t('projects.onHold') },
+              { value: 'Cancelled', label: t('projects.cancelled') },
+              { value: 'Planning', label: t('projects.planning') },
+            ]}
+          />
+        </div>
 
         <Table
           columns={columns}

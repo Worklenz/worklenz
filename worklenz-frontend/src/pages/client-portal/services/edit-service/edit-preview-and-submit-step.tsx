@@ -110,7 +110,7 @@ const EditPreviewAndSubmitStep = ({
                           Price
                         </Typography.Text>
                         <Typography.Text strong style={{ fontSize: 18, color: token.colorSuccess }}>
-                          {getCurrencyLabel(service.currency || 'usd').split(' - ')[0]} {service.price.toFixed(2)}
+                          {getCurrencyLabel(service.currency || 'usd').split(' - ')[0]} {Number(service.price).toFixed(2)}
                         </Typography.Text>
                       </div>
                     )}

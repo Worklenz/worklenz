@@ -40,7 +40,8 @@
     "acceptance_error": "Falha ao aceitar convite"
   },
   "services": {
-    "title": "Serviços ({{items}})",
+    "title": "Serviços",
+    "browseServices": "Explore nossos serviços disponíveis",
     "noDescription": "Nenhuma descrição disponível",
     "price": "{{currency}} {{price}}",
     "priceLabel": "Preço",
@@ -54,7 +55,9 @@
     "description": "Descrição",
     "details": "Detalhes do Serviço",
     "category": "Categoria",
-    "status": "Status"
+    "status": "Status",
+    "viewDetails": "Ver",
+    "contactForPrice": "Contate para preço"
   },
   "navigation": {
     "dashboard": "Painel",
@@ -115,11 +118,21 @@
     "completedProjects": "Projetos Concluídos",
     "totalRequests": "Total de Solicitações",
     "pending": "Pendente",
+    "pendingRequests": "Solicitações Pendentes",
     "inProgress": "Em Andamento",
+    "inProgressShort": "Em Andamento",
     "completed": "Concluído",
+    "done": "Feito",
     "totalInvoices": "Total de Faturas",
     "unpaidInvoices": "Faturas Não Pagas",
-    "unpaidAmount": "Valor Não Pago"
+    "unpaidAmount": "Valor Não Pago",
+    "amountDue": "Valor Devido",
+    "projectsOverview": "Projetos",
+    "requestsOverview": "Solicitações",
+    "invoicesOverview": "Faturas",
+    "viewAll": "Ver Tudo",
+    "total": "Total",
+    "active": "Ativo"
   },
   "projects": {
     "title": "Projetos",
