@@ -268,5 +268,25 @@
     "confirm": "Confirm",
     "yes": "Yes",
     "no": "No"
+  },
+  "fileUploader": {
+    "uploadFiles": "Upload Files",
+    "uploading": "Uploading...",
+    "uploadedFiles": "Uploaded Files ({{count}})",
+    "preview": "Preview",
+    "download": "Download",
+    "deleteConfirm": "Are you sure you want to delete this file?",
+    "maxFileSize": "Maximum file size: {{size}}MB",
+    "maxFiles": "Maximum files: {{count}}",
+    "acceptedTypes": "Accepted types: {{types}}",
+    "acceptedTypesAny": "Any",
+    "uploadSuccess": "File uploaded successfully",
+    "uploadError": "Failed to upload file",
+    "deleteSuccess": "File deleted successfully",
+    "deleteError": "Failed to delete file from server",
+    "fileSizeError": "File size must be smaller than {{size}}MB",
+    "fileTypeError": "File type not allowed. Accepted types: {{types}}",
+    "maxFilesError": "You can only upload up to {{count}} files",
+    "uploadedOn": "Uploaded on {{date}}"
   }
 }

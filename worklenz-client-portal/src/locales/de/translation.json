@@ -270,5 +270,25 @@
     "confirm": "Bestätigen",
     "yes": "Ja",
     "no": "Nein"
+  },
+  "fileUploader": {
+    "uploadFiles": "Dateien hochladen",
+    "uploading": "Wird hochgeladen...",
+    "uploadedFiles": "Hochgeladene Dateien ({{count}})",
+    "preview": "Vorschau",
+    "download": "Herunterladen",
+    "deleteConfirm": "Sind Sie sicher, dass Sie diese Datei löschen möchten?",
+    "maxFileSize": "Maximale Dateigröße: {{size}}MB",
+    "maxFiles": "Maximale Dateien: {{count}}",
+    "acceptedTypes": "Akzeptierte Typen: {{types}}",
+    "acceptedTypesAny": "Alle",
+    "uploadSuccess": "Datei erfolgreich hochgeladen",
+    "uploadError": "Datei konnte nicht hochgeladen werden",
+    "deleteSuccess": "Datei erfolgreich gelöscht",
+    "deleteError": "Datei konnte nicht vom Server gelöscht werden",
+    "fileSizeError": "Dateigröße muss kleiner als {{size}}MB sein",
+    "fileTypeError": "Dateityp nicht erlaubt. Akzeptierte Typen: {{types}}",
+    "maxFilesError": "Sie können nur bis zu {{count}} Dateien hochladen",
+    "uploadedOn": "Hochgeladen am {{date}}"
   }
 }

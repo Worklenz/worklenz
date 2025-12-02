@@ -13,6 +13,7 @@ import {
   Row,
   Col,
   theme,
+  Switch,
 } from '@/shared/antd-imports';
 import { PlusOutlined, DeleteOutlined, UploadOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
@@ -383,11 +384,45 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
             </div>
           </Card>
 
+          {/* Service Visibility Section */}
+          <Card 
+            title={
+              <Flex align="center" gap={8}>
+                <span>4. {t('serviceVisibility.title')}</span>
+              </Flex>
+            }
+            size="small"
+            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+          >
+            <div style={{ marginBottom: 16 }}>
+              <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+                {t('serviceVisibility.description')}
+              </Typography.Text>
+              
+              <Flex align="center" gap={12}>
+                <Switch
+                  checked={service.is_public ?? true}
+                  onChange={checked => setService({ ...service, is_public: checked })}
+                />
+                <div>
+                  <Typography.Text strong>
+                    {service.is_public ?? true ? t('serviceVisibility.showToAll') : t('serviceVisibility.hiddenFromAll')}
+                  </Typography.Text>
+                  <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                    {service.is_public ?? true 
+                      ? t('serviceVisibility.showToAllDescription')
+                      : t('serviceVisibility.hiddenFromAllDescription')}
+                  </Typography.Text>
+                </div>
+              </Flex>
+            </div>
+          </Card>
+
           {/* Service Description Section */}
           <Card 
             title={
               <Flex align="center" gap={8}>
-                <span>4. Service Description</span>
+                <span>5. Service Description</span>
                 {service.service_data?.description?.trim() && <CheckCircleOutlined style={{ color: token.colorSuccess }} />}
               </Flex>
             }

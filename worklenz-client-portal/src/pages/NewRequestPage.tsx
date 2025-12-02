@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Card,
   Form,
@@ -14,9 +14,21 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useGetServicesQuery, useCreateRequestMutation } from "@/store/api";
 import FileUploader from "@/components/FileUploader";
+import clientPortalAPI from "@/services/api";
 
 const { Title } = Typography;
 const { TextArea } = Input;
+
+interface UploadedFileInfo {
+  id?: string;
+  url: string;
+  filename: string;
+  originalName: string;
+  fileType: string;
+  size: number;
+  uploadedAt: string;
+  purpose: string;
+}
 
 interface RequestFormValues {
   service_id: string;
@@ -28,7 +40,10 @@ interface RequestFormValues {
 const NewRequestPage: React.FC = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
-  const [attachments, setAttachments] = useState<any[]>([]);
+  const [attachments, setAttachments] = useState<UploadedFileInfo[]>([]);
+  
+  // Store the markAsSubmitted callback from FileUploader
+  const markAsSubmittedRef = useRef<(() => void) | null>(null);
 
   const { data: servicesData, isLoading: servicesLoading } =
     useGetServicesQuery();
@@ -36,13 +51,21 @@ const NewRequestPage: React.FC = () => {
 
   const onFinish = async (values: RequestFormValues) => {
     try {
+      // Collect attachment IDs for linking after request creation
+      const attachmentIds = attachments
+        .filter((file) => file.id)
+        .map((file) => file.id as string);
+
       const requestData = {
         serviceId: values.service_id,
         requestData: {
           title: values.title,
           description: values.description,
           priority: values.priority,
+          // Include both attachment IDs and legacy attachment data for backward compatibility
+          attachmentIds,
           attachments: attachments.map((file) => ({
+            id: file.id,
             url: file.url,
             filename: file.filename,
             originalName: file.originalName,
@@ -52,7 +75,22 @@ const NewRequestPage: React.FC = () => {
         notes: values.description,
       };
 
-      await createRequest(requestData).unwrap();
+      const result = await createRequest(requestData).unwrap();
+      const requestId = result?.body?.id;
+      
+      // Link attachments to the newly created request if we have attachment IDs
+      if (attachmentIds.length > 0 && requestId) {
+        try {
+          await clientPortalAPI.linkAttachmentsToRequest(requestId, attachmentIds);
+        } catch (linkError) {
+          console.warn("Failed to link attachments to request:", linkError);
+          // Don't fail the whole request creation if linking fails
+        }
+      }
+
+      // Mark as submitted to prevent cleanup of uploaded files
+      markAsSubmittedRef.current?.();
+      
       message.success("Request created successfully");
       navigate("/requests");
     } catch (error) {
@@ -65,7 +103,7 @@ const NewRequestPage: React.FC = () => {
     navigate("/requests");
   };
 
-  const handleFilesChange = (files: any[]) => {
+  const handleFilesChange = (files: UploadedFileInfo[]) => {
     setAttachments(files);
   };
 
@@ -159,7 +197,6 @@ const NewRequestPage: React.FC = () => {
           <Col span={24}>
             <Form.Item
               label="Attachments"
-              extra="You can upload up to 5 files. Supported formats: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG, JPEG"
             >
               <FileUploader
                 purpose="request"
@@ -168,6 +205,8 @@ const NewRequestPage: React.FC = () => {
                 maxFileSize={10}
                 onFilesChange={handleFilesChange}
                 showFileList={true}
+                cleanupOnUnmount={true}
+                onSubmitReady={(markFn) => { markAsSubmittedRef.current = markFn; }}
               />
             </Form.Item>
           </Col>

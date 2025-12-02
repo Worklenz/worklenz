@@ -64,6 +64,27 @@
     "success": "Sukses",
     "save": "Ruaj",
     "cancel": "Anulo",
-    "view": "Shiko"
+    "view": "Shiko",
+    "delete": "Fshi"
+  },
+  "fileUploader": {
+    "uploadFiles": "Ngarko skedarë",
+    "uploading": "Duke ngarkuar...",
+    "uploadedFiles": "Skedarë të ngarkuar ({{count}})",
+    "preview": "Parashiko",
+    "download": "Shkarko",
+    "deleteConfirm": "Jeni i sigurt që dëshironi të fshini këtë skedar?",
+    "maxFileSize": "Madhësia maksimale e skedarit: {{size}}MB",
+    "maxFiles": "Skedarë maksimalë: {{count}}",
+    "acceptedTypes": "Llojet e pranuara: {{types}}",
+    "acceptedTypesAny": "Çdo",
+    "uploadSuccess": "Skedari u ngarkua me sukses",
+    "uploadError": "Dështoi ngarkimi i skedarit",
+    "deleteSuccess": "Skedari u fshi me sukses",
+    "deleteError": "Dështoi fshirja e skedarit nga serveri",
+    "fileSizeError": "Madhësia e skedarit duhet të jetë më e vogël se {{size}}MB",
+    "fileTypeError": "Lloji i skedarit nuk lejohet. Llojet e pranuara: {{types}}",
+    "maxFilesError": "Mund të ngarkoni vetëm deri në {{count}} skedarë",
+    "uploadedOn": "Ngarkuar më {{date}}"
   }
 }

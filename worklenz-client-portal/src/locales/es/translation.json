@@ -268,5 +268,25 @@
     "confirm": "Confirmar",
     "yes": "Sí",
     "no": "No"
+  },
+  "fileUploader": {
+    "uploadFiles": "Subir archivos",
+    "uploading": "Subiendo...",
+    "uploadedFiles": "Archivos subidos ({{count}})",
+    "preview": "Vista previa",
+    "download": "Descargar",
+    "deleteConfirm": "¿Está seguro de que desea eliminar este archivo?",
+    "maxFileSize": "Tamaño máximo de archivo: {{size}}MB",
+    "maxFiles": "Máximo de archivos: {{count}}",
+    "acceptedTypes": "Tipos aceptados: {{types}}",
+    "acceptedTypesAny": "Cualquiera",
+    "uploadSuccess": "Archivo subido exitosamente",
+    "uploadError": "Error al subir el archivo",
+    "deleteSuccess": "Archivo eliminado exitosamente",
+    "deleteError": "Error al eliminar el archivo del servidor",
+    "fileSizeError": "El tamaño del archivo debe ser menor a {{size}}MB",
+    "fileTypeError": "Tipo de archivo no permitido. Tipos aceptados: {{types}}",
+    "maxFilesError": "Solo puede subir hasta {{count}} archivos",
+    "uploadedOn": "Subido el {{date}}"
   }
 }

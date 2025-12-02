@@ -64,6 +64,27 @@
     "success": "成功",
     "save": "保存",
     "cancel": "取消",
-    "view": "查看"
+    "view": "查看",
+    "delete": "删除"
+  },
+  "fileUploader": {
+    "uploadFiles": "上传文件",
+    "uploading": "上传中...",
+    "uploadedFiles": "已上传文件 ({{count}})",
+    "preview": "预览",
+    "download": "下载",
+    "deleteConfirm": "确定要删除此文件吗？",
+    "maxFileSize": "最大文件大小：{{size}}MB",
+    "maxFiles": "最大文件数：{{count}}",
+    "acceptedTypes": "接受的类型：{{types}}",
+    "acceptedTypesAny": "任意",
+    "uploadSuccess": "文件上传成功",
+    "uploadError": "文件上传失败",
+    "deleteSuccess": "文件删除成功",
+    "deleteError": "从服务器删除文件失败",
+    "fileSizeError": "文件大小必须小于{{size}}MB",
+    "fileTypeError": "不允许的文件类型。接受的类型：{{types}}",
+    "maxFilesError": "最多只能上传{{count}}个文件",
+    "uploadedOn": "上传于 {{date}}"
   }
 }

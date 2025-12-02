@@ -54,7 +54,7 @@ const EditPreviewAndSubmitStep = ({
             ? service.service_data.description 
             : service.service_data?.description?.toString() || '',
           service_data: service.service_data,
-          is_public: false,
+          is_public: service.is_public,
           price: service.price,
           currency: service.currency,
           category: service.category,

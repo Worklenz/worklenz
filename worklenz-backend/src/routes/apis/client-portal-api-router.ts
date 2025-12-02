@@ -1,5 +1,6 @@
 import express from "express";
 import ClientPortalController from "../../controllers/client-portal-controller";
+import ClientPortalAttachmentController from "../../controllers/client-portal-attachment-controller";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import { authenticateClient, requireClientPermission } from "../../middlewares/client-auth-middleware";
 
@@ -78,8 +79,12 @@ router.get("/notifications", safeControllerFunction(ClientPortalController.getNo
 router.put("/notifications/:id/read", safeControllerFunction(ClientPortalController.markNotificationRead));
 router.put("/notifications/read-all", safeControllerFunction(ClientPortalController.markAllNotificationsRead));
 
-// File uploads
-router.post("/upload", safeControllerFunction(ClientPortalController.uploadFile));
+// File uploads and attachments (using new attachment controller with S3 storage)
+router.post("/upload", safeControllerFunction(ClientPortalAttachmentController.uploadFile));
+router.get("/attachments/unlinked", safeControllerFunction(ClientPortalAttachmentController.getUnlinkedAttachments));
+router.get("/attachments/:attachmentId", safeControllerFunction(ClientPortalAttachmentController.getAttachment));
+router.delete("/attachments/:attachmentId", safeControllerFunction(ClientPortalAttachmentController.deleteAttachment));
+router.get("/requests/:requestId/attachments", safeControllerFunction(ClientPortalAttachmentController.getRequestAttachments));
+router.post("/requests/:requestId/attachments/link", safeControllerFunction(ClientPortalAttachmentController.linkAttachmentsToRequest));
 
-
-export default router; 
+export default router;
