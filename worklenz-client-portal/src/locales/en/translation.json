@@ -76,5 +76,12 @@
   },
   "app": {
     "title": "Client Portal"
+  },
+  "organizations": {
+    "switch": "Switch Organization",
+    "current": "Current Organization",
+    "select": "Select Organization",
+    "switch_success": "Organization switched successfully",
+    "switch_error": "Failed to switch organization"
   }
 } 

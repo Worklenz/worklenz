@@ -1,6 +1,8 @@
 {
   "includeArchivedProjects": "Përfshij Projektet e Arkivuara",
   "export": "Eksporto",
+  "Export Excel": "Eksporto Excel",
+  "Export CSV": "Eksporto CSV",
   "timeSheet": "Fletë Kohore",
 
   "searchByName": "Kërko sipas emrit",
@@ -14,6 +16,18 @@
   "searchByCategory": "Kërko sipas emrit të kategorisë",
   "categories": "Kategoritë",
 
+  "Date": "Data",
+  "Member": "Anëtar",
+  "Project": "Projekti",
+  "Task": "Detyra",
+  "Description": "Përshkrimi",
+  "Duration": "Kohëzgjatja",
+  "Time Logs": "Regjistrat e Kohës",
+  "Select member": "Zgjidh anëtarin",
+  "Search logs": "Kërko regjistrat",
+  "Filters": "Filtrat",
+  "Refresh": "Rifresko",
+  "Non-billable": "Jo fakturueshme",
   "billable": "Fakturueshme",
   "nonBillable": "Jo Fakturueshme",
   "allBillableTypes": "Të Gjitha Llojet e Fakturueshme",

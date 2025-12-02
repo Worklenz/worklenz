@@ -25,7 +25,7 @@ export default class MigrationController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async checkEligibility(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     
     if (!organizationId) {
       return res.status(400).send(new ServerResponse(false, null, "Organization ID is required"));
@@ -66,7 +66,7 @@ export default class MigrationController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async getRecommendations(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     const { includeAnalytics, includeComparison } = req.query;
     
     if (!organizationId) {
@@ -105,7 +105,7 @@ export default class MigrationController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async previewMigration(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     const { targetPlan, billingCycle, applyDiscounts } = req.body;
     
     if (!organizationId || !targetPlan) {
@@ -181,7 +181,7 @@ export default class MigrationController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async executeMigration(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     const { 
       targetPlan, 
       billingCycle, 
@@ -282,7 +282,7 @@ export default class MigrationController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async checkAppSumoDiscount(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     
     if (!organizationId) {
       return res.status(400).send(new ServerResponse(false, null, "Organization ID is required"));

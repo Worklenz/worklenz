@@ -2,6 +2,26 @@ import React, { memo, useMemo, forwardRef, RefObject } from 'react';
 import { GanttViewMode } from '../../types/gantt-types';
 import { useGanttDimensions } from '../../hooks/useGanttDimensions';
 import { TimelineUtils } from '../../utils/timeline-calculator';
+import { useGanttContext } from '../../context/gantt-context';
+
+// Helper function to get column label based on view mode
+const getColumnLabel = (column: any, viewMode: GanttViewMode): string => {
+  const date = column.date;
+  switch (viewMode) {
+    case 'day':
+      return date.getDate().toString();
+    case 'week':
+      return `W${TimelineUtils.getWeekNumber(date)}`;
+    case 'month':
+      return date.toLocaleDateString('en-US', { month: 'short' });
+    case 'quarter':
+      return `Q${Math.ceil((date.getMonth() + 1) / 3)} ${date.getFullYear()}`;
+    case 'year':
+      return date.getFullYear().toString();
+    default:
+      return date.toLocaleDateString();
+  }
+};
 
 interface GanttTimelineProps {
   viewMode: GanttViewMode;
@@ -11,6 +31,8 @@ interface GanttTimelineProps {
 
 const GanttTimeline = forwardRef<HTMLDivElement, GanttTimelineProps>(
   ({ viewMode, containerRef, dateRange }, ref) => {
+    // Get timeline calculator from context
+    const { timelineCalculator } = useGanttContext();
     const { topHeaders, bottomHeaders } = useMemo(() => {
       if (!dateRange) {
         return { topHeaders: [], bottomHeaders: [] };
@@ -185,10 +207,22 @@ const GanttTimeline = forwardRef<HTMLDivElement, GanttTimelineProps>(
       return { topHeaders, bottomHeaders };
     }, [viewMode, dateRange]);
 
+    // Use timeline calculator columns if available, otherwise fallback to generated headers
+    const effectiveBottomHeaders = useMemo(() => {
+      if (timelineCalculator) {
+        const columns = timelineCalculator.getColumns();
+        return columns.map((column) => ({
+          label: getColumnLabel(column, viewMode),
+          key: column.key,
+        }));
+      }
+      return bottomHeaders;
+    }, [timelineCalculator, bottomHeaders, viewMode]);
+
     const { actualColumnWidth, totalWidth, shouldScroll } = useGanttDimensions(
       viewMode,
       containerRef,
-      bottomHeaders.length
+      effectiveBottomHeaders.length
     );
 
     const hasTopHeaders = topHeaders.length > 0;
@@ -222,7 +256,7 @@ const GanttTimeline = forwardRef<HTMLDivElement, GanttTimelineProps>(
           className="flex h-10"
           style={{ width: `${totalWidth}px`, minWidth: shouldScroll ? 'auto' : '100%' }}
         >
-          {bottomHeaders.map(header => (
+          {effectiveBottomHeaders.map(header => (
             <div
               key={header.key}
               className={`py-2.5 text-center border-r border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 flex-shrink-0 ${

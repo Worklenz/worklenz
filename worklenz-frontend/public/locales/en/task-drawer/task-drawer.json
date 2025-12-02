@@ -7,7 +7,9 @@
     "back": "Back",
     "backToParent": "Back to Parent Task",
     "toParentTask": "to parent task",
-    "loadingHierarchy": "Loading hierarchy..."
+    "loadingHierarchy": "Loading hierarchy...",
+    "previousTask": "Previous Task",
+    "nextTask": "Next Task"
   },
   "taskInfoTab": {
     "title": "Info",

@@ -1,7 +1,7 @@
 import express from "express";
 import ClientPortalController from "../../controllers/client-portal-controller";
 import safeControllerFunction from "../../shared/safe-controller-function";
-import { authenticateClient } from "../../middlewares/client-auth-middleware";
+import { authenticateClient, requireClientPermission } from "../../middlewares/client-auth-middleware";
 
 const router = express.Router();
 
@@ -47,16 +47,20 @@ router.get("/invoices/:id", safeControllerFunction(ClientPortalController.getInv
 router.post("/invoices/:id/pay", safeControllerFunction(ClientPortalController.payInvoice));
 router.get("/invoices/:id/download", safeControllerFunction(ClientPortalController.downloadInvoice));
 
-// Chat
-router.get("/chats", safeControllerFunction(ClientPortalController.getChats));
-router.get("/chats/:id", safeControllerFunction(ClientPortalController.getChatDetails));
-router.post("/chats/:id/messages", safeControllerFunction(ClientPortalController.sendMessage));
-router.get("/chats/:id/messages", safeControllerFunction(ClientPortalController.getMessages));
+// Chat (requires chat permissions)
+router.get("/chats", requireClientPermission("canChat"), safeControllerFunction(ClientPortalController.getChats));
+router.post("/chats", requireClientPermission("canWriteChat"), safeControllerFunction(ClientPortalController.createChat));
+router.get("/chats/:id", requireClientPermission("canChat"), safeControllerFunction(ClientPortalController.getChatDetails));
+router.post("/chats/:id/messages", requireClientPermission("canWriteChat"), safeControllerFunction(ClientPortalController.sendMessage));
+router.get("/chats/:id/messages", requireClientPermission("canChat"), safeControllerFunction(ClientPortalController.getMessages));
 
-// Settings
+// Settings (for organization management - requires team_id)
 router.get("/settings", safeControllerFunction(ClientPortalController.getSettings));
 router.put("/settings", safeControllerFunction(ClientPortalController.updateSettings));
 router.post("/settings/upload-logo", safeControllerFunction(ClientPortalController.uploadLogo));
+
+// Organization Settings (for client users - uses organizationId from token)
+router.get("/organization-settings", safeControllerFunction(ClientPortalController.getOrganizationSettings));
 
 // Profile
 router.get("/profile", safeControllerFunction(ClientPortalController.getClientProfile));
@@ -64,6 +68,10 @@ router.put("/profile", safeControllerFunction(ClientPortalController.updateClien
 
 // Authentication
 router.post("/auth/logout", safeControllerFunction(ClientPortalController.clientLogout));
+
+// Organizations
+router.get("/organizations", safeControllerFunction(ClientPortalController.getClientOrganizations));
+router.post("/organizations/switch", safeControllerFunction(ClientPortalController.switchOrganization));
 
 // Notifications
 router.get("/notifications", safeControllerFunction(ClientPortalController.getNotifications));

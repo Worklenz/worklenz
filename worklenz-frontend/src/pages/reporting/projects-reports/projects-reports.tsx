@@ -9,7 +9,7 @@ import ProjectsReportsFilters from './projects-reports-filters/project-reports-f
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import { setArchived } from '@/features/reporting/projectReports/project-reports-slice';
+import { setArchived, fetchReportingTeams } from '@/features/reporting/projectReports/project-reports-slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAuthService } from '@/hooks/useAuth';
 import { reportingExportApiService } from '@/api/reporting/reporting-export.api.service';
@@ -26,7 +26,8 @@ const ProjectsReports = () => {
 
   useEffect(() => {
     trackMixpanelEvent(evt_reporting_projects_overview);
-  }, [trackMixpanelEvent]);
+    dispatch(fetchReportingTeams());
+  }, [trackMixpanelEvent, dispatch]);
 
   // Memoize the title to prevent recalculation on every render
   const pageTitle = useMemo(() => {

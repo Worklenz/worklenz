@@ -19,6 +19,12 @@ interface ITaskDrawerState {
     isEditing: boolean;
     logBeingEdited: ITaskLogViewModel | null;
   };
+  navigationContext: {
+    taskIds: string[];
+    currentIndex: number;
+    sourceView: 'task-list' | 'kanban' | 'board' | 'home' | 'gantt' | 'workload';
+    projectId: string | null;
+  } | null;
 }
 
 const initialState: ITaskDrawerState = {
@@ -31,6 +37,7 @@ const initialState: ITaskDrawerState = {
     isEditing: false,
     logBeingEdited: null,
   },
+  navigationContext: null,
 };
 
 export const fetchTask = createAsyncThunk(
@@ -120,6 +127,35 @@ const taskDrawerSlice = createSlice({
         state.taskFormViewModel.task.schedule_id = schedule_id;
       }
     },
+    setNavigationContext: (
+      state,
+      action: PayloadAction<{
+        taskIds: string[];
+        currentIndex: number;
+        sourceView: 'task-list' | 'kanban' | 'board' | 'home' | 'gantt' | 'workload';
+        projectId: string | null;
+      } | null>
+    ) => {
+      state.navigationContext = action.payload;
+    },
+    navigateToNextTask: state => {
+      if (!state.navigationContext) return;
+      const { taskIds, currentIndex } = state.navigationContext;
+      if (currentIndex < taskIds.length - 1) {
+        const nextIndex = currentIndex + 1;
+        state.selectedTaskId = taskIds[nextIndex];
+        state.navigationContext.currentIndex = nextIndex;
+      }
+    },
+    navigateToPreviousTask: state => {
+      if (!state.navigationContext) return;
+      const { taskIds, currentIndex } = state.navigationContext;
+      if (currentIndex > 0) {
+        const prevIndex = currentIndex - 1;
+        state.selectedTaskId = taskIds[prevIndex];
+        state.navigationContext.currentIndex = prevIndex;
+      }
+    },
     resetTaskDrawer: state => {
       return initialState;
     },
@@ -152,7 +188,9 @@ export const {
   setTaskSubscribers,
   setTimeLogEditing,
   setTaskRecurringSchedule,
+  setNavigationContext,
+  navigateToNextTask,
+  navigateToPreviousTask,
   resetTaskDrawer,
-  setConvertToSubtaskDrawerOpen,
 } = taskDrawerSlice.actions;
 export default taskDrawerSlice.reducer;

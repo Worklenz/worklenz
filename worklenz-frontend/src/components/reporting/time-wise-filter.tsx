@@ -96,7 +96,10 @@ const TimeWiseFilter = () => {
         dispatch(setDateRange([startDate, endDate]));
       }
     } else {
-      dispatch(setDateRange([]));
+      // For ALL_TIME or any other case without specific dates, use a default range
+      const defaultStartDate = dayjs().subtract(1, 'year').format('YYYY-MM-DD');
+      const defaultEndDate = dayjs().format('YYYY-MM-DD');
+      dispatch(setDateRange([defaultStartDate, defaultEndDate]));
     }
   }, [duration]);
 

@@ -60,13 +60,13 @@ const ProjectViewInsights = () => {
 
     switch (activeSegment) {
       case 'Overview':
-        trackMixpanelEvent(evt_project_insights_overview_visit);
+        trackMixpanelEvent(evt_project_insights_overview_visit, { project_id: projectId });
         return <InsightsOverview t={t} />;
       case 'Members':
-        trackMixpanelEvent(evt_project_insights_members_visit);
+        trackMixpanelEvent(evt_project_insights_members_visit, { project_id: projectId });
         return <InsightsMembers t={t} />;
       case 'Tasks':
-        trackMixpanelEvent(evt_project_insights_tasks_visit);
+        trackMixpanelEvent(evt_project_insights_tasks_visit, { project_id: projectId });
         return <InsightsTasks t={t} />;
     }
   };

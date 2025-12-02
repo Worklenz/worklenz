@@ -6,5 +6,7 @@
   "associatedTaskColumn": "Projektet e Lidhura",
   "searchPlaceholder": "Kërko sipas emrit",
   "emptyText": "Kategoritë mund të krijohen gjatë përditësimit ose krijimit të projekteve.",
-  "colorChangeTooltip": "Klikoni për të ndryshuar ngjyrën"
+  "colorChangeTooltip": "Klikoni për të ndryshuar ngjyrën",
+  "deleteSuccessMessage": "Kategoria u fshi me sukses",
+  "deleteErrorMessage": "Dështoi në fshirjen e kategorisë"
 }

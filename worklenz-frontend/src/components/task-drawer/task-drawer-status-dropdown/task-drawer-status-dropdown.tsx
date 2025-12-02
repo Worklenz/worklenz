@@ -14,6 +14,8 @@ import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status'
 import { Select } from '@/shared/antd-imports';
 import { useMemo } from 'react';
 import { updateEnhancedKanbanTaskStatus } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { updateTask } from '@/features/task-management/task-management.slice';
+import { store } from '@/app/store';
 
 interface TaskDrawerStatusDropdownProps {
   statuses: ITaskStatus[];
@@ -43,18 +45,39 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId }: TaskDrawerStatusDr
         team_id: teamId,
       })
     );
+    
+    // Update task drawer state and emit progress request
+    // The global useTaskSocketHandlers will handle updating all slices
     socket?.once(
       SocketEvents.TASK_STATUS_CHANGE.toString(),
       (data: ITaskListStatusChangeResponse) => {
         dispatch(setTaskStatus(data));
-        socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.id);
-
+        
+        // Update task-management slice for task-list-v2
+        const currentTask = store.getState().taskManagement.entities[task.id];
+        if (currentTask) {
+          dispatch(
+            updateTask({
+              ...currentTask,
+              status: data.status_id || currentTask.status,
+              progress: typeof data.complete_ratio === 'number' ? data.complete_ratio : currentTask.progress,
+              complete_ratio: data.complete_ratio,
+              updatedAt: new Date().toISOString(),
+            })
+          );
+        }
+        
+        // Update old tasks slice
         if (tab === 'tasks-list') {
           dispatch(updateTaskStatus(data));
         }
+        
+        // Update enhanced kanban slice
         if (tab === 'board') {
           dispatch(updateEnhancedKanbanTaskStatus(data));
         }
+        
+        socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.id);
         if (data.parent_task) getTaskProgress(data.parent_task);
       }
     );

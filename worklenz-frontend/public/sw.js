@@ -1,7 +1,11 @@
 // Worklenz Service Worker
 // Provides offline functionality, caching, and performance improvements
 
-const CACHE_VERSION = 'v1.0.0';
+// Extract build timestamp from current URL or use current time as fallback
+const BUILD_TIMESTAMP = self.location.search.match(/v=(\d+)/) ?
+  self.location.search.match(/v=(\d+)/)[1] : Date.now().toString();
+
+const CACHE_VERSION = 'v' + BUILD_TIMESTAMP;
 const CACHE_NAMES = {
   STATIC: `worklenz-static-${CACHE_VERSION}`,
   DYNAMIC: `worklenz-dynamic-${CACHE_VERSION}`,
@@ -106,7 +110,17 @@ async function handleFetchRequest(request) {
   const url = new URL(request.url);
 
   try {
-    // Static assets - Cache First strategy
+    // JavaScript assets - Network First (important for dynamic imports)
+    if (isJavaScriptAsset(url)) {
+      return await networkFirstStrategy(request, CACHE_NAMES.DYNAMIC);
+    }
+
+    // CSS assets - Stale While Revalidate (balance between cache and freshness)
+    if (isCSSAsset(url)) {
+      return await staleWhileRevalidateStrategy(request, CACHE_NAMES.STATIC);
+    }
+
+    // Static assets (fonts, manifest) - Cache First strategy
     if (isStaticAsset(url)) {
       return await cacheFirstStrategy(request, CACHE_NAMES.STATIC);
     }
@@ -121,9 +135,9 @@ async function handleFetchRequest(request) {
       return await networkFirstStrategy(request, CACHE_NAMES.API);
     }
 
-    // HTML pages - Stale While Revalidate
+    // HTML pages - Network First (ensure fresh content for SPA routing)
     if (isHTMLRequest(request)) {
-      return await staleWhileRevalidateStrategy(request, CACHE_NAMES.DYNAMIC);
+      return await networkFirstStrategy(request, CACHE_NAMES.DYNAMIC);
     }
 
     // Everything else - Network First
@@ -213,13 +227,19 @@ async function staleWhileRevalidateStrategy(request, cacheName) {
 // Helper functions to identify resource types
 function isStaticAsset(url) {
   return (
-    /\.(js|css|woff2?|ttf|eot)$/.test(url.pathname) ||
-    url.pathname.includes('/assets/') ||
-    url.pathname === '/' ||
-    url.pathname === '/index.html' ||
+    /\.(woff2?|ttf|eot)$/.test(url.pathname) ||
     url.pathname === '/favicon.ico' ||
-    url.pathname === '/env-config.js'
+    url.pathname === '/env-config.js' ||
+    url.pathname === '/manifest.json'
   );
+}
+
+function isJavaScriptAsset(url) {
+  return /\.(js)$/.test(url.pathname) || url.pathname.includes('/assets/') && /\.js$/.test(url.pathname);
+}
+
+function isCSSAsset(url) {
+  return /\.(css)$/.test(url.pathname) || url.pathname.includes('/assets/') && /\.css$/.test(url.pathname);
 }
 
 function isImageRequest(url) {
@@ -369,20 +389,59 @@ async function checkForUpdates() {
       return true;
     }
 
-    // Also check if the main app files have been updated by trying to fetch index.html
-    // and comparing it with the cached version
+    // Check for app updates by comparing build timestamps
     try {
-      const cache = await caches.open(CACHE_NAMES.STATIC);
-      const cachedResponse = await cache.match('/');
-      const networkResponse = await fetch('/', { cache: 'no-cache' });
+      // Fetch fresh index.html to check for build changes
+      const networkResponse = await fetch('/', {
+        cache: 'no-cache',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
 
-      if (cachedResponse && networkResponse.ok) {
-        const cachedContent = await cachedResponse.text();
+      if (networkResponse.ok) {
         const networkContent = await networkResponse.text();
 
-        if (cachedContent !== networkContent) {
-          console.log('Service Worker: App content has changed');
-          return true;
+        // Look for build timestamp in the HTML (from env-config.js or script tags)
+        const buildMatch = networkContent.match(/buildTimestamp['":]?\s*['":]?(\d+)/i);
+        const viteMatch = networkContent.match(/\?v=(\d+)/); // Vite version parameter
+
+        if (buildMatch || viteMatch) {
+          const networkBuildTime = buildMatch ? buildMatch[1] : viteMatch[1];
+
+          if (networkBuildTime && networkBuildTime !== BUILD_TIMESTAMP) {
+            console.log('Service Worker: New build detected', {
+              current: BUILD_TIMESTAMP,
+              new: networkBuildTime
+            });
+
+            // Clear all caches for new build
+            await clearAllCaches();
+            return true;
+          }
+        }
+
+        // Also check for different script/css file hashes
+        const cachedResponse = await caches.match('/');
+        if (cachedResponse) {
+          const cachedContent = await cachedResponse.text();
+
+          // Compare script and CSS file hashes
+          const getAssetHashes = (content) => {
+            const scripts = [...content.matchAll(/src="[^"]*\/assets\/[^"]*\.js[^"]*"/g)];
+            const styles = [...content.matchAll(/href="[^"]*\/assets\/[^"]*\.css[^"]*"/g)];
+            return [...scripts, ...styles].map(match => match[0]);
+          };
+
+          const cachedHashes = getAssetHashes(cachedContent);
+          const networkHashes = getAssetHashes(networkContent);
+
+          const hashesChanged = cachedHashes.length !== networkHashes.length ||
+            cachedHashes.some((hash, i) => hash !== networkHashes[i]);
+
+          if (hashesChanged) {
+            console.log('Service Worker: Asset hashes changed, clearing cache');
+            await clearAllCaches();
+            return true;
+          }
         }
       }
     } catch (error) {

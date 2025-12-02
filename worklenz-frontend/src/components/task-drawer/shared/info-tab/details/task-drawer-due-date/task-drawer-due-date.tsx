@@ -57,7 +57,7 @@ const TaskDrawerDueDate = ({ task, t, form }: TaskDrawerDueDateProps) => {
         SocketEvents.TASK_START_DATE_CHANGE.toString(),
         JSON.stringify({
           task_id: task.id,
-          start_date: date?.format(),
+          start_date: date?.format('YYYY-MM-DD'),
           parent_task: task.parent_task_id,
           time_zone: getUserSession()?.timezone_name
             ? getUserSession()?.timezone_name
@@ -83,7 +83,7 @@ const TaskDrawerDueDate = ({ task, t, form }: TaskDrawerDueDateProps) => {
         SocketEvents.TASK_END_DATE_CHANGE.toString(),
         JSON.stringify({
           task_id: task.id,
-          end_date: date?.format(),
+          end_date: date?.format('YYYY-MM-DD'),
           parent_task: task.parent_task_id,
           time_zone: getUserSession()?.timezone_name
             ? getUserSession()?.timezone_name

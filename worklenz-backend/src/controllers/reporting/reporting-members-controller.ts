@@ -7,6 +7,7 @@ import { ServerResponse } from "../../models/server-response";
 import { DATE_RANGES, TASK_PRIORITY_COLOR_ALPHA } from "../../shared/constants";
 import { formatDuration, getColor, int } from "../../shared/utils";
 import ReportingControllerBaseWithTimezone from "./reporting-controller-base-with-timezone";
+import ReportingControllerBase from "./reporting-controller-base";
 import Excel from "exceljs";
 
 export default class ReportingMembersController extends ReportingControllerBaseWithTimezone {
@@ -78,7 +79,8 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     key = DATE_RANGES.LAST_WEEK,
     dateRange: string[] = [],
     includeArchived: boolean,
-    userId: string
+    userId: string,
+    req?: any
   ) {
     const pagingClause = (size !== null && offset !== null) ? `LIMIT ${size} OFFSET ${offset}` : "";
     const archivedClause = includeArchived
@@ -91,6 +93,26 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     const overdueActivityLogsClause = this.getActivityLogsOverdue(key, dateRange);
     const activityLogCreationFilter = this.getActivityLogsCreationClause(key, dateRange);
     const timeLogDateRangeClause = this.getTimeLogDateRangeClause(key, dateRange);
+
+    // Add project filtering for Team Leads - only show members working on assigned projects
+    let memberFilterClause = "";
+    if (req) {
+      const projectFilter = await ReportingControllerBase.buildProjectFilterForTeamLead(req);
+      if (projectFilter && projectFilter !== "") {
+        // Team Lead: only show members who work on their assigned projects
+        const assignedProjects = await ReportingControllerBase.getTeamLeadProjects(req.user?.id, teamId);
+        if (assignedProjects.length > 0) {
+          memberFilterClause = `AND tmiv.team_member_id IN (
+            SELECT DISTINCT pm.team_member_id 
+            FROM project_members pm 
+            WHERE pm.project_id = ANY(ARRAY[${assignedProjects.map((id: string) => `'${id}'::UUID`).join(',')}])
+          )`;
+        } else {
+          // Team Lead with no projects assigned - show no members
+          memberFilterClause = "AND FALSE";
+        }
+      }
+    }
 
     const q = `SELECT COUNT(DISTINCT email) AS total,
               (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
@@ -180,14 +202,14 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                                       ${timeLogDateRangeClause}
                                       ${includeArchived ? "" : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`}) AS non_billable_time
                       FROM team_member_info_view tmiv
-                      WHERE tmiv.team_id = $1 ${teamsClause}
+                      WHERE tmiv.team_id = $1 ${teamsClause} ${memberFilterClause}
                           ${searchQuery}
                       GROUP BY email, name, avatar_url, team_member_id, tmiv.team_id
                       ORDER BY last_user_activity DESC NULLS LAST
 
                       ${pagingClause}) t) AS members
                   FROM team_member_info_view tmiv
-                  WHERE tmiv.team_id = $1 ${teamsClause}
+                  WHERE tmiv.team_id = $1 ${teamsClause} ${memberFilterClause}
                   ${searchQuery}`;
     const result = await db.query(q, [teamId]);
     const [data] = result.rows;
@@ -447,7 +469,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
         : "";
 
     const teamId = this.getCurrentTeamId(req);
-    const result = await this.getMembers(teamId as string, searchQuery, size, offset, teamsClause, duration as string, dateRange, archived, req.user?.id as string);
+    const result = await this.getMembers(teamId as string, searchQuery, size, offset, teamsClause, duration as string, dateRange, archived, req.user?.id as string, req);
     const body = {
       total: result.total,
       members: result.members,
@@ -479,7 +501,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
     const teamId = this.getCurrentTeamId(req);
     const teamName = (req.query.team_name as string)?.trim() || null;
-    const result = await this.getMembers(teamId as string, "", null, null, "", duration as string, dateRange, archived, req.user?.id as string);
+    const result = await this.getMembers(teamId as string, "", null, null, "", duration as string, dateRange, archived, req.user?.id as string, req);
 
     let start = "-";
     let end = "-";
@@ -787,7 +809,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
   }
 
 
-  public static async getMemberProjectsData(teamId: string, teamMemberId: string, searchQuery: string, archived: boolean, userId: string) {
+  public static async getMemberProjectsData(teamId: string, teamMemberId: string, searchQuery: string, archived: boolean, userId: string, req?: any) {
 
     const teamClause = teamId
       ? `team_member_id = '${teamMemberId as string}'`
@@ -798,6 +820,13 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                         WHERE tmiv2.team_member_id = '${teamMemberId}' AND in_organization(p.team_id, tmiv2.team_id)))`;
 
     const archivedClause = archived ? `` : ` AND pm.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = pm.project_id AND user_id = '${userId}')`;
+
+    // Add project filtering for Team Leads
+    let projectFilterClause = "";
+    if (req) {
+      const filter = await ReportingControllerBase.buildProjectFilterForTeamLead(req);
+      projectFilterClause = filter.replace('p.id', 'pm.project_id');
+    }
 
     const q = `SELECT p.id, p.name, pm.team_member_id,
                   (SELECT name FROM teams WHERE id = p.team_id) AS team,
@@ -836,7 +865,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                       AND user_id = (SELECT user_id FROM team_member_info_view tmiv WHERE pm.team_member_id = tmiv.team_member_id)) AS time_logged
               FROM project_members pm
                       LEFT JOIN projects p ON p.id = pm.project_id
-              WHERE ${teamClause} ${searchQuery} ${archivedClause}
+              WHERE ${teamClause} ${searchQuery} ${archivedClause} ${projectFilterClause}
               ORDER BY name;`;
     const result = await db.query(q, []);
 
@@ -854,7 +883,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     const { teamMemberId, teamId } = req.query;
     const archived = req.query.archived === "true";
 
-    const result = await this.getMemberProjectsData(teamId as string, teamMemberId as string, searchQuery, archived, req.user?.id as string);
+    const result = await this.getMemberProjectsData(teamId as string, teamMemberId as string, searchQuery, archived, req.user?.id as string, req);
 
     return res.status(200).send(new ServerResponse(true, result));
   }
@@ -1119,7 +1148,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   }
 
-  protected static buildBillableQuery(selectedStatuses: { billable: boolean; nonBillable: boolean }): string {
+  protected static buildBillableQuery(selectedStatuses: { billable: boolean; nonBillable: boolean }, tableAlias = "tasks"): string {
     const { billable, nonBillable } = selectedStatuses;
   
     if (billable && nonBillable) {
@@ -1127,10 +1156,10 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       return "";
     } else if (billable) {
       // Only billable is enabled
-      return " AND tasks.billable IS TRUE";
+      return ` AND ${tableAlias}.billable IS TRUE`;
     } else if (nonBillable) {
       // Only non-billable is enabled
-      return " AND tasks.billable IS FALSE";
+      return ` AND ${tableAlias}.billable IS FALSE`;
     } 
 
     return "";
@@ -1256,6 +1285,214 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     return res.status(200).send(new ServerResponse(true, body));
   }
 
+  @HandleExceptions()
+  public static async getTimelogsFlat(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { team_member_id, duration, date_range, billable, search } = req.body || {};
+
+    // Get the team_id from request user
+    const teamId = req.user?.team_id;
+
+    // Get user timezone and date clauses
+    const userTimezone = await this.getUserTimezone(req.user?.id as string);
+    const durationClause = this.getDateRangeClauseWithTimezone(duration || DATE_RANGES.LAST_WEEK, date_range, userTimezone);
+
+    const billableQuery = this.buildBillableQuery(billable || { billable: true, nonBillable: true }, "t");
+
+    // Team filter - only show logs from current team if team_id is available
+    let teamFilter = '';
+    let paramIndex = 2;
+    const params: any[] = [userTimezone];
+
+    if (teamId) {
+      teamFilter = `AND p.team_id = $${paramIndex}`;
+      params.push(teamId);
+      paramIndex++;
+    }
+
+    // Optional member filter
+    const memberFilter = team_member_id ? `AND u.id = (SELECT user_id FROM team_members WHERE id = $${paramIndex})` : '';
+    if (team_member_id) {
+      params.push(team_member_id);
+      paramIndex++;
+    }
+
+    // Optional search filter (task, project, member, description)
+    const searchFilter = search ? `AND (
+      LOWER(t.name) LIKE LOWER($${paramIndex}) OR
+      LOWER(p.name) LIKE LOWER($${paramIndex}) OR
+      LOWER(u.name) LIKE LOWER($${paramIndex}) OR
+      LOWER(COALESCE(twl.description, '')) LIKE LOWER($${paramIndex})
+    )` : '';
+    if (search) {
+      params.push(`%${search}%`);
+    }
+
+    const q = `
+      SELECT
+        (twl.created_at AT TIME ZONE 'UTC' AT TIME ZONE $1)::DATE AS log_day,
+        u.name AS user_name,
+        p.name AS project_name,
+        t.name AS task_name,
+        twl.time_spent,
+        twl.description
+      FROM task_work_log twl
+      JOIN tasks t ON t.id = twl.task_id
+      JOIN projects p ON p.id = t.project_id
+      JOIN users u ON u.id = twl.user_id
+      WHERE 1=1
+        ${teamFilter}
+        ${memberFilter}
+        ${durationClause}
+        ${billableQuery}
+        ${searchFilter}
+      ORDER BY log_day DESC, user_name ASC`;
+
+    const rows = await db.query(q, params);
+
+    // Group rows by day
+    const groups: any[] = [];
+    const byDay: Record<string, any[]> = {};
+    for (const r of rows.rows) {
+      if (!byDay[r.log_day]) byDay[r.log_day] = [];
+      byDay[r.log_day].push({
+        user_name: r.user_name,
+        project_name: r.project_name,
+        task_name: r.task_name,
+        time_spent_string: this.secondsToReadable(r.time_spent || 0),
+        description: r.description || null,
+      });
+    }
+    for (const day of Object.keys(byDay).sort((a, b) => (a < b ? 1 : -1))) {
+      groups.push({ log_day: day, logs: byDay[day] });
+    }
+
+    return res.status(200).send(new ServerResponse(true, groups));
+  }
+
+  @HandleExceptions()
+  public static async exportTimelogsFlatCSV(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<void> {
+    let { team_member_id, duration, date_range, billable, search } = req.query;
+
+    // Sanitize parameters - convert string "undefined" to actual undefined
+    if (team_member_id === 'undefined' || team_member_id === 'null') team_member_id = undefined;
+    if (duration === 'undefined' || duration === 'null') duration = undefined;
+    if (search === 'undefined' || search === 'null') search = undefined;
+
+    // Get the team_id from request user
+    const teamId = req.user?.team_id;
+
+    let dateRange: string[] = [];
+    if (typeof date_range === "string") {
+      dateRange = date_range.split(",");
+    }
+
+    // Get user timezone and date clauses
+    const userTimezone = await this.getUserTimezone(req.user?.id as string);
+    const durationClause = this.getDateRangeClauseWithTimezone(duration as string || DATE_RANGES.LAST_WEEK, dateRange, userTimezone);
+
+    // Parse billable filter
+    let billableFilter = { billable: true, nonBillable: true };
+    if (typeof billable === "string") {
+      try {
+        billableFilter = JSON.parse(billable);
+      } catch (e) {
+        // Use default
+      }
+    }
+    const billableQuery = this.buildBillableQuery(billableFilter, "t");
+
+    // Team filter - only show logs from current team if team_id is available
+    let teamFilter = '';
+    let paramIndex = 2;
+    const params: any[] = [userTimezone];
+
+    if (teamId) {
+      teamFilter = `AND p.team_id = $${paramIndex}`;
+      params.push(teamId);
+      paramIndex++;
+    }
+
+    // Optional member filter
+    const memberFilter = team_member_id ? `AND u.id = (SELECT user_id FROM team_members WHERE id = $${paramIndex})` : '';
+    if (team_member_id) {
+      params.push(team_member_id);
+      paramIndex++;
+    }
+
+    // Optional search filter
+    const searchFilter = search ? `AND (
+      LOWER(t.name) LIKE LOWER($${paramIndex}) OR
+      LOWER(p.name) LIKE LOWER($${paramIndex}) OR
+      LOWER(u.name) LIKE LOWER($${paramIndex}) OR
+      LOWER(COALESCE(twl.description, '')) LIKE LOWER($${paramIndex})
+    )` : '';
+    if (search) {
+      params.push(`%${search}%`);
+    }
+
+    const q = `
+      SELECT
+        (twl.created_at AT TIME ZONE 'UTC' AT TIME ZONE $1)::DATE AS log_day,
+        u.name AS user_name,
+        p.name AS project_name,
+        t.name AS task_name,
+        twl.time_spent,
+        twl.description
+      FROM task_work_log twl
+      JOIN tasks t ON t.id = twl.task_id
+      JOIN projects p ON p.id = t.project_id
+      JOIN users u ON u.id = twl.user_id
+      WHERE 1=1
+        ${teamFilter}
+        ${memberFilter}
+        ${durationClause}
+        ${billableQuery}
+        ${searchFilter}
+      ORDER BY log_day DESC, user_name ASC`;
+
+    const rows = await db.query(q, params);
+
+    // Prepare CSV data
+    const exportDate = moment().format("MMM-DD-YYYY");
+    const fileName = `Time-Logs-${exportDate}`;
+
+    // Build CSV content
+    const csvRows: string[] = [];
+
+    // Add headers
+    csvRows.push("Date,Member,Project,Task,Description,Duration");
+
+    // Add data rows
+    for (const row of rows.rows) {
+      const date = row.log_day || "";
+      const member = (row.user_name || "").replace(/"/g, '""'); // Escape quotes
+      const project = (row.project_name || "").replace(/"/g, '""');
+      const task = (row.task_name || "").replace(/"/g, '""');
+      const description = (row.description || "").replace(/"/g, '""');
+      const duration = this.secondsToReadable(row.time_spent || 0);
+
+      csvRows.push(`"${date}","${member}","${project}","${task}","${description}","${duration}"`);
+    }
+
+    const csvContent = csvRows.join("\n");
+
+    // Set response headers for CSV
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}.csv"`);
+
+    // Add BOM for better Excel compatibility
+    res.write('\uFEFF' + csvContent);
+    res.end();
+  }
+
+  private static secondsToReadable(totalSeconds: number): string {
+    const sec = Math.max(0, Math.floor(totalSeconds || 0));
+    const hours = Math.floor(sec / 3600);
+    const minutes = Math.floor((sec % 3600) / 60);
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  }
+
   private static updateTaskProperties(tasks: any[]) {
     for (const task of tasks) {
         task.project_color = getColor(task.project_name);
@@ -1365,7 +1602,7 @@ public static async getSingleMemberProjects(req: IWorkLenzRequest, res: IWorkLen
     const teamName = (req.query.team_name as string)?.trim() || "";
     const archived = req.query.archived === "true";
 
-    const result = await this.getMemberProjectsData(teamId as string, teamMemberId as string, "", archived, req.user?.id as string);
+    const result = await this.getMemberProjectsData(teamId as string, teamMemberId as string, "", archived, req.user?.id as string, req);
 
     // excel file
     const exportDate = moment().format("MMM-DD-YYYY");

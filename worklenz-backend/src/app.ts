@@ -53,24 +53,29 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
 
 // CORS configuration
 const allowedOrigins = [
-  isProduction() 
+  isProduction()
     ? [
         `http://localhost:5000`,
         `http://127.0.0.1:5000`,
+        `https://app.worklenz.com`,
+        `https://www.app.worklenz.com`,
+        `https://clients.worklenz.com`,
+        `https://react.worklenz.com`,
+        `https://www.react.worklenz.com`,
         process.env.SERVER_CORS || "",  // Add hostname from env
         process.env.FRONTEND_URL || ""  // Support FRONTEND_URL as well
       ].filter(Boolean)  // Remove empty strings
     : [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5000",
-        `http://localhost:5000`,
-        process.env.SERVER_CORS || "",  // Add hostname from env
-        process.env.FRONTEND_URL || ""  // Support FRONTEND_URL as well
-      ].filter(Boolean)  // Remove empty strings
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:3000",
+      "http://127.0.0.1:5000",
+      `http://localhost:5000`,
+      process.env.SERVER_CORS || "",  // Add hostname from env
+      process.env.FRONTEND_URL || ""  // Support FRONTEND_URL as well
+    ].filter(Boolean)  // Remove empty strings
 ].flat();
 
 app.use(cors({
@@ -114,15 +119,19 @@ app.use(flash());
 function isLoggedIn(req: Request, _res: Response, next: NextFunction) {
   // Allow client portal invitation routes to bypass authentication
   const fullPath = req.originalUrl || req.url;
-  
-  if (req.path.includes("/client-portal/invitation/") || 
-      req.path.includes("/client-portal/auth/login") ||
-      req.path.includes("/client-portal/auth/refresh") ||
-      req.path.includes("/client-portal/handle-organization-invite") ||
-      fullPath.includes("/client-portal/invitation/") ||
-      fullPath.includes("/client-portal/auth/login") ||
-      fullPath.includes("/client-portal/auth/refresh") ||
-      fullPath.includes("/client-portal/handle-organization-invite")) {
+
+  if (req.path.includes("/client-portal/invitation/") ||
+    req.path.includes("/client-portal/auth/login") ||
+    req.path.includes("/client-portal/auth/refresh") ||
+    req.path.includes("/client-portal/handle-organization-invite") ||
+    req.path.startsWith("/invite/team/") ||
+    req.path.startsWith("/invite/project/") ||
+    fullPath.includes("/client-portal/invitation/") ||
+    fullPath.includes("/client-portal/auth/login") ||
+    fullPath.includes("/client-portal/auth/refresh") ||
+    fullPath.includes("/client-portal/handle-organization-invite") ||
+    fullPath.startsWith("/invite/team/") ||
+    fullPath.startsWith("/invite/project/")) {
     return next();
   }
   return req.user ? next() : next(createError(401));
@@ -137,13 +146,15 @@ const {
   getTokenFromRequest: (req: Request) => req.headers["x-csrf-token"] as string || (req.body && req.body["_csrf"])
 });
 
-// Apply CSRF selectively (exclude webhooks, public routes, and client portal invitation routes)
+// Apply CSRF selectively (exclude webhooks, public routes, and invitation routes)
 app.use((req, res, next) => {
   if (
     req.path.startsWith("/webhook/") ||
     req.path.startsWith("/secure/") ||
     req.path.startsWith("/api/") ||
     req.path.startsWith("/public/") ||
+    req.path.startsWith("/invite/team/") ||
+    req.path.startsWith("/invite/project/") ||
     req.path.includes("/client-portal/invitation/") ||
     req.path.includes("/client-portal/auth/login") ||
     req.path.includes("/client-portal/auth/refresh") ||
@@ -177,6 +188,7 @@ app.get("/csrf-token", (req: Request, res: Response) => {
 // Webhook endpoints (no CSRF required)
 app.post("/webhook/emails/bounce", safeControllerFunction(AwsSesController.handleBounceResponse));
 app.post("/webhook/emails/complaints", safeControllerFunction(AwsSesController.handleComplaintResponse));
+app.post("/webhook/emails/delivery", safeControllerFunction(AwsSesController.handleDeliveryEvents));
 app.post("/webhook/emails/reply", safeControllerFunction(AwsSesController.handleReplies));
 
 // Static file serving

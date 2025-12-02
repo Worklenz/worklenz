@@ -1,5 +1,6 @@
 {
   "title": "Serviços",
+  "description": "Gerencie seus serviços e ofertas",
   "nameColumn": "Nome",
   "createdByColumn": "Criado por",
   "statusColumn": "Status",

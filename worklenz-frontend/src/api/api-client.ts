@@ -3,6 +3,7 @@ import axios, { AxiosError } from 'axios';
 import alertService from '@/services/alerts/alertService';
 import logger from '@/utils/errorLogger';
 import config from '@/config/env';
+import { invitationRedirectService } from '@/services/invitation-redirect.service';
 
 // Store CSRF token in memory (since csrf-sync uses session-based tokens)
 let csrfToken: string | null = null;
@@ -141,9 +142,24 @@ apiClient.interceptors.response.use(
 
     // Add 401 unauthorized handling
     if (error.response?.status === 401) {
+      // Check if we're on an invite page and preserve the context
+      const currentPath = window.location.pathname;
+      const teamInviteMatch = currentPath.match(/^\/invite\/team\/([^/]+)$/);
+      const projectInviteMatch = currentPath.match(/^\/invite\/project\/([^/]+)$/);
+
+      if (teamInviteMatch) {
+        const token = teamInviteMatch[1];
+        invitationRedirectService.storePendingInvitation(token, 'team', currentPath);
+        console.log('[API] Stored team invitation context before 401 redirect');
+      } else if (projectInviteMatch) {
+        const token = projectInviteMatch[1];
+        invitationRedirectService.storePendingInvitation(token, 'project', currentPath);
+        console.log('[API] Stored project invitation context before 401 redirect');
+      }
+
       alertService.error('Session Expired', 'Please log in again');
       // Redirect to login page or trigger re-authentication
-      window.location.href = '/auth/login'; // Adjust this path as needed
+      window.location.href = '/auth/login';
       return Promise.reject(error);
     }
 

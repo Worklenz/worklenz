@@ -67,7 +67,7 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
 
   // Calculate phase statistics
   const phaseStats = useMemo(() => {
-    if (!localPhase || !localPhase.children) {
+    if (!localPhase) {
       return {
         totalTasks: 0,
         completedTasks: 0,
@@ -77,26 +77,50 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
       };
     }
 
-    const totalTasks = localPhase.children.length;
-    const completedTasks = localPhase.children.filter(task => task.progress === 100).length;
-    const pendingTasks = totalTasks - completedTasks;
+    // Prefer backend-provided aggregates on the phase milestone when available
+    const hasBackendAggregates =
+      typeof (localPhase as any).total_tasks === 'number' &&
+      typeof (localPhase as any).done_progress === 'number';
 
-    // Calculate overdue tasks (tasks with end_date in the past and progress < 100)
+    if (hasBackendAggregates) {
+      const totalTasks = (localPhase as any).total_tasks as number;
+      const completedTasks = (localPhase as any).done_progress as number;
+      const pendingTasks = Math.max(0, totalTasks - completedTasks);
+      const completionPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+      // Overdue requires child task dates; fall back to 0 if children not loaded
+      let overdueTasks = 0;
+      if (Array.isArray(localPhase.children) && localPhase.children.length > 0) {
+        const now = new Date();
+        overdueTasks = localPhase.children.filter(
+          task => task.end_date && new Date(task.end_date) < now && task.progress < 100
+        ).length;
+      }
+
+      return {
+        totalTasks,
+        completedTasks,
+        pendingTasks,
+        overdueTasks,
+        completionPercentage,
+      };
+    }
+
+    // Fallback: derive from loaded children (may undercount if not all children are present)
+    const totalTasks = Array.isArray(localPhase.children) ? localPhase.children.length : 0;
+    const completedTasks = Array.isArray(localPhase.children)
+      ? localPhase.children.filter(task => task.progress === 100).length
+      : 0;
+    const pendingTasks = Math.max(0, totalTasks - completedTasks);
     const now = new Date();
-    const overdueTasks = localPhase.children.filter(
-      task => task.end_date && new Date(task.end_date) < now && task.progress < 100
-    ).length;
+    const overdueTasks = Array.isArray(localPhase.children)
+      ? localPhase.children.filter(
+          task => task.end_date && new Date(task.end_date) < now && task.progress < 100
+        ).length
+      : 0;
+    const completionPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-    const completionPercentage =
-      totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-    return {
-      totalTasks,
-      completedTasks,
-      pendingTasks,
-      overdueTasks,
-      completionPercentage,
-    };
+    return { totalTasks, completedTasks, pendingTasks, overdueTasks, completionPercentage };
   }, [localPhase]);
 
   const formatDate = (date: Date | null) => {

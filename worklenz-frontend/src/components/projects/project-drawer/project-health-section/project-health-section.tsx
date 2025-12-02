@@ -1,7 +1,13 @@
 import { TFunction } from 'i18next';
-import { Badge, Form, FormInstance, Select, Typography } from '@/shared/antd-imports';
+import { Badge, Form, FormInstance, Select, Typography, Flex, Tooltip } from '@/shared/antd-imports';
+import { CrownOutlined } from '@ant-design/icons';
 
 import { IProjectHealth } from '@/types/project/projectHealth.types';
+import { useAuthService } from '@/hooks/useAuth';
+import { isFreeUser } from '@/utils/subscription-utils';
+import { useTranslation } from 'react-i18next';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 
 interface ProjectHealthSectionProps {
   healths: IProjectHealth[];
@@ -11,6 +17,12 @@ interface ProjectHealthSectionProps {
 }
 
 const ProjectHealthSection = ({ healths, form, t, disabled }: ProjectHealthSectionProps) => {
+  const { t: tCommon } = useTranslation('common');
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
+  const isFree = isFreeUser(currentSession);
+  const dispatch = useAppDispatch();
+
   const healthOptions = healths.map((status, index) => ({
     key: index,
     value: status.id,
@@ -21,12 +33,31 @@ const ProjectHealthSection = ({ healths, form, t, disabled }: ProjectHealthSecti
     ),
   }));
 
+  const handleSelectClick = () => {
+    if (isFree) {
+      dispatch(toggleUpgradeModal());
+    }
+  };
+
   return (
-    <Form.Item name="health_id" label={t('health')}>
+    <Form.Item name="health_id" label={
+      <Flex align="center" gap={4}>
+        <span>{t('health')}</span>
+        {isFree && (
+          <Tooltip title={tCommon('upgrade-plan')} placement="top">
+            <CrownOutlined 
+              style={{ fontSize: '14px', color: '#faad14', cursor: 'pointer' }}
+              onClick={handleSelectClick}
+            />
+          </Tooltip>
+        )}
+      </Flex>
+    }>
       <Select
         options={healthOptions}
         onChange={value => form.setFieldValue('health_id', value)}
         disabled={disabled}
+        onClick={handleSelectClick}
       />
     </Form.Item>
   );

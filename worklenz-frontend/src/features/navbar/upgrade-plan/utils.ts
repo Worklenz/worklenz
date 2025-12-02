@@ -19,6 +19,11 @@ export const isAppSumoUser = (
   const planName = billingInfo?.plan_name?.toLowerCase() || '';
   const subscriptionType = session?.subscription_type?.toLowerCase() || '';
 
+  // First check if user is on trial - trial users should never be considered AppSumo users
+  if (session?.subscription_type === 'TRIAL') {
+    return false;
+  }
+
   return (
     planName.includes('appsumo') ||
     subscriptionType.includes('appsumo') ||
@@ -195,9 +200,9 @@ export const formatPricing = (
 export const getAvailableUpgradePlans = (userInfo: UserSubscriptionInfo): PlanTier[] => {
   const { planTier, isAppSumoUser } = userInfo;
 
-  // AppSumo users can only upgrade to Business or Enterprise
+  // AppSumo users can only upgrade to Business plans
   if (isAppSumoUser) {
-    return [PlanTier.BUSINESS, PlanTier.ENTERPRISE];
+    return [PlanTier.BUSINESS];
   }
 
   // Regular users can upgrade to any plan higher than their current

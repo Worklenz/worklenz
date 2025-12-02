@@ -3,11 +3,13 @@ import { NotificationsService } from "../../services/notifications/notifications
 import { SocketEvents } from "../events";
 import { 
   getLoggedInUserIdFromSocket, 
-  log_error, 
   notifyProjectUpdates 
 } from "../util";
 import { logMemberAssignment } from "../../services/activity-logs/activity-logs.service";
 import { getAssignees, ITaskAssignee, runAssignOrRemove } from "./on-quick-assign-or-remove";
+import { ExternalNotificationsService } from "../../services/external-notifications.service";
+import db from "../../config/db";
+import { log_error } from "../../shared/utils";
 
 interface TaskAssigneesChangeData {
   task_id: string;
@@ -116,6 +118,25 @@ export async function on_task_assignees_change(
 
     // Notify project updates once after all changes
     notifyProjectUpdates(socket, body.task_id);
+
+    // Send external notifications (Slack, Teams) if there were assignments
+    if (addedAssignees.length > 0) {
+      try {
+        const userQuery = `SELECT name FROM users WHERE id = $1`;
+        const userResult = await db.query(userQuery, [userId]);
+        const userName = userResult.rows[0]?.name || "Unknown User";
+        
+        await ExternalNotificationsService.sendExternalNotifications(
+          body.project_id,
+          body.task_id,
+          "task_assigned",
+          userName
+        );
+      } catch (notifError) {
+        log_error("Error sending external notifications:", notifError);
+        // Don't throw - continue even if notifications fail
+      }
+    }
 
     // Emit updated assignee list
     socket.emit(SocketEvents.TASK_ASSIGNEES_CHANGE.toString(), { assigneeIds: newAssignees });

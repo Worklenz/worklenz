@@ -19,6 +19,7 @@
   "teamMembersColumn": "Team Members",
   "actionBtnsColumn": "Actions",
 
+  "statusAll": "All",
   "statusActive": "Active",
   "statusInactive": "Inactive",
   "statusPending": "Pending",
@@ -37,7 +38,7 @@
   "deleteConfirmationCancel": "Cancel",
 
   "searchClientsPlaceholder": "Search clients...",
-  "statusFilterPlaceholder": "Filter by status",
+  "portalStatusFilterPlaceholder": "Filter by portal status",
 
   "paginationText": "Showing",
   "ofText": "of",
@@ -219,6 +220,7 @@
   "linkCopiedMessage": "Link copied to clipboard",
   "noClientsTitle": "No Clients Found",
   "noClientsDescription": "You haven't added any clients yet. Add your first client to start managing their portal access.",
+  "noClientsMatchingFilters": "No clients match the current filters.",
   "errorLoadingClients": "Error Loading Clients",
   "errorLoadingClientsDescription": "There was an error loading your clients. Please try again later.",
 
@@ -245,5 +247,26 @@
   "projectAssignedSuccessMessage": "Project assigned successfully",
   "projectAssignedErrorMessage": "Failed to assign project",
   "projectRemovedSuccessMessage": "Project removed successfully",
-  "projectRemovedErrorMessage": "Failed to remove project"
+  "projectRemovedErrorMessage": "Failed to remove project",
+
+  "portalStatusColumn": "Portal Status",
+  "portalStatus": {
+    "active": "Active",
+    "invited": "Invited",
+    "not_invited": "Not Invited",
+    "expired": "Expired"
+  },
+
+  "inviteToPortalTooltip": "Invite to Portal",
+  "resendInvitationTooltip": "Resend Invitation",
+  "copyInviteLinkTooltip": "Copy Invitation Link",
+
+  "inviteSelectedToPortal": "Send Portal Invitations",
+  "selectClientsToInvite": "Please select clients to invite",
+  "bulkInviteSuccessMessage": "invitation(s) generated successfully",
+  "bulkInvitePartialFailMessage": "invitation(s) failed",
+  "bulkInviteErrorMessage": "Failed to generate invitations",
+
+  "inviteLinkGeneratedSuccess": "Invitation link generated successfully!",
+  "inviteLinkGeneratedError": "Failed to generate invitation link"
 }

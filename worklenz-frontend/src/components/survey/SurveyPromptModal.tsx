@@ -10,6 +10,7 @@ import { appMessage } from '@/shared/antd-imports';
 import { ISurveySubmissionRequest } from '@/types/account-setup/survey.types';
 import logger from '@/utils/errorLogger';
 import { resetSurveyData, setSurveySubStep } from '@/features/account-setup/account-setup.slice';
+import { useLocation } from 'react-router-dom';
 
 interface SurveyPromptModalProps {
   forceShow?: boolean;
@@ -22,6 +23,7 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({
 }) => {
   const { t } = useTranslation('survey');
   const dispatch = useAppDispatch();
+  const location = useLocation();
   const [visible, setVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
@@ -32,7 +34,16 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({
   const surveySubStep = useAppSelector(state => state.accountSetupReducer.surveySubStep);
   const isDarkMode = themeMode === 'dark';
 
+  // Check if current page is allowed to show survey (only homepage and projects list)
+  const isAllowedPage = location.pathname === '/worklenz/home' || location.pathname === '/worklenz/projects';
+
   useEffect(() => {
+    // Only show survey on allowed pages (homepage and projects list)
+    if (!isAllowedPage && !forceShow) {
+      setVisible(false);
+      return;
+    }
+
     // Check if survey modal is disabled via environment variable
     if (import.meta.env.VITE_ENABLE_SURVEY_MODAL !== 'true' && !forceShow) {
       return; // Don't show modal if disabled in environment
@@ -92,7 +103,7 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [loading, hasCompletedSurvey, dispatch, forceShow, t]);
+  }, [loading, hasCompletedSurvey, dispatch, forceShow, t, isAllowedPage]);
 
   const handleComplete = async () => {
     try {

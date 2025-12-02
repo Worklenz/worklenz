@@ -23,6 +23,7 @@ import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import logger from '@/utils/errorLogger';
 import alertService from '@/services/alerts/alertService';
 import { WORKLENZ_REDIRECT_PROJ_KEY } from '@/shared/constants';
+import { getDeviceType } from '@/types/mixpanel-events.types';
 
 // Define the global grecaptcha type
 declare global {
@@ -234,6 +235,8 @@ const SignupPage = () => {
       trackMixpanelEvent(evt_signup_with_email_click, {
         email: body.email,
         name: body.name,
+        device_type: getDeviceType(),
+        button_location: 'inline',
       });
       if (urlParams.teamId) {
         body.team_id = urlParams.teamId;
@@ -260,7 +263,10 @@ const SignupPage = () => {
 
   const onGoogleSignUpClick = () => {
     try {
-      trackMixpanelEvent(evt_signup_with_google_click);
+      trackMixpanelEvent(evt_signup_with_google_click, {
+        device_type: getDeviceType(),
+        button_location: 'inline',
+      });
       const queryParams = getInvitationQueryParams();
       const url = `${import.meta.env.VITE_API_URL}/secure/google${queryParams ? `?${queryParams}` : ''}`;
       window.location.href = url;

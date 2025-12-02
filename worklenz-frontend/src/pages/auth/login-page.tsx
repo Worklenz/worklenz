@@ -26,6 +26,7 @@ import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import alertService from '@/services/alerts/alertService';
 import { useAuthService } from '@/hooks/useAuth';
 import { WORKLENZ_REDIRECT_PROJ_KEY } from '@/shared/constants';
+import { getDeviceType } from '@/types/mixpanel-events.types';
 
 interface LoginFormValues {
   email: string;
@@ -100,7 +101,10 @@ const LoginPage: React.FC = () => {
   const onFinish = useCallback(
     async (values: LoginFormValues) => {
       try {
-        trackMixpanelEvent(evt_login_with_email_click);
+        trackMixpanelEvent(evt_login_with_email_click, {
+          device_type: getDeviceType(),
+          button_location: 'inline',
+        });
 
         // if (teamId) {
         //   localStorage.setItem(WORKLENZ_REDIRECT_PROJ_KEY, teamId);
@@ -126,7 +130,10 @@ const LoginPage: React.FC = () => {
 
   const handleGoogleLogin = useCallback(() => {
     try {
-      trackMixpanelEvent(evt_login_with_google_click);
+      trackMixpanelEvent(evt_login_with_google_click, {
+        device_type: getDeviceType(),
+        button_location: 'inline',
+      });
       window.location.href = `${import.meta.env.VITE_API_URL}/secure/google`;
     } catch (error) {
       logger.error('Google login failed', error);

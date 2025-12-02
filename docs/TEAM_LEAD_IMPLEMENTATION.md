@@ -10,18 +10,23 @@ Successfully implemented a Team Lead role that provides admin access scoped to a
 - ✅ Updated `update_team_member` function to support role selection via `role_name` parameter  
 - ✅ Updated all team creation functions to automatically create Team Lead role alongside Admin, Member, and Owner roles
 - ✅ Created migration script to add Team Lead role to existing teams
+- ✅ Enhanced `create_project` function to ensure project creators are automatically added as project members
+- ✅ Added validation in project creation to prevent silent failures when adding creators as members
 
 ### 2. Backend Changes
 - ✅ Enhanced team member creation/update endpoints to support Team Lead role
 - ✅ Updated access control middleware to recognize Team Lead permissions
 - ✅ Created team permission utility functions for role validation
 - ✅ Updated project manager validator to include Team Lead access
+- ✅ Implemented project-scoped reporting access for Team Leads
+- ✅ Added project filtering logic in reporting controllers (overview, members, projects)
+- ✅ Created utility functions for Team Lead project access validation
 
 ### 3. Frontend Changes
 - ✅ Added Team Lead role types and constants
 - ✅ Updated invite team members modal to include Team Lead option
 - ✅ Enhanced team member creation interface with role selection
-- ✅ Updated finance permissions to include Team Lead access
+- ✅ Updated finance permissions to exclude Team Lead access
 - ✅ Updated permission comments throughout the application
 
 ## Key Features
@@ -29,10 +34,9 @@ Successfully implemented a Team Lead role that provides admin access scoped to a
 ### Team Lead Permissions
 - **Admin access within assigned team**: Full management capabilities for team members, projects, and settings
 - **Team-scoped access**: Cannot access other teams or organization-wide settings
-- **Project management**: Can manage all projects within their team
-- **Finance access**: Can view and edit project finance data within their team
+- **Project-specific management**: Can only manage projects they are assigned to as members
 - **Settings access**: Full access to team-specific settings (team members, labels, categories, etc.)
-- **Reporting access**: Full access to team-scoped reporting and analytics
+- **Project-scoped reporting**: Can only view reporting and analytics for projects they're assigned to and team members working on those projects
 
 ### Role Hierarchy
 1. **Owner**: Full organization access and billing
@@ -72,15 +76,17 @@ WHERE team_id = 'YOUR_TEAM_ID';
 Test that Team Lead can:
 - ✅ Access Admin Center
 - ✅ Manage team members  
-- ✅ View and edit project finance data
 - ✅ Access team settings (labels, categories, etc.)
-- ✅ Manage projects within their team
-- ✅ Access reporting and analytics for their team
+- ✅ Manage projects they are assigned to as members
+- ✅ Access reporting and analytics for their assigned projects and relevant team members
 
 Test that Team Lead cannot:
 - ❌ Access billing information (Owner only)
+- ❌ Access project finance data (Admin/Owner/Project Manager only)
 - ❌ Manage members in other teams
 - ❌ Access organization-wide admin functions
+- ❌ View projects they are not assigned to as members
+- ❌ View reporting data from projects they don't have access to
 
 ## Migration Steps
 
@@ -107,6 +113,11 @@ Team Lead role is automatically created when new teams are created via the updat
 - `src/shared/team-permissions.ts` - New utility functions
 - `src/routes/apis/reporting-api-router.ts` - Added permission validation to reporting routes
 - `src/routes/apis/reporting-export-api-router.ts` - Added permission validation to export routes
+- `src/controllers/reporting/reporting-controller-base.ts` - Added project filtering utilities for Team Leads
+- `src/controllers/reporting/overview/reporting-overview-controller.ts` - Project-scoped access implementation
+- `src/controllers/reporting/overview/reporting-overview-base.ts` - Updated with project filtering
+- `src/controllers/reporting/reporting-members-controller.ts` - Member filtering based on assigned projects
+- `src/controllers/reporting/projects/reporting-projects-controller.ts` - Project access filtering
 
 ### Frontend
 - `src/types/teamMembers/team-member-create-request.ts` - Added role_name support
@@ -171,8 +182,33 @@ Team Lead role is automatically created when new teams are created via the updat
 - ✅ **Immediate availability** - Team Lead role can be assigned right after migration
 - ✅ **Backward compatibility** - existing admin/member assignments continue working
 
+## Project-Scoped Access Implementation
+
+### How It Works
+Team Leads now have **project-specific access** rather than full team access:
+
+1. **Project Assignment**: Team Leads must be added as members to projects they want to manage
+2. **Automatic Creator Membership**: When Team Leads create projects, they're automatically added as ADMIN members
+3. **Reporting Scope**: Team Leads only see reporting data for:
+   - Projects they're assigned to as members
+   - Team members who work on those projects
+4. **Data Isolation**: All reporting queries are filtered to prevent access to non-assigned projects
+
+### Technical Implementation
+- **Database Functions**: Enhanced `create_project()` to ensure creators become members
+- **Reporting Controllers**: Added project filtering logic across all reporting endpoints
+- **Member Filtering**: Restricts visible team members to those working on assigned projects
+- **Query Optimization**: Efficient SQL filtering using project membership joins
+
+### Benefits
+- ✅ **Granular Control**: Team Leads see only relevant projects and team members
+- ✅ **Secure Access**: No accidental access to unrelated project data
+- ✅ **Scalable**: Works with teams of any size with multiple Team Leads
+- ✅ **Intuitive**: Team Leads naturally have access to projects they create or are assigned to
+
 ## Future Enhancements
 - Consider adding team-specific admin roles (e.g., Team Finance Lead, Team Project Lead)
 - Add audit logging for team lead actions
 - Implement team lead invitation workflows
 - Add team lead activity dashboards
+- Add bulk project assignment tools for Team Leads

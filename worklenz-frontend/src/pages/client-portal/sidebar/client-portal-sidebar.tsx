@@ -24,6 +24,8 @@ import {
 import { useAppSelector } from '../../../hooks/useAppSelector';
 import { themeWiseColor } from '../../../utils/themeWiseColor';
 import { useResponsive } from '../../../hooks/useResponsive';
+import { useMixpanelTracking } from '../../../hooks/useMixpanelTracking';
+import { MixpanelEvents, ClientPortalNavigationEventProps } from '../../../types/mixpanel-events.types';
 
 const { Title } = Typography;
 
@@ -43,11 +45,25 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { isMobile } = useResponsive();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   // Example: get unread chat count from Redux (replace with real selector)
   const unreadChatsCount = useAppSelector(
     state => state.clientsPortalReducer?.chatsReducer?.chatList || []
   ).filter(chat => chat.status === 'unread').length;
+
+  // Track navigation
+  const handleNavigation = (toPage: string, fromPage?: string, method: 'sidebar' | 'link' = 'sidebar') => {
+    const navigationProps: ClientPortalNavigationEventProps = {
+      from_page: fromPage || activeKey,
+      to_page: toPage,
+      navigation_method: method,
+      page: 'client_portal',
+      source: 'sidebar'
+    };
+
+    trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_NAVIGATION, navigationProps);
+  };
 
   const menuSource = items || clientPortalItems;
 
@@ -78,9 +94,13 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
         onClick: collapsed
           ? () => {
               // Handle navigation for collapsed state
+              handleNavigation(item.key, activeKey, 'sidebar');
               window.location.href = `/worklenz/client-portal/${item.endpoint}`;
             }
-          : undefined,
+          : () => {
+              // Handle navigation for expanded state
+              handleNavigation(item.key, activeKey, 'sidebar');
+            },
       })),
     [t, unreadChatsCount, themeMode, menuSource, collapsed]
   );

@@ -1,5 +1,6 @@
 {
   "title": "Rechnungen",
+  "description": "Verwalten und verfolgen Sie Ihre Rechnungen",
   "addInvoiceButton": "Rechnung hinzufügen",
   "createInvoiceDrawerTitle": "Rechnung erstellen",
   "selectRequestLabel": "Anfrage auswählen",

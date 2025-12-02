@@ -28,6 +28,11 @@ export interface GanttTask {
   type?: 'task' | 'milestone' | 'phase' | 'add-task-button';
   // Add task row specific properties
   parent_phase_id?: string;
+  // Optional aggregates for phase milestones (from backend)
+  todo_progress?: number;
+  doing_progress?: number;
+  done_progress?: number;
+  total_tasks?: number;
 }
 
 export interface GanttPhase {
@@ -60,4 +65,7 @@ export interface GanttContextType {
   projectId: string;
   dateRange: { start: Date; end: Date };
   onRefresh: () => void;
+  timelineCalculator?: any; // UnifiedTimelineCalculator instance
+  isReadOnly: boolean;
+  hasBusinessAccess: boolean;
 }

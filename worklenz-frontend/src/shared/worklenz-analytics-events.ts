@@ -2,12 +2,14 @@
 
 // Authentication & Login
 export const evt_login_page_visit = 'login_page_visit';
+export const evt_login_page_login = 'login_page_login';
 export const evt_login_with_email_click = 'login_with_email_click';
 export const evt_login_with_google_click = 'login_with_google_click';
 export const evt_login_remember_me_click = 'login_remember_me_click';
 
 // Registration & Signup
 export const evt_signup_page_visit = 'signup_page_visit';
+export const evt_signup_page_signup = 'signup_page_signup';
 export const evt_signup_with_email_click = 'signup_with_email_click';
 export const evt_signup_with_google_click = 'signup_with_google_click';
 export const evt_forgot_password_page_visit = 'forgot_password_page_visit';
@@ -53,6 +55,15 @@ export const evt_project_settings_click = 'project_settings_click';
 export const evt_project_import_tasks_click = 'project_import_tasks_click';
 export const evt_project_import_tasks = 'project_import_tasks';
 export const evt_project_update = 'project_update';
+
+// File Management
+export const evt_file_uploaded = 'file_uploaded';
+
+// Timer & Time Tracking
+export const evt_timer_started = 'timer_started';
+
+// Client Portal
+export const evt_client_portal_viewed = 'client_portal_viewed';
 
 // Board Interactions
 export const evt_project_board_open_task = 'project_board_open_task';
@@ -135,6 +146,12 @@ export const evt_settings_labels_delete = 'settings_labels_delete';
 export const evt_settings_category_delete = 'settings_category_delete';
 export const evt_settings_task_templates_delete = 'settings_task_templates_delete';
 export const evt_settings_profile_picture_update = 'settings_profile_picture_update';
+
+// Theme & UI
+export const evt_dark_mode_toggled = 'dark_mode_toggled';
+
+// Custom Fields
+export const evt_custom_field_enabled = 'custom_field_enabled';
 
 // Common Actions
 export const evt_common_switch_team = 'common_switch_team';

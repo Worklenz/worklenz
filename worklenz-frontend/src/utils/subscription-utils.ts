@@ -3,13 +3,37 @@ import { ILocalSession } from '@/types/auth/local-session.types';
 
 /**
  * Checks if user has access to business features (client portal, project finance)
- * Only PADDLE users with business or enterprise plans have access
+ * PADDLE users with business or enterprise plans, ANNUAL_BUSINESS users, SELF_HOSTED users,
+ * and users on active Business plan trials have access
  * Excludes lifetime deal users and other subscription types
  */
 export const hasBusinessFeatureAccess = (session: ILocalSession | null): boolean => {
   if (!session) return false;
 
-  // Only PADDLE subscription type qualifies
+  // Check for active Business plan trial
+  if (session.active_plan_trial === 'BUSINESS_LARGE' && session.plan_trial_end_date) {
+    const trialEndDate = new Date(session.plan_trial_end_date);
+    if (trialEndDate > new Date()) {
+      return true; // Active Business trial grants access
+    }
+  }
+
+  // Check for Business trial subscription type (from deserialize_user)
+  if (session.subscription_type === 'BUSINESS_TRIAL') {
+    return true;
+  }
+
+  // ANNUAL_BUSINESS subscription type qualifies
+  if (session.subscription_type === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS) {
+    return true;
+  }
+
+  // SELF_HOSTED users have the same privileges as business plan users
+  if (session.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED) {
+    return true;
+  }
+
+  // Only PADDLE subscription type qualifies for plan-based access
   if (session.subscription_type !== ISUBSCRIPTION_TYPE.PADDLE) {
     return false;
   }
@@ -25,6 +49,16 @@ export const hasBusinessFeatureAccess = (session: ILocalSession | null): boolean
 export const isBusinessPlan = (session: ILocalSession | null): boolean => {
   if (!session) return false;
 
+  // ANNUAL_BUSINESS is considered a business plan
+  if (session.subscription_type === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS) {
+    return true;
+  }
+
+  // SELF_HOSTED users are considered to have business plan privileges
+  if (session.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED) {
+    return true;
+  }
+
   if (session.subscription_type !== ISUBSCRIPTION_TYPE.PADDLE) {
     return false;
   }
@@ -39,6 +73,11 @@ export const isBusinessPlan = (session: ILocalSession | null): boolean => {
 export const isEnterprisePlan = (session: ILocalSession | null): boolean => {
   if (!session) return false;
 
+  // SELF_HOSTED users are considered to have enterprise plan privileges
+  if (session.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED) {
+    return true;
+  }
+
   if (session.subscription_type !== ISUBSCRIPTION_TYPE.PADDLE) {
     return false;
   }
@@ -48,10 +87,29 @@ export const isEnterprisePlan = (session: ILocalSession | null): boolean => {
 };
 
 /**
+ * Checks if user is on a free plan
+ */
+export const isFreeUser = (session: ILocalSession | null): boolean => {
+  if (!session) return true;
+  return session.subscription_type === ISUBSCRIPTION_TYPE.FREE;
+};
+
+/**
  * Get the subscription plan type for display purposes
  */
 export const getSubscriptionPlanType = (session: ILocalSession | null): string => {
   if (!session) return 'Unknown';
+
+  // Check for plan trials first
+  if (session.subscription_type === 'BUSINESS_TRIAL') {
+    return 'Business Trial';
+  }
+  if (session.subscription_type === 'ENTERPRISE_TRIAL') {
+    return 'Enterprise Trial';
+  }
+  if (session.subscription_type === 'PLAN_TRIAL') {
+    return `${session.trial_plan_display_name || 'Plan'} Trial`;
+  }
 
   switch (session.subscription_type) {
     case ISUBSCRIPTION_TYPE.FREE:
@@ -64,6 +122,10 @@ export const getSubscriptionPlanType = (session: ILocalSession | null): string =
       return 'Custom';
     case ISUBSCRIPTION_TYPE.CREDIT:
       return 'Credit';
+    case ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS:
+      return 'Annual Business';
+    case ISUBSCRIPTION_TYPE.SELF_HOSTED:
+      return 'Self Hosted';
     case ISUBSCRIPTION_TYPE.PADDLE:
       const planName = session.plan_name?.toLowerCase() || '';
       if (planName.includes('business')) return 'Business';
@@ -73,4 +135,55 @@ export const getSubscriptionPlanType = (session: ILocalSession | null): string =
     default:
       return 'Unknown';
   }
+};
+
+/**
+ * Checks if user is currently on a plan-specific trial
+ */
+export const isOnPlanTrial = (session: ILocalSession | null): boolean => {
+  if (!session) return false;
+  return Boolean(session.is_plan_trial || (session.active_plan_trial && session.plan_trial_end_date));
+};
+
+/**
+ * Gets the number of days remaining in a plan trial
+ */
+export const getPlanTrialDaysRemaining = (session: ILocalSession | null): number => {
+  if (!session?.plan_trial_end_date) return 0;
+
+  const endDate = new Date(session.plan_trial_end_date);
+  const today = new Date();
+  const diffTime = endDate.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  return Math.max(0, diffDays);
+};
+
+/**
+ * Checks if user is on a Business plan trial specifically
+ */
+export const isOnBusinessTrial = (session: ILocalSession | null): boolean => {
+  if (!session) return false;
+  return session.subscription_type === 'BUSINESS_TRIAL' ||
+         (session.active_plan_trial === 'BUSINESS_LARGE' && Boolean(session.plan_trial_end_date));
+};
+
+/**
+ * Gets trial expiration message
+ */
+export const getTrialExpirationMessage = (session: ILocalSession | null): string | null => {
+  if (!isOnPlanTrial(session)) return null;
+
+  const daysRemaining = getPlanTrialDaysRemaining(session);
+  const planName = session.trial_plan_display_name || 'Plan';
+
+  if (daysRemaining === 0) {
+    return `Your ${planName} trial expires today`;
+  } else if (daysRemaining === 1) {
+    return `Your ${planName} trial expires tomorrow`;
+  } else if (daysRemaining <= 3) {
+    return `Your ${planName} trial expires in ${daysRemaining} days`;
+  }
+
+  return null;
 };

@@ -4,5 +4,6 @@
   "members": "Members",
   "timeReports": "Time Reports",
   "estimateVsActual": "Estimate Vs Actual",
+  "logs": "Time Logs",
   "currentOrganizationTooltip": "Current organization"
 }

@@ -137,18 +137,29 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
 
     const today = new Date();
 
-    let startDate = moment(today).clone().startOf("month");
-    let endDate = moment(today).clone().endOf("month");
+    // Use provided date parameters if available, otherwise use existing logic
+    let startDate: moment.Moment;
+    let endDate: moment.Moment;
 
-    this.setChartStartEnd(dateRange, logRange, req.query.timeZone as string);
+    if (req.query.start_date && req.query.end_date) {
+      // Use provided date range directly
+      startDate = moment(req.query.start_date as string);
+      endDate = moment(req.query.end_date as string);
+    } else {
+      // Fall back to existing complex logic
+      startDate = moment(today).clone().startOf("month");
+      endDate = moment(today).clone().endOf("month");
 
-    if (dateRange.start_date && dateRange.end_date) {
-      startDate = this.validateStartDate(moment(dateRange.start_date)) ? moment(dateRange.start_date).startOf("month") : moment(today).clone().startOf("month");
-      endDate = this.validateEndDate(moment(dateRange.end_date)) ? moment(today).clone().endOf("month") : moment(dateRange.end_date).endOf("month");
-    } else if (dateRange.start_date && !dateRange.end_date) {
-      startDate = this.validateStartDate(moment(dateRange.start_date)) ? moment(dateRange.start_date).startOf("month") : moment(today).clone().startOf("month");
-    } else if (!dateRange.start_date && dateRange.end_date) {
-      endDate = this.validateEndDate(moment(dateRange.end_date)) ? moment(today).clone().endOf("month") : moment(dateRange.end_date).endOf("month");
+      this.setChartStartEnd(dateRange, logRange, req.query.timeZone as string);
+
+      if (dateRange.start_date && dateRange.end_date) {
+        startDate = this.validateStartDate(moment(dateRange.start_date)) ? moment(dateRange.start_date).startOf("month") : moment(today).clone().startOf("month");
+        endDate = this.validateEndDate(moment(dateRange.end_date)) ? moment(today).clone().endOf("month") : moment(dateRange.end_date).endOf("month");
+      } else if (dateRange.start_date && !dateRange.end_date) {
+        startDate = this.validateStartDate(moment(dateRange.start_date)) ? moment(dateRange.start_date).startOf("month") : moment(today).clone().startOf("month");
+      } else if (!dateRange.start_date && dateRange.end_date) {
+        endDate = this.validateEndDate(moment(dateRange.end_date)) ? moment(today).clone().endOf("month") : moment(dateRange.end_date).endOf("month");
+      }
     }
 
     const xMonthsBeforeStart = startDate.clone().subtract(1, "months");
@@ -221,6 +232,8 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
   public static async getMembers(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
 
     const expandedMembers: string[] = req.body?.expanded_members || req.query?.expanded_members || [];
+    const startDate: string | undefined = req.query?.start_date as string;
+    const endDate: string | undefined = req.query?.end_date as string;
 
     const q = `SELECT pm.id AS project_member_id,
                       tmiv.team_member_id,
@@ -244,25 +257,65 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
                                       INNER JOIN tasks_assignees ta ON tasks.id = ta.task_id
                             WHERE archived IS FALSE
                               AND project_id = $1
-                              AND ta.team_member_id = tmiv.team_member_id) rec) AS duration,
+                              AND ta.team_member_id = tmiv.team_member_id
+                              ${this.getTaskDateRangeFilter(startDate, endDate)}) rec) AS duration,
 
                       (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
                       FROM (SELECT  MIN(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS min_date,
-                                    MAX(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS max_date
+                                    MAX(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS max_date,
+                                    SUM(twl.time_spent) AS total_time_spent_seconds
                                   FROM task_work_log twl
                                           INNER JOIN tasks t ON twl.task_id = t.id AND t.archived IS FALSE
                                   WHERE t.project_id = $1
-                                    AND twl.user_id = tmiv.user_id) rec) AS logs_date_union,
+                                    AND twl.user_id = tmiv.user_id
+                                    ${this.getLogDateRangeFilter(startDate, endDate)}) rec) AS logs_date_union,
 
                       (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
-                      FROM (SELECT start_date,
-                                    end_date
+                      FROM (
+                            -- Tasks with start/end dates
+                            SELECT tasks.id AS task_id,
+                                   tasks.name AS task_name,
+                                   start_date,
+                                   end_date,
+                                   (SELECT name FROM task_statuses WHERE id = tasks.status_id) AS status_name,
+                                   (SELECT color_code FROM sys_task_status_categories WHERE id = (SELECT category_id FROM task_statuses WHERE id = tasks.status_id)) AS status_color,
+                                   (SELECT name FROM task_priorities WHERE id = tasks.priority_id) AS priority_name,
+                                   (SELECT color_code FROM task_priorities WHERE id = tasks.priority_id) AS priority_color,
+                                   NULL::NUMERIC AS logged_hours,
+                                   'task' AS entry_type
                             FROM tasks
                                       INNER JOIN tasks_assignees ta ON tasks.id = ta.task_id
                             WHERE archived IS FALSE
                               AND project_id = pm.project_id
                               AND ta.team_member_id = tmiv.team_member_id
-                            ORDER BY start_date ASC) rec) AS tasks
+                              ${this.getTaskDateRangeFilter(startDate, endDate)}
+
+                            UNION ALL
+
+                            -- Time logs as single-day entries
+                            SELECT DISTINCT ON (twl.created_at::date, t.id)
+                                   t.id AS task_id,
+                                   t.name AS task_name,
+                                   twl.created_at::date AS start_date,
+                                   twl.created_at::date AS end_date,
+                                   (SELECT name FROM task_statuses WHERE id = t.status_id) AS status_name,
+                                   (SELECT color_code FROM sys_task_status_categories WHERE id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) AS status_color,
+                                   (SELECT name FROM task_priorities WHERE id = t.priority_id) AS priority_name,
+                                   (SELECT color_code FROM task_priorities WHERE id = t.priority_id) AS priority_color,
+                                   SUM(twl.time_spent / 3600.0) OVER (PARTITION BY twl.created_at::date, t.id) AS logged_hours,
+                                   'time_log' AS entry_type
+                            FROM task_work_log twl
+                                      INNER JOIN tasks t ON twl.task_id = t.id
+                                      INNER JOIN tasks_assignees ta ON t.id = ta.task_id
+                            WHERE t.archived IS FALSE
+                              AND t.project_id = pm.project_id
+                              AND ta.team_member_id = tmiv.team_member_id
+                              AND twl.user_id = tmiv.user_id
+                              ${startDate ? `AND twl.created_at::date >= '${startDate}'` : ''}
+                              ${endDate ? `AND twl.created_at::date <= '${endDate}'` : ''}
+
+                            ORDER BY start_date ASC
+                      ) rec) AS tasks
               FROM project_members pm
                       INNER JOIN team_member_info_view tmiv ON pm.team_member_id = tmiv.team_member_id
               WHERE project_id = $1
@@ -408,7 +461,7 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
 
   private static getFilterByDatesWhereClosure(text: string) {
     let closure = "";
-    switch (text.trim()) {
+    switch ((text || "").trim()) {
       case "":
         closure = ``;
         break;
@@ -423,6 +476,40 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
         break;
     }
     return closure;
+  }
+
+  private static getTaskDateRangeFilter(startDate?: string, endDate?: string): string {
+    if (!startDate || !endDate) {
+      return ""; // No filtering if date range is not provided
+    }
+
+    return `
+      AND (
+        -- Task overlaps with the selected date range
+        (start_date IS NOT NULL AND end_date IS NOT NULL AND start_date <= '${endDate}' AND end_date >= '${startDate}') OR
+        -- Task has only end_date and it falls within the range
+        (start_date IS NULL AND end_date IS NOT NULL AND end_date >= '${startDate}' AND end_date <= '${endDate}') OR
+        -- Task has only start_date and it falls within the range
+        (start_date IS NOT NULL AND end_date IS NULL AND start_date >= '${startDate}' AND start_date <= '${endDate}') OR
+        -- Include tasks with both dates NULL (unscheduled tasks)
+        (start_date IS NULL AND end_date IS NULL)
+      )
+    `;
+  }
+
+  private static getLogDateRangeFilter(startDate?: string, endDate?: string): string {
+    if (!startDate || !endDate) {
+      return ""; // No filtering if date range is not provided
+    }
+
+    return `
+      AND (
+        -- Log date (created_at - time_spent) falls within the selected date range
+        -- Convert to date and compare with the provided date range
+        DATE(twl.created_at - INTERVAL '1 second' * twl.time_spent) >= '${startDate}'
+        AND DATE(twl.created_at - INTERVAL '1 second' * twl.time_spent) <= '${endDate}'
+      )
+    `;
   }
 
   private static getFilterByMembersWhereClosure(text: string) {

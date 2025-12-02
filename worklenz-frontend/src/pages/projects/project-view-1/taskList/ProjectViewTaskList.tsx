@@ -6,21 +6,25 @@ import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSli
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import TaskListBoard from '@/components/task-management/task-list-board';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_project_task_list_visit } from '@/shared/worklenz-analytics-events';
 
 const ProjectViewTaskList = () => {
   const dispatch = useAppDispatch();
   const projectId = useAppSelector(state => state.projectReducer.projectId);
   const { statusCategories } = useAppSelector(state => state.taskStatusReducer);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   useEffect(() => {
     if (projectId) {
       // Use the optimized V3 API for faster loading
       dispatch(fetchTasksV3(projectId));
+      trackMixpanelEvent(evt_project_task_list_visit, { project_id: projectId });
     }
     if (!statusCategories.length) {
       dispatch(fetchStatusesCategories());
     }
-  }, [dispatch, projectId]);
+  }, [dispatch, projectId, trackMixpanelEvent]);
 
   // Cleanup effect - reset values when component is destroyed
   useEffect(() => {

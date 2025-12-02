@@ -35,6 +35,11 @@ export type TempServicesType = {
     description?: ReactNode | string;
     images?: string[] | null;
     request_form?: TempRequestFromItemType[];
+    imageFile?: {
+      fileName: string;
+      fileType: string;
+      size: number;
+    };
   };
   no_of_requests?: number;
 };

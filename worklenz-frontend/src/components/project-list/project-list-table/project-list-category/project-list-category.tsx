@@ -23,7 +23,7 @@ export const CategoryCell: React.FC<{
   };
 
   return (
-    <Tooltip title={`${t('clickToFilter')} "${record.category_name}"`}>
+    <Tooltip title={`${t('clickToFilter', { defaultValue: 'Click to filter' })} "${record.category_name}"`}>
       <Tag
         color={record.category_color}
         className="rounded-full table-tag"

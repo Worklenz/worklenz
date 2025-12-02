@@ -8,6 +8,7 @@ export interface AuthenticatedClientRequest extends Request {
   clientUserId?: string;
   clientAccess?: any;
   clientEmail?: string;
+  availableOrganizations?: any[];
 }
 
 export const authenticateClient = async (
@@ -39,24 +40,40 @@ export const authenticateClient = async (
 
     // Convert permissions array to access object
     const clientAccess = {
-      canViewServices: permissions.includes('read:services'),
-      canCreateRequests: permissions.includes('create:requests'),
-      canViewProjects: permissions.includes('read:projects'),
-      canViewInvoices: permissions.includes('read:invoices'),
-      canChat: permissions.includes('read:chats'),
-      canWriteChat: permissions.includes('write:chats'),
-      canUpdateProfile: permissions.includes('write:profile')
+      canViewServices: permissions.includes("read:services"),
+      canCreateRequests: permissions.includes("create:requests"),
+      canViewProjects: permissions.includes("read:projects"),
+      canViewInvoices: permissions.includes("read:invoices"),
+      canChat: permissions.includes("read:chats"),
+      canWriteChat: permissions.includes("write:chats"),
+      canUpdateProfile: permissions.includes("write:profile")
     };
+
+    // Validate organization access if clientUserId is present (multi-org support)
+    if (tokenPayload.clientUserId && tokenPayload.organizationId) {
+      const hasAccess = await TokenService.hasOrganizationAccess(
+        tokenPayload.clientUserId,
+        tokenPayload.organizationId
+      );
+
+      if (!hasAccess) {
+        return res.status(403).json(
+          new ServerResponse(false, null, "Access denied to this organization")
+        );
+      }
+    }
 
     // Attach client data to request
     req.clientId = tokenPayload.clientId;
     req.organizationId = tokenPayload.organizationId;
+    req.clientUserId = tokenPayload.clientUserId;
     req.clientEmail = tokenPayload.email;
     req.clientAccess = clientAccess;
+    req.availableOrganizations = tokenPayload.availableOrganizations;
 
     next();
   } catch (error) {
-    console.error('Client authentication error:', error);
+    console.error("Client authentication error:", error);
     return res.status(401).json(
       new ServerResponse(false, null, "Authentication failed")
     );

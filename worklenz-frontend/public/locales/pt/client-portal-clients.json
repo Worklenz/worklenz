@@ -19,6 +19,7 @@
   "teamMembersColumn": "Membros da Equipe",
   "actionBtnsColumn": "Ações",
 
+  "statusAll": "Todos",
   "statusActive": "Ativo",
   "statusInactive": "Inativo",
   "statusPending": "Pendente",
@@ -112,6 +113,7 @@
   "linkActive": "Ativo",
   "noClientsTitle": "Nenhum cliente encontrado",
   "noClientsDescription": "Você ainda não adicionou nenhum cliente. Adicione seu primeiro cliente para começar a gerenciar o acesso ao portal.",
+  "noClientsMatchingFilters": "Nenhum cliente corresponde aos filtros atuais.",
   "errorLoadingClients": "Erro ao carregar clientes",
   "errorLoadingClientsDescription": "Houve um erro ao carregar seus clientes. Por favor, tente novamente mais tarde.",
   "inviteTeamMemberLabel": "Convidar Membro da Equipe",
@@ -189,5 +191,23 @@
   "statusColumn": "Status",
   "removeConfirmationOk": "Remover",
   "removeConfirmationCancel": "Cancelar",
-  "removeProjectTooltip": "Remover Projeto"
+  "removeProjectTooltip": "Remover Projeto",
+
+  "portalStatusColumn": "Status do Portal",
+  "portalStatus": {
+    "active": "Ativo",
+    "invited": "Convidado",
+    "not_invited": "Não Convidado",
+    "expired": "Expirado"
+  },
+
+  "inviteToPortalTooltip": "Convidar para o Portal",
+  "resendInvitationTooltip": "Reenviar Convite",
+  "copyInviteLinkTooltip": "Copiar Link de Convite",
+
+  "inviteSelectedToPortal": "Enviar Convites ao Portal",
+  "selectClientsToInvite": "Por favor selecione clientes para convidar",
+  "bulkInviteSuccessMessage": "convite(s) gerado(s) com sucesso",
+  "bulkInvitePartialFailMessage": "convite(s) falhado(s)",
+  "bulkInviteErrorMessage": "Falha ao gerar convites"
 }

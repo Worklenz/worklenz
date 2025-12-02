@@ -1,5 +1,6 @@
 {
   "title": "发票",
+  "description": "管理和跟踪您的发票",
   "addInvoiceButton": "添加发票",
   "createInvoiceDrawerTitle": "创建发票",
   "selectRequestLabel": "选择请求",

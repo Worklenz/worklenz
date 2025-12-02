@@ -4,7 +4,7 @@ import HandleExceptions from "../decorators/handle-exceptions";
 import {IWorkLenzRequest} from "../interfaces/worklenz-request";
 import {IWorkLenzResponse} from "../interfaces/worklenz-response";
 import {ServerResponse} from "../models/server-response";
-import {LOG_DESCRIPTIONS} from "../shared/constants";
+import {LOG_DESCRIPTIONS, LOG_I18N_KEYS} from "../shared/constants";
 import {getColor} from "../shared/utils";
 import {generateProjectKey} from "../utils/generate-project-key";
 import WorklenzControllerBase from "./worklenz-controller-base";
@@ -13,8 +13,11 @@ import { IPassportSession } from "../interfaces/passport-session";
 import { SocketEvents } from "../socket.io/events";
 import { IO } from "../shared/io";
 import { getCurrentProjectsCount, getFreePlanSettings } from "../shared/paddle-utils";
+import { ActivityLoggingService } from "../services/activity-logging.service";
 
 export default class ProjectsController extends WorklenzControllerBase {
+
+  // Legacy logging methods removed - now using ActivityLoggingService
 
   private static async getAllKeysByTeamId(teamId?: string) {
     if (!teamId) return [];
@@ -89,6 +92,16 @@ export default class ProjectsController extends WorklenzControllerBase {
 
     const result = await db.query(q, [JSON.stringify(req.body)]);
     const [data] = result.rows;
+
+    // Log project creation after successful database operation
+    if (data.project?.id) {
+      await ActivityLoggingService.logProjectCreated(
+        req.user?.team_id || "",
+        data.project.id,
+        req.user?.id || "",
+        req.body.name
+      );
+    }
 
     return res.status(200).send(new ServerResponse(true, data.project || {}));
   }
@@ -474,6 +487,25 @@ export default class ProjectsController extends WorklenzControllerBase {
     const result = await db.query(q, [JSON.stringify(req.body)]);
     const [data] = result.rows;
 
+    // Log the project update using the centralized service
+    await ActivityLoggingService.logProjectUpdated(
+      req.user?.team_id || "",
+      req.params.id,
+      req.user?.id || "",
+      req.body.name
+    );
+
+    // Log project manager assignment if changed
+    if (req.body.project_manager && req.body.project_manager.id) {
+      await ActivityLoggingService.logProjectActivity({
+        teamId: req.user?.team_id || "",
+        projectId: req.params.id,
+        userId: req.user?.id || "",
+        i18nKey: LOG_I18N_KEYS.PROJECT_MANAGER_ASSIGNED,
+        projectName: req.body.name
+      });
+    }
+
     this.notifyProjecManagertUpdates(req.params.id, req.user as IPassportSession, req.body.project_manager ? req.body.project_manager.id : null);
 
     return res.status(200).send(new ServerResponse(true, data.project));
@@ -481,12 +513,39 @@ export default class ProjectsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async deleteById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `DELETE
-               FROM projects
-               WHERE id = $1
-                 AND team_id = $2`;
-    const result = await db.query(q, [req.params.id, req.user?.team_id || null]);
-    return res.status(200).send(new ServerResponse(true, result.rows));
+    // Get project details before deletion for logging
+    const getProjectQ = `SELECT name, color_code FROM projects WHERE id = $1 AND team_id = $2`;
+    const projectResult = await db.query(getProjectQ, [req.params.id, req.user?.team_id || null]);
+    
+    if (projectResult.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Project not found"));
+    }
+
+    const project = projectResult.rows[0];
+    const userName = req.user?.name || "Unknown User";
+    
+    // Log project deletion
+    await ActivityLoggingService.logProjectDeleted(
+      req.user?.team_id || "",
+      req.params.id,
+      req.user?.id || "",
+      project.name
+    );
+
+    // Delete the project
+    const deleteQ = `DELETE
+                     FROM projects
+                     WHERE id = $1
+                       AND team_id = $2`;
+    const result = await db.query(deleteQ, [req.params.id, req.user?.team_id || null]);
+    
+    return res.status(200).send(new ServerResponse(true, { 
+      message: `Project "${project.name}" has been successfully deleted`,
+      deleted_project: { 
+        name: project.name, 
+        color_code: project.color_code 
+      }
+    }));
   }
 
   @HandleExceptions()
@@ -682,15 +741,75 @@ export default class ProjectsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async toggleFavorite(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // Check current favorite status and get project name
+    const checkQ = `SELECT 
+                      p.name, 
+                      EXISTS(SELECT 1 FROM favorite_projects WHERE user_id = $1 AND project_id = $2) AS is_favorite
+                    FROM projects p 
+                    WHERE p.id = $2 AND p.team_id = $3`;
+    const checkResult = await db.query(checkQ, [req.user?.id, req.params.id, req.user?.team_id]);
+    
+    if (checkResult.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Project not found"));
+    }
+
+    const project = checkResult.rows[0];
+    const wasFavorite = project.is_favorite;
+    
     const q = `SELECT toggle_favorite_project($1, $2);`;
     const result = await db.query(q, [req.user?.id, req.params.id]);
+
+    // Log the favorite/unfavorite action
+    const i18nKey = wasFavorite ? LOG_I18N_KEYS.PROJECT_UNFAVORITED : LOG_I18N_KEYS.PROJECT_FAVORITED;
+    await ActivityLoggingService.logProjectActivity({
+      teamId: req.user?.team_id || "",
+      projectId: req.params.id,
+      userId: req.user?.id || "",
+      i18nKey,
+      projectName: project.name
+    });
+
     return res.status(200).send(new ServerResponse(true, result.rows || []));
   }
 
   @HandleExceptions()
   public static async toggleArchive(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // Check current archive status and get project name
+    const checkQ = `SELECT 
+                      p.name, 
+                      EXISTS(SELECT 1 FROM archived_projects WHERE user_id = $1 AND project_id = $2) AS is_archived
+                    FROM projects p 
+                    WHERE p.id = $2 AND p.team_id = $3`;
+    const checkResult = await db.query(checkQ, [req.user?.id, req.params.id, req.user?.team_id]);
+    
+    if (checkResult.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Project not found"));
+    }
+
+    const project = checkResult.rows[0];
+    const wasArchived = project.is_archived;
+    
     const q = `SELECT toggle_archive_project($1, $2);`;
     const result = await db.query(q, [req.user?.id, req.params.id]);
+
+    // Log the archive/unarchive action
+    if (wasArchived) {
+      await ActivityLoggingService.logProjectActivity({
+        teamId: req.user?.team_id || "",
+        projectId: req.params.id,
+        userId: req.user?.id || "",
+        i18nKey: LOG_I18N_KEYS.PROJECT_UNARCHIVED,
+        projectName: project.name
+      });
+    } else {
+      await ActivityLoggingService.logProjectArchived(
+        req.user?.team_id || "",
+        req.params.id,
+        req.user?.id || "",
+        project.name
+      );
+    }
+
     return res.status(200).send(new ServerResponse(true, result.rows || []));
   }
 

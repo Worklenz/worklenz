@@ -26,7 +26,7 @@ export default class SubscriptionController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async listPlans(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     const { includeLegacy, includeDiscounts, userCount } = req.query;
     
     try {
@@ -46,8 +46,8 @@ export default class SubscriptionController extends WorklenzControllerBase {
           userAnalytics, 
           recommendations,
           {
-            includeLegacy: includeLegacy === 'true',
-            includeDiscounts: includeDiscounts === 'true',
+            includeLegacy: includeLegacy === "true",
+            includeDiscounts: includeDiscounts === "true",
             userCount: parseInt(userCount as string) || recommendations.totalUsers
           }
         );
@@ -76,7 +76,7 @@ export default class SubscriptionController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async createSubscription(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     const userId = req.user?.id;
     const { 
       planId, 
@@ -100,7 +100,7 @@ export default class SubscriptionController extends WorklenzControllerBase {
       
       const existingSubscription = await this.getExistingSubscription(userId);
       
-      if (existingSubscription && existingSubscription.status === 'active') {
+      if (existingSubscription && existingSubscription.status === "active") {
         return res.status(400).send(new ServerResponse(false, null, "User already has an active subscription. Use upgrade endpoint instead."));
       }
 
@@ -185,7 +185,7 @@ export default class SubscriptionController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async getCurrentSubscription(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     const userId = req.user?.id;
     
     if (!organizationId) {
@@ -248,7 +248,7 @@ export default class SubscriptionController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async upgradeSubscription(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     const userId = req.user?.id;
     const { 
       newPlanId, 
@@ -332,7 +332,7 @@ export default class SubscriptionController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async getUsage(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     const { period, includeProjections } = req.query;
     
     if (!organizationId) {
@@ -350,14 +350,22 @@ export default class SubscriptionController extends WorklenzControllerBase {
         this.getExistingSubscription(req.user.id)
       ]);
 
+      // Calculate effective user limit for AppSumo users
+      const effectiveUserLimit = currentSubscription ? 
+        AppSumoService.getBusinessPlanUserLimit(
+          "PADDLE", // Assuming Paddle subscription
+          currentSubscription.plan_name,
+          currentSubscription.user_limit
+        ) : (currentSubscription?.user_limit || 3);
+
       const usage = {
         currentPeriod: {
           users: {
             total: usageMetrics.totalUsers,
             active: usageMetrics.activeUsers,
-            limit: currentSubscription?.user_limit || 3,
-            utilizationPercent: currentSubscription?.user_limit ? 
-              (usageMetrics.totalUsers / currentSubscription.user_limit) * 100 : 0
+            limit: effectiveUserLimit,
+            utilizationPercent: effectiveUserLimit ? 
+              (usageMetrics.totalUsers / effectiveUserLimit) * 100 : 0
           },
           storage: {
             used: usageMetrics.storageUsed,
@@ -377,7 +385,7 @@ export default class SubscriptionController extends WorklenzControllerBase {
         },
         trends: {
           userGrowth: usageMetrics.growthTrend,
-          projections: includeProjections === 'true' ? {
+          projections: includeProjections === "true" ? {
             next3Months: usageMetrics.growthTrend.predicted3MonthUsers,
             next6Months: usageMetrics.growthTrend.predicted6MonthUsers,
             next12Months: usageMetrics.growthTrend.predicted12MonthUsers
@@ -399,7 +407,7 @@ export default class SubscriptionController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async cancelSubscription(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     const userId = req.user?.id;
     const { 
       reason, 
@@ -510,7 +518,7 @@ export default class SubscriptionController extends WorklenzControllerBase {
         compatibility,
         recommendationScore: recommendation?.recommendationScore || 0,
         isRecommended: !!recommendation,
-        migrationComplexity: recommendation?.migrationComplexity || 'simple',
+        migrationComplexity: recommendation?.migrationComplexity || "simple",
         availableDiscounts: userAnalytics.userAnalytics.migrationEligibility.discounts
           .filter((d: any) => d.eligiblePlans.includes(plan.plan_id) || d.eligiblePlans.length === 0)
       });
@@ -523,7 +531,7 @@ export default class SubscriptionController extends WorklenzControllerBase {
     let basePrice = plan.recurring_price;
     
     // Apply user count multiplier for per-user plans
-    if (plan.billing_type === 'per_user') {
+    if (plan.billing_type === "per_user") {
       basePrice = basePrice * userCount;
     }
 
@@ -534,9 +542,9 @@ export default class SubscriptionController extends WorklenzControllerBase {
     );
 
     for (const discount of applicableDiscounts) {
-      if (discount.type === 'percentage') {
+      if (discount.type === "percentage") {
         discountedPrice = discountedPrice * (1 - discount.value / 100);
-      } else if (discount.type === 'fixed_amount') {
+      } else if (discount.type === "fixed_amount") {
         discountedPrice = Math.max(0, discountedPrice - discount.value);
       }
     }
@@ -551,13 +559,20 @@ export default class SubscriptionController extends WorklenzControllerBase {
 
   private static assessPlanCompatibility(plan: any, usageMetrics: any, userAnalytics: any): any {
     const userCount = usageMetrics.totalUsers;
-    const storageUsed = usageMetrics.storageUsed;
+    const {storageUsed} = usageMetrics;
+    
+    // Get effective user limit (considering AppSumo special limits)
+    const effectiveUserLimit = AppSumoService.getBusinessPlanUserLimit(
+      "PADDLE", // Assuming Paddle for plan compatibility checks
+      plan.name,
+      plan.user_limit
+    );
     
     return {
-      userCapacity: plan.user_limit === -1 || userCount <= plan.user_limit,
+      userCapacity: effectiveUserLimit === -1 || userCount <= effectiveUserLimit,
       storageCapacity: this.checkStorageCompatibility(plan.plan_id, storageUsed),
       featureCompatibility: this.checkFeatureCompatibility(plan, userAnalytics),
-      overallCompatibility: 'high' // Simplified assessment
+      overallCompatibility: "high" // Simplified assessment
     };
   }
 
@@ -603,8 +618,15 @@ export default class SubscriptionController extends WorklenzControllerBase {
     
     if (!plan) return null;
     
-    // Validate user count against plan limits
-    if (plan.user_limit !== -1 && userCount > plan.user_limit) {
+    // Get effective user limit (considering AppSumo special limits)
+    const effectiveUserLimit = AppSumoService.getBusinessPlanUserLimit(
+      "PADDLE", // Assuming Paddle for plan validation
+      plan.name,
+      plan.user_limit
+    );
+    
+    // Validate user count against effective plan limits
+    if (effectiveUserLimit !== -1 && userCount > effectiveUserLimit) {
       return null;
     }
     
@@ -636,14 +658,14 @@ export default class SubscriptionController extends WorklenzControllerBase {
       specialUserLimit = appSumoDiscount.specialUserLimit;
       
       appliedDiscounts.push({
-        code: 'APPSUMO_50_SPECIAL',
-        type: 'percentage',
+        code: "APPSUMO_50_SPECIAL",
+        type: "percentage",
         value: 50,
-        description: 'AppSumo Exclusive 50% Discount',
+        description: "AppSumo Exclusive 50% Discount",
         conditions: [
-          'AppSumo customer exclusive',
-          'Limited time promotional offer',
-          'Business or Enterprise plan required'
+          "AppSumo customer exclusive",
+          "Limited time promotional offer",
+          "Business or Enterprise plan required"
         ],
         appliedAmount: appSumoDiscount.discountAmount
       });
@@ -658,9 +680,9 @@ export default class SubscriptionController extends WorklenzControllerBase {
 
     for (const discount of availableDiscounts) {
       if (discountCode && discount.code === discountCode) {
-        if (discount.type === 'percentage') {
+        if (discount.type === "percentage") {
           finalPrice = finalPrice * (1 - discount.value / 100);
-        } else if (discount.type === 'fixed_amount') {
+        } else if (discount.type === "fixed_amount") {
           finalPrice = Math.max(0, finalPrice - discount.value);
         }
         appliedDiscounts.push(discount);
@@ -708,7 +730,7 @@ export default class SubscriptionController extends WorklenzControllerBase {
         success: true,
         subscriptionId: `paddle_sub_${Date.now()}`,
         message: subscriptionMessage,
-        paddlePlanId: paddlePlanId
+        paddlePlanId
       };
       
     } catch (error) {
@@ -736,7 +758,7 @@ export default class SubscriptionController extends WorklenzControllerBase {
       params.planId,
       params.billingCycle,
       params.finalPrice,
-      'active',
+      "active",
       JSON.stringify(params.appliedDiscounts),
       params.migrationContext
     ]);
@@ -744,18 +766,18 @@ export default class SubscriptionController extends WorklenzControllerBase {
 
   private static getSubscriptionNextSteps(planId: string, migrationContext?: string): string[] {
     const steps = [
-      'Verify plan activation and features',
-      'Update team on new capabilities',
-      'Review billing confirmation email'
+      "Verify plan activation and features",
+      "Update team on new capabilities",
+      "Review billing confirmation email"
     ];
 
-    if (migrationContext === 'appsumo') {
-      steps.push('Confirm AppSumo discount application');
+    if (migrationContext === "appsumo") {
+      steps.push("Confirm AppSumo discount application");
     }
 
     if ([PlanTier.BUSINESS_SMALL, PlanTier.BUSINESS_LARGE, PlanTier.ENTERPRISE].includes(planId as PlanTier)) {
-      steps.push('Explore advanced features');
-      steps.push('Set up client portal');
+      steps.push("Explore advanced features");
+      steps.push("Set up client portal");
     }
 
     return steps;
@@ -839,12 +861,12 @@ export default class SubscriptionController extends WorklenzControllerBase {
 
   private static getPlanDisplayName(planTier: PlanTier): string {
     const names = {
-      [PlanTier.FREE]: 'Free Plan',
-      [PlanTier.PRO_SMALL]: 'Pro Small',
-      [PlanTier.BUSINESS_SMALL]: 'Business Small',
-      [PlanTier.PRO_LARGE]: 'Pro Large',
-      [PlanTier.BUSINESS_LARGE]: 'Business Large',
-      [PlanTier.ENTERPRISE]: 'Enterprise'
+      [PlanTier.FREE]: "Free Plan",
+      [PlanTier.PRO_SMALL]: "Pro Small",
+      [PlanTier.BUSINESS_SMALL]: "Business Small",
+      [PlanTier.PRO_LARGE]: "Pro Large",
+      [PlanTier.BUSINESS_LARGE]: "Business Large",
+      [PlanTier.ENTERPRISE]: "Enterprise"
     };
     return names[planTier] || planTier;
   }
@@ -863,10 +885,10 @@ export default class SubscriptionController extends WorklenzControllerBase {
 
   private static getUpgradeNextSteps(newPlanId: string): string[] {
     return [
-      'Verify new plan features are active',
-      'Review updated billing amount',
-      'Explore enhanced capabilities',
-      'Update team on new features'
+      "Verify new plan features are active",
+      "Review updated billing amount",
+      "Explore enhanced capabilities",
+      "Update team on new features"
     ];
   }
 
@@ -895,20 +917,28 @@ export default class SubscriptionController extends WorklenzControllerBase {
   private static getCurrentLimitations(subscription: any, usageMetrics: any): any[] {
     const limitations = [];
     
-    if (subscription?.user_limit && usageMetrics.totalUsers >= subscription.user_limit) {
+    // Get effective user limit for AppSumo users
+    const effectiveUserLimit = subscription ? 
+      AppSumoService.getBusinessPlanUserLimit(
+        "PADDLE", // Assuming Paddle subscription
+        subscription.plan_name,
+        subscription.user_limit
+      ) : subscription?.user_limit;
+    
+    if (effectiveUserLimit && usageMetrics.totalUsers >= effectiveUserLimit) {
       limitations.push({
-        type: 'user_limit',
-        message: 'User limit reached',
+        type: "user_limit",
+        message: "User limit reached",
         current: usageMetrics.totalUsers,
-        limit: subscription.user_limit
+        limit: effectiveUserLimit
       });
     }
 
     const storageLimit = this.getStorageLimitForPlan(subscription?.plan_id);
     if (storageLimit !== -1 && usageMetrics.storageUsed >= storageLimit * 0.9) {
       limitations.push({
-        type: 'storage_limit',
-        message: 'Storage limit approaching',
+        type: "storage_limit",
+        message: "Storage limit approaching",
         current: usageMetrics.storageUsed,
         limit: storageLimit
       });
@@ -920,19 +950,27 @@ export default class SubscriptionController extends WorklenzControllerBase {
   private static getUsageBasedUpgradeRecommendations(usageMetrics: any, subscription: any): any[] {
     const recommendations = [];
     
-    if (subscription?.user_limit && usageMetrics.totalUsers >= subscription.user_limit * 0.8) {
+    // Get effective user limit for AppSumo users
+    const effectiveUserLimit = subscription ? 
+      AppSumoService.getBusinessPlanUserLimit(
+        "PADDLE", // Assuming Paddle subscription
+        subscription.plan_name,
+        subscription.user_limit
+      ) : subscription?.user_limit;
+    
+    if (effectiveUserLimit && usageMetrics.totalUsers >= effectiveUserLimit * 0.8) {
       recommendations.push({
-        reason: 'Approaching user limit',
+        reason: "Approaching user limit",
         suggestedPlan: PlanTier.PRO_LARGE,
-        urgency: 'medium'
+        urgency: "medium"
       });
     }
 
     if (usageMetrics.featureUtilization.ganttCharts > 0.7 && subscription?.plan_id === PlanTier.PRO_SMALL) {
       recommendations.push({
-        reason: 'Heavy Gantt chart usage',
+        reason: "Heavy Gantt chart usage",
         suggestedPlan: PlanTier.BUSINESS_SMALL,
-        urgency: 'low'
+        urgency: "low"
       });
     }
 
@@ -972,19 +1010,19 @@ export default class SubscriptionController extends WorklenzControllerBase {
   }
 
   private static getCancellationNextSteps(rollbackToLegacy: boolean, retainData: boolean): string[] {
-    const steps = ['Confirm cancellation email received'];
+    const steps = ["Confirm cancellation email received"];
     
     if (rollbackToLegacy) {
-      steps.push('Verify legacy plan restoration');
+      steps.push("Verify legacy plan restoration");
     } else {
-      steps.push('Plan data export if needed');
+      steps.push("Plan data export if needed");
     }
     
     if (retainData) {
-      steps.push('Data will be preserved for 30 days');
+      steps.push("Data will be preserved for 30 days");
     }
     
-    steps.push('Contact support for any questions');
+    steps.push("Contact support for any questions");
     
     return steps;
   }

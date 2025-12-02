@@ -11,5 +11,8 @@
   "team-members": "团队成员",
   "teams": "团队",
   "change-password": "更改密码",
-  "language-and-region": "语言和地区"
+  "language-and-region": "语言和地区",
+  "integrations": "集成",
+  "account-deletion": "删除账户",
+  "team-hierarchy": "团队层次结构"
 }

@@ -71,7 +71,8 @@ import {
   Descriptions,
   Upload,
   UploadProps,
-} from 'antd';
+  Tree,
+} from 'antd/es';
 
 import TextArea from 'antd/es/input/TextArea';
 
@@ -208,6 +209,8 @@ export {
   SafetyCertificateOutlined,
   CrownOutlined,
   FireOutlined,
+  SlackOutlined,
+  ApiOutlined
 } from '@ant-design/icons';
 
 // Re-export all components with React
@@ -272,6 +275,7 @@ export {
   Slider,
   Descriptions,
   Upload,
+  Tree,
 };
 
 // TypeScript Types - Import commonly used ones

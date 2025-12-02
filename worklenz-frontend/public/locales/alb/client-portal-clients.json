@@ -19,6 +19,7 @@
   "teamMembersColumn": "Anëtarët e Ekipit",
   "actionBtnsColumn": "Veprimet",
 
+  "statusAll": "Të gjitha",
   "statusActive": "Aktiv",
   "statusInactive": "Joaktiv",
   "statusPending": "Në pritje",
@@ -112,6 +113,7 @@
   "linkActive": "Aktive",
   "noClientsTitle": "Nuk u gjetën klientë",
   "noClientsDescription": "Ju nuk keni shtuar ende asnjë klient. Shtoni klientin tuaj të parë për të filluar të menaxhoni qasjen në portal.",
+  "noClientsMatchingFilters": "Asnjë klient nuk përputhet me filtrat aktualë.",
   "errorLoadingClients": "Gabim gjatë ngarkimit të klientëve",
   "errorLoadingClientsDescription": "Pati një gabim gjatë ngarkimit të klientëve tuaj. Ju lutemi provoni përsëri më vonë.",
 
@@ -138,5 +140,23 @@
   "projectAssignedSuccessMessage": "Projekti u caktua me sukses",
   "projectAssignedErrorMessage": "Dështoi caktimi i projektit",
   "projectRemovedSuccessMessage": "Projekti u hoq me sukses",
-  "projectRemovedErrorMessage": "Dështoi heqja e projektit"
+  "projectRemovedErrorMessage": "Dështoi heqja e projektit",
+
+  "portalStatusColumn": "Statusi i Portalit",
+  "portalStatus": {
+    "active": "Aktiv",
+    "invited": "I Ftuar",
+    "not_invited": "Nuk është Ftuar",
+    "expired": "Ka Skaduar"
+  },
+
+  "inviteToPortalTooltip": "Fto në Portal",
+  "resendInvitationTooltip": "Ridërgo Ftesën",
+  "copyInviteLinkTooltip": "Kopjo Linkun e Ftesës",
+
+  "inviteSelectedToPortal": "Dërgo Ftesa për Portal",
+  "selectClientsToInvite": "Ju lutemi zgjidhni klientët për t'i ftuar",
+  "bulkInviteSuccessMessage": "ftesë(a) u gjenerua me sukses",
+  "bulkInvitePartialFailMessage": "ftesë(a) dështoi",
+  "bulkInviteErrorMessage": "Dështoi gjenerimi i ftesave"
 }
