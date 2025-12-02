@@ -16,6 +16,7 @@ import {
   navigateToNextTask,
   navigateToPreviousTask,
   fetchTask,
+  syncNavigationIndex,
 } from '@/features/task-drawer/task-drawer.slice';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -49,6 +50,13 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
   );
   const [taskName, setTaskName] = useState<string>(taskFormViewModel?.task?.name ?? '');
   const currentSession = useAuthService().getCurrentSession();
+
+  // Sync navigation index when selected task changes
+  useEffect(() => {
+    if (selectedTaskId && navigationContext) {
+      dispatch(syncNavigationIndex());
+    }
+  }, [selectedTaskId, dispatch, navigationContext]);
 
   // Check if current task is a sub-task
   const isSubTask =

@@ -156,6 +156,15 @@ const taskDrawerSlice = createSlice({
         state.navigationContext.currentIndex = prevIndex;
       }
     },
+    syncNavigationIndex: state => {
+      // Sync the current index with the selected task ID
+      if (!state.navigationContext || !state.selectedTaskId) return;
+      const { taskIds } = state.navigationContext;
+      const actualIndex = taskIds.indexOf(state.selectedTaskId);
+      if (actualIndex !== -1 && actualIndex !== state.navigationContext.currentIndex) {
+        state.navigationContext.currentIndex = actualIndex;
+      }
+    },
     resetTaskDrawer: state => {
       return initialState;
     },
@@ -191,6 +200,7 @@ export const {
   setNavigationContext,
   navigateToNextTask,
   navigateToPreviousTask,
+  syncNavigationIndex,
   resetTaskDrawer,
 } = taskDrawerSlice.actions;
 export default taskDrawerSlice.reducer;
