@@ -17,7 +17,9 @@ import {
   SortAscendingOutlined,
   SortDescendingOutlined,
   SettingOutlined,
+  Avatar,
 } from '@/shared/antd-imports';
+import { AvatarNamesMap } from '@/shared/constants';
 import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -621,14 +623,32 @@ const FilterDropdown: React.FC<{
                         />
                       )}
 
-                      {/* Avatar */}
-                      {option.avatar && (
-                        <div className="w-5 h-5 bg-gray-300 rounded-full flex items-center justify-center text-xs font-medium text-gray-700 dark:bg-gray-600 dark:text-gray-300">
-                          <img
-                            src={option.avatar}
-                            alt={option.label}
-                            className="w-5 h-5 rounded-full object-cover"
-                          />
+                      {/* Avatar - show for assignees section */}
+                      {section.id === 'assignees' && (
+                        <div className="flex-shrink-0">
+                          {option.avatar ? (
+                            <Avatar
+                              src={option.avatar}
+                              alt={option.label}
+                              size={20}
+                              style={{ width: 20, height: 20 }}
+                            />
+                          ) : (
+                            <Avatar
+                              size={20}
+                              style={{
+                                backgroundColor: AvatarNamesMap[option.label[0]?.toUpperCase()] || '#9e9e9e',
+                                width: 20,
+                                height: 20,
+                                fontSize: 10,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              {option.label[0]?.toUpperCase()}
+                            </Avatar>
+                          )}
                         </div>
                       )}
 
