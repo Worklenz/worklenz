@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Card,
   Form,
@@ -38,6 +39,7 @@ interface RequestFormValues {
 }
 
 const NewRequestPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [attachments, setAttachments] = useState<UploadedFileInfo[]>([]);
@@ -91,10 +93,10 @@ const NewRequestPage: React.FC = () => {
       // Mark as submitted to prevent cleanup of uploaded files
       markAsSubmittedRef.current?.();
       
-      message.success("Request created successfully");
+      message.success(t("requests.createSuccess"));
       navigate("/requests");
     } catch (error) {
-      message.error("Failed to create request. Please try again.");
+      message.error(t("requests.createError"));
       console.error("Error creating request:", error);
     }
   };
@@ -114,11 +116,11 @@ const NewRequestPage: React.FC = () => {
         onClick={onCancel}
         style={{ marginBottom: 16 }}
       >
-        Back to Requests
+        {t("requests.backToRequests")}
       </Button>
 
       <Title level={2} style={{ marginBottom: 24 }}>
-        Create New Request
+        {t("requests.createNewRequest")}
       </Title>
 
       <Form
@@ -132,11 +134,11 @@ const NewRequestPage: React.FC = () => {
           <Col span={24}>
             <Form.Item
               name="service_id"
-              label="Service"
-              rules={[{ required: true, message: "Please select a service" }]}
+              label={t("requests.serviceLabel")}
+              rules={[{ required: true, message: t("requests.selectServiceRequired") }]}
             >
               <Select
-                placeholder="Select a service"
+                placeholder={t("requests.selectService")}
                 loading={servicesLoading}
                 showSearch
                 optionFilterProp="children"
@@ -155,24 +157,24 @@ const NewRequestPage: React.FC = () => {
           <Col span={24}>
             <Form.Item
               name="title"
-              label="Request Title"
-              rules={[{ required: true, message: "Please enter a title" }]}
+              label={t("requests.requestTitleLabel")}
+              rules={[{ required: true, message: t("requests.titleRequired") }]}
             >
-              <Input placeholder="Enter a brief title for your request" />
+              <Input placeholder={t("requests.enterTitle")} />
             </Form.Item>
           </Col>
 
           <Col span={24}>
             <Form.Item
               name="description"
-              label="Description"
+              label={t("requests.descriptionLabel")}
               rules={[
-                { required: true, message: "Please provide a description" },
+                { required: true, message: t("requests.descriptionRequired") },
               ]}
             >
               <TextArea
                 rows={4}
-                placeholder="Describe your request in detail"
+                placeholder={t("requests.describeRequest")}
                 showCount
                 maxLength={2000}
               />
@@ -182,21 +184,21 @@ const NewRequestPage: React.FC = () => {
           <Col span={12}>
             <Form.Item
               name="priority"
-              label="Priority"
-              rules={[{ required: true, message: "Please select priority" }]}
+              label={t("requests.priorityLabel")}
+              rules={[{ required: true, message: t("requests.priorityRequired") }]}
             >
-              <Select placeholder="Select priority">
-                <Select.Option value="low">Low</Select.Option>
-                <Select.Option value="medium">Medium</Select.Option>
-                <Select.Option value="high">High</Select.Option>
-                <Select.Option value="urgent">Urgent</Select.Option>
+              <Select placeholder={t("requests.selectPriority")}>
+                <Select.Option value="low">{t("requests.priorityLow")}</Select.Option>
+                <Select.Option value="medium">{t("requests.priorityMedium")}</Select.Option>
+                <Select.Option value="high">{t("requests.priorityHigh")}</Select.Option>
+                <Select.Option value="urgent">{t("requests.priorityUrgent")}</Select.Option>
               </Select>
             </Form.Item>
           </Col>
 
           <Col span={24}>
             <Form.Item
-              label="Attachments"
+              label={t("requests.attachmentsLabel")}
             >
               <FileUploader
                 purpose="request"
@@ -219,9 +221,9 @@ const NewRequestPage: React.FC = () => {
                 loading={creating}
                 style={{ marginRight: 8 }}
               >
-                Submit Request
+                {t("requests.submitRequest")}
               </Button>
-              <Button onClick={onCancel}>Cancel</Button>
+              <Button onClick={onCancel}>{t("requests.cancel")}</Button>
             </Form.Item>
           </Col>
         </Row>
