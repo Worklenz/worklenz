@@ -6799,7 +6799,7 @@ $$;
 CREATE OR REPLACE FUNCTION replace_task_labels(_task_id uuid, _label_ids uuid[]) RETURNS json
     LANGUAGE plpgsql
 AS
-$
+$$
 DECLARE
     _result JSON;
     _label_id UUID;
@@ -6829,4 +6829,4 @@ BEGIN
 
     RETURN _result;
 END
-$;
+$$;
