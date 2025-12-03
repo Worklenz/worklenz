@@ -3245,8 +3245,8 @@ class ClientPortalController {
         token: inviteToken
       });
 
-      // Generate client portal link with secure token
-      const portalLink = `${getClientPortalBaseUrl()}/invite?token=${inviteToken}`;
+      // Generate client portal link with secure token (URL-encode to handle + characters in JWT)
+      const portalLink = `${getClientPortalBaseUrl()}/invite?token=${encodeURIComponent(inviteToken)}`;
 
       return res.json(new ServerResponse(true, {
         invitationLink: portalLink,
@@ -3300,8 +3300,8 @@ class ClientPortalController {
       
       await db.query(upsertQuery, [teamId, inviteToken, userId, new Date(expiresAt)]);
 
-      // Generate organization portal link with secure token
-      const portalLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/organization-invite?token=${inviteToken}`;
+      // Generate organization portal link with secure token (URL-encode to handle + characters in JWT)
+      const portalLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/organization-invite?token=${encodeURIComponent(inviteToken)}`;
 
       return res.json(new ServerResponse(true, {
         invitationLink: portalLink,
@@ -3444,8 +3444,8 @@ class ClientPortalController {
         throw new Error("Client invitation email template not found");
       }
 
-      // Generate client portal link with secure token
-      const portalLink = `${getClientPortalBaseUrl()}/invite?token=${inviteToken}`;
+      // Generate client portal link with secure token (URL-encode to handle + characters in JWT)
+      const portalLink = `${getClientPortalBaseUrl()}/invite?token=${encodeURIComponent(inviteToken)}`;
 
       // Replace template variables
       const emailContent = template
@@ -4195,8 +4195,8 @@ class ClientPortalController {
         token: inviteToken
       });
 
-      // Generate invitation link
-      const inviteLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/invitation?token=${inviteToken}`;
+      // Generate invitation link (URL-encode to handle + characters in JWT)
+      const inviteLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/invitation?token=${encodeURIComponent(inviteToken)}`;
 
       // Generate email HTML
       const emailHtml = ClientPortalController.generateInvitationEmailHTML({
@@ -4488,8 +4488,8 @@ class ClientPortalController {
         [newToken, newExpiresAt, memberId]
       );
 
-      // Generate new invitation link
-      const inviteLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https//${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/invitation?token=${newToken}`;
+      // Generate new invitation link (URL-encode to handle + characters in token)
+      const inviteLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/invitation?token=${encodeURIComponent(newToken)}`;
 
       // Generate email HTML
       const emailHtml = ClientPortalController.generateInvitationEmailHTML({
