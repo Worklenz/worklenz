@@ -2903,6 +2903,7 @@ class ClientPortalController {
       const { page = 1, limit = 10, search, status, sortBy, sortOrder } = req.query;
       
       // Build query with pagination and filtering
+      // Include portal status by checking client_users (active users) and client_invitations (pending invites)
       let query = `
         SELECT 
           c.id,
@@ -2916,7 +2917,28 @@ class ClientPortalController {
           c.team_id,
           c.created_at,
           c.updated_at,
-          COUNT(DISTINCT p.id) as assigned_projects_count
+          COUNT(DISTINCT p.id) as assigned_projects_count,
+          -- Portal access: check if any active client_user exists for this client
+          CASE WHEN EXISTS (
+            SELECT 1 FROM client_users cu 
+            WHERE cu.client_id = c.id AND cu.status = 'active'
+          ) THEN true ELSE false END as has_portal_access,
+          -- Get the latest invitation info
+          (
+            SELECT ci.created_at 
+            FROM client_invitations ci 
+            WHERE ci.client_id = c.id 
+            ORDER BY ci.created_at DESC 
+            LIMIT 1
+          ) as invitation_sent_at,
+          -- Check if invitation was accepted
+          (
+            SELECT ci.status = 'accepted'
+            FROM client_invitations ci 
+            WHERE ci.client_id = c.id 
+            ORDER BY ci.created_at DESC 
+            LIMIT 1
+          ) as invitation_accepted
         FROM clients c
         LEFT JOIN projects p ON c.id = p.client_id
       `;
@@ -2973,23 +2995,47 @@ class ClientPortalController {
       queryParams.push(Number(limit), offset);
 
       const result = await db.query(query, queryParams);
-      const clients = result.rows.map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        email: row.email,
-        company_name: row.company_name,
-        phone: row.phone,
-        address: row.address,
-        contact_person: row.contact_person,
-        status: row.status || "active",
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-        assigned_projects_count: parseInt(row.assigned_projects_count || "0"),
-        projects: [],
-        team_members: []
-      }));
+      const clients = result.rows.map((row: any) => {
+        // Determine portal status based on the data
+        let portalStatus: { status: string; label: string; color: string };
+        
+        if (row.has_portal_access) {
+          portalStatus = { status: 'active', label: 'Active', color: 'green' };
+        } else if (row.invitation_sent_at && !row.invitation_accepted) {
+          const invitationDate = new Date(row.invitation_sent_at);
+          const expiryDate = new Date(invitationDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+          const isExpired = expiryDate < new Date();
+          
+          if (isExpired) {
+            portalStatus = { status: 'expired', label: 'Expired', color: 'red' };
+          } else {
+            portalStatus = { status: 'invited', label: 'Invited', color: 'orange' };
+          }
+        } else {
+          portalStatus = { status: 'not_invited', label: 'Not Invited', color: 'default' };
+        }
 
-
+        return {
+          id: row.id,
+          name: row.name,
+          email: row.email,
+          company_name: row.company_name,
+          phone: row.phone,
+          address: row.address,
+          contact_person: row.contact_person,
+          status: row.status || "active",
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+          assigned_projects_count: parseInt(row.assigned_projects_count || "0"),
+          projects: [],
+          team_members: [],
+          // Portal status fields for frontend
+          has_portal_access: row.has_portal_access || false,
+          invitation_sent_at: row.invitation_sent_at,
+          invitation_accepted: row.invitation_accepted || false,
+          portal_status: portalStatus
+        };
+      });
 
       return res.json(new ServerResponse(true, { 
         clients, 
@@ -3336,12 +3382,12 @@ class ClientPortalController {
           const clientId = crypto.randomUUID();
           await db.query(createClientQuery, [clientId, invitation.team_id, user.name, user.email]);
 
-          // Link user to client portal
+          // Link user to client portal with active status
           const linkUserQuery = `
-            INSERT INTO client_users (user_id, client_id, email, name, role, created_at)
-            VALUES ($1, $2, $3, $4, 'member', NOW())
+            INSERT INTO client_users (user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, 'member', $5, 'active', NOW(), NOW())
           `;
-          await db.query(linkUserQuery, [userId, clientId, user.email, user.name]);
+          await db.query(linkUserQuery, [userId, clientId, user.email, user.name, invitation.team_id]);
 
           return res.json(new ServerResponse(true, {
             redirectTo: "client-portal",
