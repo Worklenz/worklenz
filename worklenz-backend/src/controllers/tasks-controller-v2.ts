@@ -922,13 +922,12 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const { id } = req.params;
     const { labels }: { labels: string[] } = req.body;
 
-    labels.forEach(async (label: string) => {
-      const q = `SELECT add_or_remove_task_label($1, $2) AS labels;`;
-      await db.query(q, [id, label]);
-    });
+    const q = `SELECT replace_task_labels($1, $2) AS labels;`;
+    const result = await db.query(q, [id, labels]);
+    
     return res
       .status(200)
-      .send(new ServerResponse(true, null, "Labels assigned successfully"));
+      .send(new ServerResponse(true, result.rows[0]?.labels || [], "Labels assigned successfully"));
   }
 
   /**

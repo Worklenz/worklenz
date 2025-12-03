@@ -121,6 +121,7 @@ export default class HomePageController extends WorklenzControllerBase {
              TRUE AS is_task,
              FALSE AS done,
              t.updated_at,
+             (SELECT COUNT('*')::INT FROM tasks WHERE parent_task_id = t.id) AS sub_tasks_count,
              (SELECT ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(r)))
               FROM (SELECT task_statuses.id AS id,
                            task_statuses.name AS name,
