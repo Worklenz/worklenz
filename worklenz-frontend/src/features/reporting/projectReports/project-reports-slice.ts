@@ -242,6 +242,18 @@ const projectReportsSlice = createSlice({
       state.filterIndex = filterIndex();
       state.archived = false;
     },
+    resetAllFilters: state => {
+      state.searchQuery = '';
+      state.archived = false;
+      state.index = 1;
+      state.teams.forEach(team => {
+        team.selected = true;
+      });
+      state.selectedProjectStatuses = [];
+      state.selectedProjectHealths = [];
+      state.selectedProjectCategories = [];
+      state.selectedProjectManagers = [];
+    },
   },
   extraReducers: builder => {
     builder
@@ -318,5 +330,6 @@ export const {
   setSelectedProject,
   setSelectedProjectCategory,
   resetProjectReports,
+  resetAllFilters,
 } = projectReportsSlice.actions;
 export default projectReportsSlice.reducer;
