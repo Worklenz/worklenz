@@ -6795,3 +6795,38 @@ BEGIN
     END LOOP;
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION replace_task_labels(_task_id uuid, _label_ids uuid[]) RETURNS json
+    LANGUAGE plpgsql
+AS
+$
+DECLARE
+    _result JSON;
+    _label_id UUID;
+BEGIN
+    -- Remove all existing labels for this task
+    DELETE FROM task_labels WHERE task_id = _task_id;
+
+    -- Insert new labels if array is not empty
+    IF _label_ids IS NOT NULL AND array_length(_label_ids, 1) > 0 THEN
+        FOREACH _label_id IN ARRAY _label_ids
+        LOOP
+            INSERT INTO task_labels (task_id, label_id) 
+            VALUES (_task_id, _label_id)
+            ON CONFLICT (task_id, label_id) DO NOTHING;
+        END LOOP;
+    END IF;
+
+    -- Return the updated labels list
+    SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
+    INTO _result
+    FROM (SELECT task_labels.label_id AS id,
+                 (SELECT name FROM team_labels WHERE id = task_labels.label_id) AS name,
+                 (SELECT color_code FROM team_labels WHERE id = task_labels.label_id)
+          FROM task_labels
+          WHERE task_id = _task_id
+          ORDER BY name) rec;
+
+    RETURN _result;
+END
+$;
