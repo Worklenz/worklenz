@@ -59,7 +59,7 @@ export async function on_task_assignees_change(
         logMemberAssignment({
           task_id: body.task_id,
           socket,
-          new_value: null,
+          new_value: assignee.team_member_id,
           old_value: assignee.team_member_id,
           assign_type: "UNASSIGN",
         });
