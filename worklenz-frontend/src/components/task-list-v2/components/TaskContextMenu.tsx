@@ -37,6 +37,7 @@ import {
   CopyOutlined,
   CrownOutlined,
   message,
+  LinkOutlined,
 } from '@/shared/antd-imports';
 
 interface TaskContextMenuProps {
@@ -387,6 +388,18 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
             <span>{t('contextMenu.assignToMe')}</span>
           </button>
         ),
+      },{
+        key: 'duplicateTask',
+        label: (
+          <button
+            onClick={handleAssignToMe}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+            disabled={updatingAssignToMe}
+          >
+            <CopyOutlined className="text-gray-500 dark:text-gray-400" />
+            <span>{t('contextMenu.duplicateTask')}</span>
+          </button>
+        ),
       },
       {
         key: 'copyLink',
@@ -395,7 +408,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
             onClick={handleCopyLink}
             className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
           >
-            <CopyOutlined className="text-gray-500 dark:text-gray-400" />
+            <LinkOutlined className="text-gray-500 dark:text-gray-400" />
             <span>{t('contextMenu.copyLink')}</span>
           </button>
         ),

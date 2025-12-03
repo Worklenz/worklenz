@@ -56,6 +56,7 @@
   "pendingInvitation": "Convite Pendente",
 
   "contextMenu": {
+    "duplicateTask":"Tarefa duplicada",
     "assignToMe": "Atribuir a mim",
     "copyLink": "Copiar link da tarefa",
     "linkCopied": "Link copiado para a área de transferência",
