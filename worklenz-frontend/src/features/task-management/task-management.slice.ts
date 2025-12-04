@@ -73,6 +73,7 @@ const initialState: TaskManagementState = {
   // Add sort-related state
   sortField: '',
   sortOrder: 'ASC',
+  isOpenDuplicateTaskModal: false,
 };
 
 // Async thunk to fetch tasks from API
@@ -782,6 +783,10 @@ const taskManagementSlice = createSlice({
     setArchived: (state, action: PayloadAction<boolean>) => {
       state.archived = action.payload;
     },
+    setDuplicateTaskModalStatus
+    : (state, action: PayloadAction<boolean>) => {      
+      state.isOpenDuplicateTaskModal = action.payload;
+    },
     toggleArchived: state => {
       state.archived = !state.archived;
     },
@@ -1193,6 +1198,7 @@ export const {
   setSelectedPriorities,
   setSearch,
   setArchived,
+  setDuplicateTaskModalStatus,
   toggleArchived,
   setSortField,
   setSortOrder,

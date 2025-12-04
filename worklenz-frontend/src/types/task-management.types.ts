@@ -118,6 +118,7 @@ export interface TaskManagementState {
   // Add sort-related state
   sortField: string;
   sortOrder: 'ASC' | 'DESC';
+  isOpenDuplicateTaskModal: boolean;
 }
 
 export interface TaskGroupsState {
