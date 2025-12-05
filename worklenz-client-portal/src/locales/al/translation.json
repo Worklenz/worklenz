@@ -124,7 +124,12 @@
     "requestRejectedMessage": "Kjo kërkesë është refuzuar",
     "requestRejectedDescription": "Nuk mund të bëhen më përditësime në kërkesat e refuzuara.",
     "attachments": "Bashkëngjitjet",
-    "noAttachments": "Pa bashkëngjitje"
+    "noAttachments": "Pa bashkëngjitje",
+    "serviceQuestions": "Pyetjet e Shërbimit",
+    "noAnswer": "Nuk është dhënë përgjigje",
+    "noFilesUploaded": "Nuk janë ngarkuar skedarë",
+    "loadingQuestions": "Duke ngarkuar pyetjet...",
+    "enterAnswer": "Shkruani përgjigjen tuaj"
   },
   "common": {
     "loading": "Duke u ngarkuar...",

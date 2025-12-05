@@ -219,7 +219,12 @@
     "requestRejectedMessage": "This request has been rejected",
     "requestRejectedDescription": "No further updates can be made to rejected requests.",
     "attachments": "Attachments",
-    "noAttachments": "No attachments"
+    "noAttachments": "No attachments",
+    "serviceQuestions": "Service Questions",
+    "noAnswer": "No answer provided",
+    "noFilesUploaded": "No files uploaded",
+    "loadingQuestions": "Loading questions...",
+    "enterAnswer": "Enter your answer"
   },
   "invoices": {
     "title": "Invoices",

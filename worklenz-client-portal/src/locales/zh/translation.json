@@ -124,7 +124,12 @@
     "requestRejectedMessage": "此请求已被拒绝",
     "requestRejectedDescription": "已拒绝的请求无法再进行更新。",
     "attachments": "附件",
-    "noAttachments": "无附件"
+    "noAttachments": "无附件",
+    "serviceQuestions": "服务问题",
+    "noAnswer": "未提供回答",
+    "noFilesUploaded": "未上传文件",
+    "loadingQuestions": "正在加载问题...",
+    "enterAnswer": "请输入您的回答"
   },
   "common": {
     "loading": "加载中...",

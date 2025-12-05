@@ -221,7 +221,12 @@
     "requestRejectedMessage": "Diese Anfrage wurde abgelehnt",
     "requestRejectedDescription": "Abgelehnte Anfragen können nicht mehr aktualisiert werden.",
     "attachments": "Anhänge",
-    "noAttachments": "Keine Anhänge"
+    "noAttachments": "Keine Anhänge",
+    "serviceQuestions": "Service-Fragen",
+    "noAnswer": "Keine Antwort angegeben",
+    "noFilesUploaded": "Keine Dateien hochgeladen",
+    "loadingQuestions": "Fragen werden geladen...",
+    "enterAnswer": "Geben Sie Ihre Antwort ein"
   },
   "invoices": {
     "title": "Rechnungen",
