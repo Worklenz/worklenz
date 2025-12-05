@@ -210,7 +210,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
         </Flex>
         
         {/* Task Navigation - Show only if navigation context exists */}
-        {navigationContext && navigationContext.taskIds.length > 1 && (
+        {!isSubTask && navigationContext && navigationContext.taskIds.length > 1 && (
           <TaskDrawerNavigation
             onPrevious={handlePrevious}
             onNext={handleNext}
