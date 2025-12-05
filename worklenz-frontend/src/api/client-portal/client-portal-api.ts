@@ -945,6 +945,27 @@ export const clientPortalApi = createApi({
       }),
     }),
 
+    resendClientInvitation: builder.mutation<
+      {
+        done: boolean;
+        body: {
+          invitationLink: string;
+          clientName: string;
+          clientEmail: string;
+          expiresAt: string;
+          emailSent: boolean;
+        };
+        message: string;
+      },
+      { clientId: string }
+    >({
+      query: ({ clientId }) => ({
+        url: `/clients/portal/clients/${clientId}/resend-invitation`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Clients'],
+    }),
+
     // Handle organization invitation
     handleOrganizationInvite: builder.mutation<
       { redirectTo: string; message: string },
@@ -1051,5 +1072,6 @@ export const {
 
   // Client Invitation Management
   useGenerateClientInvitationLinkMutation,
+  useResendClientInvitationMutation,
   useHandleOrganizationInviteMutation,
 } = clientPortalApi;

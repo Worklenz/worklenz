@@ -1076,4 +1076,9 @@ export default class ClientsController extends WorklenzControllerBase {
     return ClientPortalController.generateClientInvitationLink(req, res);
   }
 
+  @HandleExceptions()
+  public static async resendClientInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    return ClientPortalController.resendClientInvitation(req, res);
+  }
+
 }

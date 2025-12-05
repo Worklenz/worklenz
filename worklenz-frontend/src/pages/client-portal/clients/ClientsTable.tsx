@@ -10,6 +10,7 @@ import {
   PlusOutlined,
   LinkOutlined,
   CopyOutlined,
+  MailOutlined,
 } from '@/shared/antd-imports';
 import {
   Button,
@@ -54,6 +55,7 @@ import {
   useBulkDeactivateClientsMutation,
   useBulkUpdateClientsMutation,
   useGenerateClientInvitationLinkMutation,
+  useResendClientInvitationMutation,
 } from '@/api/client-portal/client-portal-api';
 import { TempClientPortalClientType } from '@/types/client-portal/temp-client-portal.types';
 import { useState } from 'react';
@@ -103,6 +105,7 @@ const ClientsTable = () => {
   const [bulkDeactivateClients, { isLoading: isBulkDeactivating }] = useBulkDeactivateClientsMutation();
   const [bulkUpdateClients, { isLoading: isBulkUpdating }] = useBulkUpdateClientsMutation();
   const [generateInvitationLink] = useGenerateClientInvitationLinkMutation();
+  const [resendInvitation, { isLoading: isResendingInvitation }] = useResendClientInvitationMutation();
 
   // Use API data - handle the ServerResponse wrapper
   const displayClients = clientsData?.body?.clients || [];
@@ -324,6 +327,23 @@ const ClientsTable = () => {
     setCurrentClientId('');
   };
 
+  // Handle resend invitation email
+  const handleResendInvitation = async (clientId: string) => {
+    try {
+      const result = await resendInvitation({ clientId }).unwrap();
+
+      if (result.body?.emailSent) {
+        message.success(t('resendInvitationSuccess') || 'Invitation email sent successfully!');
+        refetch();
+      } else {
+        message.error(t('resendInvitationError') || 'Failed to send invitation email');
+      }
+    } catch (error) {
+      console.error('Failed to resend invitation:', error);
+      message.error(t('resendInvitationError') || 'Failed to send invitation email');
+    }
+  };
+
   // Handle row selection
   const handleRowSelection = {
     selectedRowKeys,
@@ -460,14 +480,24 @@ const ClientsTable = () => {
         },
       });
     } else if (portalStatus.status === 'invited') {
-      menuItems.push({
-        key: 'copyInvite',
-        label: t('copyInviteLinkTooltip') || 'Copy Invitation Link',
-        icon: <CopyOutlined />,
-        onClick: () => {
-          handleGenerateInviteLink(record.id);
+      menuItems.push(
+        {
+          key: 'resendEmail',
+          label: t('resendInviteEmailTooltip') || 'Resend Invite Email',
+          icon: <MailOutlined />,
+          onClick: () => {
+            handleResendInvitation(record.id);
+          },
         },
-      });
+        {
+          key: 'copyInvite',
+          label: t('copyInviteLinkTooltip') || 'Copy Invitation Link',
+          icon: <CopyOutlined />,
+          onClick: () => {
+            handleGenerateInviteLink(record.id);
+          },
+        }
+      );
     }
 
     menuItems.push(
