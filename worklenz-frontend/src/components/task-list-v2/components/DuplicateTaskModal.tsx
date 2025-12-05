@@ -15,10 +15,10 @@ const { Title, Text } = Typography;
 interface DuplicateTaskModalProps {
   open: boolean;
   onClose: () => void;
-  taskId: string;
+  // taskId: string;
 }
 
-const DuplicateTaskModal: React.FC<DuplicateTaskModalProps> = ({ open, onClose, taskId }) => {
+const DuplicateTaskModal: React.FC<DuplicateTaskModalProps> = ({ open, onClose}) => {
   const { t } = useTranslation('task-list-filters');
   const dispatch = useAppDispatch();
 

@@ -1,14 +1,12 @@
 import React, { memo, useMemo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Task } from '@/types/task-management.types';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { selectTaskById, setDuplicateTaskModalStatus } from '@/features/task-management/task-management.slice';
+import { selectTaskById } from '@/features/task-management/task-management.slice';
 import { selectIsTaskSelected } from '@/features/task-management/selection.slice';
 import { useTaskRowState } from './hooks/useTaskRowState';
 import { useTaskRowActions } from './hooks/useTaskRowActions';
 import { useTaskRowColumns } from './hooks/useTaskRowColumns';
-import DuplicateTaskModal from './components/DuplicateTaskModal';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 
 interface TaskRowProps {
@@ -43,9 +41,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(
     const task = useAppSelector(state => selectTaskById(state, taskId));
     const isSelected = useAppSelector(state => selectIsTaskSelected(state, taskId));
     const themeMode = useAppSelector(state => state.themeReducer.mode);
-    const isOpenDuplicateTaskModal = useAppSelector(state => state.taskManagement.isOpenDuplicateTaskModal);
     const isDarkMode = themeMode === 'dark';
-    const dispatch = useAppDispatch();
 
     // Early return if task is not found
     if (!task) {
@@ -161,7 +157,6 @@ const TaskRow: React.FC<TaskRowProps> = memo(
             </React.Fragment>
           );
         })}
-        <DuplicateTaskModal open={isOpenDuplicateTaskModal} onClose={() => dispatch(setDuplicateTaskModalStatus(false))} taskId={task?.id}/>
       </div>
     );
   }
