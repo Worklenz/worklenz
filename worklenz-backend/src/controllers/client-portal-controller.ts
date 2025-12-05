@@ -3261,6 +3261,125 @@ class ClientPortalController {
     }
   }
 
+  static async resendClientInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    try {
+      const { id: clientId } = req.params;
+      const userId = req.user?.id;
+      const teamId = req.user?.team_id;
+      const inviterName = req.user?.name || "Your team";
+
+      if (!userId || !teamId) {
+        return res.status(401).json(new ServerResponse(false, null, "Authentication required"));
+      }
+
+      if (!clientId) {
+        return res.status(400).json(new ServerResponse(false, null, "Client ID is required"));
+      }
+
+      // Get client information
+      const clientQuery = `
+        SELECT c.id, c.name, c.email, c.company_name, c.phone
+        FROM clients c
+        WHERE c.id = $1 AND c.team_id = $2
+      `;
+      const clientResult = await db.query(clientQuery, [clientId, teamId]);
+
+      if (!clientResult.rows.length) {
+        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+      }
+
+      const client = clientResult.rows[0];
+
+      // Check if client already has an active portal user (already joined)
+      const activeUserCheck = await db.query(
+        `SELECT id FROM client_users WHERE client_id = $1 AND status = 'active'`,
+        [clientId]
+      );
+
+      if (activeUserCheck.rows.length > 0) {
+        return res.status(400).json(new ServerResponse(false, null, "Client has already joined the portal"));
+      }
+
+      // Check if there's a pending invitation
+      const pendingInviteCheck = await db.query(
+        `SELECT id, email, name FROM client_invitations 
+         WHERE client_id = $1 AND status = 'pending' 
+         ORDER BY created_at DESC LIMIT 1`,
+        [clientId]
+      );
+
+      // Generate new invitation token
+      const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
+      const inviteToken = TokenService.generateInviteToken({
+        clientId: client.id,
+        email: client.email,
+        name: client.name,
+        role: "member",
+        invitedBy: userId,
+        expiresAt,
+        type: "invite"
+      });
+
+      if (pendingInviteCheck.rows.length > 0) {
+        // Update existing invitation with new token and expiry
+        await db.query(
+          `UPDATE client_invitations 
+           SET token = $1, expires_at = $2, updated_at = NOW() 
+           WHERE client_id = $3 AND status = 'pending'`,
+          [inviteToken, new Date(expiresAt), clientId]
+        );
+      } else {
+        // Create new invitation record
+        await TokenService.createInvitation({
+          clientId: client.id,
+          email: client.email,
+          name: client.name,
+          role: "member",
+          invitedBy: userId,
+          token: inviteToken
+        });
+      }
+
+      // Generate invitation link (URL-encode to handle + characters in JWT)
+      const inviteLink = `${getClientPortalBaseUrl()}/invite?token=${encodeURIComponent(inviteToken)}`;
+
+      // Generate email HTML
+      const emailHtml = ClientPortalController.generateInvitationEmailHTML({
+        inviteeName: client.name,
+        inviterName,
+        clientName: client.name,
+        companyName: client.company_name,
+        inviteLink,
+        expiresAt: new Date(expiresAt),
+        role: "member"
+      });
+
+      // Send invitation email
+      const emailRequest = new EmailRequest(
+        [client.email],
+        `You're invited to join ${client.name} on Worklenz`,
+        emailHtml
+      );
+
+      const messageId = await sendEmail(emailRequest);
+
+      if (!messageId) {
+        return res.status(500).json(new ServerResponse(false, null, "Failed to send invitation email"));
+      }
+
+      return res.json(new ServerResponse(true, {
+        invitationLink: inviteLink,
+        clientName: client.name,
+        clientEmail: client.email,
+        expiresAt: new Date(expiresAt).toISOString(),
+        emailSent: true
+      }, "Invitation email sent successfully"));
+    } catch (error) {
+      console.error("Error resending client invitation:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to resend invitation"));
+    }
+  }
+
   static async generateOrganizationInvitationLink(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
       const userId = req.user?.id;
@@ -5004,7 +5123,7 @@ class ClientPortalController {
 
   static async acceptInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
-      const { token, password, name } = req.body;
+      const { token, password, name, email } = req.body;
 
       if (!token || !password || !name) {
         return res.status(400).json(new ServerResponse(false, null, "Token, password, and name are required"));
@@ -5015,11 +5134,16 @@ class ClientPortalController {
       
       if (orgInvitePayload && orgInvitePayload.type === "organization_invite") {
         
+        // For organization invites, email is required
+        if (!email) {
+          return res.status(400).json(new ServerResponse(false, null, "Email is required for organization invites"));
+        }
+
         // For organization invites, create a new client user account
         // First, check if user already exists
         const existingUserCheck = await db.query(
-          "SELECT id FROM client_users WHERE email = $1",
-          [req.body.email || name] // Use email from form if provided
+          "SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)",
+          [email]
         );
 
         if (existingUserCheck.rows.length > 0) {
@@ -5037,7 +5161,7 @@ class ClientPortalController {
           `INSERT INTO clients (name, email, team_id, status, client_portal_enabled, created_at, updated_at)
            VALUES ($1, $2, $3, 'active', TRUE, NOW(), NOW())
            RETURNING id`,
-          [name, req.body.email, orgInvitePayload.teamId]
+          [name, email, orgInvitePayload.teamId]
         );
         
         const clientId = clientResult.rows[0].id;
@@ -5049,7 +5173,7 @@ class ClientPortalController {
            RETURNING id, email, name, role, client_id`,
           [
             clientId,
-            req.body.email || name,
+            email,
             name,
             crypto.createHash("sha256").update(password).digest("hex")
           ]

@@ -163,6 +163,7 @@ class ClientPortalAPI {
   async acceptInvite(inviteData: { 
     token: string; 
     name: string; 
+    email: string;
     password: string; 
   }): Promise<ApiResponse<{ user: ClientUser; token: string; expiresAt: string }>> {
     // Note: Both organization invites and regular invites can now create new accounts

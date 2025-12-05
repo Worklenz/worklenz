@@ -272,7 +272,10 @@
 
   "inviteToPortalTooltip": "Invite to Portal",
   "resendInvitationTooltip": "Resend Invitation",
+  "resendInviteEmailTooltip": "Resend Invite Email",
   "copyInviteLinkTooltip": "Copy Invitation Link",
+  "resendInvitationSuccess": "Invitation email sent successfully!",
+  "resendInvitationError": "Failed to send invitation email",
 
   "inviteSelectedToPortal": "Send Portal Invitations",
   "selectClientsToInvite": "Please select clients to invite",

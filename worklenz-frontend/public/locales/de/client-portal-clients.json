@@ -268,7 +268,10 @@
 
   "inviteToPortalTooltip": "Zum Portal einladen",
   "resendInvitationTooltip": "Einladung erneut senden",
+  "resendInviteEmailTooltip": "Einladungs-E-Mail erneut senden",
   "copyInviteLinkTooltip": "Einladungslink kopieren",
+  "resendInvitationSuccess": "Einladungs-E-Mail erfolgreich gesendet!",
+  "resendInvitationError": "Einladungs-E-Mail konnte nicht gesendet werden",
 
   "inviteSelectedToPortal": "Portal-Einladungen senden",
   "selectClientsToInvite": "Bitte wählen Sie Kunden zum Einladen aus",

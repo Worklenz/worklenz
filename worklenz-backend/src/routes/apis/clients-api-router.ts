@@ -53,6 +53,7 @@ clientsApiRouter.post("/portal/clients/:id/team/:memberId/resend-invitation", id
 
 // Organization-side Client Portal Invitation Management
 clientsApiRouter.post("/portal/generate-invitation-link", safeControllerFunction(ClientsController.generateClientInvitationLink));
+clientsApiRouter.post("/portal/clients/:id/resend-invitation", idParamValidator, safeControllerFunction(ClientsController.resendClientInvitation));
 
 // Organization-side Client Portal Analytics
 clientsApiRouter.get("/portal/clients/:id/stats", idParamValidator, safeControllerFunction(ClientsController.getPortalClientStats));
