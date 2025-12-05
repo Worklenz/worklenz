@@ -219,7 +219,12 @@
     "requestRejectedMessage": "Esta solicitud ha sido rechazada",
     "requestRejectedDescription": "No se pueden hacer más actualizaciones a solicitudes rechazadas.",
     "attachments": "Archivos Adjuntos",
-    "noAttachments": "Sin archivos adjuntos"
+    "noAttachments": "Sin archivos adjuntos",
+    "serviceQuestions": "Preguntas del Servicio",
+    "noAnswer": "Sin respuesta proporcionada",
+    "noFilesUploaded": "No se subieron archivos",
+    "loadingQuestions": "Cargando preguntas...",
+    "enterAnswer": "Ingrese su respuesta"
   },
   "invoices": {
     "title": "Facturas",

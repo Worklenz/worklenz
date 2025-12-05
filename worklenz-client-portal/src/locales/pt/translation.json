@@ -221,7 +221,12 @@
     "requestRejectedMessage": "Esta solicitação foi rejeitada",
     "requestRejectedDescription": "Não é possível fazer mais atualizações em solicitações rejeitadas.",
     "attachments": "Anexos",
-    "noAttachments": "Sem anexos"
+    "noAttachments": "Sem anexos",
+    "serviceQuestions": "Perguntas do Serviço",
+    "noAnswer": "Nenhuma resposta fornecida",
+    "noFilesUploaded": "Nenhum arquivo enviado",
+    "loadingQuestions": "Carregando perguntas...",
+    "enterAnswer": "Digite sua resposta"
   },
   "invoices": {
     "title": "Faturas",
