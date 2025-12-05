@@ -11,11 +11,17 @@ import {
   ShareAltOutlined 
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
 
 const SettingsPage: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  const handleViewProfile = () => {
+    navigate('/profile');
+  };
   
   return (
     <div>
@@ -31,7 +37,7 @@ const SettingsPage: React.FC = () => {
               <Text type="secondary">
                 {t('settings.accountInfoDescription')}
               </Text>
-              <Button size="large">
+              <Button size="large" onClick={handleViewProfile}>
                 {t('settings.viewProfile')}
               </Button>
             </Space>
