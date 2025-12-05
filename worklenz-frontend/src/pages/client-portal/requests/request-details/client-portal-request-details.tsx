@@ -10,6 +10,7 @@ import {
   TabsProps,
   Tag,
   Typography,
+  theme,
 } from '@/shared/antd-imports';
 import { ArrowLeftOutlined, DownOutlined, PaperClipOutlined } from '@ant-design/icons';
 import { colors } from '../../../../styles/colors';
@@ -31,6 +32,9 @@ const ClientPortalRequestDetails = () => {
   // localization
   const { t: t1 } = useTranslation('client-portal-requests');
   const { t: t2 } = useTranslation('client-portal-common');
+
+  // Theme tokens for dark/light mode support
+  const { token } = theme.useToken();
 
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -156,8 +160,8 @@ const ClientPortalRequestDetails = () => {
                       style={{
                         padding: '8px 12px',
                         borderRadius: 6,
-                        border: '1px solid #d9d9d9',
-                        background: '#fafafa',
+                        border: `1px solid ${token.colorBorder}`,
+                        background: token.colorBgLayout,
                         cursor: 'pointer',
                         width: 'fit-content',
                       }}
@@ -196,9 +200,9 @@ const ClientPortalRequestDetails = () => {
               }, index: number) => (
                 <Flex key={index} vertical gap={4} style={{ 
                   padding: '12px 16px', 
-                  background: '#fafafa', 
+                  background: token.colorBgLayout, 
                   borderRadius: 8,
-                  border: '1px solid #f0f0f0'
+                  border: `1px solid ${token.colorBorderSecondary}`
                 }}>
                   <Typography.Text style={{ fontWeight: 500 }}>
                     {qa.question}
