@@ -71,15 +71,42 @@ export interface ClientPortalProject {
 }
 
 export interface ClientPortalInvoice {
+  // List fields (from getInvoices)
   id: string;
-  invoice_no: string;
+  invoiceNumber: string;
   amount: number;
   currency: string;
   status: string;
-  due_date: string;
-  created_at: string;
-  sent_at?: string;
-  paid_at?: string;
+  dueDate: string;
+  sentAt?: string;
+  paidAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  requestNumber?: string;
+  serviceName?: string;
+  isOverdue?: boolean;
+}
+
+export interface ClientPortalInvoiceDetails extends ClientPortalInvoice {
+  request: {
+    id: string;
+    requestNumber: string;
+    requestData: any;
+    notes?: string;
+    service: {
+      id: string;
+      name: string;
+      description?: string;
+    };
+  } | null;
+  client: {
+    name: string;
+    companyName?: string | null;
+    email?: string | null;
+  };
+  createdBy: {
+    name: string;
+  } | null;
 }
 
 export interface ClientPortalChat {
@@ -404,12 +431,46 @@ export const clientPortalApi = createApi({
     }),
 
     // Invoices
-    getInvoices: builder.query<ClientPortalInvoice[], void>({
-      query: () => '/clients/portal/invoices',
+    getInvoices: builder.query<
+      {
+        done: boolean;
+        body: {
+          invoices: ClientPortalInvoice[];
+          total: number;
+          page: number;
+          limit: number;
+        };
+        message: string;
+      },
+      {
+        page?: number;
+        limit?: number;
+        status?: string;
+        search?: string;
+      } | void
+    >({
+      query: params => {
+        const searchParams = new URLSearchParams();
+        if (params && params.page) searchParams.set('page', String(params.page));
+        if (params && params.limit) searchParams.set('limit', String(params.limit));
+        if (params && params.status) searchParams.set('status', params.status);
+        if (params && params.search) searchParams.set('search', params.search);
+
+        const queryString = searchParams.toString();
+        const url = `/clients/portal/invoices${queryString ? `?${queryString}` : ''}`;
+        return url;
+      },
       providesTags: ['Invoices'],
     }),
 
-    getInvoiceDetails: builder.query<ClientPortalInvoice, string>({
+    getInvoiceDetails: builder.query<
+      {
+        done: boolean;
+        body: ClientPortalInvoiceDetails;
+        message: string;
+      },
+      string
+    >({
       query: id => `/clients/portal/invoices/${id}`,
       providesTags: (result, error, id) => [{ type: 'Invoices', id }],
     }),
