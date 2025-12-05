@@ -5004,7 +5004,7 @@ class ClientPortalController {
 
   static async acceptInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
-      const { token, password, name } = req.body;
+      const { token, password, name, email } = req.body;
 
       if (!token || !password || !name) {
         return res.status(400).json(new ServerResponse(false, null, "Token, password, and name are required"));
@@ -5015,11 +5015,16 @@ class ClientPortalController {
       
       if (orgInvitePayload && orgInvitePayload.type === "organization_invite") {
         
+        // For organization invites, email is required
+        if (!email) {
+          return res.status(400).json(new ServerResponse(false, null, "Email is required for organization invites"));
+        }
+
         // For organization invites, create a new client user account
         // First, check if user already exists
         const existingUserCheck = await db.query(
-          "SELECT id FROM client_users WHERE email = $1",
-          [req.body.email || name] // Use email from form if provided
+          "SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)",
+          [email]
         );
 
         if (existingUserCheck.rows.length > 0) {
@@ -5037,7 +5042,7 @@ class ClientPortalController {
           `INSERT INTO clients (name, email, team_id, status, client_portal_enabled, created_at, updated_at)
            VALUES ($1, $2, $3, 'active', TRUE, NOW(), NOW())
            RETURNING id`,
-          [name, req.body.email, orgInvitePayload.teamId]
+          [name, email, orgInvitePayload.teamId]
         );
         
         const clientId = clientResult.rows[0].id;
@@ -5049,7 +5054,7 @@ class ClientPortalController {
            RETURNING id, email, name, role, client_id`,
           [
             clientId,
-            req.body.email || name,
+            email,
             name,
             crypto.createHash("sha256").update(password).digest("hex")
           ]
