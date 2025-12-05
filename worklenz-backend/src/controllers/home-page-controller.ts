@@ -94,7 +94,7 @@ export default class HomePageController extends WorklenzControllerBase {
       case this.OVERDUE_TAB:
         return `AND t.end_date::DATE < CURRENT_DATE::DATE`;
       case this.UPCOMING_NOW_ON_TAB:
-        return `AND t.end_date::DATE = CURRENT_DATE::DATE AND t.end_date::DATE > CURRENT_DATE::DATE`;
+        return `AND t.end_date::DATE >= CURRENT_DATE::DATE`;
       case this.NO_DUE_DATE_TAB:
         return `AND t.end_date IS NULL`;
       case this.ALL_TAB:
