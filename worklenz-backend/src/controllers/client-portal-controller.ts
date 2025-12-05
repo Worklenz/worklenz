@@ -150,7 +150,9 @@ class ClientPortalController {
           s.service_data,
           s.is_public,
           s.created_at,
-          s.updated_at
+          s.updated_at,
+          s.price,
+          s.currency
         FROM client_portal_services s
         WHERE s.id = $1 
         AND s.organization_team_id = $2
@@ -174,7 +176,9 @@ class ClientPortalController {
         serviceData: service.service_data,
         isPublic: service.is_public,
         createdAt: service.created_at,
-        updatedAt: service.updated_at
+        updatedAt: service.updated_at,
+        price: service.price || 0,
+        currency: service.currency || "USD"
       }, "Service details retrieved successfully"));
     } catch (error) {
       console.error("Error fetching service details:", error);
