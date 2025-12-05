@@ -42,6 +42,7 @@ export default class HomePageController extends WorklenzControllerBase {
   private static readonly UPCOMING_TAB = "Upcoming";
   private static readonly OVERDUE_TAB = "Overdue";
   private static readonly NO_DUE_DATE_TAB = "NoDueDate";
+  private static readonly UPCOMING_NOW_ON_TAB = "UpcomingNowOn";
 
   private static isValidGroup(groupBy: string) {
     return groupBy === this.GROUP_BY_ASSIGNED_TO_ME
@@ -53,7 +54,8 @@ export default class HomePageController extends WorklenzControllerBase {
       || currentView === this.TODAY_TAB
       || currentView === this.UPCOMING_TAB
       || currentView === this.OVERDUE_TAB
-      || currentView === this.NO_DUE_DATE_TAB;
+      || currentView === this.NO_DUE_DATE_TAB
+      || currentView === this.UPCOMING_NOW_ON_TAB;
   }
 
   @HandleExceptions()
@@ -91,6 +93,8 @@ export default class HomePageController extends WorklenzControllerBase {
         return `AND t.end_date::DATE > CURRENT_DATE::DATE`;
       case this.OVERDUE_TAB:
         return `AND t.end_date::DATE < CURRENT_DATE::DATE`;
+      case this.UPCOMING_NOW_ON_TAB:
+        return `AND t.end_date::DATE >= CURRENT_DATE::DATE`;
       case this.NO_DUE_DATE_TAB:
         return `AND t.end_date IS NULL`;
       case this.ALL_TAB:
@@ -121,6 +125,7 @@ export default class HomePageController extends WorklenzControllerBase {
              TRUE AS is_task,
              FALSE AS done,
              t.updated_at,
+             (SELECT COUNT('*')::INT FROM tasks WHERE parent_task_id = t.id) AS sub_tasks_count,
              (SELECT ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(r)))
               FROM (SELECT task_statuses.id AS id,
                            task_statuses.name AS name,

@@ -117,7 +117,7 @@ export default class AuthController extends WorklenzControllerBase {
     // Normalize email to lowercase for case-insensitive comparison
     const normalizedEmail = email ? email.toLowerCase().trim() : null;
 
-    const q = `SELECT id, email, google_id, password FROM users WHERE LOWER(email) = $1;`;
+    const q = `SELECT id, email, google_id, apple_id, password FROM users WHERE LOWER(email) = $1;`;
     const result = await db.query(q, [normalizedEmail]);
 
     if (!result.rowCount)
@@ -127,6 +127,10 @@ export default class AuthController extends WorklenzControllerBase {
 
     if (data?.google_id) {
       return res.status(200).send(new ServerResponse(false, "oauth_user", "This account uses Google Sign-In. Please sign in with Google instead."));
+    }
+
+    if (data?.apple_id) {
+      return res.status(200).send(new ServerResponse(false, "oauth_user", "This account uses Apple Sign-In. Please sign in with Apple instead."));
     }
 
     if (data?.password) {
@@ -252,6 +256,84 @@ export default class AuthController extends WorklenzControllerBase {
           });
         });
       }); // Close login callback
+    })(req, res, next);
+  }
+
+  /**
+   * Apple Mobile Authentication Handler
+   * Handles Apple Sign-In for mobile apps using Passport strategy
+   * Similar to googleMobileAuthPassport but for Apple
+   */
+  public static appleMobileAuthPassport(req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) {
+    const mobileOptions = {
+      session: true,
+      failureFlash: true,
+      failWithError: false
+    };
+
+    passport.authenticate("apple-mobile", mobileOptions, (err: any, user: any, info: any) => {
+      // Handle authentication errors
+      if (err) {
+        log_error("Apple mobile authentication error:", err);
+        return res.status(500).send({
+          done: false,
+          message: "Authentication failed",
+          body: null
+        });
+      }
+
+      // Handle authentication failure (invalid token, user not found, etc.)
+      if (!user) {
+        return res.status(400).send({
+          done: false,
+          message: info?.message || "Apple authentication failed",
+          body: null
+        });
+      }
+
+      // Log the user in (create session)
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          log_error("Apple login session creation error:", loginErr);
+          return res.status(500).send({
+            done: false,
+            message: "Session creation failed",
+            body: null
+          });
+        }
+
+        // Add build version to user object
+        user.build_v = FileConstants.getRelease();
+
+        // Ensure session is saved and cookie is set
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            log_error("Apple login session save error:", saveErr);
+            return res.status(500).send({
+              done: false,
+              message: "Session save failed",
+              body: null
+            });
+          }
+
+          // Get session cookie details
+          const sessionName = process.env.SESSION_NAME || 'worklenz.sid';
+
+          // Return response with session info for mobile app
+          res.setHeader('X-Session-ID', req.sessionID);
+          res.setHeader('X-Session-Name', sessionName);
+
+          return res.status(200).send({
+            done: true,
+            message: info?.message || "Login successful",
+            user,
+            authenticated: true,
+            sessionId: req.sessionID,
+            sessionName: sessionName,
+            newSessionId: req.sessionID
+          });
+        });
+      });
     })(req, res, next);
   }
 

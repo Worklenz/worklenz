@@ -38,6 +38,13 @@ import dayjs from 'dayjs';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import {
+  setSelectedTaskId,
+  setShowTaskDrawer,
+  fetchTask as fetchTaskDrawer,
+  setNavigationContext,
+} from '@/features/task-drawer/task-drawer.slice';
+import { getTaskIdsFromGroups } from '@/utils/task-navigation-helper';
 
 import { colors } from '@/styles/colors';
 import TaskContextMenu from './context-menu/task-context-menu';
@@ -84,6 +91,7 @@ import PhaseDropdown from '@/components/taskListCommon/phase-dropdown/phase-drop
 import CustomColumnModal from './custom-columns/custom-column-modal/custom-column-modal';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
+import { DragEndEvent } from '@/types/task-management.types';
 
 interface TaskListTableProps {
   taskList: IProjectTask[] | null;
@@ -1264,6 +1272,27 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
   const currentSession = useAuthService().getCurrentSession();
   const { socket } = useSocket();
 
+  // Handler for opening task with navigation context
+  const handleOpenTask = (taskId: string) => {
+    // Get all task IDs from current task groups for navigation
+    const allTaskIds = getTaskIdsFromGroups(taskGroups, false);
+    const currentIndex = allTaskIds.indexOf(taskId);
+
+    // Set navigation context
+    dispatch(
+      setNavigationContext({
+        taskIds: allTaskIds,
+        currentIndex: currentIndex >= 0 ? currentIndex : 0,
+        sourceView: 'task-list',
+        projectId: project?.id || null,
+      })
+    );
+
+    dispatch(setSelectedTaskId(taskId));
+    dispatch(fetchTaskDrawer({ taskId, projectId: project?.id || '' }));
+    dispatch(setShowTaskDrawer(true));
+  };
+
   // Add drag state
   const [dragActiveId, setDragActiveId] = useState<string | null>(null);
   const [placeholderIndex, setPlaceholderIndex] = useState<number | null>(null);
@@ -1489,6 +1518,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
           isSubTask={isSubtask}
           projectId={project?.id || ''}
           toggleTaskExpansion={toggleTaskExpansion}
+          onOpenTask={handleOpenTask}
         />
       ),
       DESCRIPTION: () => <TaskListDescriptionCell description={task.description || ''} />,

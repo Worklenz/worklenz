@@ -24,6 +24,7 @@ import TaskDrawerTimeLog from './shared/time-log/task-drawer-time-log';
 import TimeLogForm from './shared/time-log/time-log-form';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import useTaskDrawerUrlSync from '@/hooks/useTaskDrawerUrlSync';
+import useTaskDrawerNavigation from '@/hooks/useTaskDrawerNavigation';
 import InfoTabFooter from './shared/info-tab/info-tab-footer';
 import { Flex, Tooltip } from '@/shared/antd-imports';
 import { CrownOutlined } from '@ant-design/icons';
@@ -49,6 +50,9 @@ const TaskDrawer = () => {
 
   // Use the custom hook to sync the task drawer state with the URL
   const { clearTaskFromUrl } = useTaskDrawerUrlSync();
+  
+  // Use the custom hook to automatically set navigation context
+  useTaskDrawerNavigation();
 
   useEffect(() => {
     if (taskNameInputRef.current?.input?.value === DEFAULT_TASK_NAME) {

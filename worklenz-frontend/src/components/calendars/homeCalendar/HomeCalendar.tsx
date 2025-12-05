@@ -1,8 +1,6 @@
 import { Calendar } from '@/shared/antd-imports';
-import React, { useEffect } from 'react';
 import type { Dayjs } from 'dayjs';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { selectedDate } from '../../../features/date/dateSlice';
 import { useAppSelector } from '@/hooks/useAppSelector';
 /* homepage calendar style override  */
 import './homeCalendar.css';

@@ -12,16 +12,12 @@ export async function on_task_name_change(_io: Server, socket: Socket, data?: st
   try {
     const body = JSON.parse(data as string);
     const userId = getLoggedInUserIdFromSocket(socket);
-
     const name = (body.name || "").trim();
     const task_data = await getTaskDetails(body.task_id, "name");
-
     const q = `SELECT handle_task_name_change($1, $2, $3) AS response;`;
-
     const result = await db.query(q, [body.task_id, name, userId]);
     const [d] = result.rows;
     const response = d.response || {};
-
     for (const member of response.members || []) {
       if (member.user_id === userId) continue;
       NotificationsService.createNotification({

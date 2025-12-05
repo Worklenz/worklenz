@@ -4,12 +4,14 @@ import { ClockCircleOutlined } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import AddTaskInlineForm from './AddTaskInlineForm';
 import { useTranslation } from 'react-i18next';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { setHomeTasksConfig } from '@/features/home-page/home-page.slice';
 import dayjs from 'dayjs';
+import { getDueDateStatus, getDueDateColorClass } from '@/utils/dueDateColorHelper';
 
 const CalendarView = () => {
   const { homeTasksConfig } = useAppSelector(state => state.homePageReducer);
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { t } = useTranslation('home');
 
   useEffect(() => {
@@ -21,13 +23,35 @@ const CalendarView = () => {
     }
   }, [homeTasksConfig.selected_date]);
 
+  // Get due date status and color for the selected date
+  const dueDateStatus = useMemo(
+    () => getDueDateStatus(homeTasksConfig.selected_date),
+    [homeTasksConfig.selected_date]
+  );
+  const isDarkMode = themeMode === 'dark';
+
+  // Determine tag color based on due date status
+  const getTagColor = () => {
+    if (!dueDateStatus) return 'default';
+    switch (dueDateStatus) {
+      case 'overdue':
+        return 'error';
+      case 'today':
+      case 'tomorrow':
+        return 'success';
+      case 'upcoming':
+      default:
+        return 'default';
+    }
+  };
+
   return (
     <div>
       <HomeCalendar />
 
       <Tag
         icon={<ClockCircleOutlined style={{ fontSize: 16 }} />}
-        color="success"
+        color={getTagColor()}
         style={{
           display: 'flex',
           width: '100%',
@@ -35,7 +59,7 @@ const CalendarView = () => {
           marginBlock: 12,
         }}
       >
-        <Typography.Text>
+        <Typography.Text className={getDueDateColorClass(dueDateStatus, isDarkMode)}>
           {t('home:tasks.dueOn')} {homeTasksConfig.selected_date?.format('MMM DD, YYYY')}
         </Typography.Text>
       </Tag>

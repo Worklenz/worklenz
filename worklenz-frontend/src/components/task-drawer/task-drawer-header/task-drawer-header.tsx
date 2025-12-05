@@ -10,7 +10,14 @@ import { useAuthService } from '@/hooks/useAuth';
 import TaskDrawerStatusDropdown from '../task-drawer-status-dropdown/task-drawer-status-dropdown';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
+import {
+  setSelectedTaskId,
+  setShowTaskDrawer,
+  navigateToNextTask,
+  navigateToPreviousTask,
+  fetchTask,
+  syncNavigationIndex,
+} from '@/features/task-drawer/task-drawer.slice';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import useTaskDrawerUrlSync from '@/hooks/useTaskDrawerUrlSync';
@@ -22,9 +29,9 @@ import {
   deleteTask as deleteKanbanTask,
   updateEnhancedKanbanSubtask,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
-import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import TaskHierarchyBreadcrumb from '../task-hierarchy-breadcrumb/task-hierarchy-breadcrumb';
+import TaskDrawerNavigation from '../task-drawer-navigation/task-drawer-navigation';
 
 type TaskDrawerHeaderProps = {
   inputRef: React.RefObject<InputRef | null>;
@@ -38,9 +45,18 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
   const isDeleting = useRef(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  const { taskFormViewModel, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
+  const { taskFormViewModel, selectedTaskId, navigationContext } = useAppSelector(
+    state => state.taskDrawerReducer
+  );
   const [taskName, setTaskName] = useState<string>(taskFormViewModel?.task?.name ?? '');
   const currentSession = useAuthService().getCurrentSession();
+
+  // Sync navigation index when selected task changes
+  useEffect(() => {
+    if (selectedTaskId && navigationContext) {
+      dispatch(syncNavigationIndex());
+    }
+  }, [selectedTaskId, dispatch, navigationContext]);
 
   // Check if current task is a sub-task
   const isSubTask =
@@ -140,6 +156,26 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
     // No need for local socket listeners that could interfere with global handlers
   };
 
+  const handlePrevious = () => {
+    if (!navigationContext) return;
+    dispatch(navigateToPreviousTask());
+    // Fetch the previous task
+    const prevTaskId = navigationContext.taskIds[navigationContext.currentIndex - 1];
+    if (prevTaskId && navigationContext.projectId) {
+      dispatch(fetchTask({ taskId: prevTaskId, projectId: navigationContext.projectId }));
+    }
+  };
+
+  const handleNext = () => {
+    if (!navigationContext) return;
+    dispatch(navigateToNextTask());
+    // Fetch the next task
+    const nextTaskId = navigationContext.taskIds[navigationContext.currentIndex + 1];
+    if (nextTaskId && navigationContext.projectId) {
+      dispatch(fetchTask({ taskId: nextTaskId, projectId: navigationContext.projectId }));
+    }
+  };
+
   const displayTaskName = taskName || t('taskHeader.taskNamePlaceholder');
 
   return (
@@ -172,6 +208,18 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
             </p>
           )}
         </Flex>
+        
+        {/* Task Navigation - Show only if navigation context exists */}
+        {navigationContext && navigationContext.taskIds.length > 1 && (
+          <TaskDrawerNavigation
+            onPrevious={handlePrevious}
+            onNext={handleNext}
+            hasPrevious={navigationContext.currentIndex > 0}
+            hasNext={navigationContext.currentIndex < navigationContext.taskIds.length - 1}
+            currentIndex={navigationContext.currentIndex}
+            totalTasks={navigationContext.taskIds.length}
+          />
+        )}
 
         <TaskDrawerStatusDropdown
           statuses={taskFormViewModel?.statuses ?? []}

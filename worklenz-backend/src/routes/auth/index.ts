@@ -59,6 +59,9 @@ authRouter.get("/google/verify", (req, res, next) => {
 // Mobile Google Sign-In using Passport strategy
 authRouter.post("/google/mobile", AuthController.googleMobileAuthPassport);
 
+// Mobile Apple Sign-In using Passport strategy
+authRouter.post("/apple/mobile", AuthController.appleMobileAuthPassport);
+
 // Passport logout
 authRouter.get("/logout", AuthController.logout);
 

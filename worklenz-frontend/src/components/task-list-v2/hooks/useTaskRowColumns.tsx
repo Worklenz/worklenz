@@ -294,12 +294,11 @@ export const useTaskRowColumns = ({
         const hoverBg = rowBackgrounds?.hover || (isDarkMode ? '#2a2a2a' : '#f9fafb');
         return (
           <div
-            style={
-              {
-                ...wrapperStyle,
-                '--hover-bg': hoverBg,
-              } as React.CSSProperties
-            }
+            style={{
+              ...wrapperStyle,
+              // @ts-ignore - CSS custom property
+              '--hover-bg': hoverBg,
+            }}
             className="border-r border-gray-200 dark:border-gray-700 overflow-hidden sticky-column-hover hover:bg-[var(--hover-bg)]"
           >
             {content}
