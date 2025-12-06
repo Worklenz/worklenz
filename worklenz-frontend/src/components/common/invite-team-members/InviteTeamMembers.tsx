@@ -308,11 +308,18 @@ const InviteTeamMembers = () => {
                 )
               }
             />
-            {linkExpiry && (
-              <Typography.Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                {t('This link will automatically expire in')} {formatExpiryDate(linkExpiry)}.
-              </Typography.Text>
-            )}
+            {linkExpiry && (() => {
+              const expiryText = formatExpiryDate(linkExpiry);
+              return expiryText === 'Expired' ? (
+                <Typography.Text type="danger" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+                  {expiryText}
+                </Typography.Text>
+              ) : (
+                <Typography.Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+                  {t('This link will automatically expire in')} {expiryText}.
+                </Typography.Text>
+              );
+            })()}
           </div>
 
           <Flex gap={8}>
@@ -333,13 +340,15 @@ const InviteTeamMembers = () => {
                 >
                   {t('Deactivate Link')}
                 </Button>
-                <Button
-                  type="primary"
-                  onClick={handleCopyLink}
-                  icon={linkCopied ? <CheckOutlined /> : <CopyOutlined />}
-                >
-                  {linkCopied ? t('Copied!') : t('Copy Link')}
-                </Button>
+                {formatExpiryDate(linkExpiry) !== 'Expired' && (
+                  <Button
+                    type="primary"
+                    onClick={handleCopyLink}
+                    icon={linkCopied ? <CheckOutlined /> : <CopyOutlined />}
+                  >
+                    {linkCopied ? t('Copied!') : t('Copy Link')}
+                  </Button>
+                )}
               </>
             )}
           </Flex>
