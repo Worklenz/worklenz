@@ -203,7 +203,10 @@
 
   "inviteToPortalTooltip": "邀请至门户",
   "resendInvitationTooltip": "重新发送邀请",
+  "resendInviteEmailTooltip": "重新发送邀请邮件",
   "copyInviteLinkTooltip": "复制邀请链接",
+  "resendInvitationSuccess": "邀请邮件发送成功！",
+  "resendInvitationError": "发送邀请邮件失败",
 
   "inviteSelectedToPortal": "发送门户邀请",
   "selectClientsToInvite": "请选择要邀请的客户",

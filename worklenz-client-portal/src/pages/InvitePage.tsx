@@ -130,8 +130,13 @@ const InvitePage: React.FC = () => {
           message.success(t("invite.success"));
           navigate("/dashboard", { replace: true });
         } else {
-          const errorMessage =
-            (result.payload as string) || t("invite.acceptance_error");
+          const errorKey = result.payload as string;
+          
+          // Check if the error is an i18n key (starts with "errors.")
+          const errorMessage = errorKey && errorKey.startsWith("errors.") 
+            ? t(errorKey) 
+            : errorKey || t("invite.acceptance_error");
+          
           message.error(errorMessage);
         }
       } catch (error) {
@@ -237,7 +242,7 @@ const InvitePage: React.FC = () => {
 
         {error && (
           <Alert
-            message={error}
+            message={error.startsWith("errors.") ? t(error) : error}
             type="error"
             closable
             onClose={() => dispatch(setError(null))}

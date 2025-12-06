@@ -149,6 +149,81 @@ export function getClientPortalLogoKey(teamId: string, type: string) {
   return keyPath;
 }
 
+/**
+ * Get the environment prefix for client portal storage
+ * Uses explicit environment names: prod, uat, dev
+ * @returns Environment prefix string
+ */
+export function getEnvironmentPrefix(): string {
+  if (isProduction()) return "prod";
+  if (isTestServer()) return "uat";
+  return "dev";
+}
+
+/**
+ * Client Portal Storage Purposes
+ */
+export type ClientPortalStoragePurpose = 
+  | "request-attachments"
+  | "chat-files"
+  | "avatars"
+  | "service-images"
+  | "documents"
+  | "general";
+
+/**
+ * Generate a storage key for client portal files with environment-based directories
+ * Structure: {env}/client-portal/{purpose}/{organizationId}/{...pathSegments}
+ * 
+ * @param purpose - The purpose/category of the file (request-attachments, chat-files, etc.)
+ * @param organizationId - The organization team ID
+ * @param pathSegments - Additional path segments (e.g., clientId, requestId, filename)
+ * @returns Full storage key path
+ * 
+ * @example
+ * // For request attachment:
+ * getClientPortalStorageKey("request-attachments", "org-123", "client-456", "file.pdf")
+ * // Returns: "prod/client-portal/request-attachments/org-123/client-456/file.pdf"
+ */
+export function getClientPortalStorageKey(
+  purpose: ClientPortalStoragePurpose,
+  organizationId: string,
+  ...pathSegments: string[]
+): string {
+  const env = getEnvironmentPrefix();
+  const keyPath = path
+    .join(env, "client-portal", purpose, organizationId, ...pathSegments)
+    .replace(/\\/g, "/");
+  
+  return keyPath;
+}
+
+/**
+ * Generate a unique filename for client portal uploads
+ * Format: {prefix}_{timestamp}_{randomId}.{extension}
+ * 
+ * @param originalFilename - Original filename with extension
+ * @param prefix - Optional prefix (e.g., "client", "request")
+ * @returns Unique filename
+ */
+export function generateUniqueFilename(originalFilename: string, prefix = "file"): string {
+  const extension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toLowerCase();
+  const timestamp = Date.now();
+  const randomId = Math.random().toString(36).substring(2, 11);
+  return `${prefix}_${timestamp}_${randomId}.${extension}`;
+}
+
+/**
+ * Extract file extension from filename (without dot)
+ * @param filename - Filename with extension
+ * @returns Extension without dot, lowercase
+ */
+export function getFileExtension(filename: string): string {
+  const lastDot = filename.lastIndexOf(".");
+  if (lastDot === -1) return "";
+  return filename.substring(lastDot + 1).toLowerCase();
+}
+
 async function uploadBufferToS3(
   buffer: Buffer,
   type: string,

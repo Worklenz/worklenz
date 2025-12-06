@@ -1,16 +1,8 @@
 import {
-  DeleteOutlined,
-  ExclamationCircleFilled,
-  EditOutlined,
-  EyeOutlined,
-} from '@ant-design/icons';
-import {
   Button,
   Card,
   Flex,
-  Popconfirm,
   Table,
-  Tooltip,
   Typography,
   Tag,
   Spin,
@@ -18,25 +10,24 @@ import {
   Empty,
 } from '@/shared/antd-imports';
 import { TableProps } from 'antd/lib';
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../../../styles/colors';
-import { useAppDispatch } from '../../../../hooks/useAppDispatch';
 import { useNavigate } from 'react-router-dom';
 import { useGetInvoicesQuery } from '../../../../api/client-portal/client-portal-api';
 import { PlusOutlined } from '@ant-design/icons';
-import AddInvoiceDrawer from '@/components/client-portal/AddInvoiceDrawer';
 
 const InvoicesTable = () => {
   // localization
   const { t } = useTranslation('client-portal-invoices');
-  const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
-
-  const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
   // Fetch invoices from API
-  const { data: invoicesData, isLoading, error, refetch } = useGetInvoicesQuery();
+  const {
+    data: invoicesData,
+    isLoading,
+    error,
+  } = useGetInvoicesQuery();
 
   // Function to get status color
   const getStatusColor = (status: string) => {
@@ -103,8 +94,14 @@ const InvoicesTable = () => {
   }
 
   // Extract invoices from API response - backend returns IServerResponse with {total, data} structure
-  const invoicesResponse = (invoicesData as any)?.body || { total: 0, data: [] };
-  const invoices = invoicesResponse.data || [];
+  const invoicesResponse =
+    invoicesData?.body || {
+      total: 0,
+      page: 1,
+      limit: 10,
+      invoices: [],
+    };
+  const invoices = invoicesResponse.invoices || [];
 
   // Handle empty state
   if (!invoices || invoices.length === 0) {
@@ -149,19 +146,7 @@ const InvoicesTable = () => {
       title: t('invoiceNoColumn'),
       render: record => (
         <Typography.Text strong style={{ color: colors.skyBlue }}>
-          {record.invoice_no}
-        </Typography.Text>
-      ),
-      onCell: () => ({
-        style: { minWidth: 200 },
-      }),
-    },
-    {
-      key: 'client',
-      title: t('clientColumn'),
-      render: record => (
-        <Typography.Text style={{ textTransform: 'capitalize' }}>
-          {record.client_name}
+          {record.invoiceNumber}
         </Typography.Text>
       ),
       onCell: () => ({
@@ -171,9 +156,21 @@ const InvoicesTable = () => {
     {
       key: 'service',
       title: t('serviceColumn'),
-      render: record => <Typography.Text>{record.service}</Typography.Text>,
+      render: record => <Typography.Text>{record.serviceName || '-'}</Typography.Text>,
       onCell: () => ({
         style: { minWidth: 250 },
+      }),
+    },
+    {
+      key: 'amount',
+      title: t('amountColumn'),
+      render: record => (
+        <Typography.Text>
+          {record.currency} {record.amount.toFixed(2)}
+        </Typography.Text>
+      ),
+      onCell: () => ({
+        style: { minWidth: 150 },
       }),
     },
     {
@@ -185,10 +182,12 @@ const InvoicesTable = () => {
       width: 120,
     },
     {
-      key: 'issued_time',
-      title: t('issuedTimeColumn'),
+      key: 'due_date',
+      title: t('dueDateColumn'),
       render: record => (
-        <Typography.Text>{new Date(record.issued_time).toLocaleDateString()}</Typography.Text>
+        <Typography.Text>
+          {record.dueDate ? new Date(record.dueDate).toLocaleDateString() : '-'}
+        </Typography.Text>
       ),
       width: 150,
     },
@@ -202,8 +201,8 @@ const InvoicesTable = () => {
         pagination={{
           size: 'small',
           total: invoicesResponse.total || invoices.length,
-          current: 1, // Backend doesn't return current page info
-          pageSize: 10, // Default page size
+          current: invoicesResponse.page || 1,
+          pageSize: invoicesResponse.limit || 10,
         }}
         scroll={{
           x: 'max-content',
@@ -212,15 +211,6 @@ const InvoicesTable = () => {
           onClick: () => navigate(`/worklenz/client-portal/invoices/${record.id}`),
           style: { cursor: 'pointer' },
         })}
-      />
-      
-      <AddInvoiceDrawer
-        open={isAddDrawerOpen}
-        onClose={() => setIsAddDrawerOpen(false)}
-        onSuccess={() => {
-          setIsAddDrawerOpen(false);
-          refetch();
-        }}
       />
     </Card>
   );

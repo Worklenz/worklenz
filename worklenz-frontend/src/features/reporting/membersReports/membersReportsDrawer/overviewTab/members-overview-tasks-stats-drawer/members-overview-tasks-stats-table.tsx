@@ -99,7 +99,7 @@ const MembersOverviewTasksStatsTable = ({
       title: <CustomTableTitle title={t('dueDateColumn')} />,
       render: record => (
         <Typography.Text className="text-center group-hover:text-[#1890ff]">
-          {record.due_date ? `${dayjs(record.due_date).format('MMM DD, YYYY')}` : '-'}
+          {record.due_date ? `${dayjs(record.due_date, 'YYYY-MM-DD').format('MMM DD, YYYY')}` : '-'}
         </Typography.Text>
       ),
       width: 120,

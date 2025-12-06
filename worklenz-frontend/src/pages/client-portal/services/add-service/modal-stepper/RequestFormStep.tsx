@@ -33,6 +33,10 @@ const RequestFormStep = ({ setCurrent, service, setService }: RequestFormStepPro
     service.service_data?.request_form || []
   );
 
+  // Track editing state
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [originalQuestion, setOriginalQuestion] = useState<TempRequestFromItemType | null>(null);
+
   // Get Ant Design theme tokens
   const { token } = theme.useToken();
 
@@ -108,14 +112,26 @@ const RequestFormStep = ({ setCurrent, service, setService }: RequestFormStepPro
     };
 
     // Update the state with the new question
-    setRequestForm(prev => [...prev, newQuestionData]);
+    if (editingIndex !== null) {
+      // If editing, replace the question at the original index
+      setRequestForm(prev => {
+        const updated = [...prev];
+        updated.splice(editingIndex, 0, newQuestionData);
+        return updated;
+      });
+    } else {
+      // If adding new, append to the end
+      setRequestForm(prev => [...prev, newQuestionData]);
+    }
 
-    // Clear the new question form
+    // Clear the new question form and editing state
     setNewQuestion({
       question: '',
       type: 'text',
       options: [],
     });
+    setEditingIndex(null);
+    setOriginalQuestion(null);
 
     // Hide the Add Question form card
     setIsAddQuestionCardVisible(false);
@@ -141,6 +157,8 @@ const RequestFormStep = ({ setCurrent, service, setService }: RequestFormStepPro
   // function to edit question
   const handleEditQuestion = (index: number) => {
     const questionToEdit = requestForm[index];
+    setOriginalQuestion(questionToEdit);
+    setEditingIndex(index);
     setNewQuestion({
       question: questionToEdit.question,
       type: questionToEdit.type,
@@ -148,6 +166,28 @@ const RequestFormStep = ({ setCurrent, service, setService }: RequestFormStepPro
     });
     handleDeleteQuestion(index);
     setIsAddQuestionCardVisible(true);
+  };
+
+  // function to handle cancel
+  const handleCancelEdit = () => {
+    // If we were editing, restore the original question
+    if (editingIndex !== null && originalQuestion) {
+      setRequestForm(prev => {
+        const updated = [...prev];
+        updated.splice(editingIndex, 0, originalQuestion);
+        return updated;
+      });
+    }
+
+    // Clear the form and editing state
+    setNewQuestion({
+      question: '',
+      type: 'text',
+      options: [],
+    });
+    setEditingIndex(null);
+    setOriginalQuestion(null);
+    setIsAddQuestionCardVisible(false);
   };
 
   return (
@@ -384,11 +424,11 @@ const RequestFormStep = ({ setCurrent, service, setService }: RequestFormStepPro
                 )}
 
                 <Flex gap={12} justify="flex-end">
-                  <Button onClick={() => setIsAddQuestionCardVisible(false)} size="large">
+                  <Button onClick={handleCancelEdit} size="large">
                     Cancel
                   </Button>
                   <Button type="primary" htmlType="submit" size="large">
-                    Add Question
+                    {editingIndex !== null ? 'Update Question' : 'Add Question'}
                   </Button>
                 </Flex>
               </Form>

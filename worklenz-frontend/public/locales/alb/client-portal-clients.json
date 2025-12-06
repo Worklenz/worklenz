@@ -152,7 +152,10 @@
 
   "inviteToPortalTooltip": "Fto në Portal",
   "resendInvitationTooltip": "Ridërgo Ftesën",
+  "resendInviteEmailTooltip": "Ridërgo Email-in e Ftesës",
   "copyInviteLinkTooltip": "Kopjo Linkun e Ftesës",
+  "resendInvitationSuccess": "Email-i i ftesës u dërgua me sukses!",
+  "resendInvitationError": "Dështoi dërgimi i email-it të ftesës",
 
   "inviteSelectedToPortal": "Dërgo Ftesa për Portal",
   "selectClientsToInvite": "Ju lutemi zgjidhni klientët për t'i ftuar",

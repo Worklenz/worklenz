@@ -28,17 +28,35 @@ export interface ClientPortalService {
 
 export interface ClientPortalRequest {
   id: string;
-  requestNumber: string;
-  serviceId: string;
-  serviceName: string;
-  serviceDescription?: string;
+  // snake_case from backend
+  req_no: string;
+  service_id: string;
+  service_name: string;
+  service_description?: string;
+  client_id?: string;
+  client_name: string;
+  client_email?: string;
   status: string;
-  requestData?: any;
+  request_data?: {
+    title?: string;
+    priority?: string;
+    description?: string;
+    attachments?: Array<{
+      id: string;
+      url: string;
+      size: string;
+      filename: string;
+      originalName: string;
+    }>;
+    attachmentIds?: string[];
+    [key: string]: any;
+  };
   notes?: string;
-  createdAt: string;
-  updatedAt: string;
-  completedAt?: string;
-  clientName: string;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string;
+  assigned_to?: string;
+  assigned_to_name?: string;
 }
 
 export interface ClientPortalProject {
@@ -53,15 +71,42 @@ export interface ClientPortalProject {
 }
 
 export interface ClientPortalInvoice {
+  // List fields (from getInvoices)
   id: string;
-  invoice_no: string;
+  invoiceNumber: string;
   amount: number;
   currency: string;
   status: string;
-  due_date: string;
-  created_at: string;
-  sent_at?: string;
-  paid_at?: string;
+  dueDate: string;
+  sentAt?: string;
+  paidAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  requestNumber?: string;
+  serviceName?: string;
+  isOverdue?: boolean;
+}
+
+export interface ClientPortalInvoiceDetails extends ClientPortalInvoice {
+  request: {
+    id: string;
+    requestNumber: string;
+    requestData: any;
+    notes?: string;
+    service: {
+      id: string;
+      name: string;
+      description?: string;
+    };
+  } | null;
+  client: {
+    name: string;
+    companyName?: string | null;
+    email?: string | null;
+  };
+  createdBy: {
+    name: string;
+  } | null;
 }
 
 export interface ClientPortalChat {
@@ -338,7 +383,14 @@ export const clientPortalApi = createApi({
       invalidatesTags: ['Requests', 'Dashboard'],
     }),
 
-    getRequestDetails: builder.query<ClientPortalRequest, string>({
+    getRequestDetails: builder.query<
+      {
+        done: boolean;
+        body: ClientPortalRequest;
+        message: string;
+      },
+      string
+    >({
       query: id => `/clients/portal/requests/${id}`,
       providesTags: (result, error, id) => [{ type: 'Requests', id }],
     }),
@@ -379,12 +431,46 @@ export const clientPortalApi = createApi({
     }),
 
     // Invoices
-    getInvoices: builder.query<ClientPortalInvoice[], void>({
-      query: () => '/clients/portal/invoices',
+    getInvoices: builder.query<
+      {
+        done: boolean;
+        body: {
+          invoices: ClientPortalInvoice[];
+          total: number;
+          page: number;
+          limit: number;
+        };
+        message: string;
+      },
+      {
+        page?: number;
+        limit?: number;
+        status?: string;
+        search?: string;
+      } | void
+    >({
+      query: params => {
+        const searchParams = new URLSearchParams();
+        if (params && params.page) searchParams.set('page', String(params.page));
+        if (params && params.limit) searchParams.set('limit', String(params.limit));
+        if (params && params.status) searchParams.set('status', params.status);
+        if (params && params.search) searchParams.set('search', params.search);
+
+        const queryString = searchParams.toString();
+        const url = `/clients/portal/invoices${queryString ? `?${queryString}` : ''}`;
+        return url;
+      },
       providesTags: ['Invoices'],
     }),
 
-    getInvoiceDetails: builder.query<ClientPortalInvoice, string>({
+    getInvoiceDetails: builder.query<
+      {
+        done: boolean;
+        body: ClientPortalInvoiceDetails;
+        message: string;
+      },
+      string
+    >({
       query: id => `/clients/portal/invoices/${id}`,
       providesTags: (result, error, id) => [{ type: 'Invoices', id }],
     }),
@@ -575,7 +661,7 @@ export const clientPortalApi = createApi({
       invalidatesTags: (result, error, { id }) => [{ type: 'Client', id }, 'Clients'],
     }),
 
-    deleteClient: builder.mutation<void, string>({
+    deactivateClient: builder.mutation<void, string>({
       query: id => ({
         url: `/clients/portal/clients/${id}`,
         method: 'DELETE',
@@ -698,7 +784,7 @@ export const clientPortalApi = createApi({
       invalidatesTags: ['Clients'],
     }),
 
-    bulkDeleteClients: builder.mutation<void, BulkDeleteRequest>({
+    bulkDeactivateClients: builder.mutation<void, BulkDeleteRequest>({
       query: bulkData => ({
         url: '/clients/portal/clients/bulk-delete',
         method: 'DELETE',
@@ -798,6 +884,9 @@ export const clientPortalApi = createApi({
         service_data?: any;
         is_public?: boolean;
         allowed_client_ids?: string[];
+        price?: number | null;
+        currency?: string;
+        category?: string;
         imageData?: string;
         imageName?: string;
         imageType?: string;
@@ -822,6 +911,9 @@ export const clientPortalApi = createApi({
           is_public?: boolean;
           allowed_client_ids?: string[];
           status?: string;
+          price?: number | null;
+          currency?: string;
+          category?: string;
           imageData?: string;
           imageName?: string;
           imageType?: string;
@@ -851,6 +943,27 @@ export const clientPortalApi = createApi({
         method: 'POST',
         body: { clientId },
       }),
+    }),
+
+    resendClientInvitation: builder.mutation<
+      {
+        done: boolean;
+        body: {
+          invitationLink: string;
+          clientName: string;
+          clientEmail: string;
+          expiresAt: string;
+          emailSent: boolean;
+        };
+        message: string;
+      },
+      { clientId: string }
+    >({
+      query: ({ clientId }) => ({
+        url: `/clients/portal/clients/${clientId}/resend-invitation`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Clients'],
     }),
 
     // Handle organization invitation
@@ -922,7 +1035,7 @@ export const {
   useGetClientDetailsQuery,
   useCreateClientMutation,
   useUpdateClientMutation,
-  useDeleteClientMutation,
+  useDeactivateClientMutation,
 
   // Client Projects
   useGetClientProjectsQuery,
@@ -943,7 +1056,7 @@ export const {
 
   // Bulk Operations
   useBulkUpdateClientsMutation,
-  useBulkDeleteClientsMutation,
+  useBulkDeactivateClientsMutation,
 
   // Organization-side Client Portal Management
   useGetOrganizationRequestsQuery,
@@ -959,5 +1072,6 @@ export const {
 
   // Client Invitation Management
   useGenerateClientInvitationLinkMutation,
+  useResendClientInvitationMutation,
   useHandleOrganizationInviteMutation,
 } = clientPortalApi;

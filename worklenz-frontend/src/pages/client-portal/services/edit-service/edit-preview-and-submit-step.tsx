@@ -6,6 +6,7 @@ import {
   message,
   Card,
   Tag,
+  Divider,
   theme,
 } from '@/shared/antd-imports';
 import React from 'react';
@@ -16,6 +17,7 @@ import {
   TempRequestFromItemType,
 } from '../../../../types/client-portal/temp-client-portal.types';
 import { useUpdateOrganizationServiceMutation } from '../../../../api/client-portal/client-portal-api';
+import { getCurrencyLabel } from '@/shared/currencies';
 
 type EditPreviewAndSubmitStepProps = {
   setCurrent: (index: number) => void;
@@ -48,9 +50,14 @@ const EditPreviewAndSubmitStep = ({
         id,
         data: {
           name: service.name,
-          description: service.service_data?.description,
+          description: typeof service.service_data?.description === 'string' 
+            ? service.service_data.description 
+            : service.service_data?.description?.toString() || '',
           service_data: service.service_data,
-          is_public: false,
+          is_public: service.is_public,
+          price: service.price,
+          currency: service.currency,
+          category: service.category,
         },
       }).unwrap();
       message.success(t('serviceUpdatedSuccessfully') || 'Service updated successfully!');
@@ -89,6 +96,36 @@ const EditPreviewAndSubmitStep = ({
                       border: `1px solid ${token.colorBorder}`,
                     }}
                   />
+                </div>
+              )}
+
+              {/* Pricing and Category */}
+              {(service.price || service.category) && (
+                <div>
+                  <Divider style={{ margin: '12px 0' }} />
+                  <Flex gap={16} wrap>
+                    {service.price !== null && service.price !== undefined && (
+                      <div>
+                        <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+                          Price
+                        </Typography.Text>
+                        <Typography.Text strong style={{ fontSize: 18, color: token.colorSuccess }}>
+                          {getCurrencyLabel(service.currency || 'usd').split(' - ')[0]} {Number(service.price).toFixed(2)}
+                        </Typography.Text>
+                      </div>
+                    )}
+                    {service.category && (
+                      <div>
+                        <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+                          Category
+                        </Typography.Text>
+                        <Tag color="blue" style={{ fontSize: 13 }}>
+                          {service.category}
+                        </Tag>
+                      </div>
+                    )}
+                  </Flex>
+                  <Divider style={{ margin: '12px 0' }} />
                 </div>
               )}
 

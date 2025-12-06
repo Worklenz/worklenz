@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { 
   Card, 
   Typography, 
@@ -9,40 +9,68 @@ import {
   Tag, 
   Progress, 
   Table,
-  Avatar,
   Space,
   Descriptions,
   Button,
-  List,
+  Input,
   ProjectOutlined, 
-  TeamOutlined, 
   CalendarOutlined,
   CheckCircleOutlined,
-  UserOutlined,
   ArrowLeftOutlined,
-  FileTextOutlined
+  ClockCircleOutlined,
+  SearchOutlined
 } from '@/shared/antd-imports';
 
 import { useParams, useNavigate } from 'react-router-dom';
 import clientPortalAPI from '@/services/api';
-import { ProjectDetails } from '@/types';
 
-const { Title, Paragraph } = Typography;
+const { Title, Text } = Typography;
+
+interface ProjectDetails {
+  id: string;
+  name: string;
+  description: string | null;
+  status: string;
+  statusColor: string;
+  startDate: string | null;
+  endDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+  statistics: {
+    totalTasks: number;
+    completedTasks: number;
+    progressPercentage: number;
+  };
+}
+
+interface ProjectTask {
+  id: string;
+  name: string;
+  description: string | null;
+  status: string;
+  statusColor: string;
+  startDate: string | null;
+  endDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 const ProjectDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [projectDetails, setProjectDetails] = useState<ProjectDetails | null>(null);
+  const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isTasksLoading, setIsTasksLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tasksPagination, setTasksPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0
+  });
+  const [searchText, setSearchText] = useState('');
 
-  useEffect(() => {
-    if (id) {
-      fetchProjectDetails(id);
-    }
-  }, [id]);
-
-  const fetchProjectDetails = async (projectId: string) => {
+  const fetchProjectDetails = useCallback(async (projectId: string) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -60,6 +88,67 @@ const ProjectDetailsPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  const fetchProjectTasks = useCallback(async (projectId: string, page = 1, limit = 10, search = '') => {
+    try {
+      setIsTasksLoading(true);
+      
+      const response = await clientPortalAPI.getProjectTasks(projectId, { page, limit, search });
+
+      if (response.done && response.body) {
+        const data = response.body as { tasks: ProjectTask[]; total: number; page: number; limit: number };
+        setTasks(data.tasks);
+        setTasksPagination({
+          current: data.page,
+          pageSize: data.limit,
+          total: data.total
+        });
+      }
+    } catch (err) {
+      console.error('Project tasks API error:', err);
+    } finally {
+      setIsTasksLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (id) {
+      fetchProjectDetails(id);
+      fetchProjectTasks(id, 1, 10, '');
+    }
+  }, [id, fetchProjectDetails, fetchProjectTasks]);
+
+  const handleTableChange = (pagination: { current?: number; pageSize?: number }) => {
+    if (id) {
+      fetchProjectTasks(id, pagination.current || 1, pagination.pageSize || 10, searchText);
+    }
+  };
+
+  const handleSearch = (value: string) => {
+    setSearchText(value);
+    if (id) {
+      fetchProjectTasks(id, 1, tasksPagination.pageSize, value);
+    }
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   if (isLoading) {
@@ -113,52 +202,54 @@ const ProjectDetailsPage: React.FC = () => {
       title: 'Task Name',
       dataIndex: 'name',
       key: 'name',
-      render: (text: string, record: any) => (
-        <Space direction="vertical" size="small">
-          <strong>{text}</strong>
+      render: (text: string, record: ProjectTask) => (
+        <div>
+          <Text strong>{text}</Text>
           {record.description && (
-            <div style={{ color: '#666', fontSize: '12px' }}>
-              {record.description.length > 100 
-                ? `${record.description.substring(0, 100)}...` 
+            <div style={{ color: '#666', fontSize: '12px', marginTop: 4 }}>
+              {record.description.length > 80 
+                ? `${record.description.substring(0, 80)}...` 
                 : record.description
               }
             </div>
           )}
-        </Space>
+        </div>
       ),
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string, record: any) => (
+      width: 120,
+      render: (status: string, record: ProjectTask) => (
         <Tag color={record.statusColor}>
-          {status}
+          {status || 'No Status'}
         </Tag>
       ),
     },
     {
-      title: 'Duration',
-      key: 'duration',
-      render: (record: any) => {
-        if (record.startDate && record.endDate) {
-          const start = new Date(record.startDate);
-          const end = new Date(record.endDate);
-          const diffTime = Math.abs(end.getTime() - start.getTime());
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          return `${diffDays} days`;
-        }
-        return '-';
-      },
+      title: 'Start Date',
+      dataIndex: 'startDate',
+      key: 'startDate',
+      width: 120,
+      render: (date: string | null) => formatDate(date),
     },
     {
-      title: 'Comments',
-      dataIndex: 'commentCount',
-      key: 'commentCount',
-      render: (count: number) => (
-        <Space>
-          <FileTextOutlined />
-          {count}
+      title: 'End Date',
+      dataIndex: 'endDate',
+      key: 'endDate',
+      width: 120,
+      render: (date: string | null) => formatDate(date),
+    },
+    {
+      title: 'Last Updated',
+      dataIndex: 'updatedAt',
+      key: 'updatedAt',
+      width: 180,
+      render: (date: string) => (
+        <Space size="small">
+          <ClockCircleOutlined style={{ color: '#8c8c8c' }} />
+          <Text type="secondary">{formatDateTime(date)}</Text>
         </Space>
       ),
     },
@@ -166,154 +257,113 @@ const ProjectDetailsPage: React.FC = () => {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button 
-          icon={<ArrowLeftOutlined />} 
-          onClick={() => navigate('/projects')}
-        >
-          Back to Projects
-        </Button>
-      </Space>
+      <Button 
+        icon={<ArrowLeftOutlined />} 
+        onClick={() => navigate('/projects')}
+        style={{ marginBottom: 16 }}
+      >
+        Back to Projects
+      </Button>
 
-      <Title level={2}>
-        <ProjectOutlined /> {projectDetails.name}
-      </Title>
-
-      <Row gutter={[16, 16]}>
-        {/* Project Overview */}
-        <Col xs={24} lg={16}>
-          <Card title="Project Information">
-            <Descriptions column={{ xs: 1, sm: 2 }} bordered>
-              <Descriptions.Item label="Status">
-                <Tag color={projectDetails.statusColor}>
+      <Card style={{ marginBottom: 24 }}>
+        <Row gutter={[24, 16]} align="middle">
+          <Col flex="auto">
+            <Space align="center" size="middle">
+              <ProjectOutlined style={{ fontSize: 32, color: '#1890ff' }} />
+              <div>
+                <Title level={3} style={{ margin: 0 }}>{projectDetails.name}</Title>
+                <Tag color={projectDetails.statusColor} style={{ marginTop: 8 }}>
                   {projectDetails.status}
                 </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Client">
-                <Space>
-                  <TeamOutlined />
-                  {projectDetails.client.name}
-                  {projectDetails.client.companyName && (
-                    <span style={{ color: '#666' }}>
-                      ({projectDetails.client.companyName})
-                    </span>
-                  )}
-                </Space>
-              </Descriptions.Item>
+              </div>
+            </Space>
+          </Col>
+          <Col>
+            <Card size="small" style={{ background: '#fafafa', border: 'none' }}>
+              <Space direction="vertical" align="center" size={0}>
+                <Text type="secondary" style={{ fontSize: 12 }}>Progress</Text>
+                <Progress 
+                  type="circle" 
+                  percent={projectDetails.statistics.progressPercentage}
+                  size={80}
+                  status={projectDetails.statistics.progressPercentage === 100 ? 'success' : 'active'}
+                />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {projectDetails.statistics.completedTasks}/{projectDetails.statistics.totalTasks} tasks
+                </Text>
+              </Space>
+            </Card>
+          </Col>
+        </Row>
+      </Card>
+
+      <Row gutter={[24, 24]}>
+        <Col xs={24} lg={8}>
+          <Card title="Project Details" size="small">
+            <Descriptions column={1} size="small">
               <Descriptions.Item label="Start Date">
-                {projectDetails.startDate ? (
-                  <Space>
-                    <CalendarOutlined />
-                    {new Date(projectDetails.startDate).toLocaleDateString()}
-                  </Space>
-                ) : (
-                  'Not set'
-                )}
-              </Descriptions.Item>
-              <Descriptions.Item label="End Date">
-                {projectDetails.endDate ? (
-                  <Space>
-                    <CalendarOutlined />
-                    {new Date(projectDetails.endDate).toLocaleDateString()}
-                  </Space>
-                ) : (
-                  'Not set'
-                )}
-              </Descriptions.Item>
-              <Descriptions.Item label="Created" span={2}>
                 <Space>
                   <CalendarOutlined />
-                  {new Date(projectDetails.createdAt).toLocaleDateString()}
+                  {formatDate(projectDetails.startDate)}
                 </Space>
               </Descriptions.Item>
+              <Descriptions.Item label="End Date">
+                <Space>
+                  <CalendarOutlined />
+                  {formatDate(projectDetails.endDate)}
+                </Space>
+              </Descriptions.Item>
+              <Descriptions.Item label="Created">
+                {formatDate(projectDetails.createdAt)}
+              </Descriptions.Item>
             </Descriptions>
-
             {projectDetails.description && (
               <div style={{ marginTop: 16 }}>
-                <Title level={4}>Description</Title>
-                <Paragraph>{projectDetails.description}</Paragraph>
+                <Text type="secondary" style={{ fontSize: 12 }}>Description</Text>
+                <div style={{ marginTop: 4 }}>{projectDetails.description}</div>
               </div>
             )}
           </Card>
         </Col>
 
-        {/* Project Statistics */}
-        <Col xs={24} lg={8}>
-          <Row gutter={[16, 16]}>
-            <Col span={24}>
-              <Card title="Progress Overview">
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  <div>
-                    <div style={{ marginBottom: 8 }}>
-                      <strong>Task Completion</strong>
-                    </div>
-                    <Progress 
-                      percent={projectDetails.statistics.progressPercentage}
-                      status={projectDetails.statistics.progressPercentage === 100 ? 'success' : 'active'}
-                    />
-                    <div style={{ textAlign: 'center', marginTop: 8, color: '#666' }}>
-                      {projectDetails.statistics.completedTasks} / {projectDetails.statistics.totalTasks} tasks completed
-                    </div>
-                  </div>
-                </Space>
-              </Card>
-            </Col>
-
-            <Col span={24}>
-              <Card title="Team Members">
-                <List
-                  itemLayout="horizontal"
-                  size="small"
-                  dataSource={projectDetails.teamMembers}
-                  renderItem={(member) => (
-                    <List.Item>
-                      <List.Item.Meta
-                        avatar={
-                          member.avatarUrl ? (
-                            <Avatar src={member.avatarUrl} />
-                          ) : (
-                            <Avatar icon={<UserOutlined />} />
-                          )
-                        }
-                        title={member.fullName}
-                        description={
-                          <Space direction="vertical" size="small">
-                            <div style={{ fontSize: '12px', color: '#666' }}>
-                              {member.email}
-                            </div>
-                            {member.roleName && (
-                              <Tag>{member.roleName}</Tag>
-                            )}
-                          </Space>
-                        }
-                      />
-                    </List.Item>
-                  )}
-                />
-              </Card>
-            </Col>
-          </Row>
-        </Col>
-
-        {/* Recent Tasks */}
-        <Col span={24}>
+        <Col xs={24} lg={16}>
           <Card 
             title={
               <Space>
                 <CheckCircleOutlined />
-                Recent Tasks
+                Tasks
+                <Tag>{tasksPagination.total}</Tag>
               </Space>
+            }
+            extra={
+              <Input.Search
+                placeholder="Search tasks..."
+                allowClear
+                onSearch={handleSearch}
+                style={{ width: 200 }}
+                prefix={<SearchOutlined />}
+              />
             }
           >
             <Table
               columns={taskColumns}
-              dataSource={projectDetails.recentTasks}
+              dataSource={tasks}
               rowKey="id"
-              pagination={false}
-              scroll={{ x: 600 }}
-              locale={{
-                emptyText: 'No tasks available'
+              loading={isTasksLoading}
+              pagination={{
+                current: tasksPagination.current,
+                pageSize: tasksPagination.pageSize,
+                total: tasksPagination.total,
+                showSizeChanger: true,
+                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} tasks`,
+                pageSizeOptions: ['10', '20', '50']
               }}
+              onChange={handleTableChange}
+              scroll={{ x: 700 }}
+              locale={{
+                emptyText: 'No tasks found'
+              }}
+              size="small"
             />
           </Card>
         </Col>

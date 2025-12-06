@@ -1,6 +1,5 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAppSelector } from '../../../../hooks/useAppSelector';
 import {
   Card,
   Typography,
@@ -14,24 +13,60 @@ import {
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { LeftOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { useGetInvoiceDetailsQuery } from '@/api/client-portal/client-portal-api';
 
 const ClientPortalInvoiceDetails = () => {
   const { invoiceId } = useParams();
   const navigate = useNavigate();
   const { t } = useTranslation('client-portal-invoices');
 
-  // Get invoice from Redux
-  const invoice = useAppSelector(state =>
-    state.clientsPortalReducer.invoicesReducer.invoices.find(inv => inv.id === invoiceId)
-  );
+  const {
+    data,
+    isLoading,
+    error,
+  } = useGetInvoiceDetailsQuery(invoiceId as string, {
+    skip: !invoiceId,
+  });
 
-  // Use actual invoice data with fallbacks
-  const invoice_no = invoice?.invoice_no || 'N/A';
-  const reference = 'N/A';
-  const subject = 'N/A';
-  const invoice_date = 'N/A';
-  const due_date = 'N/A';
-  const invoice_total = 0;
+  if (isLoading) {
+    return (
+      <div style={{ minHeight: '100vh', padding: 24, width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Typography.Text>{t('loadingInvoice') || 'Loading invoice...'}</Typography.Text>
+      </div>
+    );
+  }
+
+  if (error || !data?.done || !data.body) {
+    return (
+      <div style={{ minHeight: '100vh', padding: 24, width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Card>
+          <Typography.Title level={5} style={{ marginBottom: 8 }}>
+            {t('errorLoadingInvoice') || 'Unable to load invoice'}
+          </Typography.Title>
+          <Typography.Text type="secondary">
+            {t('errorLoadingInvoiceDescription') ||
+              'There was a problem loading this invoice. Please try again later.'}
+          </Typography.Text>
+          <div style={{ marginTop: 16 }}>
+            <Button onClick={() => navigate(-1)}>{t('backToInvoices') || 'Back to invoices'}</Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  const invoice = data.body;
+
+  const invoice_no = invoice.invoiceNumber || 'N/A';
+  const reference = invoice.request?.requestNumber || 'N/A';
+  const subject = invoice.request?.service?.name || 'N/A';
+  const invoice_date = invoice.createdAt
+    ? new Date(invoice.createdAt).toLocaleDateString()
+    : 'N/A';
+  const due_date = invoice.dueDate
+    ? new Date(invoice.dueDate).toLocaleDateString()
+    : 'N/A';
+  const invoice_total = invoice.amount || 0;
 
   return (
     <div style={{ minHeight: '100vh', padding: 24, width: '100%' }}>

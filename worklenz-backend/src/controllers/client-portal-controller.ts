@@ -103,7 +103,9 @@ class ClientPortalController {
           s.service_data,
           s.is_public,
           s.created_at,
-          s.updated_at
+          s.updated_at,
+          s.price,
+          s.currency
         FROM client_portal_services s
         WHERE s.organization_team_id = $1 
         AND s.status = $2
@@ -121,8 +123,8 @@ class ClientPortalController {
         isPublic: row.is_public,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
-        price: row.service_data?.price || 0,
-        currency: row.service_data?.currency || "USD"
+        price: row.price || 0,
+        currency: row.currency || "USD"
       }));
 
       return res.json(new ServerResponse(true, services, "Services retrieved successfully"));
@@ -148,7 +150,9 @@ class ClientPortalController {
           s.service_data,
           s.is_public,
           s.created_at,
-          s.updated_at
+          s.updated_at,
+          s.price,
+          s.currency
         FROM client_portal_services s
         WHERE s.id = $1 
         AND s.organization_team_id = $2
@@ -172,7 +176,9 @@ class ClientPortalController {
         serviceData: service.service_data,
         isPublic: service.is_public,
         createdAt: service.created_at,
-        updatedAt: service.updated_at
+        updatedAt: service.updated_at,
+        price: service.price || 0,
+        currency: service.currency || "USD"
       }, "Service details retrieved successfully"));
     } catch (error) {
       console.error("Error fetching service details:", error);
@@ -248,17 +254,17 @@ class ClientPortalController {
       const result = await db.query(query, queryParams);
       const requests = result.rows.map((row: any) => ({
         id: row.id,
-        requestNumber: row.req_no,
-        serviceId: row.service_id,
-        serviceName: row.service_name,
-        serviceDescription: row.service_description,
+        req_no: row.req_no,
+        service_id: row.service_id,
+        service_name: row.service_name,
+        service_description: row.service_description,
         status: row.status,
-        requestData: row.request_data,
+        request_data: row.request_data,
         notes: row.notes,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        completedAt: row.completed_at,
-        clientName: row.client_name
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        completed_at: row.completed_at,
+        client_name: row.client_name
       }));
 
       return res.json(new ServerResponse(true, { 
@@ -380,18 +386,18 @@ class ClientPortalController {
 
       return res.json(new ServerResponse(true, {
         id: request.id,
-        requestNumber: request.req_no,
-        serviceId: request.service_id,
-        serviceName: request.service_name,
-        serviceDescription: request.service_description,
-        serviceConfig: request.service_config,
+        req_no: request.req_no,
+        service_id: request.service_id,
+        service_name: request.service_name,
+        service_description: request.service_description,
+        service_config: request.service_config,
         status: request.status,
-        requestData: request.request_data,
+        request_data: request.request_data,
         notes: request.notes,
-        createdAt: request.created_at,
-        updatedAt: request.updated_at,
-        completedAt: request.completed_at,
-        clientName: request.client_name
+        created_at: request.created_at,
+        updated_at: request.updated_at,
+        completed_at: request.completed_at,
+        client_name: request.client_name
       }, "Request details retrieved successfully"));
     } catch (error) {
       console.error("Error fetching request details:", error);
@@ -645,6 +651,9 @@ class ClientPortalController {
           s.service_data,
           s.is_public,
           s.allowed_client_ids,
+          s.price,
+          s.currency,
+          s.category,
           s.created_at,
           s.updated_at,
           u.name as created_by_name
@@ -669,6 +678,9 @@ class ClientPortalController {
         serviceData: service.service_data,
         isPublic: service.is_public,
         allowedClientIds: service.allowed_client_ids,
+        price: service.price,
+        currency: service.currency,
+        category: service.category,
         createdAt: service.created_at,
         updatedAt: service.updated_at,
         createdByName: service.created_by_name
@@ -687,6 +699,9 @@ class ClientPortalController {
         service_data, 
         is_public = false, 
         allowed_client_ids = [],
+        price,
+        currency,
+        category,
         // Image upload fields
         imageData,
         imageName,
@@ -696,6 +711,9 @@ class ClientPortalController {
 
       console.log("Service creation request received:", {
         name,
+        price,
+        currency,
+        category,
         hasImageData: !!imageData,
         imageName,
         imageType,
@@ -766,8 +784,9 @@ class ClientPortalController {
       const query = `
         INSERT INTO client_portal_services (
           name, description, service_data, is_public, allowed_client_ids,
+          price, currency, category,
           team_id, organization_team_id, created_by
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING *
       `;
 
@@ -777,6 +796,9 @@ class ClientPortalController {
         JSON.stringify(finalServiceData), // Ensure proper JSON stringification
         is_public,
         allowed_client_ids,
+        price,
+        currency,
+        category,
         organizationId, // team_id
         organizationId, // organization_team_id
         clientUserId
@@ -798,6 +820,9 @@ class ClientPortalController {
         serviceData: service.service_data,
         isPublic: service.is_public,
         allowedClientIds: service.allowed_client_ids,
+        price: service.price,
+        currency: service.currency,
+        category: service.category,
         createdAt: service.created_at,
         updatedAt: service.updated_at
       }, "Service created successfully"));
@@ -817,6 +842,9 @@ class ClientPortalController {
         is_public, 
         allowed_client_ids, 
         status,
+        price,
+        currency,
+        category,
         // Image upload fields
         imageData,
         imageName,
@@ -827,6 +855,9 @@ class ClientPortalController {
       console.log("Service update request received:", {
         id,
         name,
+        price,
+        currency,
+        category,
         hasImageData: !!imageData,
         imageName,
         imageType,
@@ -966,6 +997,21 @@ class ClientPortalController {
         updateFields.push(`status = $${paramCount}`);
         queryParams.push(status);
       }
+      if (price !== undefined) {
+        paramCount++;
+        updateFields.push(`price = $${paramCount}`);
+        queryParams.push(price);
+      }
+      if (currency !== undefined) {
+        paramCount++;
+        updateFields.push(`currency = $${paramCount}`);
+        queryParams.push(currency);
+      }
+      if (category !== undefined) {
+        paramCount++;
+        updateFields.push(`category = $${paramCount}`);
+        queryParams.push(category);
+      }
 
       if (updateFields.length === 0) {
         return res.status(400).json(new ServerResponse(false, null, "No fields to update"));
@@ -989,7 +1035,15 @@ class ClientPortalController {
         RETURNING *
       `;
 
+      console.log("Update query:", updateQuery);
+      console.log("Query params:", queryParams);
+
       const result = await db.query(updateQuery, queryParams);
+      
+      console.log("Update result:", {
+        rowCount: result.rowCount,
+        updatedService: result.rows[0]
+      });
       const service = result.rows[0];
 
       return res.json(new ServerResponse(true, {
@@ -1000,6 +1054,9 @@ class ClientPortalController {
         serviceData: service.service_data,
         isPublic: service.is_public,
         allowedClientIds: service.allowed_client_ids,
+        price: service.price,
+        currency: service.currency,
+        category: service.category,
         createdAt: service.created_at,
         updatedAt: service.updated_at
       }, "Service updated successfully"));
@@ -1095,10 +1152,10 @@ class ClientPortalController {
   // Projects
   static async getProjects(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
-      const teamId = (req.user as any)?.team_id;
+      const {clientId} = req;
       const { page = 1, limit = 10, status, search } = req.query;
 
-      // Build query with pagination and filtering
+      // Build query with pagination and filtering - only show projects assigned to this client
       let query = `
         SELECT 
           p.id,
@@ -1118,10 +1175,10 @@ class ClientPortalController {
         LEFT JOIN clients c ON p.client_id = c.id
         LEFT JOIN tasks t ON p.id = t.project_id
         LEFT JOIN task_statuses ts ON t.status_id = ts.id
-        WHERE p.team_id = $1
+        WHERE p.client_id = $1
       `;
 
-      const queryParams = [teamId];
+      const queryParams: (string | number)[] = [clientId as string];
       let paramIndex = 2;
 
       // Add status filter if provided
@@ -1145,13 +1202,13 @@ class ClientPortalController {
         SELECT COUNT(*) as total
         FROM projects p
         LEFT JOIN sys_project_statuses sps ON p.status_id = sps.id
-        WHERE p.team_id = $1
+        WHERE p.client_id = $1
         ${status ? "AND sps.name = $2" : ""}
         ${search ? `AND (p.name ILIKE $${status ? 3 : 2} OR p.notes ILIKE $${status ? 3 : 2})` : ""}
       `;
-      const countParams = status && search ? [teamId, status, `%${search}%`] : 
-                         status ? [teamId, status] : 
-                         search ? [teamId, `%${search}%`] : [teamId];
+      const countParams = status && search ? [clientId, status, `%${search}%`] : 
+                         status ? [clientId, status] : 
+                         search ? [clientId, `%${search}%`] : [clientId];
       const countResult = await db.query(countQuery, countParams);
       const total = parseInt(countResult.rows[0]?.total || "0");
 
@@ -1227,69 +1284,6 @@ class ClientPortalController {
 
       const project = result.rows[0];
 
-      // Get project team members
-      const teamQuery = `
-        SELECT
-          u.id,
-          u.name,
-          u.email,
-          u.avatar_url,
-          pmu.role_id,
-          r.name as role_name
-        FROM project_members_users pmu
-        JOIN users u ON pmu.user_id = u.id
-        LEFT JOIN roles r ON pmu.role_id = r.id
-        WHERE pmu.project_id = $1
-        ORDER BY u.name
-      `;
-
-      const teamResult = await db.query(teamQuery, [id]);
-      const teamMembers = teamResult.rows.map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        fullName: row.name,
-        email: row.email,
-        avatarUrl: row.avatar_url,
-        roleId: row.role_id,
-        roleName: row.role_name
-      }));
-
-      // Get recent project tasks (limited view for client)
-      const tasksQuery = `
-        SELECT 
-          t.id,
-          t.name,
-          t.description,
-          ts.name as status,
-          ts.color_code as status_color,
-          t.start_date,
-          t.end_date,
-          t.created_at,
-          t.updated_at,
-          COUNT(tc.id) as comment_count
-        FROM tasks t
-        LEFT JOIN task_statuses ts ON t.status_id = ts.id
-        LEFT JOIN task_comments tc ON t.id = tc.task_id
-        WHERE t.project_id = $1
-        GROUP BY t.id, t.name, t.description, ts.name, ts.color_code, t.start_date, t.end_date, t.created_at, t.updated_at
-        ORDER BY t.created_at DESC
-        LIMIT 20
-      `;
-
-      const tasksResult = await db.query(tasksQuery, [id]);
-      const tasks = tasksResult.rows.map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        description: row.description,
-        status: row.status,
-        statusColor: row.status_color,
-        startDate: row.start_date,
-        endDate: row.end_date,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        commentCount: parseInt(row.comment_count || "0")
-      }));
-
       const projectDetails = {
         id: project.id,
         name: project.name,
@@ -1300,23 +1294,102 @@ class ClientPortalController {
         endDate: project.end_date,
         createdAt: project.created_at,
         updatedAt: project.updated_at,
-        client: {
-          name: project.client_name,
-          companyName: project.company_name
-        },
         statistics: {
           totalTasks: parseInt(project.total_tasks || "0"),
           completedTasks: parseInt(project.completed_tasks || "0"),
           progressPercentage: project.total_tasks > 0 ? Math.round((project.completed_tasks / project.total_tasks) * 100) : 0
-        },
-        teamMembers,
-        recentTasks: tasks
+        }
       };
 
       return res.json(new ServerResponse(true, projectDetails, "Project details retrieved successfully"));
     } catch (error) {
       console.error("Error fetching project details:", error);
       return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve project details"));
+    }
+  }
+
+  static async getProjectTasks(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const { id } = req.params;
+      const { clientId } = req;
+      const { page = 1, limit = 10, search } = req.query;
+
+      // Verify client has access to this project
+      const accessCheck = await db.query(
+        `SELECT id FROM projects WHERE id = $1 AND client_id = $2`,
+        [id, clientId]
+      );
+
+      if (accessCheck.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Project not found or not accessible"));
+      }
+
+      // Build tasks query with pagination
+      let tasksQuery = `
+        SELECT 
+          t.id,
+          t.name,
+          t.description,
+          ts.name as status,
+          stsc.color_code as status_color,
+          t.start_date,
+          t.end_date,
+          t.created_at,
+          t.updated_at
+        FROM tasks t
+        LEFT JOIN task_statuses ts ON t.status_id = ts.id
+        LEFT JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
+        WHERE t.project_id = $1
+      `;
+
+      const queryParams: (string | number)[] = [id as string];
+      let paramIndex = 2;
+
+      // Add search filter if provided
+      if (search) {
+        tasksQuery += ` AND (t.name ILIKE $${paramIndex} OR t.description ILIKE $${paramIndex})`;
+        queryParams.push(`%${search}%`);
+        paramIndex++;
+      }
+
+      // Get total count
+      const countQuery = `
+        SELECT COUNT(*) as total
+        FROM tasks t
+        WHERE t.project_id = $1
+        ${search ? `AND (t.name ILIKE $2 OR t.description ILIKE $2)` : ""}
+      `;
+      const countParams = search ? [id, `%${search}%`] : [id];
+      const countResult = await db.query(countQuery, countParams);
+      const total = parseInt(countResult.rows[0]?.total || "0");
+
+      // Add ordering and pagination - last updated first
+      const offset = (Number(page) - 1) * Number(limit);
+      tasksQuery += ` ORDER BY t.updated_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+      queryParams.push(String(Number(limit)), String(offset));
+
+      const tasksResult = await db.query(tasksQuery, queryParams);
+      const tasks = tasksResult.rows.map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        status: row.status,
+        statusColor: row.status_color,
+        startDate: row.start_date,
+        endDate: row.end_date,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      }));
+
+      return res.json(new ServerResponse(true, {
+        tasks,
+        total,
+        page: Number(page),
+        limit: Number(limit)
+      }, "Project tasks retrieved successfully"));
+    } catch (error) {
+      console.error("Error fetching project tasks:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve project tasks"));
     }
   }
 
@@ -2834,6 +2907,7 @@ class ClientPortalController {
       const { page = 1, limit = 10, search, status, sortBy, sortOrder } = req.query;
       
       // Build query with pagination and filtering
+      // Include portal status by checking client_users (active users) and client_invitations (pending invites)
       let query = `
         SELECT 
           c.id,
@@ -2847,7 +2921,28 @@ class ClientPortalController {
           c.team_id,
           c.created_at,
           c.updated_at,
-          COUNT(DISTINCT p.id) as assigned_projects_count
+          COUNT(DISTINCT p.id) as assigned_projects_count,
+          -- Portal access: check if any active client_user exists for this client
+          CASE WHEN EXISTS (
+            SELECT 1 FROM client_users cu 
+            WHERE cu.client_id = c.id AND cu.status = 'active'
+          ) THEN true ELSE false END as has_portal_access,
+          -- Get the latest invitation info
+          (
+            SELECT ci.created_at 
+            FROM client_invitations ci 
+            WHERE ci.client_id = c.id 
+            ORDER BY ci.created_at DESC 
+            LIMIT 1
+          ) as invitation_sent_at,
+          -- Check if invitation was accepted
+          (
+            SELECT ci.status = 'accepted'
+            FROM client_invitations ci 
+            WHERE ci.client_id = c.id 
+            ORDER BY ci.created_at DESC 
+            LIMIT 1
+          ) as invitation_accepted
         FROM clients c
         LEFT JOIN projects p ON c.id = p.client_id
       `;
@@ -2904,23 +2999,47 @@ class ClientPortalController {
       queryParams.push(Number(limit), offset);
 
       const result = await db.query(query, queryParams);
-      const clients = result.rows.map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        email: row.email,
-        company_name: row.company_name,
-        phone: row.phone,
-        address: row.address,
-        contact_person: row.contact_person,
-        status: row.status || "active",
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-        assigned_projects_count: parseInt(row.assigned_projects_count || "0"),
-        projects: [],
-        team_members: []
-      }));
+      const clients = result.rows.map((row: any) => {
+        // Determine portal status based on the data
+        let portalStatus: { status: string; label: string; color: string };
+        
+        if (row.has_portal_access) {
+          portalStatus = { status: 'active', label: 'Active', color: 'green' };
+        } else if (row.invitation_sent_at && !row.invitation_accepted) {
+          const invitationDate = new Date(row.invitation_sent_at);
+          const expiryDate = new Date(invitationDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+          const isExpired = expiryDate < new Date();
+          
+          if (isExpired) {
+            portalStatus = { status: 'expired', label: 'Expired', color: 'red' };
+          } else {
+            portalStatus = { status: 'invited', label: 'Invited', color: 'orange' };
+          }
+        } else {
+          portalStatus = { status: 'not_invited', label: 'Not Invited', color: 'default' };
+        }
 
-
+        return {
+          id: row.id,
+          name: row.name,
+          email: row.email,
+          company_name: row.company_name,
+          phone: row.phone,
+          address: row.address,
+          contact_person: row.contact_person,
+          status: row.status || "active",
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+          assigned_projects_count: parseInt(row.assigned_projects_count || "0"),
+          projects: [],
+          team_members: [],
+          // Portal status fields for frontend
+          has_portal_access: row.has_portal_access || false,
+          invitation_sent_at: row.invitation_sent_at,
+          invitation_accepted: row.invitation_accepted || false,
+          portal_status: portalStatus
+        };
+      });
 
       return res.json(new ServerResponse(true, { 
         clients, 
@@ -3088,6 +3207,14 @@ class ClientPortalController {
             WHERE id = $1 AND team_id = $2
           `;
           await db.query(updateClientQuery, [client.id, teamId]);
+
+          // Create client portal access record with full permissions
+          await db.query(
+            `INSERT INTO client_portal_access (client_id, is_active, created_at, updated_at)
+             VALUES ($1, TRUE, NOW(), NOW())
+             ON CONFLICT (client_id) DO UPDATE SET is_active = TRUE, updated_at = NOW()`,
+            [client.id]
+          );
         }
 
         // Return response indicating user can use existing Worklenz credentials
@@ -3122,8 +3249,8 @@ class ClientPortalController {
         token: inviteToken
       });
 
-      // Generate client portal link with secure token
-      const portalLink = `${getClientPortalBaseUrl()}/invite?token=${inviteToken}`;
+      // Generate client portal link with secure token (URL-encode to handle + characters in JWT)
+      const portalLink = `${getClientPortalBaseUrl()}/invite?token=${encodeURIComponent(inviteToken)}`;
 
       return res.json(new ServerResponse(true, {
         invitationLink: portalLink,
@@ -3135,6 +3262,125 @@ class ClientPortalController {
     } catch (error) {
       console.error("Error generating client invitation link:", error);
       return res.status(500).json(new ServerResponse(false, null, "Failed to generate invitation link"));
+    }
+  }
+
+  static async resendClientInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    try {
+      const { id: clientId } = req.params;
+      const userId = req.user?.id;
+      const teamId = req.user?.team_id;
+      const inviterName = req.user?.name || "Your team";
+
+      if (!userId || !teamId) {
+        return res.status(401).json(new ServerResponse(false, null, "Authentication required"));
+      }
+
+      if (!clientId) {
+        return res.status(400).json(new ServerResponse(false, null, "Client ID is required"));
+      }
+
+      // Get client information
+      const clientQuery = `
+        SELECT c.id, c.name, c.email, c.company_name, c.phone
+        FROM clients c
+        WHERE c.id = $1 AND c.team_id = $2
+      `;
+      const clientResult = await db.query(clientQuery, [clientId, teamId]);
+
+      if (!clientResult.rows.length) {
+        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+      }
+
+      const client = clientResult.rows[0];
+
+      // Check if client already has an active portal user (already joined)
+      const activeUserCheck = await db.query(
+        `SELECT id FROM client_users WHERE client_id = $1 AND status = 'active'`,
+        [clientId]
+      );
+
+      if (activeUserCheck.rows.length > 0) {
+        return res.status(400).json(new ServerResponse(false, null, "Client has already joined the portal"));
+      }
+
+      // Check if there's a pending invitation
+      const pendingInviteCheck = await db.query(
+        `SELECT id, email, name FROM client_invitations 
+         WHERE client_id = $1 AND status = 'pending' 
+         ORDER BY created_at DESC LIMIT 1`,
+        [clientId]
+      );
+
+      // Generate new invitation token
+      const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
+      const inviteToken = TokenService.generateInviteToken({
+        clientId: client.id,
+        email: client.email,
+        name: client.name,
+        role: "member",
+        invitedBy: userId,
+        expiresAt,
+        type: "invite"
+      });
+
+      if (pendingInviteCheck.rows.length > 0) {
+        // Update existing invitation with new token and expiry
+        await db.query(
+          `UPDATE client_invitations 
+           SET token = $1, expires_at = $2, updated_at = NOW() 
+           WHERE client_id = $3 AND status = 'pending'`,
+          [inviteToken, new Date(expiresAt), clientId]
+        );
+      } else {
+        // Create new invitation record
+        await TokenService.createInvitation({
+          clientId: client.id,
+          email: client.email,
+          name: client.name,
+          role: "member",
+          invitedBy: userId,
+          token: inviteToken
+        });
+      }
+
+      // Generate invitation link (URL-encode to handle + characters in JWT)
+      const inviteLink = `${getClientPortalBaseUrl()}/invite?token=${encodeURIComponent(inviteToken)}`;
+
+      // Generate email HTML
+      const emailHtml = ClientPortalController.generateInvitationEmailHTML({
+        inviteeName: client.name,
+        inviterName,
+        clientName: client.name,
+        companyName: client.company_name,
+        inviteLink,
+        expiresAt: new Date(expiresAt),
+        role: "member"
+      });
+
+      // Send invitation email
+      const emailRequest = new EmailRequest(
+        [client.email],
+        `You're invited to join ${client.name} on Worklenz`,
+        emailHtml
+      );
+
+      const messageId = await sendEmail(emailRequest);
+
+      if (!messageId) {
+        return res.status(500).json(new ServerResponse(false, null, "Failed to send invitation email"));
+      }
+
+      return res.json(new ServerResponse(true, {
+        invitationLink: inviteLink,
+        clientName: client.name,
+        clientEmail: client.email,
+        expiresAt: new Date(expiresAt).toISOString(),
+        emailSent: true
+      }, "Invitation email sent successfully"));
+    } catch (error) {
+      console.error("Error resending client invitation:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to resend invitation"));
     }
   }
 
@@ -3177,8 +3423,8 @@ class ClientPortalController {
       
       await db.query(upsertQuery, [teamId, inviteToken, userId, new Date(expiresAt)]);
 
-      // Generate organization portal link with secure token
-      const portalLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/organization-invite?token=${inviteToken}`;
+      // Generate organization portal link with secure token (URL-encode to handle + characters in JWT)
+      const portalLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/organization-invite?token=${encodeURIComponent(inviteToken)}`;
 
       return res.json(new ServerResponse(true, {
         invitationLink: portalLink,
@@ -3259,12 +3505,12 @@ class ClientPortalController {
           const clientId = crypto.randomUUID();
           await db.query(createClientQuery, [clientId, invitation.team_id, user.name, user.email]);
 
-          // Link user to client portal
+          // Link user to client portal with active status
           const linkUserQuery = `
-            INSERT INTO client_users (user_id, client_id, email, name, role, created_at)
-            VALUES ($1, $2, $3, $4, 'member', NOW())
+            INSERT INTO client_users (user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, 'member', $5, 'active', NOW(), NOW())
           `;
-          await db.query(linkUserQuery, [userId, clientId, user.email, user.name]);
+          await db.query(linkUserQuery, [userId, clientId, user.email, user.name, invitation.team_id]);
 
           return res.json(new ServerResponse(true, {
             redirectTo: "client-portal",
@@ -3321,8 +3567,8 @@ class ClientPortalController {
         throw new Error("Client invitation email template not found");
       }
 
-      // Generate client portal link with secure token
-      const portalLink = `${getClientPortalBaseUrl()}/invite?token=${inviteToken}`;
+      // Generate client portal link with secure token (URL-encode to handle + characters in JWT)
+      const portalLink = `${getClientPortalBaseUrl()}/invite?token=${encodeURIComponent(inviteToken)}`;
 
       // Replace template variables
       const emailContent = template
@@ -3641,36 +3887,32 @@ class ClientPortalController {
         return res.status(404).json(new ServerResponse(false, null, "Client not found"));
       }
 
-      // Check if client has any projects
-      const projectCheck = await db.query(
-        "SELECT COUNT(*) as project_count FROM projects WHERE client_id = $1",
-        [id]
-      );
-
-      const projectCount = parseInt(projectCheck.rows[0]?.project_count || "0");
-      if (projectCount > 0) {
-        return res.status(400).json(new ServerResponse(false, null, "Cannot delete client with assigned projects"));
-      }
-
-      // Delete the client
-      const deleteResult = await db.query(
-        "DELETE FROM clients WHERE id = $1 AND team_id = $2",
+      // Deactivate the client instead of deleting (soft delete)
+      const deactivateResult = await db.query(
+        "UPDATE clients SET status = 'inactive', updated_at = NOW() WHERE id = $1 AND team_id = $2",
         [id, teamId]
       );
 
-      if (deleteResult.rowCount === 0) {
+      if (deactivateResult.rowCount === 0) {
         return res.status(404).json(new ServerResponse(false, null, "Client not found"));
       }
 
-      return res.json(new ServerResponse(true, null, "Client deleted successfully"));
+      // Also deactivate all client users for this client
+      await db.query(
+        "UPDATE client_users SET status = 'inactive' WHERE client_id = $1",
+        [id]
+      );
+
+      return res.json(new ServerResponse(true, null, "Client deactivated successfully"));
     } catch (error) {
-      console.error("Error deleting client:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to delete client"));
+      console.error("Error deactivating client:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to deactivate client"));
     }
   }
 
   // Client Projects
   static async getClientProjects(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    // ...
     try {
       const { id } = req.params;
       const { page = 1, limit = 10, status } = req.query;
@@ -4076,8 +4318,8 @@ class ClientPortalController {
         token: inviteToken
       });
 
-      // Generate invitation link
-      const inviteLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/invitation?token=${inviteToken}`;
+      // Generate invitation link (URL-encode to handle + characters in JWT)
+      const inviteLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/invitation?token=${encodeURIComponent(inviteToken)}`;
 
       // Generate email HTML
       const emailHtml = ClientPortalController.generateInvitationEmailHTML({
@@ -4369,8 +4611,8 @@ class ClientPortalController {
         [newToken, newExpiresAt, memberId]
       );
 
-      // Generate new invitation link
-      const inviteLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https//${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/invitation?token=${newToken}`;
+      // Generate new invitation link (URL-encode to handle + characters in token)
+      const inviteLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/invitation?token=${encodeURIComponent(newToken)}`;
 
       // Generate email HTML
       const emailHtml = ClientPortalController.generateInvitationEmailHTML({
@@ -4828,26 +5070,22 @@ class ClientPortalController {
         return res.status(400).json(new ServerResponse(false, null, "Some clients not found or not accessible"));
       }
 
-      // Check if any clients have projects
-      const projectCheck = await db.query(
-        "SELECT client_id FROM projects WHERE client_id = ANY($1)",
-        [client_ids]
-      );
-
-      if (projectCheck.rows.length > 0) {
-        return res.status(400).json(new ServerResponse(false, null, "Cannot delete clients with assigned projects"));
-      }
-
-      // Delete all clients
-      const deleteResult = await db.query(
-        "DELETE FROM clients WHERE id = ANY($1) AND team_id = $2",
+      // Deactivate all clients instead of deleting (soft delete)
+      const deactivateResult = await db.query(
+        "UPDATE clients SET status = 'inactive', updated_at = NOW() WHERE id = ANY($1) AND team_id = $2",
         [client_ids, teamId]
       );
 
-      return res.json(new ServerResponse(true, { deleted_count: deleteResult.rowCount }, "Clients deleted successfully"));
+      // Also deactivate all client users for these clients
+      await db.query(
+        "UPDATE client_users SET status = 'inactive' WHERE client_id = ANY($1)",
+        [client_ids]
+      );
+
+      return res.json(new ServerResponse(true, { deactivated_count: deactivateResult.rowCount }, "Clients deactivated successfully"));
     } catch (error) {
-      console.error("Error bulk deleting clients:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to delete clients"));
+      console.error("Error bulk deactivating clients:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to deactivate clients"));
     }
   }
 
@@ -4889,7 +5127,7 @@ class ClientPortalController {
 
   static async acceptInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
-      const { token, password, name } = req.body;
+      const { token, password, name, email } = req.body;
 
       if (!token || !password || !name) {
         return res.status(400).json(new ServerResponse(false, null, "Token, password, and name are required"));
@@ -4900,23 +5138,34 @@ class ClientPortalController {
       
       if (orgInvitePayload && orgInvitePayload.type === "organization_invite") {
         
+        // For organization invites, email is required
+        if (!email) {
+          return res.status(400).json(new ServerResponse(false, null, "Email is required for organization invites"));
+        }
+
         // For organization invites, create a new client user account
         // First, check if user already exists
         const existingUserCheck = await db.query(
-          "SELECT id FROM client_users WHERE email = $1",
-          [req.body.email || name] // Use email from form if provided
+          "SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)",
+          [email]
         );
 
         if (existingUserCheck.rows.length > 0) {
-          return res.status(400).json(new ServerResponse(false, null, "A user with this email already exists. Please login instead."));
+          return res.status(400).json({
+            done: false,
+            body: null,
+            title: "Email Already Registered",
+            message: "A user with this email already exists. Please login instead.",
+            messageKey: "errors.email_already_registered_message" // For frontend i18n
+          });
         }
 
         // Create a client record for this organization
         const clientResult = await db.query(
-          `INSERT INTO clients (name, team_id, status, created_at, updated_at)
-           VALUES ($1, $2, 'active', NOW(), NOW())
+          `INSERT INTO clients (name, email, team_id, status, client_portal_enabled, created_at, updated_at)
+           VALUES ($1, $2, $3, 'active', TRUE, NOW(), NOW())
            RETURNING id`,
-          [name, orgInvitePayload.teamId]
+          [name, email, orgInvitePayload.teamId]
         );
         
         const clientId = clientResult.rows[0].id;
@@ -4928,7 +5177,7 @@ class ClientPortalController {
            RETURNING id, email, name, role, client_id`,
           [
             clientId,
-            req.body.email || name,
+            email,
             name,
             crypto.createHash("sha256").update(password).digest("hex")
           ]
