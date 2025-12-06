@@ -385,8 +385,8 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
                         <CalendarOutlined className="text-[10px]" />
                         {task.start_date && task.end_date ? (
                           <>
-                            {dayjs(task.start_date).format('MMM D')} -{' '}
-                            {dayjs(task.end_date).format('MMM D, YYYY')}
+                            {dayjs(task.start_date, 'YYYY-MM-DD').format('MMM D')} -{' '}
+                            {dayjs(task.end_date, 'YYYY-MM-DD').format('MMM D, YYYY')}
                           </>
                         ) : (
                           'Set dates'

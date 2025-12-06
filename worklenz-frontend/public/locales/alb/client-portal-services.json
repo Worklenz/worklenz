@@ -50,6 +50,17 @@
   "noServicesDescription": "Ju nuk keni krijuar ende asnjë shërbim. Krijoni shërbimin tuaj të parë për të filluar të merrni kërkesa nga klientët.",
   "errorLoadingServices": "Gabim gjatë ngarkimit të shërbimeve",
   "errorLoadingServicesDescription": "Pati një gabim gjatë ngarkimit të shërbimeve tuaja. Ju lutemi provoni përsëri më vonë.",
+  "visibilityColumn": "Dukshmëria",
+  "visibilityVisible": "I dukshëm",
+  "visibilityHidden": "I fshehur",
+  "serviceVisibility": {
+    "title": "Dukshmëria e Shërbimit",
+    "description": "Kontrolloni nëse ky shërbim është i dukshëm për klientët.",
+    "showToAll": "Shfaq për të gjithë klientët",
+    "hiddenFromAll": "I fshehur nga të gjithë klientët",
+    "showToAllDescription": "Ky shërbim është i dukshëm për të gjithë klientët në portal",
+    "hiddenFromAllDescription": "Ky shërbim është i fshehur dhe nuk është i dukshëm për asnjë klient"
+  },
   "addService": {
     "serviceDetails": {
       "title": "Detajet e Shërbimit",

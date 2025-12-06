@@ -203,7 +203,10 @@
 
   "inviteToPortalTooltip": "Convidar para o Portal",
   "resendInvitationTooltip": "Reenviar Convite",
+  "resendInviteEmailTooltip": "Reenviar Email de Convite",
   "copyInviteLinkTooltip": "Copiar Link de Convite",
+  "resendInvitationSuccess": "Email de convite enviado com sucesso!",
+  "resendInvitationError": "Falha ao enviar email de convite",
 
   "inviteSelectedToPortal": "Enviar Convites ao Portal",
   "selectClientsToInvite": "Por favor selecione clientes para convidar",

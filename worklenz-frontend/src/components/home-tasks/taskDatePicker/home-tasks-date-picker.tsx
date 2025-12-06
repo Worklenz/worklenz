@@ -32,7 +32,7 @@ const HomeTasksDatePicker = ({ record }: HomeTasksDatePickerProps) => {
 
   // Use useMemo to avoid re-renders when record.end_date is the same
   const initialDate = useMemo(
-    () => (record.end_date ? dayjs(record.end_date) : null),
+    () => (record.end_date ? dayjs(record.end_date, 'YYYY-MM-DD') : null),
     [record.end_date]
   );
 

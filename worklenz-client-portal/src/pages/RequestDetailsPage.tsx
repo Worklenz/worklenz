@@ -20,8 +20,10 @@ import {
   PaperClipOutlined,
 } from "@/shared/antd-imports";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   useGetRequestDetailsQuery,
+  useGetRequestStatusHistoryQuery,
   useUpdateRequestMutation,
 } from "@/store/api";
 
@@ -29,15 +31,18 @@ const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 const RequestDetailsPage: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [addingComment, setAddingComment] = useState(false);
 
   const { data, isLoading, refetch } = useGetRequestDetailsQuery(id!);
+  const { data: historyData } = useGetRequestStatusHistoryQuery(id!);
   const [updateRequest] = useUpdateRequestMutation();
 
   const request = data?.body;
+  const statusHistory = historyData?.body || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -75,19 +80,20 @@ const RequestDetailsPage: React.FC = () => {
     try {
       setAddingComment(true);
       // In a real implementation, this would add a comment to the request
+      const currentNotes = request?.notes || '';
       await updateRequest({
         id: id!,
         data: {
           // Add comment logic here
-          description: `${request?.description}\n\n---\nComment: ${values.comment}`,
+          notes: `${currentNotes}\n\n---\nComment: ${values.comment}`,
         },
       }).unwrap();
 
-      message.success("Comment added successfully");
+      message.success(t('requests.commentAdded'));
       form.resetFields();
       refetch();
     } catch {
-      message.error("Failed to add comment");
+      message.error(t('requests.commentError'));
     } finally {
       setAddingComment(false);
     }
@@ -99,8 +105,8 @@ const RequestDetailsPage: React.FC = () => {
     return (
       <Card>
         <Alert
-          message="Error loading request"
-          description="Failed to load request details. Please try again."
+          message={t('common.error')}
+          description={t('requests.errorLoadingDescription')}
           type="error"
           showIcon
         />
@@ -109,7 +115,7 @@ const RequestDetailsPage: React.FC = () => {
           onClick={() => navigate("/requests")}
           style={{ marginTop: 16 }}
         >
-          Back to Requests
+          {t('requests.backToRequests')}
         </Button>
       </Card>
     );
@@ -127,8 +133,8 @@ const RequestDetailsPage: React.FC = () => {
     return (
       <Card>
         <Alert
-          message="Request not found"
-          description="The requested item could not be found."
+          message={t('requests.requestNotFound')}
+          description={t('requests.errorLoadingDescription')}
           type="warning"
           showIcon
         />
@@ -137,7 +143,7 @@ const RequestDetailsPage: React.FC = () => {
           onClick={() => navigate("/requests")}
           style={{ marginTop: 16 }}
         >
-          Back to Requests
+          {t('requests.backToRequests')}
         </Button>
       </Card>
     );
@@ -151,7 +157,7 @@ const RequestDetailsPage: React.FC = () => {
           onClick={() => navigate("/requests")}
           style={{ marginBottom: 16 }}
         >
-          Back to Requests
+          {t('requests.backToRequests')}
         </Button>
 
         <Row gutter={24}>
@@ -161,150 +167,162 @@ const RequestDetailsPage: React.FC = () => {
             </Title>
 
             <Descriptions column={2} bordered>
-              <Descriptions.Item label="Service" span={2}>
-                {request.service}
+              <Descriptions.Item label={t('requests.service')} span={2}>
+                {request.service_name}
               </Descriptions.Item>
-              <Descriptions.Item label="Title" span={2}>
-                {request.title}
+              <Descriptions.Item label={t('requests.requestTitle')} span={2}>
+                {request.request_data?.title || '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="Status">
+              <Descriptions.Item label={t('requests.status')}>
                 <Tag color={getStatusColor(request.status)}>
                   {request.status.charAt(0).toUpperCase() +
                     request.status.slice(1).replace("_", " ")}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Priority">
-                <Tag color={getPriorityColor(request.priority || '')}>
-                  {request.priority ? request.priority.charAt(0).toUpperCase() +
-                    request.priority.slice(1) : 'N/A'}
+              <Descriptions.Item label={t('requests.priorityLabel')}>
+                <Tag color={getPriorityColor(request.request_data?.priority || '')}>
+                  {request.request_data?.priority ? request.request_data.priority.charAt(0).toUpperCase() +
+                    request.request_data.priority.slice(1) : 'N/A'}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Created Date">
-                {request.time ? new Date(request.time).toLocaleDateString() : 'N/A'}
+              <Descriptions.Item label={t('requests.submittedOn')} span={2}>
+                {request.created_at ? new Date(request.created_at).toLocaleString() : 'N/A'}
               </Descriptions.Item>
-              <Descriptions.Item label="Created Time">
-                {request.time ? new Date(request.time).toLocaleTimeString() : 'N/A'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Description" span={2}>
+              <Descriptions.Item label={t('requests.descriptionLabel')} span={2}>
                 <Text style={{ whiteSpace: "pre-wrap" }}>
-                  {request.description}
+                  {request.request_data?.description || request.notes || '-'}
                 </Text>
               </Descriptions.Item>
-              {request.attachments && request.attachments.length > 0 && (
-                <Descriptions.Item label="Attachments" span={2}>
-                  {request.attachments.map((attachment, index) => (
-                    <Tag
-                      key={index}
-                      icon={<PaperClipOutlined />}
-                      style={{ marginBottom: 4 }}
+              {request.request_data?.attachments && request.request_data.attachments.length > 0 && (
+                <Descriptions.Item label={t('requests.attachments')} span={2}>
+                  {request.request_data.attachments.map((attachment) => (
+                    <a
+                      key={attachment.id}
+                      href={attachment.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ marginRight: 8 }}
                     >
-                      {attachment}
-                    </Tag>
+                      <Tag
+                        icon={<PaperClipOutlined />}
+                        style={{ marginBottom: 4, cursor: 'pointer' }}
+                      >
+                        {attachment.originalName}
+                      </Tag>
+                    </a>
                   ))}
                 </Descriptions.Item>
               )}
             </Descriptions>
+
+            {/* Question Answers Section */}
+            {request.request_data?.questionAnswers && Array.isArray(request.request_data.questionAnswers) && request.request_data.questionAnswers.length > 0 && (
+              <Card 
+                title={t('requests.serviceQuestions')} 
+                size="small" 
+                style={{ marginTop: 16 }}
+              >
+                {request.request_data.questionAnswers.map((qa, index) => (
+                  <div key={index} style={{ marginBottom: 16 }}>
+                    <Text strong style={{ display: 'block', marginBottom: 4 }}>
+                      {qa.question}
+                    </Text>
+                    {qa.type === 'attachment' ? (
+                      qa.attachments && qa.attachments.length > 0 ? (
+                        <div>
+                          {qa.attachments.map((att, attIndex) => (
+                            <a
+                              key={attIndex}
+                              href={att.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ marginRight: 8 }}
+                            >
+                              <Tag
+                                icon={<PaperClipOutlined />}
+                                style={{ marginBottom: 4, cursor: 'pointer' }}
+                              >
+                                {att.originalName}
+                              </Tag>
+                            </a>
+                          ))}
+                        </div>
+                      ) : (
+                        <Text type="secondary">{t('requests.noFilesUploaded')}</Text>
+                      )
+                    ) : (
+                      <Text style={{ whiteSpace: 'pre-wrap' }}>
+                        {qa.answer || <Text type="secondary">{t('requests.noAnswer')}</Text>}
+                      </Text>
+                    )}
+                  </div>
+                ))}
+              </Card>
+            )}
           </Col>
 
           <Col span={8}>
-            <Card title="Activity Timeline" size="small">
+            <Card title={t('requests.activityTimeline')} size="small">
               <Timeline
-                items={[
-                  {
-                    color: "green",
+                items={statusHistory.map((item) => {
+                  const getStatusLabel = (status: string) => {
+                    switch (status) {
+                      case 'pending': return t('requests.requestCreated');
+                      case 'accepted': return t('requests.requestAccepted');
+                      case 'in_progress': return t('requests.workStarted');
+                      case 'completed': return t('requests.requestCompleted');
+                      case 'rejected': return t('requests.requestRejected');
+                      default: return status;
+                    }
+                  };
+
+                  const getColor = (status: string) => {
+                    switch (status) {
+                      case 'pending': return 'green';
+                      case 'accepted': return 'blue';
+                      case 'in_progress': return 'blue';
+                      case 'completed': return 'green';
+                      case 'rejected': return 'red';
+                      default: return 'gray';
+                    }
+                  };
+
+                  return {
+                    color: getColor(item.new_status),
                     children: (
                       <>
-                        <Text strong>Request Created</Text>
+                        <Text strong>{getStatusLabel(item.new_status)}</Text>
                         <br />
                         <Text type="secondary">
-                          {request.time ? new Date(request.time).toLocaleString() : 'N/A'}
+                          {new Date(item.changed_at).toLocaleString()}
                         </Text>
+                        {item.changed_by_name && (
+                          <>
+                            <br />
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              by {item.changed_by_name}
+                            </Text>
+                          </>
+                        )}
                       </>
                     ),
-                  },
-                  ...(request.status === "accepted" ||
-                  request.status === "in_progress" ||
-                  request.status === "completed"
-                    ? [
-                        {
-                          color: "blue",
-                          children: (
-                            <>
-                              <Text strong>Request Accepted</Text>
-                              <br />
-                              <Text type="secondary">
-                                Status changed to accepted
-                              </Text>
-                            </>
-                          ),
-                        },
-                      ]
-                    : []),
-                  ...(request.status === "in_progress" ||
-                  request.status === "completed"
-                    ? [
-                        {
-                          color: "blue",
-                          children: (
-                            <>
-                              <Text strong>Work Started</Text>
-                              <br />
-                              <Text type="secondary">
-                                Status changed to in progress
-                              </Text>
-                            </>
-                          ),
-                        },
-                      ]
-                    : []),
-                  ...(request.status === "completed"
-                    ? [
-                        {
-                          color: "green",
-                          children: (
-                            <>
-                              <Text strong>Request Completed</Text>
-                              <br />
-                              <Text type="secondary">
-                                All work has been completed
-                              </Text>
-                            </>
-                          ),
-                        },
-                      ]
-                    : []),
-                  ...(request.status === "rejected"
-                    ? [
-                        {
-                          color: "red",
-                          children: (
-                            <>
-                              <Text strong>Request Rejected</Text>
-                              <br />
-                              <Text type="secondary">
-                                Request was not accepted
-                              </Text>
-                            </>
-                          ),
-                        },
-                      ]
-                    : []),
-                ]}
+                  };
+                })}
               />
             </Card>
           </Col>
         </Row>
       </Card>
 
-      <Card title="Comments & Updates">
+      <Card title={t('requests.commentsUpdates')}>
         <Form form={form} onFinish={handleAddComment}>
           <Form.Item
             name="comment"
-            rules={[{ required: true, message: "Please enter a comment" }]}
+            rules={[{ required: true, message: t('requests.commentRequired') }]}
           >
             <TextArea
               rows={3}
-              placeholder="Add a comment or update..."
+              placeholder={t('requests.addCommentPlaceholder')}
               disabled={
                 request.status === "completed" || request.status === "rejected"
               }
@@ -320,15 +338,15 @@ const RequestDetailsPage: React.FC = () => {
                 request.status === "completed" || request.status === "rejected"
               }
             >
-              Add Comment
+              {t('requests.addComment')}
             </Button>
           </Form.Item>
         </Form>
 
         {request.status === "completed" && (
           <Alert
-            message="This request has been completed"
-            description="No further updates can be made to completed requests."
+            message={t('requests.requestCompletedMessage')}
+            description={t('requests.requestCompletedDescription')}
             type="info"
             showIcon
             style={{ marginTop: 16 }}
@@ -337,8 +355,8 @@ const RequestDetailsPage: React.FC = () => {
 
         {request.status === "rejected" && (
           <Alert
-            message="This request has been rejected"
-            description="No further updates can be made to rejected requests."
+            message={t('requests.requestRejectedMessage')}
+            description={t('requests.requestRejectedDescription')}
             type="warning"
             showIcon
             style={{ marginTop: 16 }}
