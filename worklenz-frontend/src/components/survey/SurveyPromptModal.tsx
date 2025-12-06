@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Button, Result, Spin, Flex } from '@/shared/antd-imports';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Modal, Button, Result, Spin, Flex, Checkbox, Typography } from '@/shared/antd-imports';
 import { SurveyStep } from '@/components/account-setup/survey-step';
 import { useSurveyStatus } from '@/hooks/useSurveyStatus';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +11,17 @@ import { ISurveySubmissionRequest } from '@/types/account-setup/survey.types';
 import logger from '@/utils/errorLogger';
 import { resetSurveyData, setSurveySubStep } from '@/features/account-setup/account-setup.slice';
 import { useLocation } from 'react-router-dom';
+import {
+  isRouteExcluded,
+  isRouteAllowed,
+  isSurveyPermanentlyDismissed,
+  setSurveyPermanentlyDismissed,
+  hasFrequencyCapPassed,
+  recordSurveySkip,
+  hasReachedMaxShowCount,
+  SURVEY_FREQUENCY_CONFIG,
+  SURVEY_MODAL_Z_INDEX,
+} from './survey.config';
 
 interface SurveyPromptModalProps {
   forceShow?: boolean;
@@ -28,82 +39,98 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [surveyInfo, setSurveyInfo] = useState<{ id: string; questions: any[] } | null>(null);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
   const { hasCompletedSurvey, loading, refetch } = useSurveyStatus();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const surveyData = useAppSelector(state => state.accountSetupReducer.surveyData);
   const surveySubStep = useAppSelector(state => state.accountSetupReducer.surveySubStep);
   const isDarkMode = themeMode === 'dark';
 
-  // Check if current page is allowed to show survey (only homepage and projects list)
-  const isAllowedPage = location.pathname === '/worklenz/home' || location.pathname === '/worklenz/projects';
+  // Fetch survey info - memoized to avoid recreation
+  const fetchSurveyInfo = useCallback(async () => {
+    try {
+      const response = await surveyApiService.getAccountSetupSurvey();
+      if (response.done && response.body) {
+        setSurveyInfo({
+          id: response.body.id,
+          questions: response.body.questions || [],
+        });
+      }
+    } catch (error) {
+      logger.error(t('survey:fetchErrorLog'), error);
+    }
+  }, [t]);
+
+  // Check if survey should be shown based on all conditions
+  const shouldShowSurvey = useCallback((): boolean => {
+    const currentPath = location.pathname;
+
+    // 1. Check if route is explicitly excluded (pricing, billing, checkout, etc.)
+    if (isRouteExcluded(currentPath)) {
+      return false;
+    }
+
+    // 2. Check if route is in the allowed list
+    if (!isRouteAllowed(currentPath)) {
+      return false;
+    }
+
+    // 3. Check if survey modal is disabled via environment variable
+    if (import.meta.env.VITE_ENABLE_SURVEY_MODAL !== 'true') {
+      return false;
+    }
+
+    // 4. Check if user has permanently dismissed the survey
+    if (isSurveyPermanentlyDismissed()) {
+      return false;
+    }
+
+    // 5. Check if max show count has been reached (auto-permanent-dismiss)
+    if (hasReachedMaxShowCount()) {
+      return false;
+    }
+
+    // 6. Check frequency cap (minimum days between shows)
+    if (!hasFrequencyCapPassed()) {
+      return false;
+    }
+
+    return true;
+  }, [location.pathname]);
 
   useEffect(() => {
-    // Only show survey on allowed pages (homepage and projects list)
-    if (!isAllowedPage && !forceShow) {
-      setVisible(false);
-      return;
-    }
-
-    // Check if survey modal is disabled via environment variable
-    if (import.meta.env.VITE_ENABLE_SURVEY_MODAL !== 'true' && !forceShow) {
-      return; // Don't show modal if disabled in environment
-    }
-
-    // Check if survey was skipped recently (within 7 days)
-    const skippedAt = localStorage.getItem('survey_skipped_at');
-    if (!forceShow && skippedAt) {
-      const skippedDate = new Date(skippedAt);
-      const now = new Date();
-      const diffDays = (now.getTime() - skippedDate.getTime()) / (1000 * 60 * 60 * 24);
-      if (diffDays < 3) {
-        return; // Don't show modal if skipped within 7 days
-      }
-    }
-
+    // If forceShow is true (from settings), always show regardless of conditions
     if (forceShow) {
       setVisible(true);
       dispatch(resetSurveyData());
       dispatch(setSurveySubStep(0));
-      // Fetch survey info
-      const fetchSurvey = async () => {
-        try {
-          const response = await surveyApiService.getAccountSetupSurvey();
-          if (response.done && response.body) {
-            setSurveyInfo({
-              id: response.body.id,
-              questions: response.body.questions || [],
-            });
-          }
-        } catch (error) {
-          logger.error(t('survey:fetchErrorLog'), error);
-        }
-      };
-      fetchSurvey();
-    } else if (!loading && hasCompletedSurvey === false) {
+      fetchSurveyInfo();
+      return;
+    }
+
+    // Check all conditions for showing the survey
+    if (!shouldShowSurvey()) {
+      setVisible(false);
+      return;
+    }
+
+    // Only show if survey hasn't been completed
+    if (!loading && hasCompletedSurvey === false) {
       dispatch(resetSurveyData());
       dispatch(setSurveySubStep(0));
-      // Fetch survey info
-      const fetchSurvey = async () => {
-        try {
-          const response = await surveyApiService.getAccountSetupSurvey();
-          if (response.done && response.body) {
-            setSurveyInfo({
-              id: response.body.id,
-              questions: response.body.questions || [],
-            });
-          }
-        } catch (error) {
-          logger.error(t('survey:fetchErrorLog'), error);
-        }
-      };
-      fetchSurvey();
-      // Show modal after a 5 second delay to not interrupt user immediately
+      fetchSurveyInfo();
+
+      // Show modal after a delay to not interrupt user immediately
       const timer = setTimeout(() => {
-        setVisible(true);
-      }, 5000);
+        // Double-check conditions before showing (route might have changed)
+        if (shouldShowSurvey()) {
+          setVisible(true);
+        }
+      }, SURVEY_FREQUENCY_CONFIG.INITIAL_DELAY_MS);
+
       return () => clearTimeout(timer);
     }
-  }, [loading, hasCompletedSurvey, dispatch, forceShow, t, isAllowedPage]);
+  }, [loading, hasCompletedSurvey, dispatch, forceShow, fetchSurveyInfo, shouldShowSurvey]);
 
   const handleComplete = async () => {
     try {
@@ -193,8 +220,15 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({
 
   const handleSkip = () => {
     setVisible(false);
-    // Optionally, you can set a flag in localStorage to not show again for some time
-    localStorage.setItem('survey_skipped_at', new Date().toISOString());
+    
+    // If user checked "don't show again", permanently dismiss
+    if (dontShowAgain) {
+      setSurveyPermanentlyDismissed();
+    } else {
+      // Record the skip for frequency cap
+      recordSurveySkip();
+    }
+    
     onClose?.();
   };
 
@@ -236,22 +270,37 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({
       onCancel={handleSkip}
       footer={
         surveyCompleted ? null : (
-          <Flex justify="space-between" align="center">
-            <div>
-              <Button onClick={handleSkip}>{t('survey:skip')}</Button>
-            </div>
-            <Flex gap={8}>
-              {surveySubStep > 0 && (
-                <Button onClick={handlePrevious}>{t('survey:previous')}</Button>
-              )}
-              <Button
-                type="primary"
-                onClick={handleNext}
-                disabled={!isCurrentStepValid()}
-                loading={submitting && surveySubStep === 2}
+          <Flex vertical gap={12}>
+            {/* Don't show again checkbox */}
+            <Flex justify="flex-start" align="center">
+              <Checkbox
+                checked={dontShowAgain}
+                onChange={e => setDontShowAgain(e.target.checked)}
               >
-                {surveySubStep === 2 ? t('survey:completeSurvey') : t('survey:next')}
-              </Button>
+                <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+                  {t('survey:dontShowAgain')}
+                </Typography.Text>
+              </Checkbox>
+            </Flex>
+            
+            {/* Action buttons */}
+            <Flex justify="space-between" align="center">
+              <div>
+                <Button onClick={handleSkip}>{t('survey:skip')}</Button>
+              </div>
+              <Flex gap={8}>
+                {surveySubStep > 0 && (
+                  <Button onClick={handlePrevious}>{t('survey:previous')}</Button>
+                )}
+                <Button
+                  type="primary"
+                  onClick={handleNext}
+                  disabled={!isCurrentStepValid()}
+                  loading={submitting && surveySubStep === 2}
+                >
+                  {surveySubStep === 2 ? t('survey:completeSurvey') : t('survey:next')}
+                </Button>
+              </Flex>
             </Flex>
           </Flex>
         )
@@ -259,6 +308,7 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({
       width={800}
       maskClosable={false}
       centered
+      zIndex={SURVEY_MODAL_Z_INDEX}
     >
       {submitting ? (
         <div style={{ textAlign: 'center', padding: '40px' }}>
