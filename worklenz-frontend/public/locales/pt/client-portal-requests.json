@@ -19,5 +19,8 @@
   "priorityLabel": "Prioridade",
   "descriptionLabel": "Descrição",
   "createdAtLabel": "Criado em",
-  "attachmentsLabel": "Anexos"
+  "attachmentsLabel": "Anexos",
+  "serviceQuestionsLabel": "Perguntas do serviço",
+  "noFilesUploaded": "Nenhum arquivo enviado",
+  "noAnswer": "Nenhuma resposta fornecida"
 }

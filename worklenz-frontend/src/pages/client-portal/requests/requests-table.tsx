@@ -26,6 +26,13 @@ const RequestsTable = () => {
       render: record => <Typography.Text>{record.req_no}</Typography.Text>,
     },
     {
+      key: 'title',
+      title: t('titleLabel'),
+      render: record => (
+        <Typography.Text>{record.request_data?.title || '-'}</Typography.Text>
+      ),
+    },
+    {
       key: 'serviceName',
       title: t('serviceColumn'),
       render: record => <Typography.Text>{record.service_name}</Typography.Text>,
@@ -46,7 +53,7 @@ const RequestsTable = () => {
     },
     {
       key: 'createdAt',
-      title: t('timeColumn'),
+      title: t('createdAtLabel'),
       render: record => (
         <Typography.Text>{durationDateFormat(new Date(record.created_at))}</Typography.Text>
       ),

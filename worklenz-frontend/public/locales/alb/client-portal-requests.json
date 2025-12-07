@@ -19,5 +19,8 @@
   "priorityLabel": "Prioriteti",
   "descriptionLabel": "Përshkrimi",
   "createdAtLabel": "Krijuar më",
-  "attachmentsLabel": "Bashkëngjitjet"
+  "attachmentsLabel": "Bashkëngjitjet",
+  "serviceQuestionsLabel": "Pyetjet e shërbimit",
+  "noFilesUploaded": "Nuk u ngarkuan skedarë",
+  "noAnswer": "Nuk u dha përgjigje"
 }

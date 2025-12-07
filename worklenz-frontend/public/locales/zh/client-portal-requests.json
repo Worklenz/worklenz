@@ -19,5 +19,8 @@
   "priorityLabel": "优先级",
   "descriptionLabel": "描述",
   "createdAtLabel": "创建时间",
-  "attachmentsLabel": "附件"
+  "attachmentsLabel": "附件",
+  "serviceQuestionsLabel": "服务问题",
+  "noFilesUploaded": "未上传文件",
+  "noAnswer": "未提供答案"
 }

@@ -19,5 +19,8 @@
   "priorityLabel": "Priorität",
   "descriptionLabel": "Beschreibung",
   "createdAtLabel": "Erstellt am",
-  "attachmentsLabel": "Anhänge"
+  "attachmentsLabel": "Anhänge",
+  "serviceQuestionsLabel": "Service-Fragen",
+  "noFilesUploaded": "Keine Dateien hochgeladen",
+  "noAnswer": "Keine Antwort angegeben"
 }

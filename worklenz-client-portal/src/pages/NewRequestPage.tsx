@@ -58,14 +58,12 @@ const NewRequestPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [form] = Form.useForm();
-  const [attachments, setAttachments] = useState<UploadedFileInfo[]>([]);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(
     searchParams.get('service') || null
   );
   const [questionAttachments, setQuestionAttachments] = useState<Record<number, UploadedFileInfo[]>>({});
   
-  // Store the markAsSubmitted callback from FileUploader
-  const markAsSubmittedRef = useRef<(() => void) | null>(null);
+  // Store the markAsSubmitted callback from FileUploader (for question attachments)
   const questionMarkAsSubmittedRefs = useRef<Record<number, (() => void) | null>>({});
 
   const { data: servicesData, isLoading: servicesLoading } =
@@ -107,12 +105,8 @@ const NewRequestPage: React.FC = () => {
 
   const onFinish = async (values: Record<string, unknown>) => {
     try {
-      // Collect attachment IDs for linking after request creation
-      const attachmentIds = attachments
-        .filter((file) => file.id)
-        .map((file) => file.id as string);
-
       // Collect question attachments IDs
+      const attachmentIds: string[] = [];
       Object.values(questionAttachments).forEach(files => {
         files.forEach(file => {
           if (file.id) attachmentIds.push(file.id);
@@ -160,15 +154,8 @@ const NewRequestPage: React.FC = () => {
           priority: values.priority as string,
           // Include question answers
           questionAnswers: questionAnswers.length > 0 ? questionAnswers : undefined,
-          // Include both attachment IDs and legacy attachment data for backward compatibility
-          attachmentIds,
-          attachments: attachments.map((file) => ({
-            id: file.id,
-            url: file.url,
-            filename: file.filename,
-            originalName: file.originalName,
-            size: file.size,
-          })),
+          // Include attachment IDs from question attachments
+          attachmentIds: attachmentIds.length > 0 ? attachmentIds : undefined,
         },
         notes: values.description as string,
       };
@@ -186,8 +173,7 @@ const NewRequestPage: React.FC = () => {
         }
       }
 
-      // Mark as submitted to prevent cleanup of uploaded files
-      markAsSubmittedRef.current?.();
+      // Mark question attachments as submitted to prevent cleanup
       Object.values(questionMarkAsSubmittedRefs.current).forEach(fn => fn?.());
       
       message.success(t("requests.createSuccess"));
@@ -200,10 +186,6 @@ const NewRequestPage: React.FC = () => {
 
   const onCancel = () => {
     navigate("/requests");
-  };
-
-  const handleFilesChange = (files: UploadedFileInfo[]) => {
-    setAttachments(files);
   };
 
   // Render a question field based on its type
@@ -382,23 +364,6 @@ const NewRequestPage: React.FC = () => {
               )}
             </Col>
           )}
-
-          <Col span={24}>
-            <Form.Item
-              label={t("requests.attachmentsLabel")}
-            >
-              <FileUploader
-                purpose="request"
-                maxFiles={5}
-                acceptedFileTypes=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
-                maxFileSize={10}
-                onFilesChange={handleFilesChange}
-                showFileList={true}
-                cleanupOnUnmount={true}
-                onSubmitReady={(markFn) => { markAsSubmittedRef.current = markFn; }}
-              />
-            </Form.Item>
-          </Col>
 
           <Col span={24}>
             <Form.Item>
