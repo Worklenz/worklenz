@@ -1525,7 +1525,7 @@ class ClientPortalController {
       const insertQuery = `
         INSERT INTO client_portal_invoices (
           invoice_no, request_id, client_id, organization_team_id, 
-          amount, currency, status, due_date, notes, created_by, created_at, updated_at
+          amount, currency, status, due_date, notes, created_by_user_id, created_at, updated_at
         )
         VALUES ($1, $2, $3, $4, $5, $6, 'draft', $7, $8, $9, NOW(), NOW())
         RETURNING id, invoice_no, amount, currency, status, due_date, created_at
