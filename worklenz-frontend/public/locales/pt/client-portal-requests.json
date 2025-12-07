@@ -22,5 +22,6 @@
   "attachmentsLabel": "Anexos",
   "serviceQuestionsLabel": "Perguntas do serviço",
   "noFilesUploaded": "Nenhum arquivo enviado",
-  "noAnswer": "Nenhuma resposta fornecida"
+  "noAnswer": "Nenhuma resposta fornecida",
+  "createInvoiceButton": "Criar Fatura"
 }

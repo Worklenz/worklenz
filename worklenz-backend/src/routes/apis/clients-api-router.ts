@@ -70,6 +70,7 @@ clientsApiRouter.get("/portal/projects/:id", idParamValidator, safeControllerFun
 
 // Organization-side Client Portal Invoices Management  
 clientsApiRouter.get("/portal/invoices", safeControllerFunction(ClientsController.getPortalInvoices));
+clientsApiRouter.post("/portal/invoices", safeControllerFunction(ClientsController.createPortalInvoice));
 clientsApiRouter.get("/portal/invoices/:id", idParamValidator, safeControllerFunction(ClientsController.getPortalInvoiceById));
 clientsApiRouter.post("/portal/invoices/:id/pay", idParamValidator, safeControllerFunction(ClientsController.payPortalInvoice));
 clientsApiRouter.get("/portal/invoices/:id/download", idParamValidator, safeControllerFunction(ClientsController.downloadPortalInvoice));

@@ -15,14 +15,11 @@ import { colors } from '../../../../styles/colors';
 import { useNavigate } from 'react-router-dom';
 import { useGetInvoicesQuery } from '../../../../api/client-portal/client-portal-api';
 import { PlusOutlined } from '@ant-design/icons';
-import { useAppDispatch } from '../../../../hooks/useAppDispatch';
-import { toggleAddInvoiceDrawer } from '../../../../features/clients-portal/invoices/invoices-slice';
 
 const InvoicesTable = () => {
   // localization
   const { t } = useTranslation('client-portal-invoices');
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
 
   // Fetch invoices from API
   const {
@@ -130,7 +127,7 @@ const InvoicesTable = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => dispatch(toggleAddInvoiceDrawer())}
+            onClick={() => navigate('/worklenz/client-portal/invoices/create')}
           >
             {t('addInvoiceButton')}
           </Button>

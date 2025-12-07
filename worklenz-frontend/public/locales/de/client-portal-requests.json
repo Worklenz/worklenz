@@ -22,5 +22,6 @@
   "attachmentsLabel": "Anhänge",
   "serviceQuestionsLabel": "Service-Fragen",
   "noFilesUploaded": "Keine Dateien hochgeladen",
-  "noAnswer": "Keine Antwort angegeben"
+  "noAnswer": "Keine Antwort angegeben",
+  "createInvoiceButton": "Rechnung erstellen"
 }

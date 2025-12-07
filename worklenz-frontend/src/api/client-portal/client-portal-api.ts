@@ -495,6 +495,38 @@ export const clientPortalApi = createApi({
       }),
     }),
 
+    createInvoice: builder.mutation<
+      {
+        done: boolean;
+        body: {
+          id: string;
+          invoiceNumber: string;
+          amount: number;
+          currency: string;
+          status: string;
+          dueDate: string | null;
+          createdAt: string;
+          clientName: string;
+          serviceName: string;
+        };
+        message: string;
+      },
+      {
+        requestId: string;
+        amount: number;
+        currency?: string;
+        dueDate?: string;
+        notes?: string;
+      }
+    >({
+      query: invoiceData => ({
+        url: '/clients/portal/invoices',
+        method: 'POST',
+        body: invoiceData,
+      }),
+      invalidatesTags: ['Invoices', 'Dashboard'],
+    }),
+
     // Chat
     getChats: builder.query<ClientPortalChat[], void>({
       query: () => '/clients/portal/chats',
@@ -1005,6 +1037,7 @@ export const {
   useGetInvoiceDetailsQuery,
   usePayInvoiceMutation,
   useDownloadInvoiceQuery,
+  useCreateInvoiceMutation,
 
   // Chat
   useGetChatsQuery,

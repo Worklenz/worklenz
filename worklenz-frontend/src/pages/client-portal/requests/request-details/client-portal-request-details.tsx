@@ -12,7 +12,7 @@ import {
   Typography,
   theme,
 } from '@/shared/antd-imports';
-import { ArrowLeftOutlined, DownOutlined, PaperClipOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, DownOutlined, PaperClipOutlined, FileTextOutlined } from '@ant-design/icons';
 import { colors } from '../../../../styles/colors';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGetRequestDetailsQuery, useUpdateOrganizationRequestStatusMutation } from '../../../../api/client-portal/client-portal-api';
@@ -45,6 +45,15 @@ const ClientPortalRequestDetails = () => {
 
   // Status update mutation
   const [updateStatus, { isLoading: isUpdatingStatus }] = useUpdateOrganizationRequestStatusMutation();
+
+  // Check if request can be invoiced (not pending or rejected)
+  const canCreateInvoice = selectedRequest?.status && 
+    !['pending', 'rejected'].includes(selectedRequest.status);
+
+  // Navigate to invoice builder with request ID
+  const handleCreateInvoice = () => {
+    navigate(`/worklenz/client-portal/invoices/create?requestId=${id}`);
+  };
 
   // Handle status change
   const handleStatusChange = async (newStatus: string) => {
@@ -280,24 +289,35 @@ const ClientPortalRequestDetails = () => {
           </Typography.Title>
         </Flex>
 
-        <Select
-          value={selectedRequest?.status}
-          options={[
-            { label: t2('pending'), value: 'pending' },
-            { label: t2('accepted'), value: 'accepted' },
-            { label: t2('inProgress'), value: 'in_progress' },
-            { label: t2('completed'), value: 'completed' },
-            { label: t2('rejected'), value: 'rejected' },
-          ]}
-          onChange={handleStatusChange}
-          loading={isUpdatingStatus}
-          disabled={isUpdatingStatus}
-          variant="borderless"
-          labelRender={value => (
-            <Typography.Text style={{ color: colors.skyBlue }}>{value.label}</Typography.Text>
+        <Flex gap={12} align="center">
+          {canCreateInvoice && (
+            <Button
+              type="primary"
+              icon={<FileTextOutlined />}
+              onClick={handleCreateInvoice}
+            >
+              {t1('createInvoiceButton') || 'Create Invoice'}
+            </Button>
           )}
-          suffixIcon={<DownOutlined style={{ color: colors.skyBlue }} />}
-        />
+          <Select
+            value={selectedRequest?.status}
+            options={[
+              { label: t2('pending'), value: 'pending' },
+              { label: t2('accepted'), value: 'accepted' },
+              { label: t2('inProgress'), value: 'in_progress' },
+              { label: t2('completed'), value: 'completed' },
+              { label: t2('rejected'), value: 'rejected' },
+            ]}
+            onChange={handleStatusChange}
+            loading={isUpdatingStatus}
+            disabled={isUpdatingStatus}
+            variant="borderless"
+            labelRender={value => (
+              <Typography.Text style={{ color: colors.skyBlue }}>{value.label}</Typography.Text>
+            )}
+            suffixIcon={<DownOutlined style={{ color: colors.skyBlue }} />}
+          />
+        </Flex>
       </Flex>
       <Card style={{ height: 'cal(100vh - 330px)' }}>
         <Tabs

@@ -1488,6 +1488,80 @@ class ClientPortalController {
     }
   }
 
+  static async createInvoice(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    try {
+      const { requestId, amount, currency = "USD", dueDate, notes } = req.body;
+      const organizationId = req.user?.team_id;
+      const createdBy = req.user?.id;
+
+      if (!requestId) {
+        return res.status(400).json(new ServerResponse(false, null, "Request ID is required"));
+      }
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json(new ServerResponse(false, null, "Valid amount is required"));
+      }
+
+      // Verify request exists and get client info
+      const requestQuery = `
+        SELECT r.id, r.client_id, r.service_id, r.status, c.name as client_name, s.name as service_name
+        FROM client_portal_requests r
+        LEFT JOIN clients c ON r.client_id = c.id
+        LEFT JOIN client_portal_services s ON r.service_id = s.id
+        WHERE r.id = $1 AND r.organization_team_id = $2
+      `;
+      const requestResult = await db.query(requestQuery, [requestId, organizationId]);
+
+      if (requestResult.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Request not found"));
+      }
+
+      const request = requestResult.rows[0];
+
+      // Generate invoice number
+      const invoiceNo = `INV-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+
+      // Create invoice
+      const insertQuery = `
+        INSERT INTO client_portal_invoices (
+          invoice_no, request_id, client_id, organization_team_id, 
+          amount, currency, status, due_date, notes, created_by, created_at, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, 'draft', $7, $8, $9, NOW(), NOW())
+        RETURNING id, invoice_no, amount, currency, status, due_date, created_at
+      `;
+
+      const result = await db.query(insertQuery, [
+        invoiceNo,
+        requestId,
+        request.client_id,
+        organizationId,
+        amount,
+        currency,
+        dueDate || null,
+        notes || null,
+        createdBy
+      ]);
+
+      const newInvoice = result.rows[0];
+
+      return res.json(new ServerResponse(true, {
+        id: newInvoice.id,
+        invoiceNumber: newInvoice.invoice_no,
+        amount: parseFloat(newInvoice.amount),
+        currency: newInvoice.currency,
+        status: newInvoice.status,
+        dueDate: newInvoice.due_date,
+        createdAt: newInvoice.created_at,
+        clientName: request.client_name,
+        serviceName: request.service_name
+      }, "Invoice created successfully"));
+    } catch (error) {
+      console.error("Error creating invoice:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to create invoice"));
+    }
+  }
+
   static async getInvoiceDetails(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
       const { id } = req.params;

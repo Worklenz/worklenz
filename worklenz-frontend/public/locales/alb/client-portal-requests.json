@@ -22,5 +22,6 @@
   "attachmentsLabel": "Bashkëngjitjet",
   "serviceQuestionsLabel": "Pyetjet e shërbimit",
   "noFilesUploaded": "Nuk u ngarkuan skedarë",
-  "noAnswer": "Nuk u dha përgjigje"
+  "noAnswer": "Nuk u dha përgjigje",
+  "createInvoiceButton": "Krijo Faturë"
 }

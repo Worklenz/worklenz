@@ -22,5 +22,6 @@
   "attachmentsLabel": "Attachments",
   "serviceQuestionsLabel": "Service Questions",
   "noFilesUploaded": "No files uploaded",
-  "noAnswer": "No answer provided"
+  "noAnswer": "No answer provided",
+  "createInvoiceButton": "Create Invoice"
 }
