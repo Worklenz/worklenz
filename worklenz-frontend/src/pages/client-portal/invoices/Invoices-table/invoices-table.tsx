@@ -10,17 +10,19 @@ import {
   Empty,
 } from '@/shared/antd-imports';
 import { TableProps } from 'antd/lib';
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../../../styles/colors';
 import { useNavigate } from 'react-router-dom';
 import { useGetInvoicesQuery } from '../../../../api/client-portal/client-portal-api';
 import { PlusOutlined } from '@ant-design/icons';
+import { useAppDispatch } from '../../../../hooks/useAppDispatch';
+import { toggleAddInvoiceDrawer } from '../../../../features/clients-portal/invoices/invoices-slice';
 
 const InvoicesTable = () => {
   // localization
   const { t } = useTranslation('client-portal-invoices');
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
 
   // Fetch invoices from API
   const {
@@ -128,9 +130,7 @@ const InvoicesTable = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => {
-              setIsAddDrawerOpen(true);
-            }}
+            onClick={() => dispatch(toggleAddInvoiceDrawer())}
           >
             {t('addInvoiceButton')}
           </Button>
