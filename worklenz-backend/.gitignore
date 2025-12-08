@@ -60,3 +60,5 @@ config.json
 build
 .vscode
 *.code-workspace
+
+*.p8

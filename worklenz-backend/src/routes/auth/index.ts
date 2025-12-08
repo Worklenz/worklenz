@@ -62,6 +62,33 @@ authRouter.post("/google/mobile", AuthController.googleMobileAuthPassport);
 // Mobile Apple Sign-In using Passport strategy
 authRouter.post("/apple/mobile", AuthController.appleMobileAuthPassport);
 
+// Apple Web OAuth authentication
+authRouter.get("/apple", (req, res, next) => {
+  return passport.authenticate("apple", {
+    scope: ["name", "email"],
+    state: JSON.stringify({
+      teamMember: req.query.teamMember || null,
+      team: req.query.team || null,
+      teamName: req.query.teamName || null,
+      project: req.query.project || null
+    })
+  })(req, res, next);
+});
+
+authRouter.post("/apple/verify", (req, res, next) => {
+  let error = "";
+  if ((req.session as any).error) {
+    error = `?error=${encodeURIComponent((req.session as any).error as string)}`;
+    delete (req.session as any).error;
+  }
+
+  const failureRedirect = process.env.LOGIN_FAILURE_REDIRECT + error;
+  return passport.authenticate("apple", {
+    failureRedirect,
+    successRedirect: process.env.LOGIN_SUCCESS_REDIRECT
+  })(req, res, next);
+});
+
 // Passport logout
 authRouter.get("/logout", AuthController.logout);
 

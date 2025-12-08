@@ -11,6 +11,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import PageHeader from '@components/AuthPageHeader';
 import googleIcon from '@assets/images/google-icon.png';
+import appleIcon from '@assets/images/apple-icon.svg';
 import { login, verifyAuthentication } from '@/features/auth/authSlice';
 import logger from '@/utils/errorLogger';
 import { setUser } from '@/features/user/userSlice';
@@ -22,6 +23,9 @@ import {
   evt_login_remember_me_click,
   evt_login_page_login,
 } from '@/shared/worklenz-analytics-events';
+
+// Add Apple login event (following existing pattern)
+const evt_login_with_apple_click = 'login_with_apple_click';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import alertService from '@/services/alerts/alertService';
@@ -49,6 +53,7 @@ const LoginPage: React.FC = () => {
   });
 
   const enableGoogleLogin = import.meta.env.VITE_ENABLE_GOOGLE_LOGIN === 'true' || false;
+  const enableAppleLogin = import.meta.env.VITE_ENABLE_APPLE_LOGIN === 'true' || false;
 
   useDocumentTitle('Login');
 
@@ -141,6 +146,16 @@ const LoginPage: React.FC = () => {
       logger.error('Google login failed', error);
     }
   }, [trackMixpanelEvent, t]);
+
+  const handleAppleLogin = useCallback(() => {
+    try {
+      trackMixpanelEvent(evt_login_page_login);
+      trackMixpanelEvent(evt_login_with_apple_click);
+      window.location.href = `${import.meta.env.VITE_API_URL}/secure/apple`;
+    } catch (error) {
+      logger.error('Apple login failed', error);
+    }
+  }, [trackMixpanelEvent]);
 
   const handleRememberMeChange = useCallback(
     (checked: boolean) => {
@@ -238,20 +253,35 @@ const LoginPage: React.FC = () => {
               {t('loginButton')}
             </Button>
 
-            {enableGoogleLogin && (
+            {(enableGoogleLogin || enableAppleLogin) && (
               <>
                 <Typography.Text style={{ textAlign: 'center' }}>{t('orText')}</Typography.Text>
 
-                <Button
-                  block
-                  type="default"
-                  size="large"
-                  onClick={handleGoogleLogin}
-                  style={styles.googleButton}
-                >
-                  <img src={googleIcon} alt="Google" style={styles.googleIcon} />
-                  {t('signInWithGoogleButton')}
-                </Button>
+                {enableGoogleLogin && (
+                  <Button
+                    block
+                    type="default"
+                    size="large"
+                    onClick={handleGoogleLogin}
+                    style={styles.googleButton}
+                  >
+                    <img src={googleIcon} alt="Google" style={styles.googleIcon} />
+                    {t('signInWithGoogleButton')}
+                  </Button>
+                )}
+
+                {enableAppleLogin && (
+                  <Button
+                    block
+                    type="default"
+                    size="large"
+                    onClick={handleAppleLogin}
+                    style={styles.googleButton}
+                  >
+                    <img src={appleIcon} alt="Apple" style={styles.googleIcon} />
+                    {t('signInWithAppleButton', { defaultValue: 'Sign in with Apple' })}
+                  </Button>
+                )}
               </>
             )}
           </Flex>
