@@ -88,6 +88,7 @@ export interface ClientPortalInvoice {
 }
 
 export interface ClientPortalInvoiceDetails extends ClientPortalInvoice {
+  notes?: string;
   request: {
     id: string;
     requestNumber: string;
@@ -100,13 +101,27 @@ export interface ClientPortalInvoiceDetails extends ClientPortalInvoice {
     };
   } | null;
   client: {
+    id?: string;
     name: string;
     companyName?: string | null;
     email?: string | null;
+    phone?: string | null;
+    address?: string | null;
+    contactPerson?: string | null;
   };
   createdBy: {
     name: string;
   } | null;
+  organization?: {
+    name: string | null;
+    logoUrl: string | null;
+    primaryColor: string | null;
+    email: string | null;
+    phone: string | null;
+    addressLine1: string | null;
+    addressLine2: string | null;
+    invoiceFooterMessage: string | null;
+  };
 }
 
 export interface ClientPortalChat {

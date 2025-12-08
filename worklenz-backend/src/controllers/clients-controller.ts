@@ -986,11 +986,7 @@ export default class ClientsController extends WorklenzControllerBase {
   
   @HandleExceptions()
   public static async getPortalInvoices(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const modifiedReq = {
-      ...req,
-      user: req.user
-    } as any;
-    return ClientPortalController.getInvoices(modifiedReq, res as any);
+    return ClientPortalController.getOrganizationInvoices(req, res);
   }
 
   @HandleExceptions()
@@ -1000,11 +996,7 @@ export default class ClientsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async getPortalInvoiceById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const modifiedReq = {
-      ...req,
-      user: req.user
-    } as any;
-    return ClientPortalController.getInvoiceDetails(modifiedReq, res as any);
+    return ClientPortalController.getOrganizationInvoiceDetails(req, res);
   }
 
   @HandleExceptions()

@@ -1488,6 +1488,129 @@ class ClientPortalController {
     }
   }
 
+  // Organization-side invoice listing (for admin/team members)
+  static async getOrganizationInvoices(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    try {
+      const organizationId = req.user?.team_id;
+      const { page = 1, limit = 10, status, search, clientId } = req.query;
+
+      if (!organizationId) {
+        return res.status(401).json(new ServerResponse(false, null, "Unauthorized"));
+      }
+
+      // Build query with pagination and filtering
+      let query = `
+        SELECT 
+          i.id,
+          i.invoice_no,
+          i.amount,
+          i.currency,
+          i.status,
+          i.due_date,
+          i.sent_at,
+          i.paid_at,
+          i.created_at,
+          i.updated_at,
+          r.req_no as request_number,
+          s.name as service_name,
+          c.name as client_name
+        FROM client_portal_invoices i
+        LEFT JOIN client_portal_requests r ON i.request_id = r.id
+        LEFT JOIN client_portal_services s ON r.service_id = s.id
+        LEFT JOIN clients c ON i.client_id = c.id
+        WHERE i.organization_team_id = $1
+      `;
+
+      const queryParams: (string | number)[] = [organizationId];
+      let paramIndex = 2;
+
+      // Add client filter if provided
+      if (clientId) {
+        query += ` AND i.client_id = $${paramIndex}`;
+        queryParams.push(String(clientId));
+        paramIndex++;
+      }
+
+      // Add status filter if provided
+      if (status) {
+        query += ` AND i.status = $${paramIndex}`;
+        queryParams.push(String(status));
+        paramIndex++;
+      }
+
+      // Add search filter if provided
+      if (search) {
+        query += ` AND (i.invoice_no ILIKE $${paramIndex} OR s.name ILIKE $${paramIndex} OR c.name ILIKE $${paramIndex})`;
+        queryParams.push(`%${search}%`);
+        paramIndex++;
+      }
+
+      // Get total count
+      let countQuery = `
+        SELECT COUNT(*) as total
+        FROM client_portal_invoices i
+        LEFT JOIN client_portal_requests r ON i.request_id = r.id
+        LEFT JOIN client_portal_services s ON r.service_id = s.id
+        LEFT JOIN clients c ON i.client_id = c.id
+        WHERE i.organization_team_id = $1
+      `;
+      const countParams: (string | number)[] = [organizationId];
+      let countParamIndex = 2;
+
+      if (clientId) {
+        countQuery += ` AND i.client_id = $${countParamIndex}`;
+        countParams.push(String(clientId));
+        countParamIndex++;
+      }
+      if (status) {
+        countQuery += ` AND i.status = $${countParamIndex}`;
+        countParams.push(String(status));
+        countParamIndex++;
+      }
+      if (search) {
+        countQuery += ` AND (i.invoice_no ILIKE $${countParamIndex} OR s.name ILIKE $${countParamIndex} OR c.name ILIKE $${countParamIndex})`;
+        countParams.push(`%${search}%`);
+        countParamIndex++;
+      }
+
+      const countResult = await db.query(countQuery, countParams);
+      const total = parseInt(countResult.rows[0]?.total || "0");
+
+      // Add pagination
+      const offset = (Number(page) - 1) * Number(limit);
+      query += ` ORDER BY i.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+      queryParams.push(Number(limit), offset);
+
+      const result = await db.query(query, queryParams);
+      const invoices = result.rows.map((row: any) => ({
+        id: row.id,
+        invoiceNumber: row.invoice_no,
+        amount: parseFloat(row.amount || "0"),
+        currency: row.currency,
+        status: row.status,
+        dueDate: row.due_date,
+        sentAt: row.sent_at,
+        paidAt: row.paid_at,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        requestNumber: row.request_number,
+        serviceName: row.service_name,
+        clientName: row.client_name,
+        isOverdue: row.due_date && new Date(row.due_date) < new Date() && row.status !== "paid"
+      }));
+
+      return res.json(new ServerResponse(true, { 
+        invoices, 
+        total, 
+        page: Number(page), 
+        limit: Number(limit) 
+      }, "Invoices retrieved successfully"));
+    } catch (error) {
+      console.error("Error fetching organization invoices:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve invoices"));
+    }
+  }
+
   static async createInvoice(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
       const { requestId, amount, currency = "USD", dueDate, notes } = req.body;
@@ -1644,6 +1767,135 @@ class ClientPortalController {
       return res.json(new ServerResponse(true, invoiceDetails, "Invoice details retrieved successfully"));
     } catch (error) {
       console.error("Error fetching invoice details:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve invoice details"));
+    }
+  }
+
+  // Organization-side invoice details (for admin/team members)
+  static async getOrganizationInvoiceDetails(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    try {
+      const { id } = req.params;
+      const organizationId = req.user?.team_id;
+
+      if (!organizationId) {
+        return res.status(401).json(new ServerResponse(false, null, "Unauthorized"));
+      }
+
+      // Get invoice details with related information (without client_id filter)
+      const query = `
+        SELECT 
+          i.id,
+          i.invoice_no,
+          i.amount,
+          i.currency,
+          i.status,
+          i.due_date,
+          i.sent_at,
+          i.paid_at,
+          i.created_at,
+          i.updated_at,
+          i.notes,
+          r.id as request_id,
+          r.req_no as request_number,
+          r.request_data,
+          r.notes as request_notes,
+          s.id as service_id,
+          s.name as service_name,
+          s.description as service_description,
+          c.id as client_id,
+          c.name as client_name,
+          c.company_name,
+          c.email as client_email,
+          c.phone as client_phone,
+          c.address as client_address,
+          c.contact_person as client_contact_person,
+          u.name as created_by_name
+        FROM client_portal_invoices i
+        LEFT JOIN client_portal_requests r ON i.request_id = r.id
+        LEFT JOIN client_portal_services s ON r.service_id = s.id
+        LEFT JOIN clients c ON i.client_id = c.id
+        LEFT JOIN users u ON i.created_by_user_id = u.id
+        WHERE i.id = $1 AND i.organization_team_id = $2
+      `;
+
+      const result = await db.query(query, [id, organizationId]);
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Invoice not found"));
+      }
+
+      const invoice = result.rows[0];
+
+      // Get organization settings and team name for company details
+      const orgQuery = `
+        SELECT 
+          t.name as organization_name,
+          cps.logo_url,
+          cps.primary_color,
+          cps.contact_email,
+          cps.contact_phone,
+          cps.company_name,
+          cps.address_line_1,
+          cps.address_line_2,
+          cps.invoice_footer_message
+        FROM teams t
+        LEFT JOIN client_portal_settings cps ON cps.organization_team_id = t.id
+        WHERE t.id = $1
+      `;
+      const orgResult = await db.query(orgQuery, [organizationId]);
+      const orgSettings = orgResult.rows[0] || {};
+
+      const invoiceDetails = {
+        id: invoice.id,
+        invoiceNumber: invoice.invoice_no,
+        amount: parseFloat(invoice.amount || "0"),
+        currency: invoice.currency,
+        status: invoice.status,
+        dueDate: invoice.due_date,
+        sentAt: invoice.sent_at,
+        paidAt: invoice.paid_at,
+        createdAt: invoice.created_at,
+        updatedAt: invoice.updated_at,
+        notes: invoice.notes,
+        isOverdue: invoice.due_date && new Date(invoice.due_date) < new Date() && invoice.status !== "paid",
+        request: invoice.request_id ? {
+          id: invoice.request_id,
+          requestNumber: invoice.request_number,
+          requestData: invoice.request_data,
+          notes: invoice.request_notes,
+          service: {
+            id: invoice.service_id,
+            name: invoice.service_name,
+            description: invoice.service_description
+          }
+        } : null,
+        client: {
+          id: invoice.client_id,
+          name: invoice.client_name,
+          companyName: invoice.company_name,
+          email: invoice.client_email,
+          phone: invoice.client_phone,
+          address: invoice.client_address,
+          contactPerson: invoice.client_contact_person
+        },
+        createdBy: invoice.created_by_name ? {
+          name: invoice.created_by_name
+        } : null,
+        organization: {
+          name: orgSettings.company_name || orgSettings.organization_name || null,
+          logoUrl: orgSettings.logo_url || null,
+          primaryColor: orgSettings.primary_color || null,
+          email: orgSettings.contact_email || null,
+          phone: orgSettings.contact_phone || null,
+          addressLine1: orgSettings.address_line_1 || null,
+          addressLine2: orgSettings.address_line_2 || null,
+          invoiceFooterMessage: orgSettings.invoice_footer_message || null
+        }
+      };
+
+      return res.json(new ServerResponse(true, invoiceDetails, "Invoice details retrieved successfully"));
+    } catch (error) {
+      console.error("Error fetching organization invoice details:", error);
       return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve invoice details"));
     }
   }
@@ -2216,7 +2468,8 @@ class ClientPortalController {
       const q = `
         SELECT id, team_id, organization_team_id, logo_url, primary_color, 
                welcome_message, contact_email, contact_phone, terms_of_service, 
-               privacy_policy, created_at, updated_at
+               privacy_policy, company_name, address_line_1, address_line_2, 
+               invoice_footer_message, created_at, updated_at
         FROM client_portal_settings 
         WHERE organization_team_id = $1
       `;
@@ -2230,7 +2483,11 @@ class ClientPortalController {
         contact_email: null,
         contact_phone: null,
         terms_of_service: null,
-        privacy_policy: null
+        privacy_policy: null,
+        company_name: null,
+        address_line_1: null,
+        address_line_2: null,
+        invoice_footer_message: null
       };
 
       return res.json(new ServerResponse(true, settings, null));
@@ -2258,7 +2515,11 @@ class ClientPortalController {
         contact_email,
         contact_phone,
         terms_of_service,
-        privacy_policy
+        privacy_policy,
+        company_name,
+        address_line_1,
+        address_line_2,
+        invoice_footer_message
       } = req.body;
 
       // Check if settings exist
@@ -2272,26 +2533,30 @@ class ClientPortalController {
           UPDATE client_portal_settings 
           SET logo_url = $1, primary_color = $2, welcome_message = $3, 
               contact_email = $4, contact_phone = $5, terms_of_service = $6, 
-              privacy_policy = $7, updated_at = CURRENT_TIMESTAMP
-          WHERE organization_team_id = $8
+              privacy_policy = $7, company_name = $8, address_line_1 = $9, address_line_2 = $10,
+              invoice_footer_message = $11, updated_at = CURRENT_TIMESTAMP
+          WHERE organization_team_id = $12
           RETURNING *
         `;
         result = await db.query(updateQ, [
           logo_url, primary_color, welcome_message, contact_email,
-          contact_phone, terms_of_service, privacy_policy, organizationTeamId
+          contact_phone, terms_of_service, privacy_policy, company_name, address_line_1, address_line_2,
+          invoice_footer_message, organizationTeamId
         ]);
       } else {
         // Create new settings
         const insertQ = `
           INSERT INTO client_portal_settings 
           (team_id, organization_team_id, logo_url, primary_color, welcome_message, 
-           contact_email, contact_phone, terms_of_service, privacy_policy)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           contact_email, contact_phone, terms_of_service, privacy_policy, company_name, 
+           address_line_1, address_line_2, invoice_footer_message)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
           RETURNING *
         `;
         result = await db.query(insertQ, [
           teamId, organizationTeamId, logo_url, primary_color, welcome_message,
-          contact_email, contact_phone, terms_of_service, privacy_policy
+          contact_email, contact_phone, terms_of_service, privacy_policy, company_name, 
+          address_line_1, address_line_2, invoice_footer_message
         ]);
       }
 
@@ -2379,7 +2644,8 @@ class ClientPortalController {
       const q = `
         SELECT id, team_id, organization_team_id, logo_url, primary_color, 
                welcome_message, contact_email, contact_phone, terms_of_service, 
-               privacy_policy, created_at, updated_at
+               privacy_policy, company_name, address_line_1, address_line_2, 
+               invoice_footer_message, created_at, updated_at
         FROM client_portal_settings 
         WHERE organization_team_id = $1
       `;
@@ -2393,7 +2659,11 @@ class ClientPortalController {
         contact_email: null,
         contact_phone: null,
         terms_of_service: null,
-        privacy_policy: null
+        privacy_policy: null,
+        company_name: null,
+        address_line_1: null,
+        address_line_2: null,
+        invoice_footer_message: null
       };
 
       return res.json(new ServerResponse(true, settings, null));
