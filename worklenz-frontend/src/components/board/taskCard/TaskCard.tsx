@@ -49,6 +49,17 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
 
   const dispatch = useAppDispatch();
 
+  // Initialize dueDate from task.end_date
+  // Parse ISO date string (YYYY-MM-DD) to avoid timezone issues
+  useEffect(() => {
+    if (task.end_date) {
+      // Parse as local date to avoid timezone shifting (e.g., "2024-02-10" stays as Feb 10)
+      setDueDate(dayjs(task.end_date, 'YYYY-MM-DD').startOf('day'));
+    } else {
+      setDueDate(null);
+    }
+  }, [task.end_date]);
+
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id as UniqueIdentifier,
     data: {
@@ -277,6 +288,7 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                     }}
+                    value={dueDate}
                     onChange={handleDateChange}
                     variant="borderless"
                     size="small"
