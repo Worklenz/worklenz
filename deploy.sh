@@ -58,7 +58,27 @@ fi
 # 4. Return to root directory
 cd ..
 
-# 5. Build backend and restart with PM2
+# 5. Build client portal
+echo -e "${YELLOW}Building client portal application...${NC}"
+cd worklenz-client-portal
+
+# Install dependencies
+npm i || handle_error
+
+# Build the application
+npm run build || handle_error
+
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✅ Client portal build successful!${NC}"
+else
+    echo -e "${RED}❌ Client portal build failed!${NC}"
+    handle_error
+fi
+
+# Return to root directory
+cd ..
+
+# 7. Build backend and restart with PM2
 echo -e "${YELLOW}Building backend application and restarting service...${NC}"
 cd worklenz-backend
 
@@ -90,7 +110,7 @@ else
     handle_error
 fi
 
-# 6. Disable maintenance mode (handled by cleanup function)
+# 8. Disable maintenance mode (handled by cleanup function)
 echo -e "${GREEN}🚀 Deployment completed successfully!${NC}"
 echo -e "${GREEN}Site is now live with latest changes${NC}"
 
@@ -98,6 +118,7 @@ echo -e "${GREEN}Site is now live with latest changes${NC}"
 echo -e "${BLUE}=== Deployment Summary ===${NC}"
 echo -e "${GREEN}✅ Git pull completed${NC}"
 echo -e "${GREEN}✅ Frontend built and deployed${NC}"
+echo -e "${GREEN}✅ Client portal built and deployed${NC}"
 echo -e "${GREEN}✅ Backend built and restarted${NC}"
 echo -e "${GREEN}✅ Maintenance mode disabled${NC}"
 echo -e "${BLUE}=========================${NC}"
