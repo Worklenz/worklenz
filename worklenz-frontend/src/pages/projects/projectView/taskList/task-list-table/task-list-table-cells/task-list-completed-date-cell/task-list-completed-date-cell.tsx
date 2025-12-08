@@ -5,7 +5,7 @@ import { formatDate } from '@/utils/timeUtils';
 
 const TaskListCompletedDateCell = ({ completedDate }: { completedDate: string | null }) => {
   return (
-    <Tooltip title={completedDate ? formatDate(new Date(completedDate)) : 'N/A'}>
+    <Tooltip title={completedDate ? formatDate(completedDate) : 'N/A'}>
       <Typography.Text>{durationDateFormat(completedDate || null)}</Typography.Text>
     </Tooltip>
   );

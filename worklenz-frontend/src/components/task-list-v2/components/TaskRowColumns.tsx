@@ -24,9 +24,15 @@ export const getTaskDisplayName = (task: Task): string => {
 };
 
 // Memoized date formatter to avoid repeated date parsing
+// Parse date as local date to avoid timezone issues (e.g., "2024-02-10" should display as Feb 10, not Feb 9)
 export const formatDate = (dateString: string): string => {
   try {
-    return format(new Date(dateString), 'MMM d, yyyy');
+    // Parse date string as local date to avoid UTC conversion issues
+    // Input format: "YYYY-MM-DD"
+    const [year, month, day] = dateString.split('-').map(Number);
+    // Create date in local timezone (month is 0-indexed)
+    const date = new Date(year, month - 1, day);
+    return format(date, 'MMM d, yyyy');
   } catch {
     return '';
   }

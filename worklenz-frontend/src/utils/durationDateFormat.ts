@@ -1,7 +1,22 @@
 export const durationDateFormat = (date: Date | null | string | undefined): string => {
   if (!date) return '-';
 
-  const givenDate = new Date(date);
+  let givenDate: Date;
+
+  // Handle different input types and parse ISO date strings as local dates
+  if (typeof date === 'string') {
+    // Check if it's an ISO date string (YYYY-MM-DD format)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      const [year, month, day] = date.split('-').map(Number);
+      givenDate = new Date(year, month - 1, day);
+    } else {
+      // ISO timestamp or other format - parse normally
+      givenDate = new Date(date);
+    }
+  } else {
+    givenDate = date;
+  }
+
   const currentDate = new Date();
 
   const diffInMilliseconds = currentDate.getTime() - givenDate.getTime();
