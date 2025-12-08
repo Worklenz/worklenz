@@ -330,6 +330,49 @@ export default class HomePageController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
+  public static async getTaskCountsByMonth(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const userId = req.user?.id;
+    const month = req.query.month as string; // Format: YYYY-MM
+    const timeZone = req.query.time_zone as string;
+    const currentGroup = this.isValidGroup(req.query.group_by as string) 
+      ? req.query.group_by 
+      : this.GROUP_BY_ASSIGNED_TO_ME;
+
+    const groupByClosure = this.getTasksByGroupClosure(currentGroup as string);
+
+    // Get first and last day of month
+    const startDate = `${month}-01`;
+    const endDate = moment(startDate).endOf('month').format('YYYY-MM-DD');
+
+    const q = `
+      SELECT DATE(t.end_date AT TIME ZONE 'UTC' AT TIME ZONE $5) as date, COUNT(*)::INT as count
+      FROM tasks t
+      JOIN projects p ON t.project_id = p.id
+      WHERE t.archived IS FALSE
+        AND t.end_date IS NOT NULL
+        AND DATE(t.end_date AT TIME ZONE 'UTC' AT TIME ZONE $5) >= $3::DATE
+        AND DATE(t.end_date AT TIME ZONE 'UTC' AT TIME ZONE $5) <= $4::DATE
+        AND t.status_id NOT IN (
+          SELECT id FROM task_statuses
+          WHERE category_id NOT IN (
+            SELECT id FROM sys_task_status_categories WHERE is_done IS FALSE
+          )
+        )
+        AND NOT EXISTS(
+          SELECT project_id FROM archived_projects
+          WHERE project_id = p.id AND user_id = $2
+        )
+        ${groupByClosure}
+      GROUP BY DATE(t.end_date AT TIME ZONE 'UTC' AT TIME ZONE $5)
+      ORDER BY DATE(t.end_date AT TIME ZONE 'UTC' AT TIME ZONE $5)
+    `;
+
+    const result = await db.query(q, [teamId, userId, startDate, endDate, timeZone]);
+    return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  @HandleExceptions()
   public static async getPersonalTasks(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const user_id = req.user?.id;
     const q = `SELECT ptl.id,
