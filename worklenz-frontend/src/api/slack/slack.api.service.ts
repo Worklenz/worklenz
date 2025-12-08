@@ -142,11 +142,16 @@ export const slackApiService = {
     notificationTypes: string[];
     autoJoin?: boolean;
   }): Promise<ISlackChannelConfig> => {
-    const response = await apiClient.post<ISlackChannelConfig>(
+    const response = await apiClient.post<IServerResponse<ISlackChannelConfig>>(
       `${rootUrl}/channel-configs`,
       data
     );
-    return response.data;
+    // Check if the response indicates success
+    if (response.data && response.data.done && response.data.body) {
+      return response.data.body;
+    }
+    // If done is false, throw an error with the message
+    throw new Error(response.data?.message || 'Failed to create channel configuration');
   },
 
   updateChannelConfig: async (configId: string, data: { isActive: boolean }): Promise<void> => {
