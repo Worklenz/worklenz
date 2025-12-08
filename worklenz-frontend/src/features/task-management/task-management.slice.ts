@@ -407,6 +407,23 @@ export const refreshTaskProgress = createAsyncThunk(
   }
 );
 
+export const duplicateTask = createAsyncThunk(
+  'taskManagement/duplicateTask',
+  async ({projectId, taskId, duplicateOptions}: {projectId: string, taskId: string, duplicateOptions: any },{ rejectWithValue }) => {
+    try {
+      console.log('Duplicate Task Thunk', projectId, taskId, duplicateOptions);
+      // const response = await tasksApiService.refreshTaskProgress(projectId);
+      // return response.body;
+    } catch (error) {
+      logger.error('Failed to duplicate task', error);
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to duplicate task');
+    }
+  }
+);
+
 // Async thunk to reorder tasks with API call
 export const reorderTasksWithAPI = createAsyncThunk(
   'taskManagement/reorderTasksWithAPI',
