@@ -1,9 +1,9 @@
 import moment from "moment-timezone";
 import db from "../config/db";
 import HandleExceptions from "../decorators/handle-exceptions";
-import {IWorkLenzRequest} from "../interfaces/worklenz-request";
-import {IWorkLenzResponse} from "../interfaces/worklenz-response";
-import {ServerResponse} from "../models/server-response";
+import { IWorkLenzRequest } from "../interfaces/worklenz-request";
+import { IWorkLenzResponse } from "../interfaces/worklenz-response";
+import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import momentTime from "moment-timezone";
 
@@ -27,10 +27,10 @@ interface ITask {
   done: boolean,
   updated_at: string | null,
   project_statuses: [{
-      id: string,
-      name: string | null,
-      color_code: string | null,
-    }]
+    id: string,
+    name: string | null,
+    color_code: string | null,
+  }]
 }
 
 export default class HomePageController extends WorklenzControllerBase {
@@ -201,7 +201,7 @@ export default class HomePageController extends WorklenzControllerBase {
       currentTabClosure = `AND t.end_date::DATE = '${req.query.selected_date}'`;
       result = await this.groupBySingleDate(result, timeZone, req.query.selected_date as string);
     } else {
-      result = await this.groupByDate(currentTab as string,result, timeZone, today);
+      result = await this.groupByDate(currentTab as string, result, timeZone, today);
     }
 
     // const counts = await this.getCountsResult(groupByClosure, teamId as string, userId as string);
@@ -218,7 +218,7 @@ export default class HomePageController extends WorklenzControllerBase {
     return res.status(200).send(new ServerResponse(true, data));
   }
 
-  private static async groupByDate(currentTab: string,tasks: any[], timeZone: string, today: Date) {
+  private static async groupByDate(currentTab: string, tasks: any[], timeZone: string, today: Date) {
     const formatToday = moment(today).format("YYYY-MM-DD");
 
     const tasksReturn = [];
@@ -248,6 +248,17 @@ export default class HomePageController extends WorklenzControllerBase {
       }
     }
 
+    if (currentTab === this.UPCOMING_NOW_ON_TAB) {
+      for (const task of tasks) {
+        if (task.end_date) {
+          const taskEndDate = momentTime.tz(task.end_date, `${timeZone}`).format("YYYY-MM-DD");
+          if (moment(taskEndDate).isSameOrAfter(formatToday)) {
+            tasksReturn.push(task);
+          }
+        }
+      }
+    }
+
     if (currentTab === this.UPCOMING_TAB) {
       for (const task of tasks) {
         if (task.end_date) {
@@ -266,7 +277,7 @@ export default class HomePageController extends WorklenzControllerBase {
           if (moment(taskEndDate).isBefore(formatToday)) {
             tasksReturn.push(task);
           }
-         }
+        }
       }
     }
 
@@ -284,7 +295,7 @@ export default class HomePageController extends WorklenzControllerBase {
         if (moment(taskEndDate).isSame(formatSelectedDate)) {
           tasksReturn.push(task);
         }
-       }
+      }
     }
 
     return tasksReturn;
