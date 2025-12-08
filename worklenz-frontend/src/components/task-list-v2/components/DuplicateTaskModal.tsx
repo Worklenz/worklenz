@@ -61,7 +61,7 @@ const DuplicateTaskModal: React.FC<DuplicateTaskModalProps> = ({
       await dispatch(
         duplicateTask({
           taskId,
-          projectId,
+          projectId: projectId as string,
           duplicateOptions: options, // exactly the JSON you want
         })
       ).unwrap();
