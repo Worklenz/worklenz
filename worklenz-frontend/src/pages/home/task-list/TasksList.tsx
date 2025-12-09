@@ -31,7 +31,7 @@ import {
   fetchTask,
   setNavigationContext,
 } from '@/features/task-drawer/task-drawer.slice';
-import { useGetMyTasksQuery } from '@/api/home-page/home-page.api.service';
+import homePageApi, { useGetMyTasksQuery } from '@/api/home-page/home-page.api.service';
 import { IHomeTasksModel } from '@/types/home/home-page.types';
 import './tasks-list.css';
 import HomeTasksStatusDropdown from '@/components/home-tasks/statusDropdown/HomeTasksStatusDropdown';
@@ -124,7 +124,9 @@ const TasksList: React.FC = React.memo(() => {
   const refetch = useCallback(() => {
     setSkipAutoRefetch(false);
     originalRefetch();
-  }, [originalRefetch]);
+    // Invalidate task counts cache to refresh calendar badges
+    dispatch(homePageApi.util.invalidateTags(['taskCounts']));
+  }, [originalRefetch, dispatch]);
 
   const handlePageChange = (page: number) => {
     setSkipAutoRefetch(true);
