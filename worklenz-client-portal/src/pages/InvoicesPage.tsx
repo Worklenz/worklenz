@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Card,
   Typography,
-  Flex,
   Table,
   Tag,
   Spin,
   Alert,
   Empty,
-  FileTextOutlined,
 } from "@/shared/antd-imports";
+import { FileDoneOutlined } from "@/shared/antd-imports";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import clientPortalAPI from "@/services/api";
 import { ClientInvoice } from "@/types";
@@ -18,17 +18,14 @@ import type { TableProps } from "antd/lib";
 const { Title, Text } = Typography;
 
 const InvoicesPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<ClientInvoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalInvoices, setTotalInvoices] = useState(0);
 
-  useEffect(() => {
-    fetchInvoices();
-  }, []);
-
-  const fetchInvoices = async () => {
+  const fetchInvoices = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -39,15 +36,19 @@ const InvoicesPage: React.FC = () => {
         setInvoices(data.invoices || []);
         setTotalInvoices(data.total || 0);
       } else {
-        setError("Failed to load invoices");
+        setError(t('invoices.errorLoading'));
       }
     } catch (err) {
-      setError("Failed to load invoices. Please try again later.");
+      setError(t('invoices.errorLoadingDescription'));
       console.error("Invoices API error:", err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices]);
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -67,13 +68,13 @@ const InvoicesPage: React.FC = () => {
   const getStatusText = (status: string) => {
     switch (status?.toLowerCase()) {
       case "paid":
-        return "Paid";
+        return t('invoices.paid');
       case "pending":
-        return "Pending";
+        return t('invoices.pending');
       case "overdue":
-        return "Overdue";
+        return t('invoices.overdue');
       case "cancelled":
-        return "Cancelled";
+        return t('invoices.cancelled');
       default:
         return status;
     }
@@ -82,35 +83,8 @@ const InvoicesPage: React.FC = () => {
   // Handle loading state
   if (isLoading) {
     return (
-      <div
-        style={{
-          maxWidth: "100%",
-          minHeight: "calc(100vh - 120px)",
-        }}
-      >
-        <div style={{ marginBottom: 32 }}>
-          <Flex align="center" gap={12} style={{ marginBottom: 8 }}>
-            <FileTextOutlined style={{ fontSize: 20 }} />
-            <Title level={4} style={{ margin: 0, fontSize: "20px" }}>
-              Invoices
-            </Title>
-          </Flex>
-          <Text type="secondary" style={{ fontSize: "16px", lineHeight: 1.5 }}>
-            View and manage your invoices and payments
-          </Text>
-        </div>
-        <Card style={{ height: "calc(100vh - 280px)" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              height: "200px",
-            }}
-          >
-            <Spin size="large" />
-          </div>
-        </Card>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <Spin size="large" />
       </div>
     );
   }
@@ -118,26 +92,15 @@ const InvoicesPage: React.FC = () => {
   // Handle error state
   if (error) {
     return (
-      <div
-        style={{
-          maxWidth: "100%",
-          minHeight: "calc(100vh - 120px)",
-        }}
-      >
-        <div style={{ marginBottom: 32 }}>
-          <Flex align="center" gap={12} style={{ marginBottom: 8 }}>
-            <FileTextOutlined style={{ fontSize: 20 }} />
-            <Title level={4} style={{ margin: 0, fontSize: "20px" }}>
-              Invoices
-            </Title>
-          </Flex>
-          <Text type="secondary" style={{ fontSize: "16px", lineHeight: 1.5 }}>
-            View and manage your invoices and payments
-          </Text>
+      <div>
+        <div style={{ marginBottom: 24 }}>
+          <Title level={4} style={{ marginBottom: 4 }}>
+            <FileDoneOutlined style={{ marginRight: 8 }} />
+            {t('invoices.title')}
+          </Title>
+          <Text type="secondary">{t('invoices.description')}</Text>
         </div>
-        <Card style={{ height: "calc(100vh - 280px)" }}>
-          <Alert message="Error loading invoices" description={error} type="error" showIcon />
-        </Card>
+        <Alert message={t('invoices.errorLoading')} description={error} type="error" showIcon />
       </div>
     );
   }
@@ -145,41 +108,18 @@ const InvoicesPage: React.FC = () => {
   // Handle empty state
   if (!invoices || invoices.length === 0) {
     return (
-      <div
-        style={{
-          maxWidth: "100%",
-          minHeight: "calc(100vh - 120px)",
-        }}
-      >
-        <div style={{ marginBottom: 32 }}>
-          <Flex align="center" gap={12} style={{ marginBottom: 8 }}>
-            <FileTextOutlined style={{ fontSize: 20 }} />
-            <Title level={4} style={{ margin: 0, fontSize: "20px" }}>
-              Invoices
-            </Title>
-          </Flex>
-          <Text type="secondary" style={{ fontSize: "16px", lineHeight: 1.5 }}>
-            View and manage your invoices and payments
-          </Text>
+      <div>
+        <div style={{ marginBottom: 24 }}>
+          <Title level={4} style={{ marginBottom: 4 }}>
+            <FileDoneOutlined style={{ marginRight: 8 }} />
+            {t('invoices.title')}
+          </Title>
+          <Text type="secondary">{t('invoices.description')}</Text>
         </div>
-        <Card style={{ height: "calc(100vh - 280px)" }}>
+        <Card>
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={
-              <div>
-                <Title level={4} style={{ marginBottom: 8 }}>
-                  No invoices yet
-                </Title>
-                <Text type="secondary">Your invoices will appear here when available</Text>
-              </div>
-            }
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              height: "calc(100vh - 320px)",
-            }}
+            description={t('invoices.noInvoicesYet')}
           />
         </Card>
       </div>
@@ -189,7 +129,7 @@ const InvoicesPage: React.FC = () => {
   const columns: TableProps["columns"] = [
     {
       key: "invoiceNumber",
-      title: "Invoice #",
+      title: t('invoices.invoiceNo'),
       render: (record) => <Text strong>{record.invoiceNumber}</Text>,
       onCell: () => ({
         style: { minWidth: 140 },
@@ -197,7 +137,7 @@ const InvoicesPage: React.FC = () => {
     },
     {
       key: "serviceName",
-      title: "Service",
+      title: t('invoices.service'),
       render: (record) => <Text>{record.serviceName || "-"}</Text>,
       onCell: () => ({
         style: { minWidth: 200 },
@@ -205,7 +145,7 @@ const InvoicesPage: React.FC = () => {
     },
     {
       key: "amount",
-      title: "Amount",
+      title: t('invoices.amount'),
       render: (record) => (
         <Text strong>
           {new Intl.NumberFormat("en-US", {
@@ -220,7 +160,7 @@ const InvoicesPage: React.FC = () => {
     },
     {
       key: "status",
-      title: "Status",
+      title: t('invoices.status'),
       render: (record) => (
         <Tag color={getStatusColor(record.status)}>{getStatusText(record.status)}</Tag>
       ),
@@ -228,7 +168,7 @@ const InvoicesPage: React.FC = () => {
     },
     {
       key: "dueDate",
-      title: "Due Date",
+      title: t('invoices.dueDate'),
       render: (record) => (
         <Text>
           {record.dueDate ? new Date(record.dueDate).toLocaleDateString() : "-"}
@@ -239,45 +179,29 @@ const InvoicesPage: React.FC = () => {
   ];
 
   return (
-    <div
-      style={{
-        maxWidth: "100%",
-        minHeight: "calc(100vh - 120px)",
-      }}
-    >
+    <div>
       {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <Flex align="center" gap={12} style={{ marginBottom: 8 }}>
-          <FileTextOutlined style={{ fontSize: 20 }} />
-          <Title level={4} style={{ margin: 0, fontSize: "20px" }}>
-            Invoices
-          </Title>
-        </Flex>
-        <Text type="secondary" style={{ fontSize: "16px", lineHeight: 1.5 }}>
-          View and manage your invoices and payments
-        </Text>
+      <div style={{ marginBottom: 24 }}>
+        <Title level={4} style={{ marginBottom: 4 }}>
+          <FileDoneOutlined style={{ marginRight: 8 }} />
+          {t('invoices.title')}
+        </Title>
+        <Text type="secondary">{t('invoices.description')}</Text>
       </div>
 
       {/* Invoices Table */}
-      <Card
-        style={{
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          borderRadius: 8,
-        }}
-      >
+      <Card size="small" styles={{ body: { padding: 0 } }}>
         <Table
           columns={columns}
           dataSource={invoices}
           rowKey="id"
+          size="small"
           pagination={{
             size: "small",
             total: totalInvoices,
-            current: 1,
-            pageSize: 10,
+            showSizeChanger: true,
           }}
-          scroll={{
-            x: "max-content",
-          }}
+          scroll={{ x: "max-content" }}
           onRow={(record) => ({
             onClick: () => navigate(`/invoices/${record.id}`),
             style: { cursor: "pointer" },

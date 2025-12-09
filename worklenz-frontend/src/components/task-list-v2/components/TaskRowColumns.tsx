@@ -223,28 +223,38 @@ interface ProgressColumnProps {
   task: Task;
 }
 
-export const ProgressColumn: React.FC<ProgressColumnProps> = memo(({ width, task }) => (
-  <div
-    className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
-    style={{ width }}
-  >
-    {task.progress !== undefined &&
-      task.progress >= 0 &&
-      (task.progress === 100 ? (
-        <div className="flex items-center justify-center">
-          <CheckCircleOutlined
-            className="text-green-500"
-            style={{
-              fontSize: '20px',
-              color: '#52c41a',
-            }}
-          />
-        </div>
-      ) : (
-        <TaskProgress progress={task.progress} numberOfSubTasks={task.sub_tasks?.length || 0} />
-      ))}
-  </div>
-));
+export const ProgressColumn: React.FC<ProgressColumnProps> = memo(({ width, task }) => {
+  // Add defensive fallback like TaskProgressCircle to handle both complete_ratio and progress fields
+  const progress =
+    typeof task.complete_ratio === 'number'
+      ? task.complete_ratio
+      : typeof task.progress === 'number'
+        ? task.progress
+        : 0;
+
+  return (
+    <div
+      className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
+      style={{ width }}
+    >
+      {progress !== undefined &&
+        progress >= 0 &&
+        (progress === 100 ? (
+          <div className="flex items-center justify-center">
+            <CheckCircleOutlined
+              className="text-green-500"
+              style={{
+                fontSize: '20px',
+                color: '#52c41a',
+              }}
+            />
+          </div>
+        ) : (
+          <TaskProgress progress={progress} numberOfSubTasks={task.sub_tasks?.length || 0} />
+        ))}
+    </div>
+  );
+});
 
 ProgressColumn.displayName = 'ProgressColumn';
 

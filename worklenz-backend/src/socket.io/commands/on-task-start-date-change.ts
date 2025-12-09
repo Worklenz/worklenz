@@ -19,9 +19,9 @@ export async function on_task_start_date_change(_io: Server, socket: Socket, dat
     const [d] = result.rows;
     socket.emit(SocketEvents.TASK_START_DATE_CHANGE.toString(), {
       id: body.task_id,
-      start_date: d.start_date,
+      start_date: d.start_date ? momentTime(d.start_date).format('YYYY-MM-DD') : d.start_date,
       parent_task: body.parent_task,
-      end_date: d.end_date,
+      end_date: d.end_date ? momentTime(d.end_date).format('YYYY-MM-DD') : d.end_date,
       group_id: body.group_id
     });
 

@@ -50,6 +50,17 @@
   "noServicesDescription": "Você ainda não criou nenhum serviço. Crie seu primeiro serviço para começar a receber solicitações de clientes.",
   "errorLoadingServices": "Erro ao carregar serviços",
   "errorLoadingServicesDescription": "Houve um erro ao carregar seus serviços. Por favor, tente novamente mais tarde.",
+  "visibilityColumn": "Visibilidade",
+  "visibilityVisible": "Visível",
+  "visibilityHidden": "Oculto",
+  "serviceVisibility": {
+    "title": "Visibilidade do Serviço",
+    "description": "Controle se este serviço é visível para os clientes.",
+    "showToAll": "Mostrar para todos os clientes",
+    "hiddenFromAll": "Oculto para todos os clientes",
+    "showToAllDescription": "Este serviço é visível para todos os clientes no portal",
+    "hiddenFromAllDescription": "Este serviço está oculto e não é visível para nenhum cliente"
+  },
   "addService": {
     "serviceDetails": {
       "title": "Detalhes do Serviço",

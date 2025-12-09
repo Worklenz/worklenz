@@ -73,7 +73,7 @@ const BoardViewTaskCard = ({ task, sectionId }: IBoardViewTaskCardProps) => {
   const [isSubTaskShow, setIsSubTaskShow] = useState(false);
   const [showNewSubtaskCard, setShowNewSubtaskCard] = useState(false);
   const [dueDate, setDueDate] = useState<Dayjs | null>(
-    task?.end_date ? dayjs(task?.end_date) : null
+    task?.end_date ? dayjs(task?.end_date, 'YYYY-MM-DD') : null
   );
   const [updatingAssignToMe, setUpdatingAssignToMe] = useState(false);
 

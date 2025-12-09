@@ -66,10 +66,39 @@ export default class SlackController extends WorklenzControllerBase {
   public static async oauthCallback(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { code, state, error } = req.query;
     // Ensure we get a clean frontend URL without any path components
-    // Remove any trailing paths that might have been accidentally included
+    // Parse and normalize the frontend URL to ensure it's a valid URL with protocol
     const rawFrontendUrl = process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3000";
-    const frontendUrl = rawFrontendUrl.replace(/\/public\/.*$/, "").replace(/\/api\/.*$/, "").replace(/\/$/, "");
-    const frontendOrigin = frontendUrl.match(/^https?:\/\/[^/]+/i)?.[0] || frontendUrl;
+    
+    // Normalize the URL: ensure it has a protocol, remove paths, and extract just the origin
+    let frontendUrl = rawFrontendUrl.trim();
+    
+    // If URL doesn't start with http:// or https://, try to add https://
+    if (!/^https?:\/\//i.test(frontendUrl)) {
+      // If it looks like a domain, add https://
+      if (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(frontendUrl)) {
+        frontendUrl = `https://${frontendUrl}`;
+      } else {
+        // Fallback to default
+        frontendUrl = "https://app.worklenz.com";
+      }
+    }
+    
+    // Extract just the origin (protocol + host, no path)
+    try {
+      const urlObj = new URL(frontendUrl);
+      frontendUrl = `${urlObj.protocol}//${urlObj.host}`;
+    } catch (e) {
+      // If URL parsing fails, try regex fallback
+      const match = frontendUrl.match(/^(https?:\/\/[^/]+)/i);
+      if (match) {
+        frontendUrl = match[1];
+      } else {
+        // Ultimate fallback
+        frontendUrl = "https://app.worklenz.com";
+      }
+    }
+    
+    const frontendOrigin = frontendUrl;
 
     const sendPopupResponse = (status: "success" | "error" | "cancelled") => {
       const messageType =
@@ -122,16 +151,43 @@ export default class SlackController extends WorklenzControllerBase {
       (function() {
         var payload = { type: ${JSON.stringify(messageType)}, status: ${JSON.stringify(status)} };
         var targetOrigin = ${JSON.stringify(frontendOrigin)};
+        var fallbackUrl = ${JSON.stringify(fallbackUrl)};
+        var closed = false;
+        
+        // Try to notify parent window and close
         try {
           if (window.opener && !window.opener.closed) {
             window.opener.postMessage(payload, targetOrigin);
-            window.close();
+            // Give a small delay to ensure message is sent before closing
+            setTimeout(function() {
+              if (!closed) {
+                window.close();
+                closed = true;
+              }
+            }, 100);
+            // Also try immediate close as fallback
+            setTimeout(function() {
+              if (!closed && window.opener && !window.opener.closed) {
+                window.close();
+                closed = true;
+              }
+            }, 500);
             return;
           }
         } catch (err) {
           console.error('Slack OAuth popup could not notify opener', err);
         }
-        window.location.replace(${JSON.stringify(fallbackUrl)});
+        
+        // If we couldn't close, redirect to fallback URL
+        if (!closed) {
+          try {
+            window.location.replace(fallbackUrl);
+          } catch (err) {
+            console.error('Failed to redirect:', err);
+            // Last resort: try setting location.href
+            window.location.href = fallbackUrl;
+          }
+        }
       })();
     </script>
   </body>

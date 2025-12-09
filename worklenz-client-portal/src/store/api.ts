@@ -82,6 +82,19 @@ export const clientPortalApi = createApi({
       providesTags: (_result, _error, id) => [{ type: 'Requests', id }],
     }),
 
+    getRequestStatusHistory: builder.query<ApiResponse<Array<{
+      id: string;
+      previous_status: string | null;
+      new_status: string;
+      notes: string | null;
+      changed_at: string;
+      changed_by_name: string | null;
+      changed_by_client_name: string | null;
+    }>>, string>({
+      query: (id) => `/requests/${id}/history`,
+      providesTags: (_result, _error, id) => [{ type: 'Requests', id }],
+    }),
+
     updateRequest: builder.mutation<ApiResponse<ClientRequest>, { id: string; data: Partial<ClientRequest> }>({
       query: ({ id, data }) => ({
         url: `/requests/${id}`,
@@ -284,6 +297,7 @@ export const {
   useGetRequestsQuery,
   useCreateRequestMutation,
   useGetRequestDetailsQuery,
+  useGetRequestStatusHistoryQuery,
   useUpdateRequestMutation,
   useDeleteRequestMutation,
   

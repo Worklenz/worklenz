@@ -1,5 +1,6 @@
 import express from "express";
 import ClientPortalController from "../../controllers/client-portal-controller";
+import ClientPortalAttachmentController from "../../controllers/client-portal-attachment-controller";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import { authenticateClient, requireClientPermission } from "../../middlewares/client-auth-middleware";
 
@@ -40,6 +41,7 @@ router.delete("/requests/:id", safeControllerFunction(ClientPortalController.del
 // Projects
 router.get("/projects", safeControllerFunction(ClientPortalController.getProjects));
 router.get("/projects/:id", safeControllerFunction(ClientPortalController.getProjectDetails));
+router.get("/projects/:id/tasks", safeControllerFunction(ClientPortalController.getProjectTasks));
 
 // Invoices
 router.get("/invoices", safeControllerFunction(ClientPortalController.getInvoices));
@@ -47,12 +49,12 @@ router.get("/invoices/:id", safeControllerFunction(ClientPortalController.getInv
 router.post("/invoices/:id/pay", safeControllerFunction(ClientPortalController.payInvoice));
 router.get("/invoices/:id/download", safeControllerFunction(ClientPortalController.downloadInvoice));
 
-// Chat (requires chat permissions)
-router.get("/chats", requireClientPermission("canChat"), safeControllerFunction(ClientPortalController.getChats));
-router.post("/chats", requireClientPermission("canWriteChat"), safeControllerFunction(ClientPortalController.createChat));
-router.get("/chats/:id", requireClientPermission("canChat"), safeControllerFunction(ClientPortalController.getChatDetails));
-router.post("/chats/:id/messages", requireClientPermission("canWriteChat"), safeControllerFunction(ClientPortalController.sendMessage));
-router.get("/chats/:id/messages", requireClientPermission("canChat"), safeControllerFunction(ClientPortalController.getMessages));
+// Chat
+router.get("/chats", safeControllerFunction(ClientPortalController.getChats));
+router.post("/chats", safeControllerFunction(ClientPortalController.createChat));
+router.get("/chats/:id", safeControllerFunction(ClientPortalController.getChatDetails));
+router.post("/chats/:id/messages", safeControllerFunction(ClientPortalController.sendMessage));
+router.get("/chats/:id/messages", safeControllerFunction(ClientPortalController.getMessages));
 
 // Settings (for organization management - requires team_id)
 router.get("/settings", safeControllerFunction(ClientPortalController.getSettings));
@@ -78,8 +80,12 @@ router.get("/notifications", safeControllerFunction(ClientPortalController.getNo
 router.put("/notifications/:id/read", safeControllerFunction(ClientPortalController.markNotificationRead));
 router.put("/notifications/read-all", safeControllerFunction(ClientPortalController.markAllNotificationsRead));
 
-// File uploads
-router.post("/upload", safeControllerFunction(ClientPortalController.uploadFile));
+// File uploads and attachments (using new attachment controller with S3 storage)
+router.post("/upload", safeControllerFunction(ClientPortalAttachmentController.uploadFile));
+router.get("/attachments/unlinked", safeControllerFunction(ClientPortalAttachmentController.getUnlinkedAttachments));
+router.get("/attachments/:attachmentId", safeControllerFunction(ClientPortalAttachmentController.getAttachment));
+router.delete("/attachments/:attachmentId", safeControllerFunction(ClientPortalAttachmentController.deleteAttachment));
+router.get("/requests/:requestId/attachments", safeControllerFunction(ClientPortalAttachmentController.getRequestAttachments));
+router.post("/requests/:requestId/attachments/link", safeControllerFunction(ClientPortalAttachmentController.linkAttachmentsToRequest));
 
-
-export default router; 
+export default router;

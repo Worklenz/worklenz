@@ -545,6 +545,8 @@ const enhancedKanbanSlice = createSlice({
       foundTask.status_color = color_code;
       foundTask.status_color_dark = color_code_dark;
       foundTask.complete_ratio = +complete_ratio;
+      foundTask.progress = +complete_ratio; // Also update progress field for consistency
+      foundTask.progress_value = +complete_ratio; // Also update progress_value field
       foundTask.status = status_id;
       foundTask.status_category = statusCategory;
 

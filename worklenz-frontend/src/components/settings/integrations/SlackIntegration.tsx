@@ -164,13 +164,16 @@ export function SlackIntegration() {
         if (event.origin !== window.location.origin) return;
 
         if (event.data.type === 'SLACK_AUTH_SUCCESS') {
+          messageApi.success(t('connection.success', { defaultValue: 'Slack workspace connected successfully!' }));
           checkSlackConnection();
           setLoading(false);
           window.removeEventListener('message', handleMessage);
         } else if (event.data.type === 'SLACK_AUTH_ERROR') {
+          messageApi.error(t('connection.error', { defaultValue: 'Failed to connect Slack workspace' }));
           setLoading(false);
           window.removeEventListener('message', handleMessage);
         } else if (event.data.type === 'SLACK_AUTH_CANCELLED') {
+          messageApi.info(t('connection.cancelled', { defaultValue: 'Slack installation cancelled' }));
           setLoading(false);
           window.removeEventListener('message', handleMessage);
         }

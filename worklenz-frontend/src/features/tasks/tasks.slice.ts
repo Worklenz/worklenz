@@ -684,6 +684,8 @@ const taskSlice = createSlice({
       task.status_color = color_code;
       task.status_color_dark = color_code_dark;
       task.complete_ratio = +complete_ratio;
+      task.progress = +complete_ratio; // Also update progress field for consistency
+      task.progress_value = +complete_ratio; // Also update progress_value field
       task.status = status_id;
       task.status_category = statusCategory;
 

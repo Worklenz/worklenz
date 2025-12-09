@@ -587,6 +587,11 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       const existingProjectResult = await db.query(existingProjectMemberQuery, [teamMemberId, projectId]);
 
       if (existingProjectResult.rows.length > 0) {
+        // Set the joined team as active for the user
+        if (userId) {
+          const setActiveTeamQuery = `SELECT set_active_team($1, $2)`;
+          await db.query(setActiveTeamQuery, [userId, teamId]);
+        }
         return res.status(200).send(new ServerResponse(false, null, "You are already a member of this project."));
       }
 
@@ -617,6 +622,12 @@ export default class ProjectMembersController extends WorklenzControllerBase {
           validation.link_id, userId, teamMemberId, projectMemberResult.member?.id,
           email, name, ipAddress, userAgent
         ]);
+
+        // Set the joined team as active for the user
+        if (userId) {
+          const setActiveTeamQuery = `SELECT set_active_team($1, $2)`;
+          await db.query(setActiveTeamQuery, [userId, teamId]);
+        }
       }
 
       return res.status(200).send(new ServerResponse(true, projectMemberResult, "Successfully joined the project!"));

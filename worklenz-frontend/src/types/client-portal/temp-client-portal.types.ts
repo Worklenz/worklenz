@@ -27,10 +27,14 @@ export type TempRequestFromItemType = {
 };
 
 export type TempServicesType = {
-  id: string;
+  id?: string;
   name: string;
-  status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'rejected';
+  status?: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'rejected';
+  is_public?: boolean;
   created_by?: string;
+  price?: number | null;
+  currency?: string;
+  category?: string;
   service_data?: {
     description?: ReactNode | string;
     images?: string[] | null;

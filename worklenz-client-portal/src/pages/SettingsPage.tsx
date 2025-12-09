@@ -10,26 +10,35 @@ import {
 import { 
   ShareAltOutlined 
 } from '@/shared/antd-imports';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
 
 const SettingsPage: React.FC = () => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  const handleViewProfile = () => {
+    navigate('/profile');
+  };
+  
   return (
     <div>
       <Title level={2}>
-        <ShareAltOutlined /> Settings
+        <ShareAltOutlined /> {t('settings.title')}
       </Title>
-      <p>Manage your account settings and preferences</p>
+      <p>{t('settings.description')}</p>
 
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={12}>
-          <Card title="Account Information" style={{ height: '100%' }}>
+          <Card title={t('settings.accountInfo')} style={{ height: '100%' }}>
             <Space direction="vertical" style={{ width: '100%' }}>
               <Text type="secondary">
-                View your account details and billing information in the Profile section.
+                {t('settings.accountInfoDescription')}
               </Text>
-              <Button size="large">
-                View Profile
+              <Button size="large" onClick={handleViewProfile}>
+                {t('settings.viewProfile')}
               </Button>
             </Space>
           </Card>

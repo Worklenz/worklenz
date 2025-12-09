@@ -10,6 +10,7 @@ import {
   Dropdown,
   message,
   Modal,
+  Tag,
 } from '@/shared/antd-imports';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { TableProps } from 'antd/lib';
@@ -74,6 +75,15 @@ const ServicesTable = () => {
       render: record => <ClientPortalStatusTags status={record.status} />,
     },
     {
+      key: 'visibility',
+      title: t('visibilityColumn'),
+      render: record => (
+        <Tag color={record.is_public ? 'green' : 'orange'}>
+          {record.is_public ? t('visibilityVisible') : t('visibilityHidden')}
+        </Tag>
+      ),
+    },
+    {
       key: 'noOfRequests',
       title: t('noOfRequestsColumn'),
       render: record => (
@@ -118,7 +128,12 @@ const ServicesTable = () => {
 
         return (
           <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-            <Button type="text" icon={<MoreOutlined />} style={{ border: 'none' }} />
+            <Button 
+              type="text" 
+              icon={<MoreOutlined />} 
+              style={{ border: 'none' }} 
+              onClick={e => e.stopPropagation()}
+            />
           </Dropdown>
         );
       },
@@ -206,6 +221,7 @@ const ServicesTable = () => {
       <Table
         columns={columns}
         dataSource={servicesData.body.data}
+        rowKey="id"
         pagination={{
           size: 'small',
           total: servicesData.body.total,
@@ -218,6 +234,7 @@ const ServicesTable = () => {
         onRow={record => {
           return {
             style: { cursor: 'pointer' },
+            onClick: () => handleEdit(record.id),
           };
         }}
       />

@@ -55,9 +55,11 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
                       (SELECT EXISTS(SELECT id FROM licensing_credit_subs lcs WHERE lcs.user_id = ud.user_id)) AS is_credit,
                       (SELECT EXISTS(SELECT id FROM licensing_coupon_codes WHERE redeemed_by = ud.user_id)) AS is_ltd,
                       (SELECT SUM(team_members_limit) FROM licensing_coupon_codes WHERE redeemed_by = ud.user_id) AS ltd_users,
-                      (SELECT COUNT(DISTINCT email)
+                      (SELECT COUNT(DISTINCT tmiv.email)
                         FROM team_member_info_view tmiv
-                        WHERE tmiv.team_id IN
+                        JOIN team_members tm ON tmiv.team_member_id = tm.id
+                        WHERE tm.active = true
+                          AND tmiv.team_id IN
                               (SELECT id
                               FROM teams
                               WHERE teams.user_id = ud.user_id)) AS current_count

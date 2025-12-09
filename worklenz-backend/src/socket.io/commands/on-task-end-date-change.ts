@@ -19,8 +19,8 @@ export async function on_task_end_date_change(_io: Server, socket: Socket, data?
     socket.emit(SocketEvents.TASK_END_DATE_CHANGE.toString(), {
       id: body.task_id,
       parent_task: body.parent_task,
-      end_date: d.end_date,
-      start_date: d.start_date,
+      end_date: d.end_date ? momentTime(d.end_date).format('YYYY-MM-DD') : d.end_date,
+      start_date: d.start_date ? momentTime(d.start_date).format('YYYY-MM-DD') : d.start_date,
       group_id: body.group_id
     });
 

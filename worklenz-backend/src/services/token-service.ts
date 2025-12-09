@@ -249,6 +249,14 @@ class TokenService {
         ["active", invitation.client_id]
       );
 
+      // Create client portal access record with full permissions
+      const portalAccessQuery = `
+        INSERT INTO client_portal_access (client_id, is_active, created_at, updated_at)
+        VALUES ($1, TRUE, NOW(), NOW())
+        ON CONFLICT (client_id) DO UPDATE SET is_active = TRUE, updated_at = NOW()
+      `;
+      await client.query(portalAccessQuery, [invitation.client_id]);
+
       await client.query("COMMIT");
 
       // Return complete user data with client information
@@ -327,6 +335,27 @@ class TokenService {
   // Get client permissions
   async getClientPermissions(clientId: string): Promise<string[]> {
     try {
+      // Check client status first - inactive clients get read-only access
+      const clientStatusQuery = `
+        SELECT status
+        FROM clients
+        WHERE id = $1
+        LIMIT 1
+      `;
+      const clientStatusResult = await db.query(clientStatusQuery, [clientId]);
+
+      if (clientStatusResult.rows.length > 0 && clientStatusResult.rows[0].status === 'inactive') {
+        // Inactive clients get read-only permissions (can view history but not create new content)
+        return [
+          "read:services",
+          "read:requests",    // Can view past requests
+          "read:projects",
+          "read:invoices",
+          "read:chats",       // Can view chat history
+          "read:profile"
+        ];
+      }
+
       // Check if client has active portal access
       const accessQuery = `
         SELECT is_active
@@ -336,8 +365,25 @@ class TokenService {
       `;
       const accessResult = await db.query(accessQuery, [clientId]);
 
-      // If no active access, return minimal permissions
-      if (!accessResult.rows.length || !accessResult.rows[0].is_active) {
+      // If no record exists, grant full default permissions (new clients)
+      // If record exists but is_active is false, return minimal permissions (disabled clients)
+      if (!accessResult.rows.length) {
+        // No record = new client, grant full access
+        return [
+          "read:services",
+          "create:requests",
+          "read:requests",
+          "read:projects",
+          "read:invoices",
+          "read:chats",
+          "write:chats",
+          "read:profile",
+          "write:profile"
+        ];
+      }
+      
+      if (!accessResult.rows[0].is_active) {
+        // Record exists but disabled = restricted access
         return [
           "read:services",
           "read:profile"

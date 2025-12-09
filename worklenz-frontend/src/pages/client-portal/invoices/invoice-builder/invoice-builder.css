@@ -1,0 +1,39 @@
+/* Invoice Builder Styles */
+
+.invoice-builder-table .ant-table-cell {
+  padding: 8px 12px !important;
+  vertical-align: middle;
+}
+
+.invoice-builder-table .ant-input-number,
+.invoice-builder-table .ant-input {
+  background: transparent;
+}
+
+.invoice-builder-table .ant-input-number:hover,
+.invoice-builder-table .ant-input:hover {
+  background: var(--ant-color-bg-container);
+}
+
+.invoice-builder-table .ant-input-number-input {
+  text-align: right;
+}
+
+/* Summary card styling */
+.invoice-summary-card {
+  position: sticky;
+  top: 24px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .invoice-builder-container {
+    flex-direction: column;
+  }
+  
+  .invoice-builder-left,
+  .invoice-builder-right {
+    min-width: 100% !important;
+    flex: 1 !important;
+  }
+}

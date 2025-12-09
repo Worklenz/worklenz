@@ -10,6 +10,7 @@ import {
   PlusOutlined,
   LinkOutlined,
   CopyOutlined,
+  MailOutlined,
 } from '@/shared/antd-imports';
 import {
   Button,
@@ -50,10 +51,11 @@ import {
 import { ClientPortalClient } from '@/api/client-portal/client-portal-api';
 import {
   useGetClientsQuery,
-  useDeleteClientMutation,
-  useBulkDeleteClientsMutation,
+  useDeactivateClientMutation,
+  useBulkDeactivateClientsMutation,
   useBulkUpdateClientsMutation,
   useGenerateClientInvitationLinkMutation,
+  useResendClientInvitationMutation,
 } from '@/api/client-portal/client-portal-api';
 import { TempClientPortalClientType } from '@/types/client-portal/temp-client-portal.types';
 import { useState } from 'react';
@@ -99,10 +101,11 @@ const ClientsTable = () => {
     sortOrder: filters.sortOrder,
   });
 
-  const [deleteClient, { isLoading: isDeleting }] = useDeleteClientMutation();
-  const [bulkDeleteClients, { isLoading: isBulkDeleting }] = useBulkDeleteClientsMutation();
+  const [deactivateClient, { isLoading: isDeactivating }] = useDeactivateClientMutation();
+  const [bulkDeactivateClients, { isLoading: isBulkDeactivating }] = useBulkDeactivateClientsMutation();
   const [bulkUpdateClients, { isLoading: isBulkUpdating }] = useBulkUpdateClientsMutation();
   const [generateInvitationLink] = useGenerateClientInvitationLinkMutation();
+  const [resendInvitation, { isLoading: isResendingInvitation }] = useResendClientInvitationMutation();
 
   // Use API data - handle the ServerResponse wrapper
   const displayClients = clientsData?.body?.clients || [];
@@ -193,50 +196,50 @@ const ClientsTable = () => {
     setSelectedRowKeys([]);
   };
 
-  // Handle delete client
-  const handleDeleteClient = async (clientId: string) => {
+  // Handle deactivate client
+  const handleDeactivateClient = async (clientId: string) => {
     try {
-      await deleteClient(clientId).unwrap();
-      message.success(t('deleteClientSuccessMessage') || 'Client deleted successfully');
+      await deactivateClient(clientId).unwrap();
+      message.success(t('deactivateClientSuccessMessage') || 'Client deactivated successfully');
     } catch (error) {
-      message.error(t('deleteClientErrorMessage') || 'Failed to delete client');
+      message.error(t('deactivateClientErrorMessage') || 'Failed to deactivate client');
     }
   };
 
-  // Handle delete client with confirmation
-  const handleDeleteClientWithConfirmation = (clientId: string) => {
+  // Handle deactivate client with confirmation
+  const handleDeactivateClientWithConfirmation = (clientId: string) => {
     // Create a temporary confirmation dialog
-    const confirmDelete = () => {
-      handleDeleteClient(clientId);
+    const confirmDeactivate = () => {
+      handleDeactivateClient(clientId);
     };
 
     // Use Ant Design's Modal.confirm for better UX
     Modal.confirm({
-      title: t('deleteConfirmationTitle') || 'Delete Client',
+      title: t('deactivateConfirmationTitle') || 'Deactivate Client',
       content:
-        t('deleteConfirmationDescription') ||
-        'Are you sure you want to delete this client? This action cannot be undone.',
-      okText: t('deleteConfirmationOk') || 'Delete',
-      cancelText: t('deleteConfirmationCancel') || 'Cancel',
+        t('deactivateConfirmationDescription') ||
+        'Are you sure you want to deactivate this client? They will lose access to the portal, but all data will be preserved.',
+      okText: t('deactivateConfirmationOk') || 'Deactivate',
+      cancelText: t('deactivateConfirmationCancel') || 'Cancel',
       okType: 'danger',
-      onOk: confirmDelete,
+      onOk: confirmDeactivate,
     });
   };
 
-  // Handle bulk delete
-  const handleBulkDelete = async () => {
+  // Handle bulk deactivate
+  const handleBulkDeactivate = async () => {
     if (selectedRowKeys.length === 0) {
-      message.warning(t('selectClientsToDelete') || 'Please select clients to delete');
+      message.warning(t('selectClientsToDeactivate') || 'Please select clients to deactivate');
       return;
     }
 
     try {
       setBulkActionLoading(true);
-      await bulkDeleteClients({ client_ids: selectedRowKeys }).unwrap();
-      message.success(t('bulkDeleteSuccessMessage') || 'Selected clients deleted successfully');
+      await bulkDeactivateClients({ client_ids: selectedRowKeys }).unwrap();
+      message.success(t('bulkDeactivateSuccessMessage') || 'Selected clients deactivated successfully');
       setSelectedRowKeys([]);
     } catch (error) {
-      message.error(t('bulkDeleteErrorMessage') || 'Failed to delete selected clients');
+      message.error(t('bulkDeactivateErrorMessage') || 'Failed to deactivate selected clients');
     } finally {
       setBulkActionLoading(false);
     }
@@ -322,6 +325,23 @@ const ClientsTable = () => {
     setInviteModalOpen(false);
     setInvitationLink('');
     setCurrentClientId('');
+  };
+
+  // Handle resend invitation email
+  const handleResendInvitation = async (clientId: string) => {
+    try {
+      const result = await resendInvitation({ clientId }).unwrap();
+
+      if (result.body?.emailSent) {
+        message.success(t('resendInvitationSuccess') || 'Invitation email sent successfully!');
+        refetch();
+      } else {
+        message.error(t('resendInvitationError') || 'Failed to send invitation email');
+      }
+    } catch (error) {
+      console.error('Failed to resend invitation:', error);
+      message.error(t('resendInvitationError') || 'Failed to send invitation email');
+    }
   };
 
   // Handle row selection
@@ -410,10 +430,10 @@ const ClientsTable = () => {
       type: 'divider' as const,
     },
     {
-      key: 'delete',
-      label: t('deleteSelected') || 'Delete Selected',
+      key: 'deactivate',
+      label: t('deactivateSelected') || 'Deactivate Selected',
       danger: true,
-      onClick: handleBulkDelete,
+      onClick: handleBulkDeactivate,
     },
   ];
 
@@ -460,14 +480,24 @@ const ClientsTable = () => {
         },
       });
     } else if (portalStatus.status === 'invited') {
-      menuItems.push({
-        key: 'copyInvite',
-        label: t('copyInviteLinkTooltip') || 'Copy Invitation Link',
-        icon: <CopyOutlined />,
-        onClick: () => {
-          handleGenerateInviteLink(record.id);
+      menuItems.push(
+        {
+          key: 'resendEmail',
+          label: t('resendInviteEmailTooltip') || 'Resend Invite Email',
+          icon: <MailOutlined />,
+          onClick: () => {
+            handleResendInvitation(record.id);
+          },
         },
-      });
+        {
+          key: 'copyInvite',
+          label: t('copyInviteLinkTooltip') || 'Copy Invitation Link',
+          icon: <CopyOutlined />,
+          onClick: () => {
+            handleGenerateInviteLink(record.id);
+          },
+        }
+      );
     }
 
     menuItems.push(
@@ -491,12 +521,12 @@ const ClientsTable = () => {
         type: 'divider' as const,
       },
       {
-        key: 'delete',
-        label: t('deleteTooltip') || 'Delete Client',
+        key: 'deactivate',
+        label: t('deactivateTooltip') || 'Deactivate Client',
         icon: <DeleteOutlined />,
         danger: true,
         onClick: () => {
-          handleDeleteClientWithConfirmation(record.id);
+          handleDeactivateClientWithConfirmation(record.id);
         },
       }
     );
@@ -602,17 +632,16 @@ const ClientsTable = () => {
           />
 
           <Select
-            placeholder={t('portalStatusFilterPlaceholder') || 'Filter by portal status'}
+            placeholder={t('statusFilterPlaceholder') || 'Filter by status'}
             allowClear
             style={{ width: 180 }}
             onChange={handleStatusFilter}
             value={filters.status}
           >
             <Option value="all">{t('statusAll') || 'All'}</Option>
-            <Option value="active">{t('portalStatus.active') || 'Active'}</Option>
-            <Option value="invited">{t('portalStatus.invited') || 'Invited'}</Option>
-            <Option value="not_invited">{t('portalStatus.not_invited') || 'Not Invited'}</Option>
-            <Option value="expired">{t('portalStatus.expired') || 'Expired'}</Option>
+            <Option value="active">{t('statusActive') || 'Active'}</Option>
+            <Option value="inactive">{t('statusInactive') || 'Inactive'}</Option>
+            <Option value="pending">{t('statusPending') || 'Pending'}</Option>
           </Select>
 
           <Button icon={<ReloadOutlined />} onClick={handleRefresh} loading={isLoading}>

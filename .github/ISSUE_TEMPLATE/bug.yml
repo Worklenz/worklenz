@@ -1,0 +1,32 @@
+name: Bug Report
+description: Report a bug or issue.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      placeholder: 1. …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version / Environment
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Screenshots

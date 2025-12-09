@@ -9,8 +9,8 @@ import logger from '@/utils/errorLogger';
 
 const TaskListDueDateCell = ({ task }: { task: IProjectTask }) => {
   const { socket } = useSocket();
-  const dueDayjs = task.end_date ? dayjs(task.end_date) : null;
-  const startDayjs = task.start_date ? dayjs(task.start_date) : null;
+  const dueDayjs = task.end_date ? dayjs(task.end_date, 'YYYY-MM-DD') : null;
+  const startDayjs = task.start_date ? dayjs(task.start_date, 'YYYY-MM-DD') : null;
 
   const handleEndDateChange = (date: Dayjs | null) => {
     try {
