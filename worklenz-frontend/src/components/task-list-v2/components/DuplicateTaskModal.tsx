@@ -30,7 +30,7 @@ const DuplicateTaskModal: React.FC<DuplicateTaskModalProps> = ({
   taskId,
   projectId: propProjectId,
 }) => {
-  const { t } = useTranslation('tasks');
+  const { t } = useTranslation('task-duplicate');
   const dispatch = useAppDispatch();
 
   const isDarkMode = useAppSelector(state => state.themeReducer?.mode === 'dark');

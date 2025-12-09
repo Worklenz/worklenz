@@ -21,6 +21,7 @@ import {
   ITaskListConfigV2,
   ITaskListV3Response,
 } from '@/api/tasks/tasks.api.service';
+import duplicateTaskApiService from '@/api/tasks/task-duplicate.api.service';
 import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';
 import logger from '@/utils/errorLogger';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
@@ -411,9 +412,9 @@ export const duplicateTask = createAsyncThunk(
   'taskManagement/duplicateTask',
   async ({projectId, taskId, duplicateOptions}: {projectId: string, taskId: string, duplicateOptions: any },{ rejectWithValue }) => {
     try {
-      console.log('Duplicate Task Thunk', projectId, taskId, duplicateOptions);
-      // const response = await tasksApiService.refreshTaskProgress(projectId);
-      // return response.body;
+      // console.log('Duplicate Task Thunk', projectId, taskId, duplicateOptions);
+      const response = await duplicateTaskApiService.duplicate({task_id: taskId, project_id: projectId, options: duplicateOptions});
+      return response.body;
     } catch (error) {
       logger.error('Failed to duplicate task', error);
       if (error instanceof Error) {
