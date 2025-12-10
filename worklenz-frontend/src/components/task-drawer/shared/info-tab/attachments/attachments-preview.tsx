@@ -8,6 +8,7 @@ import {
   Typography,
   Popconfirm,
   message,
+  dayjs,
 } from '@/shared/antd-imports';
 import {
   EyeOutlined,
@@ -174,7 +175,7 @@ const AttachmentsPreview = ({
                   <p style={{ margin: 0 }}>{attachment.name}</p>
                   <p style={{ margin: 0 }}>{attachment.size}</p>
                   <p style={{ margin: 0 }}>
-                    {attachment.created_at ? new Date(attachment.created_at).toLocaleString() : ''}
+                    {attachment.created_at ? dayjs(attachment.created_at).format('MMM D, YYYY h:mm A') : ''}
                   </p>
                 </div>
               }

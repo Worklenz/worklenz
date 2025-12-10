@@ -57,8 +57,12 @@ const KanbanTaskCard: React.FC<TaskRowProps> = ({
   // Format due date
   const formatDueDate = (dateString?: string) => {
     if (!dateString) return null;
-    const date = new Date(dateString);
+    // Parse date as local date to avoid timezone issues (e.g., "2024-02-10" stays as Feb 10)
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     const now = new Date();
+    // Reset time to midnight for accurate day comparison
+    now.setHours(0, 0, 0, 0);
     const diffTime = date.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     if (diffDays < 0) {
