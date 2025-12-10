@@ -382,7 +382,6 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     } catch (error) {
       logger.error('Error open duplicate task modal:', error);
     }finally {
-      dispatch(setDuplicateTask({}));
       onClose();
     }
   }, [projectId, task.id, onClose, t]);

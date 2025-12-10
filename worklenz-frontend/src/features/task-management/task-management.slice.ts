@@ -416,7 +416,7 @@ export const duplicateTask = createAsyncThunk(
     try {
       // console.log('Duplicate Task Thunk', projectId, taskId, duplicateOptions);
       const response = await duplicateTaskApiService.duplicate({task_id: taskId, project_id: projectId, options: duplicateOptions});
-      return response.body;
+      return response;
     } catch (error) {
       logger.error('Failed to duplicate task', error);
       if (error instanceof Error) {

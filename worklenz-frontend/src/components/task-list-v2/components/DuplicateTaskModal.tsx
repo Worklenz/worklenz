@@ -57,14 +57,14 @@ const DuplicateTaskModal: React.FC<DuplicateTaskModalProps> = ({
   const handleDuplicate = useCallback(async () => {
     setLoading(true);
     try {
-      await dispatch(
+      const res = await dispatch(
         duplicateTask({
           taskId:task.taskId as string,
           projectId: projectId as string,
           duplicateOptions: options, // exactly the JSON you want
         })
       ).unwrap();
-
+      console.log('Duplicate Task Response:', res);
       message.success(t('taskDuplicatedSuccess') || 'Task duplicated successfully');
       onClose();
     } catch {
