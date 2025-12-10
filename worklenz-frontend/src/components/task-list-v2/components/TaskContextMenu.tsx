@@ -15,6 +15,7 @@ import {
   deleteTask,
   fetchTasksV3,
   IGroupBy,
+  setDuplicateTask,
   setDuplicateTaskModalStatus,
   toggleTaskExpansion,
   updateTaskAssignees,
@@ -376,10 +377,12 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     if (!projectId || !task.id) return;
 
     try {
+      dispatch(setDuplicateTask({taskId: task.id, title: task.title}));
       dispatch(setDuplicateTaskModalStatus(true));
     } catch (error) {
       logger.error('Error open duplicate task modal:', error);
     }finally {
+      dispatch(setDuplicateTask({}));
       onClose();
     }
   }, [projectId, task.id, onClose, t]);

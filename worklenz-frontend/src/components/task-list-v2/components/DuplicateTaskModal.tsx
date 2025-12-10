@@ -20,14 +20,12 @@ const { Title, Text } = Typography;
 interface DuplicateTaskModalProps {
   open: boolean;
   onClose: () => void;
-  taskId: string;
   projectId?: string; // optional
 }
 
 const DuplicateTaskModal: React.FC<DuplicateTaskModalProps> = ({
   open,
   onClose,
-  taskId,
   projectId: propProjectId,
 }) => {
   const { t } = useTranslation('task-duplicate');
@@ -36,7 +34,8 @@ const DuplicateTaskModal: React.FC<DuplicateTaskModalProps> = ({
   const isDarkMode = useAppSelector(state => state.themeReducer?.mode === 'dark');
   const currentProjectId = useAppSelector(state => state.projectReducer.projectId);
   const projectId = propProjectId || currentProjectId;
-
+  const task = useAppSelector(state => state.taskManagement.duplicateTask);
+  
   // Exactly your 8 options – change defaults if you want
   const [options, setOptions] = useState<Record<string, boolean>>({
     subtasks: true,
@@ -60,7 +59,7 @@ const DuplicateTaskModal: React.FC<DuplicateTaskModalProps> = ({
     try {
       await dispatch(
         duplicateTask({
-          taskId,
+          taskId:task.taskId as string,
           projectId: projectId as string,
           duplicateOptions: options, // exactly the JSON you want
         })
@@ -73,7 +72,7 @@ const DuplicateTaskModal: React.FC<DuplicateTaskModalProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [dispatch, taskId, projectId, options, onClose, t]);
+  }, [dispatch, task.taskId, projectId, options, onClose, t]);
 
   // Your exact list in the order you wrote
   const checkboxItems = [
@@ -110,7 +109,7 @@ const DuplicateTaskModal: React.FC<DuplicateTaskModalProps> = ({
       className={isDarkMode ? 'dark-modal' : ''}
     >
       <Text className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-        {t('duplicateTaskDescription') || 'Select items to copy to the new task:'}
+        {task.title || 'Task Title'}
       </Text>
 
       <div className="mt-6">

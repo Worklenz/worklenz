@@ -13,6 +13,7 @@ import {
   TaskGroup,
   TaskGrouping,
   getSortOrderField,
+  DuplicateTask,
 } from '@/types/task-management.types';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
 import { RootState } from '@/app/store';
@@ -75,6 +76,7 @@ const initialState: TaskManagementState = {
   sortField: '',
   sortOrder: 'ASC',
   isOpenDuplicateTaskModal: false,
+  duplicateTask: {}
 };
 
 // Async thunk to fetch tasks from API
@@ -801,9 +803,11 @@ const taskManagementSlice = createSlice({
     setArchived: (state, action: PayloadAction<boolean>) => {
       state.archived = action.payload;
     },
-    setDuplicateTaskModalStatus
-    : (state, action: PayloadAction<boolean>) => {      
+    setDuplicateTaskModalStatus: (state, action: PayloadAction<boolean>) => {      
       state.isOpenDuplicateTaskModal = action.payload;
+    },
+    setDuplicateTask: (state, action: PayloadAction<DuplicateTask>) => {      
+      state.duplicateTask = action.payload;
     },
     toggleArchived: state => {
       state.archived = !state.archived;
@@ -1217,6 +1221,7 @@ export const {
   setSearch,
   setArchived,
   setDuplicateTaskModalStatus,
+  setDuplicateTask,
   toggleArchived,
   setSortField,
   setSortOrder,
