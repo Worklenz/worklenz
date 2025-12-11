@@ -60,6 +60,11 @@ export default class ClientPortalAttachmentController {
       const uniqueFileName = generateUniqueFilename(fileName, "client");
       const fileExtension = getFileExtension(fileName);
 
+      // Validate and normalize purpose to match database constraint
+      // Database allows: 'request', 'chat', 'avatar', 'document', 'general'
+      const allowedPurposes = ['request', 'chat', 'avatar', 'document', 'general'];
+      const normalizedPurpose = allowedPurposes.includes(purpose) ? purpose : 'general';
+
       // Map purpose to storage purpose type
       const storagePurposeMap: Record<string, ClientPortalStoragePurpose> = {
         "request": "request-attachments",
@@ -69,7 +74,7 @@ export default class ClientPortalAttachmentController {
         "general": "general"
       };
 
-      const storagePurpose = storagePurposeMap[purpose] || "general";
+      const storagePurpose = storagePurposeMap[normalizedPurpose] || "general";
 
       // Generate storage key with environment-based directory structure
       // Structure: {env}/client-portal/{purpose}/{organizationId}/{clientId}/{filename}
@@ -114,7 +119,7 @@ export default class ClientPortalAttachmentController {
           fileType || "application/octet-stream",
           fileExtension,
           fileSizeBytes,
-          purpose,
+          normalizedPurpose,
           clientId
         ]);
 
@@ -125,7 +130,7 @@ export default class ClientPortalAttachmentController {
           attachmentId: attachment.id,
           fileName,
           fileType,
-          purpose,
+          purpose: normalizedPurpose,
           storageKey,
           fileSizeBytes
         });
@@ -329,9 +334,13 @@ export default class ClientPortalAttachmentController {
 
       const queryParams: any[] = [clientId, organizationId];
 
+      // Validate purpose if provided
       if (purpose) {
-        query += ` AND purpose = $3`;
-        queryParams.push(purpose);
+        const allowedPurposes = ['request', 'chat', 'avatar', 'document', 'general'];
+        if (allowedPurposes.includes(purpose as string)) {
+          query += ` AND purpose = $3`;
+          queryParams.push(purpose);
+        }
       }
 
       query += ` ORDER BY created_at DESC LIMIT 50`;
