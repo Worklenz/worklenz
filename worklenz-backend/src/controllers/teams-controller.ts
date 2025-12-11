@@ -61,7 +61,7 @@ export default class TeamsController extends WorklenzControllerBase {
              (SELECT name FROM teams WHERE id = team_id) AS team_name,
              (SELECT name FROM users WHERE id = (SELECT user_id FROM teams WHERE id = team_id)) AS team_owner
       FROM email_invitations
-      WHERE email = (SELECT email FROM users WHERE id = $1);
+      WHERE LOWER(email) = LOWER((SELECT email FROM users WHERE id = $1));
     `;
 
     const result = await db.query(q, [req.user?.id]);

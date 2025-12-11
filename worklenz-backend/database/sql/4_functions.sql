@@ -4931,7 +4931,7 @@ DECLARE
     _google_id       TEXT;
 BEGIN
     _name = (_body ->> 'displayName')::TEXT;
-    _email = (_body ->> 'email')::TEXT;
+    _email = LOWER(TRIM((_body ->> 'email')::TEXT));
     _google_id = (_body ->> 'id');
 
     INSERT INTO users (name, email, google_id, timezone_id)
@@ -5009,8 +5009,8 @@ BEGIN
     _trimmed_name = TRIM((_body ->> 'name'));
     _trimmed_team_name = TRIM((_body ->> 'team_name'));
 
-    -- check user exists
-    IF EXISTS(SELECT email FROM users WHERE email = _trimmed_email)
+    -- check user exists (case-insensitive)
+    IF EXISTS(SELECT email FROM users WHERE LOWER(email) = _trimmed_email)
     THEN
         RAISE 'EMAIL_EXISTS_ERROR:%', (_body ->> 'email');
     END IF;
@@ -5042,7 +5042,7 @@ BEGIN
         IF NOT EXISTS(SELECT id
                       FROM email_invitations
                       WHERE team_id = (_body ->> 'invited_team_id')::UUID
-                        AND email = _trimmed_email)
+                        AND LOWER(email) = _trimmed_email)
         THEN
             RAISE 'ERROR_INVALID_JOINING_EMAIL';
         END IF;
@@ -5065,7 +5065,7 @@ BEGIN
         UPDATE team_members SET user_id = (_user_id)::UUID WHERE id = (_body ->> 'team_member_id')::UUID;
         DELETE
         FROM email_invitations
-        WHERE email = _trimmed_email
+        WHERE LOWER(email) = _trimmed_email
           AND team_member_id = (_body ->> 'team_member_id')::UUID;
     END IF;
 
