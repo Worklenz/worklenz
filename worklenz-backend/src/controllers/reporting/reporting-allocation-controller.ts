@@ -947,11 +947,11 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const projectIds = projects.map(p => `'${p}'`).join(",");
     
     const categories = (req.body.categories || []) as string[];
-    const noCategory = req.body.noCategory || false;
+    const noCategory = req.body.selectNoCategory || req.body.noCategory || false;
     const { type, billable } = req.body;
 
     if (!teamIds || !projectIds.length)
-      return res.status(200).send(new ServerResponse(true, { users: [], projects: [] }));
+      return res.status(200).send(new ServerResponse(true, []));
 
     const { duration, date_range } = req.body;
 
