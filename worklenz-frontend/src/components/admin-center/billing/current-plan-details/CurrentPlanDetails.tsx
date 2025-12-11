@@ -210,8 +210,9 @@ const CurrentPlanDetails = () => {
 
   const shouldShowRedeemButton = useMemo(() => {
     if (billingInfo?.trial_in_progress) return true;
+    if (billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.FREE) return true;
     return billingInfo?.ltd_users ? billingInfo.ltd_users < LTD_USER_LIMIT : false;
-  }, [billingInfo?.trial_in_progress, billingInfo?.ltd_users]);
+  }, [billingInfo?.trial_in_progress, billingInfo?.subscription_type, billingInfo?.ltd_users]);
 
   const showChangeButton = useMemo(() => {
     return checkSubscriptionStatus([SUBSCRIPTION_STATUS.ACTIVE, SUBSCRIPTION_STATUS.PASTDUE]);
