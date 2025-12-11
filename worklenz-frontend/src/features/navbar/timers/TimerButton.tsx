@@ -1,4 +1,4 @@
-import { ClockCircleOutlined, StopOutlined } from '@/shared/antd-imports';
+import { ClockCircleOutlined, PlayCircleFilled } from '@/shared/antd-imports';
 import {
   Badge,
   Button,
@@ -10,20 +10,22 @@ import {
   Divider,
   theme,
 } from '@/shared/antd-imports';
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { taskTimeLogsApiService, IRunningTimer } from '@/api/tasks/task-time-logs.api.service';
+import { taskTimeLogsApiService, IRunningTimer, IRecentTimeLog } from '@/api/tasks/task-time-logs.api.service';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { updateTaskTimeTracking } from '@/features/tasks/tasks.slice';
-import { format, differenceInSeconds, isValid, parseISO } from 'date-fns';
+import { format, differenceInSeconds, isValid, parseISO, formatDistanceToNow } from 'date-fns';
+import { colors } from '@/styles/colors';
 
 const { Text } = Typography;
 const { useToken } = theme;
 
 const TimerButton = () => {
   const [runningTimers, setRunningTimers] = useState<IRunningTimer[]>([]);
+  const [recentTimeLogs, setRecentTimeLogs] = useState<IRecentTimeLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentTimes, setCurrentTimes] = useState<Record<string, string>>({});
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -39,23 +41,34 @@ const TimerButton = () => {
     setError(message);
   };
 
-  const fetchRunningTimers = useCallback(async () => {
+  const fetchTimerData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await taskTimeLogsApiService.getRunningTimers();
+      const [timersResponse, recentLogsResponse] = await Promise.all([
+        taskTimeLogsApiService.getRunningTimers(),
+        taskTimeLogsApiService.getRecentTimeLogs(),
+      ]);
 
-      if (response && response.done) {
-        const timers = Array.isArray(response.body) ? response.body : [];
+      if (timersResponse && timersResponse.done) {
+        const timers = Array.isArray(timersResponse.body) ? timersResponse.body : [];
         setRunningTimers(timers);
       } else {
         logError('Invalid response from getRunningTimers API');
         setRunningTimers([]);
       }
+
+      if (recentLogsResponse && recentLogsResponse.done) {
+        const logs = Array.isArray(recentLogsResponse.body) ? recentLogsResponse.body : [];
+        setRecentTimeLogs(logs);
+      } else {
+        setRecentTimeLogs([]);
+      }
     } catch (error) {
-      logError('Error fetching running timers', error);
+      logError('Error fetching timer data', error);
       setRunningTimers([]);
+      setRecentTimeLogs([]);
     } finally {
       setLoading(false);
     }
@@ -94,17 +107,17 @@ const TimerButton = () => {
   }, [runningTimers]);
 
   useEffect(() => {
-    fetchRunningTimers();
+    fetchTimerData();
 
     // If socket is not available, fall back to periodic polling
     if (!socket) {
       const pollInterval = setInterval(() => {
-        fetchRunningTimers();
+        fetchTimerData();
       }, 30000); // Poll every 30 seconds as fallback
 
       return () => clearInterval(pollInterval);
     }
-  }, [fetchRunningTimers, socket]);
+  }, [fetchTimerData, socket]);
 
   useEffect(() => {
     if (runningTimers.length > 0) {
@@ -127,8 +140,8 @@ const TimerButton = () => {
         const parsed = typeof data === 'string' ? JSON.parse(data) : data;
         const { id } = parsed || {};
         if (id) {
-          // Refresh the running timers list when a new timer is started
-          fetchRunningTimers();
+          // Refresh both running timers and recent logs when a new timer is started
+          fetchTimerData();
         }
       } catch (error) {
         logError('Error parsing timer start event', error);
@@ -140,8 +153,8 @@ const TimerButton = () => {
         const parsed = typeof data === 'string' ? JSON.parse(data) : data;
         const { id } = parsed || {};
         if (id) {
-          // Refresh the running timers list when a timer is stopped
-          fetchRunningTimers();
+          // Refresh both running timers and recent logs when a timer is stopped
+          fetchTimerData();
         }
       } catch (error) {
         logError('Error parsing timer stop event', error);
@@ -150,8 +163,8 @@ const TimerButton = () => {
 
     const handleProjectUpdates = () => {
       try {
-        // Refresh timers when project updates are available
-        fetchRunningTimers();
+        // Refresh timers and recent logs when project updates are available
+        fetchTimerData();
       } catch (error) {
         logError('Error handling project updates', error);
       }
@@ -174,7 +187,7 @@ const TimerButton = () => {
     } catch (error) {
       logError('Error setting up socket listeners', error);
     }
-  }, [socket, fetchRunningTimers]);
+  }, [socket, fetchTimerData]);
 
   const hasRunningTimers = () => {
     return Array.isArray(runningTimers) && runningTimers.length > 0;
@@ -189,7 +202,7 @@ const TimerButton = () => {
       console.warn('[TimerButton] Socket not available for stopping timer - using fallback method');
       // Fallback: just update the local state and dispatch the action
       dispatch(updateTaskTimeTracking({ taskId, timeTracking: null }));
-      fetchRunningTimers(); // Refresh the list
+      fetchTimerData(); // Refresh the list
       return;
     }
 
@@ -206,6 +219,40 @@ const TimerButton = () => {
     }
   };
 
+  const handleStartTimerForTask = (taskId: string) => {
+    if (!socket) {
+      console.warn('[TimerButton] Socket not available for starting timer');
+      return;
+    }
+
+    if (!taskId) {
+      logError('Invalid task ID for starting timer');
+      return;
+    }
+
+    try {
+      socket.emit(SocketEvents.TASK_TIMER_START.toString(), JSON.stringify({ task_id: taskId }));
+      dispatch(updateTaskTimeTracking({ taskId, timeTracking: Date.now() }));
+      // Refresh to show updated state
+      fetchTimerData();
+    } catch (error) {
+      logError(`Error starting timer for task ${taskId}`, error);
+    }
+  };
+
+  const renderStopIcon = () => {
+    return (
+      <span
+        className="nz-icon"
+        style={{ fontSize: 8, position: 'relative', top: -1, left: 0, right: 0, bottom: 0 }}
+      >
+        <svg viewBox="0 0 1024 1024" width="1em" height="1em" fill="currentColor">
+          <path d="M864 64H160C107 64 64 107 64 160v704c0 53 43 96 96 96h704c53 0 96-43 96-96V160c0-53-43-96-96-96z"></path>
+        </svg>
+      </span>
+    );
+  };
+
   const renderDropdownContent = () => {
     try {
       if (error) {
@@ -216,11 +263,14 @@ const TimerButton = () => {
         );
       }
 
+      const hasRunning = Array.isArray(runningTimers) && runningTimers.length > 0;
+      const hasRecent = Array.isArray(recentTimeLogs) && recentTimeLogs.length > 0;
+
       return (
         <div
           style={{
             width: 350,
-            maxHeight: 400,
+            maxHeight: 500,
             overflow: 'auto',
             backgroundColor: token.colorBgElevated,
             borderRadius: token.borderRadius,
@@ -228,107 +278,258 @@ const TimerButton = () => {
             border: `1px solid ${token.colorBorderSecondary}`,
           }}
         >
-          {!Array.isArray(runningTimers) || runningTimers.length === 0 ? (
-            <div style={{ padding: 16, textAlign: 'center' }}>
-              <Text type="secondary">No running timers</Text>
-            </div>
-          ) : (
-            <List
-              dataSource={runningTimers}
-              renderItem={timer => {
-                if (!timer || !timer.task_id) return null;
+          {/* Running Timers Section */}
+          {hasRunning && (
+            <>
+              <div
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: token.colorFillQuaternary,
+                  borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                }}
+              >
+                <Text strong style={{ fontSize: 12, color: token.colorTextSecondary }}>
+                  RUNNING TIMERS
+                </Text>
+              </div>
+              <List
+                dataSource={runningTimers}
+                renderItem={timer => {
+                  if (!timer || !timer.task_id) return null;
 
-                return (
-                  <List.Item
-                    style={{
-                      padding: '12px 16px',
-                      borderBottom: `1px solid ${token.colorBorderSecondary}`,
-                      backgroundColor: 'transparent',
-                    }}
-                  >
-                    <div style={{ width: '100%' }}>
-                      <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                        <Text strong style={{ fontSize: 14, color: token.colorText }}>
-                          {timer.task_name || 'Unnamed Task'}
-                        </Text>
-                        <div
-                          style={{
-                            display: 'inline-block',
-                            backgroundColor: token.colorPrimaryBg,
-                            color: token.colorPrimary,
-                            padding: '2px 8px',
-                            borderRadius: token.borderRadiusSM,
-                            fontSize: 11,
-                            fontWeight: 500,
-                            marginTop: 2,
-                          }}
-                        >
-                          {timer.project_name || 'Unnamed Project'}
-                        </div>
-                        {timer.parent_task_name && (
-                          <Text type="secondary" style={{ fontSize: 11 }}>
-                            Parent: {timer.parent_task_name}
-                          </Text>
-                        )}
-                        <div
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}
-                        >
-                          <div style={{ flex: 1 }}>
-                            <div
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 8,
-                                marginBottom: 4,
-                              }}
-                            >
-                              <Text type="secondary" style={{ fontSize: 11 }}>
-                                Started:{' '}
-                                {timer.start_time
-                                  ? format(parseISO(timer.start_time), 'HH:mm')
-                                  : '--:--'}
-                              </Text>
-                              <Text
-                                strong
-                                style={{
-                                  fontSize: 14,
-                                  color: token.colorPrimary,
-                                  fontFamily: 'monospace',
-                                }}
-                              >
-                                {currentTimes[timer.task_id] || '00:00:00'}
-                              </Text>
-                            </div>
-                          </div>
-                          <Button
-                            size="small"
-                            icon={<StopOutlined />}
-                            onClick={e => {
-                              e.stopPropagation();
-                              handleStopTimer(timer.task_id);
-                            }}
+                  return (
+                    <List.Item
+                      style={{
+                        padding: '12px 16px',
+                        borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                        backgroundColor: 'transparent',
+                      }}
+                    >
+                      <div style={{ width: '100%' }}>
+                        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                          <div
                             style={{
-                              backgroundColor: token.colorErrorBg,
-                              borderColor: token.colorError,
-                              color: token.colorError,
-                              fontWeight: 500,
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              gap: 8,
+                              width: '100%',
                             }}
                           >
-                            Stop
-                          </Button>
-                        </div>
-                      </Space>
-                    </div>
-                  </List.Item>
-                );
-              }}
-            />
+                            <Text
+                              strong
+                              style={{
+                                fontSize: 14,
+                                color: token.colorText,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                flex: 1,
+                                minWidth: 0,
+                              }}
+                              title={timer.task_name || 'Unnamed Task'}
+                            >
+                              {timer.task_name || 'Unnamed Task'}
+                            </Text>
+                            <Text
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 500,
+                                color: token.colorTextSecondary,
+                                backgroundColor: token.colorFillQuaternary,
+                                padding: '2px 8px',
+                                borderRadius: token.borderRadiusSM,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                maxWidth: '40%',
+                                flexShrink: 0,
+                              }}
+                              title={timer.project_name || 'Unnamed Project'}
+                            >
+                              {timer.project_name || 'Unnamed Project'}
+                            </Text>
+                          </div>
+                          {timer.parent_task_name && (
+                            <Text type="secondary" style={{ fontSize: 11 }}>
+                              Parent: {timer.parent_task_name}
+                            </Text>
+                          )}
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <div style={{ flex: 1 }}>
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 8,
+                                  marginBottom: 4,
+                                }}
+                              >
+                                <Text type="secondary" style={{ fontSize: 11 }}>
+                                  Started:{' '}
+                                  {timer.start_time
+                                    ? format(parseISO(timer.start_time), 'HH:mm')
+                                    : '--:--'}
+                                </Text>
+                                <Text
+                                  strong
+                                  style={{
+                                    fontSize: 14,
+                                    color: token.colorPrimary,
+                                    fontFamily: 'monospace',
+                                  }}
+                                >
+                                  {currentTimes[timer.task_id] || '00:00:00'}
+                                </Text>
+                              </div>
+                            </div>
+                            <Button
+                              type="text"
+                              size="small"
+                              icon={renderStopIcon()}
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleStopTimer(timer.task_id);
+                              }}
+                              style={{
+                                color: token.colorError,
+                              }}
+                            />
+                          </div>
+                        </Space>
+                      </div>
+                    </List.Item>
+                  );
+                }}
+              />
+            </>
           )}
-          {hasRunningTimers() && (
+
+          {/* Recent Time Logs Section */}
+          {hasRecent && (
+            <>
+              {hasRunning && (
+                <Divider style={{ margin: 0, borderColor: token.colorBorderSecondary }} />
+              )}
+              <div
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: token.colorFillQuaternary,
+                  borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                }}
+              >
+                <Text strong style={{ fontSize: 12, color: token.colorTextSecondary }}>
+                  RECENT TIME LOGS
+                </Text>
+              </div>
+              <List
+                dataSource={recentTimeLogs}
+                renderItem={log => {
+                  if (!log || !log.task_id) return null;
+
+                  return (
+                    <List.Item
+                      style={{
+                        padding: '12px 16px',
+                        borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                        backgroundColor: 'transparent',
+                      }}
+                    >
+                      <div style={{ width: '100%' }}>
+                        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              gap: 8,
+                              width: '100%',
+                            }}
+                          >
+                            <Text
+                              strong
+                              style={{
+                                fontSize: 14,
+                                color: token.colorText,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                flex: 1,
+                                minWidth: 0,
+                              }}
+                              title={log.task_name || 'Unnamed Task'}
+                            >
+                              {log.task_name || 'Unnamed Task'}
+                            </Text>
+                            <Text
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 500,
+                                color: token.colorTextSecondary,
+                                backgroundColor: token.colorFillQuaternary,
+                                padding: '2px 8px',
+                                borderRadius: token.borderRadiusSM,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                maxWidth: '40%',
+                                flexShrink: 0,
+                              }}
+                              title={log.project_name || 'Unnamed Project'}
+                            >
+                              {log.project_name || 'Unnamed Project'}
+                            </Text>
+                          </div>
+                          {log.parent_task_name && (
+                            <Text type="secondary" style={{ fontSize: 11 }}>
+                              Parent: {log.parent_task_name}
+                            </Text>
+                          )}
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              marginTop: 4,
+                            }}
+                          >
+                            <Text type="secondary" style={{ fontSize: 11 }}>
+                              {formatDistanceToNow(parseISO(log.created_at), { addSuffix: true })}
+                            </Text>
+                            <Button
+                              type="text"
+                              size="small"
+                              icon={<PlayCircleFilled style={{ color: colors.skyBlue, fontSize: 20 }} />}
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleStartTimerForTask(log.task_id);
+                              }}
+                            />
+                          </div>
+                        </Space>
+                      </div>
+                    </List.Item>
+                  );
+                }}
+              />
+            </>
+          )}
+
+          {/* Empty State */}
+          {!hasRunning && !hasRecent && (
+            <div style={{ padding: 16, textAlign: 'center' }}>
+              <Text type="secondary">No timers or recent logs</Text>
+            </div>
+          )}
+
+          {/* Footer Summary */}
+          {(hasRunning || hasRecent) && (
             <>
               <Divider style={{ margin: 0, borderColor: token.colorBorderSecondary }} />
               <div
@@ -341,7 +542,9 @@ const TimerButton = () => {
                 }}
               >
                 <Text type="secondary" style={{ fontSize: 11 }}>
-                  {timerCount()} timer{timerCount() !== 1 ? 's' : ''} running
+                  {hasRunning && `${timerCount()} timer${timerCount() !== 1 ? 's' : ''} running`}
+                  {hasRunning && hasRecent && ' • '}
+                  {hasRecent && `${recentTimeLogs.length} recent log${recentTimeLogs.length !== 1 ? 's' : ''}`}
                 </Text>
               </div>
             </>
@@ -362,7 +565,7 @@ const TimerButton = () => {
     try {
       setDropdownOpen(open);
       if (open) {
-        fetchRunningTimers();
+        fetchTimerData();
       }
     } catch (error) {
       logError('Error handling dropdown open change', error);
@@ -403,7 +606,7 @@ const TimerButton = () => {
         <Button
           style={{ height: '62px', width: '60px' }}
           type="text"
-          icon={<ClockCircleOutlined style={{ fontSize: 20 }} />}
+          icon={<ClockCircleOutlined style={{ fontSize: 24 }} />}
           disabled
         />
       </Tooltip>
