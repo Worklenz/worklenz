@@ -258,7 +258,7 @@ const TimerButton = () => {
       if (error) {
         return (
           <div style={{ padding: 16, textAlign: 'center', width: 350 }}>
-            <Text type="danger">Error loading timers</Text>
+            <Text type="danger">{t('timerButton.errorLoadingTimers')}</Text>
           </div>
         );
       }
@@ -289,7 +289,7 @@ const TimerButton = () => {
                 }}
               >
                 <Text strong style={{ fontSize: 12, color: token.colorTextSecondary }}>
-                  RUNNING TIMERS
+                  {t('timerButton.runningTimers').toUpperCase()}
                 </Text>
               </div>
               <List
@@ -327,9 +327,9 @@ const TimerButton = () => {
                                 flex: 1,
                                 minWidth: 0,
                               }}
-                              title={timer.task_name || 'Unnamed Task'}
+                              title={timer.task_name || t('timerButton.unnamedTask')}
                             >
-                              {timer.task_name || 'Unnamed Task'}
+                              {timer.task_name || t('timerButton.unnamedTask')}
                             </Text>
                             <Text
                               style={{
@@ -345,14 +345,14 @@ const TimerButton = () => {
                                 maxWidth: '40%',
                                 flexShrink: 0,
                               }}
-                              title={timer.project_name || 'Unnamed Project'}
+                              title={timer.project_name || t('timerButton.unnamedProject')}
                             >
-                              {timer.project_name || 'Unnamed Project'}
+                              {timer.project_name || t('timerButton.unnamedProject')}
                             </Text>
                           </div>
                           {timer.parent_task_name && (
                             <Text type="secondary" style={{ fontSize: 11 }}>
-                              Parent: {timer.parent_task_name}
+                              {t('timerButton.parent')}: {timer.parent_task_name}
                             </Text>
                           )}
                           <div
@@ -372,7 +372,7 @@ const TimerButton = () => {
                                 }}
                               >
                                 <Text type="secondary" style={{ fontSize: 11 }}>
-                                  Started:{' '}
+                                  {t('timerButton.started')}:{' '}
                                   {timer.start_time
                                     ? format(parseISO(timer.start_time), 'HH:mm')
                                     : '--:--'}
@@ -425,7 +425,7 @@ const TimerButton = () => {
                 }}
               >
                 <Text strong style={{ fontSize: 12, color: token.colorTextSecondary }}>
-                  RECENT TIME LOGS
+                  {t('timerButton.recentTimeLogs').toUpperCase()}
                 </Text>
               </div>
               <List
@@ -463,9 +463,9 @@ const TimerButton = () => {
                                 flex: 1,
                                 minWidth: 0,
                               }}
-                              title={log.task_name || 'Unnamed Task'}
+                              title={log.task_name || t('timerButton.unnamedTask')}
                             >
-                              {log.task_name || 'Unnamed Task'}
+                              {log.task_name || t('timerButton.unnamedTask')}
                             </Text>
                             <Text
                               style={{
@@ -481,14 +481,14 @@ const TimerButton = () => {
                                 maxWidth: '40%',
                                 flexShrink: 0,
                               }}
-                              title={log.project_name || 'Unnamed Project'}
+                              title={log.project_name || t('timerButton.unnamedProject')}
                             >
-                              {log.project_name || 'Unnamed Project'}
+                              {log.project_name || t('timerButton.unnamedProject')}
                             </Text>
                           </div>
                           {log.parent_task_name && (
                             <Text type="secondary" style={{ fontSize: 11 }}>
-                              Parent: {log.parent_task_name}
+                              {t('timerButton.parent')}: {log.parent_task_name}
                             </Text>
                           )}
                           <div
@@ -524,7 +524,7 @@ const TimerButton = () => {
           {/* Empty State */}
           {!hasRunning && !hasRecent && (
             <div style={{ padding: 16, textAlign: 'center' }}>
-              <Text type="secondary">No timers or recent logs</Text>
+              <Text type="secondary">{t('timerButton.noTimersOrLogs')}</Text>
             </div>
           )}
 
@@ -542,9 +542,9 @@ const TimerButton = () => {
                 }}
               >
                 <Text type="secondary" style={{ fontSize: 11 }}>
-                  {hasRunning && `${timerCount()} timer${timerCount() !== 1 ? 's' : ''} running`}
+                  {hasRunning && t('timerButton.timerRunning', { count: timerCount() })}
                   {hasRunning && hasRecent && ' • '}
-                  {hasRecent && `${recentTimeLogs.length} recent log${recentTimeLogs.length !== 1 ? 's' : ''}`}
+                  {hasRecent && t('timerButton.recentLog', { count: recentTimeLogs.length })}
                 </Text>
               </div>
             </>
@@ -555,7 +555,7 @@ const TimerButton = () => {
       logError('Error rendering dropdown content', error);
       return (
         <div style={{ padding: 16, textAlign: 'center', width: 350 }}>
-          <Text type="danger">Error rendering timers</Text>
+          <Text type="danger">{t('timerButton.errorRenderingTimers')}</Text>
         </div>
       );
     }
@@ -581,7 +581,7 @@ const TimerButton = () => {
         open={dropdownOpen}
         onOpenChange={handleDropdownOpenChange}
       >
-        <Tooltip title="Running Timers">
+        <Tooltip title={t('timerButton.runningTimers')}>
           <Button
             style={{ height: '62px', width: '60px' }}
             type="text"
@@ -602,7 +602,7 @@ const TimerButton = () => {
   } catch (error) {
     logError('Error rendering TimerButton', error);
     return (
-      <Tooltip title="Timer Error">
+      <Tooltip title={t('timerButton.timerError')}>
         <Button
           style={{ height: '62px', width: '60px' }}
           type="text"
