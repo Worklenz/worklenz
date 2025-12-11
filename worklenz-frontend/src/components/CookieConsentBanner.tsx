@@ -57,25 +57,25 @@ function CookieConsentBanner() {
       
       {/* Banner */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-[9999] p-4 sm:p-6 animate-slide-up"
+        className="fixed bottom-0 left-0 right-0 z-[9999] p-2 sm:p-3 animate-slide-up"
         role="dialog"
         aria-labelledby="cookie-consent-title"
         aria-describedby="cookie-consent-description"
       >
         <div
-          className={`max-w-6xl mx-auto ${bannerBgClass} border-2 rounded-2xl shadow-2xl backdrop-blur-sm`}
+          className={`max-w-3xl mx-auto ${bannerBgClass} border rounded-lg shadow-lg backdrop-blur-sm`}
         >
-          <div className="p-5 sm:p-7">
-            <div className="flex flex-col sm:flex-row gap-5 sm:gap-6 items-start sm:items-center justify-between">
+          <div className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center justify-between">
               {/* Content Section */}
-              <div className="flex-1 space-y-3">
-                <div className="flex items-center gap-3">
+              <div className="flex-1 space-y-1.5">
+                <div className="flex items-center gap-2">
                   {/* Cookie Icon */}
-                  <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                  <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
                     isDarkMode ? 'bg-amber-500/20' : 'bg-amber-50'
                   }`}>
                     <svg 
-                      className={`w-6 h-6 ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`} 
+                      className={`w-4 h-4 ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`} 
                       fill="currentColor" 
                       viewBox="0 0 24 24"
                     >
@@ -84,7 +84,7 @@ function CookieConsentBanner() {
                   </div>
                   <h3
                     id="cookie-consent-title"
-                    className={`text-lg sm:text-xl font-bold ${textClass}`}
+                    className={`text-sm sm:text-base font-semibold ${textClass}`}
                   >
                     {t('consent.title', { defaultValue: 'Cookie Preferences' })}
                   </h3>
@@ -92,7 +92,7 @@ function CookieConsentBanner() {
                 
                 <p
                   id="cookie-consent-description"
-                  className={`text-sm sm:text-base ${subtextClass} leading-relaxed`}
+                  className={`text-xs sm:text-sm ${subtextClass} leading-snug`}
                 >
                   {t('consent.description', {
                     defaultValue:
@@ -104,11 +104,11 @@ function CookieConsentBanner() {
                   href="https://worklenz.com/privacy/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`text-sm font-medium ${linkClass} inline-flex items-center gap-1 transition-all`}
+                  className={`text-xs font-medium ${linkClass} inline-flex items-center gap-1 transition-all`}
                 >
                   {t('consent.learnMore', { defaultValue: 'Learn more about our privacy policy' })}
                   <svg 
-                    className="w-4 h-4" 
+                    className="w-3 h-3" 
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -124,21 +124,21 @@ function CookieConsentBanner() {
               </div>
 
               {/* Actions Section */}
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto sm:min-w-[300px]">
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:min-w-[200px]">
                 <button
                   onClick={handleReject}
                   className={`
-                    px-6 py-3 text-sm font-semibold rounded-lg 
-                    transition-all duration-200 transform hover:scale-105
-                    flex items-center justify-center gap-2
+                    px-3 py-1.5 text-xs font-medium rounded-md 
+                    transition-all duration-200
+                    flex items-center justify-center gap-1.5
                     ${isDarkMode
-                      ? 'bg-gray-700/50 text-gray-200 hover:bg-gray-600 border-2 border-gray-600 hover:border-gray-500'
-                      : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-300 hover:border-gray-400 shadow-sm'
+                      ? 'bg-gray-700/50 text-gray-200 hover:bg-gray-600 border border-gray-600 hover:border-gray-500'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 hover:border-gray-400 shadow-sm'
                     }
                   `}
                   aria-label={t('consent.reject', { defaultValue: 'Reject analytics cookies' })}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                   {t('consent.rejectButton', { defaultValue: 'Reject All' })}
@@ -146,16 +146,16 @@ function CookieConsentBanner() {
                 <button
                   onClick={handleAccept}
                   className="
-                    px-6 py-3 text-sm font-semibold text-white rounded-lg
+                    px-3 py-1.5 text-xs font-medium text-white rounded-md
                     bg-gradient-to-r from-blue-600 to-blue-700 
                     hover:from-blue-700 hover:to-blue-800
-                    transition-all duration-200 transform hover:scale-105
-                    shadow-lg hover:shadow-xl
-                    flex items-center justify-center gap-2
+                    transition-all duration-200
+                    shadow hover:shadow-md
+                    flex items-center justify-center gap-1.5
                   "
                   aria-label={t('consent.accept', { defaultValue: 'Accept analytics cookies' })}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   {t('consent.acceptButton', { defaultValue: 'Accept All' })}
