@@ -15,7 +15,7 @@ import {
 } from '@/shared/antd-imports';
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMediaQuery } from 'react-responsive';
+import { useDebouncedMediaQuery } from '@/hooks/useDebouncedMediaQuery';
 
 import ListView from './ListView';
 import CalendarView from './CalendarView';
@@ -65,7 +65,7 @@ const TasksList: React.FC = React.memo(() => {
 
   const { t, ready } = useTranslation('home');
   const { model } = useAppSelector(state => state.homePageReducer);
-  const isMobile = useMediaQuery({ maxWidth: 768 });
+  const isMobile = useDebouncedMediaQuery({ query: '(max-width: 768px)' });
 
   const taskModes = useMemo(
     () => [
