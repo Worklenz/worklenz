@@ -1,6 +1,7 @@
 import { Badge, Flex, Select } from '@/shared/antd-imports';
 import './home-tasks-status-dropdown.css';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
 import { ITaskStatus } from '@/types/status.types';
 import { useState, useEffect, useMemo } from 'react';
@@ -9,7 +10,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { ITaskListStatusChangeResponse } from '@/types/tasks/task-list-status.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { useGetMyTasksQuery } from '@/api/home-page/home-page.api.service';
+import homePageApi, { useGetMyTasksQuery } from '@/api/home-page/home-page.api.service';
 
 type HomeTasksStatusDropdownProps = {
   task: IProjectTask;
@@ -18,6 +19,7 @@ type HomeTasksStatusDropdownProps = {
 
 const HomeTasksStatusDropdown = ({ task, teamId }: HomeTasksStatusDropdownProps) => {
   const { t } = useTranslation('task-list-table');
+  const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
   const { homeTasksConfig } = useAppSelector(state => state.homePageReducer);
   const { refetch } = useGetMyTasksQuery(homeTasksConfig, {
@@ -54,6 +56,8 @@ const HomeTasksStatusDropdown = ({ task, teamId }: HomeTasksStatusDropdownProps)
       // Only refetch when there's an actual status change
       if (response.status_id !== task.status_id) {
         refetch();
+        // Invalidate task counts cache to refresh calendar badges
+        dispatch(homePageApi.util.invalidateTags(['taskCounts']));
       }
     }
   };

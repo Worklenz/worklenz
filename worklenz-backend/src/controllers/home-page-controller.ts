@@ -1,9 +1,9 @@
 import moment from "moment-timezone";
 import db from "../config/db";
 import HandleExceptions from "../decorators/handle-exceptions";
-import {IWorkLenzRequest} from "../interfaces/worklenz-request";
-import {IWorkLenzResponse} from "../interfaces/worklenz-response";
-import {ServerResponse} from "../models/server-response";
+import { IWorkLenzRequest } from "../interfaces/worklenz-request";
+import { IWorkLenzResponse } from "../interfaces/worklenz-response";
+import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import momentTime from "moment-timezone";
 
@@ -27,10 +27,10 @@ interface ITask {
   done: boolean,
   updated_at: string | null,
   project_statuses: [{
-      id: string,
-      name: string | null,
-      color_code: string | null,
-    }]
+    id: string,
+    name: string | null,
+    color_code: string | null,
+  }]
 }
 
 export default class HomePageController extends WorklenzControllerBase {
@@ -201,7 +201,7 @@ export default class HomePageController extends WorklenzControllerBase {
       currentTabClosure = `AND t.end_date::DATE = '${req.query.selected_date}'`;
       result = await this.groupBySingleDate(result, timeZone, req.query.selected_date as string);
     } else {
-      result = await this.groupByDate(currentTab as string,result, timeZone, today);
+      result = await this.groupByDate(currentTab as string, result, timeZone, today);
     }
 
     // const counts = await this.getCountsResult(groupByClosure, teamId as string, userId as string);
@@ -218,7 +218,7 @@ export default class HomePageController extends WorklenzControllerBase {
     return res.status(200).send(new ServerResponse(true, data));
   }
 
-  private static async groupByDate(currentTab: string,tasks: any[], timeZone: string, today: Date) {
+  private static async groupByDate(currentTab: string, tasks: any[], timeZone: string, today: Date) {
     const formatToday = moment(today).format("YYYY-MM-DD");
 
     const tasksReturn = [];
@@ -248,6 +248,17 @@ export default class HomePageController extends WorklenzControllerBase {
       }
     }
 
+    if (currentTab === this.UPCOMING_NOW_ON_TAB) {
+      for (const task of tasks) {
+        if (task.end_date) {
+          const taskEndDate = momentTime.tz(task.end_date, `${timeZone}`).format("YYYY-MM-DD");
+          if (moment(taskEndDate).isSameOrAfter(formatToday)) {
+            tasksReturn.push(task);
+          }
+        }
+      }
+    }
+
     if (currentTab === this.UPCOMING_TAB) {
       for (const task of tasks) {
         if (task.end_date) {
@@ -266,7 +277,7 @@ export default class HomePageController extends WorklenzControllerBase {
           if (moment(taskEndDate).isBefore(formatToday)) {
             tasksReturn.push(task);
           }
-         }
+        }
       }
     }
 
@@ -284,7 +295,7 @@ export default class HomePageController extends WorklenzControllerBase {
         if (moment(taskEndDate).isSame(formatSelectedDate)) {
           tasksReturn.push(task);
         }
-       }
+      }
     }
 
     return tasksReturn;
@@ -327,6 +338,48 @@ export default class HomePageController extends WorklenzControllerBase {
       no_due_date
     };
 
+  }
+
+  @HandleExceptions()
+  public static async getTaskCountsByMonth(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const userId = req.user?.id;
+    const month = req.query.month as string; // Format: YYYY-MM
+    const currentGroup = this.isValidGroup(req.query.group_by as string) 
+      ? req.query.group_by 
+      : this.GROUP_BY_ASSIGNED_TO_ME;
+
+    const groupByClosure = this.getTasksByGroupClosure(currentGroup as string);
+
+    // Get first and last day of month
+    const startDate = `${month}-01`;
+    const endDate = moment(startDate).endOf('month').format('YYYY-MM-DD');
+
+    const q = `
+      SELECT t.end_date::DATE as date, COUNT(*)::INT as count
+      FROM tasks t
+      JOIN projects p ON t.project_id = p.id
+      WHERE t.archived IS FALSE
+        AND t.end_date IS NOT NULL
+        AND t.end_date::DATE >= $3::DATE
+        AND t.end_date::DATE <= $4::DATE
+        AND t.status_id NOT IN (
+          SELECT id FROM task_statuses
+          WHERE category_id NOT IN (
+            SELECT id FROM sys_task_status_categories WHERE is_done IS FALSE
+          )
+        )
+        AND NOT EXISTS(
+          SELECT project_id FROM archived_projects
+          WHERE project_id = p.id AND user_id = $2
+        )
+        ${groupByClosure}
+      GROUP BY t.end_date::DATE
+      ORDER BY t.end_date::DATE
+    `;
+
+    const result = await db.query(q, [teamId, userId, startDate, endDate]);
+    return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
   @HandleExceptions()

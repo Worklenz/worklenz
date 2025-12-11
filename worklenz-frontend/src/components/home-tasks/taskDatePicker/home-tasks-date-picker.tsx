@@ -8,7 +8,8 @@ import type { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { useGetMyTasksQuery } from '@/api/home-page/home-page.api.service';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import homePageApi, { useGetMyTasksQuery } from '@/api/home-page/home-page.api.service';
 import { getUserSession } from '@/utils/session-helper';
 import { getDueDateStatus, getDueDateColor, getDueDateAriaLabel } from '@/utils/dueDateColorHelper';
 import './home-tasks-date-picker.css';
@@ -22,6 +23,7 @@ type HomeTasksDatePickerProps = {
 
 const HomeTasksDatePicker = ({ record }: HomeTasksDatePickerProps) => {
   const { socket, connected } = useSocket();
+  const dispatch = useAppDispatch();
   const { t } = useTranslation('home');
   const { homeTasksConfig } = useAppSelector(state => state.homePageReducer);
   const { refetch } = useGetMyTasksQuery(homeTasksConfig, {
@@ -45,6 +47,8 @@ const HomeTasksDatePicker = ({ record }: HomeTasksDatePickerProps) => {
 
   const handleChangeReceived = (value: any) => {
     refetch();
+    // Invalidate task counts cache to refresh calendar badges
+    dispatch(homePageApi.util.invalidateTags(['taskCounts']));
   };
 
   useEffect(() => {

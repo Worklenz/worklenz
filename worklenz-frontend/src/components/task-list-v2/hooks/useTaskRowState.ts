@@ -72,8 +72,10 @@ export const useTaskRowState = (task: Task) => {
   // Use startOf('day') to ensure we're working with the date only, no time component
   const dateValues = useMemo(
     () => ({
-      start: task.startDate ? dayjs(task.startDate).startOf('day') : undefined,
-      due: task.dueDate || task.due_date ? dayjs(task.dueDate || task.due_date).startOf('day') : undefined,
+      start: task.startDate ? dayjs(task.startDate, 'YYYY-MM-DD').startOf('day') : undefined,
+      due: task.dueDate || task.due_date
+        ? dayjs(task.dueDate || task.due_date, 'YYYY-MM-DD').startOf('day')
+        : undefined,
     }),
     [task.startDate, task.dueDate, task.due_date]
   );
