@@ -1,4 +1,4 @@
-import { ClockCircleOutlined, PlayCircleFilled } from '@/shared/antd-imports';
+import { ClockCircleOutlined } from '@/shared/antd-imports';
 import {
   Badge,
   Button,
@@ -18,7 +18,8 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { updateTaskTimeTracking } from '@/features/tasks/tasks.slice';
 import { format, differenceInSeconds, isValid, parseISO, formatDistanceToNow } from 'date-fns';
-import { colors } from '@/styles/colors';
+import TaskTimer from '@/components/taskListCommon/task-timer/task-timer';
+import { useTaskTimerWithConflictCheck } from '@/hooks/useTaskTimerWithConflictCheck';
 
 const { Text } = Typography;
 const { useToken } = theme;
@@ -219,25 +220,30 @@ const TimerButton = () => {
     }
   };
 
-  const handleStartTimerForTask = (taskId: string) => {
-    if (!socket) {
-      console.warn('[TimerButton] Socket not available for starting timer');
-      return;
-    }
+  // Component to handle timer for recent logs with conflict checking
+  const RecentLogTimerButton = ({ taskId }: { taskId: string }) => {
+    const { started, timeString, handleStartTimer, handleStopTimer } = useTaskTimerWithConflictCheck(
+      taskId,
+      null
+    );
 
-    if (!taskId) {
-      logError('Invalid task ID for starting timer');
-      return;
-    }
-
-    try {
-      socket.emit(SocketEvents.TASK_TIMER_START.toString(), JSON.stringify({ task_id: taskId }));
-      dispatch(updateTaskTimeTracking({ taskId, timeTracking: Date.now() }));
-      // Refresh to show updated state
-      fetchTimerData();
-    } catch (error) {
-      logError(`Error starting timer for task ${taskId}`, error);
-    }
+    return (
+      <TaskTimer
+        taskId={taskId}
+        started={started}
+        handleStartTimer={() => {
+          handleStartTimer();
+          // Refresh timer data after starting
+          setTimeout(() => fetchTimerData(), 100);
+        }}
+        handleStopTimer={() => {
+          handleStopTimer();
+          // Refresh timer data after stopping
+          setTimeout(() => fetchTimerData(), 100);
+        }}
+        timeString={timeString}
+      />
+    );
   };
 
   const renderStopIcon = () => {
@@ -502,15 +508,7 @@ const TimerButton = () => {
                             <Text type="secondary" style={{ fontSize: 11 }}>
                               {formatDistanceToNow(parseISO(log.created_at), { addSuffix: true })}
                             </Text>
-                            <Button
-                              type="text"
-                              size="small"
-                              icon={<PlayCircleFilled style={{ color: colors.skyBlue, fontSize: 20 }} />}
-                              onClick={e => {
-                                e.stopPropagation();
-                                handleStartTimerForTask(log.task_id);
-                              }}
-                            />
+                            <RecentLogTimerButton taskId={log.task_id} />
                           </div>
                         </Space>
                       </div>
