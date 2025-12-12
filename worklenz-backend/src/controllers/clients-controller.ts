@@ -846,6 +846,24 @@ export default class ClientsController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
+  public static async setClientInviteSlug(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const modifiedReq = {
+      ...req,
+      user: req.user
+    } as any;
+    return ClientPortalController.setClientInviteSlug(modifiedReq, res as any);
+  }
+
+  @HandleExceptions()
+  public static async suggestClientInviteSlug(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const modifiedReq = {
+      ...req,
+      user: req.user
+    } as any;
+    return ClientPortalController.suggestClientInviteSlug(modifiedReq, res as any);
+  }
+
+  @HandleExceptions()
   public static async getPortalClientProjects(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const modifiedReq = {
       ...req,

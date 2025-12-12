@@ -41,6 +41,7 @@ const InvitePage: React.FC = () => {
     error,
     inviteToken,
     inviteValid,
+    inviteChecked,
     inviteLoading,
     inviteDetails,
     isAuthenticated,
@@ -186,7 +187,7 @@ const InvitePage: React.FC = () => {
     );
   }
 
-  if (!inviteValid) {
+  if (inviteChecked && !inviteValid) {
     return (
       <div
         style={{

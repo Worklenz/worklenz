@@ -12,6 +12,7 @@ import { IO } from "../shared/io";
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import crypto from "crypto";
+import { generateUniqueSlug, suggestSlug, isValidSlug } from "../utils/slug";
 
 class ClientPortalController {
 
@@ -3488,7 +3489,7 @@ class ClientPortalController {
 
       // Get client information
       const clientQuery = `
-        SELECT c.id, c.name, c.email, c.company_name, c.phone
+        SELECT c.id, c.name, c.email, c.company_name, c.phone, c.invite_slug
         FROM clients c
         WHERE c.id = $1 AND c.team_id = $2
       `;
@@ -3571,17 +3572,9 @@ class ClientPortalController {
         }, "Client is existing Worklenz user - access granted"));
       }
 
-      // Generate secure token for invitation for new users
+      // Generate secure short random token for invitation (64 characters, same as team/project invitations)
       const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
-      const inviteToken = TokenService.generateInviteToken({
-        clientId: client.id,
-        email: client.email,
-        name: client.name,
-        role: "member",
-        invitedBy: userId,
-        expiresAt,
-        type: "invite"
-      });
+      const inviteToken = TokenService.generateInviteToken();
 
       // Create invitation record in database
       await TokenService.createInvitation({
@@ -3593,15 +3586,24 @@ class ClientPortalController {
         token: inviteToken
       });
 
-      // Generate client portal link with secure token (URL-encode to handle + characters in JWT)
-      const portalLink = `${getClientPortalBaseUrl()}/invite?token=${encodeURIComponent(inviteToken)}`;
+      // Generate client portal link with secure token
+      const baseUrl = getClientPortalBaseUrl();
+      const tokenLink = `${baseUrl}/invite?token=${inviteToken}`;
+
+      // Also provide vanity URL option if client has invite_slug
+      let vanityLink = null;
+      if (client.invite_slug) {
+        vanityLink = `${baseUrl}/i/${client.invite_slug}`;
+      }
 
       return res.json(new ServerResponse(true, {
-        invitationLink: portalLink,
+        invitationLink: tokenLink,
+        vanityLink: vanityLink,
         token: inviteToken,
         expiresAt: new Date(expiresAt).toISOString(),
         clientName: client.name,
-        clientEmail: client.email
+        clientEmail: client.email,
+        inviteSlug: client.invite_slug
       }, "Invitation link generated successfully"));
     } catch (error) {
       console.error("Error generating client invitation link:", error);
@@ -3656,17 +3658,9 @@ class ClientPortalController {
         [clientId]
       );
 
-      // Generate new invitation token
+      // Generate new invitation token (short random token)
       const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
-      const inviteToken = TokenService.generateInviteToken({
-        clientId: client.id,
-        email: client.email,
-        name: client.name,
-        role: "member",
-        invitedBy: userId,
-        expiresAt,
-        type: "invite"
-      });
+      const inviteToken = TokenService.generateInviteToken();
 
       if (pendingInviteCheck.rows.length > 0) {
         // Update existing invitation with new token and expiry
@@ -3688,8 +3682,8 @@ class ClientPortalController {
         });
       }
 
-      // Generate invitation link (URL-encode to handle + characters in JWT)
-      const inviteLink = `${getClientPortalBaseUrl()}/invite?token=${encodeURIComponent(inviteToken)}`;
+      // Generate invitation link
+      const inviteLink = `${getClientPortalBaseUrl()}/invite?token=${inviteToken}`;
 
       // Generate email HTML
       const emailHtml = ClientPortalController.generateInvitationEmailHTML({
@@ -3883,17 +3877,9 @@ class ClientPortalController {
       const teamResult = await db.query(teamQuery, [teamId]);
       const teamName = teamResult.rows[0]?.name || "Worklenz Team";
 
-      // Generate secure token for invitation
+      // Generate secure token for invitation (short random token)
       const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
-      const inviteToken = TokenService.generateInviteToken({
-        clientId: client.id,
-        email: client.email,
-        name: client.name,
-        role: "member",
-        invitedBy,
-        expiresAt,
-        type: "invite"
-      });
+      const inviteToken = TokenService.generateInviteToken();
 
       // Create invitation record in database
       await TokenService.createInvitation({
@@ -3911,8 +3897,8 @@ class ClientPortalController {
         throw new Error("Client invitation email template not found");
       }
 
-      // Generate client portal link with secure token (URL-encode to handle + characters in JWT)
-      const portalLink = `${getClientPortalBaseUrl()}/invite?token=${encodeURIComponent(inviteToken)}`;
+      // Generate client portal link with secure token
+      const portalLink = `${getClientPortalBaseUrl()}/invite?token=${inviteToken}`;
 
       // Replace template variables
       const emailContent = template
@@ -4229,6 +4215,110 @@ class ClientPortalController {
     } catch (error) {
       console.error("Error updating client:", error);
       return res.status(500).json(new ServerResponse(false, null, "Failed to update client"));
+    }
+  }
+
+  // Set or update client invite slug (vanity URL)
+  static async setClientInviteSlug(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const { id } = req.params;
+      const { invite_slug } = req.body;
+      const teamId = (req.user as any)?.team_id;
+
+      // Verify client exists and belongs to team
+      const clientCheck = await db.query(
+        "SELECT id, name, company_name FROM clients WHERE id = $1 AND team_id = $2",
+        [id, teamId]
+      );
+
+      if (clientCheck.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+      }
+
+      const client = clientCheck.rows[0];
+
+      // If invite_slug is null or empty, remove it
+      if (!invite_slug || invite_slug.trim() === '') {
+        await db.query(
+          "UPDATE clients SET invite_slug = NULL, updated_at = NOW() WHERE id = $1",
+          [id]
+        );
+
+        return res.json(new ServerResponse(true, {
+          id,
+          invite_slug: null
+        }, "Invite slug removed successfully"));
+      }
+
+      // Validate slug format
+      if (!isValidSlug(invite_slug)) {
+        return res.status(400).json(new ServerResponse(false, null, "Invalid slug format. Use lowercase letters, numbers, and hyphens only (3-50 characters)"));
+      }
+
+      // Check if slug is already taken
+      const slugCheck = await db.query(
+        "SELECT id FROM clients WHERE LOWER(invite_slug) = LOWER($1) AND id != $2",
+        [invite_slug, id]
+      );
+
+      if (slugCheck.rows.length > 0) {
+        return res.status(400).json(new ServerResponse(false, null, "This invite slug is already taken. Please choose another."));
+      }
+
+      // Update client with new slug
+      const result = await db.query(
+        "UPDATE clients SET invite_slug = LOWER($1), updated_at = NOW() WHERE id = $2 RETURNING invite_slug",
+        [invite_slug, id]
+      );
+
+      return res.json(new ServerResponse(true, {
+        id,
+        invite_slug: result.rows[0].invite_slug,
+        vanity_url: `${getClientPortalBaseUrl()}/i/${result.rows[0].invite_slug}`
+      }, "Invite slug updated successfully"));
+    } catch (error) {
+      console.error("Error setting client invite slug:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to update invite slug"));
+    }
+  }
+
+  // Generate suggested slug from client name
+  static async suggestClientInviteSlug(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const { id } = req.params;
+      const teamId = (req.user as any)?.team_id;
+
+      // Get client information
+      const client = await db.query(
+        "SELECT id, name, company_name FROM clients WHERE id = $1 AND team_id = $2",
+        [id, teamId]
+      );
+
+      if (client.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+      }
+
+      const clientData = client.rows[0];
+      const baseName = clientData.company_name || clientData.name;
+
+      // Generate unique slug
+      const checkSlugExists = async (slug: string): Promise<boolean> => {
+        const result = await db.query(
+          "SELECT id FROM clients WHERE LOWER(invite_slug) = LOWER($1)",
+          [slug]
+        );
+        return result.rows.length > 0;
+      };
+
+      const suggestedSlug = await generateUniqueSlug(baseName, checkSlugExists);
+
+      return res.json(new ServerResponse(true, {
+        suggested_slug: suggestedSlug,
+        vanity_url: `${getClientPortalBaseUrl()}/i/${suggestedSlug}`
+      }, "Slug suggestion generated successfully"));
+    } catch (error) {
+      console.error("Error suggesting client invite slug:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to generate slug suggestion"));
     }
   }
 
@@ -4684,8 +4774,8 @@ class ClientPortalController {
         token: inviteToken
       });
 
-      // Generate invitation link (URL-encode to handle + characters in JWT)
-      const inviteLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/invitation?token=${encodeURIComponent(inviteToken)}`;
+      // Generate invitation link
+      const inviteLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/invitation?token=${inviteToken}`;
 
       // Generate email HTML
       const emailHtml = ClientPortalController.generateInvitationEmailHTML({
@@ -5475,6 +5565,48 @@ class ClientPortalController {
   }
 
   // Client Portal Authentication Endpoints
+  // Validate invitation via vanity slug
+  static async validateInvitationBySlug(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    try {
+      const { slug } = req.params;
+
+      if (!slug) {
+        return res.status(400).json(new ServerResponse(false, null, "Invitation slug is required"));
+      }
+
+      // Get client by invite_slug
+      const clientQuery = `
+        SELECT c.id, c.name, c.email, c.company_name, c.status, c.invite_slug, t.name as team_name
+        FROM clients c
+        JOIN teams t ON c.team_id = t.id
+        WHERE LOWER(c.invite_slug) = LOWER($1) AND c.status = 'pending'
+      `;
+      const clientResult = await db.query(clientQuery, [slug]);
+
+      if (clientResult.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Invalid invitation link"));
+      }
+
+      const client = clientResult.rows[0];
+
+      // Return client details for the frontend (similar to token-based invitation)
+      return res.json(new ServerResponse(true, {
+        valid: true,
+        email: client.email,
+        clientId: client.id,
+        clientName: client.name,
+        companyName: client.company_name,
+        teamName: client.team_name,
+        inviteSlug: client.invite_slug,
+        type: 'vanity_url'
+      }, "Invitation is valid"));
+    } catch (error) {
+      console.error("Error validating invitation by slug:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to validate invitation"));
+    }
+  }
+
+  // Validate invitation via token (existing method - supports both old hex tokens and new base62 tokens)
   static async validateInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
       const { token } = req.query;
@@ -5483,7 +5615,7 @@ class ClientPortalController {
         return res.status(400).json(new ServerResponse(false, null, "Invitation token is required"));
       }
 
-      // Get invitation details
+      // Get invitation details (TokenService handles both old hex and new base62 tokens)
       const invitation = await TokenService.getInvitationByToken(token as string);
 
       if (!invitation) {
@@ -5502,7 +5634,8 @@ class ClientPortalController {
         companyName: invitation.company_name,
         teamName: invitation.team_name,
         expiresAt: invitation.expires_at,
-        status: invitation.status
+        status: invitation.status,
+        type: 'token'
       }, "Invitation is valid"));
     } catch (error) {
       console.error("Error validating invitation:", error);
@@ -5519,82 +5652,100 @@ class ClientPortalController {
       }
 
       // Check if this is an organization invite token
-      const orgInvitePayload = TokenService.verifyOrganizationInviteToken(token);
-      
-      if (orgInvitePayload && orgInvitePayload.type === "organization_invite") {
-        
-        // For organization invites, email is required
-        if (!email) {
-          return res.status(400).json(new ServerResponse(false, null, "Email is required for organization invites"));
-        }
+      if (TokenService.isOrganizationInviteToken(token)) {
+        const orgInvitePayload = TokenService.verifyOrganizationInviteToken(token);
 
-        // For organization invites, create a new client user account
-        // First, check if user already exists
-        const existingUserCheck = await db.query(
-          "SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)",
-          [email]
-        );
+        if (orgInvitePayload && orgInvitePayload.type === "organization_invite") {
+          // For organization invites, email is required
+          if (!email) {
+            return res
+              .status(400)
+              .json(
+                new ServerResponse(
+                  false,
+                  null,
+                  "Email is required for organization invites"
+                )
+              );
+          }
 
-        if (existingUserCheck.rows.length > 0) {
-          return res.status(400).json({
-            done: false,
-            body: null,
-            title: "Email Already Registered",
-            message: "A user with this email already exists. Please login instead.",
-            messageKey: "errors.email_already_registered_message" // For frontend i18n
-          });
-        }
+          // For organization invites, create a new client user account
+          // First, check if user already exists
+          const existingUserCheck = await db.query(
+            "SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)",
+            [email]
+          );
 
-        // Create a client record for this organization
-        const clientResult = await db.query(
-          `INSERT INTO clients (name, email, team_id, status, client_portal_enabled, created_at, updated_at)
+          if (existingUserCheck.rows.length > 0) {
+            return res.status(400).json({
+              done: false,
+              body: null,
+              title: "Email Already Registered",
+              message:
+                "A user with this email already exists. Please login instead.",
+              messageKey: "errors.email_already_registered_message", // For frontend i18n
+            });
+          }
+
+          // Create a client record for this organization
+          const clientResult = await db.query(
+            `INSERT INTO clients (name, email, team_id, status, client_portal_enabled, created_at, updated_at)
            VALUES ($1, $2, $3, 'active', TRUE, NOW(), NOW())
            RETURNING id`,
-          [name, email, orgInvitePayload.teamId]
-        );
-        
-        const clientId = clientResult.rows[0].id;
-        
-        // Create the client user
-        const userResult = await db.query(
-          `INSERT INTO client_users (id, client_id, email, name, password_hash, role, status, created_at)
+            [name, email, orgInvitePayload.teamId]
+          );
+
+          const clientId = clientResult.rows[0].id;
+
+          // Create the client user
+          const userResult = await db.query(
+            `INSERT INTO client_users (id, client_id, email, name, password_hash, role, status, created_at)
            VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
            RETURNING id, email, name, role, client_id`,
-          [
+            [
+              clientId,
+              email,
+              name,
+              crypto.createHash("sha256").update(password).digest("hex"),
+            ]
+          );
+
+          const newUser = userResult.rows[0];
+
+          // Generate client access token
+          const permissions = await TokenService.getClientPermissions(clientId);
+          const tokenPayload = {
             clientId,
-            email,
-            name,
-            crypto.createHash("sha256").update(password).digest("hex")
-          ]
-        );
-
-        const newUser = userResult.rows[0];
-
-        // Generate client access token
-        const permissions = await TokenService.getClientPermissions(clientId);
-        const tokenPayload = {
-          clientId,
-          organizationId: orgInvitePayload.teamId,
-          email: newUser.email,
-          permissions,
-          type: "client" as const
-        };
-
-        const accessToken = TokenService.generateClientToken(tokenPayload);
-
-        return res.json(new ServerResponse(true, {
-          token: accessToken,
-          user: {
-            id: newUser.id,
+            organizationId: orgInvitePayload.teamId,
             email: newUser.email,
-            name: newUser.name,
-            role: newUser.role,
-            clientId,
-            clientName: name,
-            companyName: orgInvitePayload.organizationName
-          },
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-        }, "Account created successfully"));
+            permissions,
+            type: "client" as const,
+          };
+
+          const accessToken = TokenService.generateClientToken(tokenPayload);
+
+          return res.json(
+            new ServerResponse(
+              true,
+              {
+                token: accessToken,
+                user: {
+                  id: newUser.id,
+                  email: newUser.email,
+                  name: newUser.name,
+                  role: newUser.role,
+                  clientId,
+                  clientName: name,
+                  companyName: orgInvitePayload.organizationName,
+                },
+                expiresAt: new Date(
+                  Date.now() + 24 * 60 * 60 * 1000
+                ).toISOString(),
+              },
+              "Account created successfully"
+            )
+          );
+        }
       }
 
       // Regular invitation flow

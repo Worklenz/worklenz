@@ -8,6 +8,7 @@ const router = express.Router();
 
 // Authentication routes (no authentication required)
 router.get("/invitation/validate", safeControllerFunction(ClientPortalController.validateInvitation));
+router.get("/invitation/validate/:slug", safeControllerFunction(ClientPortalController.validateInvitationBySlug));
 router.post("/invitation/accept", safeControllerFunction(ClientPortalController.acceptInvitation));
 router.post("/auth/login", safeControllerFunction(ClientPortalController.clientLogin));
 router.post("/auth/refresh", safeControllerFunction(ClientPortalController.refreshClientToken));
