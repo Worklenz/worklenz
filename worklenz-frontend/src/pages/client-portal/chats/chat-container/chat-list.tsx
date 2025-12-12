@@ -1,7 +1,7 @@
 import { Button, Flex, Table, Typography, Tooltip } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { TempChatsType } from './chat-box/chat-box-wrapper';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, MessageOutlined } from '@ant-design/icons';
 import { colors } from '../../../../styles/colors';
 import { useTranslation } from 'react-i18next';
 import NewChatModal from '@/components/client-portal/NewChatModal';
@@ -47,14 +47,21 @@ const ChatList = ({ chatList, setOpenedChatId }: ChatListProps) => {
             title: (
               <Flex justify="space-between" align="center">
                 <Typography.Text strong>{t('chatsTitle') || 'Chats'}</Typography.Text>
-                <Tooltip title={t('newChat') || 'New Chat'}>
-                  <Button
-                    type="text"
-                    icon={<PlusOutlined />}
-                    onClick={handleNewChat}
-                    size="small"
-                  />
-                </Tooltip>
+                <Button
+                  type="primary"
+                  icon={<MessageOutlined />}
+                  onClick={handleNewChat}
+                  size="small"
+                  style={{
+                    fontSize: '12px',
+                    height: '28px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  {t('startConversation') || 'Start Conversation'}
+                </Button>
               </Flex>
             ),
             render: (record: TempChatsType) => (

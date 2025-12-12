@@ -1,5 +1,6 @@
 {
   "title": "Mesazhet",
+  "chatsTitle": "Bisedat",
   "description": "Komunikoni me ekipin tuaj dhe klientët",
   "refresh": "Rifresko",
   "noChatsTitle": "Nuk u gjetën mesazhe",
@@ -7,5 +8,22 @@
   "errorLoadingChats": "Gabim gjatë ngarkimit të mesazheve",
   "errorLoadingChatsDescription": "Pati një gabim gjatë ngarkimit të mesazheve tuaja. Ju lutemi provoni përsëri më vonë.",
   "selectChatMessage": "Zgjidhni një chat për të filluar të dërgoni mesazhe",
-  "startConversation": "Filloni Bisedën"
+  "startConversation": "Filloni Bisedën",
+  "newChat": "Bisedë e Re",
+  "newChatDescription": "Filloni një bisedë të re me ekipin tuaj",
+  "subject": "Subjekti",
+  "subjectPlaceholder": "Shkruani një subjekt të shkurtër për mesazhin tuaj",
+  "subjectHelper": "Një subjekt i qartë i ndihmon ekipit tuaj të përgjigjet më shpejt",
+  "message": "Mesazhi",
+  "messagePlaceholder": "Shkruani mesazhin tuaj këtu...",
+  "messageHelper": "Përshkruani pyetjen ose kërkesën tuaj në detaje",
+  "sendMessage": "Dërgo Mesazhin",
+  "newChatCreatedSuccessfully": "Biseda u krijua me sukses!",
+  "newChatFailed": "Dështoi krijimi i bisedës. Ju lutemi provoni përsëri.",
+  "subjectRequired": "Ju lutemi shkruani një subjekt",
+  "subjectMinLength": "Subjekti duhet të ketë të paktën 3 karaktere",
+  "subjectMaxLength": "Subjekti duhet të ketë më pak se 100 karaktere",
+  "messageRequired": "Ju lutemi shkruani një mesazh",
+  "messageMinLength": "Mesazhi duhet të ketë të paktën 10 karaktere",
+  "messageMaxLength": "Mesazhi duhet të ketë më pak se 1000 karaktere"
 }

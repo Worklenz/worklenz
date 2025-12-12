@@ -77,6 +77,7 @@ clientsApiRouter.get("/portal/invoices/:id/download", idParamValidator, safeCont
 
 // Organization-side Client Portal Chats Management
 clientsApiRouter.get("/portal/chats", safeControllerFunction(ClientsController.getPortalChats));
+clientsApiRouter.post("/portal/chats", safeControllerFunction(ClientsController.createPortalChat));
 clientsApiRouter.get("/portal/chats/:id", idParamValidator, safeControllerFunction(ClientsController.getPortalChatById));
 clientsApiRouter.post("/portal/chats/:chatId/messages", idParamValidator, safeControllerFunction(ClientsController.sendPortalMessage));
 clientsApiRouter.get("/portal/chats/:chatId/messages", idParamValidator, safeControllerFunction(ClientsController.getPortalMessages));

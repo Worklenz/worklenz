@@ -1,5 +1,6 @@
 {
   "title": "Nachrichten",
+  "chatsTitle": "Konversationen",
   "description": "Kommunizieren Sie mit Ihrem Team und Kunden",
   "refresh": "Aktualisieren",
   "noChatsTitle": "Keine Nachrichten gefunden",
@@ -7,5 +8,22 @@
   "errorLoadingChats": "Fehler beim Laden der Nachrichten",
   "errorLoadingChatsDescription": "Beim Laden Ihrer Nachrichten ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.",
   "selectChatMessage": "Wählen Sie einen Chat aus, um mit dem Messaging zu beginnen",
-  "startConversation": "Konversation starten"
+  "startConversation": "Konversation starten",
+  "newChat": "Neue Konversation",
+  "newChatDescription": "Starten Sie eine neue Konversation mit Ihrem Team",
+  "subject": "Betreff",
+  "subjectPlaceholder": "Geben Sie einen kurzen Betreff für Ihre Nachricht ein",
+  "subjectHelper": "Ein klarer Betreff hilft Ihrem Team, schneller zu antworten",
+  "message": "Nachricht",
+  "messagePlaceholder": "Geben Sie hier Ihre Nachricht ein...",
+  "messageHelper": "Beschreiben Sie Ihre Frage oder Anfrage im Detail",
+  "sendMessage": "Nachricht senden",
+  "newChatCreatedSuccessfully": "Konversation erfolgreich erstellt!",
+  "newChatFailed": "Fehler beim Erstellen der Konversation. Bitte versuchen Sie es erneut.",
+  "subjectRequired": "Bitte geben Sie einen Betreff ein",
+  "subjectMinLength": "Der Betreff muss mindestens 3 Zeichen lang sein",
+  "subjectMaxLength": "Der Betreff muss weniger als 100 Zeichen lang sein",
+  "messageRequired": "Bitte geben Sie eine Nachricht ein",
+  "messageMinLength": "Die Nachricht muss mindestens 10 Zeichen lang sein",
+  "messageMaxLength": "Die Nachricht muss weniger als 1000 Zeichen lang sein"
 }

@@ -2927,7 +2927,7 @@ class ClientPortalController {
 
       // Get request status updates
       const requestNotificationsQuery = `
-        SELECT 
+        SELECT
           'request_update' as type,
           r.id as reference_id,
           r.req_no as reference_number,
@@ -2935,9 +2935,14 @@ class ClientPortalController {
           r.updated_at as created_at,
           s.name as service_name,
           'Request ' || r.req_no || ' status changed to ' || r.status as message,
-          false as is_read
+          CASE WHEN nr.id IS NOT NULL THEN true ELSE false END as is_read
         FROM client_portal_requests r
         JOIN client_portal_services s ON r.service_id = s.id
+        LEFT JOIN client_portal_notification_reads nr
+          ON nr.reference_id = r.id
+          AND nr.notification_type = 'request'
+          AND nr.client_id = $1
+          AND nr.organization_team_id = $2
         WHERE r.client_id = $1 AND r.organization_team_id = $2
         AND r.updated_at >= NOW() - INTERVAL '30 days'
         ORDER BY r.updated_at DESC
@@ -2967,7 +2972,7 @@ class ClientPortalController {
 
       // Get new invoice notifications
       const invoiceNotificationsQuery = `
-        SELECT 
+        SELECT
           'new_invoice' as type,
           i.id as reference_id,
           i.invoice_no as reference_number,
@@ -2976,8 +2981,13 @@ class ClientPortalController {
           i.due_date,
           i.created_at,
           'New invoice ' || i.invoice_no || ' for ' || i.currency || ' ' || i.amount as message,
-          false as is_read
+          CASE WHEN nr.id IS NOT NULL THEN true ELSE false END as is_read
         FROM client_portal_invoices i
+        LEFT JOIN client_portal_notification_reads nr
+          ON nr.reference_id = i.id
+          AND nr.notification_type = 'invoice'
+          AND nr.client_id = $1
+          AND nr.organization_team_id = $2
         WHERE i.client_id = $1 AND i.organization_team_id = $2
         AND i.created_at >= NOW() - INTERVAL '30 days'
         ORDER BY i.created_at DESC
@@ -3097,10 +3107,27 @@ class ClientPortalController {
           break;
 
         case "request":
+          // Insert into notification_reads table to track read status
+          updateResult = await db.query(
+            `INSERT INTO client_portal_notification_reads
+            (client_id, organization_team_id, notification_type, reference_id)
+            VALUES ($1, $2, 'request', $3)
+            ON CONFLICT (client_id, organization_team_id, notification_type, reference_id)
+            DO UPDATE SET read_at = NOW()`,
+            [clientId, organizationId, referenceId]
+          );
+          break;
+
         case "invoice":
-          // For request and invoice notifications, we'll simulate marking as read
-          // In a full implementation, you'd have a separate notifications table
-          updateResult = { rowCount: 1 }; // Simulate successful update
+          // Insert into notification_reads table to track read status
+          updateResult = await db.query(
+            `INSERT INTO client_portal_notification_reads
+            (client_id, organization_team_id, notification_type, reference_id)
+            VALUES ($1, $2, 'invoice', $3)
+            ON CONFLICT (client_id, organization_team_id, notification_type, reference_id)
+            DO UPDATE SET read_at = NOW()`,
+            [clientId, organizationId, referenceId]
+          );
           break;
 
         default:
@@ -3128,23 +3155,51 @@ class ClientPortalController {
       const {clientId} = req;
       const {organizationId} = req;
 
+      let totalMarked = 0;
+
       // Mark all unread chat messages as read
       const chatUpdateResult = await db.query(
         "UPDATE client_portal_chat_messages SET read_at = NOW() WHERE client_id = $1 AND organization_team_id = $2 AND sender_type = 'team_member' AND read_at IS NULL",
         [clientId, organizationId]
       );
+      totalMarked += chatUpdateResult.rowCount || 0;
 
-      // In a full implementation with a notifications table, you would also update:
-      // - Request notifications
-      // - Invoice notifications
-      // - Other notification types
-      
-      const markedCount = chatUpdateResult.rowCount || 0;
+      // Mark all request notifications as read
+      // Insert records for all requests from the last 30 days that aren't already marked as read
+      const requestUpdateResult = await db.query(
+        `INSERT INTO client_portal_notification_reads
+        (client_id, organization_team_id, notification_type, reference_id)
+        SELECT $1, $2, 'request', r.id
+        FROM client_portal_requests r
+        WHERE r.client_id = $1
+        AND r.organization_team_id = $2
+        AND r.updated_at >= NOW() - INTERVAL '30 days'
+        ON CONFLICT (client_id, organization_team_id, notification_type, reference_id)
+        DO UPDATE SET read_at = NOW()`,
+        [clientId, organizationId]
+      );
+      totalMarked += requestUpdateResult.rowCount || 0;
+
+      // Mark all invoice notifications as read
+      // Insert records for all invoices from the last 30 days that aren't already marked as read
+      const invoiceUpdateResult = await db.query(
+        `INSERT INTO client_portal_notification_reads
+        (client_id, organization_team_id, notification_type, reference_id)
+        SELECT $1, $2, 'invoice', i.id
+        FROM client_portal_invoices i
+        WHERE i.client_id = $1
+        AND i.organization_team_id = $2
+        AND i.created_at >= NOW() - INTERVAL '30 days'
+        ON CONFLICT (client_id, organization_team_id, notification_type, reference_id)
+        DO UPDATE SET read_at = NOW()`,
+        [clientId, organizationId]
+      );
+      totalMarked += invoiceUpdateResult.rowCount || 0;
 
       return res.json(new ServerResponse(true, {
-        markedCount,
+        markedCount: totalMarked,
         markedAt: new Date(),
-        types: ["chat_messages"]
+        types: ["chat_messages", "requests", "invoices"]
       }, "All notifications marked as read"));
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
