@@ -36,12 +36,12 @@ export function sendJoinTeamInvitation(myName: string, teamName: string, teamId:
   let content = FileConstants.getEmailTemplate(IEmailTemplateType.TeamMemberInvitation) as string;
   if (!content) return;
 
-  content = content.replace("[VAR_USER_NAME]", sanitize(userName));
-  content = content.replace("[VAR_TEAM_NAME]", sanitize(teamName));
-  content = content.replace("[VAR_HOSTNAME]", sanitize(FRONTEND_URL));
-  content = content.replace("[VAR_TEAM_ID]", sanitize(teamId));
-  content = content.replace("[VAR_USER_ID]", sanitize(userId));
-  content = content.replace("[PROJECT_ID]", projectId ? sanitize(projectId as string) : "");
+  content = content.replaceAll("[VAR_USER_NAME]", sanitize(userName));
+  content = content.replaceAll("[VAR_TEAM_NAME]", sanitize(teamName));
+  content = content.replaceAll("[VAR_HOSTNAME]", sanitize(FRONTEND_URL));
+  content = content.replaceAll("[VAR_TEAM_ID]", sanitize(teamId));
+  content = content.replaceAll("[VAR_USER_ID]", sanitize(userId));
+  content = content.replaceAll("[PROJECT_ID]", projectId ? sanitize(projectId as string) : "");
 
   sendEmail({
     to: [toEmail],
@@ -54,13 +54,13 @@ export function sendRegisterAndJoinTeamInvitation(myName: string, userName: stri
   let content = FileConstants.getEmailTemplate(IEmailTemplateType.UnregisteredTeamMemberInvitation) as string;
   if (!content) return;
 
-  content = content.replace("[VAR_EMAIL]", sanitize(toEmail));
-  content = content.replace("[VAR_USER_ID]", sanitize(userId));
-  content = content.replace("[VAR_USER_NAME]", sanitize(userName));
-  content = content.replace("[VAR_TEAM_NAME]", sanitize(teamName));
-  content = content.replace("[VAR_HOSTNAME]", sanitize(FRONTEND_URL));
-  content = content.replace("[VAR_TEAM_ID]", sanitize(teamId));
-  content = content.replace("[PROJECT_ID]", projectId ? sanitize(projectId as string) : "");
+  content = content.replaceAll("[VAR_EMAIL]", sanitize(toEmail));
+  content = content.replaceAll("[VAR_USER_ID]", sanitize(userId));
+  content = content.replaceAll("[VAR_USER_NAME]", sanitize(userName));
+  content = content.replaceAll("[VAR_TEAM_NAME]", sanitize(teamName));
+  content = content.replaceAll("[VAR_HOSTNAME]", sanitize(FRONTEND_URL));
+  content = content.replaceAll("[VAR_TEAM_ID]", sanitize(teamId));
+  content = content.replaceAll("[PROJECT_ID]", projectId ? sanitize(projectId as string) : "");
 
   sendEmail({
     to: [toEmail],

@@ -1,7 +1,7 @@
 import { ServerResponse } from "../models/server-response";
 import db from "../config/db";
 import TokenService from "../services/token-service";
-import { sendEmail, EmailRequest } from "../shared/email";
+import { sendEmail, sendEmailEnhanced, EmailRequest } from "../shared/email";
 import { AuthenticatedClientRequest } from "../middlewares/client-auth-middleware";
 import FileConstants from "../shared/file-constants";
 import { IEmailTemplateType } from "../interfaces/email-template-type";
@@ -1669,6 +1669,25 @@ class ClientPortalController {
 
       const newInvoice = result.rows[0];
 
+      // Create notification for the client about new invoice
+      if (request.client_id && organizationId) {
+        await this.createNotification(
+          request.client_id,
+          organizationId,
+          "invoice_created",
+          "New Invoice",
+          `New invoice ${newInvoice.invoice_no} for ${currency} ${amount}`,
+          newInvoice.id,
+          newInvoice.invoice_no,
+          {
+            amount: parseFloat(newInvoice.amount),
+            currency: newInvoice.currency,
+            dueDate: newInvoice.due_date,
+            serviceName: request.service_name
+          }
+        );
+      }
+
       return res.json(new ServerResponse(true, {
         id: newInvoice.id,
         invoiceNumber: newInvoice.invoice_no,
@@ -2917,155 +2936,124 @@ class ClientPortalController {
   }
 
   // Notifications
+
+  /**
+   * Helper method to create a notification in the client_portal_notifications table
+   */
+  static async createNotification(
+    clientId: string,
+    organizationId: string,
+    type: string,
+    title: string,
+    message: string,
+    referenceId?: string,
+    referenceNumber?: string,
+    metadata?: Record<string, any>
+  ) {
+    try {
+      const query = `
+        INSERT INTO client_portal_notifications 
+          (client_id, organization_team_id, type, title, message, reference_id, reference_number, metadata)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING id
+      `;
+      const result = await db.query(query, [
+        clientId,
+        organizationId,
+        type,
+        title,
+        message,
+        referenceId || null,
+        referenceNumber || null,
+        JSON.stringify(metadata || {})
+      ]);
+      return result.rows[0]?.id;
+    } catch (error) {
+      console.error("Error creating notification:", error);
+      return null;
+    }
+  }
+
   static async getNotifications(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
       const { page = 1, limit = 20, unread_only = false } = req.query;
 
-      // Since there's no dedicated notifications table, we'll aggregate activities that would be notifications
-      const notifications = [];
+      const pageNum = Number(page);
+      const limitNum = Number(limit);
+      const offset = (pageNum - 1) * limitNum;
 
-      // Get request status updates
-      const requestNotificationsQuery = `
+      // Build query based on unread_only filter
+      let whereClause = "WHERE client_id = $1 AND organization_team_id = $2";
+      if (String(unread_only) === "true") {
+        whereClause += " AND is_read = false";
+      }
+
+      // Get notifications from the centralized table
+      const notificationsQuery = `
         SELECT 
-          'request_update' as type,
-          r.id as reference_id,
-          r.req_no as reference_number,
-          r.status,
-          r.updated_at as created_at,
-          s.name as service_name,
-          'Request ' || r.req_no || ' status changed to ' || r.status as message,
-          false as is_read
-        FROM client_portal_requests r
-        JOIN client_portal_services s ON r.service_id = s.id
-        WHERE r.client_id = $1 AND r.organization_team_id = $2
-        AND r.updated_at >= NOW() - INTERVAL '30 days'
-        ORDER BY r.updated_at DESC
-        LIMIT $3
+          id,
+          type,
+          reference_id,
+          reference_number,
+          title,
+          message,
+          metadata,
+          is_read,
+          read_at,
+          created_at
+        FROM client_portal_notifications
+        ${whereClause}
+        ORDER BY created_at DESC
+        LIMIT $3 OFFSET $4
       `;
 
-      const requestResult = await db.query(requestNotificationsQuery, [
-        clientId, 
-        organizationId, 
-        Number(limit)
+      const notificationsResult = await db.query(notificationsQuery, [
+        clientId,
+        organizationId,
+        limitNum,
+        offset
       ]);
 
-      notifications.push(...requestResult.rows.map((row: any) => ({
-        id: `request_${row.reference_id}`,
+      // Get total count
+      const countQuery = `
+        SELECT COUNT(*) as total
+        FROM client_portal_notifications
+        ${whereClause}
+      `;
+      const countResult = await db.query(countQuery, [clientId, organizationId]);
+      const total = parseInt(countResult.rows[0]?.total || "0", 10);
+
+      // Get unread count
+      const unreadCountQuery = `
+        SELECT COUNT(*) as unread_count
+        FROM client_portal_notifications
+        WHERE client_id = $1 AND organization_team_id = $2 AND is_read = false
+      `;
+      const unreadCountResult = await db.query(unreadCountQuery, [clientId, organizationId]);
+      const unreadCount = parseInt(unreadCountResult.rows[0]?.unread_count || "0", 10);
+
+      // Map notifications to response format
+      const notifications = notificationsResult.rows.map((row: any) => ({
+        id: row.id,
         type: row.type,
         referenceId: row.reference_id,
         referenceNumber: row.reference_number,
-        title: `Request Update`,
+        title: row.title,
         message: row.message,
+        metadata: row.metadata || {},
         isRead: row.is_read,
-        createdAt: row.created_at,
-        metadata: {
-          serviceName: row.service_name,
-          status: row.status
-        }
-      })));
-
-      // Get new invoice notifications
-      const invoiceNotificationsQuery = `
-        SELECT 
-          'new_invoice' as type,
-          i.id as reference_id,
-          i.invoice_no as reference_number,
-          i.amount,
-          i.currency,
-          i.due_date,
-          i.created_at,
-          'New invoice ' || i.invoice_no || ' for ' || i.currency || ' ' || i.amount as message,
-          false as is_read
-        FROM client_portal_invoices i
-        WHERE i.client_id = $1 AND i.organization_team_id = $2
-        AND i.created_at >= NOW() - INTERVAL '30 days'
-        ORDER BY i.created_at DESC
-        LIMIT $3
-      `;
-
-      const invoiceResult = await db.query(invoiceNotificationsQuery, [
-        clientId, 
-        organizationId, 
-        Number(limit)
-      ]);
-
-      notifications.push(...invoiceResult.rows.map((row: any) => ({
-        id: `invoice_${row.reference_id}`,
-        type: row.type,
-        referenceId: row.reference_id,
-        referenceNumber: row.reference_number,
-        title: `New Invoice`,
-        message: row.message,
-        isRead: row.is_read,
-        createdAt: row.created_at,
-        metadata: {
-          amount: parseFloat(row.amount || "0"),
-          currency: row.currency,
-          dueDate: row.due_date
-        }
-      })));
-
-      // Get new chat messages as notifications
-      const chatNotificationsQuery = `
-        SELECT
-          'new_message' as type,
-          m.id as reference_id,
-          DATE(m.created_at)::text as reference_number,
-          m.message,
-          m.created_at,
-          u.name as sender_name,
-          'New message from ' || u.name as notification_message,
-          CASE WHEN m.read_at IS NULL THEN false ELSE true END as is_read
-        FROM client_portal_chat_messages m
-        LEFT JOIN users u ON m.sender_type = 'team_member' AND m.sender_id = u.id
-        WHERE m.client_id = $1 AND m.organization_team_id = $2
-        AND m.sender_type = 'team_member'
-        AND m.created_at >= NOW() - INTERVAL '7 days'
-        ORDER BY m.created_at DESC
-        LIMIT $3
-      `;
-
-      const chatResult = await db.query(chatNotificationsQuery, [
-        clientId, 
-        organizationId, 
-        Math.floor(Number(limit) / 2) // Limit chat notifications
-      ]);
-
-      notifications.push(...chatResult.rows.map((row: any) => ({
-        id: `message_${row.reference_id}`,
-        type: row.type,
-        referenceId: row.reference_id,
-        referenceNumber: row.reference_number,
-        title: `New Message`,
-        message: row.notification_message,
-        isRead: row.is_read,
-        createdAt: row.created_at,
-        metadata: {
-          senderName: row.sender_name,
-          messagePreview: row.message.substring(0, 100)
-        }
-      })));
-
-      // Sort all notifications by creation date
-      notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-      // Filter unread only if requested
-      const filteredNotifications = String(unread_only) === "true"
-        ? notifications.filter(n => !n.isRead) 
-        : notifications;
-
-      // Paginate
-      const offset = (Number(page) - 1) * Number(limit);
-      const paginatedNotifications = filteredNotifications.slice(offset, offset + Number(limit));
+        readAt: row.read_at,
+        createdAt: row.created_at
+      }));
 
       return res.json(new ServerResponse(true, {
-        notifications: paginatedNotifications,
-        total: filteredNotifications.length,
-        unreadCount: notifications.filter(n => !n.isRead).length,
-        page: Number(page),
-        limit: Number(limit)
+        notifications,
+        total,
+        unreadCount,
+        page: pageNum,
+        limit: limitNum
       }, "Notifications retrieved successfully"));
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -3076,46 +3064,29 @@ class ClientPortalController {
   static async markNotificationRead(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
       const { id } = req.params;
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
 
-      // Parse notification ID to determine type and reference
-      const [type, referenceId] = id.split("_");
+      // Update the notification in the centralized table
+      const updateQuery = `
+        UPDATE client_portal_notifications 
+        SET is_read = true, read_at = NOW(), updated_at = NOW()
+        WHERE id = $1 AND client_id = $2 AND organization_team_id = $3
+        RETURNING id, type, reference_id
+      `;
 
-      if (!type || !referenceId) {
-        return res.status(400).json(new ServerResponse(false, null, "Invalid notification ID"));
-      }
-
-      let updateResult;
-
-      switch (type) {
-        case "message":
-          // Mark chat message as read
-          updateResult = await db.query(
-            "UPDATE client_portal_chat_messages SET read_at = NOW() WHERE id = $1 AND client_id = $2 AND organization_team_id = $3 AND sender_type = 'team_member'",
-            [referenceId, clientId, organizationId]
-          );
-          break;
-
-        case "request":
-        case "invoice":
-          // For request and invoice notifications, we'll simulate marking as read
-          // In a full implementation, you'd have a separate notifications table
-          updateResult = { rowCount: 1 }; // Simulate successful update
-          break;
-
-        default:
-          return res.status(400).json(new ServerResponse(false, null, "Unknown notification type"));
-      }
+      const updateResult = await db.query(updateQuery, [id, clientId, organizationId]);
 
       if (updateResult.rowCount === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Notification not found or already read"));
+        return res.status(404).json(new ServerResponse(false, null, "Notification not found"));
       }
 
+      const notification = updateResult.rows[0];
+
       return res.json(new ServerResponse(true, {
-        id,
-        type,
-        referenceId,
+        id: notification.id,
+        type: notification.type,
+        referenceId: notification.reference_id,
         markedAt: new Date()
       }, "Notification marked as read"));
     } catch (error) {
@@ -3126,26 +3097,22 @@ class ClientPortalController {
 
   static async markAllNotificationsRead(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
 
-      // Mark all unread chat messages as read
-      const chatUpdateResult = await db.query(
-        "UPDATE client_portal_chat_messages SET read_at = NOW() WHERE client_id = $1 AND organization_team_id = $2 AND sender_type = 'team_member' AND read_at IS NULL",
-        [clientId, organizationId]
-      );
+      // Mark all unread notifications as read
+      const updateQuery = `
+        UPDATE client_portal_notifications 
+        SET is_read = true, read_at = NOW(), updated_at = NOW()
+        WHERE client_id = $1 AND organization_team_id = $2 AND is_read = false
+      `;
 
-      // In a full implementation with a notifications table, you would also update:
-      // - Request notifications
-      // - Invoice notifications
-      // - Other notification types
-      
-      const markedCount = chatUpdateResult.rowCount || 0;
+      const updateResult = await db.query(updateQuery, [clientId, organizationId]);
+      const markedCount = updateResult.rowCount || 0;
 
       return res.json(new ServerResponse(true, {
         markedCount,
-        markedAt: new Date(),
-        types: ["chat_messages"]
+        markedAt: new Date()
       }, "All notifications marked as read"));
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
@@ -3652,7 +3619,7 @@ class ClientPortalController {
 
       // Check if there's a pending invitation
       const pendingInviteCheck = await db.query(
-        `SELECT id, email, name FROM client_invitations 
+        `SELECT id, email, name, token FROM client_invitations 
          WHERE client_id = $1 AND status = 'pending' 
          ORDER BY created_at DESC LIMIT 1`,
         [clientId]
@@ -3660,17 +3627,21 @@ class ClientPortalController {
 
       // Generate new invitation token (short random token)
       const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
-      const inviteToken = TokenService.generateInviteToken();
+      let inviteToken: string;
 
       if (pendingInviteCheck.rows.length > 0) {
-        // Update existing invitation with new token and expiry
+        const existingInvitation = pendingInviteCheck.rows[0];
+        inviteToken = TokenService.generateInviteToken();
+        
+        // Update only this specific invitation by ID with new token and expiry
         await db.query(
           `UPDATE client_invitations 
            SET token = $1, expires_at = $2, updated_at = NOW() 
-           WHERE client_id = $3 AND status = 'pending'`,
-          [inviteToken, new Date(expiresAt), clientId]
+           WHERE id = $3`,
+          [inviteToken, new Date(expiresAt), existingInvitation.id]
         );
       } else {
+        inviteToken = TokenService.generateInviteToken();
         // Create new invitation record
         await TokenService.createInvitation({
           clientId: client.id,
@@ -3703,10 +3674,12 @@ class ClientPortalController {
         emailHtml
       );
 
-      const messageId = await sendEmail(emailRequest);
+      const emailResult = await sendEmailEnhanced(emailRequest);
 
-      if (!messageId) {
-        return res.status(500).json(new ServerResponse(false, null, "Failed to send invitation email"));
+      if (!emailResult.success) {
+        console.error("Failed to send client invitation email:", emailResult.error);
+        const errorMessage = emailResult.error?.message || "Failed to send invitation email";
+        return res.status(500).json(new ServerResponse(false, null, errorMessage));
       }
 
       return res.json(new ServerResponse(true, {
