@@ -284,5 +284,13 @@
   "bulkInviteErrorMessage": "Failed to generate invitations",
 
   "inviteLinkGeneratedSuccess": "Invitation link generated successfully!",
-  "inviteLinkGeneratedError": "Failed to generate invitation link"
+  "inviteLinkGeneratedError": "Failed to generate invitation link",
+
+  "invitationModalTitle": "Invitation Link Generated",
+  "invitationModalDescription": "Share this link with the client to invite them to create their portal account. The link will expire in 7 days.",
+  "invitationModalFooterText": "When the client clicks this link, they'll be able to create their portal account and access their projects and services.",
+  "invitationModalCopyLink": "Copy Link",
+  "portalUrlLabel": "Portal URL:",
+  "invitationLinkCopiedSuccess": "Invitation link copied to clipboard!",
+  "invitationLinkCopyError": "Failed to copy link to clipboard"
 }

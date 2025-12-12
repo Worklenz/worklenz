@@ -59,6 +59,7 @@ import {
 } from '@/api/client-portal/client-portal-api';
 import { TempClientPortalClientType } from '@/types/client-portal/temp-client-portal.types';
 import { useState } from 'react';
+import { themeWiseColor } from '@/utils/themeWiseColor';
 import './clients-table.css';
 
 const { Search } = Input;
@@ -72,6 +73,10 @@ const ClientsTable = () => {
   const { filters, pagination } = useAppSelector(
     state => state.clientsPortalReducer.clientsReducer
   );
+
+  // Get theme mode for dark mode support
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const isDarkMode = themeMode === 'dark';
 
   const dispatch = useAppDispatch();
 
@@ -116,8 +121,8 @@ const ClientsTable = () => {
     return (
       <Card>
         <Alert
-          message={t('errorLoadingClients')}
-          description={t('errorLoadingClientsDescription')}
+          message={t('errorLoadingClients', { defaultValue: 'Error Loading Clients' })}
+          description={t('errorLoadingClientsDescription', { defaultValue: 'There was an error loading your clients. Please try again later.' })}
           type="error"
           showIcon
         />
@@ -132,12 +137,12 @@ const ClientsTable = () => {
       description={
         <div>
           <Typography.Title level={4} style={{ marginBottom: 8 }}>
-            {t('noClientsTitle') || 'No clients found'}
+            {t('noClientsTitle', { defaultValue: 'No Clients Found' })}
           </Typography.Title>
           <Typography.Text type="secondary">
             {filters.search || filters.status !== 'all'
-              ? t('noClientsMatchingFilters') || 'No clients match the current filters.'
-              : t('noClientsDescription') || 'Get started by adding your first client.'}
+              ? t('noClientsMatchingFilters', { defaultValue: 'No clients match the current filters.' })
+              : t('noClientsDescription', { defaultValue: 'You haven\'t added any clients yet. Add your first client to start managing their portal access.' })}
           </Typography.Text>
         </div>
       }
@@ -156,7 +161,7 @@ const ClientsTable = () => {
           dispatch(toggleAddClientDrawer());
         }}
       >
-        {t('addClientButton') || 'Add Client'}
+        {t('addClientButton', { defaultValue: 'Add Client' })}
       </Button>
     </Empty>
   );
@@ -200,9 +205,9 @@ const ClientsTable = () => {
   const handleDeactivateClient = async (clientId: string) => {
     try {
       await deactivateClient(clientId).unwrap();
-      message.success(t('deactivateClientSuccessMessage') || 'Client deactivated successfully');
+      message.success(t('deactivateClientSuccessMessage', { defaultValue: 'Client deactivated successfully' }));
     } catch (error) {
-      message.error(t('deactivateClientErrorMessage') || 'Failed to deactivate client');
+      message.error(t('deactivateClientErrorMessage', { defaultValue: 'Failed to deactivate client' }));
     }
   };
 
@@ -215,12 +220,10 @@ const ClientsTable = () => {
 
     // Use Ant Design's Modal.confirm for better UX
     Modal.confirm({
-      title: t('deactivateConfirmationTitle') || 'Deactivate Client',
-      content:
-        t('deactivateConfirmationDescription') ||
-        'Are you sure you want to deactivate this client? They will lose access to the portal, but all data will be preserved.',
-      okText: t('deactivateConfirmationOk') || 'Deactivate',
-      cancelText: t('deactivateConfirmationCancel') || 'Cancel',
+      title: t('deactivateConfirmationTitle', { defaultValue: 'Deactivate Client' }),
+      content: t('deactivateConfirmationDescription', { defaultValue: 'Are you sure you want to deactivate this client? They will lose access to the portal, but all data will be preserved.' }),
+      okText: t('deactivateConfirmationOk', { defaultValue: 'Deactivate' }),
+      cancelText: t('deactivateConfirmationCancel', { defaultValue: 'Cancel' }),
       okType: 'danger',
       onOk: confirmDeactivate,
     });
@@ -229,17 +232,17 @@ const ClientsTable = () => {
   // Handle bulk deactivate
   const handleBulkDeactivate = async () => {
     if (selectedRowKeys.length === 0) {
-      message.warning(t('selectClientsToDeactivate') || 'Please select clients to deactivate');
+      message.warning(t('selectClientsToDeactivate', { defaultValue: 'Please select clients to deactivate' }));
       return;
     }
 
     try {
       setBulkActionLoading(true);
       await bulkDeactivateClients({ client_ids: selectedRowKeys }).unwrap();
-      message.success(t('bulkDeactivateSuccessMessage') || 'Selected clients deactivated successfully');
+      message.success(t('bulkDeactivateSuccessMessage', { defaultValue: 'Selected clients deactivated successfully' }));
       setSelectedRowKeys([]);
     } catch (error) {
-      message.error(t('bulkDeactivateErrorMessage') || 'Failed to deactivate selected clients');
+      message.error(t('bulkDeactivateErrorMessage', { defaultValue: 'Failed to deactivate selected clients' }));
     } finally {
       setBulkActionLoading(false);
     }
@@ -248,7 +251,7 @@ const ClientsTable = () => {
   // Handle bulk status update
   const handleBulkStatusUpdate = async (status: 'active' | 'inactive' | 'pending') => {
     if (selectedRowKeys.length === 0) {
-      message.warning(t('selectClientsToUpdate') || 'Please select clients to update');
+      message.warning(t('selectClientsToUpdate', { defaultValue: 'Please select clients to update' }));
       return;
     }
 
@@ -258,10 +261,10 @@ const ClientsTable = () => {
         client_ids: selectedRowKeys,
         status,
       }).unwrap();
-      message.success(t('bulkUpdateSuccessMessage') || 'Selected clients updated successfully');
+      message.success(t('bulkUpdateSuccessMessage', { defaultValue: 'Selected clients updated successfully' }));
       setSelectedRowKeys([]);
     } catch (error) {
-      message.error(t('bulkUpdateErrorMessage') || 'Failed to update selected clients');
+      message.error(t('bulkUpdateErrorMessage', { defaultValue: 'Failed to update selected clients' }));
     } finally {
       setBulkActionLoading(false);
     }
@@ -283,7 +286,7 @@ const ClientsTable = () => {
               <div>{result.body.message}</div>
               {result.body.portalUrl && (
                 <div style={{ marginTop: 8, fontSize: '12px', color: '#666' }}>
-                  Portal URL:{' '}
+                  {t('portalUrlLabel', { defaultValue: 'Portal URL:' })}{' '}
                   <a href={result.body.portalUrl} target="_blank" rel="noopener noreferrer">
                     {result.body.portalUrl}
                   </a>
@@ -299,13 +302,13 @@ const ClientsTable = () => {
         // Handle new user invitation
         setInvitationLink(result.body.invitationLink);
         setInviteModalOpen(true);
-        message.success(t('inviteLinkGeneratedSuccess') || 'Invitation link generated successfully!');
+        message.success(t('inviteLinkGeneratedSuccess', { defaultValue: 'Invitation link generated successfully!' }));
       } else {
-        message.error(t('inviteLinkGeneratedError') || 'Failed to generate invitation link');
+        message.error(t('inviteLinkGeneratedError', { defaultValue: 'Failed to generate invitation link' }));
       }
     } catch (error) {
       console.error('Failed to generate invitation link:', error);
-      message.error(t('inviteLinkGeneratedError') || 'Failed to generate invitation link');
+      message.error(t('inviteLinkGeneratedError', { defaultValue: 'Failed to generate invitation link' }));
     } finally {
       setIsGeneratingLink(false);
     }
@@ -314,10 +317,10 @@ const ClientsTable = () => {
   const copyInvitationLink = async () => {
     try {
       await navigator.clipboard.writeText(invitationLink);
-      message.success('Invitation link copied to clipboard!');
+      message.success(t('invitationLinkCopiedSuccess', { defaultValue: 'Invitation link copied to clipboard!' }));
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
-      message.error('Failed to copy link to clipboard');
+      message.error(t('invitationLinkCopyError', { defaultValue: 'Failed to copy link to clipboard' }));
     }
   };
 
@@ -333,14 +336,14 @@ const ClientsTable = () => {
       const result = await resendInvitation({ clientId }).unwrap();
 
       if (result.body?.emailSent) {
-        message.success(t('resendInvitationSuccess') || 'Invitation email sent successfully!');
+        message.success(t('resendInvitationSuccess', { defaultValue: 'Invitation email sent successfully!' }));
         refetch();
       } else {
-        message.error(t('resendInvitationError') || 'Failed to send invitation email');
+        message.error(t('resendInvitationError', { defaultValue: 'Failed to send invitation email' }));
       }
     } catch (error) {
       console.error('Failed to resend invitation:', error);
-      message.error(t('resendInvitationError') || 'Failed to send invitation email');
+      message.error(t('resendInvitationError', { defaultValue: 'Failed to send invitation email' }));
     }
   };
 
@@ -354,32 +357,45 @@ const ClientsTable = () => {
 
   // Get portal status details
   const getPortalStatus = (record: any) => {
-    // If portal_status exists in the record, use it
+    // If portal_status exists in the record, use it and ensure label is translated
     if (record.portal_status) {
-      return record.portal_status;
+      const status = record.portal_status;
+      // If it's already an object with status, translate the label
+      if (status.status) {
+        return {
+          ...status,
+          label: t(`portalStatus.${status.status}`, { defaultValue: status.status === 'active' ? 'Active' : status.status === 'expired' ? 'Expired' : status.status === 'invited' ? 'Invited' : 'Not Invited' }),
+        };
+      }
+      // If it's just a status string, create the full object
+      return {
+        status: status,
+        label: t(`portalStatus.${status}`, { defaultValue: status === 'active' ? 'Active' : status === 'expired' ? 'Expired' : status === 'invited' ? 'Invited' : 'Not Invited' }),
+        color: status === 'active' ? 'green' : status === 'expired' ? 'red' : status === 'invited' ? 'orange' : 'default',
+      };
     }
 
     // Otherwise, infer from available data
     if (record.has_portal_access) {
-      return { status: 'active', label: 'Active', color: 'green' };
+      return { status: 'active', label: t('portalStatus.active', { defaultValue: 'Active' }), color: 'green' };
     } else if (record.invitation_sent_at && !record.invitation_accepted) {
       const invitationDate = new Date(record.invitation_sent_at);
       const expiryDate = new Date(invitationDate.getTime() + 7 * 24 * 60 * 60 * 1000);
       const isExpired = expiryDate < new Date();
 
       if (isExpired) {
-        return { status: 'expired', label: 'Expired', color: 'red' };
+        return { status: 'expired', label: t('portalStatus.expired', { defaultValue: 'Expired' }), color: 'red' };
       }
-      return { status: 'invited', label: 'Invited', color: 'orange' };
+      return { status: 'invited', label: t('portalStatus.invited', { defaultValue: 'Invited' }), color: 'orange' };
     }
 
-    return { status: 'not_invited', label: 'Not Invited', color: 'default' };
+    return { status: 'not_invited', label: t('portalStatus.not_invited', { defaultValue: 'Not Invited' }), color: 'default' };
   };
 
   // Handle bulk portal invitations
   const handleBulkInvite = async () => {
     if (selectedRowKeys.length === 0) {
-      message.warning(t('selectClientsToInvite') || 'Please select clients to invite');
+      message.warning(t('selectClientsToInvite', { defaultValue: 'Please select clients to invite' }));
       return;
     }
 
@@ -399,20 +415,16 @@ const ClientsTable = () => {
       }
 
       if (successCount > 0) {
-        message.success(
-          `${successCount} ${t('bulkInviteSuccessMessage') || 'invitation(s) generated successfully'}`
-        );
+        message.success(`${successCount} ${t('bulkInviteSuccessMessage', { defaultValue: 'invitation(s) generated successfully' })}`);
       }
       if (failCount > 0) {
-        message.warning(
-          `${failCount} ${t('bulkInvitePartialFailMessage') || 'invitation(s) failed'}`
-        );
+        message.warning(`${failCount} ${t('bulkInvitePartialFailMessage', { defaultValue: 'invitation(s) failed' })}`);
       }
 
       setSelectedRowKeys([]);
       refetch();
     } catch (error) {
-      message.error(t('bulkInviteErrorMessage') || 'Failed to generate invitations');
+      message.error(t('bulkInviteErrorMessage', { defaultValue: 'Failed to generate invitations' }));
     } finally {
       setBulkActionLoading(false);
     }
@@ -422,7 +434,7 @@ const ClientsTable = () => {
   const bulkActionMenuItems = [
     {
       key: 'invite',
-      label: t('inviteSelectedToPortal') || 'Send Portal Invitations',
+      label: t('inviteSelectedToPortal', { defaultValue: 'Send Portal Invitations' }),
       icon: <LinkOutlined />,
       onClick: handleBulkInvite,
     },
@@ -431,7 +443,7 @@ const ClientsTable = () => {
     },
     {
       key: 'deactivate',
-      label: t('deactivateSelected') || 'Deactivate Selected',
+      label: t('deactivateSelected', { defaultValue: 'Deactivate Selected' }),
       danger: true,
       onClick: handleBulkDeactivate,
     },
@@ -444,7 +456,7 @@ const ClientsTable = () => {
     const menuItems: any[] = [
       {
         key: 'view',
-        label: t('viewDetailsTooltip') || 'View Details',
+        label: t('viewDetailsTooltip', { defaultValue: 'View Details' }),
         icon: <EyeOutlined />,
         onClick: () => {
           dispatch(toggleClientDetailsDrawer(record.id));
@@ -452,7 +464,7 @@ const ClientsTable = () => {
       },
       {
         key: 'edit',
-        label: t('editClientTooltip') || 'Edit Client',
+        label: t('editClientTooltip', { defaultValue: 'Edit Client' }),
         icon: <EditOutlined />,
         onClick: () => {
           dispatch(toggleEditClientDrawer(record.id));
@@ -464,7 +476,7 @@ const ClientsTable = () => {
     if (portalStatus.status === 'not_invited') {
       menuItems.push({
         key: 'invite',
-        label: t('inviteToPortalTooltip') || 'Invite to Portal',
+        label: t('inviteToPortalTooltip', { defaultValue: 'Invite to Portal' }),
         icon: <LinkOutlined />,
         onClick: () => {
           handleGenerateInviteLink(record.id);
@@ -473,7 +485,7 @@ const ClientsTable = () => {
     } else if (portalStatus.status === 'expired') {
       menuItems.push({
         key: 'resend',
-        label: t('resendInvitationTooltip') || 'Resend Invitation',
+        label: t('resendInvitationTooltip', { defaultValue: 'Resend Invitation' }),
         icon: <ShareAltOutlined />,
         onClick: () => {
           handleGenerateInviteLink(record.id);
@@ -483,7 +495,7 @@ const ClientsTable = () => {
       menuItems.push(
         {
           key: 'resendEmail',
-          label: t('resendInviteEmailTooltip') || 'Resend Invite Email',
+          label: t('resendInviteEmailTooltip', { defaultValue: 'Resend Invite Email' }),
           icon: <MailOutlined />,
           onClick: () => {
             handleResendInvitation(record.id);
@@ -491,7 +503,7 @@ const ClientsTable = () => {
         },
         {
           key: 'copyInvite',
-          label: t('copyInviteLinkTooltip') || 'Copy Invitation Link',
+          label: t('copyInviteLinkTooltip', { defaultValue: 'Copy Invitation Link' }),
           icon: <CopyOutlined />,
           onClick: () => {
             handleGenerateInviteLink(record.id);
@@ -503,7 +515,7 @@ const ClientsTable = () => {
     menuItems.push(
       {
         key: 'projects',
-        label: t('manageProjectsTooltip') || 'Manage Projects',
+        label: t('manageProjectsTooltip', { defaultValue: 'Manage Projects' }),
         icon: <SettingOutlined />,
         onClick: () => {
           dispatch(toggleClientSettingsDrawer(record.id));
@@ -511,7 +523,7 @@ const ClientsTable = () => {
       },
       {
         key: 'team',
-        label: t('manageTeamTooltip') || 'Manage Team',
+        label: t('manageTeamTooltip', { defaultValue: 'Manage Team' }),
         icon: <ShareAltOutlined />,
         onClick: () => {
           dispatch(toggleClientTeamsDrawer(record.id));
@@ -522,7 +534,7 @@ const ClientsTable = () => {
       },
       {
         key: 'deactivate',
-        label: t('deactivateTooltip') || 'Deactivate Client',
+        label: t('deactivateTooltip', { defaultValue: 'Deactivate Client' }),
         icon: <DeleteOutlined />,
         danger: true,
         onClick: () => {
@@ -538,7 +550,7 @@ const ClientsTable = () => {
   const columns: TableProps<ClientPortalClient | TempClientPortalClientType>['columns'] = [
     {
       key: 'client',
-      title: t('clientColumn'),
+      title: t('clientColumn', { defaultValue: 'Client' }),
       dataIndex: 'name',
       sorter: true,
       render: (name: string, record: any) => (
@@ -564,13 +576,13 @@ const ClientsTable = () => {
     },
     {
       key: 'portalStatus',
-      title: t('portalStatusColumn') || 'Portal Status',
+      title: t('portalStatusColumn', { defaultValue: 'Portal Status' }),
       dataIndex: 'portal_status',
       render: (_: any, record: any) => {
         const portalStatus = getPortalStatus(record);
         return (
           <Tag color={portalStatus.color} style={{ textTransform: 'capitalize' }}>
-            {t(`portalStatus.${portalStatus.status}`) || portalStatus.label}
+            {portalStatus.label}
           </Tag>
         );
       },
@@ -578,7 +590,7 @@ const ClientsTable = () => {
     },
     {
       key: 'assignedProjects',
-      title: t('assignedProjectsColumn'),
+      title: t('assignedProjectsColumn', { defaultValue: 'Assigned Projects' }),
       dataIndex: 'assigned_projects_count',
       sorter: true,
       render: (count: number) => <Typography.Text>{count || 0}</Typography.Text>,
@@ -586,14 +598,14 @@ const ClientsTable = () => {
     },
     {
       key: 'teamMembers',
-      title: t('teamMembersColumn') || 'Team Members',
+      title: t('teamMembersColumn', { defaultValue: 'Team Members' }),
       dataIndex: 'team_members',
       render: (teamMembers: any[]) => <Typography.Text>{teamMembers?.length || 0}</Typography.Text>,
       width: 140,
     },
     {
       key: 'actionBtns',
-      title: t('actionBtnsColumn'),
+      title: t('actionBtnsColumn', { defaultValue: 'Actions' }),
       width: 80,
       render: (_, record) => (
         <div
@@ -624,7 +636,7 @@ const ClientsTable = () => {
       <Flex vertical gap={16} style={{ marginBottom: 16 }}>
         <Flex gap={16} align="center" wrap="wrap">
           <Search
-            placeholder={t('searchClientsPlaceholder') || 'Search clients...'}
+            placeholder={t('searchClientsPlaceholder', { defaultValue: 'Search clients...' })}
             allowClear
             style={{ width: 300 }}
             onSearch={handleSearch}
@@ -632,35 +644,35 @@ const ClientsTable = () => {
           />
 
           <Select
-            placeholder={t('statusFilterPlaceholder') || 'Filter by status'}
+            placeholder={t('statusFilterPlaceholder', { defaultValue: 'Filter by status' })}
             allowClear
             style={{ width: 180 }}
             onChange={handleStatusFilter}
             value={filters.status}
           >
-            <Option value="all">{t('statusAll') || 'All'}</Option>
-            <Option value="active">{t('statusActive') || 'Active'}</Option>
-            <Option value="inactive">{t('statusInactive') || 'Inactive'}</Option>
-            <Option value="pending">{t('statusPending') || 'Pending'}</Option>
+            <Option value="all">{t('statusAll', { defaultValue: 'All' })}</Option>
+            <Option value="active">{t('statusActive', { defaultValue: 'Active' })}</Option>
+            <Option value="inactive">{t('statusInactive', { defaultValue: 'Inactive' })}</Option>
+            <Option value="pending">{t('statusPending', { defaultValue: 'Pending' })}</Option>
           </Select>
 
           <Button icon={<ReloadOutlined />} onClick={handleRefresh} loading={isLoading}>
-            {t('refreshButton') || 'Refresh'}
+            {t('refreshButton', { defaultValue: 'Refresh' })}
           </Button>
 
           <Button icon={<FilterOutlined />} onClick={() => dispatch(clearFilters())}>
-            {t('clearFiltersButton') || 'Clear Filters'}
+            {t('clearFiltersButton', { defaultValue: 'Clear Filters' })}
           </Button>
 
           {/* Bulk Actions */}
           {selectedRowKeys.length > 0 && (
             <Space>
               <Typography.Text type="secondary">
-                {t('selectedCount') || 'Selected'}: {selectedRowKeys.length}
+                {t('selectedCount', { defaultValue: 'Selected' })}: {selectedRowKeys.length}
               </Typography.Text>
               <Dropdown menu={{ items: bulkActionMenuItems }} trigger={['click']}>
                 <Button icon={<MoreOutlined />} loading={bulkActionLoading}>
-                  {t('bulkActions') || 'Bulk Actions'}
+                  {t('bulkActions', { defaultValue: 'Bulk Actions' })}
                 </Button>
               </Dropdown>
             </Space>
@@ -714,7 +726,7 @@ const ClientsTable = () => {
             showSizeChanger
             showQuickJumper
             showTotal={(total, range) =>
-              `${t('paginationText') || 'Showing'} ${range[0]}-${range[1]} ${t('ofText') || 'of'} ${total} ${t('clientsText') || 'clients'}`
+              `${t('paginationText', { defaultValue: 'Showing' })} ${range[0]}-${range[1]} ${t('ofText', { defaultValue: 'of' })} ${total} ${t('clientsText', { defaultValue: 'clients' })}`
             }
             onChange={handlePaginationChange}
             onShowSizeChange={handlePaginationChange}
@@ -724,41 +736,47 @@ const ClientsTable = () => {
 
       {/* Invitation Modal */}
       <Modal
-        title="Invitation Link Generated"
+        title={t('invitationModalTitle', { defaultValue: 'Invitation Link Generated' })}
         open={inviteModalOpen}
         onCancel={closeInviteModal}
         footer={[
           <Button key="close" onClick={closeInviteModal}>
-            Close
+            {t('closeButton', { defaultValue: 'Close' })}
           </Button>,
           <Button key="copy" type="primary" icon={<CopyOutlined />} onClick={copyInvitationLink}>
-            Copy Link
+            {t('invitationModalCopyLink', { defaultValue: 'Copy Link' })}
           </Button>,
         ]}
         width={600}
       >
         <div style={{ marginBottom: 16 }}>
           <Typography.Text type="secondary">
-            Share this link with the client to invite them to create their portal account. The link
-            will expire in 7 days.
+            {t('invitationModalDescription', { defaultValue: 'Share this link with the client to invite them to create their portal account. The link will expire in 7 days.' })}
           </Typography.Text>
         </div>
 
         <div
           style={{
             padding: 12,
-            backgroundColor: '#f5f5f5',
+            backgroundColor: themeWiseColor('#f5f5f5', '#2a2a2a', themeMode),
             borderRadius: 6,
             marginBottom: 16,
             wordBreak: 'break-all',
+            border: `1px solid ${themeWiseColor('#e8e8e8', '#404040', themeMode)}`,
           }}
         >
-          <Typography.Text copyable={{ text: invitationLink }}>{invitationLink}</Typography.Text>
+          <Typography.Text 
+            copyable={{ text: invitationLink }}
+            style={{ 
+              color: themeWiseColor('rgba(0, 0, 0, 0.88)', 'rgba(255, 255, 255, 0.85)', themeMode)
+            }}
+          >
+            {invitationLink}
+          </Typography.Text>
         </div>
 
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          When the client clicks this link, they'll be able to create their portal account and
-          access their projects and services.
+          {t('invitationModalFooterText', {defaultValue: 'When the client clicks this link, they\'ll be able to create their portal account and access their projects and services.'})}
         </Typography.Text>
       </Modal>
 
