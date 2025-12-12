@@ -14,6 +14,7 @@ const ClientPortalChats = lazy(() => import('@/pages/client-portal/chats/client-
 const ClientPortalSettings = lazy(() => import('@/pages/client-portal/settings/ClientPortalSettings'));
 const ClientPortalInvoices = lazy(() => import('@/pages/client-portal/invoices/client-portal-invoices'));
 const ClientPortalInvoiceDetails = lazy(() => import('@/pages/client-portal/invoices/invoice-details/client-portal-invoice-details'));
+const InvoiceBuilder = lazy(() => import('@/pages/client-portal/invoices/invoice-builder/invoice-builder'));
 
 const clientPortalRoutes: RouteObject[] = [
   {
@@ -81,6 +82,14 @@ const clientPortalRoutes: RouteObject[] = [
         element: (
           <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
             <ClientPortalInvoices />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'invoices/create',
+        element: (
+          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+            <InvoiceBuilder />
           </Suspense>
         ),
       },

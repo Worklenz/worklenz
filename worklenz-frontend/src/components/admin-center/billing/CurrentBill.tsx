@@ -7,7 +7,7 @@ import InvoicesTable from './billing-tables/invoices-table';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useMediaQuery } from 'react-responsive';
+import { useDebouncedMediaQuery } from '@/hooks/useDebouncedMediaQuery';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -26,7 +26,7 @@ const CurrentBill: React.FC = React.memo(() => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('admin-center/current-bill');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
-  const isTablet = useMediaQuery({ query: '(min-width: 1025px)' });
+  const isTablet = useDebouncedMediaQuery({ query: '(min-width: 1025px)' });
   const currentSession = useAuthService().getCurrentSession();
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { billingInfo, storageInfo } = useAppSelector(state => state.adminCenterReducer);

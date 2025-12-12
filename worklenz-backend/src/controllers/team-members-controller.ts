@@ -1404,6 +1404,12 @@ export default class TeamMembersController extends WorklenzControllerBase {
         `;
         const existingResult = await db.query(existingMemberQuery, [userId, teamId]);
         if (existingResult.rows.length > 0) {
+
+          // Set the joined team as active for the user
+          if (userId) {
+            const setActiveTeamQuery = `SELECT set_active_team($1, $2)`;
+            await db.query(setActiveTeamQuery, [userId, teamId]);
+          }
           return res.status(200).send(new ServerResponse(false, null, "You are already a member of this team."));
         }
       }
@@ -1419,6 +1425,11 @@ export default class TeamMembersController extends WorklenzControllerBase {
       const [emailExists] = emailResult.rows;
 
       if (emailExists.exists) {
+        // Set the joined team as active for the user
+        if (userId) {
+          const setActiveTeamQuery = `SELECT set_active_team($1, $2)`;
+          await db.query(setActiveTeamQuery, [userId, teamId]);
+        }
         return res.status(200).send(new ServerResponse(false, null, "A team member with this email already exists."));
       }
 
@@ -1460,6 +1471,12 @@ export default class TeamMembersController extends WorklenzControllerBase {
           validation.link_id, userId, member.team_member_id,
           email, name, ipAddress, userAgent
         ]);
+
+        // Set the joined team as active for the user
+        if (userId) {
+          const setActiveTeamQuery = `SELECT set_active_team($1, $2)`;
+          await db.query(setActiveTeamQuery, [userId, teamId]);
+        }
       }
 
       return res.status(200).send(new ServerResponse(true, newMembers, "Successfully joined the team!"));

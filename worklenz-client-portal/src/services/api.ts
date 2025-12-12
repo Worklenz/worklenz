@@ -163,6 +163,7 @@ class ClientPortalAPI {
   async acceptInvite(inviteData: { 
     token: string; 
     name: string; 
+    email: string;
     password: string; 
   }): Promise<ApiResponse<{ user: ClientUser; token: string; expiresAt: string }>> {
     // Note: Both organization invites and regular invites can now create new accounts
@@ -318,6 +319,16 @@ class ClientPortalAPI {
     return this.request(`/projects/${id}`);
   }
 
+  async getProjectTasks(projectId: string, params?: { page?: number; limit?: number; search?: string }) {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.search) queryParams.append('search', params.search);
+    
+    const queryString = queryParams.toString();
+    return this.request(`/projects/${projectId}/tasks${queryString ? `?${queryString}` : ''}`);
+  }
+
   // Invoices
   async getInvoices(params?: { page?: number; limit?: number; status?: string; search?: string }) {
     const queryParams = new URLSearchParams();
@@ -428,8 +439,19 @@ class ClientPortalAPI {
     });
   }
 
-  // File uploads
-  async uploadFile(file: File, purpose?: string): Promise<ApiResponse<{ url: string; filename: string; originalName: string; fileType: string; purpose: string; size: number; uploadedAt: string }>> {
+  // File uploads and attachments
+  async uploadFile(file: File, purpose?: string): Promise<ApiResponse<{ 
+    id: string;
+    url: string; 
+    filename: string; 
+    originalName: string; 
+    fileType: string; 
+    fileExtension: string;
+    purpose: string; 
+    size: number; 
+    storageKey: string;
+    uploadedAt: string 
+  }>> {
     // Convert file to base64
     const base64 = await this.fileToBase64(file);
     
@@ -447,6 +469,70 @@ class ClientPortalAPI {
     return response.data;
   }
 
+  // Get attachments for a specific request
+  async getRequestAttachments(requestId: string): Promise<ApiResponse<Array<{
+    id: string;
+    originalName: string;
+    url: string;
+    fileType: string;
+    fileExtension: string;
+    size: number;
+    purpose: string;
+    uploadedAt: string;
+  }>>> {
+    return this.request(`/requests/${requestId}/attachments`);
+  }
+
+  // Link uploaded attachments to a request
+  async linkAttachmentsToRequest(requestId: string, attachmentIds: string[]): Promise<ApiResponse<{
+    linkedCount: number;
+    requestId: string;
+  }>> {
+    return this.request(`/requests/${requestId}/attachments/link`, {
+      method: 'POST',
+      data: { attachmentIds },
+    });
+  }
+
+  // Get unlinked attachments (files uploaded but not yet linked to a request)
+  async getUnlinkedAttachments(purpose?: string): Promise<ApiResponse<Array<{
+    id: string;
+    originalName: string;
+    url: string;
+    fileType: string;
+    fileExtension: string;
+    size: number;
+    purpose: string;
+    uploadedAt: string;
+  }>>> {
+    const queryParams = new URLSearchParams();
+    if (purpose) queryParams.append('purpose', purpose);
+    const queryString = queryParams.toString();
+    return this.request(`/attachments/unlinked${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Get a single attachment by ID
+  async getAttachment(attachmentId: string): Promise<ApiResponse<{
+    id: string;
+    originalName: string;
+    url: string;
+    fileType: string;
+    fileExtension: string;
+    size: number;
+    purpose: string;
+    requestId: string | null;
+    uploadedAt: string;
+  }>> {
+    return this.request(`/attachments/${attachmentId}`);
+  }
+
+  // Delete an attachment
+  async deleteAttachment(attachmentId: string): Promise<ApiResponse<null>> {
+    return this.request(`/attachments/${attachmentId}`, {
+      method: 'DELETE',
+    });
+  }
+
   private fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -459,4 +545,4 @@ class ClientPortalAPI {
 
 // Export singleton instance
 export const clientPortalAPI = new ClientPortalAPI();
-export default clientPortalAPI; 
+export default clientPortalAPI;

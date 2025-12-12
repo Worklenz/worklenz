@@ -1,10 +1,10 @@
 import { Flex, Typography } from '@/shared/antd-imports';
 import SettingsSidebar from '../pages/settings/sidebar/settings-sidebar';
 import { Outlet } from 'react-router-dom';
-import { useMediaQuery } from 'react-responsive';
+import { useDebouncedMediaQuery } from '@/hooks/useDebouncedMediaQuery';
 
 const SettingsLayout = () => {
-  const isTablet = useMediaQuery({ query: '(min-width: 768px)' });
+  const isTablet = useDebouncedMediaQuery({ query: '(min-width: 768px)' });
 
   return (
     <div className="my-6 min-h-[90vh]">

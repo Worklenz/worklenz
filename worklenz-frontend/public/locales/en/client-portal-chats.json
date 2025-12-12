@@ -1,5 +1,6 @@
 {
   "title": "Messages",
+  "chatsTitle": "Chats",
   "description": "Communicate with your team and clients",
   "refresh": "Refresh",
   "noChatsTitle": "No Messages Found",
@@ -7,5 +8,22 @@
   "errorLoadingChats": "Error Loading Messages",
   "errorLoadingChatsDescription": "There was an error loading your messages. Please try again later.",
   "selectChatMessage": "Select a chat to start messaging",
-  "startConversation": "Start Conversation"
+  "startConversation": "Start Conversation",
+  "newChat": "New Chat",
+  "newChatDescription": "Start a new conversation with your team",
+  "subject": "Subject",
+  "subjectPlaceholder": "Enter a brief subject for your message",
+  "subjectHelper": "A clear subject helps your team respond faster",
+  "message": "Message",
+  "messagePlaceholder": "Type your message here...",
+  "messageHelper": "Describe your question or request in detail",
+  "sendMessage": "Send Message",
+  "newChatCreatedSuccessfully": "Chat created successfully!",
+  "newChatFailed": "Failed to create chat. Please try again.",
+  "subjectRequired": "Please enter a subject",
+  "subjectMinLength": "Subject must be at least 3 characters",
+  "subjectMaxLength": "Subject must be less than 100 characters",
+  "messageRequired": "Please enter a message",
+  "messageMinLength": "Message must be at least 10 characters",
+  "messageMaxLength": "Message must be less than 1000 characters"
 }

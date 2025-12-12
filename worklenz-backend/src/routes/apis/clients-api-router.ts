@@ -20,6 +20,7 @@ clientsApiRouter.delete("/:id", teamOwnerOrAdminValidator, idParamValidator, saf
 clientsApiRouter.get("/portal/requests", safeControllerFunction(ClientsController.getClientRequests));
 clientsApiRouter.get("/portal/requests/stats", safeControllerFunction(ClientsController.getClientRequestsStats));
 clientsApiRouter.get("/portal/requests/:id", idParamValidator, safeControllerFunction(ClientsController.getClientRequestById));
+clientsApiRouter.get("/portal/requests/:id/history", idParamValidator, safeControllerFunction(ClientsController.getClientRequestStatusHistory));
 clientsApiRouter.put("/portal/requests/:id/status", idParamValidator, safeControllerFunction(ClientsController.updateClientRequestStatus));
 clientsApiRouter.put("/portal/requests/:id/assign", idParamValidator, safeControllerFunction(ClientsController.assignClientRequest));
 
@@ -52,6 +53,7 @@ clientsApiRouter.post("/portal/clients/:id/team/:memberId/resend-invitation", id
 
 // Organization-side Client Portal Invitation Management
 clientsApiRouter.post("/portal/generate-invitation-link", safeControllerFunction(ClientsController.generateClientInvitationLink));
+clientsApiRouter.post("/portal/clients/:id/resend-invitation", idParamValidator, safeControllerFunction(ClientsController.resendClientInvitation));
 
 // Organization-side Client Portal Analytics
 clientsApiRouter.get("/portal/clients/:id/stats", idParamValidator, safeControllerFunction(ClientsController.getPortalClientStats));
@@ -68,12 +70,14 @@ clientsApiRouter.get("/portal/projects/:id", idParamValidator, safeControllerFun
 
 // Organization-side Client Portal Invoices Management  
 clientsApiRouter.get("/portal/invoices", safeControllerFunction(ClientsController.getPortalInvoices));
+clientsApiRouter.post("/portal/invoices", safeControllerFunction(ClientsController.createPortalInvoice));
 clientsApiRouter.get("/portal/invoices/:id", idParamValidator, safeControllerFunction(ClientsController.getPortalInvoiceById));
 clientsApiRouter.post("/portal/invoices/:id/pay", idParamValidator, safeControllerFunction(ClientsController.payPortalInvoice));
 clientsApiRouter.get("/portal/invoices/:id/download", idParamValidator, safeControllerFunction(ClientsController.downloadPortalInvoice));
 
 // Organization-side Client Portal Chats Management
 clientsApiRouter.get("/portal/chats", safeControllerFunction(ClientsController.getPortalChats));
+clientsApiRouter.post("/portal/chats", safeControllerFunction(ClientsController.createPortalChat));
 clientsApiRouter.get("/portal/chats/:id", idParamValidator, safeControllerFunction(ClientsController.getPortalChatById));
 clientsApiRouter.post("/portal/chats/:chatId/messages", idParamValidator, safeControllerFunction(ClientsController.sendPortalMessage));
 clientsApiRouter.get("/portal/chats/:chatId/messages", idParamValidator, safeControllerFunction(ClientsController.getPortalMessages));

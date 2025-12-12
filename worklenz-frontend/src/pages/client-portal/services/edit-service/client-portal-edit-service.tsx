@@ -40,6 +40,7 @@ const ClientPortalEditService = () => {
   const [windowHeight, setWindowHeight] = useState(window.innerHeight);
   const [service, setService] = useState<TempServicesType>({
     name: '',
+    is_public: true,
     service_data: {
       description: '',
       images: [],
@@ -87,6 +88,10 @@ const ClientPortalEditService = () => {
       setService({
         id: fetchedService.id,
         name: fetchedService.name,
+        is_public: fetchedService.is_public ?? true,
+        price: fetchedService.price,
+        currency: fetchedService.currency,
+        category: fetchedService.category,
         service_data: {
           description: fetchedService.service_data?.description || '',
           images: fetchedService.service_data?.images || [],
@@ -259,7 +264,7 @@ const ClientPortalEditService = () => {
                   '100%': token.colorSuccess,
                 }}
                 showInfo={false}
-                strokeWidth={4}
+                size={['100%', 4]}
                 style={{ marginBottom: 4 }}
               />
               <Flex justify="space-between" align="center">

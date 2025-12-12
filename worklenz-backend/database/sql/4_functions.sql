@@ -4931,7 +4931,7 @@ DECLARE
     _google_id       TEXT;
 BEGIN
     _name = (_body ->> 'displayName')::TEXT;
-    _email = (_body ->> 'email')::TEXT;
+    _email = LOWER(TRIM((_body ->> 'email')::TEXT));
     _google_id = (_body ->> 'id');
 
     INSERT INTO users (name, email, google_id, timezone_id)
@@ -5009,8 +5009,8 @@ BEGIN
     _trimmed_name = TRIM((_body ->> 'name'));
     _trimmed_team_name = TRIM((_body ->> 'team_name'));
 
-    -- check user exists
-    IF EXISTS(SELECT email FROM users WHERE email = _trimmed_email)
+    -- check user exists (case-insensitive)
+    IF EXISTS(SELECT email FROM users WHERE LOWER(email) = _trimmed_email)
     THEN
         RAISE 'EMAIL_EXISTS_ERROR:%', (_body ->> 'email');
     END IF;
@@ -5042,7 +5042,7 @@ BEGIN
         IF NOT EXISTS(SELECT id
                       FROM email_invitations
                       WHERE team_id = (_body ->> 'invited_team_id')::UUID
-                        AND email = _trimmed_email)
+                        AND LOWER(email) = _trimmed_email)
         THEN
             RAISE 'ERROR_INVALID_JOINING_EMAIL';
         END IF;
@@ -5065,7 +5065,7 @@ BEGIN
         UPDATE team_members SET user_id = (_user_id)::UUID WHERE id = (_body ->> 'team_member_id')::UUID;
         DELETE
         FROM email_invitations
-        WHERE email = _trimmed_email
+        WHERE LOWER(email) = _trimmed_email
           AND team_member_id = (_body ->> 'team_member_id')::UUID;
     END IF;
 
@@ -6794,4 +6794,39 @@ BEGIN
         END IF;
     END LOOP;
 END;
+$$;
+
+CREATE OR REPLACE FUNCTION replace_task_labels(_task_id uuid, _label_ids uuid[]) RETURNS json
+    LANGUAGE plpgsql
+AS
+$$
+DECLARE
+    _result JSON;
+    _label_id UUID;
+BEGIN
+    -- Remove all existing labels for this task
+    DELETE FROM task_labels WHERE task_id = _task_id;
+
+    -- Insert new labels if array is not empty
+    IF _label_ids IS NOT NULL AND array_length(_label_ids, 1) > 0 THEN
+        FOREACH _label_id IN ARRAY _label_ids
+        LOOP
+            INSERT INTO task_labels (task_id, label_id) 
+            VALUES (_task_id, _label_id)
+            ON CONFLICT (task_id, label_id) DO NOTHING;
+        END LOOP;
+    END IF;
+
+    -- Return the updated labels list
+    SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
+    INTO _result
+    FROM (SELECT task_labels.label_id AS id,
+                 (SELECT name FROM team_labels WHERE id = task_labels.label_id) AS name,
+                 (SELECT color_code FROM team_labels WHERE id = task_labels.label_id)
+          FROM task_labels
+          WHERE task_id = _task_id
+          ORDER BY name) rec;
+
+    RETURN _result;
+END
 $$;

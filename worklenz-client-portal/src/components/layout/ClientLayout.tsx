@@ -67,6 +67,13 @@ const ClientLayout: React.FC = () => {
     // }
   }, [notificationsData]);
 
+  // Sync i18n language with Redux state on mount
+  React.useEffect(() => {
+    if (currentLanguage && i18n.language !== currentLanguage) {
+      i18n.changeLanguage(currentLanguage);
+    }
+  }, [currentLanguage, i18n]);
+
   const handleLogout = () => {
     dispatch(logout());
     navigate('/auth/login');
@@ -76,9 +83,13 @@ const ClientLayout: React.FC = () => {
     dispatch(setTheme(currentTheme === 'light' ? 'dark' : 'light'));
   };
 
-  const handleLanguageChange = (language: string) => {
-    dispatch(setLanguage(language));
-    i18n.changeLanguage(language);
+  const handleLanguageChange = async (language: string) => {
+    try {
+      await i18n.changeLanguage(language);
+      dispatch(setLanguage(language));
+    } catch (error) {
+      console.error('Failed to change language:', error);
+    }
   };
 
   const languageOptions = [
@@ -143,16 +154,17 @@ const ClientLayout: React.FC = () => {
           trigger={null}
           collapsible
           collapsed={sidebarCollapsed}
-          width={280}
+          width={240}
           collapsedWidth={80}
           style={{
-            borderRight: `1px solid ${token.colorBorder}`,
+            borderRight: `1px solid ${token.colorBorderSecondary}`,
             background: token.colorBgContainer,
             position: 'fixed',
             height: '100vh',
             left: 0,
             top: 0,
             zIndex: 1001,
+            overflow: 'auto',
           }}
         >
           <ClientPortalSidebar
@@ -171,106 +183,94 @@ const ClientLayout: React.FC = () => {
       
       <Layout
         style={{
-          marginLeft: isMobile ? 0 : sidebarCollapsed ? 80 : 280,
-          transition: 'margin-left 0.2s ease',
+          marginLeft: isMobile ? 0 : sidebarCollapsed ? 80 : 240,
+          transition: 'margin-left 0.2s cubic-bezier(0.645, 0.045, 0.355, 1)',
+          background: token.colorBgLayout,
         }}
       >
         <Header
           style={{
             padding: 0,
             background: token.colorBgContainer,
-            borderBottom: `1px solid ${token.colorBorder}`,
-            height: 64,
+            borderBottom: `1px solid ${token.colorBorderSecondary}`,
+            height: 56,
+            lineHeight: '56px',
             zIndex: 1000,
             position: 'sticky',
             top: 0,
-            boxShadow: currentTheme === 'dark' ? '0 2px 8px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.06)',
           }}
         >
           <div style={{
             width: '100%',
             height: '100%',
-            paddingInline: isMobile ? 24 : 48,
+            paddingInline: isMobile ? 16 : 24,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'flex-end',
+            gap: 16,
           }}>
-            {/* Actions Section */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-              {/* Theme & Language Controls */}
-              {!isMobile && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Switch
-                    checked={currentTheme === 'dark'}
-                    onChange={handleThemeToggle}
-                    checkedChildren={<MoonOutlined />}
-                    unCheckedChildren={<SunOutlined />}
-                  />
-                  <Select
-                    value={currentLanguage}
-                    onChange={handleLanguageChange}
-                    style={{ width: 120 }}
-                    size="small"
-                    options={languageOptions}
-                    suffixIcon={<TranslationOutlined />}
-                    variant="borderless"
-                  />
-                </div>
-              )}
-              
-              {!isMobile && <OrganizationSwitcher />}
-              <NotificationCenter />
-              
-              <Dropdown
-                menu={{ items: userMenuItems }}
-                placement="bottomRight"
-                trigger={['click']}
+            {/* Theme & Language Controls */}
+            {!isMobile && (
+              <>
+                <Switch
+                  checked={currentTheme === 'dark'}
+                  onChange={handleThemeToggle}
+                  checkedChildren={<MoonOutlined />}
+                  unCheckedChildren={<SunOutlined />}
+                  size="small"
+                />
+                <Select
+                  value={currentLanguage}
+                  onChange={handleLanguageChange}
+                  style={{ width: 110 }}
+                  size="small"
+                  options={languageOptions}
+                  suffixIcon={<TranslationOutlined />}
+                  variant="borderless"
+                />
+                <OrganizationSwitcher />
+              </>
+            )}
+            
+            <NotificationCenter />
+            
+            <Dropdown
+              menu={{ items: userMenuItems }}
+              placement="bottomRight"
+              trigger={['click']}
+            >
+              <div style={{ 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center',
+                padding: '4px 8px',
+                borderRadius: 6,
+                transition: 'background 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = token.colorFillSecondary}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
               >
-                <div style={{ 
-                  cursor: 'pointer', 
-                  display: 'flex', 
-                  alignItems: 'center',
-                  height: '100%',
-                }}
-                >
-                  <Avatar 
-                    icon={<UserOutlined />} 
-                    style={{ 
-                      backgroundColor: token.colorPrimary,
-                      width: 40,
-                      height: 40,
-                    }}
-                  />
-                </div>
-              </Dropdown>
-            </div>
+                <Avatar 
+                  icon={<UserOutlined />} 
+                  size={32}
+                  style={{ backgroundColor: token.colorPrimary }}
+                />
+              </div>
+            </Dropdown>
           </div>
         </Header>
         
         <Content
           style={{
-            margin: isMobile ? '16px' : '24px',
-            padding: isMobile ? '20px' : '32px',
-            background: token.colorBgContainer,
-            borderRadius: isMobile ? '12px' : '16px',
-            minHeight: 280,
-            overflow: 'auto',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            border: `1px solid ${token.colorBorderSecondary}`,
+            margin: isMobile ? 16 : 24,
+            minHeight: 'calc(100vh - 104px)',
           }}
         >
-          <div style={{ 
-            maxWidth: '1200px', 
-            margin: '0 auto',
-            minHeight: 'calc(100vh - 200px)',
-            width: '100%',
-          }}>
-            <Outlet />
-          </div>
+          <Outlet />
         </Content>
       </Layout>
     </Layout>
   );
 };
 
-export default ClientLayout; 
+export default ClientLayout;

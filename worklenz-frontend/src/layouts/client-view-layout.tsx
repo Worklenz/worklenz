@@ -2,7 +2,7 @@ import { Col, ConfigProvider, Flex, Layout } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useAppSelector } from '../hooks/useAppSelector';
-import { useMediaQuery } from 'react-responsive';
+import { useDebouncedMediaQuery } from '@/hooks/useDebouncedMediaQuery';
 import { colors } from '../styles/colors';
 import ClientViewSiderMenu from '../pages/client-view/sidebar/client-view-sider-menu';
 import ClientViewLogo from '../assets/images/client-view-logo.png';
@@ -15,7 +15,7 @@ const ClientViewLayout = () => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   // useMediaQuery hook to check if the screen is desktop or not
-  const isDesktop = useMediaQuery({ query: '(min-width: 1024px)' });
+  const isDesktop = useDebouncedMediaQuery({ query: '(min-width: 1024px)' });
 
   return (
     <ConfigProvider

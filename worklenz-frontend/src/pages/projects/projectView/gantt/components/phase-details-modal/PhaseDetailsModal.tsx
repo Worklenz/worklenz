@@ -701,7 +701,7 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
                                 type="secondary"
                                 className={`text-xs ${taskStatus === 'overdue' ? 'text-red-500 dark:text-red-400' : ''}`}
                               >
-                                {dayjs(task.end_date).format('MMM DD')}
+                                {dayjs(task.end_date, 'YYYY-MM-DD').format('MMM DD')}
                               </Text>
                             </div>
                           ) : (

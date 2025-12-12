@@ -94,15 +94,15 @@ export async function on_quick_task(_io: Server, socket: Socket, data?: string) 
           logStartDateChange({
             task_id: d.task.id,
             socket,
-            new_value: body.time_zone && d.task.start_date ? momentTime.tz(d.task.start_date, `${body.time_zone}`) : d.task.start_date,
+            new_value: d.task.start_date ? momentTime.utc(d.task.start_date).format('YYYY-MM-DD') : null,
             old_value: null
           });
 
           logEndDateChange({
             task_id: d.task.id,
             socket,
-            new_value:  body.time_zone && d.task.end_date ? momentTime.tz(d.task.end_date, `${body.time_zone}`) : d.task.end_date,
-            old_value:  null
+            new_value: d.task.end_date ? momentTime.utc(d.task.end_date).format('YYYY-MM-DD') : null,
+            old_value: null
           });
         }
 

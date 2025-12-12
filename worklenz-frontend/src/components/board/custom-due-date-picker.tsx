@@ -20,7 +20,7 @@ const CustomDueDatePicker = ({
   const [isDatePickerOpen, setIsDatePickerOpen] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null); // Add ref to container
 
-  const dueDayjs = task?.end_date ? dayjs(task.end_date) : null;
+  const dueDayjs = task?.end_date ? dayjs(task.end_date, 'YYYY-MM-DD') : null;
 
   const handleDateChange = (date: Dayjs | null) => {
     onDateChange(date);

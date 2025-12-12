@@ -1,9 +1,10 @@
-import {Strategy as CustomStrategy} from "passport-custom";
-import {Request} from "express";
+import { Strategy as CustomStrategy } from "passport-custom";
+import { Request } from "express";
 import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
 import db from "../../config/db";
-import {log_error} from "../../shared/utils";
+import { log_error } from "../../shared/utils";
+import { ERROR_KEY } from "./passport-constants";
 
 /**
  * Apple ID Token Payload Interface
@@ -67,18 +68,18 @@ async function getAppleSigningKey(kid: string): Promise<string> {
  */
 async function handleAppleMobileAuth(req: Request, done: any) {
   try {
-    const {idToken} = req.body;
+    const { idToken } = req.body;
 
     // Validate ID token presence
     if (!idToken) {
-      return done(null, false, {message: "Apple ID token is required"});
+      return done(null, false, { message: "Apple ID token is required" });
     }
 
     // Decode token header to get key ID (kid)
-    const decoded = jwt.decode(idToken, {complete: true});
+    const decoded = jwt.decode(idToken, { complete: true });
 
     if (!decoded || !decoded.header.kid) {
-      return done(null, false, {message: "Invalid Apple ID token format"});
+      return done(null, false, { message: "Invalid Apple ID token format" });
     }
 
     // Fetch Apple's public signing key
@@ -118,7 +119,7 @@ async function handleAppleMobileAuth(req: Request, done: any) {
 
     // Validate Apple ID
     if (!appleId) {
-      return done(null, false, {message: "Apple ID (sub) not found in token"});
+      return done(null, false, { message: "Apple ID (sub) not found in token" });
     }
 
     // Check for existing local account (password-based)
@@ -184,49 +185,55 @@ async function handleAppleMobileAuth(req: Request, done: any) {
         [user.id]
       );
 
-      return done(null, user, {message: "User successfully logged in"});
+      return done(null, user, { message: "User successfully logged in" });
     }
 
-    // New user - registration flow
-    // Email is required for new user registration
-    if (!email) {
-      return done(null, false, {
-        message: "Email is required for new user registration. Please sign in with Apple again and provide your email."
-      });
-    }
-
-    // Prepare user data for registration
-    const appleUserData = {
-      id: appleId,
-      displayName: "Apple User", // Apple doesn't provide name on subsequent logins
-      email: email,
-      timezone: req.body.timezone || "UTC"
-    };
-
-    // Register new user via database function
-    const registerResult = await db.query(
-      "SELECT register_apple_user($1) AS user;",
-      [JSON.stringify(appleUserData)]
-    );
-
-    const {user} = registerResult.rows[0];
-
-    return done(null, user, {
-      message: "User successfully registered and logged in"
+    // New user - registration not allowed from mobile
+    return done(null, false, {
+      message: "Please create your account using the web application first, then you can sign in with Apple on mobile.",
+      [ERROR_KEY]: "MOBILE_REGISTRATION_DISABLED"
     });
+
+    // // New user - registration flow
+    // // Email is required for new user registration
+    // if (!email) {
+    //   return done(null, false, {
+    //     message: "Email is required for new user registration. Please sign in with Apple again and provide your email."
+    //   });
+    // }
+
+    // // Prepare user data for registration
+    // const appleUserData = {
+    //   id: appleId,
+    //   displayName: "Apple User", // Apple doesn't provide name on subsequent logins
+    //   email: email,
+    //   timezone: req.body.timezone || "UTC"
+    // };
+
+    // // Register new user via database function
+    // const registerResult = await db.query(
+    //   "SELECT register_apple_user($1) AS user;",
+    //   [JSON.stringify(appleUserData)]
+    // );
+
+    // const { user } = registerResult.rows[0];
+
+    // return done(null, user, {
+    //   message: "User successfully registered and logged in"
+    // });
 
   } catch (error: any) {
     log_error("Apple mobile authentication error:", error);
 
     // Handle specific JWT errors
     if (error.name === "TokenExpiredError") {
-      return done(null, false, {message: "Apple ID token has expired"});
+      return done(null, false, { message: "Apple ID token has expired" });
     }
     if (error.name === "JsonWebTokenError") {
-      return done(null, false, {message: "Invalid Apple ID token"});
+      return done(null, false, { message: "Invalid Apple ID token" });
     }
     if (error.name === "NotBeforeError") {
-      return done(null, false, {message: "Apple ID token not yet valid"});
+      return done(null, false, { message: "Apple ID token not yet valid" });
     }
 
     // Generic error

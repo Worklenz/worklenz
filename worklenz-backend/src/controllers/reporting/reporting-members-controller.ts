@@ -815,9 +815,9 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       ? `team_member_id = '${teamMemberId as string}'`
       : `team_member_id IN (SELECT team_member_id
             FROM team_member_info_view tmiv
-            WHERE email = (SELECT email
+            WHERE LOWER(email) = LOWER((SELECT email
                         FROM team_member_info_view tmiv2
-                        WHERE tmiv2.team_member_id = '${teamMemberId}' AND in_organization(p.team_id, tmiv2.team_id)))`;
+                        WHERE tmiv2.team_member_id = '${teamMemberId}' AND in_organization(p.team_id, tmiv2.team_id))))`;
 
     const archivedClause = archived ? `` : ` AND pm.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = pm.project_id AND user_id = '${userId}')`;
 

@@ -97,21 +97,21 @@ const transformToWorkloadData = (rawData: any, workingHoursPerDay: number = 8, t
           // Both dates available
           startDateStr = typeof task.start_date === 'string'
             ? task.start_date.split('T')[0]
-            : dayjs(task.start_date).format('YYYY-MM-DD');
+            : dayjs(task.start_date, 'YYYY-MM-DD').format('YYYY-MM-DD');
           endDateStr = typeof task.end_date === 'string'
             ? task.end_date.split('T')[0]
-            : dayjs(task.end_date).format('YYYY-MM-DD');
+            : dayjs(task.end_date, 'YYYY-MM-DD').format('YYYY-MM-DD');
         } else if (task.start_date && !task.end_date) {
           // Only start date - assume single day task
           startDateStr = typeof task.start_date === 'string'
             ? task.start_date.split('T')[0]
-            : dayjs(task.start_date).format('YYYY-MM-DD');
+            : dayjs(task.start_date, 'YYYY-MM-DD').format('YYYY-MM-DD');
           endDateStr = startDateStr;
         } else if (!task.start_date && task.end_date) {
           // Only end date - assume single day task
           endDateStr = typeof task.end_date === 'string'
             ? task.end_date.split('T')[0]
-            : dayjs(task.end_date).format('YYYY-MM-DD');
+            : dayjs(task.end_date, 'YYYY-MM-DD').format('YYYY-MM-DD');
           startDateStr = endDateStr;
         } else {
           // No dates - place on current date as unscheduled

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Upload,
   Button,
@@ -37,6 +38,8 @@ interface FileUploaderProps {
   showFileList?: boolean;
   listType?: 'text' | 'picture' | 'picture-card';
   disabled?: boolean;
+  cleanupOnUnmount?: boolean; // If true, delete unlinked uploads when component unmounts
+  onSubmitReady?: (markAsSubmitted: () => void) => void; // Callback to receive markAsSubmitted function
 }
 
 interface UploadedFileInfo {
@@ -59,11 +62,49 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   initialFiles = [],
   showFileList = true,
   listType = 'text',
-  disabled = false
+  disabled = false,
+  cleanupOnUnmount = false,
+  onSubmitReady
 }) => {
+  const { t } = useTranslation();
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFileInfo[]>(initialFiles);
   const [uploading, setUploading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Track uploaded files for cleanup - use ref to avoid stale closure in cleanup
+  const uploadedFilesRef = useRef<UploadedFileInfo[]>([]);
+  uploadedFilesRef.current = uploadedFiles;
+  
+  // Track isSubmitted in ref for cleanup function
+  const isSubmittedRef = useRef(false);
+  isSubmittedRef.current = isSubmitted;
+
+  // Method to mark as submitted (prevents cleanup)
+  const markAsSubmitted = () => setIsSubmitted(true);
+
+  // Expose markAsSubmitted to parent via callback
+  useEffect(() => {
+    if (onSubmitReady) {
+      onSubmitReady(markAsSubmitted);
+    }
+  }, [onSubmitReady]);
+
+  // Cleanup unlinked uploads on unmount if cleanupOnUnmount is enabled
+  useEffect(() => {
+    return () => {
+      if (cleanupOnUnmount && !isSubmittedRef.current && uploadedFilesRef.current.length > 0) {
+        // Delete all uploaded files that weren't submitted
+        uploadedFilesRef.current.forEach(file => {
+          if (file.id) {
+            clientPortalAPI.deleteAttachment(file.id).catch(err => {
+              console.warn('Failed to cleanup orphaned attachment:', err);
+            });
+          }
+        });
+      }
+    };
+  }, [cleanupOnUnmount]);
 
   const getFileIcon = (fileType: string) => {
     if (fileType.startsWith('image/')) return <FileImageOutlined />;
@@ -84,7 +125,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   const validateFile = (file: File): boolean => {
     // Check file size
     if (file.size > maxFileSize * 1024 * 1024) {
-      message.error(`File size must be smaller than ${maxFileSize}MB`);
+      message.error(t('fileUploader.fileSizeError', { size: maxFileSize }));
       return false;
     }
 
@@ -106,7 +147,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       });
 
       if (!isValidType) {
-        message.error(`File type not allowed. Accepted types: ${acceptedFileTypes}`);
+        message.error(t('fileUploader.fileTypeError', { types: acceptedFileTypes }));
         return false;
       }
     }
@@ -146,28 +187,41 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         });
         
         onSuccess?.(response.body);
-        message.success('File uploaded successfully');
+        message.success(t('fileUploader.uploadSuccess'));
       } else {
         throw new Error(response.message || 'Upload failed');
       }
     } catch (error) {
       console.error('Upload error:', error);
       onError?.(error as Error);
-      message.error('Failed to upload file');
+      message.error(t('fileUploader.uploadError'));
     } finally {
       setUploading(false);
     }
   };
 
-  const handleRemove = (file: UploadFile | UploadedFileInfo) => {
-    if ('id' in file) {
-      // Remove from uploaded files
-      setUploadedFiles(prev => {
-        const updated = prev.filter(f => f.id !== file.id);
-        onFilesChange?.(updated);
-        return updated;
-      });
-    } else {
+  const handleRemove = async (file: UploadFile | UploadedFileInfo) => {
+    if ('id' in file && file.id) {
+      // Remove from uploaded files - also delete from server
+      try {
+        await clientPortalAPI.deleteAttachment(file.id);
+        setUploadedFiles(prev => {
+          const updated = prev.filter(f => f.id !== file.id);
+          onFilesChange?.(updated);
+          return updated;
+        });
+        message.success(t('fileUploader.deleteSuccess'));
+      } catch (error) {
+        console.error('Failed to delete file:', error);
+        message.error(t('fileUploader.deleteError'));
+        // Still remove from local state to allow retry
+        setUploadedFiles(prev => {
+          const updated = prev.filter(f => f.id !== file.id);
+          onFilesChange?.(updated);
+          return updated;
+        });
+      }
+    } else if ('uid' in file) {
       // Remove from file list (pending uploads)
       const uploadFile = file as UploadFile;
       setFileList(prev => prev.filter(f => f.uid !== uploadFile.uid));
@@ -205,7 +259,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     onRemove: handleRemove,
     beforeUpload: (file, files) => {
       if (uploadedFiles.length + files.length > maxFiles) {
-        message.error(`You can only upload up to ${maxFiles} files`);
+        message.error(t('fileUploader.maxFilesError', { count: maxFiles }));
         return false;
       }
       return validateFile(file);
@@ -228,13 +282,13 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           loading={uploading}
           disabled={disabled || uploadedFiles.length >= maxFiles}
         >
-          {uploading ? 'Uploading...' : 'Upload Files'}
+          {uploading ? t('fileUploader.uploading') : t('fileUploader.uploadFiles')}
         </Button>
       </Upload>
 
       {showFileList && uploadedFiles.length > 0 && (
         <Card 
-          title={`Uploaded Files (${uploadedFiles.length})`} 
+          title={t('fileUploader.uploadedFiles', { count: uploadedFiles.length })} 
           size="small" 
           style={{ marginTop: 16 }}
         >
@@ -243,7 +297,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
             renderItem={(file) => (
               <List.Item
                 actions={[
-                  <Tooltip title="Preview">
+                  <Tooltip title={t('fileUploader.preview')}>
                     <Button
                       type="text"
                       icon={<EyeOutlined />}
@@ -251,7 +305,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
                       size="small"
                     />
                   </Tooltip>,
-                  <Tooltip title="Download">
+                  <Tooltip title={t('fileUploader.download')}>
                     <Button
                       type="text"
                       icon={<DownloadOutlined />}
@@ -260,10 +314,10 @@ const FileUploader: React.FC<FileUploaderProps> = ({
                     />
                   </Tooltip>,
                   <Popconfirm
-                    title="Are you sure you want to delete this file?"
+                    title={t('fileUploader.deleteConfirm')}
                     onConfirm={() => handleRemove(file)}
                   >
-                    <Tooltip title="Delete">
+                    <Tooltip title={t('common.delete')}>
                       <Button
                         type="text"
                         danger
@@ -288,7 +342,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
                   }
                   description={
                     <Text type="secondary" style={{ fontSize: '12px' }}>
-                      Uploaded on {new Date(file.uploadedAt).toLocaleDateString()}
+                      {t('fileUploader.uploadedOn', { date: new Date(file.uploadedAt).toLocaleDateString() })}
                     </Text>
                   }
                 />
@@ -300,9 +354,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
 
       <div style={{ marginTop: 8, fontSize: '12px', color: '#888' }}>
         <Text type="secondary">
-          Maximum file size: {maxFileSize}MB | 
-          Maximum files: {maxFiles} | 
-          Accepted types: {acceptedFileTypes === '*' ? 'Any' : acceptedFileTypes}
+          {t('fileUploader.maxFileSize', { size: maxFileSize })} | {t('fileUploader.maxFiles', { count: maxFiles })} | {t('fileUploader.acceptedTypes', { types: acceptedFileTypes === '*' ? t('fileUploader.acceptedTypesAny') : acceptedFileTypes })}
         </Text>
       </div>
     </div>

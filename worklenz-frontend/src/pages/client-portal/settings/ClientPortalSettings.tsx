@@ -15,6 +15,8 @@ import {
   Image,
   Tooltip,
   Alert,
+  Form,
+  Input,
 } from '@/shared/antd-imports';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -51,6 +53,24 @@ const ClientPortalSettings = () => {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  // State for company details
+  const [companyDetails, setCompanyDetails] = useState({
+    company_name: '',
+    address_line_1: '',
+    address_line_2: '',
+    contact_email: '',
+    contact_phone: '',
+    invoice_footer_message: '',
+  });
+  const [originalCompanyDetails, setOriginalCompanyDetails] = useState({
+    company_name: '',
+    address_line_1: '',
+    address_line_2: '',
+    contact_email: '',
+    contact_phone: '',
+    invoice_footer_message: '',
+  });
+
   // Load client portal settings on component mount
   useEffect(() => {
     loadSettings();
@@ -80,8 +100,21 @@ const ClientPortalSettings = () => {
     try {
       setLoading(true);
       const response = await profileSettingsApiService.getClientPortalSettings();
-      if (response.done && response.body?.logo_url) {
-        setCustomLogo(response.body.logo_url);
+      if (response.done && response.body) {
+        if (response.body.logo_url) {
+          setCustomLogo(response.body.logo_url);
+        }
+        // Load company details
+        const details = {
+          company_name: response.body.company_name || '',
+          address_line_1: response.body.address_line_1 || '',
+          address_line_2: response.body.address_line_2 || '',
+          contact_email: response.body.contact_email || '',
+          contact_phone: response.body.contact_phone || '',
+          invoice_footer_message: response.body.invoice_footer_message || '',
+        };
+        setCompanyDetails(details);
+        setOriginalCompanyDetails(details);
       }
     } catch (error) {
       console.error('Failed to load client portal settings:', error);
@@ -138,6 +171,19 @@ const ClientPortalSettings = () => {
     setHasUnsavedChanges(true);
 
     message.success(t('logoRemovedText'));
+  };
+
+  // Handle company details change
+  const handleCompanyDetailsChange = (field: string, value: string) => {
+    setCompanyDetails(prev => ({ ...prev, [field]: value }));
+    // Check if there are changes
+    const newDetails = { ...companyDetails, [field]: value };
+    const hasChanges = JSON.stringify(newDetails) !== JSON.stringify(originalCompanyDetails);
+    if (hasChanges || pendingLogoFile || pendingLogoRemoval) {
+      setHasUnsavedChanges(true);
+    } else {
+      setHasUnsavedChanges(false);
+    }
   };
 
   const handleSaveChanges = async () => {
@@ -204,11 +250,31 @@ const ClientPortalSettings = () => {
           message.error('Failed to remove logo');
         }
         setSaving(false);
-      } else {
-        // No changes to save
-        resetPendingChanges();
-        setSaving(false);
       }
+
+      // Save company details if changed
+      const companyDetailsChanged = JSON.stringify(companyDetails) !== JSON.stringify(originalCompanyDetails);
+      if (companyDetailsChanged) {
+        const response = await profileSettingsApiService.updateClientPortalSettings({
+          ...companyDetails,
+        });
+
+        if (response.done) {
+          setOriginalCompanyDetails(companyDetails);
+          if (!pendingLogoFile && !pendingLogoRemoval) {
+            message.success(t('settingsSavedText'));
+          }
+        } else {
+          message.error('Failed to save company details');
+        }
+      }
+
+      // If no logo changes and no company details changes
+      if (!pendingLogoFile && !pendingLogoRemoval && !companyDetailsChanged) {
+        resetPendingChanges();
+      }
+      
+      setSaving(false);
     } catch (error) {
       console.error('Failed to save settings:', error);
       message.error('Failed to save settings');
@@ -218,6 +284,7 @@ const ClientPortalSettings = () => {
 
   const handleCancelChanges = () => {
     resetPendingChanges();
+    setCompanyDetails(originalCompanyDetails);
     message.info(t('discardButton'));
   };
 
@@ -506,6 +573,85 @@ const ClientPortalSettings = () => {
                 }}
               />
             </Flex>
+          </Card>
+
+          {/* Company Details Card */}
+          <Card
+            title={
+              <Flex align="center" gap={8}>
+                <InfoCircleOutlined />
+                <span>{t('companyDetailsTitle')}</span>
+              </Flex>
+            }
+            style={{ marginTop: 24 }}
+          >
+            <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+              {t('companyDetailsDescription')}
+            </Typography.Text>
+            <Form layout="vertical">
+              <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <Form.Item label={t('companyNameLabel')}>
+                    <Input
+                      placeholder={t('companyNamePlaceholder')}
+                      value={companyDetails.company_name}
+                      onChange={(e) => handleCompanyDetailsChange('company_name', e.target.value)}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item label={t('contactEmailLabel')}>
+                    <Input
+                      placeholder={t('contactEmailPlaceholder')}
+                      value={companyDetails.contact_email}
+                      onChange={(e) => handleCompanyDetailsChange('contact_email', e.target.value)}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <Form.Item label={t('contactPhoneLabel')}>
+                    <Input
+                      placeholder={t('contactPhonePlaceholder')}
+                      value={companyDetails.contact_phone}
+                      onChange={(e) => handleCompanyDetailsChange('contact_phone', e.target.value)}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <Form.Item label={t('addressLine1Label')}>
+                    <Input
+                      placeholder={t('addressLine1Placeholder')}
+                      value={companyDetails.address_line_1}
+                      onChange={(e) => handleCompanyDetailsChange('address_line_1', e.target.value)}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item label={t('addressLine2Label')}>
+                    <Input
+                      placeholder={t('addressLine2Placeholder')}
+                      value={companyDetails.address_line_2}
+                      onChange={(e) => handleCompanyDetailsChange('address_line_2', e.target.value)}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={16}>
+                <Col xs={24}>
+                  <Form.Item label={t('invoiceFooterLabel')}>
+                    <Input
+                      placeholder={t('invoiceFooterPlaceholder')}
+                      value={companyDetails.invoice_footer_message}
+                      onChange={(e) => handleCompanyDetailsChange('invoice_footer_message', e.target.value)}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Form>
           </Card>
         </Col>
 

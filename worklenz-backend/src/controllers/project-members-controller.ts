@@ -138,12 +138,13 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       //   if (!response.body.subscription_id) return res.status(200).send(new ServerResponse(false, null, response.message || "Unable to add user! Please check your subscription."));
       // }
       const updatedCount = parseInt(subscriptionData.current_count) + 1;
-      const requiredSeats = updatedCount - subscriptionData.quantity;
-      if (updatedCount > subscriptionData.quantity) {
+      const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
+      const requiredSeats = updatedCount - effectiveUserLimit;
+      if (updatedCount > effectiveUserLimit) {
         const obj = {
           seats_enough: false,
           required_count: requiredSeats,
-          current_seat_amount: subscriptionData.quantity
+          current_seat_amount: effectiveUserLimit
         };
         return res.status(200).send(new ServerResponse(false, obj, `Insufficient seats available. You need ${requiredSeats} more seat${requiredSeats > 1 ? 's' : ''} to add this member. Please upgrade your subscription.`));
       }
@@ -277,12 +278,13 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       // Check seat availability for active subscriptions
       if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
         const currentCount = parseInt(subscriptionData.current_count) || 0;
-        if (currentCount >= subscriptionData.quantity) {
+        const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
+        if (currentCount >= effectiveUserLimit) {
           const requiredSeats = 1; // At least 1 more seat needed
           const obj = {
             seats_enough: false,
             required_count: requiredSeats,
-            current_seat_amount: subscriptionData.quantity
+            current_seat_amount: effectiveUserLimit
           };
           return res.status(200).send(new ServerResponse(false, obj, "Insufficient seats available. Please upgrade your subscription before generating invitation links."));
         }
@@ -537,12 +539,13 @@ export default class ProjectMembersController extends WorklenzControllerBase {
         // Check seat availability for active subscriptions
         if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
           const updatedCount = parseInt(subscriptionData.current_count) + incrementBy;
-          const requiredSeats = updatedCount - subscriptionData.quantity;
-          if (updatedCount > subscriptionData.quantity) {
+          const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
+          const requiredSeats = updatedCount - effectiveUserLimit;
+          if (updatedCount > effectiveUserLimit) {
             const obj = {
               seats_enough: false,
               required_count: requiredSeats,
-              current_seat_amount: subscriptionData.quantity
+              current_seat_amount: effectiveUserLimit
             };
             return res.status(200).send(new ServerResponse(false, obj, `Insufficient seats available. The team needs ${requiredSeats} more seat${requiredSeats > 1 ? 's' : ''} to add you. Please ask the team owner to upgrade.`));
           }
@@ -587,6 +590,11 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       const existingProjectResult = await db.query(existingProjectMemberQuery, [teamMemberId, projectId]);
 
       if (existingProjectResult.rows.length > 0) {
+        // Set the joined team as active for the user
+        if (userId) {
+          const setActiveTeamQuery = `SELECT set_active_team($1, $2)`;
+          await db.query(setActiveTeamQuery, [userId, teamId]);
+        }
         return res.status(200).send(new ServerResponse(false, null, "You are already a member of this project."));
       }
 
@@ -617,6 +625,12 @@ export default class ProjectMembersController extends WorklenzControllerBase {
           validation.link_id, userId, teamMemberId, projectMemberResult.member?.id,
           email, name, ipAddress, userAgent
         ]);
+
+        // Set the joined team as active for the user
+        if (userId) {
+          const setActiveTeamQuery = `SELECT set_active_team($1, $2)`;
+          await db.query(setActiveTeamQuery, [userId, teamId]);
+        }
       }
 
       return res.status(200).send(new ServerResponse(true, projectMemberResult, "Successfully joined the project!"));

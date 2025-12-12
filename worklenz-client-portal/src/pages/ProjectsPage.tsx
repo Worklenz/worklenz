@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { 
   Card, 
   Typography, 
@@ -12,22 +12,22 @@ import {
   Progress,
   Tooltip
 } from '@/shared/antd-imports';
+import { useTranslation } from 'react-i18next';
 import { 
   EyeOutlined, 
   SearchOutlined,
   ProjectOutlined,
-  CalendarOutlined,
-  TeamOutlined
+  CalendarOutlined
 } from '@/shared/antd-imports';
 import { useNavigate } from 'react-router-dom';
 import clientPortalAPI from '@/services/api';
 import { ClientProject } from '@/types';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { Search } = Input;
-const { Option } = Select;
 
 const ProjectsPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [projects, setProjects] = useState<ClientProject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +42,7 @@ const ProjectsPage: React.FC = () => {
     status: '',
   });
 
-  const fetchProjects = async (page = 1, pageSize = 10, search = '', status = '') => {
+  const fetchProjects = useCallback(async (page = 1, pageSize = 10, search = '', status = '') => {
     try {
       setIsLoading(true);
       setError(null);
@@ -62,24 +62,24 @@ const ProjectsPage: React.FC = () => {
           total: (response.body as any).total,
         });
       } else {
-        setError('Failed to load projects');
+        setError(t('projects.tryAgain'));
       }
     } catch (err) {
-      setError('Failed to load projects. Please try again later.');
+      setError(t('dashboard.errorLoadingDescription'));
       console.error('Projects API error:', err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     fetchProjects();
-  }, []);
+  }, [fetchProjects]);
 
-  const handleTableChange = (paginationInfo: any, _filtersInfo: any, _sorter: any) => {
+  const handleTableChange = (paginationInfo: { current?: number; pageSize?: number }) => {
     fetchProjects(
-      paginationInfo.current,
-      paginationInfo.pageSize,
+      paginationInfo.current || 1,
+      paginationInfo.pageSize || 10,
       filters.search,
       filters.status
     );
@@ -106,9 +106,20 @@ const ProjectsPage: React.FC = () => {
     return statusColors[status] || 'default';
   };
 
+  const getStatusLabel = (status: string) => {
+    const statusMap: { [key: string]: string } = {
+      'Active': t('projects.active'),
+      'Completed': t('projects.completed'),
+      'On Hold': t('projects.onHold'),
+      'Cancelled': t('projects.cancelled'),
+      'Planning': t('projects.planning'),
+    };
+    return statusMap[status] || status;
+  };
+
   const columns = [
     {
-      title: 'Project Name',
+      title: t('projects.projectName'),
       dataIndex: 'name',
       key: 'name',
       render: (text: string, record: ClientProject) => (
@@ -133,24 +144,24 @@ const ProjectsPage: React.FC = () => {
       ),
     },
     {
-      title: 'Status',
+      title: t('projects.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string, record: ClientProject) => (
         <Tag color={getStatusColor(status)} style={{ color: record.status_color }}>
-          {status}
+          {getStatusLabel(status)}
         </Tag>
       ),
       filters: [
-        { text: 'Active', value: 'Active' },
-        { text: 'Completed', value: 'Completed' },
-        { text: 'On Hold', value: 'On Hold' },
-        { text: 'Cancelled', value: 'Cancelled' },
-        { text: 'Planning', value: 'Planning' },
+        { text: t('projects.active'), value: 'Active' },
+        { text: t('projects.completed'), value: 'Completed' },
+        { text: t('projects.onHold'), value: 'On Hold' },
+        { text: t('projects.cancelled'), value: 'Cancelled' },
+        { text: t('projects.planning'), value: 'Planning' },
       ],
     },
     {
-      title: 'Progress',
+      title: t('projects.progress'),
       key: 'progress',
       render: (record: ClientProject) => {
         const progress = record.total_tasks > 0 
@@ -165,25 +176,14 @@ const ProjectsPage: React.FC = () => {
               status={progress === 100 ? 'success' : 'active'}
             />
             <div style={{ fontSize: '12px', color: '#666' }}>
-              {record.completed_tasks} / {record.total_tasks} tasks
+              {record.completed_tasks} / {record.total_tasks} {t('projects.tasks')}
             </div>
           </Space>
         );
       },
     },
     {
-      title: 'Client',
-      dataIndex: 'client_name',
-      key: 'client_name',
-      render: (text: string) => (
-        <Space>
-          <TeamOutlined />
-          {text}
-        </Space>
-      ),
-    },
-    {
-      title: 'Last Updated',
+      title: t('projects.lastUpdated'),
       dataIndex: 'updated_at',
       key: 'updated_at',
       render: (date: string) => (
@@ -196,7 +196,7 @@ const ProjectsPage: React.FC = () => {
       ),
     },
     {
-      title: 'Actions',
+      title: t('projects.actions'),
       key: 'actions',
       render: (record: ClientProject) => (
         <Button
@@ -205,7 +205,7 @@ const ProjectsPage: React.FC = () => {
           onClick={() => navigate(`/projects/${record.id}`)}
           size="small"
         >
-          View Details
+          {t('projects.viewDetails')}
         </Button>
       ),
     },
@@ -214,13 +214,13 @@ const ProjectsPage: React.FC = () => {
   if (error) {
     return (
       <Alert
-        message="Error"
+        message={t('common.error')}
         description={error}
         type="error"
         showIcon
         action={
           <Button onClick={() => fetchProjects()}>
-            Try Again
+            {t('projects.tryAgain')}
           </Button>
         }
       />
@@ -229,36 +229,42 @@ const ProjectsPage: React.FC = () => {
 
   return (
     <div>
-      <Title level={2}>
-        <ProjectOutlined /> Projects
-      </Title>
-      <p>Manage and view your project progress</p>
+      {/* Page Header */}
+      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <Title level={4} style={{ marginBottom: 4 }}>
+            <ProjectOutlined style={{ marginRight: 8 }} />
+            {t('projects.title')}
+          </Title>
+          <Text type="secondary">{t('projects.description')}</Text>
+        </div>
+      </div>
 
-      <Card>
-        <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
-          <Space>
-            <Search
-              placeholder="Search projects..."
-              allowClear
-              onSearch={handleSearch}
-              style={{ width: 250 }}
-              prefix={<SearchOutlined />}
-            />
-            <Select
-              placeholder="Filter by status"
-              allowClear
-              style={{ width: 150 }}
-              onChange={handleStatusFilter}
-              value={filters.status || undefined}
-            >
-              <Option value="Active">Active</Option>
-              <Option value="Completed">Completed</Option>
-              <Option value="On Hold">On Hold</Option>
-              <Option value="Cancelled">Cancelled</Option>
-              <Option value="Planning">Planning</Option>
-            </Select>
-          </Space>
-        </Space>
+      <Card size="small">
+        {/* Filters */}
+        <div style={{ marginBottom: 16, display: 'flex', gap: 12 }}>
+          <Search
+            placeholder={t('projects.searchPlaceholder')}
+            allowClear
+            onSearch={handleSearch}
+            style={{ width: 240 }}
+            prefix={<SearchOutlined />}
+          />
+          <Select
+            placeholder={t('projects.filterByStatus')}
+            allowClear
+            style={{ width: 140 }}
+            onChange={handleStatusFilter}
+            value={filters.status || undefined}
+            options={[
+              { value: 'Active', label: t('projects.active') },
+              { value: 'Completed', label: t('projects.completed') },
+              { value: 'On Hold', label: t('projects.onHold') },
+              { value: 'Cancelled', label: t('projects.cancelled') },
+              { value: 'Planning', label: t('projects.planning') },
+            ]}
+          />
+        </div>
 
         <Table
           columns={columns}
@@ -270,7 +276,7 @@ const ProjectsPage: React.FC = () => {
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) =>
-              `${range[0]}-${range[1]} of ${total} projects`,
+              t('projects.showingRange', { start: range[0], end: range[1], total }),
           }}
           onChange={handleTableChange}
           scroll={{ x: 800 }}

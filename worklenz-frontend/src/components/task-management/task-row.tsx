@@ -647,8 +647,8 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
     // Optimized date handling with better memoization
     const dateValues = useMemo(
       () => ({
-        start: task.startDate ? dayjs(task.startDate) : undefined,
-        due: task.dueDate ? dayjs(task.dueDate) : undefined,
+        start: task.startDate ? dayjs(task.startDate, 'YYYY-MM-DD') : undefined,
+        due: task.dueDate ? dayjs(task.dueDate, 'YYYY-MM-DD') : undefined,
       }),
       [task.startDate, task.dueDate]
     );
@@ -1406,7 +1406,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                 style={{ width: col.width }}
               >
                 <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  {task.dueDate ? dayjs(task.dueDate).format('HH:mm') : '-'}
+                  {task.dueDate ? dayjs(task.dueDate, 'YYYY-MM-DD').format('HH:mm') : '-'}
                 </span>
               </div>
             );

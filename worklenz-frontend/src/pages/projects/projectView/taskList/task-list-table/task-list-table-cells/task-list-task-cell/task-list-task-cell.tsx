@@ -27,6 +27,7 @@ type TaskListTaskCellProps = {
   isSubTask?: boolean;
   toggleTaskExpansion: (taskId: string) => void;
   projectId: string;
+  onOpenTask?: (taskId: string) => void;
 };
 
 const TaskListTaskCell = ({
@@ -34,6 +35,7 @@ const TaskListTaskCell = ({
   isSubTask = false,
   toggleTaskExpansion,
   projectId,
+  onOpenTask,
 }: TaskListTaskCellProps) => {
   const { t } = useTranslation('task-list-table');
   const { socket, connected } = useSocket();
@@ -224,8 +226,13 @@ const TaskListTaskCell = ({
           type="text"
           icon={<ExpandAltOutlined />}
           onClick={() => {
-            dispatch(setSelectedTaskId(task.id || ''));
-            dispatch(setShowTaskDrawer(true));
+            if (onOpenTask) {
+              onOpenTask(task.id || '');
+            } else {
+              // Fallback to default behavior
+              dispatch(setSelectedTaskId(task.id || ''));
+              dispatch(setShowTaskDrawer(true));
+            }
           }}
           style={{
             backgroundColor: colors.transparent,

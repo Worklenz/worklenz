@@ -238,7 +238,8 @@ export const useTaskSocketHandlers = () => {
           updateTask({
             ...currentTask,
             status: response.status_id || newStatusValue, // Use actual status_id instead of category
-            progress: response.complete_ratio || currentTask.progress,
+            progress: typeof response.complete_ratio === 'number' ? response.complete_ratio : currentTask.progress,
+            complete_ratio: response.complete_ratio, // Also update complete_ratio field
             updatedAt: new Date().toISOString(),
           })
         );
@@ -640,7 +641,8 @@ export const useTaskSocketHandlers = () => {
       // Update task-management slice for task-list-v2 components
       const currentTask = store.getState().taskManagement.entities[data.id];
       if (currentTask) {
-        const estimatedHours = (data.total_hours || 0) + (data.total_minutes || 0) / 60;
+        // total_minutes from backend is the complete value in minutes, not additional minutes
+        const estimatedHours = (data.total_minutes || 0) / 60;
         const updatedTask: Task = {
           ...currentTask,
           timeTracking: {
@@ -1098,6 +1100,7 @@ export const useTaskSocketHandlers = () => {
       { event: SocketEvents.TASK_LABELS_CHANGE.toString(), handler: handleLabelsChange },
       { event: SocketEvents.CREATE_LABEL.toString(), handler: handleLabelsChange },
       { event: SocketEvents.TASK_STATUS_CHANGE.toString(), handler: handleTaskStatusChange },
+      { event: SocketEvents.GET_TASK_PROGRESS.toString(), handler: handleTaskProgress },
       { event: SocketEvents.TASK_PROGRESS_UPDATED.toString(), handler: handleTaskProgress },
       { event: SocketEvents.TASK_PRIORITY_CHANGE.toString(), handler: handlePriorityChange },
       { event: SocketEvents.TASK_END_DATE_CHANGE.toString(), handler: handleEndDateChange },

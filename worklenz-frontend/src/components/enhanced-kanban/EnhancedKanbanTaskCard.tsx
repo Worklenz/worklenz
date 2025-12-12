@@ -57,7 +57,7 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
     const themeMode = useAppSelector(state => state.themeReducer.mode);
     const [showNewSubtaskCard, setShowNewSubtaskCard] = useState(false);
     const [dueDate, setDueDate] = useState<Dayjs | null>(
-      task?.end_date ? dayjs(task?.end_date) : null
+      task?.end_date ? dayjs(task?.end_date, 'YYYY-MM-DD') : null
     );
 
     const projectId = useAppSelector(state => state.projectReducer.projectId);

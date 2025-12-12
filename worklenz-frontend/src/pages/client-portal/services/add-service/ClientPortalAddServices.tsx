@@ -183,7 +183,7 @@ const ClientPortalAddServices = () => {
                   '100%': token.colorSuccess,
                 }}
                 showInfo={false}
-                strokeWidth={4}
+                size={['100%', 4]}
                 style={{ marginBottom: 4 }}
               />
               <Flex justify="space-between" align="center">

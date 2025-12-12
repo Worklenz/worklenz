@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { useMediaQuery } from 'react-responsive';
+import { useDebouncedMediaQuery } from '@/hooks/useDebouncedMediaQuery';
 import { useTranslation } from 'react-i18next';
 import { RootState } from '@/app/store';
 import { IOrganizationProject } from '@/types/admin-center/admin-center.types';
@@ -31,7 +31,7 @@ import { projectsApiService } from '@/api/projects/projects.api.service';
 const Projects: React.FC = () => {
   const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);
   const [isLoading, setIsLoading] = useState(false);
-  const isTablet = useMediaQuery({ query: '(min-width: 1000px)' });
+  const isTablet = useDebouncedMediaQuery({ query: '(min-width: 1000px)' });
   const [projects, setProjects] = useState<IOrganizationProject[]>([]);
   const [requestParams, setRequestParams] = useState({
     total: 0,
@@ -47,7 +47,7 @@ const Projects: React.FC = () => {
 
   const { t } = useTranslation('admin-center/projects');
 
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     setIsLoading(true);
     try {
       const res = await adminCenterApiService.getOrganizationProjects(requestParams);
@@ -60,9 +60,9 @@ const Projects: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [requestParams]);
 
-  const deleteProject = async (id: string) => {
+  const deleteProject = useCallback(async (id: string) => {
     if (!id) return;
     try {
       await projectsApiService.deleteProject(id);
@@ -71,7 +71,7 @@ const Projects: React.FC = () => {
     } finally {
       fetchProjects();
     }
-  };
+  }, [fetchProjects]);
 
   useEffect(() => {
     trackMixpanelEvent(evt_admin_center_projects_visit);
@@ -79,91 +79,88 @@ const Projects: React.FC = () => {
 
   useEffect(() => {
     fetchProjects();
-  }, [
-    requestParams.search,
-    requestParams.index,
-    requestParams.size,
-    requestParams.field,
-    requestParams.order,
-  ]);
+  }, [fetchProjects]);
 
-  const columns: TableProps['columns'] = [
-    {
-      title: 'Project name',
-      key: 'projectName',
-      render: (record: IOrganizationProject) => (
-        <Typography.Text
-          className="project-names"
-          style={{ fontSize: `${isTablet ? '14px' : '10px'}` }}
-        >
-          {record.name}
-        </Typography.Text>
-      ),
-    },
-    {
-      title: 'Team',
-      key: 'team',
-      render: (record: IOrganizationProject) => (
-        <Typography.Text
-          className="project-team"
-          style={{ fontSize: `${isTablet ? '14px' : '10px'}` }}
-        >
-          {record.team_name}
-        </Typography.Text>
-      ),
-    },
-    {
-      title: <span style={{ display: 'flex', justifyContent: 'center' }}>{t('membersCount')}</span>,
-      key: 'membersCount',
-      render: (record: IOrganizationProject) => (
-        <Typography.Text
-          className="project-member-count"
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            fontSize: `${isTablet ? '14px' : '10px'}`,
-          }}
-        >
-          {record.member_count ?? 0}
-        </Typography.Text>
-      ),
-    },
-    {
-      title: <span style={{ display: 'flex', justifyContent: 'center' }}>Created at</span>,
-      key: 'createdAt',
-      render: (record: IOrganizationProject) => (
-        <Typography.Text
-          className="project-created-at"
-          style={{
-            display: 'flex',
-            justifyContent: 'right',
-            fontSize: `${isTablet ? '14px' : '10px'}`,
-          }}
-        >
-          {formatDateTimeWithLocale(record.created_at ?? '')}
-        </Typography.Text>
-      ),
-    },
-    {
-      title: '',
-      key: 'button',
-      render: (record: IOrganizationProject) => (
-        <div className="row-buttons">
-          <Tooltip title={t('delete')}>
-            <Popconfirm
-              title={t('confirm')}
-              description={t('deleteProject')}
-              onConfirm={() => deleteProject(record.id ?? '')}
-            >
-              <Button size="small">
-                <DeleteOutlined />
-              </Button>
-            </Popconfirm>
-          </Tooltip>
-        </div>
-      ),
-    },
-  ];
+  const columns: TableProps['columns'] = useMemo(
+    () => [
+      {
+        title: 'Project name',
+        key: 'projectName',
+        render: (record: IOrganizationProject) => (
+          <Typography.Text
+            className="project-names"
+            style={{ fontSize: `${isTablet ? '14px' : '10px'}` }}
+          >
+            {record.name}
+          </Typography.Text>
+        ),
+      },
+      {
+        title: 'Team',
+        key: 'team',
+        render: (record: IOrganizationProject) => (
+          <Typography.Text
+            className="project-team"
+            style={{ fontSize: `${isTablet ? '14px' : '10px'}` }}
+          >
+            {record.team_name}
+          </Typography.Text>
+        ),
+      },
+      {
+        title: <span style={{ display: 'flex', justifyContent: 'center' }}>{t('membersCount')}</span>,
+        key: 'membersCount',
+        render: (record: IOrganizationProject) => (
+          <Typography.Text
+            className="project-member-count"
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              fontSize: `${isTablet ? '14px' : '10px'}`,
+            }}
+          >
+            {record.member_count ?? 0}
+          </Typography.Text>
+        ),
+      },
+      {
+        title: <span style={{ display: 'flex', justifyContent: 'center' }}>Created at</span>,
+        key: 'createdAt',
+        render: (record: IOrganizationProject) => (
+          <Typography.Text
+            className="project-created-at"
+            style={{
+              display: 'flex',
+              justifyContent: 'right',
+              fontSize: `${isTablet ? '14px' : '10px'}`,
+            }}
+          >
+            {formatDateTimeWithLocale(record.created_at ?? '')}
+          </Typography.Text>
+        ),
+      },
+      {
+        title: '',
+        key: 'button',
+        render: (record: IOrganizationProject) => (
+          <div className="row-buttons">
+            <Tooltip title={t('delete')}>
+              <Popconfirm
+                title={t('confirm')}
+                description={t('deleteProject')}
+                onConfirm={() => deleteProject(record.id ?? '')}
+              >
+                <Button size="small">
+                  <DeleteOutlined />
+                </Button>
+              </Popconfirm>
+            </Tooltip>
+          </div>
+        ),
+      },
+    ],
+    [isTablet, t, deleteProject]
+  );
 
   return (
     <div style={{ width: '100%' }}>

@@ -24,9 +24,18 @@ export const getTaskDisplayName = (task: Task): string => {
 };
 
 // Memoized date formatter to avoid repeated date parsing
+// Parse date as local date to avoid timezone issues (e.g., "2024-02-10" should display as Feb 10, not Feb 9)
 export const formatDate = (dateString: string): string => {
   try {
-    return format(new Date(dateString), 'MMM d, yyyy');
+    // Handle both ISO date strings ("YYYY-MM-DD") and ISO timestamps ("YYYY-MM-DDTHH:mm:ss.sssZ")
+    // Extract just the date part if it's a timestamp
+    const datePart = dateString.includes('T') ? dateString.split('T')[0] : dateString;
+
+    // Parse date string as local date to avoid UTC conversion issues
+    const [year, month, day] = datePart.split('-').map(Number);
+    // Create date in local timezone (month is 0-indexed)
+    const date = new Date(year, month - 1, day);
+    return format(date, 'MMM d, yyyy');
   } catch {
     return '';
   }
@@ -223,28 +232,38 @@ interface ProgressColumnProps {
   task: Task;
 }
 
-export const ProgressColumn: React.FC<ProgressColumnProps> = memo(({ width, task }) => (
-  <div
-    className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
-    style={{ width }}
-  >
-    {task.progress !== undefined &&
-      task.progress >= 0 &&
-      (task.progress === 100 ? (
-        <div className="flex items-center justify-center">
-          <CheckCircleOutlined
-            className="text-green-500"
-            style={{
-              fontSize: '20px',
-              color: '#52c41a',
-            }}
-          />
-        </div>
-      ) : (
-        <TaskProgress progress={task.progress} numberOfSubTasks={task.sub_tasks?.length || 0} />
-      ))}
-  </div>
-));
+export const ProgressColumn: React.FC<ProgressColumnProps> = memo(({ width, task }) => {
+  // Add defensive fallback like TaskProgressCircle to handle both complete_ratio and progress fields
+  const progress =
+    typeof task.complete_ratio === 'number'
+      ? task.complete_ratio
+      : typeof task.progress === 'number'
+        ? task.progress
+        : 0;
+
+  return (
+    <div
+      className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
+      style={{ width }}
+    >
+      {progress !== undefined &&
+        progress >= 0 &&
+        (progress === 100 ? (
+          <div className="flex items-center justify-center">
+            <CheckCircleOutlined
+              className="text-green-500"
+              style={{
+                fontSize: '20px',
+                color: '#52c41a',
+              }}
+            />
+          </div>
+        ) : (
+          <TaskProgress progress={progress} numberOfSubTasks={task.sub_tasks?.length || 0} />
+        ))}
+    </div>
+  );
+});
 
 ProgressColumn.displayName = 'ProgressColumn';
 
