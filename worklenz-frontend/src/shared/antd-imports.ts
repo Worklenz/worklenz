@@ -86,6 +86,7 @@ export {
   CloseOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
+  FieldTimeOutlined,
   UserOutlined,
   TeamOutlined,
   TagOutlined,

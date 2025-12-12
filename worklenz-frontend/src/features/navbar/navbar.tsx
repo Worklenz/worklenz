@@ -40,12 +40,12 @@ const Navbar = () => {
   const { isDesktop, isMobile, isTablet } = useResponsive();
   const { t } = useTranslation('navbar');
   const { t: tCommon } = useTranslation('common');
-  
+
   // Get auth service and memoize derived values
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
   const isOwnerOrAdmin = useMemo(() => authService.isOwnerOrAdmin(), [authService]);
-  
+
   const { setIdentity, trackMixpanelEvent } = useMixpanelTracking();
   const [navRoutesList, setNavRoutesList] = useState<NavRoutesType[]>(navRoutes);
   const showUpgradeTypes = useMemo(() => [ISUBSCRIPTION_TYPE.TRIAL], []);
@@ -84,7 +84,7 @@ const Navbar = () => {
     const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
     const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
     const isSelfHosted = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED;
-    
+
     // Check if user has team lead role
     const isTeamLead = currentSession?.role_name ? isTeamLeadRole(currentSession.role_name) : false;
 
@@ -208,7 +208,7 @@ const Navbar = () => {
                       is_admin: isOwnerOrAdmin,
                     });
                   }
-                  
+
                   const isBusinessRoute = clickedRoute.businessPlanRequired;
                   const isFreePlanRoute = !clickedRoute.freePlanFeature;
                   const shouldOpenModal =
@@ -225,22 +225,25 @@ const Navbar = () => {
           <Flex gap={20} align="center">
             <ConfigProvider wave={{ disabled: true }}>
               {isDesktop && (
-                <Flex gap={20} align="center">
-                  <TrialDaysBadge />
-                  {isOwnerOrAdmin &&
-                    showUpgradeTypes.includes(
-                      currentSession?.subscription_type as ISUBSCRIPTION_TYPE
-                    ) && <UpgradePlanButton showModal redirectToBilling={false} />}
-                  {isOwnerOrAdmin && <InviteButton />}
-                  <Flex align="center">
-                    <ConnectionStatusIndicator />
-                    <SwitchTeamButton />
-                    <NotificationButton />
-                    <TimerButton />
-                    {/* <HelpButton /> */}
-                    <ProfileButton isOwnerOrAdmin={isOwnerOrAdmin} />
+                <Flex>
+                  <TimerButton />
+                  <Flex gap={20} align="center">
+                    <TrialDaysBadge />
+                    {isOwnerOrAdmin &&
+                      showUpgradeTypes.includes(
+                        currentSession?.subscription_type as ISUBSCRIPTION_TYPE
+                      ) && <UpgradePlanButton showModal redirectToBilling={false} />}
+                    {isOwnerOrAdmin && <InviteButton />}
+                    <Flex align="center">
+                      <ConnectionStatusIndicator />
+                      <SwitchTeamButton />
+                      <NotificationButton />
+                      {/* <HelpButton /> */}
+                      <ProfileButton isOwnerOrAdmin={isOwnerOrAdmin} />
+                    </Flex>
                   </Flex>
                 </Flex>
+
               )}
               {isTablet && !isDesktop && (
                 <Flex gap={12} align="center">
