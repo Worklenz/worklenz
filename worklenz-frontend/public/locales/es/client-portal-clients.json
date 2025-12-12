@@ -266,5 +266,28 @@
   "selectClientsToInvite": "Por favor seleccione clientes para invitar",
   "bulkInviteSuccessMessage": "invitación(es) generada(s) exitosamente",
   "bulkInvitePartialFailMessage": "invitación(es) fallida(s)",
-  "bulkInviteErrorMessage": "Error al generar invitaciones"
+  "bulkInviteErrorMessage": "Error al generar invitaciones",
+
+  "deactivateConfirmationTitle": "Desactivar Cliente",
+  "deactivateConfirmationDescription": "¿Estás seguro de que quieres desactivar este cliente? Perderán el acceso al portal, pero todos los datos se conservarán.",
+  "deactivateConfirmationOk": "Desactivar",
+  "deactivateConfirmationCancel": "Cancelar",
+  "deactivateClientSuccessMessage": "Cliente desactivado exitosamente",
+  "deactivateClientErrorMessage": "Error al desactivar cliente",
+  "deactivateTooltip": "Desactivar Cliente",
+  "deactivateSelected": "Desactivar Seleccionados",
+  "selectClientsToDeactivate": "Por favor seleccione clientes para desactivar",
+  "bulkDeactivateSuccessMessage": "Clientes seleccionados desactivados exitosamente",
+  "bulkDeactivateErrorMessage": "Error al desactivar clientes seleccionados",
+
+  "inviteLinkGeneratedSuccess": "¡Enlace de invitación generado exitosamente!",
+  "inviteLinkGeneratedError": "Error al generar enlace de invitación",
+
+  "invitationModalTitle": "Enlace de Invitación Generado",
+  "invitationModalDescription": "Comparte este enlace con el cliente para invitarlo a crear su cuenta del portal. El enlace expirará en 7 días.",
+  "invitationModalFooterText": "Cuando el cliente haga clic en este enlace, podrá crear su cuenta del portal y acceder a sus proyectos y servicios.",
+  "invitationModalCopyLink": "Copiar Enlace",
+  "portalUrlLabel": "URL del Portal:",
+  "invitationLinkCopiedSuccess": "¡Enlace de invitación copiado al portapapeles!",
+  "invitationLinkCopyError": "Error al copiar enlace al portapapeles"
 }

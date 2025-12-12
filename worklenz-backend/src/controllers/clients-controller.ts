@@ -214,17 +214,21 @@ export default class ClientsController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null, "Invalid status"));
     }
 
-    // Get current status before update
-    const currentStatusResult = await db.query(
-      "SELECT status FROM client_portal_requests WHERE id = $1 AND organization_team_id = $2",
+    // Get current status and request details before update
+    const currentRequestResult = await db.query(
+      `SELECT r.status, r.client_id, r.req_no, s.name as service_name
+       FROM client_portal_requests r
+       LEFT JOIN client_portal_services s ON r.service_id = s.id
+       WHERE r.id = $1 AND r.organization_team_id = $2`,
       [requestId, teamId]
     );
     
-    if (currentStatusResult.rows.length === 0) {
+    if (currentRequestResult.rows.length === 0) {
       return res.status(404).send(new ServerResponse(false, null, "Request not found"));
     }
     
-    const previousStatus = currentStatusResult.rows[0].status;
+    const currentRequest = currentRequestResult.rows[0];
+    const previousStatus = currentRequest.status;
 
     // Build update query
     const updateFields = ["status = $3", "updated_at = NOW()"];
@@ -276,6 +280,24 @@ export default class ClientsController extends WorklenzControllerBase {
          VALUES ($1, $2, $3, $4, $5, NOW())`,
         [requestId, previousStatus, status, userId, notes || null]
       );
+
+      // Create notification for the client
+      if (currentRequest.client_id && teamId) {
+        await ClientPortalController.createNotification(
+          currentRequest.client_id,
+          teamId,
+          "request_update",
+          "Request Update",
+          `Request ${currentRequest.req_no} status changed to ${status}`,
+          requestId,
+          currentRequest.req_no,
+          {
+            serviceName: currentRequest.service_name,
+            status,
+            previousStatus
+          }
+        );
+      }
     }
 
     return res.status(200).send(new ServerResponse(true, data, "Request updated successfully"));
@@ -843,6 +865,24 @@ export default class ClientsController extends WorklenzControllerBase {
       user: req.user
     } as any;
     return ClientPortalController.deleteClient(modifiedReq, res as any);
+  }
+
+  @HandleExceptions()
+  public static async setClientInviteSlug(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const modifiedReq = {
+      ...req,
+      user: req.user
+    } as any;
+    return ClientPortalController.setClientInviteSlug(modifiedReq, res as any);
+  }
+
+  @HandleExceptions()
+  public static async suggestClientInviteSlug(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const modifiedReq = {
+      ...req,
+      user: req.user
+    } as any;
+    return ClientPortalController.suggestClientInviteSlug(modifiedReq, res as any);
   }
 
   @HandleExceptions()
