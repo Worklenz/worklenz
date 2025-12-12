@@ -1,6 +1,6 @@
 import { UsergroupAddOutlined } from '@/shared/antd-imports';
 import { Button, Tooltip } from '@/shared/antd-imports';
-import React from 'react';
+import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../../styles/colors';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -29,4 +29,4 @@ const InviteButton = () => {
   );
 };
 
-export default InviteButton;
+export default memo(InviteButton);

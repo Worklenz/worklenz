@@ -8,6 +8,7 @@ import {sendNewSubscriberNotification} from "../shared/email-templates";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import ClientPortalController from "./client-portal-controller";
+import {uploadBase64, deleteObject} from "../shared/storage";
 
 export default class ClientsController extends WorklenzControllerBase {
 
@@ -203,6 +204,7 @@ export default class ClientsController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async updateClientRequestStatus(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teamId = req.user?.team_id;
+    const userId = req.user?.id;
     const requestId = req.params.id;
     const {status, notes, assigned_to} = req.body;
 
@@ -212,9 +214,21 @@ export default class ClientsController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null, "Invalid status"));
     }
 
+    // Get current status before update
+    const currentStatusResult = await db.query(
+      "SELECT status FROM client_portal_requests WHERE id = $1 AND organization_team_id = $2",
+      [requestId, teamId]
+    );
+    
+    if (currentStatusResult.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Request not found"));
+    }
+    
+    const previousStatus = currentStatusResult.rows[0].status;
+
     // Build update query
     const updateFields = ["status = $3", "updated_at = NOW()"];
-    const updateValues = [requestId, teamId, status];
+    const updateValues: (string | null)[] = [requestId, teamId, status];
     let paramIndex = 4;
 
     if (notes) {
@@ -229,15 +243,22 @@ export default class ClientsController extends WorklenzControllerBase {
       paramIndex++;
     }
 
-    if (status === "completed") {
+    // Set specific timestamp based on status
+    if (status === "accepted") {
+      updateFields.push("accepted_at = NOW()");
+    } else if (status === "in_progress") {
+      updateFields.push("in_progress_at = NOW()");
+    } else if (status === "completed") {
       updateFields.push("completed_at = NOW()");
+    } else if (status === "rejected") {
+      updateFields.push("rejected_at = NOW()");
     }
 
     const q = `
       UPDATE client_portal_requests 
       SET ${updateFields.join(", ")}
       WHERE id = $1 AND organization_team_id = $2
-      RETURNING id, req_no, status, updated_at, completed_at, assigned_to
+      RETURNING id, req_no, status, updated_at, completed_at, accepted_at, in_progress_at, rejected_at, assigned_to
     `;
 
     const result = await db.query(q, updateValues);
@@ -247,7 +268,53 @@ export default class ClientsController extends WorklenzControllerBase {
       return res.status(404).send(new ServerResponse(false, null, "Request not found"));
     }
 
+    // Log the status change to history (with user who made the change)
+    if (previousStatus !== status) {
+      await db.query(
+        `INSERT INTO client_portal_request_status_history 
+         (request_id, previous_status, new_status, changed_by, notes, changed_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())`,
+        [requestId, previousStatus, status, userId, notes || null]
+      );
+    }
+
     return res.status(200).send(new ServerResponse(true, data, "Request updated successfully"));
+  }
+
+  @HandleExceptions()
+  public static async getClientRequestStatusHistory(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const requestId = req.params.id;
+
+    // Verify request belongs to this team
+    const requestCheck = await db.query(
+      "SELECT id FROM client_portal_requests WHERE id = $1 AND organization_team_id = $2",
+      [requestId, teamId]
+    );
+
+    if (requestCheck.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Request not found"));
+    }
+
+    const q = `
+      SELECT 
+        h.id,
+        h.previous_status,
+        h.new_status,
+        h.notes,
+        h.changed_at,
+        u.name as changed_by_name,
+        cpu.name as changed_by_client_name
+      FROM client_portal_request_status_history h
+      LEFT JOIN users u ON h.changed_by = u.id
+      LEFT JOIN client_users cpu ON h.changed_by_client = cpu.id
+      WHERE h.request_id = $1
+      ORDER BY h.changed_at ASC
+    `;
+
+    const result = await db.query(q, [requestId]);
+
+    return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
   @HandleExceptions()
@@ -361,6 +428,9 @@ export default class ClientsController extends WorklenzControllerBase {
              s.status,
              s.is_public,
              s.service_data,
+             s.price,
+             s.currency,
+             s.category,
              s.created_at,
              s.updated_at,
              s.created_by,
@@ -386,26 +456,87 @@ export default class ClientsController extends WorklenzControllerBase {
   public static async createClientService(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teamId = req.user?.team_id;
     const userId = req.user?.id;
-    const {name, description, service_data, is_public, allowed_client_ids} = req.body;
+    const {
+      name, 
+      description, 
+      service_data, 
+      is_public, 
+      allowed_client_ids,
+      price,
+      currency,
+      category,
+      // Image upload fields
+      imageData,
+      imageName,
+      imageType
+    } = req.body;
+
 
     if (!name) {
       return res.status(400).send(new ServerResponse(false, null, "Service name is required"));
     }
 
+    let finalServiceData = { ...service_data };
+
+    // Handle image upload if provided
+    if (imageData && imageName && imageType) {
+      
+      // Validate image
+      const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+      if (!allowedImageTypes.includes(imageType)) {
+        return res.status(400).send(new ServerResponse(false, null, "Only JPEG, PNG, GIF, and WebP images are allowed"));
+      }
+
+      // Validate file size (assuming base64 data) - 5MB limit
+      const fileSizeBytes = Math.floor((imageData.length * 3) / 4);
+      const maxSizeBytes = 5 * 1024 * 1024; // 5MB limit
+      
+      if (fileSizeBytes > maxSizeBytes) {
+        return res.status(400).send(new ServerResponse(false, null, "Image size exceeds 5MB limit"));
+      }
+
+      // Generate unique filename and storage key
+      const fileExtension = imageName.substring(imageName.lastIndexOf("."));
+      const uniqueFileName = `service_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
+      const storageKey = `client-portal/service-images/${teamId}/${uniqueFileName}`;
+
+      try {
+        // Upload to S3
+        const imageUrl = await uploadBase64(imageData, storageKey);
+        
+        if (!imageUrl) {
+          return res.status(500).send(new ServerResponse(false, null, "Failed to upload service image"));
+        }
+
+        // Add image URL to service data
+        finalServiceData = {
+          ...finalServiceData,
+          images: [imageUrl]
+        };
+
+      } catch (uploadError) {
+        return res.status(500).send(new ServerResponse(false, null, "Failed to upload service image"));
+      }
+    }
+
     const q = `
       INSERT INTO client_portal_services (
         name, description, service_data, is_public, allowed_client_ids, 
+        price, currency, category,
         team_id, organization_team_id, created_by, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active')
-      RETURNING id, name, description, status, is_public, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'active')
+      RETURNING id, name, description, status, is_public, created_at, service_data, price, currency, category
     `;
 
     const values = [
       name,
       description || null,
-      service_data ? JSON.stringify(service_data) : null,
+      finalServiceData ? JSON.stringify(finalServiceData) : null,
       is_public || false,
       allowed_client_ids || null,
+      price || null,
+      currency || null,
+      category || null,
       teamId,
       teamId,
       userId
@@ -421,7 +552,97 @@ export default class ClientsController extends WorklenzControllerBase {
   public static async updateClientService(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teamId = req.user?.team_id;
     const serviceId = req.params.id;
-    const {name, description, service_data, is_public, allowed_client_ids, status} = req.body;
+    const {
+      name, 
+      description, 
+      service_data, 
+      is_public, 
+      allowed_client_ids, 
+      status,
+      price,
+      currency,
+      category,
+      // Image upload fields
+      imageData,
+      imageName,
+      imageType
+    } = req.body;
+
+
+    // First check if service exists and belongs to team
+    const checkQuery = `SELECT id, service_data FROM client_portal_services WHERE id = $1 AND organization_team_id = $2`;
+    const checkResult = await db.query(checkQuery, [serviceId, teamId]);
+    
+    if (checkResult.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Service not found"));
+    }
+
+    let finalServiceData = service_data ? { ...service_data } : undefined;
+
+    // Handle image upload if provided
+    if (imageData && imageName && imageType) {
+      
+      // Validate image
+      const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+      if (!allowedImageTypes.includes(imageType)) {
+        return res.status(400).send(new ServerResponse(false, null, "Only JPEG, PNG, GIF, and WebP images are allowed"));
+      }
+
+      // Validate file size (assuming base64 data) - 5MB limit
+      const fileSizeBytes = Math.floor((imageData.length * 3) / 4);
+      const maxSizeBytes = 5 * 1024 * 1024; // 5MB limit
+      
+      if (fileSizeBytes > maxSizeBytes) {
+        return res.status(400).send(new ServerResponse(false, null, "Image size exceeds 5MB limit"));
+      }
+
+      // Get current service data to check for existing images to clean up
+      const currentServiceData = checkResult.rows[0]?.service_data || {};
+      const oldImageUrls = currentServiceData?.images || [];
+
+      // Clean up old images from S3 (async, don't wait for completion)
+      if (oldImageUrls.length > 0) {
+        oldImageUrls.forEach(async (oldImageUrl: string) => {
+          try {
+            const urlParts = oldImageUrl.split("/");
+            const storageKey = urlParts.slice(-4).join("/");
+            
+            await deleteObject(storageKey);
+          } catch (deleteError) {
+            // Don't fail the update if image cleanup fails
+          }
+        });
+      }
+
+      // Generate unique filename and storage key
+      const fileExtension = imageName.substring(imageName.lastIndexOf("."));
+      const uniqueFileName = `service_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
+      const storageKey = `client-portal/service-images/${teamId}/${uniqueFileName}`;
+
+      try {
+        // Upload to S3
+        const imageUrl = await uploadBase64(imageData, storageKey);
+        
+        if (!imageUrl) {
+          return res.status(500).send(new ServerResponse(false, null, "Failed to upload service image"));
+        }
+
+        // Use current service data as base if finalServiceData wasn't provided
+        if (!finalServiceData) {
+          finalServiceData = currentServiceData;
+        }
+
+        // Add new image URL to service data
+        finalServiceData = {
+          ...finalServiceData,
+          images: [imageUrl]
+        };
+
+      } catch (uploadError) {
+        return res.status(500).send(new ServerResponse(false, null, "Failed to upload service image"));
+      }
+    }
+
 
     const updateFields = ["updated_at = NOW()"];
     const updateValues = [serviceId, teamId];
@@ -439,9 +660,9 @@ export default class ClientsController extends WorklenzControllerBase {
       paramIndex++;
     }
 
-    if (service_data) {
+    if (finalServiceData !== undefined) {
       updateFields.push(`service_data = $${paramIndex}`);
-      updateValues.push(JSON.stringify(service_data));
+      updateValues.push(JSON.stringify(finalServiceData));
       paramIndex++;
     }
 
@@ -463,6 +684,24 @@ export default class ClientsController extends WorklenzControllerBase {
       paramIndex++;
     }
 
+    if (price !== undefined) {
+      updateFields.push(`price = $${paramIndex}`);
+      updateValues.push(price);
+      paramIndex++;
+    }
+
+    if (currency !== undefined) {
+      updateFields.push(`currency = $${paramIndex}`);
+      updateValues.push(currency);
+      paramIndex++;
+    }
+
+    if (category !== undefined) {
+      updateFields.push(`category = $${paramIndex}`);
+      updateValues.push(category);
+      paramIndex++;
+    }
+
     if (updateFields.length === 1) {
       return res.status(400).send(new ServerResponse(false, null, "No valid fields to update"));
     }
@@ -471,14 +710,14 @@ export default class ClientsController extends WorklenzControllerBase {
       UPDATE client_portal_services 
       SET ${updateFields.join(", ")}
       WHERE id = $1 AND organization_team_id = $2
-      RETURNING id, name, description, status, is_public, updated_at
+      RETURNING id, name, description, status, is_public, updated_at, service_data, price, currency, category
     `;
 
     const result = await db.query(q, updateValues);
     const [data] = result.rows;
 
     if (!data) {
-      return res.status(404).send(new ServerResponse(false, null, "Service not found"));
+      return res.status(500).send(new ServerResponse(false, null, "Failed to update service"));
     }
 
     return res.status(200).send(new ServerResponse(true, data, "Service updated successfully"));
@@ -488,6 +727,7 @@ export default class ClientsController extends WorklenzControllerBase {
   public static async deleteClientService(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teamId = req.user?.team_id;
     const serviceId = req.params.id;
+
 
     // Check if service has any requests
     const requestsCheck = await db.query(
@@ -500,15 +740,49 @@ export default class ClientsController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null, "Cannot delete service with existing requests"));
     }
 
-    const q = `
+    // Get service data before deletion to extract image URLs for cleanup
+    const serviceQuery = `
+      SELECT service_data 
+      FROM client_portal_services 
+      WHERE id = $1 AND organization_team_id = $2
+    `;
+    const serviceResult = await db.query(serviceQuery, [serviceId, teamId]);
+    
+    if (serviceResult.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Service not found"));
+    }
+
+    const serviceData = serviceResult.rows[0].service_data;
+    const imageUrls = serviceData?.images || [];
+
+
+    // Delete the service from database first
+    const deleteQuery = `
       DELETE FROM client_portal_services 
       WHERE id = $1 AND organization_team_id = $2
     `;
 
-    const result = await db.query(q, [serviceId, teamId]);
+    const result = await db.query(deleteQuery, [serviceId, teamId]);
 
     if (result.rowCount === 0) {
-      return res.status(404).send(new ServerResponse(false, null, "Service not found"));
+      return res.status(500).send(new ServerResponse(false, null, "Failed to delete service from database"));
+    }
+
+    // Clean up images from S3 storage (async, don't wait for completion)
+    if (imageUrls.length > 0) {
+      
+      imageUrls.forEach(async (imageUrl: string) => {
+        try {
+          // Extract storage key from URL
+          // URL format: https://s3-bucket/client-portal/service-images/teamId/filename
+          const urlParts = imageUrl.split("/");
+          const storageKey = urlParts.slice(-4).join("/"); // client-portal/service-images/teamId/filename
+          
+            await deleteObject(storageKey);
+        } catch (deleteError) {
+          // Don't fail the service deletion if image cleanup fails
+        }
+      });
     }
 
     return res.status(200).send(new ServerResponse(true, null, "Service deleted successfully"));
@@ -712,20 +986,17 @@ export default class ClientsController extends WorklenzControllerBase {
   
   @HandleExceptions()
   public static async getPortalInvoices(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const modifiedReq = {
-      ...req,
-      user: req.user
-    } as any;
-    return ClientPortalController.getInvoices(modifiedReq, res as any);
+    return ClientPortalController.getOrganizationInvoices(req, res);
+  }
+
+  @HandleExceptions()
+  public static async createPortalInvoice(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    return ClientPortalController.createInvoice(req, res as any);
   }
 
   @HandleExceptions()
   public static async getPortalInvoiceById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const modifiedReq = {
-      ...req,
-      user: req.user
-    } as any;
-    return ClientPortalController.getInvoiceDetails(modifiedReq, res as any);
+    return ClientPortalController.getOrganizationInvoiceDetails(req, res);
   }
 
   @HandleExceptions()
@@ -800,6 +1071,11 @@ export default class ClientsController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async generateClientInvitationLink(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     return ClientPortalController.generateClientInvitationLink(req, res);
+  }
+
+  @HandleExceptions()
+  public static async resendClientInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    return ClientPortalController.resendClientInvitation(req, res);
   }
 
 }

@@ -11,6 +11,7 @@ import React, {
 import ReactDOM from 'react-dom';
 import { Input, message } from '@/shared/antd-imports';
 import { GanttTask, GanttViewMode, GanttPhase } from '../../types/gantt-types';
+import { useGanttContext } from '../../context/gantt-context';
 import { useGanttDimensions } from '../../hooks/useGanttDimensions';
 import { useUpdateTaskDatesMutation } from '../../services/roadmap-api.service';
 import { useTranslation } from 'react-i18next';
@@ -34,6 +35,7 @@ interface GanttChartProps {
   viewMode: GanttViewMode;
   onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
   onPhaseClick?: (phase: GanttTask) => void;
+  onTaskClick?: (taskId: string) => void;
   containerRef: RefObject<HTMLDivElement | null>;
   dateRange?: { start: Date; end: Date };
   phases?: GanttPhase[];
@@ -41,6 +43,7 @@ interface GanttChartProps {
   animatingTasks?: Set<string>;
   onCreateQuickTask?: (taskName: string, phaseId?: string, startDate?: Date) => void;
   projectId?: string;
+  onRefresh?: () => void;
 }
 
 interface GridColumnProps {
@@ -67,8 +70,10 @@ interface TaskBarRowProps {
   dateRange?: { start: Date; end: Date };
   animationClass?: string;
   onPhaseClick?: (phase: GanttTask) => void;
+  onTaskClick?: (taskId: string) => void;
   onTaskDateUpdate?: (taskId: string, startDate: Date | null, endDate: Date | null) => void;
   calculateDateFromPosition?: (x: number, columnWidth: number) => Date;
+  timelineCalculator?: any; // Pass timeline calculator
 }
 
 const TaskBarRow: React.FC<TaskBarRowProps> = memo(
@@ -80,10 +85,14 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
     dateRange,
     animationClass = '',
     onPhaseClick,
+    onTaskClick,
     onTaskDateUpdate,
     calculateDateFromPosition,
+    timelineCalculator,
   }) => {
     const { t } = useTranslation('gantt');
+    const isPhase = task.type === 'milestone' || task.is_milestone;
+    
     const [isResizing, setIsResizing] = useState<'left' | 'right' | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [tempDates, setTempDates] = useState<{ start: Date | null; end: Date | null }>({
@@ -100,11 +109,23 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
       originalEnd: null,
     });
     const isActiveRef = useRef(false);
+    const hasDraggedRef = useRef(false); // Track if the user actually dragged
 
-    // Update temp dates when task changes
+    // Update temp dates when task changes (but not for phases - they should use actual dates)
     useEffect(() => {
-      setTempDates({ start: task.start_date, end: task.end_date });
-    }, [task.start_date, task.end_date]);
+      // Only update tempDates for regular tasks, not phases
+      // AND only when not actively dragging/resizing
+      // AND not when we just finished dragging (hasDraggedRef)
+      if (!isPhase && !isDragging && !isResizing && !hasDraggedRef.current) {
+        // Check if the dates have actually changed to avoid unnecessary updates
+        const startChanged = tempDates.start?.getTime() !== task.start_date?.getTime();
+        const endChanged = tempDates.end?.getTime() !== task.end_date?.getTime();
+        
+        if (startChanged || endChanged) {
+          setTempDates({ start: task.start_date, end: task.end_date });
+        }
+      }
+    }, [task.start_date, task.end_date, isPhase, isDragging, isResizing]);
 
     // Create stable refs for current values
     const currentStateRef = useRef({
@@ -140,6 +161,11 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
       } = currentStateRef.current;
 
       const deltaX = e.clientX - dragStartRef.current.x;
+      
+      // Mark that we've actually dragged if movement is significant (more than 5 pixels)
+      if (Math.abs(deltaX) > 5) {
+        hasDraggedRef.current = true;
+      }
 
       // Calculate delta based on view mode for more precision
       let deltaUnits: number;
@@ -191,6 +217,8 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
         const newEnd = new Date(dragStartRef.current.originalEnd);
         newStart.setDate(newStart.getDate() + deltaUnits);
         newEnd.setDate(newEnd.getDate() + deltaUnits);
+        
+        
         setTempDates({ start: newStart, end: newEnd });
       }
     }, []);
@@ -209,16 +237,29 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
 
       // Save the changes if dates changed
       const currentTempDates = currentStateRef.current.tempDates;
-      if (
-        onTaskDateUpdate &&
+      const datesChanged = hasDraggedRef.current &&
         (currentTempDates.start?.getTime() !== task.start_date?.getTime() ||
-          currentTempDates.end?.getTime() !== task.end_date?.getTime())
-      ) {
+          currentTempDates.end?.getTime() !== task.end_date?.getTime());
+      
+      if (onTaskDateUpdate && datesChanged) {
+        // Keep the temp dates as they are (don't revert) since we're updating the DB
         onTaskDateUpdate(task.id, currentTempDates.start, currentTempDates.end);
       }
 
-      setIsResizing(null);
-      setIsDragging(false);
+      // Reset dragging state after a small delay to prevent click from firing
+      setTimeout(() => {
+        setIsResizing(null);
+        setIsDragging(false);
+        // Only reset hasDraggedRef after a longer delay if dates were changed
+        // This prevents the useEffect from reverting the dates
+        if (datesChanged) {
+          setTimeout(() => {
+            hasDraggedRef.current = false;
+          }, 500);
+        } else {
+          hasDraggedRef.current = false;
+        }
+      }, 50);
     }, [handleMouseMove, onTaskDateUpdate, task.id, task.start_date, task.end_date]);
 
     // Cleanup effect to remove body classes and event listeners on unmount
@@ -236,9 +277,8 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
         e.stopPropagation();
         e.preventDefault();
 
-        console.log(`Mouse down: ${type}`, { tempDates, isActiveRef: isActiveRef.current }); // Debug log
-
         isActiveRef.current = true;
+        hasDraggedRef.current = false; // Reset drag tracking
 
         if (type === 'drag') {
           setIsDragging(true);
@@ -262,44 +302,27 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
     );
 
     const renderMilestone = () => {
-      if (!task.start_date || !dateRange) return null;
-
-      // Calculate position for milestone diamond based on day alignment
-      const startOfRange = new Date(dateRange.start);
-      startOfRange.setHours(0, 0, 0, 0);
-
-      const startOfMilestone = new Date(task.start_date);
-      startOfMilestone.setHours(0, 0, 0, 0);
-
-      // Calculate days from range start to milestone start
-      const daysFromStart = Math.floor(
-        (startOfMilestone.getTime() - startOfRange.getTime()) / (1000 * 60 * 60 * 24)
-      );
-
-      // Position milestone at the center of the day column
-      const left = daysFromStart * columnWidth + columnWidth / 2;
-
-      return (
-        <div
-          className="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-4 h-4 rotate-45 z-10 shadow-sm"
-          style={{
-            left: `${left}px`,
-            backgroundColor: task.color || '#3b82f6',
-          }}
-          title={`${task.name} - ${task.start_date.toLocaleDateString()}`}
-        />
-      );
-    };
-
-    const renderTaskBar = () => {
       if (!dateRange) return null;
 
-      // For tasks without dates, show a placeholder on click
-      if (!tempDates.start || !tempDates.end) {
+      // Use actual task dates, not tempDates for phase rendering
+      const actualStartDate = task.start_date;
+      const actualEndDate = task.end_date;
+      
+      console.log(`renderMilestone for ${task.name}:`, {
+        taskStartDate: task.start_date,
+        taskEndDate: task.end_date,
+        actualStartDate,
+        actualEndDate,
+        isPhase,
+        taskId: task.id
+      });
+
+      // For milestones without dates, show a placeholder
+      if (!actualStartDate || !actualEndDate) {
         return (
           <div
             className="absolute inset-0 flex items-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
-            title={t('task.clickTimelineSetDates', 'Click on timeline to set dates for this task')}
+            title={t('task.clickTimelineSetDates', 'Click on timeline to set dates for this phase')}
           >
             <div className="text-xs text-gray-400 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border border-gray-200 dark:border-gray-600 ml-2">
               {t('task.clickTimelineAddDates', 'Click timeline to add dates')}
@@ -308,34 +331,259 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
         );
       }
 
-      // Calculate position and width for task bar based on precise day alignment
-      const startOfRange = new Date(dateRange.start);
-      startOfRange.setHours(0, 0, 0, 0);
+      // Use unified timeline calculator for consistent positioning
+      let left = 0;
+      let width = columnWidth;
 
-      const startOfTask = new Date(tempDates.start);
-      startOfTask.setHours(0, 0, 0, 0);
+      if (timelineCalculator) {
+        const position = timelineCalculator.calculateTaskPosition(actualStartDate, actualEndDate);
+        console.log(`Phase ${task.name} positioning:`, {
+          startDate: actualStartDate,
+          endDate: actualEndDate,
+          calculatedPosition: position,
+          viewMode,
+          columnWidth
+        });
+        
+        if (position.isValid) {
+          left = position.left;
+          width = position.width;
+        }
+      } else {
+        // Fallback to percentage-based positioning
+        const startOfRange = new Date(dateRange.start);
+        startOfRange.setHours(0, 0, 0, 0);
 
-      const endOfTask = new Date(tempDates.end);
-      endOfTask.setHours(23, 59, 59, 999); // Set to end of day for proper width calculation
+        const startOfMilestone = new Date(actualStartDate);
+        startOfMilestone.setHours(0, 0, 0, 0);
 
-      const totalWidth = columnsCount * columnWidth;
+        const endOfMilestone = new Date(actualEndDate);
+        endOfMilestone.setHours(23, 59, 59, 999);
 
-      // Calculate days from range start to task start
-      const daysFromStart = Math.floor(
-        (startOfTask.getTime() - startOfRange.getTime()) / (1000 * 60 * 60 * 24)
-      );
-
-      // Calculate task duration in days (inclusive)
-      const taskDurationDays =
-        Math.floor((endOfTask.getTime() - startOfTask.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-
-      // Position based on day columns
-      const left = Math.max(0, daysFromStart * columnWidth);
-      const width = Math.max(columnWidth, taskDurationDays * columnWidth);
+        const totalTimeSpan = dateRange.end.getTime() - dateRange.start.getTime();
+        const milestoneStartOffset = startOfMilestone.getTime() - startOfRange.getTime();
+        const milestoneEndOffset = endOfMilestone.getTime() - startOfRange.getTime();
+        
+        const totalWidth = columnsCount * columnWidth;
+        const startPercent = Math.max(0, Math.min(1, milestoneStartOffset / totalTimeSpan));
+        const endPercent = Math.max(0, Math.min(1, milestoneEndOffset / totalTimeSpan));
+        
+        left = Math.max(0, startPercent * totalWidth);
+        width = Math.max(columnWidth * 0.5, (endPercent - startPercent) * totalWidth);
+      }
 
       return (
         <div
-          className={`absolute top-1/2 transform -translate-y-1/2 h-6 rounded flex items-center text-xs text-white font-medium shadow-sm group gantt-task-bar ${
+          className="absolute inset-y-2 z-10 gantt-phase-bar"
+          style={{
+            left: `${left}px`,
+            width: `${width}px`,
+          }}
+          title={t('task.phaseTitle', 'Phase: {{name}} - {{startDate}} to {{endDate}}', { 
+            name: task.name, 
+            startDate: actualStartDate.toLocaleDateString(), 
+            endDate: actualEndDate.toLocaleDateString() 
+          })}
+        >
+          {/* Main phase bar with gradient and distinctive styling */}
+          <div
+            className="h-full rounded-lg flex items-center text-sm text-white font-bold shadow-lg border-2 relative overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, ${task.color || '#3b82f6'} 0%, ${addAlphaToHex(task.color || '#3b82f6', 0.8)} 100%)`,
+              borderColor: task.color || '#3b82f6',
+              boxShadow: `0 4px 12px ${addAlphaToHex(task.color || '#3b82f6', 0.3)}`,
+            }}
+          >
+            {/* Left accent stripe */}
+            <div
+              className="absolute left-0 top-0 bottom-0 w-1 bg-white opacity-60"
+            />
+            
+            {/* Phase content - non-draggable */}
+            <div className="flex-1 flex items-center px-3 min-w-0 h-full pointer-events-none relative">
+              {/* Phase name */}
+              <div className="truncate flex-1 select-none font-bold tracking-wide text-shadow">
+                {task.name}
+              </div>
+              
+              {/* Progress indicator if phase has children */}
+              {task.children && task.children.length > 0 && (
+                <div className="flex-shrink-0 ml-2 text-xs gantt-phase-progress">
+                  {Math.round((task.children.filter((child: any) => child.progress === 100).length / task.children.length) * 100)}%
+                </div>
+              )}
+            </div>
+            
+            {/* Subtle pattern overlay */}
+            <div
+              className="absolute inset-0 opacity-10"
+              style={{
+                backgroundImage: `repeating-linear-gradient(
+                  45deg,
+                  transparent,
+                  transparent 4px,
+                  rgba(255, 255, 255, 0.1) 4px,
+                  rgba(255, 255, 255, 0.1) 8px
+                )`,
+              }}
+            />
+            
+            {/* Right accent stripe */}
+            <div
+              className="absolute right-0 top-0 bottom-0 w-1 bg-white opacity-60"
+            />
+          </div>
+        </div>
+      );
+    };
+
+    const renderTaskBar = () => {
+      if (!dateRange) return null;
+
+      // For tasks without dates, show a hover preview and placeholder
+      if (!tempDates.start || !tempDates.end) {
+        const getDurationText = () => {
+          switch (viewMode) {
+            case 'day':
+              return '3 days';
+            case 'week':
+              return '3 weeks';
+            case 'month':
+              return '3 months';
+            case 'quarter':
+              return '3 quarters';
+            case 'year':
+              return '3 years';
+            default:
+              return '3 days';
+          }
+        };
+
+        return (
+          <div className="absolute inset-0 gantt-task-preview-container group">
+            {/* Hover preview bar that follows mouse */}
+            <div 
+              className="gantt-task-preview-tracker"
+              onMouseMove={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                
+                // Calculate which column the mouse is over
+                const columnIndex = Math.floor(x / columnWidth);
+                
+                // Always show exactly 3 cells width
+                const previewWidth = 3 * columnWidth;
+                
+                // Debug log
+                console.log('Preview calculation:', {
+                  columnWidth,
+                  columnIndex,
+                  previewWidth,
+                  rectWidth: rect.width,
+                  mouseX: x
+                });
+                
+                // Position preview starting at the current column, but ensure it doesn't go off screen
+                let previewLeft = columnIndex * columnWidth;
+                
+                // If preview would extend beyond the right edge, shift it left
+                if (previewLeft + previewWidth > rect.width) {
+                  previewLeft = Math.max(0, rect.width - previewWidth);
+                }
+                
+                // Update preview bar position with exact dimensions
+                const previewElement = e.currentTarget.querySelector('.gantt-task-preview-bar') as HTMLElement;
+                if (previewElement) {
+                  previewElement.style.left = `${previewLeft}px`;
+                  previewElement.style.width = `${previewWidth}px`;
+                  previewElement.style.opacity = '0.85';
+                  previewElement.style.display = 'flex';
+                }
+              }}
+              onMouseLeave={(e) => {
+                const previewElement = e.currentTarget.querySelector('.gantt-task-preview-bar') as HTMLElement;
+                if (previewElement) {
+                  previewElement.style.opacity = '0';
+                }
+              }}
+            >
+              {/* Preview bar */}
+              <div 
+                className="gantt-task-preview-bar absolute top-1/2 transform -translate-y-1/2 h-6 rounded-md transition-all duration-200 pointer-events-none opacity-0 flex items-center"
+                style={{
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  boxShadow: '0 4px 8px rgba(16, 185, 129, 0.4)',
+                  border: '2px solid rgba(16, 185, 129, 0.6)',
+                  left: '0px',
+                  width: '0px' // Will be set dynamically
+                }}
+              >
+                {/* Preview content */}
+                <div className="flex-1 flex items-center justify-center px-2">
+                  <span className="text-xs font-semibold text-white tracking-wide opacity-90">
+                    {getDurationText()}
+                  </span>
+                </div>
+                
+                {/* Preview indicator dots */}
+                <div className="absolute inset-x-0 bottom-0 flex justify-center space-x-1 pb-1">
+                  <div className="w-1 h-1 bg-white rounded-full opacity-60"></div>
+                  <div className="w-1 h-1 bg-white rounded-full opacity-60"></div>
+                  <div className="w-1 h-1 bg-white rounded-full opacity-60"></div>
+                </div>
+              </div>
+              
+              {/* Text hint */}
+              <div
+                className="absolute inset-0 flex items-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer pointer-events-auto"
+                title={t('task.clickTimelineSetDates', `Click on timeline to create ${getDurationText()} task`)}
+              >
+                <div className="text-xs text-gray-400 bg-white dark:bg-gray-800 px-2 py-1 rounded shadow-sm border border-gray-200 dark:border-gray-600 ml-2 pointer-events-none">
+                  {t('task.clickTimelineAddDates', `Click to add ${getDurationText()}`)}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Use unified timeline calculator for consistent positioning
+      let left = 0;
+      let width = columnWidth;
+
+      if (timelineCalculator && tempDates.start && tempDates.end) {
+        const position = timelineCalculator.calculateTaskPosition(tempDates.start, tempDates.end);
+        
+        if (position.isValid) {
+          left = position.left;
+          width = position.width;
+        }
+      } else {
+        // Fallback to percentage-based positioning
+        const startOfRange = new Date(dateRange.start);
+        startOfRange.setHours(0, 0, 0, 0);
+
+        const startOfTask = new Date(tempDates.start);
+        startOfTask.setHours(0, 0, 0, 0);
+
+        const endOfTask = new Date(tempDates.end);
+        endOfTask.setHours(23, 59, 59, 999);
+
+        const totalTimeSpan = dateRange.end.getTime() - dateRange.start.getTime();
+        const taskStartOffset = startOfTask.getTime() - startOfRange.getTime();
+        const taskEndOffset = endOfTask.getTime() - startOfRange.getTime();
+
+        const totalWidth = columnsCount * columnWidth;
+        const startPercent = taskStartOffset / totalTimeSpan;
+        const endPercent = taskEndOffset / totalTimeSpan;
+
+        left = Math.max(0, startPercent * totalWidth);
+        width = Math.max(columnWidth, (endPercent - startPercent) * totalWidth);
+      }
+
+      return (
+        <div
+          className={`absolute top-1/2 h-6 rounded flex items-center text-xs text-white font-medium shadow-sm group gantt-task-bar ${
             isDragging
               ? 'dragging cursor-move'
               : isResizing
@@ -347,13 +595,24 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
             width: `${width}px`,
             backgroundColor: task.color || '#6b7280',
             opacity: isResizing || isDragging ? 0.8 : 1,
+            transform: `translateY(-50%) ${isDragging ? 'scale(1.05)' : 'scale(1)'}`,
+            zIndex: isDragging || isResizing ? 999 : 1,
+            boxShadow: isDragging || isResizing ? '0 4px 12px rgba(0,0,0,0.3)' : undefined,
           }}
-          title={`${task.name} - ${tempDates.start.toLocaleDateString()} to ${tempDates.end.toLocaleDateString()}`}
+          title={t('task.taskTitle', '{{name}} - {{startDate}} to {{endDate}}', { 
+            name: task.name, 
+            startDate: tempDates.start?.toLocaleDateString() || t('common.noStart', 'No start'), 
+            endDate: tempDates.end?.toLocaleDateString() || t('common.noEnd', 'No end')
+          })}
         >
           {/* Left resize handle */}
           <div
             className="gantt-resize-handle left"
             onMouseDown={e => handleMouseDown(e, 'left')}
+            onClick={e => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
             title={t('task.resizeStartDate', 'Resize start date')}
           >
             <div className="w-1 h-4 bg-white bg-opacity-60 rounded-sm opacity-20 group-hover:opacity-100 hover:opacity-100 transition-opacity" />
@@ -362,11 +621,18 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
           {/* Task content area - draggable */}
           <div
             className={`flex-1 flex items-center px-2 min-w-0 h-full ${
-              isDragging ? 'cursor-move' : 'cursor-grab hover:cursor-grab'
+              isDragging ? 'cursor-move' : 'cursor-pointer hover:cursor-grab'
             }`}
             onMouseDown={e => handleMouseDown(e, 'drag')}
+            onClick={(e) => {
+              e.stopPropagation();
+              // Only trigger click if we haven't dragged
+              if (!hasDraggedRef.current && !isDragging && !isResizing && onTaskClick) {
+                onTaskClick(task.id);
+              }
+            }}
             style={{ userSelect: 'none' }}
-            title={t('task.dragToMove', 'Drag to move task')}
+            title={t('task.dragToMove', 'Click to open task details, drag to move')}
           >
             {/* Task name */}
             <div className="truncate flex-1 pointer-events-none select-none">{task.name}</div>
@@ -384,6 +650,10 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
           <div
             className="gantt-resize-handle right"
             onMouseDown={e => handleMouseDown(e, 'right')}
+            onClick={e => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
             title={t('task.resizeEndDate', 'Resize end date')}
           >
             <div className="w-1 h-4 bg-white bg-opacity-60 rounded-sm opacity-20 group-hover:opacity-100 hover:opacity-100 transition-opacity" />
@@ -391,8 +661,6 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
         </div>
       );
     };
-
-    const isPhase = task.type === 'milestone' || task.is_milestone;
 
     const handleClick = (e: React.MouseEvent) => {
       // For regular tasks without dates, calculate date from click position
@@ -406,37 +674,54 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
         const x = e.clientX - rect.left;
         const clickedDate = calculateDateFromPosition(x, columnWidth);
 
-        // Set both start and end date based on view mode
+        // Set both start and end date based on view mode with 3-cell duration
         const startDate = new Date(clickedDate);
         startDate.setHours(0, 0, 0, 0); // Start of day
 
-        const endDate = new Date(clickedDate);
+        const endDate = new Date(startDate);
         switch (viewMode) {
           case 'day':
-            // For day view, end at end of the same day
+            // For day view, span 3 days (3 cells)
+            endDate.setDate(endDate.getDate() + 2); // +2 to make it 3 days inclusive
             endDate.setHours(23, 59, 59, 999);
             break;
           case 'week':
-            // For week view, span one week
-            endDate.setDate(endDate.getDate() + 6);
+            // For week view, span 3 weeks (3 cells)
+            endDate.setDate(endDate.getDate() + (3 * 7) - 1); // 3 weeks minus 1 day for inclusive
             endDate.setHours(23, 59, 59, 999);
             break;
           case 'month':
-            // For month view, span one month
-            endDate.setMonth(endDate.getMonth() + 1);
+            // For month view, span 3 months (3 cells)
+            endDate.setMonth(endDate.getMonth() + 3);
+            endDate.setDate(endDate.getDate() - 1); // Make it inclusive
+            endDate.setHours(23, 59, 59, 999);
+            break;
+          case 'quarter':
+            // For quarter view, span 3 quarters (3 cells)
+            endDate.setMonth(endDate.getMonth() + 9); // 3 quarters = 9 months
+            endDate.setDate(endDate.getDate() - 1);
+            endDate.setHours(23, 59, 59, 999);
+            break;
+          case 'year':
+            // For year view, span 3 years (3 cells)
+            endDate.setFullYear(endDate.getFullYear() + 3);
             endDate.setDate(endDate.getDate() - 1);
             endDate.setHours(23, 59, 59, 999);
             break;
           default:
-            // Default to next day
-            endDate.setDate(endDate.getDate() + 1);
+            // Default to 3 days
+            endDate.setDate(endDate.getDate() + 2);
             endDate.setHours(23, 59, 59, 999);
         }
 
         setTempDates({ start: startDate, end: endDate });
         onTaskDateUpdate(task.id, startDate, endDate);
       } else if (isPhase && onPhaseClick) {
+        // When clicking on a phase bar, trigger the phase click handler
         onPhaseClick(task);
+      } else if (!isPhase && onTaskClick) {
+        // When clicking on a regular task bar, open the task drawer
+        onTaskClick(task.id);
       }
     };
 
@@ -444,7 +729,7 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
       <div
         className={`${isPhase ? 'min-h-[4.5rem]' : 'h-9'} relative border-b border-gray-100 dark:border-gray-700 transition-colors ${
           !isPhase
-            ? 'hover:bg-gray-50 dark:hover:bg-gray-750'
+            ? '' // Removed hover background for tasks
             : onPhaseClick
               ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750'
               : ''
@@ -533,6 +818,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
       viewMode,
       onScroll,
       onPhaseClick,
+      onTaskClick,
       containerRef,
       dateRange,
       phases,
@@ -540,9 +826,13 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
       animatingTasks,
       onCreateQuickTask,
       projectId,
+      onRefresh,
     },
     ref
   ) => {
+    const { t } = useTranslation('gantt');
+    // Get timeline calculator from context
+    const { timelineCalculator } = useGanttContext();
     // State for popover task creation
     const [taskPopover, setTaskPopover] = useState<{
       taskName: string;
@@ -1031,14 +1321,8 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
       (e: React.MouseEvent, rowIndex: number) => {
         if (!dateRange || !onCreateQuickTask) return;
 
-        // Get the task for this row
-        const task = flattenedTasks[rowIndex];
-
-        // Check if this is a phase row - only show popover for phase rows
-        const isPhase = task && 'type' in task && (task.type === 'milestone' || task.is_milestone);
-        if (!isPhase) {
-          return; // Don't show popover for non-phase rows
-        }
+        // Disable the task creation popover on timeline clicks completely
+        return;
 
         // Get the click position relative to the timeline
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -1101,20 +1385,48 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
       async (taskId: string, startDate: Date | null, endDate: Date | null) => {
         if (!startDate || !endDate) return;
 
+        // Find the task to check if it's a phase
+        const task = finalTasks.find(t => 'id' in t && t.id === taskId);
+        if (task && 'type' in task && (task.type === 'milestone' || task.is_milestone)) {
+          // Don't allow date updates for phases via this method
+          console.warn('Attempted to update phase dates via task update method');
+          return;
+        }
+
         try {
+          console.log('Updating task dates:', {
+            taskId,
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+          });
+          
           await updateTaskDates({
             task_id: taskId,
             start_date: startDate.toISOString(),
             end_date: endDate.toISOString(),
           }).unwrap();
 
-          message.success('Task dates updated successfully');
+          console.log('Task dates updated successfully in database');
+          message.success(t('task.datesUpdatedSuccessfully', 'Task dates updated successfully'));
+          
+          // Delay the refresh slightly to allow the UI to settle
+          // This prevents the task bar from jumping back
+          if (onRefresh) {
+            setTimeout(() => {
+              console.log('Calling manual refresh...');
+              onRefresh();
+            }, 100);
+          }
         } catch (error) {
           console.error('Failed to update task dates:', error);
-          message.error('Failed to update task dates');
+          message.error(t('task.failedToUpdateDates', 'Failed to update task dates'));
+          // On error, refresh to revert to correct state
+          if (onRefresh) {
+            onRefresh();
+          }
         }
       },
-      [updateTaskDates]
+      [updateTaskDates, finalTasks, onRefresh, t]
     );
 
     return (
@@ -1179,6 +1491,15 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
 
                 const task = item as GanttTask;
                 const isPhase = task.type === 'milestone' || task.is_milestone;
+                
+                // Debug task dates
+                if (isPhase) {
+                  console.log(`Rendering phase bar for ${task.name}:`, {
+                    start_date: task.start_date,
+                    end_date: task.end_date,
+                    task_id: task.id
+                  });
+                }
 
                 // Determine if this task should have animation classes
                 let parentPhaseId = '';
@@ -1219,12 +1540,14 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
                         task={task}
                         viewMode={viewMode}
                         columnWidth={actualColumnWidth}
-                        columnsCount={columnsCount}
+                        columnsCount={effectiveColumnsCount}
                         dateRange={dateRange}
                         animationClass=""
-                        onPhaseClick={undefined}
+                        onPhaseClick={isPhase ? onPhaseClick : undefined}
+                        onTaskClick={!isPhase ? onTaskClick : undefined}
                         onTaskDateUpdate={handleTaskDateUpdate}
                         calculateDateFromPosition={calculateDateFromPosition}
+                        timelineCalculator={timelineCalculator}
                       />
                     </div>
                   </div>

@@ -42,7 +42,6 @@ const AppContent: React.FC = () => {
     if (token) {
       // Socket manager is already initialized as singleton
       // Additional setup if needed can be done here
-      console.log('Client portal app loaded with socket connection');
     }
     
     // Cleanup on unmount
@@ -58,30 +57,60 @@ const AppContent: React.FC = () => {
         token: {
           colorPrimary: '#1890ff',
           borderRadius: 6,
-          colorBgLayout: currentTheme === 'dark' ? '#141414' : '#f0f2f5',
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+          colorBgLayout: currentTheme === 'dark' ? '#141414' : '#f5f5f5',
           colorBgContainer: currentTheme === 'dark' ? '#1f1f1f' : '#ffffff',
-          colorText: currentTheme === 'dark' ? '#ffffff' : '#000000',
-          colorTextSecondary: currentTheme === 'dark' ? '#a6a6a6' : '#666666',
-          colorBorder: currentTheme === 'dark' ? '#303030' : '#d9d9d9',
+          colorText: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.88)',
+          colorTextSecondary: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.65)' : 'rgba(0, 0, 0, 0.65)',
+          colorBorder: currentTheme === 'dark' ? '#424242' : '#d9d9d9',
+          colorBorderSecondary: currentTheme === 'dark' ? '#303030' : '#f0f0f0',
+          colorFillSecondary: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)',
+          colorFillTertiary: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.04)',
         },
         components: {
           Layout: {
-            siderBg: currentTheme === 'dark' ? '#1f1f1f' : '#ffffff',
+            siderBg: currentTheme === 'dark' ? '#141414' : '#ffffff',
             headerBg: currentTheme === 'dark' ? '#1f1f1f' : '#ffffff',
+            bodyBg: currentTheme === 'dark' ? '#141414' : '#f5f5f5',
           },
           Menu: {
-            colorBgContainer: currentTheme === 'dark' ? '#1f1f1f' : '#ffffff',
+            colorBgContainer: 'transparent',
             itemBg: 'transparent',
-            itemSelectedBg: currentTheme === 'dark' ? '#1890ff20' : '#1890ff10',
-            itemHoverBg: currentTheme === 'dark' ? '#ffffff10' : '#00000008',
-            colorText: currentTheme === 'dark' ? '#ffffff' : '#000000',
-            colorTextDescription: currentTheme === 'dark' ? '#a6a6a6' : '#666666',
+            itemSelectedBg: currentTheme === 'dark' ? 'rgba(24, 144, 255, 0.15)' : '#e6f4ff',
+            itemHoverBg: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+            itemSelectedColor: '#1890ff',
+            itemColor: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.88)',
+            itemMarginBlock: 4,
+            itemMarginInline: 8,
+            itemPaddingInline: 16,
+            itemBorderRadius: 6,
+          },
+          Card: {
+            borderRadiusLG: 8,
+            paddingLG: 24,
           },
           Button: {
             borderRadius: 6,
+            controlHeight: 36,
+          },
+          Input: {
+            borderRadius: 6,
+            controlHeight: 36,
           },
           Select: {
             borderRadius: 6,
+            controlHeight: 36,
+          },
+          Table: {
+            borderRadius: 8,
+            headerBg: currentTheme === 'dark' ? '#1f1f1f' : '#fafafa',
+          },
+          Statistic: {
+            contentFontSize: 28,
+          },
+          Typography: {
+            titleMarginBottom: 0,
+            titleMarginTop: 0,
           },
         },
       }}

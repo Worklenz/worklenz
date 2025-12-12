@@ -38,7 +38,7 @@ import {
 } from '../../features/clients-portal/clients/clients-slice';
 import {
   useGetClientDetailsQuery,
-  useDeleteClientMutation,
+  useDeactivateClientMutation,
 } from '../../api/client-portal/client-portal-api';
 import { ClientPortalClient } from '../../api/client-portal/client-portal-api';
 
@@ -73,7 +73,7 @@ const ClientDetailsDrawer = () => {
   const isLoadingTeam = isLoadingClient;
   const isLoadingProjects = isLoadingClient;
 
-  const [deleteClient, { isLoading: isDeleting }] = useDeleteClientMutation();
+  const [deactivateClient, { isLoading: isDeactivating }] = useDeactivateClientMutation();
 
   const handleClose = () => {
     dispatch(toggleClientDetailsDrawer(null));
@@ -84,16 +84,16 @@ const ClientDetailsDrawer = () => {
     dispatch(toggleEditClientDrawer(selectedClientId));
   };
 
-  const handleDeleteClient = async () => {
+  const handleDeactivateClient = async () => {
     if (!selectedClientId) return;
 
     try {
-      await deleteClient(selectedClientId).unwrap();
-      message.success(t('deleteClientSuccessMessage') || 'Client deleted successfully');
+      await deactivateClient(selectedClientId).unwrap();
+      message.success(t('deactivateClientSuccessMessage') || 'Client deactivated successfully');
       handleClose();
     } catch (error: any) {
       message.error(
-        error?.data?.message || t('deleteClientErrorMessage') || 'Failed to delete client'
+        error?.data?.message || t('deactivateClientErrorMessage') || 'Failed to deactivate client'
       );
     }
   };
@@ -146,10 +146,10 @@ const ClientDetailsDrawer = () => {
           <Button
             danger
             icon={<DeleteOutlined />}
-            onClick={handleDeleteClient}
-            loading={isDeleting}
+            onClick={handleDeactivateClient}
+            loading={isDeactivating}
           >
-            {t('deleteButton') || 'Delete Client'}
+            {t('deactivateButton') || 'Deactivate Client'}
           </Button>
         </Flex>
       }

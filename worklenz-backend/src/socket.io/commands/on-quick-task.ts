@@ -1,14 +1,16 @@
 import {Server, Socket} from "socket.io";
 import db from "../../config/db";
-import {getColor, toMinutes} from "../../shared/utils";
+import {toMinutes} from "../../shared/utils";
 import {SocketEvents} from "../events";
 
-import {log_error, notifyProjectUpdates} from "../util";
+import {getLoggedInUserIdFromSocket, notifyProjectUpdates} from "../util";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
-import {TASK_STATUS_COLOR_ALPHA, UNMAPPED} from "../../shared/constants";
+import {UNMAPPED} from "../../shared/constants";
 import moment from "moment";
 import momentTime from "moment-timezone";
 import { logEndDateChange, logStartDateChange, logStatusChange } from "../../services/activity-logs/activity-logs.service";
+import { ExternalNotificationsService } from "../../services/external-notifications.service";
+import { log_error } from "../../shared/utils";
 
 export async function getTaskCompleteInfo(task: any) {
   if (!task) return null;
@@ -92,15 +94,15 @@ export async function on_quick_task(_io: Server, socket: Socket, data?: string) 
           logStartDateChange({
             task_id: d.task.id,
             socket,
-            new_value: body.time_zone && d.task.start_date ? momentTime.tz(d.task.start_date, `${body.time_zone}`) : d.task.start_date,
+            new_value: d.task.start_date ? momentTime.utc(d.task.start_date).format('YYYY-MM-DD') : null,
             old_value: null
           });
 
           logEndDateChange({
             task_id: d.task.id,
             socket,
-            new_value:  body.time_zone && d.task.end_date ? momentTime.tz(d.task.end_date, `${body.time_zone}`) : d.task.end_date,
-            old_value:  null
+            new_value: d.task.end_date ? momentTime.utc(d.task.end_date).format('YYYY-MM-DD') : null,
+            old_value: null
           });
         }
 
@@ -112,6 +114,24 @@ export async function on_quick_task(_io: Server, socket: Socket, data?: string) 
         });
 
         notifyProjectUpdates(socket, d.task.id);
+
+        // Send external notifications (Slack, Teams)
+        try {
+          const userId = getLoggedInUserIdFromSocket(socket);
+          const userQuery = `SELECT name FROM users WHERE id = $1`;
+          const userResult = await db.query(userQuery, [userId]);
+          const userName = userResult.rows[0]?.name || "Unknown User";
+          
+          await ExternalNotificationsService.sendExternalNotifications(
+            d.task.project_id,
+            d.task.id,
+            "task_created",
+            userName
+          );
+        } catch (notifError) {
+          log_error("Error sending external notifications:", notifError);
+          // Don't throw - continue even if notifications fail
+        }
       }
     } else {
       // Empty task name, emit null to indicate no task was created

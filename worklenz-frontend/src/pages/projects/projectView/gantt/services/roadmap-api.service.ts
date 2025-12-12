@@ -122,7 +122,7 @@ export const roadmapApi = createApi({
     },
     credentials: 'include',
   }),
-  tagTypes: ['GanttTasks', 'GanttPhases'],
+  // Removed tagTypes since we're not using caching
   endpoints: builder => ({
     getRoadmapTasks: builder.query<IServerResponse<RoadmapTasksResponse[]>, { projectId: string }>({
       query: ({ projectId }) => {
@@ -131,10 +131,12 @@ export const roadmapApi = createApi({
         });
         return `${rootUrl}/roadmap-tasks?${params.toString()}`;
       },
-      providesTags: (result, error, { projectId }) => [
-        { type: 'GanttTasks', id: projectId },
-        { type: 'GanttTasks', id: 'LIST' },
-      ],
+      // Disable caching - always fetch fresh data for real-time gantt updates
+      keepUnusedDataFor: 0,
+      // Always refetch when component mounts or args change
+      refetchOnMountOrArgChange: true,
+      // Always refetch when window regains focus
+      refetchOnFocus: true,
     }),
 
     getProjectPhases: builder.query<IServerResponse<ProjectPhaseResponse[]>, { projectId: string }>(
@@ -145,10 +147,12 @@ export const roadmapApi = createApi({
           });
           return `${rootUrl}/project-phases?${params.toString()}`;
         },
-        providesTags: (result, error, { projectId }) => [
-          { type: 'GanttPhases', id: projectId },
-          { type: 'GanttPhases', id: 'LIST' },
-        ],
+        // Disable caching - always fetch fresh data for real-time gantt updates
+        keepUnusedDataFor: 0,
+        // Always refetch when component mounts or args change
+        refetchOnMountOrArgChange: true,
+        // Always refetch when window regains focus
+        refetchOnFocus: true,
       }
     ),
 
@@ -158,7 +162,7 @@ export const roadmapApi = createApi({
         method: 'POST',
         body,
       }),
-      invalidatesTags: (result, error, { task_id }) => [{ type: 'GanttTasks', id: 'LIST' }],
+      // No cache invalidation needed since we're not caching
     }),
 
     createPhase: builder.mutation<IServerResponse<ProjectPhaseResponse>, CreatePhaseRequest>({
@@ -167,12 +171,7 @@ export const roadmapApi = createApi({
         method: 'POST',
         body,
       }),
-      invalidatesTags: (result, error, { project_id }) => [
-        { type: 'GanttPhases', id: project_id },
-        { type: 'GanttPhases', id: 'LIST' },
-        { type: 'GanttTasks', id: project_id },
-        { type: 'GanttTasks', id: 'LIST' },
-      ],
+      // No cache invalidation needed since we're not caching
     }),
 
     createTask: builder.mutation<IServerResponse<RoadmapTasksResponse>, CreateTaskRequest>({
@@ -181,10 +180,7 @@ export const roadmapApi = createApi({
         method: 'POST',
         body,
       }),
-      invalidatesTags: (result, error, { project_id }) => [
-        { type: 'GanttTasks', id: project_id },
-        { type: 'GanttTasks', id: 'LIST' },
-      ],
+      // No cache invalidation needed since we're not caching
     }),
 
     updatePhase: builder.mutation<IServerResponse<ProjectPhaseResponse>, UpdatePhaseRequest>({
@@ -193,12 +189,7 @@ export const roadmapApi = createApi({
         method: 'PUT',
         body,
       }),
-      invalidatesTags: (result, error, { project_id }) => [
-        { type: 'GanttPhases', id: project_id },
-        { type: 'GanttPhases', id: 'LIST' },
-        { type: 'GanttTasks', id: project_id },
-        { type: 'GanttTasks', id: 'LIST' },
-      ],
+      // No cache invalidation needed since we're not caching
     }),
 
     reorderPhases: builder.mutation<IServerResponse<any>, ReorderPhasesRequest>({
@@ -207,12 +198,7 @@ export const roadmapApi = createApi({
         method: 'POST',
         body,
       }),
-      invalidatesTags: (result, error, { project_id }) => [
-        { type: 'GanttPhases', id: project_id },
-        { type: 'GanttPhases', id: 'LIST' },
-        { type: 'GanttTasks', id: project_id },
-        { type: 'GanttTasks', id: 'LIST' },
-      ],
+      // No cache invalidation needed since we're not caching
     }),
   }),
 });
@@ -254,18 +240,51 @@ export const transformToGanttTasks = (
 
   const result: GanttTask[] = [];
 
-  // Create phase milestones with their tasks (sorted by phase order)
-  [...apiPhases]
-    .sort((a, b) => a.sort_index - b.sort_index)
-    .forEach(phase => {
+  // Create phase milestones with their tasks (already sorted from backend)
+  apiPhases.forEach(phase => {
       const phaseTasks = tasksByPhase.get(phase.id) || [];
+
+      // Use phase dates if provided, they are independent of child task dates
+      let phaseStartDate = phase.start_date ? new Date(phase.start_date) : null;
+      let phaseEndDate = phase.end_date ? new Date(phase.end_date) : null;
+      
+      // Only calculate from child tasks if phase has no dates AND we want to show something
+      // This is optional - phases without dates can remain without dates
+      if (!phaseStartDate && !phaseEndDate && phaseTasks.length > 0) {
+        // Optional: Calculate from child tasks as a visual helper
+        const taskDates = phaseTasks
+          .filter(task => task.start_date && task.end_date)
+          .map(task => ({
+            start: new Date(task.start_date!),
+            end: new Date(task.end_date!)
+          }));
+        
+        console.log(`Phase ${phase.name} has no dates, optionally calculating from child tasks:`, {
+          taskCount: phaseTasks.length,
+          tasksWithDates: taskDates.length,
+          taskDates
+        });
+        
+        // Only set calculated dates if we have tasks with dates
+        // This is optional behavior - can be disabled if phases should only show their own dates
+        if (taskDates.length > 0) {
+          phaseStartDate = new Date(Math.min(...taskDates.map(d => d.start.getTime())));
+          phaseEndDate = new Date(Math.max(...taskDates.map(d => d.end.getTime())));
+          console.log(`Optional calculated dates - start: ${phaseStartDate}, end: ${phaseEndDate}`);
+        }
+      } else if (phase.start_date || phase.end_date) {
+        console.log(`Phase ${phase.name} using its own dates:`, {
+          start_date: phaseStartDate,
+          end_date: phaseEndDate
+        });
+      }
 
       // Create phase milestone
       const phaseMilestone: GanttTask = {
         id: `phase-${phase.id}`,
         name: phase.name,
-        start_date: phase.start_date ? new Date(phase.start_date) : null,
-        end_date: phase.end_date ? new Date(phase.end_date) : null,
+        start_date: phaseStartDate,
+        end_date: phaseEndDate,
         progress: 0,
         level: 0,
         expanded: true,
@@ -280,6 +299,13 @@ export const transformToGanttTasks = (
         total_tasks: phase.total_tasks,
         children: phaseTasks.map(task => transformTask(task, 1)),
       };
+
+      console.log(`Final phase milestone:`, {
+        name: phaseMilestone.name,
+        start_date: phaseMilestone.start_date,
+        end_date: phaseMilestone.end_date,
+        childrenCount: phaseMilestone.children?.length || 0
+      });
 
       result.push(phaseMilestone);
     });
@@ -316,7 +342,8 @@ const transformTask = (task: RoadmapTasksResponse, level: number = 0): GanttTask
     name: task.name,
     start_date: task.start_date ? new Date(task.start_date) : null,
     end_date: task.end_date ? new Date(task.end_date) : null,
-    progress: task.progress,
+    // Normalize completion: if backend marks task as done, force 100% progress
+    progress: task.done ? 100 : task.progress,
     dependencies: task.dependencies.map(dep => dep.related_task_id),
     dependencyType: (task.dependencies[0]?.dependency_type as any) || 'blocked_by',
     parent_id: task.parent_task_id,
@@ -325,7 +352,8 @@ const transformTask = (task: RoadmapTasksResponse, level: number = 0): GanttTask
       name: subtask.name,
       start_date: subtask.start_date ? new Date(subtask.start_date) : null,
       end_date: subtask.end_date ? new Date(subtask.end_date) : null,
-      progress: subtask.progress,
+      // Normalize completion for subtasks as well
+      progress: subtask.done ? 100 : subtask.progress,
       parent_id: subtask.parent_task_id,
       level: level + 1,
       type: 'task',

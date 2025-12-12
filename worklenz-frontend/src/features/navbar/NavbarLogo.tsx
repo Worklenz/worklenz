@@ -14,11 +14,11 @@ const NavbarLogo = () => {
 
   return (
     <Link to={'/worklenz/home'}>
-      <div style={{ position: 'relative', display: 'inline-block' }}>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', height: 44 }}>
         <img
           src={themeMode === 'dark' ? logoDark : logo}
           alt={t('logoAlt')}
-          style={{ width: '100%', maxWidth: 140 }}
+          style={{ height: 26, display: 'block' }}
         />
       </div>
     </Link>

@@ -57,12 +57,20 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDraw
 
   const currentUser = auth.getCurrentSession();
   const canManageTarget = useMemo(() => {
+    // Admin users should have the same permissions as owners (except for other owners)
+    if (currentUser?.is_admin && !currentUser?.owner) {
+      return teamMember?.role_name?.toLowerCase() !== 'owner';
+    }
     return canManageUserRole(currentUser?.role_name, teamMember?.role_name, currentUser?.owner);
-  }, [currentUser?.role_name, currentUser?.owner, teamMember?.role_name]);
+  }, [currentUser?.role_name, currentUser?.owner, currentUser?.is_admin, teamMember?.role_name]);
 
   const availableRoles = useMemo(() => {
+    // Admin users should have the same role options as owners (except Owner role)
+    if (currentUser?.is_admin && !currentUser?.owner) {
+      return getAvailableRoleOptions('admin', true); // Pass true for isOwner to get all options
+    }
     return getAvailableRoleOptions(currentUser?.role_name, currentUser?.owner);
-  }, [currentUser?.role_name, currentUser?.owner]);
+  }, [currentUser?.role_name, currentUser?.owner, currentUser?.is_admin]);
 
   const isResendAvailable = useMemo(() => {
     return teamMember?.pending_invitation && selectedMemberId && !resentSuccess;

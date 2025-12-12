@@ -87,20 +87,6 @@ const LoginPage: React.FC = () => {
     [dispatch, navigate, t]
   );
 
-  const styles = {
-    card: {
-      width: 500,
-      maxWidth: "90vw",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-    },
-    button: {
-      borderRadius: 4,
-    },
-    link: {
-      fontSize: 14,
-    },
-  };
-
   return (
     <div
       style={{
@@ -109,16 +95,13 @@ const LoginPage: React.FC = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#f0f2f5",
-        flexDirection: "column",
-        margin: 0,
-        padding: 0,
+        background: "#f5f5f5",
+        padding: 24,
       }}
     >
       <Card
-        style={styles.card}
+        style={{ width: 400, maxWidth: "100%" }}
         styles={{ body: { padding: 32 } }}
-        variant="outlined"
       >
         <AuthPageHeader description={t("login.description")} />
 
@@ -137,64 +120,59 @@ const LoginPage: React.FC = () => {
           name="login"
           layout="vertical"
           autoComplete="off"
-          requiredMark="optional"
+          requiredMark={false}
           initialValues={{ remember: true }}
           onFinish={onFinish}
-          style={{ width: "100%" }}
         >
-          <Form.Item name="email" rules={validationRules.email}>
+          <Form.Item 
+            name="email" 
+            rules={validationRules.email}
+            label={t("login.emailLabel", "Email")}
+          >
             <Input
               prefix={<UserOutlined />}
               placeholder={t("login.email")}
-              size="large"
-              style={styles.button}
             />
           </Form.Item>
 
-          <Form.Item name="password" rules={validationRules.password}>
+          <Form.Item 
+            name="password" 
+            rules={validationRules.password}
+            label={t("login.passwordLabel", "Password")}
+          >
             <Input.Password
               prefix={<LockOutlined />}
               placeholder={t("login.password")}
-              size="large"
-              style={styles.button}
             />
           </Form.Item>
 
-          <Form.Item>
+          <Form.Item style={{ marginBottom: 16 }}>
             <Flex justify="space-between" align="center">
               <Form.Item name="remember" valuePropName="checked" noStyle>
                 <Checkbox>{t("login.remember")}</Checkbox>
               </Form.Item>
-              <Link
-                to="/forgot-password"
-                className="ant-typography ant-typography-link blue-link"
-                style={styles.link}
-              >
-                {t("login.forgot")}
+              <Link to="/forgot-password">
+                <Typography.Link>{t("login.forgot")}</Typography.Link>
               </Link>
             </Flex>
           </Form.Item>
 
-          <Form.Item>
+          <Form.Item style={{ marginBottom: 16 }}>
             <Button
               block
               type="primary"
               htmlType="submit"
-              size="large"
               loading={isLoading}
-              style={styles.button}
             >
               {t("login.signin")}
             </Button>
           </Form.Item>
 
-          <Form.Item>
-            <Typography.Text
-              style={{ ...styles.link, textAlign: "center", display: "block" }}
-            >
+          <div style={{ textAlign: "center" }}>
+            <Typography.Text type="secondary">
               {t("login.invite_only")}
             </Typography.Text>
-          </Form.Item>
+          </div>
         </Form>
       </Card>
     </div>

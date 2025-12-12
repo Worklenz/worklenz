@@ -13,6 +13,7 @@ import { ICommentEmailNotification } from "../interfaces/comment-email-notificat
 import { sendTaskComment } from "../shared/email-notifications";
 import { getRootDir, uploadBase64, getKey, getTaskAttachmentKey, createPresignedUrlWithClient } from "../shared/s3";
 import { getFreePlanSettings, getUsedStorage } from "../shared/paddle-utils";
+import { ExternalNotificationsService } from "../services/external-notifications.service";
 
 interface ITaskAssignee {
   team_member_id: string;
@@ -258,6 +259,19 @@ export default class TaskCommentsController extends WorklenzControllerBase {
       team_member_id: req.user?.team_member_id || "",
       user_id: req.user?.id || ""
     };
+
+    // Send external notifications (Slack, Teams) for comment added
+    try {
+      await ExternalNotificationsService.sendExternalNotifications(
+        response.project_id,
+        req.body.task_id,
+        "comment_added",
+        req.user?.name || "Unknown User"
+      );
+    } catch (notifError) {
+      log_error("Error sending external notifications for comment:", notifError);
+      // Don't throw - continue even if notifications fail
+    }
 
     return res.status(200).send(new ServerResponse(true, commentdata));
   }

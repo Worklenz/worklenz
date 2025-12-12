@@ -19,6 +19,7 @@
   "teamMembersColumn": "Miembros del Equipo",
   "actionBtnsColumn": "Acciones",
 
+  "statusAll": "Todos",
   "statusActive": "Activo",
   "statusInactive": "Inactivo",
   "statusPending": "Pendiente",
@@ -217,6 +218,7 @@
   "linkCopiedMessage": "Enlace copiado al portapapeles",
   "noClientsTitle": "No se encontraron clientes",
   "noClientsDescription": "Aún no ha agregado ningún cliente. Agregue su primer cliente para comenzar a gestionar el acceso a su portal.",
+  "noClientsMatchingFilters": "Ningún cliente coincide con los filtros actuales.",
   "errorLoadingClients": "Error al cargar clientes",
   "errorLoadingClientsDescription": "Hubo un error al cargar sus clientes. Por favor, inténtelo de nuevo más tarde.",
 
@@ -243,5 +245,26 @@
   "projectAssignedSuccessMessage": "Proyecto asignado exitosamente",
   "projectAssignedErrorMessage": "Error al asignar el proyecto",
   "projectRemovedSuccessMessage": "Proyecto eliminado exitosamente",
-  "projectRemovedErrorMessage": "Error al eliminar el proyecto"
+  "projectRemovedErrorMessage": "Error al eliminar el proyecto",
+
+  "portalStatusColumn": "Estado del Portal",
+  "portalStatus": {
+    "active": "Activo",
+    "invited": "Invitado",
+    "not_invited": "No Invitado",
+    "expired": "Expirado"
+  },
+
+  "inviteToPortalTooltip": "Invitar al Portal",
+  "resendInvitationTooltip": "Reenviar Invitación",
+  "resendInviteEmailTooltip": "Reenviar Correo de Invitación",
+  "copyInviteLinkTooltip": "Copiar Enlace de Invitación",
+  "resendInvitationSuccess": "¡Correo de invitación enviado exitosamente!",
+  "resendInvitationError": "Error al enviar el correo de invitación",
+
+  "inviteSelectedToPortal": "Enviar Invitaciones al Portal",
+  "selectClientsToInvite": "Por favor seleccione clientes para invitar",
+  "bulkInviteSuccessMessage": "invitación(es) generada(s) exitosamente",
+  "bulkInvitePartialFailMessage": "invitación(es) fallida(s)",
+  "bulkInviteErrorMessage": "Error al generar invitaciones"
 }

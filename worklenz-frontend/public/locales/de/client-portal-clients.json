@@ -19,6 +19,7 @@
   "teamMembersColumn": "Teammitglieder",
   "actionBtnsColumn": "Aktionen",
 
+  "statusAll": "Alle",
   "statusActive": "Aktiv",
   "statusInactive": "Inaktiv",
   "statusPending": "Ausstehend",
@@ -217,6 +218,7 @@
   "linkCopiedMessage": "Link in die Zwischenablage kopiert",
   "noClientsTitle": "Keine Kunden gefunden",
   "noClientsDescription": "Sie haben noch keine Kunden hinzugefügt. Fügen Sie Ihren ersten Kunden hinzu, um die Verwaltung des Portalzugangs zu beginnen.",
+  "noClientsMatchingFilters": "Keine Kunden entsprechen den aktuellen Filtern.",
   "errorLoadingClients": "Fehler beim Laden der Kunden",
   "errorLoadingClientsDescription": "Beim Laden Ihrer Kunden ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.",
   "inviteTeamMemberLabel": "Teammitglied einladen",
@@ -255,6 +257,27 @@
   "projectRemovedSuccessMessage": "Projekt erfolgreich entfernt",
   "projectRemovedErrorMessage": "Fehler beim Entfernen des Projekts",
   "noAssignedProjectsText": "Keine Projekte diesem Kunden zugewiesen",
+
+  "portalStatusColumn": "Portal-Status",
+  "portalStatus": {
+    "active": "Aktiv",
+    "invited": "Eingeladen",
+    "not_invited": "Nicht Eingeladen",
+    "expired": "Abgelaufen"
+  },
+
+  "inviteToPortalTooltip": "Zum Portal einladen",
+  "resendInvitationTooltip": "Einladung erneut senden",
+  "resendInviteEmailTooltip": "Einladungs-E-Mail erneut senden",
+  "copyInviteLinkTooltip": "Einladungslink kopieren",
+  "resendInvitationSuccess": "Einladungs-E-Mail erfolgreich gesendet!",
+  "resendInvitationError": "Einladungs-E-Mail konnte nicht gesendet werden",
+
+  "inviteSelectedToPortal": "Portal-Einladungen senden",
+  "selectClientsToInvite": "Bitte wählen Sie Kunden zum Einladen aus",
+  "bulkInviteSuccessMessage": "Einladung(en) erfolgreich generiert",
+  "bulkInvitePartialFailMessage": "Einladung(en) fehlgeschlagen",
+  "bulkInviteErrorMessage": "Fehler beim Generieren von Einladungen",
 
   "assignProjectTitle": "Neues Projekt zuweisen",
   "assignButton": "Projekt zuweisen",

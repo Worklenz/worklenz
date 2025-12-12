@@ -11,6 +11,7 @@ import {
 
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { memo } from 'react';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -93,7 +94,7 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
           variant="borderless"
           style={{ width: 230 }}
         >
-          {isOwnerOrAdmin && !isLicenseExpired && (
+          {isOwnerOrAdmin && (
             <Link to="/worklenz/admin-center/overview" style={getLinkStyle()}>
               {t('adminCenter')}
             </Link>
@@ -145,4 +146,4 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
   );
 };
 
-export default ProfileButton;
+export default memo(ProfileButton);

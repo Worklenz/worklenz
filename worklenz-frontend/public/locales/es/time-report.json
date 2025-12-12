@@ -1,6 +1,8 @@
 {
   "includeArchivedProjects": "Incluir Proyectos Archivados",
   "export": "Exportar",
+  "Export Excel": "Exportar Excel",
+  "Export CSV": "Exportar CSV",
   "timeSheet": "Hoja de Tiempo",
 
   "searchByName": "Buscar por nombre",
@@ -14,6 +16,18 @@
   "searchByCategory": "Buscar por nombre de categoría",
   "categories": "Categorías",
 
+  "Date": "Fecha",
+  "Member": "Miembro",
+  "Project": "Proyecto",
+  "Task": "Tarea",
+  "Description": "Descripción",
+  "Duration": "Duración",
+  "Time Logs": "Registros de Tiempo",
+  "Select member": "Seleccionar miembro",
+  "Search logs": "Buscar registros",
+  "Filters": "Filtros",
+  "Refresh": "Actualizar",
+  "Non-billable": "No facturable",
   "billable": "Facturable",
   "nonBillable": "No Facturable",
   "allBillableTypes": "Todos los Tipos Facturables",

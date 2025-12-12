@@ -22,8 +22,8 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
       ? ""
       : `AND projects.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND user_id = '${req.user?.id}') `;
 
-    const teams = await this.getTeamsCounts(teamId, archivedClause);
-    const projects = await this.getProjectsCounts(teamId, archivedClause);
+    const teams = await this.getTeamsCounts(teamId, archivedClause, req);
+    const projects = await this.getProjectsCounts(teamId, archivedClause, req);
     const members = await this.getMemberCounts(teamId);
 
     projects.count = teams.projects;
@@ -88,7 +88,9 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
       ? ""
       : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
 
-    const teamFilterClause = `p.team_id = $1`;
+    // Add project filtering for Team Leads
+    const projectFilterClause = await this.buildProjectFilterForTeamLead(req);
+    const teamFilterClause = `p.team_id = $1 ${projectFilterClause}`;
 
     const result = await ReportingControllerBase.getProjectsByTeam(teamId, size, offset, searchQuery, sortField, sortOrder, "", "", "", archivedClause, teamFilterClause, "");
 

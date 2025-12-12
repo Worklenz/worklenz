@@ -437,6 +437,20 @@ export default class AdminCenterController extends WorklenzControllerBase {
     const result = await db.query(q, [req.user?.owner_id]);
     const [data] = result.rows;
 
+    // Validate that billing_info exists
+    if (!data || !data.billing_info) {
+      return res.status(200).send(
+        new ServerResponse(false, null, "Billing information not found")
+      );
+    }
+
+    // Validate trial_expire_date exists before processing
+    if (!data.billing_info.trial_expire_date) {
+      return res.status(200).send(
+        new ServerResponse(false, null, "Trial expiration date not found")
+      );
+    }
+
     const validTillDate = moment(data.billing_info.trial_expire_date);
 
     const daysDifference = validTillDate.diff(moment(), "days");
@@ -1336,7 +1350,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async getAppSumoCountdownWidget(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const organizationId = req.user?.organization_team_id;
+    const organizationId = req.user?.organization_id;
     
     if (!organizationId) {
       return res.status(400).send(new ServerResponse(false, null, "Organization ID is required"));

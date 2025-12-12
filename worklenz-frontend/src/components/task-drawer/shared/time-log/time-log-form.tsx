@@ -254,7 +254,12 @@ const TimeLogForm = ({
           label={t('taskTimeLogTab.timeLogForm.workDescription')}
           style={{ marginBlockEnd: 12 }}
         >
-          <Input.TextArea placeholder={t('taskTimeLogTab.timeLogForm.descriptionPlaceholder')} />
+          <Input.TextArea
+            placeholder={t('taskTimeLogTab.timeLogForm.descriptionPlaceholder')}
+            maxLength={500}
+            showCount
+            autoSize={{ minRows: 2, maxRows: 6 }}
+          />
         </Form.Item>
 
         <Form.Item style={{ marginBlockEnd: 0 }}>

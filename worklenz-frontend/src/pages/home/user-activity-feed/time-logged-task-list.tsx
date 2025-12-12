@@ -61,15 +61,19 @@ const TimeLoggedTaskList: React.FC<TimeLoggedTaskListProps> = React.memo(({ task
           {/* Main Content */}
           <div style={{ flex: 1, minWidth: 0 }}>
             {/* Task Name */}
-            <div style={{ marginBottom: 2 }}>
+            <div style={{ marginBottom: 2, overflow: 'hidden' }}>
               <Text
                 strong
                 style={{
                   fontSize: 13,
                   lineHeight: 1.4,
                   color: token.colorText,
+                  display: 'block',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
                 }}
-                ellipsis={{ tooltip: record.task_name }}
+                title={record.task_name}
               >
                 {record.task_name}
               </Text>
@@ -83,8 +87,11 @@ const TimeLoggedTaskList: React.FC<TimeLoggedTaskListProps> = React.memo(({ task
                 lineHeight: 1.2,
                 display: 'block',
                 marginBottom: 4,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
               }}
-              ellipsis={{ tooltip: record.project_name }}
+              title={record.project_name}
             >
               {record.project_name}
             </Text>

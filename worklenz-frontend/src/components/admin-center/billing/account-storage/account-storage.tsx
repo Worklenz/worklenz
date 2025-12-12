@@ -67,7 +67,7 @@ const AccountStorage = ({ themeMode }: IAccountStorageProps) => {
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <div style={{ padding: '0 16px' }}>
           <Progress
-            percent={billingInfo?.used_percent ?? 0}
+            percent={storageInfo?.used_percent ?? 0}
             type="circle"
             format={percent => <span style={{ fontSize: '13px' }}>{percent}% Used</span>}
           />

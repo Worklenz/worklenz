@@ -1,7 +1,8 @@
 import express from "express";
 import ClientPortalController from "../../controllers/client-portal-controller";
+import ClientPortalAttachmentController from "../../controllers/client-portal-attachment-controller";
 import safeControllerFunction from "../../shared/safe-controller-function";
-import { authenticateClient } from "../../middlewares/client-auth-middleware";
+import { authenticateClient, requireClientPermission } from "../../middlewares/client-auth-middleware";
 
 const router = express.Router();
 
@@ -40,6 +41,7 @@ router.delete("/requests/:id", safeControllerFunction(ClientPortalController.del
 // Projects
 router.get("/projects", safeControllerFunction(ClientPortalController.getProjects));
 router.get("/projects/:id", safeControllerFunction(ClientPortalController.getProjectDetails));
+router.get("/projects/:id/tasks", safeControllerFunction(ClientPortalController.getProjectTasks));
 
 // Invoices
 router.get("/invoices", safeControllerFunction(ClientPortalController.getInvoices));
@@ -49,14 +51,18 @@ router.get("/invoices/:id/download", safeControllerFunction(ClientPortalControll
 
 // Chat
 router.get("/chats", safeControllerFunction(ClientPortalController.getChats));
+router.post("/chats", safeControllerFunction(ClientPortalController.createChat));
 router.get("/chats/:id", safeControllerFunction(ClientPortalController.getChatDetails));
 router.post("/chats/:id/messages", safeControllerFunction(ClientPortalController.sendMessage));
 router.get("/chats/:id/messages", safeControllerFunction(ClientPortalController.getMessages));
 
-// Settings
+// Settings (for organization management - requires team_id)
 router.get("/settings", safeControllerFunction(ClientPortalController.getSettings));
 router.put("/settings", safeControllerFunction(ClientPortalController.updateSettings));
 router.post("/settings/upload-logo", safeControllerFunction(ClientPortalController.uploadLogo));
+
+// Organization Settings (for client users - uses organizationId from token)
+router.get("/organization-settings", safeControllerFunction(ClientPortalController.getOrganizationSettings));
 
 // Profile
 router.get("/profile", safeControllerFunction(ClientPortalController.getClientProfile));
@@ -65,13 +71,21 @@ router.put("/profile", safeControllerFunction(ClientPortalController.updateClien
 // Authentication
 router.post("/auth/logout", safeControllerFunction(ClientPortalController.clientLogout));
 
+// Organizations
+router.get("/organizations", safeControllerFunction(ClientPortalController.getClientOrganizations));
+router.post("/organizations/switch", safeControllerFunction(ClientPortalController.switchOrganization));
+
 // Notifications
 router.get("/notifications", safeControllerFunction(ClientPortalController.getNotifications));
 router.put("/notifications/:id/read", safeControllerFunction(ClientPortalController.markNotificationRead));
 router.put("/notifications/read-all", safeControllerFunction(ClientPortalController.markAllNotificationsRead));
 
-// File uploads
-router.post("/upload", safeControllerFunction(ClientPortalController.uploadFile));
+// File uploads and attachments (using new attachment controller with S3 storage)
+router.post("/upload", safeControllerFunction(ClientPortalAttachmentController.uploadFile));
+router.get("/attachments/unlinked", safeControllerFunction(ClientPortalAttachmentController.getUnlinkedAttachments));
+router.get("/attachments/:attachmentId", safeControllerFunction(ClientPortalAttachmentController.getAttachment));
+router.delete("/attachments/:attachmentId", safeControllerFunction(ClientPortalAttachmentController.deleteAttachment));
+router.get("/requests/:requestId/attachments", safeControllerFunction(ClientPortalAttachmentController.getRequestAttachments));
+router.post("/requests/:requestId/attachments/link", safeControllerFunction(ClientPortalAttachmentController.linkAttachmentsToRequest));
 
-
-export default router; 
+export default router;

@@ -56,6 +56,8 @@ export interface PlanPriceDisplayProps {
   label: string;
   subtitle?: React.ReactNode;
   isAppSumoUser?: boolean;
+  originalMonthlyPrice?: string | null;
+  originalAnnualPrice?: string | null;
 }
 
 export interface PlanCardProps {
@@ -67,6 +69,16 @@ export interface PlanCardProps {
   selectedPlanType: PlanType;
   onPlanSelect: (planType: PlanType) => void;
   isLoading?: boolean;
+  primaryActionLabel: string;
+  onPrimaryAction: () => void;
+  primaryActionDisabled?: boolean;
+  primaryActionLoading?: boolean;
+  footerNote?: React.ReactNode;
+  isAppSumoUser?: boolean;
+  themeMode?: 'light' | 'dark';
+  teamSize?: number;
+  billingFrequency?: 'monthly' | 'annual';
+  calculateTotalCostForPlan?: (planType: 'pro' | 'business' | 'enterprise', teamSize: number, isAnnual: boolean) => number;
 }
 
 export interface AppSumoAlertProps {
@@ -81,5 +93,8 @@ export interface PlanSelectionControlsProps {
   selectedPlanType: PlanType;
   onTeamSizeChange: (size: number) => void;
   onBillingFrequencyChange: (frequency: BillingFrequency) => void;
-  generateTeamSizeOptions: () => { value: number; label: string }[];
+  generateTeamSizeOptions: () => { value: number; label: string; disabled?: boolean }[];
+  minTeamSize: number;
+  maxTeamSize: number;
+  annualSavingsPercent?: number;
 }

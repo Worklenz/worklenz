@@ -3,6 +3,8 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSocket } from '@/socket/socketContext';
 import { useAuthService } from '@/hooks/useAuth';
+import { isFreeUser } from '@/utils/subscription-utils';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { SocketEvents } from '@/shared/socket-events';
 import logger from '@/utils/errorLogger';
 import { Task } from '@/types/task-management.types';
@@ -33,6 +35,7 @@ import {
   UserAddOutlined,
   LoadingOutlined,
   CopyOutlined,
+  CrownOutlined,
   message,
 } from '@/shared/antd-imports';
 
@@ -51,8 +54,11 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('task-list-table');
+  const { t: tCommon } = useTranslation('common');
   const { socket, connected } = useSocket();
-  const currentSession = useAuthService().getCurrentSession();
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
+  const isFree = isFreeUser(currentSession);
   const { trackMixpanelEvent } = useMixpanelTracking();
 
   const { groups: taskGroups } = useAppSelector(state => state.taskManagement);
@@ -150,6 +156,12 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   ]);
 
   const handleArchive = useCallback(async () => {
+    if (isFree) {
+      dispatch(toggleUpgradeModal());
+      onClose();
+      return;
+    }
+
     if (!projectId || !task.id) return;
 
     try {
@@ -174,7 +186,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     } finally {
       onClose();
     }
-  }, [projectId, task.id, task.parent_task_id, dispatch, socket, onClose, trackMixpanelEvent]);
+  }, [projectId, task.id, task.parent_task_id, dispatch, socket, onClose, trackMixpanelEvent, isFree]);
 
   const handleDelete = useCallback(async () => {
     if (!projectId || !task.id) return;
@@ -443,8 +455,11 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
             onClick={handleArchive}
             className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
           >
-            <InboxOutlined className="text-gray-500 dark:text-gray-400" />
-            <span>{archived ? t('contextMenu.unarchive') : t('contextMenu.archive')}</span>
+            <div className="flex items-center gap-2">
+              <InboxOutlined className="text-gray-500 dark:text-gray-400" />
+              <span>{archived ? t('contextMenu.unarchive') : t('contextMenu.archive')}</span>
+              {isFree && <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />}
+            </div>
           </button>
         ),
       });
@@ -541,6 +556,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     projectId,
     updatingAssignToMe,
     archived,
+    isFree,
     handleAssignToMe,
     handleArchive,
     handleDelete,

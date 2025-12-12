@@ -1,5 +1,6 @@
 {
   "title": "Dienstleistungen",
+  "description": "Verwalten Sie Ihre Dienstleistungen und Angebote",
   "nameColumn": "Name",
   "createdByColumn": "Erstellt von",
   "statusColumn": "Status",
@@ -49,6 +50,17 @@
   "noServicesDescription": "Sie haben noch keine Dienstleistungen erstellt. Erstellen Sie Ihre erste Dienstleistung, um Kundenanfragen zu erhalten.",
   "errorLoadingServices": "Fehler beim Laden der Dienstleistungen",
   "errorLoadingServicesDescription": "Beim Laden Ihrer Dienstleistungen ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.",
+  "visibilityColumn": "Sichtbarkeit",
+  "visibilityVisible": "Sichtbar",
+  "visibilityHidden": "Versteckt",
+  "serviceVisibility": {
+    "title": "Dienstleistungssichtbarkeit",
+    "description": "Steuern Sie, ob diese Dienstleistung für Kunden sichtbar ist.",
+    "showToAll": "Allen Kunden anzeigen",
+    "hiddenFromAll": "Vor allen Kunden versteckt",
+    "showToAllDescription": "Diese Dienstleistung ist für alle Kunden im Portal sichtbar",
+    "hiddenFromAllDescription": "Diese Dienstleistung ist versteckt und für keine Kunden sichtbar"
+  },
   "addService": {
     "serviceDetails": {
       "title": "Dienstleistungsdetails",

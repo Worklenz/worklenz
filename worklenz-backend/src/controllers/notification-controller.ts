@@ -66,7 +66,7 @@ export default class NotificationController extends WorklenzControllerBase {
   public static async getUnreadCount(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const q = `
       SELECT COALESCE(COUNT(*)::INTEGER, 0) AS notifications_count,
-            (SELECT COALESCE(COUNT(*)::INTEGER, 0) FROM email_invitations WHERE email = (SELECT email FROM users WHERE id = $1)) AS invitations_count
+            (SELECT COALESCE(COUNT(*)::INTEGER, 0) FROM email_invitations WHERE LOWER(email) = LOWER((SELECT email FROM users WHERE id = $1))) AS invitations_count
       FROM user_notifications
       WHERE user_id = $1
       AND read = false

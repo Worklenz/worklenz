@@ -7,7 +7,7 @@ import {
   ReadOutlined,
 } from '@/shared/antd-imports';
 import { Button, Card, Dropdown, Flex, MenuProps, Space, Typography } from '@/shared/antd-imports';
-import React from 'react';
+import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../../styles/colors';
 import { NavLink } from 'react-router-dom';
@@ -96,4 +96,4 @@ const MobileMenuButton = () => {
   );
 };
 
-export default MobileMenuButton;
+export default memo(MobileMenuButton);

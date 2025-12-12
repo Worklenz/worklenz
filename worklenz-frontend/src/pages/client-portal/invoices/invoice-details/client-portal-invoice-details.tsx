@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAppSelector } from '../../../../hooks/useAppSelector';
+import DOMPurify from 'dompurify';
 import {
   Card,
   Typography,
@@ -9,162 +9,361 @@ import {
   Flex,
   Row,
   Col,
-  Table,
   Tag,
+  Spin,
+  Result,
+  Space,
+  Divider,
+  Statistic,
+  Avatar,
+  Tooltip,
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import { LeftOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  ArrowLeftOutlined,
+  FileTextOutlined,
+  UserOutlined,
+  CalendarOutlined,
+  DollarOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  SendOutlined,
+  DownloadOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  ExclamationCircleOutlined,
+  EyeOutlined,
+} from '@ant-design/icons';
+import { useGetInvoiceDetailsQuery } from '@/api/client-portal/client-portal-api';
+import InvoicePreviewModal from './invoice-preview-modal';
 
-const ClientPortalInvoiceDetails = () => {
-  const { invoiceId } = useParams();
+const { Title, Text } = Typography;
+
+const ClientPortalInvoiceDetails: React.FC = () => {
+  const { invoiceId } = useParams<{ invoiceId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation('client-portal-invoices');
+  const [previewOpen, setPreviewOpen] = useState(false);
 
-  // Get invoice from Redux
-  const invoice = useAppSelector(state =>
-    state.clientsPortalReducer.invoicesReducer.invoices.find(inv => inv.id === invoiceId)
-  );
+  const {
+    data,
+    isLoading,
+    error,
+  } = useGetInvoiceDetailsQuery(invoiceId as string, {
+    skip: !invoiceId,
+  });
 
-  // Use actual invoice data with fallbacks
-  const invoice_no = invoice?.invoice_no || 'N/A';
-  const reference = 'N/A';
-  const subject = 'N/A';
-  const invoice_date = 'N/A';
-  const due_date = 'N/A';
-  const invoice_total = 0;
+  // Get status tag color and icon
+  const getStatusConfig = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return { color: 'success', icon: <CheckCircleOutlined /> };
+      case 'sent':
+        return { color: 'processing', icon: <SendOutlined /> };
+      case 'draft':
+        return { color: 'default', icon: <FileTextOutlined /> };
+      case 'overdue':
+        return { color: 'error', icon: <ExclamationCircleOutlined /> };
+      case 'cancelled':
+        return { color: 'default', icon: <ClockCircleOutlined /> };
+      default:
+        return { color: 'default', icon: <FileTextOutlined /> };
+    }
+  };
+
+  // Get status text
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return t('statusPaid');
+      case 'sent':
+        return t('statusSent');
+      case 'draft':
+        return t('statusDraft');
+      case 'overdue':
+        return t('statusOverdue');
+      case 'cancelled':
+        return t('statusCancelled');
+      default:
+        return status;
+    }
+  };
+
+  // Format date
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  // Format currency
+  const formatCurrency = (amount: number, currency: string = 'USD') => {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: currency,
+    }).format(amount);
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <Flex justify="center" align="center" style={{ minHeight: '60vh' }}>
+        <Spin size="large" tip={t('loadingInvoice')} />
+      </Flex>
+    );
+  }
+
+  // Error state
+  if (error || !data?.done || !data.body) {
+    return (
+      <Flex justify="center" align="center" style={{ minHeight: '60vh' }}>
+        <Result
+          status="error"
+          title={t('errorLoadingInvoice')}
+          subTitle={t('errorLoadingInvoiceDescription')}
+          extra={
+            <Button type="primary" onClick={() => navigate(-1)}>
+              {t('backToInvoices')}
+            </Button>
+          }
+        />
+      </Flex>
+    );
+  }
+
+  const invoice = data.body;
+  const statusConfig = getStatusConfig(invoice.status);
 
   return (
-    <div style={{ minHeight: '100vh', padding: 24, width: '100%' }}>
-      <div style={{ width: '100%' }}>
-        {/* Header */}
-        <Flex align="center" gap={12} style={{ marginBottom: 16 }}>
+    <div style={{ padding: '24px', maxWidth: 1200, margin: '0 auto' }}>
+      {/* Header */}
+      <Flex justify="space-between" align="center" style={{ marginBottom: 24 }}>
+        <Flex align="center" gap={16}>
           <Button
-            icon={<LeftOutlined />}
-            onClick={() => navigate(-1)}
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate('/worklenz/client-portal/invoices')}
             type="text"
-            style={{ boxShadow: 'none' }}
           />
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            {invoice_no}
-          </Typography.Title>
-        </Flex>
-        <Card style={{ borderRadius: 10, marginBottom: 24, width: '100%' }}>
-          {/* Top summary: company info and business address */}
-          <Row gutter={32} style={{ marginBottom: 24 }}>
-            <Col span={12}>
-              <Flex align="center" gap={12} style={{ marginBottom: 8 }}>
-                {/* Logo placeholder */}
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: '50%',
-                    background: '#e6f4ea',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 700,
-                    fontSize: 24,
-                    color: '#3aaf85',
-                  }}
-                >
-                  CE
-                </div>
-                <Typography.Text strong style={{ fontSize: 18 }}>
-                  Company Name
-                </Typography.Text>
-              </Flex>
-              <Typography.Text>www.company.com</Typography.Text>
-              <br />
-              <Typography.Text>hello@company.com</Typography.Text>
-              <br />
-              <Typography.Text>+1 (555) 123-4567</Typography.Text>
-            </Col>
-            <Col span={12} style={{ textAlign: 'right' }}>
-              <Typography.Text>{t('businessAddress') || 'Business address'}</Typography.Text>
-              <br />
-              <Typography.Text>Business Address</Typography.Text>
-              <br />
-              <Typography.Text>Tax ID</Typography.Text>
-              <EditOutlined style={{ marginLeft: 8, color: '#bfbfbf', cursor: 'pointer' }} />
-            </Col>
-          </Row>
-          {/* Invoice meta and billed to */}
-          <Row gutter={32} style={{ marginBottom: 24 }}>
-            <Col span={12}>
-              <Typography.Text style={{ fontWeight: 500 }}>
-                {t('billedTo') || 'Billed to'}
-              </Typography.Text>
-              <EditOutlined style={{ marginLeft: 8, color: '#bfbfbf', cursor: 'pointer' }} />
-              <div style={{ marginTop: 4 }}>
-                <Typography.Text strong>Client Name</Typography.Text>
-                <br />
-                <Typography.Text>Client Address</Typography.Text>
-                <br />
-                <Typography.Text>Client City</Typography.Text>
-                <br />
-                <Typography.Text>Client Phone</Typography.Text>
-              </div>
-            </Col>
-            <Col span={12}>
-              <Row>
-                <Col span={12}>
-                  <Typography.Text type="secondary">{t('invoiceNoColumn')}</Typography.Text>
-                  <br />
-                  <Typography.Text strong>{invoice_no}</Typography.Text>
-                </Col>
-                <Col span={12} style={{ textAlign: 'right' }}>
-                  <Typography.Text type="secondary">{t('invoiceOf')}</Typography.Text>
-                  <br />
-                  <Typography.Title level={3} style={{ color: '#3aaf85', margin: 0 }}>
-                    ${invoice_total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </Typography.Title>
-                </Col>
-              </Row>
-              <Row style={{ marginTop: 16 }}>
-                <Col span={12}>
-                  <Typography.Text type="secondary">{t('reference')}</Typography.Text>
-                  <br />
-                  <Typography.Text strong>{reference}</Typography.Text>
-                </Col>
-                <Col span={12} style={{ textAlign: 'right' }}>
-                  <Typography.Text type="secondary">{t('date')}</Typography.Text>
-                  <br />
-                  <Typography.Text strong>{due_date}</Typography.Text>
-                </Col>
-              </Row>
-            </Col>
-          </Row>
-          <Row gutter={32} style={{ marginBottom: 24 }}>
-            <Col span={12}>
-              <Typography.Text type="secondary">{t('subject')}</Typography.Text>
-              <EditOutlined style={{ marginLeft: 8, color: '#bfbfbf', cursor: 'pointer' }} />
-              <br />
-              <Typography.Text strong>{subject}</Typography.Text>
-            </Col>
-            <Col span={12}>
-              <Typography.Text type="secondary">{t('invoiceDate')}</Typography.Text>
-              <br />
-              <Typography.Text strong>{invoice_date}</Typography.Text>
-              <EditOutlined style={{ marginLeft: 8, color: '#bfbfbf', cursor: 'pointer' }} />
-            </Col>
-          </Row>
-          {/* Service table placeholder */}
-          <div
-            style={{
-              marginTop: 16,
-              padding: 24,
-              textAlign: 'center',
-              background: '#f5f5f5',
-              borderRadius: 8,
-            }}
-          >
-            <Typography.Text type="secondary">
-              Service items will be displayed here when available
-            </Typography.Text>
+          <div>
+            <Flex align="center" gap={12}>
+              <Title level={4} style={{ margin: 0 }}>
+                {invoice.invoiceNumber}
+              </Title>
+              <Tag
+                icon={statusConfig.icon}
+                color={statusConfig.color as any}
+              >
+                {getStatusText(invoice.status)}
+              </Tag>
+            </Flex>
+            <Text type="secondary">
+              {t('createdAt')}: {formatDate(invoice.createdAt)}
+            </Text>
           </div>
-        </Card>
-      </div>
+        </Flex>
+
+        <Space>
+          <Button icon={<EyeOutlined />} onClick={() => setPreviewOpen(true)}>
+            {t('previewInvoice')}
+          </Button>
+          {invoice.status === 'draft' && (
+            <Button icon={<SendOutlined />} type="primary">
+              {t('sendInvoice')}
+            </Button>
+          )}
+          {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
+            <Button icon={<CheckCircleOutlined />}>
+              {t('markAsPaid')}
+            </Button>
+          )}
+          <Tooltip title={t('downloadInvoice')}>
+            <Button icon={<DownloadOutlined />} />
+          </Tooltip>
+          <Tooltip title={t('editInvoice')}>
+            <Button icon={<EditOutlined />} />
+          </Tooltip>
+          <Tooltip title={t('deleteInvoice')}>
+            <Button icon={<DeleteOutlined />} danger />
+          </Tooltip>
+        </Space>
+      </Flex>
+
+      <Row gutter={[24, 24]}>
+        {/* Main Invoice Card */}
+        <Col xs={24} lg={16}>
+          <Card>
+            {/* Invoice Amount Header */}
+            <Flex justify="space-between" align="flex-start" style={{ marginBottom: 24 }}>
+              <div>
+                <Text type="secondary">{t('invoiceOf')}</Text>
+                <Title level={2} style={{ margin: 0, color: '#52c41a' }}>
+                  {formatCurrency(invoice.amount, invoice.currency)}
+                </Title>
+              </div>
+              {invoice.isOverdue && (
+                <Tag color="error" icon={<ExclamationCircleOutlined />}>
+                  {t('statusOverdue')}
+                </Tag>
+              )}
+            </Flex>
+
+            <Divider />
+
+            {/* Invoice Details */}
+            <Descriptions
+              title={t('invoiceDetails')}
+              bordered
+              column={{ xs: 1, sm: 2 }}
+              size="small"
+            >
+              <Descriptions.Item label={t('invoiceNoColumn')}>
+                <Text strong>{invoice.invoiceNumber}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label={t('statusColumn')}>
+                <Tag icon={statusConfig.icon} color={statusConfig.color as any}>
+                  {getStatusText(invoice.status)}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label={t('invoiceDate')}>
+                {formatDate(invoice.createdAt)}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('dueDateLabel')}>
+                <Text type={invoice.isOverdue ? 'danger' : undefined}>
+                  {formatDate(invoice.dueDate)}
+                </Text>
+              </Descriptions.Item>
+              <Descriptions.Item label={t('amountLabel')}>
+                <Text strong>{formatCurrency(invoice.amount, invoice.currency)}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label={t('currencyLabel')}>
+                {invoice.currency}
+              </Descriptions.Item>
+            </Descriptions>
+
+            <Divider />
+
+            {/* Client Details */}
+            <Descriptions
+              title={t('clientDetails')}
+              bordered
+              column={{ xs: 1, sm: 2 }}
+              size="small"
+            >
+              <Descriptions.Item label={t('clientLabel')}>
+                <Flex align="center" gap={8}>
+                  <Avatar icon={<UserOutlined />} size="small" />
+                  <Text strong>{invoice.client?.name || '-'}</Text>
+                </Flex>
+              </Descriptions.Item>
+              <Descriptions.Item label={t('companyName')}>
+                {invoice.client?.companyName || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label={t('email')} span={2}>
+                {invoice.client?.email || '-'}
+              </Descriptions.Item>
+            </Descriptions>
+
+            {/* Request Details (if linked) */}
+            {invoice.request && (
+              <>
+                <Divider />
+                <Descriptions
+                  title={t('requestDetails')}
+                  bordered
+                  column={{ xs: 1, sm: 2 }}
+                  size="small"
+                >
+                  <Descriptions.Item label={t('requestNumber')}>
+                    <Text strong>{invoice.request.requestNumber}</Text>
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('serviceName')}>
+                    {invoice.request.service?.name || '-'}
+                  </Descriptions.Item>
+                </Descriptions>
+                {invoice.request.service?.description && (
+                  <div style={{ marginTop: 16 }}>
+                    <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                      {t('serviceDescription')}
+                    </Text>
+                    <Card size="small" style={{ backgroundColor: 'var(--ant-color-bg-layout)' }}>
+                      <div 
+                        dangerouslySetInnerHTML={{ 
+                          __html: DOMPurify.sanitize(invoice.request.service.description, {
+                            ALLOWED_TAGS: ['p', 'br', 'strong', 'b', 'i', 'em', 'u', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'span', 'div'],
+                            ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style']
+                          })
+                        }}
+                        style={{ maxHeight: 200, overflow: 'auto' }}
+                      />
+                    </Card>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Notes */}
+            {invoice.notes && (
+              <>
+                <Divider />
+                <div>
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                    {t('notes')}
+                  </Text>
+                  <Card size="small" style={{ backgroundColor: '#fafafa' }}>
+                    <Text>{invoice.notes}</Text>
+                  </Card>
+                </div>
+              </>
+            )}
+          </Card>
+        </Col>
+
+        {/* Sidebar */}
+        <Col xs={24} lg={8}>
+          {/* Payment Status Card */}
+          <Card title={t('paymentDetails')} style={{ marginBottom: 24 }}>
+            <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              <Flex justify="space-between">
+                <Text type="secondary">{t('sentAt')}</Text>
+                <Text>
+                  {invoice.sentAt ? formatDate(invoice.sentAt) : t('notSentYet')}
+                </Text>
+              </Flex>
+              <Flex justify="space-between">
+                <Text type="secondary">{t('paidAt')}</Text>
+                <Text>
+                  {invoice.paidAt ? formatDate(invoice.paidAt) : t('notPaidYet')}
+                </Text>
+              </Flex>
+              <Divider style={{ margin: '12px 0' }} />
+              <Flex justify="space-between">
+                <Text type="secondary">{t('updatedAt')}</Text>
+                <Text>{formatDate(invoice.updatedAt)}</Text>
+              </Flex>
+            </Space>
+          </Card>
+
+          {/* Created By Card */}
+          {invoice.createdBy && (
+            <Card title={t('createdBy')}>
+              <Flex align="center" gap={12}>
+                <Avatar icon={<UserOutlined />} />
+                <Text strong>{invoice.createdBy.name}</Text>
+              </Flex>
+            </Card>
+          )}
+        </Col>
+      </Row>
+
+      {/* Invoice Preview Modal */}
+      <InvoicePreviewModal
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        invoice={invoice}
+      />
     </div>
   );
 };

@@ -17,9 +17,13 @@ const ProjectViewRoadmap = () => {
   // get theme details
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
+  const { projectId } = useAppSelector(state => state.projectReducer);
+
   useEffect(() => {
-    trackMixpanelEvent(evt_project_roadmap_visit);
-  }, [trackMixpanelEvent]);
+    trackMixpanelEvent(evt_project_roadmap_visit, {
+      project_id: projectId || '',
+    });
+  }, [trackMixpanelEvent, projectId]);
 
   return (
     <Flex vertical className={`${themeMode === 'dark' ? 'dark-theme' : ''}`}>

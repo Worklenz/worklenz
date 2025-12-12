@@ -112,7 +112,12 @@
     "toggleTheme": "切换主题",
     "switchToLight": "切换到亮色主题",
     "switchToDark": "切换到暗色主题",
-    "closeModal": "关闭定价模态框"
+    "closeModal": "关闭定价模态框",
+    "loadingPlans": "加载方案中...",
+    "selectPlan": "选择一个方案",
+    "switchToFree": "切换到免费方案",
+    "planSummary": "{{planName}} 方案 - ${{total}}{{period}}{{userText}}",
+    "planSummaryNoName": "${{total}}{{period}}{{userText}}"
   },
   "userTypes": {
     "trial": {

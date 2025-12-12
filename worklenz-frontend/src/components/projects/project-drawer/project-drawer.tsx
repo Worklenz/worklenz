@@ -56,12 +56,16 @@ import useIsProjectManager from '@/hooks/useIsProjectManager';
 import { useAuthService } from '@/hooks/useAuth';
 import { evt_projects_create } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { isFreeUser } from '@/utils/subscription-utils';
+import { CrownOutlined } from '@ant-design/icons';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 
 const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { t } = useTranslation('project-drawer');
+  const { t: tCommon } = useTranslation('common');
   const [form] = Form.useForm();
   const [loading, setLoading] = useState<boolean>(true);
   const currentSession = useAuthService().getCurrentSession();
@@ -113,6 +117,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   const isProjectManager = currentSession?.team_member_id == selectedProjectManager?.id;
   const isOwnerorAdmin = useAuthService().isOwnerOrAdmin();
   const isEditable = isProjectManager || isOwnerorAdmin;
+  const isFree = isFreeUser(currentSession);
 
   // Effects
   useEffect(() => {
@@ -200,6 +205,10 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   }, [form]);
 
   // Handlers
+  const handleUpgradeClick = useCallback(() => {
+    dispatch(toggleUpgradeModal());
+  }, [dispatch]);
+
   const handleFormSubmit = async (values: any) => {
     try {
       const projectModel: IProjectViewModel = {
@@ -470,13 +479,13 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
             healths={projectHealths}
             form={form}
             t={t}
-            disabled={!isProjectManager && !isOwnerorAdmin}
+            disabled={isFree || (!isProjectManager && !isOwnerorAdmin)}
           />
           <ProjectCategorySection
             categories={projectCategories}
             form={form}
             t={t}
-            disabled={!isProjectManager && !isOwnerorAdmin}
+            disabled={isFree || (!isProjectManager && !isOwnerorAdmin)}
           />
 
           <Form.Item name="notes" label={t('notes')}>
@@ -495,11 +504,23 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
             disabled={!isProjectManager && !isOwnerorAdmin}
           />
 
-          <Form.Item name="project_manager" label={t('projectManager')} layout="horizontal">
+          <Form.Item name="project_manager" label={
+            <Flex align="center" gap={4}>
+              <span>{t('projectManager')}</span>
+              {isFree && (
+                <Tooltip title={tCommon('upgrade-plan')} placement="top">
+                  <CrownOutlined 
+                    style={{ fontSize: '14px', color: '#faad14', cursor: 'pointer' }}
+                    onClick={handleUpgradeClick}
+                  />
+                </Tooltip>
+              )}
+            </Flex>
+          } layout="horizontal">
             <ProjectManagerDropdown
               selectedProjectManager={selectedProjectManager}
               setSelectedProjectManager={setSelectedProjectManager}
-              disabled={!isProjectManager && !isOwnerorAdmin}
+              disabled={isFree || (!isProjectManager && !isOwnerorAdmin)}
             />
           </Form.Item>
 

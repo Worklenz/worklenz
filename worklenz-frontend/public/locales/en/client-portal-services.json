@@ -1,5 +1,6 @@
 {
   "title": "Services",
+  "description": "Manage your services and offerings",
   "nameColumn": "Name",
   "createdByColumn": "Created By",
   "statusColumn": "Status",
@@ -71,6 +72,17 @@
   "noServicesDescription": "You haven't created any services yet. Create your first service to start receiving client requests.",
   "errorLoadingServices": "Error Loading Services",
   "errorLoadingServicesDescription": "There was an error loading your services. Please try again later.",
+  "visibilityColumn": "Visibility",
+  "visibilityVisible": "Visible",
+  "visibilityHidden": "Hidden",
+  "serviceVisibility": {
+    "title": "Service Visibility",
+    "description": "Control whether this service is visible to clients.",
+    "showToAll": "Show to all clients",
+    "hiddenFromAll": "Hidden from all clients",
+    "showToAllDescription": "This service is visible to all clients in the portal",
+    "hiddenFromAllDescription": "This service is hidden and not visible to any clients"
+  },
   "addService": {
     "serviceDetails": {
       "title": "Service Details",

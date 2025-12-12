@@ -98,8 +98,20 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
 
   // used useMemo hook for re render the list when searching
   const filteredLabelData = useMemo(() => {
-    return labelList.filter(label => label.name?.toLowerCase().includes(searchQuery.toLowerCase()));
-  }, [labelList, searchQuery]);
+    const filtered = labelList.filter(label =>
+      label.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Sort labels: selected ones first, then unselected ones
+    return filtered.sort((a, b) => {
+      const aSelected = task?.labels?.some(existingLabel => existingLabel.id === a.id) || false;
+      const bSelected = task?.labels?.some(existingLabel => existingLabel.id === b.id) || false;
+
+      if (aSelected && !bSelected) return -1;
+      if (!aSelected && bSelected) return 1;
+      return 0;
+    });
+  }, [labelList, searchQuery, task?.labels]);
 
   const labelDropdownContent = (
     <Card
@@ -193,6 +205,11 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
               height: 18,
               fontSize: 11,
               marginBottom: 4,
+            }}
+            closable
+            onClose={e => {
+              e.preventDefault();
+              handleLabelChange(label);
             }}
           >
             {label.name}

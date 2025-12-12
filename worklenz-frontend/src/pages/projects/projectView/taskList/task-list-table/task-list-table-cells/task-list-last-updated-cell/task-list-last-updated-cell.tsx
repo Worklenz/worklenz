@@ -4,7 +4,7 @@ import { formatDate } from '@/utils/timeUtils';
 
 const TaskListLastUpdatedCell = ({ lastUpdated }: { lastUpdated: string | null }) => {
   return (
-    <Tooltip title={lastUpdated ? formatDate(new Date(lastUpdated)) : 'N/A'}>
+    <Tooltip title={lastUpdated ? formatDate(lastUpdated) : 'N/A'}>
       <Typography.Text>{durationDateFormat(lastUpdated || null)}</Typography.Text>
     </Tooltip>
   );

@@ -85,7 +85,7 @@ const ProjectReportsMembersTasksTable = ({ tasksData }: ProjectReportsMembersTas
       title: <CustomTableTitle title={t('dueDateColumn')} />,
       render: record => (
         <Typography.Text className="text-center group-hover:text-[#1890ff]">
-          {record.end_date ? `${dayjs(record.end_date).format('MMM DD, YYYY')}` : '-'}
+          {record.end_date ? `${dayjs(record.end_date, 'YYYY-MM-DD').format('MMM DD, YYYY')}` : '-'}
         </Typography.Text>
       ),
       width: 120,

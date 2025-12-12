@@ -35,9 +35,10 @@ import { WarningTwoTone, PlusOutlined } from '@/shared/antd-imports';
 import { calculateTimeGap } from '@/utils/calculate-time-gap';
 import { formatDate } from '@/utils/timeUtils';
 // import UpgradePlansLKR from '../drawers/upgrade-plans-lkr/upgrade-plans-lkr';
-import UpgradePlans from '../drawers/upgrade-plans/upgrade-plans';
+// UpgradePlans modal is now handled globally in MainLayout.tsx
 import { ISUBSCRIPTION_TYPE, SUBSCRIPTION_STATUS } from '@/shared/constants';
 import { billingApiService } from '@/api/admin-center/billing.api.service';
+import { useAuthService } from '@/hooks/useAuth';
 
 type SubscriptionAction = 'pause' | 'resume';
 type SeatOption = { label: string; value: number | string };
@@ -58,6 +59,7 @@ const CurrentPlanDetails = () => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('admin-center/current-bill');
   const { trackMixpanelEvent } = useMixpanelTracking();
+  const currentSession = useAuthService().getCurrentSession();
 
   const [pausingPlan, setPausingPlan] = useState(false);
   const [cancellingPlan, setCancellingPlan] = useState(false);
@@ -188,9 +190,19 @@ const CurrentPlanDetails = () => {
     setSelectedSeatCount(getDefaultSeatCount);
   }, [getDefaultSeatCount]);
 
+  // Handle query parameter to open upgrade modal from email links
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'upgrade-plans') {
+      dispatch(toggleUpgradeModal());
+      // Clean up URL to remove the query parameter
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+    }
+  }, [dispatch]);
+
   const checkSubscriptionStatus = useCallback(
     (allowedStatuses: string[]) => {
-      if (!billingInfo?.status || billingInfo.is_ltd_user) return false;
+      if (!billingInfo?.status || billingInfo.is_ltd_user || billingInfo.subscription_type === ISUBSCRIPTION_TYPE.TRIAL) return false;
       return allowedStatuses.includes(billingInfo.status);
     },
     [billingInfo?.status, billingInfo?.is_ltd_user]
@@ -198,8 +210,9 @@ const CurrentPlanDetails = () => {
 
   const shouldShowRedeemButton = useMemo(() => {
     if (billingInfo?.trial_in_progress) return true;
+    if (billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.FREE) return true;
     return billingInfo?.ltd_users ? billingInfo.ltd_users < LTD_USER_LIMIT : false;
-  }, [billingInfo?.trial_in_progress, billingInfo?.ltd_users]);
+  }, [billingInfo?.trial_in_progress, billingInfo?.subscription_type, billingInfo?.ltd_users]);
 
   const showChangeButton = useMemo(() => {
     return checkSubscriptionStatus([SUBSCRIPTION_STATUS.ACTIVE, SUBSCRIPTION_STATUS.PASTDUE]);
@@ -220,6 +233,23 @@ const CurrentPlanDetails = () => {
       billingInfo.status === SUBSCRIPTION_STATUS.ACTIVE
     );
   }, [billingInfo]);
+
+  const isAppSumoUser = useMemo(() => {
+    const planName = billingInfo?.plan_name?.toLowerCase() || '';
+    const subscriptionType = currentSession?.subscription_type?.toLowerCase() || '';
+    
+    // First check if user is on trial - trial users should never be considered AppSumo users
+    if (currentSession?.subscription_type === 'TRIAL') {
+      return false;
+    }
+    
+    return (
+      planName.includes('appsumo') ||
+      subscriptionType.includes('appsumo') ||
+      planName.includes('life_time_deal') ||
+      subscriptionType.includes('life_time_deal')
+    );
+  }, [billingInfo, currentSession]);
 
   const renderExtra = useCallback(() => {
     if (!billingInfo || billingInfo.is_custom) return null;
@@ -254,6 +284,12 @@ const CurrentPlanDetails = () => {
         )}
 
         {billingInfo.subscription_type === ISUBSCRIPTION_TYPE.FREE && (
+          <Button type="primary" onClick={() => dispatch(toggleUpgradeModal())}>
+            {t('upgradePlan')}
+          </Button>
+        )}
+
+        {billingInfo.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL && (
           <Button type="primary" onClick={() => dispatch(toggleUpgradeModal())}>
             {t('upgradePlan')}
           </Button>
@@ -521,6 +557,11 @@ const CurrentPlanDetails = () => {
   const renderSubscriptionContent = useCallback(() => {
     if (!billingInfo) return null;
 
+    // Handle trial users even when subscription_type is null
+    if (billingInfo.trial_in_progress) {
+      return renderTrialDetails();
+    }
+
     switch (billingInfo.subscription_type) {
       case ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL:
         return renderLtdDetails();
@@ -579,18 +620,6 @@ const CurrentPlanDetails = () => {
             <RedeemCodeDrawer />
           </>
         )}
-        <Modal
-          open={isUpgradeModalOpen}
-          onCancel={() => dispatch(toggleUpgradeModal())}
-          width={1400}
-          centered
-          okButtonProps={{ hidden: true }}
-          cancelButtonProps={{ hidden: true }}
-        >
-          {/* LKR pricing disabled for now - always show main upgrade plans */}
-          <UpgradePlans />
-          {/* {browserTimeZone === 'Asia/Colombo' ? <UpgradePlansLKR /> : <UpgradePlans />} */}
-        </Modal>
 
         <Modal
           title={t('addMoreSeats')}

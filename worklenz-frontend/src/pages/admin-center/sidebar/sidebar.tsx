@@ -8,6 +8,7 @@ import { adminCenterItems } from '../../../lib/admin-center-constants';
 import './sidebar.css';
 import { useAuthService } from '@/hooks/useAuth';
 import { isBusinessPlan } from '@/utils/subscription-utils';
+import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 
 const AdminCenterSidebar: React.FC = () => {
   const { t } = useTranslation('admin-center/sidebar');
@@ -16,9 +17,14 @@ const AdminCenterSidebar: React.FC = () => {
   const currentSession = authService.getCurrentSession();
 
   type MenuItem = Required<MenuProps>['items'][number];
+  const isSelfHosted = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED;
+  
   const menuItems = adminCenterItems.filter(item => {
     if (item.key === 'settings') {
       return isBusinessPlan(currentSession);
+    }
+    if (item.selfHostedExcluded && isSelfHosted) {
+      return false;
     }
     return true;
   });
@@ -30,7 +36,7 @@ const AdminCenterSidebar: React.FC = () => {
         <Flex gap={8} justify="space-between" className="admin-center-sidebar-button">
           <Flex gap={8}>
             {item.icon}
-            <Link to={`/worklenz/admin-center/${item.endpoint}`}>{t(item.name)}</Link>
+            <Link to={`/worklenz/admin-center/${item.endpoint}`}>{t(item.name, { defaultValue: item.defaultValue })}</Link>
           </Flex>
           <RightOutlined style={{ fontSize: 12, fontWeight: 'bold' }} />
         </Flex>

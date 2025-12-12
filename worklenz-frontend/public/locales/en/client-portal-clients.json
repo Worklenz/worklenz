@@ -19,6 +19,7 @@
   "teamMembersColumn": "Team Members",
   "actionBtnsColumn": "Actions",
 
+  "statusAll": "All",
   "statusActive": "Active",
   "statusInactive": "Inactive",
   "statusPending": "Pending",
@@ -30,13 +31,20 @@
   "settingsTooltip": "Settings",
   "shareTooltip": "Share",
   "deleteTooltip": "Delete",
+  "deactivateTooltip": "Deactivate Client",
 
   "deleteConfirmationTitle": "Delete Client",
   "deleteConfirmationDescription": "Are you sure you want to delete this client? This action cannot be undone.",
   "deleteConfirmationOk": "Delete",
   "deleteConfirmationCancel": "Cancel",
 
+  "deactivateConfirmationTitle": "Deactivate Client",
+  "deactivateConfirmationDescription": "Are you sure you want to deactivate this client? They will lose access to the portal, but all data will be preserved.",
+  "deactivateConfirmationOk": "Deactivate",
+  "deactivateConfirmationCancel": "Cancel",
+
   "searchClientsPlaceholder": "Search clients...",
+  "portalStatusFilterPlaceholder": "Filter by portal status",
   "statusFilterPlaceholder": "Filter by status",
 
   "paginationText": "Showing",
@@ -76,6 +84,8 @@
   "updateClientErrorMessage": "Failed to update client",
   "deleteClientSuccessMessage": "Client deleted successfully",
   "deleteClientErrorMessage": "Failed to delete client",
+  "deactivateClientSuccessMessage": "Client deactivated successfully",
+  "deactivateClientErrorMessage": "Failed to deactivate client",
 
   "clientPortalAccessTitle": "Client Portal Access",
   "clientPortalAccessDescription": "Share this link with your client to give them access to their portal",
@@ -102,6 +112,7 @@
 
   "closeButton": "Close",
   "deleteButton": "Delete Client",
+  "deactivateButton": "Deactivate Client",
 
   "clientInformationTitle": "Client Information",
   "createdAtLabel": "Created",
@@ -158,9 +169,12 @@
   "markPendingSelected": "Mark Pending",
   "deleteSelected": "Delete Selected",
   "selectClientsToDelete": "Please select clients to delete",
+  "selectClientsToDeactivate": "Please select clients to deactivate",
   "selectClientsToUpdate": "Please select clients to update",
   "bulkDeleteSuccessMessage": "Selected clients deleted successfully",
   "bulkDeleteErrorMessage": "Failed to delete selected clients",
+  "bulkDeactivateSuccessMessage": "Selected clients deactivated successfully",
+  "bulkDeactivateErrorMessage": "Failed to deactivate selected clients",
   "bulkUpdateSuccessMessage": "Selected clients updated successfully",
   "bulkUpdateErrorMessage": "Failed to update selected clients",
 
@@ -219,6 +233,7 @@
   "linkCopiedMessage": "Link copied to clipboard",
   "noClientsTitle": "No Clients Found",
   "noClientsDescription": "You haven't added any clients yet. Add your first client to start managing their portal access.",
+  "noClientsMatchingFilters": "No clients match the current filters.",
   "errorLoadingClients": "Error Loading Clients",
   "errorLoadingClientsDescription": "There was an error loading your clients. Please try again later.",
 
@@ -245,5 +260,29 @@
   "projectAssignedSuccessMessage": "Project assigned successfully",
   "projectAssignedErrorMessage": "Failed to assign project",
   "projectRemovedSuccessMessage": "Project removed successfully",
-  "projectRemovedErrorMessage": "Failed to remove project"
+  "projectRemovedErrorMessage": "Failed to remove project",
+
+  "portalStatusColumn": "Portal Status",
+  "portalStatus": {
+    "active": "Active",
+    "invited": "Invited",
+    "not_invited": "Not Invited",
+    "expired": "Expired"
+  },
+
+  "inviteToPortalTooltip": "Invite to Portal",
+  "resendInvitationTooltip": "Resend Invitation",
+  "resendInviteEmailTooltip": "Resend Invite Email",
+  "copyInviteLinkTooltip": "Copy Invitation Link",
+  "resendInvitationSuccess": "Invitation email sent successfully!",
+  "resendInvitationError": "Failed to send invitation email",
+
+  "inviteSelectedToPortal": "Send Portal Invitations",
+  "selectClientsToInvite": "Please select clients to invite",
+  "bulkInviteSuccessMessage": "invitation(s) generated successfully",
+  "bulkInvitePartialFailMessage": "invitation(s) failed",
+  "bulkInviteErrorMessage": "Failed to generate invitations",
+
+  "inviteLinkGeneratedSuccess": "Invitation link generated successfully!",
+  "inviteLinkGeneratedError": "Failed to generate invitation link"
 }

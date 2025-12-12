@@ -12,10 +12,36 @@ export const SessionsStatus = {
 export const LOG_DESCRIPTIONS = {
   PROJECT_CREATED: "Project created by @user",
   PROJECT_UPDATED: "Project updated by @user",
+  PROJECT_DELETED: "Project deleted by @user",
+  PROJECT_ARCHIVED: "Project archived by @user",
+  PROJECT_UNARCHIVED: "Project unarchived by @user",
+  PROJECT_FAVORITED: "Project favorited by @user",
+  PROJECT_UNFAVORITED: "Project unfavorited by @user",
+  PROJECT_STATUS_CHANGED: "Project status changed by @user",
+  PROJECT_MANAGER_ASSIGNED: "Project manager assigned by @user",
+  PROJECT_MANAGER_REMOVED: "Project manager removed by @user",
   TASK_CREATED: "Task created by @user",
   TASK_UPDATED: "Task updated by @user",
   PROJECT_MEMBER_ADDED: "was added to the project by",
   PROJECT_MEMBER_REMOVED: "was removed from the project by",
+};
+
+// I18n-compatible log keys and parameters
+export const LOG_I18N_KEYS = {
+  PROJECT_CREATED: "activityLogs.project.created",
+  PROJECT_UPDATED: "activityLogs.project.updated", 
+  PROJECT_DELETED: "activityLogs.project.deleted",
+  PROJECT_ARCHIVED: "activityLogs.project.archived",
+  PROJECT_UNARCHIVED: "activityLogs.project.unarchived",
+  PROJECT_FAVORITED: "activityLogs.project.favorited",
+  PROJECT_UNFAVORITED: "activityLogs.project.unfavorited",
+  PROJECT_STATUS_CHANGED: "activityLogs.project.statusChanged",
+  PROJECT_MANAGER_ASSIGNED: "activityLogs.project.managerAssigned",
+  PROJECT_MANAGER_REMOVED: "activityLogs.project.managerRemoved",
+  TASK_CREATED: "activityLogs.task.created",
+  TASK_UPDATED: "activityLogs.task.updated",
+  PROJECT_MEMBER_ADDED: "activityLogs.project.memberAdded",
+  PROJECT_MEMBER_REMOVED: "activityLogs.project.memberRemoved",
 };
 
 export const WorklenzColorShades = {

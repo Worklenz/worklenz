@@ -14,6 +14,7 @@ import {
 import { GlobalOutlined, MoonOutlined, SunOutlined } from '@/shared/antd-imports';
 
 import logger from '@/utils/errorLogger';
+import { invitationRedirectService } from '@/services/invitation-redirect.service';
 import { setCurrentStep, setSurveySubStep } from '@/features/account-setup/account-setup.slice';
 import { OrganizationStep } from '@/components/account-setup/organization-step';
 import { ProjectStep } from '@/components/account-setup/project-step';
@@ -293,6 +294,16 @@ const AccountSetup: React.FC = () => {
           logger.error('Failed to refresh user session after setup completion', error);
         }
 
+        // Check for pending invitation before navigating to default project
+        const pendingInvitation = invitationRedirectService.getPendingInvitation();
+        if (pendingInvitation) {
+          console.log('[AccountSetup] Found pending invitation after setup completion, redirecting to:', pendingInvitation.url);
+          // Don't clear here - let the invite page clear it after successful join
+          navigate(pendingInvitation.url);
+          return;
+        }
+
+        // Default navigation to the newly created project
         navigate(`/worklenz/projects/${res.body.id}?tab=tasks-list&pinned_tab=tasks-list`);
       }
     } catch (error) {
@@ -348,6 +359,16 @@ const AccountSetup: React.FC = () => {
           logger.error('Failed to refresh user session after template setup completion', error);
         }
 
+        // Check for pending invitation before navigating to default project
+        const pendingInvitation = invitationRedirectService.getPendingInvitation();
+        if (pendingInvitation) {
+          console.log('[AccountSetup] Found pending invitation after template setup completion, redirecting to:', pendingInvitation.url);
+          // Don't clear here - let the invite page clear it after successful join
+          navigate(pendingInvitation.url);
+          return;
+        }
+
+        // Default navigation to the newly created project
         navigate(`/worklenz/projects/${res.body.id}?tab=tasks-list&pinned_tab=tasks-list`);
       }
     } catch (error) {
@@ -561,7 +582,7 @@ const AccountSetup: React.FC = () => {
     { key: Language.PT, label: 'Português', flag: '🇵🇹' },
     { key: Language.DE, label: 'Deutsch', flag: '🇩🇪' },
     { key: Language.ALB, label: 'Shqip', flag: '🇦🇱' },
-    { key: Language.ZH_CN, label: '简体中文', flag: '🇨🇳' },
+    { key: Language.ZH, label: '简体中文', flag: '🇨🇳' },
   ];
 
   const handleLanguageChange = (languageKey: ILanguageType) => {

@@ -23,7 +23,7 @@ import { useTranslation } from 'react-i18next';
 import ClientPortalSidebar from './ClientPortalSidebar';
 import { useResponsive } from '@/hooks/useResponsive';
 import NotificationCenter from '../NotificationCenter';
-// import { useGetSettingsQuery } from '@/store/api';
+import OrganizationSwitcher from '../OrganizationSwitcher';
 
 const { Header, Sider, Content } = Layout;
 
@@ -67,6 +67,13 @@ const ClientLayout: React.FC = () => {
     // }
   }, [notificationsData]);
 
+  // Sync i18n language with Redux state on mount
+  React.useEffect(() => {
+    if (currentLanguage && i18n.language !== currentLanguage) {
+      i18n.changeLanguage(currentLanguage);
+    }
+  }, [currentLanguage, i18n]);
+
   const handleLogout = () => {
     dispatch(logout());
     navigate('/auth/login');
@@ -76,9 +83,13 @@ const ClientLayout: React.FC = () => {
     dispatch(setTheme(currentTheme === 'light' ? 'dark' : 'light'));
   };
 
-  const handleLanguageChange = (language: string) => {
-    dispatch(setLanguage(language));
-    i18n.changeLanguage(language);
+  const handleLanguageChange = async (language: string) => {
+    try {
+      await i18n.changeLanguage(language);
+      dispatch(setLanguage(language));
+    } catch (error) {
+      console.error('Failed to change language:', error);
+    }
   };
 
   const languageOptions = [
@@ -95,29 +106,34 @@ const ClientLayout: React.FC = () => {
     {
       key: 'profile',
       icon: <UserOutlined />,
-      label: t('user.profile', 'Profile'),
-      onClick: () => navigate('/profile'),
-    },
-    {
-      key: 'theme',
-      icon: currentTheme === 'light' ? <MoonOutlined /> : <SunOutlined />,
-      label: t(`theme.${currentTheme === 'light' ? 'dark' : 'light'}`, currentTheme === 'light' ? 'Dark Mode' : 'Light Mode'),
-      onClick: handleThemeToggle,
-    },
-    {
-      key: 'language',
-      icon: <TranslationOutlined />,
       label: (
-        <Select
-          value={currentLanguage}
-          onChange={handleLanguageChange}
-          style={{ width: 120 }}
-          size="small"
-          bordered={false}
-          options={languageOptions}
-          onClick={(e) => e.stopPropagation()}
-        />
+        <div style={{ padding: '8px 0' }}>
+          <div style={{ 
+            fontSize: '14px', 
+            fontWeight: '600',
+            color: token.colorText,
+            marginBottom: '4px',
+          }}>
+            {user?.name || t('user.defaultName', 'Client User')}
+          </div>
+          <div style={{ 
+            fontSize: '12px', 
+            color: token.colorTextSecondary,
+          }}>
+            {user?.email || 'user@example.com'}
+          </div>
+        </div>
       ),
+      disabled: true,
+    },
+    {
+      type: 'divider' as const,
+    },
+    {
+      key: 'settings',
+      icon: <UserOutlined />,
+      label: t('user.profile', 'Profile Settings'),
+      onClick: () => navigate('/profile'),
     },
     {
       type: 'divider' as const,
@@ -127,6 +143,7 @@ const ClientLayout: React.FC = () => {
       icon: <LogoutOutlined />,
       label: t('user.logout', 'Logout'),
       onClick: handleLogout,
+      danger: true,
     },
   ];
 
@@ -137,16 +154,17 @@ const ClientLayout: React.FC = () => {
           trigger={null}
           collapsible
           collapsed={sidebarCollapsed}
-          width={280}
+          width={240}
           collapsedWidth={80}
           style={{
-            borderRight: `1px solid ${token.colorBorder}`,
+            borderRight: `1px solid ${token.colorBorderSecondary}`,
             background: token.colorBgContainer,
             position: 'fixed',
             height: '100vh',
             left: 0,
             top: 0,
             zIndex: 1001,
+            overflow: 'auto',
           }}
         >
           <ClientPortalSidebar
@@ -165,59 +183,55 @@ const ClientLayout: React.FC = () => {
       
       <Layout
         style={{
-          marginLeft: isMobile ? 0 : sidebarCollapsed ? 80 : 280,
-          transition: 'margin-left 0.2s ease',
+          marginLeft: isMobile ? 0 : sidebarCollapsed ? 80 : 240,
+          transition: 'margin-left 0.2s cubic-bezier(0.645, 0.045, 0.355, 1)',
+          background: token.colorBgLayout,
         }}
       >
         <Header
           style={{
-            padding: isMobile ? '0 16px' : '0 24px',
+            padding: 0,
             background: token.colorBgContainer,
-            borderBottom: `1px solid ${token.colorBorder}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            height: 72,
+            borderBottom: `1px solid ${token.colorBorderSecondary}`,
+            height: 56,
+            lineHeight: '56px',
             zIndex: 1000,
             position: 'sticky',
             top: 0,
           }}
         >
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: isMobile ? 8 : 16,
-            background: token.colorBgLayout,
-            padding: isMobile ? '6px 12px' : '8px 16px',
-            borderRadius: '12px',
-            border: `1px solid ${token.colorBorder}`,
+          <div style={{
+            width: '100%',
+            height: '100%',
+            paddingInline: isMobile ? 16 : 24,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 16,
           }}>
-            <Switch
-              checked={currentTheme === 'dark'}
-              onChange={handleThemeToggle}
-              checkedChildren={<MoonOutlined />}
-              unCheckedChildren={<SunOutlined />}
-              size="small"
-              style={{
-                backgroundColor: currentTheme === 'dark' ? '#1890ff' : '#d9d9d9',
-                borderColor: currentTheme === 'dark' ? '#1890ff' : '#d9d9d9',
-              }}
-            />
+            {/* Theme & Language Controls */}
             {!isMobile && (
-              <Select
-                value={currentLanguage}
-                onChange={handleLanguageChange}
-                style={{ width: 110 }}
-                size="small"
-                options={languageOptions}
-                suffixIcon={<TranslationOutlined />}
-                bordered={false}
-              />
+              <>
+                <Switch
+                  checked={currentTheme === 'dark'}
+                  onChange={handleThemeToggle}
+                  checkedChildren={<MoonOutlined />}
+                  unCheckedChildren={<SunOutlined />}
+                  size="small"
+                />
+                <Select
+                  value={currentLanguage}
+                  onChange={handleLanguageChange}
+                  style={{ width: 110 }}
+                  size="small"
+                  options={languageOptions}
+                  suffixIcon={<TranslationOutlined />}
+                  variant="borderless"
+                />
+                <OrganizationSwitcher />
+              </>
             )}
-          </div>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 20 }}>
+            
             <NotificationCenter />
             
             <Dropdown
@@ -228,52 +242,19 @@ const ClientLayout: React.FC = () => {
               <div style={{ 
                 cursor: 'pointer', 
                 display: 'flex', 
-                alignItems: 'center', 
-                gap: isMobile ? 8 : 12,
-                padding: isMobile ? '6px 12px' : '8px 16px',
-                borderRadius: '12px',
-                transition: 'all 0.2s ease',
-                border: `1px solid ${token.colorBorder}`,
-                background: token.colorBgContainer,
+                alignItems: 'center',
+                padding: '4px 8px',
+                borderRadius: 6,
+                transition: 'background 0.2s',
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = token.colorBgTextHover;
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = token.colorBgContainer;
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = token.colorFillSecondary}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
               >
                 <Avatar 
                   icon={<UserOutlined />} 
-                  style={{ 
-                    backgroundColor: token.colorPrimary,
-                    width: isMobile ? 32 : 36,
-                    height: isMobile ? 32 : 36,
-                  }}
+                  size={32}
+                  style={{ backgroundColor: token.colorPrimary }}
                 />
-                {!isMobile && (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                    <span style={{ 
-                      fontSize: '14px', 
-                      fontWeight: '600',
-                      color: token.colorText,
-                      lineHeight: '1.2',
-                    }}>
-                      {user?.name || t('user.defaultName', 'Client User')}
-                    </span>
-                    <span style={{ 
-                      fontSize: '12px', 
-                      color: token.colorTextSecondary,
-                      lineHeight: '1.2',
-                    }}>
-                      {user?.email || 'user@example.com'}
-                    </span>
-                  </div>
-                )}
               </div>
             </Dropdown>
           </div>
@@ -281,28 +262,15 @@ const ClientLayout: React.FC = () => {
         
         <Content
           style={{
-            margin: isMobile ? '16px' : '24px',
-            padding: isMobile ? '20px' : '32px',
-            background: token.colorBgContainer,
-            borderRadius: isMobile ? '12px' : '16px',
-            minHeight: 280,
-            overflow: 'auto',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            border: `1px solid ${token.colorBorderSecondary}`,
+            margin: isMobile ? 16 : 24,
+            minHeight: 'calc(100vh - 104px)',
           }}
         >
-          <div style={{ 
-            maxWidth: '1200px', 
-            margin: '0 auto',
-            minHeight: 'calc(100vh - 200px)',
-            width: '100%',
-          }}>
-            <Outlet />
-          </div>
+          <Outlet />
         </Content>
       </Layout>
     </Layout>
   );
 };
 
-export default ClientLayout; 
+export default ClientLayout;

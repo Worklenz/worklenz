@@ -15,7 +15,7 @@ import {
 } from '@/shared/antd-imports';
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMediaQuery } from 'react-responsive';
+import { useDebouncedMediaQuery } from '@/hooks/useDebouncedMediaQuery';
 
 import ListView from './ListView';
 import CalendarView from './CalendarView';
@@ -29,8 +29,9 @@ import {
   setSelectedTaskId,
   setShowTaskDrawer,
   fetchTask,
+  setNavigationContext,
 } from '@/features/task-drawer/task-drawer.slice';
-import { useGetMyTasksQuery } from '@/api/home-page/home-page.api.service';
+import homePageApi, { useGetMyTasksQuery } from '@/api/home-page/home-page.api.service';
 import { IHomeTasksModel } from '@/types/home/home-page.types';
 import './tasks-list.css';
 import HomeTasksStatusDropdown from '@/components/home-tasks/statusDropdown/HomeTasksStatusDropdown';
@@ -64,7 +65,7 @@ const TasksList: React.FC = React.memo(() => {
 
   const { t, ready } = useTranslation('home');
   const { model } = useAppSelector(state => state.homePageReducer);
-  const isMobile = useMediaQuery({ maxWidth: 768 });
+  const isMobile = useDebouncedMediaQuery({ query: '(max-width: 768px)' });
 
   const taskModes = useMemo(
     () => [
@@ -97,19 +98,35 @@ const TasksList: React.FC = React.memo(() => {
 
   const handleSelectTask = useCallback(
     (task: IMyTask) => {
+      // Get all task IDs from current data for navigation
+      const allTaskIds = (data?.body?.tasks || []).map(t => t.id || '').filter(Boolean);
+      const currentIndex = allTaskIds.indexOf(task.id || '');
+
+      // Set navigation context
+      dispatch(
+        setNavigationContext({
+          taskIds: allTaskIds,
+          currentIndex: currentIndex >= 0 ? currentIndex : 0,
+          sourceView: 'home',
+          projectId: task.project_id || null,
+        })
+      );
+
       dispatch(setSelectedTaskId(task.id || ''));
       dispatch(fetchTask({ taskId: task.id || '', projectId: task.project_id || '' }));
       dispatch(setProjectId(task.project_id || ''));
       dispatch(setShowTaskDrawer(true));
       dispatch(setHomeTasksConfig({ ...homeTasksConfig, selected_task_id: task.id || '' }));
     },
-    [dispatch, setSelectedTaskId, setShowTaskDrawer, fetchTask, homeTasksConfig]
+    [dispatch, data?.body?.tasks, homeTasksConfig]
   );
 
   const refetch = useCallback(() => {
     setSkipAutoRefetch(false);
     originalRefetch();
-  }, [originalRefetch]);
+    // Invalidate task counts cache to refresh calendar badges
+    dispatch(homePageApi.util.invalidateTags(['taskCounts']));
+  }, [originalRefetch, dispatch]);
 
   const handlePageChange = (page: number) => {
     setSkipAutoRefetch(true);

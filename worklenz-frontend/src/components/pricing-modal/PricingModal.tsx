@@ -291,7 +291,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
 }) => {
   const { t } = useTranslation(['pricing-modal', 'common']);
   const dispatch = useDispatch();
-  const theme = useSelector((state: RootState) => state.theme.mode);
+  const theme = useSelector((state: RootState) => state.themeReducer.mode);
   const isDarkMode = theme === 'dark';
 
   // State management
@@ -416,7 +416,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
         (currentUser?.userType === 'appsumo' || userPersonalization?.userType === 'appsumo') &&
         plan.category !== 'free'
       ) {
-        const discountPercentage = 50;
+        const discountPercentage = 70;
         const discountAmount = calculation.totalCost * (discountPercentage / 100);
 
         calculation.discountApplied = {
@@ -644,7 +644,6 @@ const PricingModal: React.FC<PricingModalProps> = ({
     const shouldShowForAppSumo =
       !isAppSumoUser ||
       plan.category === 'business' ||
-      plan.category === 'enterprise' ||
       plan.id === 'free';
 
     if (isAppSumoUser && !shouldShowForAppSumo) return null;

@@ -1,5 +1,6 @@
 {
   "title": "服务",
+  "description": "管理您的服务和产品",
   "nameColumn": "名称",
   "createdByColumn": "创建者",
   "statusColumn": "状态",
@@ -49,6 +50,17 @@
   "noServicesDescription": "您还没有创建任何服务。创建您的第一个服务以开始接收客户请求。",
   "errorLoadingServices": "加载服务时出错",
   "errorLoadingServicesDescription": "加载您的服务时出现错误。请稍后再试。",
+  "visibilityColumn": "可见性",
+  "visibilityVisible": "可见",
+  "visibilityHidden": "隐藏",
+  "serviceVisibility": {
+    "title": "服务可见性",
+    "description": "控制此服务是否对客户可见。",
+    "showToAll": "对所有客户显示",
+    "hiddenFromAll": "对所有客户隐藏",
+    "showToAllDescription": "此服务对门户中的所有客户可见",
+    "hiddenFromAllDescription": "此服务已隐藏，对任何客户都不可见"
+  },
   "addService": {
     "serviceDetails": {
       "title": "服务详情",

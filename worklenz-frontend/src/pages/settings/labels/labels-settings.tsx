@@ -8,7 +8,7 @@ import {
   TableProps,
   Tooltip,
   Typography,
-} from 'antd';
+} from '@/shared/antd-imports';
 import { useEffect, useMemo, useState } from 'react';
 
 import PinRouteToNavbarButton from '../../../components/PinRouteToNavbarButton';

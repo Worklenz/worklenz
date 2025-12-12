@@ -81,23 +81,29 @@ async function handleMobileGoogleAuth(req: Request, done: any) {
       const user = userResult.rows[0];
       return done(null, user, { message: "User successfully logged in" });
     }
-    // New user - register
-    const googleUserData = {
-      id: profile.sub,
-      displayName: profile.name,
-      email: profile.email,
-      picture: profile.picture,
-    };
 
-    const registerResult = await db.query(
-      "SELECT register_google_user($1) AS user;",
-      [JSON.stringify(googleUserData)]
-    );
-    const { user } = registerResult.rows[0];
-
-    return done(null, user, {
-      message: "User successfully registered and logged in",
+    // New user - registration not allowed from mobile
+    return done(null, false, {
+      message: "Please create your account using the web application first, then you can sign in with Google on mobile.",
+      [ERROR_KEY]: "MOBILE_REGISTRATION_DISABLED"
     });
+    // // New user - register
+    // const googleUserData = {
+    //   id: profile.sub,
+    //   displayName: profile.name,
+    //   email: profile.email,
+    //   picture: profile.picture,
+    // };
+
+    // const registerResult = await db.query(
+    //   "SELECT register_google_user($1) AS user;",
+    //   [JSON.stringify(googleUserData)]
+    // );
+    // const { user } = registerResult.rows[0];
+
+    // return done(null, user, {
+    //   message: "User successfully registered and logged in",
+    // });
   } catch (error: any) {
     log_error(error);
     if (error.response?.status === 400) {

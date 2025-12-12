@@ -252,7 +252,7 @@ export const LicenseExpiredModal = ({
       closable={false}
       footer={null}
       centered
-      width={650}
+      width={900}
       maskClosable={false}
       keyboard={false}
       mask={true}
@@ -265,44 +265,33 @@ export const LicenseExpiredModal = ({
       }}
       wrapClassName="license-expired-modal-wrap"
     >
-      <div style={{ padding: '20px 0' }}>
-        <Space direction="vertical" size="large" style={{ width: '100%', textAlign: 'center' }}>
-          {/* Icon and Title */}
-          <div>
-            <ClockCircleOutlined style={{ fontSize: 64, color: '#1890ff', marginBottom: 16 }} />
-            <Title level={2} style={{ margin: 0, marginBottom: 8 }}>
+      <div className="license-modal-container">
+        {/* Main Content Section */}
+        <div className="license-modal-main-content">
+          <div className="license-modal-header">
+            <ClockCircleOutlined className="license-modal-icon" />
+            <Title level={2} className="license-modal-title">
               {getTitle()}
             </Title>
-            <Paragraph type="secondary" style={{ fontSize: 16, marginBottom: 0 }}>
+            <Paragraph type="secondary" className="license-modal-subtitle">
               {getSubtitle()}
             </Paragraph>
           </div>
 
           {/* Features Card */}
-          <Card
-            style={{
-              backgroundColor: '#e6f7ff',
-              border: '1px solid #91d5ff',
-              marginTop: 24,
-            }}
-            bodyStyle={{ padding: '20px' }}
-          >
+          <Card className="license-modal-features-card">
             <Space direction="vertical" size="small" style={{ width: '100%' }}>
-              <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
+              <Text strong className="license-modal-features-title">
                 {getFeaturesTitle()}
               </Text>
-              <Space
-                direction="vertical"
-                size="small"
-                align="start"
-                style={{ width: '100%', marginTop: 12 }}
-              >
+              <div className="license-modal-features-list">
                 {features.map((feature, index) => (
-                  <Text key={index} style={{ fontSize: 14 }}>
-                    {feature}
-                  </Text>
+                  <div key={index} className="license-modal-feature-item">
+                    <CheckCircleFilled className="license-modal-feature-icon" />
+                    <Text className="license-modal-feature-text">{feature}</Text>
+                  </div>
                 ))}
-              </Space>
+              </div>
             </Space>
           </Card>
 
@@ -313,18 +302,7 @@ export const LicenseExpiredModal = ({
             onClick={handleUpgrade}
             loading={isContactingSupport && subscriptionType === ISUBSCRIPTION_TYPE.CUSTOM}
             icon={!isContactingSupport ? getUpgradeIcon() : undefined}
-            style={{
-              minWidth: 200,
-              height: 48,
-              fontSize: 16,
-              marginTop: 8,
-              background:
-                subscriptionType === ISUBSCRIPTION_TYPE.CUSTOM
-                  ? 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)'
-                  : 'linear-gradient(135deg, #1890ff 0%, #40a9ff 100%)',
-              border: 'none',
-              boxShadow: '0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08)',
-            }}
+            className="license-modal-upgrade-btn"
           >
             {subscriptionType === ISUBSCRIPTION_TYPE.CUSTOM
               ? messageSent
@@ -335,129 +313,57 @@ export const LicenseExpiredModal = ({
               : getUpgradeText()}
           </Button>
 
-          {/* Team Switcher - Show below upgrade button if multiple teams exist */}
-          {teamsList && teamsList.length > 1 && (
-            <>
-              <div
-                style={{
-                  margin: '24px 0 16px',
-                  textAlign: 'center',
-                  position: 'relative',
-                }}
-              >
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: 0,
-                    right: 0,
-                    height: 1,
-                    backgroundColor: themeMode === 'dark' ? '#434343' : '#e8e8e8',
-                    transform: 'translateY(-50%)',
-                  }}
-                />
-                <Text
-                  type="secondary"
-                  style={{
-                    backgroundColor: themeMode === 'dark' ? '#141414' : '#fff',
-                    padding: '0 16px',
-                    fontSize: 14,
-                    position: 'relative',
-                    zIndex: 1,
-                  }}
-                >
-                  {t('or')}
-                </Text>
-              </div>
-              <Card
-                style={{
-                  backgroundColor: themeMode === 'dark' ? '#1f1f1f' : '#f8f9fa',
-                  border: `1px solid ${themeMode === 'dark' ? '#303030' : '#e9ecef'}`,
-                  borderRadius: 8,
-                }}
-                bodyStyle={{ padding: '16px' }}
-              >
-                <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                  <Text
-                    strong
-                    style={{
-                      fontSize: 14,
-                      color: themeMode === 'dark' ? '#fff' : '#1890ff',
-                      textAlign: 'center',
-                      display: 'block',
-                    }}
-                  >
-                    {t('switch-team-to-continue')}
-                  </Text>
-                  <Dropdown
-                    overlayClassName="switch-team-dropdown"
-                    menu={{ items: dropdownItems }}
-                    trigger={['click']}
-                    placement="bottom"
-                    overlayStyle={{ zIndex: 1060 }}
-                  >
-                    <Button
-                      size="middle"
-                      style={{
-                        width: '100%',
-                        height: 36,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '0 16px',
-                        border: `1px solid ${themeMode === 'dark' ? '#434343' : '#d9d9d9'}`,
-                        backgroundColor: themeMode === 'dark' ? '#262626' : 'white',
-                        color: themeMode === 'dark' ? '#fff' : '#000',
-                      }}
-                    >
-                      <Flex gap={12} align="center">
-                        <BankOutlined
-                          style={{
-                            fontSize: 16,
-                            color: themeMode === 'dark' ? '#1890ff' : '#1890ff',
-                          }}
-                        />
-                        <Typography.Text
-                          strong
-                          style={{
-                            fontSize: 14,
-                            color: themeMode === 'dark' ? '#fff' : '#000',
-                          }}
-                        >
-                          {t('current-team')}: {session?.team_name || t('select-team')}
-                        </Typography.Text>
-                      </Flex>
-                      <CaretDownFilled
-                        style={{
-                          color: themeMode === 'dark' ? '#8c8c8c' : '#8c8c8c',
-                        }}
-                      />
-                    </Button>
-                  </Dropdown>
-                  <Text
-                    type="secondary"
-                    style={{
-                      fontSize: 12,
-                      textAlign: 'center',
-                      display: 'block',
-                      color: themeMode === 'dark' ? '#8c8c8c' : '#8c8c8c',
-                    }}
-                  >
-                    {t('switch-team-active-subscription')}
-                  </Text>
-                </Space>
-              </Card>
-            </>
-          )}
-
           {/* Note */}
-          <Text type="secondary" style={{ fontSize: 12, marginTop: 8 }}>
-            <Tag color="blue" style={{ marginRight: 4 }}>
+          <div className="license-modal-note">
+            <Tag color="blue" style={{ marginRight: 8 }}>
               Note
             </Tag>
-            {t('trial-alert-admin-note')}
-          </Text>
-        </Space>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {t('trial-alert-admin-note')}
+            </Text>
+          </div>
+        </div>
+
+        {/* Team Switcher Sidebar - Show if multiple teams exist */}
+        {teamsList && teamsList.length > 1 && (
+          <>
+            <Divider type="vertical" className="license-modal-divider" />
+            <div className="license-modal-sidebar">
+              <div className="license-modal-sidebar-header">
+                <BankOutlined className="license-modal-sidebar-icon" />
+                <Text strong className="license-modal-sidebar-title">
+                  {t('switch-team-to-continue')}
+                </Text>
+                <Text type="secondary" className="license-modal-sidebar-subtitle">
+                  {t('switch-team-active-subscription')}
+                </Text>
+              </div>
+
+              <div className="license-modal-teams-section">
+                <Text type="secondary" className="license-modal-current-team">
+                  {t('current-team')}: <Text strong>{session?.team_name || t('select-team')}</Text>
+                </Text>
+                
+                <Dropdown
+                  overlayClassName="switch-team-dropdown"
+                  menu={{ items: dropdownItems }}
+                  trigger={['click']}
+                  placement="bottomLeft"
+                  overlayStyle={{ zIndex: 1060 }}
+                >
+                  <Button className="license-modal-team-dropdown">
+                    <Flex gap={8} align="center" justify="space-between" style={{ width: '100%' }}>
+                      <Text strong style={{ fontSize: 14 }}>
+                        {t('select-team')}
+                      </Text>
+                      <CaretDownFilled style={{ fontSize: 12 }} />
+                    </Flex>
+                  </Button>
+                </Dropdown>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </Modal>
   );
