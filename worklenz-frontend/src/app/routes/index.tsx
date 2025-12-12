@@ -11,8 +11,6 @@ import { useAuthService } from '@/hooks/useAuth';
 import { AuthenticatedLayout } from '@/layouts/AuthenticatedLayout';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
-import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
-import { LicenseExpiredModal } from '@/components/LicenseExpiredModal/LicenseExpiredModal';
 
 // Lazy load the NotFoundPage component for better code splitting
 const NotFoundPage = lazy(() => import('@/pages/404-page/404-page'));
@@ -64,28 +62,15 @@ AdminGuard.displayName = 'AdminGuard';
 
 export const LicenseExpiryGuard = memo(({ children }: GuardProps) => {
   const { isLicenseExpired, location } = useAuthStatus();
-  const authService = useAuthService();
 
   const isAdminCenterRoute = location.pathname.includes('/worklenz/admin-center');
   const isAccountDeletionRoute = location.pathname.includes('/worklenz/settings/account-deletion');
+  const isLicenseExpiredPage = location.pathname.includes('/worklenz/license-expired');
 
-  // Show modal instead of redirecting, but not on admin center routes or account deletion
-  const showModal = isLicenseExpired && !isAdminCenterRoute && !isAccountDeletionRoute;
-
-  // Get the user's subscription type
-  const currentSession = authService?.getCurrentSession();
-  const subscriptionType = currentSession?.subscription_type as ISUBSCRIPTION_TYPE;
-
-  // If license is expired and not on admin center, show modal overlay
-  if (showModal) {
-    return (
-      <>
-        {/* Render children normally */}
-        {children}
-        {/* Show modal as an overlay */}
-        <LicenseExpiredModal open={true} subscriptionType={subscriptionType} />
-      </>
-    );
+  // Redirect to license expired page if license is expired
+  // Except when on admin center, account deletion, or already on license expired page
+  if (isLicenseExpired && !isAdminCenterRoute && !isAccountDeletionRoute && !isLicenseExpiredPage) {
+    return <Navigate to="/worklenz/license-expired" replace />;
   }
 
   return <>{children}</>;

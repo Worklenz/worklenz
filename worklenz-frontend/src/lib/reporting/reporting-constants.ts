@@ -12,11 +12,13 @@ const MembersTimeReports = lazy(() => import('@/pages/reporting/timeReports/memb
 const EstimatedVsActualTimeReports = lazy(
   () => import('@/pages/reporting/timeReports/estimated-vs-actual-time-reports')
 );
+const TimeLogsReports = lazy(() => import('@/pages/reporting/timeReports/time-logs'));
 
 // Type definition for a menu item
 export type ReportingMenuItems = {
   key: string;
   name: string;
+  defaultValue: string;
   endpoint: string;
   element: ReactNode;
   children?: ReportingMenuItems[];
@@ -27,50 +29,65 @@ export const reportingsItems: ReportingMenuItems[] = [
   {
     key: 'overview',
     name: 'overview',
+    defaultValue: 'Overview',
     endpoint: 'overview',
     element: React.createElement(OverviewReports),
   },
   {
     key: 'projects',
     name: 'projects',
+    defaultValue: 'Projects',
     endpoint: 'projects',
     element: React.createElement(ProjectsReports),
   },
   {
     key: 'members',
-    name: 'members',
+    name: 'members',  
+    defaultValue: 'Members',
     endpoint: 'members',
     element: React.createElement(MembersReports),
   },
   {
     key: 'time-sheet',
     name: 'timeReports',
+    defaultValue: 'Time Reports',
     endpoint: 'time-sheets',
     element: null,
     children: [
       {
         key: 'time-sheet-overview',
         name: 'overview',
+        defaultValue: 'Overview',
         endpoint: 'time-sheet-overview',
         element: React.createElement(OverviewTimeReports),
       },
       {
         key: 'time-sheet-projects',
         name: 'projects',
+        defaultValue: 'Projects',
         endpoint: 'time-sheet-projects',
         element: React.createElement(ProjectsTimeReports),
       },
       {
         key: 'time-sheet-members',
         name: 'members',
+        defaultValue: 'Members',
         endpoint: 'time-sheet-members',
         element: React.createElement(MembersTimeReports),
       },
       {
         key: 'time-sheet-estimate-vs-actual',
         name: 'estimateVsActual',
+        defaultValue: 'Estimate vs Actual',
         endpoint: 'time-sheet-estimate-vs-actual',
         element: React.createElement(EstimatedVsActualTimeReports),
+      },
+      {
+        key: 'time-sheet-logs',
+        name: 'logs',
+        defaultValue: 'Logs',
+        endpoint: 'time-sheet-logs',
+        element: React.createElement(TimeLogsReports),
       },
     ],
   },

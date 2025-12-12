@@ -1,17 +1,30 @@
 {
   "title": "Salvar como Modelo",
   "templateName": "Nome do Modelo",
-  "includes": "O que deve ser incluído no modelo do projeto?",
+  "templateNamePlaceholder": "Digite o nome do modelo",
+  "templateInfo": "Informações do Modelo",
+  "includes": "Elementos do Projeto",
+  "taskIncludes": "Elementos de Tarefas",
+  "cancel": "Cancelar",
+  "save": "Salvar",
+  "creating": "Criando modelo...",
+  "created": "Modelo Criado!",
+  "quickSelect": "Seleção Rápida:",
+  "selectAll": "Selecionar Tudo",
+  "essentialOnly": "Apenas Essencial",
+  "clearAll": "Limpar Tudo",
+  "itemsSelected": "itens selecionados",
+  "readyToSave": "Pronto para salvar",
+  "validName": "Nome válido",
+  "required": "Obrigatório",
+  "proTips": "Dicas Pro",
   "includesOptions": {
     "statuses": "Status",
     "phases": "Fases",
-    "labels": "Etiquetas"
-  },
-  "taskIncludes": "O que deve ser incluído no modelo das tarefas?",
-  "taskIncludesOptions": {
-    "statuses": "Status",
-    "phases": "Fases",
     "labels": "Etiquetas",
+    "customColumns": "Colunas Personalizadas"
+  },
+  "taskIncludesOptions": {
     "name": "Nome",
     "priority": "Prioridade",
     "status": "Status",
@@ -21,7 +34,40 @@
     "description": "Descrição",
     "subTasks": "Subtarefas"
   },
-  "cancel": "Cancelar",
-  "save": "Salvar",
-  "templateNamePlaceholder": "Digite o nome do modelo"
+  "descriptions": {
+    "statuses": "Configuração do fluxo de trabalho de status do projeto",
+    "phases": "Fases do projeto e marcos",
+    "labels": "Etiquetas personalizadas para categorização",
+    "customColumns": "Campos personalizados e metadados",
+    "taskName": "Nomes e títulos de tarefas",
+    "taskPriority": "Níveis de prioridade de tarefas",
+    "taskStatus": "Status de conclusão de tarefas",
+    "taskPhase": "Fase do projeto associada",
+    "taskLabel": "Etiquetas e tags de tarefas",
+    "timeEstimate": "Estimativas de tempo e duração",
+    "description": "Descrições e detalhes de tarefas",
+    "subTasks": "Subtarefas e itens de lista"
+  },
+  "tooltips": {
+    "projectElements": "Escolha quais elementos do projeto incluir no seu modelo",
+    "taskElements": "Escolha quais elementos de tarefas incluir no seu modelo",
+    "required": "Este item é obrigatório e não pode ser desmarcado"
+  },
+  "tips": {
+    "line1": "Modelos preservam a estrutura do seu projeto para reutilização rápida",
+    "line2": "Itens essenciais estão sempre incluídos e não podem ser removidos",
+    "line3": "Você pode personalizar o modelo ao criar novos projetos",
+    "line4": "Selecione os elementos que você quer incluir no seu modelo"
+  },
+  "validation": {
+    "nameRequired": "Por favor, digite um nome para o modelo",
+    "nameMinLength": "Nome do modelo deve ter pelo menos 3 caracteres",
+    "nameMaxLength": "Nome do modelo deve ter menos de 50 caracteres"
+  },
+  "notifications": {
+    "createSuccess": "Modelo Criado",
+    "createSuccessDesc": "Seu modelo de projeto foi criado com sucesso e está pronto para usar.",
+    "createError": "Falha ao Criar Modelo",
+    "error": "Erro"
+  }
 }

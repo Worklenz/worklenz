@@ -1,4 +1,4 @@
-import { Badge, Button, Flex, Table, Typography, Tooltip } from '@/shared/antd-imports';
+import { Button, Flex, Table, Typography, Tooltip } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { TempChatsType } from './chat-box/chat-box-wrapper';
 import { PlusOutlined } from '@ant-design/icons';
@@ -71,14 +71,6 @@ const ChatList = ({ chatList, setOpenedChatId }: ChatListProps) => {
                     >
                       {record.name}
                     </Typography.Text>
-
-                    {record.status === 'unread' && (
-                      <Badge
-                        color={colors.vibrantOrange}
-                        count={record.unreadCount || 1}
-                        size="small"
-                      />
-                    )}
                   </Flex>
                 </Flex>
 

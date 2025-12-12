@@ -10,6 +10,24 @@ import LazyAssigneeSelectorWrapper from '@/components/task-management/lazy-assig
 import { format } from 'date-fns';
 import logger from '@/utils/errorLogger';
 import { createPortal } from 'react-dom';
+
+// Format date as local date to avoid timezone issues
+// Parse date as local date to avoid timezone issues (e.g., "2024-02-10" should display as Feb 10, not Feb 9)
+const formatDate = (dateString: string): string => {
+  try {
+    // Handle both ISO date strings ("YYYY-MM-DD") and ISO timestamps ("YYYY-MM-DDTHH:mm:ss.sssZ")
+    // Extract just the date part if it's a timestamp
+    const datePart = dateString.includes('T') ? dateString.split('T')[0] : dateString;
+
+    // Parse date string as local date to avoid UTC conversion issues
+    const [year, month, day] = datePart.split('-').map(Number);
+    // Create date in local timezone (month is 0-indexed)
+    const date = new Date(year, month - 1, day);
+    return format(date, 'MMM d, yyyy');
+  } catch {
+    return '';
+  }
+};
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { getUserSession } from '@/utils/session-helper';
@@ -67,9 +85,13 @@ const TaskCard: React.FC<TaskCardProps> = memo(
     const { t } = useTranslation('kanban-board');
 
     const [showDatePicker, setShowDatePicker] = useState(false);
-    const [selectedDate, setSelectedDate] = useState<Date | null>(
-      task.end_date ? new Date(task.end_date) : null
-    );
+    const [selectedDate, setSelectedDate] = useState<Date | null>(() => {
+      if (!task.end_date) return null;
+      // Parse as local date to avoid timezone issues
+      const datePart = task.end_date.includes('T') ? task.end_date.split('T')[0] : task.end_date;
+      const [year, month, day] = datePart.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    });
     const [isUpdating, setIsUpdating] = useState(false);
     const datePickerRef = useRef<HTMLDivElement>(null);
     const dateButtonRef = useRef<HTMLDivElement>(null);
@@ -89,7 +111,14 @@ const TaskCard: React.FC<TaskCardProps> = memo(
     const [selectedTask, setSelectedTask] = useState<IProjectTask | null>(null);
 
     useEffect(() => {
-      setSelectedDate(task.end_date ? new Date(task.end_date) : null);
+      if (!task.end_date) {
+        setSelectedDate(null);
+        return;
+      }
+      // Parse as local date to avoid timezone issues
+      const datePart = task.end_date.includes('T') ? task.end_date.split('T')[0] : task.end_date;
+      const [year, month, day] = datePart.split('-').map(Number);
+      setSelectedDate(new Date(year, month - 1, day));
     }, [task.end_date]);
 
     // Close date picker when clicking outside
@@ -158,7 +187,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
             SocketEvents.TASK_END_DATE_CHANGE.toString(),
             JSON.stringify({
               task_id: task.id,
-              end_date: date,
+              end_date: date ? format(date, 'yyyy-MM-dd') : null,
               parent_task: task.parent_task_id,
               time_zone: getUserSession()?.timezone_name
                 ? getUserSession()?.timezone_name
@@ -413,8 +442,8 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                   >
                     {isUpdating ? (
                       <div className="w-3 h-3 border border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
-                    ) : selectedDate ? (
-                      format(selectedDate, 'MMM d, yyyy')
+                    ) : task.end_date ? (
+                      formatDate(task.end_date)
                     ) : (
                       t('noDueDate')
                     )}
@@ -661,7 +690,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                           {sub.name}
                         </span>
                         <span className="task-due-date ml-2 text-[10px] text-gray-500 dark:text-gray-400">
-                          {sub.end_date ? format(new Date(sub.end_date), 'MMM d, yyyy') : ''}
+                          {sub.end_date ? formatDate(sub.end_date) : ''}
                         </span>
                         <span className="flex items-center">
                           {sub.names && sub.names.length > 0 && (

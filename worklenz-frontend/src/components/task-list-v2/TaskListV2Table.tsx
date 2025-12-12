@@ -25,6 +25,7 @@ import { HolderOutlined } from '@/shared/antd-imports';
 // Redux hooks and selectors
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import {
   selectAllTasksArray,
   selectGroups,
@@ -206,10 +207,12 @@ import { useBulkActions } from './hooks/useBulkActions';
 import { BASE_COLUMNS, ColumnStyle } from './constants/columns';
 import { Task } from '@/types/task-management.types';
 import { SocketEvents } from '@/shared/socket-events';
+import { evt_project_task_list_visit } from '@/shared/worklenz-analytics-events';
 
 const TaskListV2Section: React.FC = () => {
   const dispatch = useAppDispatch();
   const { projectId: urlProjectId } = useParams();
+  const { trackMixpanelEvent } = useMixpanelTracking();
   const { t } = useTranslation('task-list-table');
   const { socket, connected } = useSocket();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -344,6 +347,8 @@ const TaskListV2Section: React.FC = () => {
       dispatch(fetchTasksV3(urlProjectId));
       dispatch(fetchTaskListColumns(urlProjectId));
       dispatch(fetchPhasesByProjectId(urlProjectId));
+
+      trackMixpanelEvent(evt_project_task_list_visit, { project_id: urlProjectId });
     }
   }, [dispatch, urlProjectId]);
 

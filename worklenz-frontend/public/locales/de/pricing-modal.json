@@ -128,7 +128,12 @@
     "toggleTheme": "Theme umschalten",
     "switchToLight": "Zum hellen Theme wechseln",
     "switchToDark": "Zum dunklen Theme wechseln",
-    "closeModal": "Preismodal schließen"
+    "closeModal": "Preismodal schließen",
+    "loadingPlans": "Preise werden geladen...",
+    "selectPlan": "Plan auswählen",
+    "switchToFree": "Zum kostenlosen Plan wechseln",
+    "planSummary": "Plan {{planName}} - ${{total}}{{period}}{{userText}}",
+    "planSummaryNoName": "${{total}}{{period}}{{userText}}"
   },
   "userTypes": {
     "trial": {
@@ -217,7 +222,7 @@
     }
   },
   "appsumo": {
-    "exclusiveTitle": "🎉 AppSumo Exklusiv: 50% RABATT auf Business & Enterprise Pläne!",
+    "exclusiveTitle": "🎉 AppSumo Exklusiv: 70% RABATT auf Business Pläne!",
     "timeRemaining": "{{days}}T {{hours}}St {{minutes}}Min verbleibend",
     "urgency": {
       "finalHours": "LETZTE STUNDEN",
@@ -227,7 +232,7 @@
     "specialPricing": "🎯 Spezialpreise für AppSumo Lifetime Deal Mitglieder",
     "businessUsers": "💪 Business Pläne unterstützen bis zu 50 Benutzer (normalerweise 25)",
     "lifetimeTitle": "AppSumo Lifetime Deal Mitglied",
-    "discountExpired": "Ihre 50% Rabattperiode ist abgelaufen, aber Sie können weiterhin auf Business oder Enterprise Pläne zu Standardpreisen upgraden.",
+    "discountExpired": "Ihre 70% Rabattperiode ist abgelaufen, aber Sie können weiterhin auf Business Pläne zu Standardpreisen upgraden.",
     "watchOffers": "💡 Achten Sie auf zukünftige Kampagnen und Sonderangebote!",
     "discountApplied": "50% AppSumo Rabatt angewendet"
   },

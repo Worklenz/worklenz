@@ -18,6 +18,8 @@ import logger from '@/utils/errorLogger';
 import { validateEmail } from '@/utils/validateEmail';
 import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_project_invite_members } from '@/shared/worklenz-analytics-events';
 
 const ProjectMemberDrawer = () => {
   const { t } = useTranslation('project-view/project-member-drawer');
@@ -32,6 +34,7 @@ const ProjectMemberDrawer = () => {
   const [isInviting, setIsInviting] = useState(false);
   const [members, setMembers] = useState<ITeamMembersViewModel>({ data: [], total: 0 });
   const [teamMembersLoading, setTeamMembersLoading] = useState(false);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   // Filter out members already in the project
   const currentProjectMemberIds = (currentMembersList || [])
@@ -83,6 +86,8 @@ const ProjectMemberDrawer = () => {
     try {
       const res = await dispatch(addProjectMember({ memberId, projectId })).unwrap();
       if (res.done) {
+        // Track invite via selection (count 1)
+        trackMixpanelEvent(evt_project_invite_members, { count: 1, project_id: projectId });
         form.resetFields();
         dispatch(
           getTeamMembers({
@@ -143,6 +148,8 @@ const ProjectMemberDrawer = () => {
       setIsInviting(true);
       const res = await dispatch(createByEmail(body)).unwrap();
       if (res.done) {
+        // Track invite via email (count 1)
+        trackMixpanelEvent(evt_project_invite_members, { count: 1, project_id: projectId });
         form.resetFields();
         await fetchProjectMembers();
         dispatch(

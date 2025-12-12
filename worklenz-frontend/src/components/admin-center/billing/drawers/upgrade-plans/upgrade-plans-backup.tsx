@@ -131,7 +131,7 @@ const PlanPriceDisplay: React.FC<{
           marginTop: 4,
         }}
       >
-        50% AppSumo Discount Applied
+        70% AppSumo Discount Applied
       </span>
     )}
   </div>
@@ -1399,7 +1399,7 @@ const UpgradePlans = () => {
               })()}
               {isAppSumoUser && selectedPlanType !== 'free' && (
                 <span style={{ color: '#52c41a', fontWeight: 'bold', display: 'block' }}>
-                  50% AppSumo Discount Applied
+                  70% AppSumo Discount Applied
                 </span>
               )}
             </Typography.Text>

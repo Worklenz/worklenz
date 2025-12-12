@@ -1,11 +1,21 @@
 // Client Portal Types
 
+export interface ClientOrganization {
+  id: string;
+  name: string;
+  teamId: string;
+  clientId: string;
+  isDefault: boolean;
+}
+
 export interface ClientUser {
   id: string;
   email: string;
   name: string;
   organizationId: string;
   permissions: string[];
+  organizations?: ClientOrganization[];
+  currentOrganizationId?: string;
 }
 
 export interface ClientToken {
@@ -44,26 +54,50 @@ export interface ClientService {
   category?: string;
 }
 
+export interface QuestionAnswer {
+  question: string;
+  type: string;
+  answer: string | string[] | null;
+  attachments?: Array<{
+    id?: string;
+    url: string;
+    filename: string;
+    originalName: string;
+    size: number;
+  }>;
+}
+
 export interface ClientRequest {
   id: string;
-  requestNumber: string;
-  serviceId: string;
-  serviceName: string;
-  serviceDescription: string;
+  req_no: string;
+  service_id: string;
+  service_name: string;
+  service_description?: string;
+  client_id?: string;
+  client_name: string;
+  client_email?: string;
   status: string;
-  requestData: any;
-  notes: string;
-  createdAt: string;
-  updatedAt: string;
-  completedAt?: string;
-  clientName: string;
-  priority?: string;
-  description?: string;
-  time?: string;
-  attachments?: string[];
-  req_no?: string;
-  service?: any;
-  title?: string;
+  request_data?: {
+    title?: string;
+    priority?: string;
+    description?: string;
+    attachments?: Array<{
+      id: string;
+      url: string;
+      size: string;
+      filename: string;
+      originalName: string;
+    }>;
+    attachmentIds?: string[];
+    questionAnswers?: QuestionAnswer[];
+    [key: string]: unknown;
+  };
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string;
+  assigned_to?: string;
+  assigned_to_name?: string;
 }
 
 export interface ClientProject {
@@ -153,7 +187,8 @@ export interface ApiResponse<T> {
 }
 
 export interface PaginatedResponse<T> {
-  data: T[];
+  data?: T[];
+  requests?: T[];
   total: number;
   page: number;
   limit: number;

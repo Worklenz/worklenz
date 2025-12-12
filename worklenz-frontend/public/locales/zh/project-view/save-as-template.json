@@ -1,17 +1,30 @@
 {
   "title": "保存为模板",
   "templateName": "模板名称",
-  "includes": "项目中应包含哪些内容到模板中？",
+  "templateNamePlaceholder": "输入模板名称",
+  "templateInfo": "模板信息",
+  "includes": "项目元素",
+  "taskIncludes": "任务元素",
+  "cancel": "取消",
+  "save": "保存",
+  "creating": "正在创建模板...",
+  "created": "模板已创建！",
+  "quickSelect": "快速选择：",
+  "selectAll": "全选",
+  "essentialOnly": "仅基本",
+  "clearAll": "清空",
+  "itemsSelected": "项已选择",
+  "readyToSave": "准备保存",
+  "validName": "有效名称",
+  "required": "必需",
+  "proTips": "专业提示",
   "includesOptions": {
     "statuses": "状态",
     "phases": "阶段",
-    "labels": "标签"
-  },
-  "taskIncludes": "任务中应包含哪些内容到模板中？",
-  "taskIncludesOptions": {
-    "statuses": "状态",
-    "phases": "阶段",
     "labels": "标签",
+    "customColumns": "自定义列"
+  },
+  "taskIncludesOptions": {
     "name": "名称",
     "priority": "优先级",
     "status": "状态",
@@ -21,7 +34,40 @@
     "description": "描述",
     "subTasks": "子任务"
   },
-  "cancel": "取消",
-  "save": "保存",
-  "templateNamePlaceholder": "输入模板名称"
+  "descriptions": {
+    "statuses": "项目状态工作流配置",
+    "phases": "项目阶段和里程碑",
+    "labels": "分类的自定义标签",
+    "customColumns": "自定义字段和元数据",
+    "taskName": "任务名称和标题",
+    "taskPriority": "任务优先级",
+    "taskStatus": "任务完成状态",
+    "taskPhase": "关联的项目阶段",
+    "taskLabel": "任务标签",
+    "timeEstimate": "时间估算和持续时间",
+    "description": "任务描述和详情",
+    "subTasks": "子任务和检查项"
+  },
+  "tooltips": {
+    "projectElements": "选择要包含在模板中的项目元素",
+    "taskElements": "选择要包含在模板中的任务元素",
+    "required": "此项是必需的，无法取消选择"
+  },
+  "tips": {
+    "line1": "模板保留您的项目结构以便快速重用",
+    "line2": "基本项目始终包含且无法移除",
+    "line3": "创建新项目时可以自定义模板",
+    "line4": "选择您想要包含在模板中的元素"
+  },
+  "validation": {
+    "nameRequired": "请输入模板名称",
+    "nameMinLength": "模板名称至少需要3个字符",
+    "nameMaxLength": "模板名称必须少于50个字符"
+  },
+  "notifications": {
+    "createSuccess": "模板已创建",
+    "createSuccessDesc": "您的项目模板已成功创建并可使用。",
+    "createError": "模板创建失败",
+    "error": "错误"
+  }
 }

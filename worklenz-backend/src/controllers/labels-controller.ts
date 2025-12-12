@@ -73,7 +73,8 @@ export default class LabelsController extends WorklenzControllerBase {
                WHERE id = $1
                  AND team_id = $2;`;
 
-    if (!Object.values(WorklenzColorShades).flat().includes(req.body.color))
+    const validColors = [...Object.keys(WorklenzColorShades), ...Object.values(WorklenzColorShades).flat()].map(c => c.toLowerCase());
+    if (!validColors.includes(req.body.color.toLowerCase()))
       return res.status(400).send(new ServerResponse(false, null));
 
     const result = await db.query(q, [req.params.id, req.user?.team_id, req.body.color]);
@@ -92,8 +93,9 @@ export default class LabelsController extends WorklenzControllerBase {
     }
 
     if (req.body.color) {
-      if (!Object.values(WorklenzColorShades).flat().includes(req.body.color))
-        return res.status(400).send(new ServerResponse(false, null));
+      const validColors = [...Object.keys(WorklenzColorShades), ...Object.values(WorklenzColorShades).flat()].map(c => c.toLowerCase());
+      if (!validColors.includes(req.body.color.toLowerCase()))
+        return res.status(400).send(new ServerResponse(false, {}, "Invalid color"));
       updates.push(`color_code = $${paramIndex++}`);
       values.push(req.body.color);
     }

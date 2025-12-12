@@ -1,16 +1,14 @@
-import { ConfigProvider, Flex, Menu, Badge, Button, Drawer } from '@/shared/antd-imports';
-import { Link, useLocation } from 'react-router-dom';
-import { colors } from '@/styles/colors';
+import { Flex, Menu, Badge, Button, Drawer, theme } from '@/shared/antd-imports';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { clientPortalItems, ClientPortalMenuItems } from '@/lib/client-portal/client-portal-constants';
 import { useMemo, useState } from 'react';
-import { RightOutlined, MenuFoldOutlined, MenuUnfoldOutlined, MenuOutlined } from '@/shared/antd-imports';
+import { MenuFoldOutlined, MenuUnfoldOutlined, MenuOutlined } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { themeWiseColor } from '@/utils/themeWiseColor';
 import { useResponsive } from '@/hooks/useResponsive';
 import worklenzLightLogo from '@/assets/images/worklenz-light-mode.png';
 import worklenzDarkLogo from '@/assets/images/worklenz-dark-mode.png';
-import { useGetSettingsQuery } from '@/store/api';
+import { useGetOrganizationSettingsQuery } from '@/store/api';
 
 interface ClientPortalSidebarProps {
   items?: ClientPortalMenuItems[];
@@ -24,13 +22,15 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
   onToggleCollapse 
 }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const themeMode = useAppSelector(state => state.ui.theme);
   const { isMobile } = useResponsive();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { token } = theme.useToken();
   
-  // Get client portal settings for custom logo
-  const { data: settingsData } = useGetSettingsQuery();
+  // Get organization settings for custom logo (client-side)
+  const { data: settingsData } = useGetOrganizationSettingsQuery();
   
   // Example: get unread chat count from Redux (replace with real selector)
   const unreadChatsCount = useAppSelector(
@@ -45,25 +45,17 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
       menuSource.map(item => ({
         key: item.key,
         icon: item.icon,
-        label: collapsed ? null : (
-          <Link to={`/${item.endpoint}`}>
-            <Flex align="center" justify="space-between" style={{ width: '100%' }}>
-              <Flex align="center" gap={8}>
-                <span>{t(item.name)}</span>
-                {item.key === 'chats' && unreadChatsCount > 0 && (
-                  <Badge count={unreadChatsCount} style={{ backgroundColor: '#ff4d4f', marginLeft: 4 }} />
-                )}
-              </Flex>
-              <RightOutlined style={{ fontSize: 12, color: themeWiseColor('#bfbfbf', '#888', themeMode) }} />
-            </Flex>
-          </Link>
+        label: (
+          <Flex align="center" gap={8}>
+            <span>{t(item.name)}</span>
+            {item.key === 'chats' && unreadChatsCount > 0 && (
+              <Badge count={unreadChatsCount} size="small" />
+            )}
+          </Flex>
         ),
-        onClick: collapsed ? () => {
-          // Handle navigation for collapsed state
-          window.location.href = `/${item.endpoint}`;
-        } : undefined,
+        onClick: () => navigate(`/${item.endpoint}`),
       })),
-    [t, unreadChatsCount, themeMode, menuSource, collapsed]
+    [t, unreadChatsCount, menuSource, navigate]
   );
 
   // Memoize the active key calculation
@@ -80,217 +72,107 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
     setMobileMenuOpen(true);
   };
 
+  // Get logo based on theme and settings
+  const logoSrc = useMemo(() => {
+    if (settingsData?.body?.logo_url) {
+      return settingsData.body.logo_url;
+    }
+    return themeMode === 'dark' ? worklenzDarkLogo : worklenzLightLogo;
+  }, [settingsData, themeMode]);
+
   // Mobile menu component
   const MobileMenu = () => (
     <Drawer
       title={
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <img
-            src={(() => {
-              // Check for custom logo from API first
-              if (settingsData?.body?.logo_url) {
-                return settingsData.body.logo_url;
-              }
-              // Fallback to Worklenz logo based on theme
-              return themeMode === 'dark' ? worklenzDarkLogo : worklenzLightLogo;
-            })()}
-            alt="Logo"
-            style={{ 
-              maxHeight: '32px', 
-              maxWidth: '140px',
-              objectFit: 'contain'
-            }}
-          />
+        <div style={{ display: 'flex', alignItems: 'center', height: 32 }}>
+          <img src={logoSrc} alt="Logo" style={{ height: '100%', objectFit: 'contain' }} />
         </div>
       }
       placement="left"
       onClose={handleMobileMenuClose}
       open={mobileMenuOpen}
-      width={320}
+      width={280}
       styles={{
-        body: {
-          padding: '16px 0',
-          background: themeWiseColor('#fafafa', '#1f1f1f', themeMode),
-        },
-        header: {
-          borderBottom: `1px solid ${themeWiseColor('#e8e8e8', '#2a2a2a', themeMode)}`,
-          background: themeWiseColor('#fff', '#262626', themeMode),
-          padding: '16px 24px',
-        },
+        body: { padding: 0 },
       }}
     >
-      <div className="animate-fadeIn" style={{ padding: '0 16px' }}>
-        <Menu
-          items={menuItems}
-          selectedKeys={[activeKey]}
-          mode="inline"
-          style={{ 
-            border: 'none', 
-            background: 'transparent',
-            width: '100%',
-            fontSize: '14px',
-          }}
-          onClick={handleMobileMenuClose}
-        />
-      </div>
+      <Menu
+        items={menuItems}
+        selectedKeys={[activeKey]}
+        mode="inline"
+        style={{ border: 'none' }}
+        onClick={handleMobileMenuClose}
+      />
     </Drawer>
   );
 
   // Desktop sidebar component
   const DesktopSidebar = () => (
     <div
-      className="animate-slideInLeft"
       style={{
-        background: themeWiseColor('#fafafa', '#1f1f1f', themeMode),
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        width: '100%',
-        boxShadow: themeWiseColor('2px 0 8px rgba(0,0,0,0.06)', '2px 0 8px rgba(0,0,0,0.2)', themeMode),
       }}
     >
-      {/* Header with title and collapse button */}
+      {/* Header with logo and collapse button */}
       <div
         style={{
-          padding: collapsed ? '17px 16px' : '17px 24px',
-          borderBottom: `1px solid ${themeWiseColor('#e8e8e8', '#2a2a2a', themeMode)}`,
+          padding: collapsed ? '12px 8px' : '12px 16px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: collapsed ? 'center' : 'space-between',
-          minHeight: 72,
-          background: themeWiseColor('#fff', '#262626', themeMode),
+          height: 56,
+          borderBottom: `1px solid ${token.colorBorderSecondary}`,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'flex-start' }}>
-          <img
-            src={(() => {
-              // Check for custom logo from API first
-              if (settingsData?.body?.logo_url) {
-                return settingsData.body.logo_url;
-              }
-              // Fallback to Worklenz logo based on theme
-              return themeMode === 'dark' ? worklenzDarkLogo : worklenzLightLogo;
-            })()}
-            alt="Logo"
-            style={{ 
-              maxHeight: collapsed ? '32px' : '36px', 
-              maxWidth: collapsed ? '48px' : '160px',
-              objectFit: 'contain'
-            }}
-          />
-        </div>
+        {!collapsed && (
+          <div style={{ height: 28, display: 'flex', alignItems: 'center' }}>
+            <img src={logoSrc} alt="Logo" style={{ height: '100%', objectFit: 'contain' }} />
+          </div>
+        )}
         {onToggleCollapse && (
           <Button
             type="text"
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             onClick={onToggleCollapse}
-            style={{
-              fontSize: 16,
-              color: themeWiseColor('#666', '#ccc', themeMode),
-              border: 'none',
-              padding: '8px',
-              borderRadius: '8px',
-              transition: 'all 0.2s ease',
-              width: '32px',
-              height: '32px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = themeWiseColor('#f0f0f0', '#333', themeMode);
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-            }}
+            size="small"
           />
         )}
       </div>
 
       {/* Menu */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 12px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
         <Menu
           items={menuItems}
           selectedKeys={[activeKey]}
           mode="inline"
           inlineCollapsed={collapsed}
-          style={{ 
-            border: 'none', 
-            background: 'transparent',
-            width: '100%',
-            fontSize: '14px',
-          }}
+          style={{ border: 'none' }}
         />
       </div>
     </div>
   );
 
   return (
-    <ConfigProvider
-      theme={{
-        components: {
-          Menu: {
-            subMenuItemBg: colors.transparent,
-            itemHoverBg: themeWiseColor('#f0f6ff', '#2a2a2a', themeMode),
-            itemSelectedBg: themeWiseColor('#e6f4ff', '#1f4d7d', themeMode),
-            itemHoverColor: themeWiseColor('#1890ff', '#4dabf7', themeMode),
-            itemSelectedColor: themeWiseColor('#1890ff', '#ffffff', themeMode),
-            itemColor: themeWiseColor('#424242', '#d9d9d9', themeMode),
-            borderRadius: 12,
-            itemMarginBlock: 6,
-            itemMarginInline: 0,
-            itemPaddingInline: 16,
-            itemHeight: 48,
-            fontSize: 14,
-          },
-        },
-      }}
-    >
+    <>
       {isMobile ? (
         <>
-          {/* Mobile menu button */}
           <Button
             type="text"
             icon={<MenuOutlined />}
             onClick={handleMobileMenuOpen}
-            className="smooth-hover animate-bounce"
             style={{
               position: 'fixed',
-              top: 80,
+              top: 72,
               left: 16,
               zIndex: 1001,
-              background: themeWiseColor('#ffffff', '#262626', themeMode),
-              border: `1px solid ${themeWiseColor('#e8e8e8', '#3a3a3a', themeMode)}`,
-              borderRadius: 12,
-              boxShadow: themeWiseColor(
-                '0 4px 12px rgba(0,0,0,0.1)',
-                '0 4px 12px rgba(0,0,0,0.3)',
-                themeMode
-              ),
-              width: 48,
-              height: 48,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 18,
-              color: themeWiseColor('#424242', '#d9d9d9', themeMode),
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.05)';
-              e.currentTarget.style.boxShadow = themeWiseColor(
-                '0 6px 16px rgba(0,0,0,0.15)',
-                '0 6px 16px rgba(0,0,0,0.4)',
-                themeMode
-              );
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.boxShadow = themeWiseColor(
-                '0 4px 12px rgba(0,0,0,0.1)',
-                '0 4px 12px rgba(0,0,0,0.3)',
-                themeMode
-              );
+              background: token.colorBgContainer,
+              border: `1px solid ${token.colorBorder}`,
+              borderRadius: 8,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              width: 40,
+              height: 40,
             }}
           />
           <MobileMenu />
@@ -298,7 +180,7 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
       ) : (
         <DesktopSidebar />
       )}
-    </ConfigProvider>
+    </>
   );
 };
 

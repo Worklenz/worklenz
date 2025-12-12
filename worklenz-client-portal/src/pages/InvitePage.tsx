@@ -23,7 +23,6 @@ import {
   setError,
 } from "@/store/slices/authSlice";
 import type { RootState } from "@/store";
-import { clientPortalAPI } from "@/services/api";
 
 interface InviteFormValues {
   name: string;
@@ -89,34 +88,9 @@ const InvitePage: React.FC = () => {
     }
   }, [searchParams, dispatch]);
 
-  // Handle organization invites automatically
-  useEffect(() => {
-    if (inviteDetails?.isOrganizationInvite && inviteToken) {
-      // For organization invites, automatically process the invitation
-      const handleOrgInvite = async () => {
-        try {
-          const response = await clientPortalAPI.handleOrganizationInvite(
-            inviteToken
-          );
-          if (response.body.redirectTo === "client-portal") {
-            navigate("/dashboard", { replace: true });
-          } else {
-            // Redirect to login
-            navigate("/auth/login", {
-              state: {
-                organizationInviteToken: inviteToken,
-                message: "Please login to accept the organization invitation.",
-              },
-            });
-          }
-        } catch (error) {
-          dispatch(setError("Failed to process organization invitation"));
-        }
-      };
-
-      handleOrgInvite();
-    }
-  }, [inviteDetails, inviteToken, navigate, dispatch]);
+  // Handle organization invites - allow sign-up if needed
+  // Note: Organization invites can now be used to create new accounts
+  // The form will handle both new user creation and existing user login
 
   // Clear error when component unmounts
   useEffect(() => {
@@ -156,8 +130,13 @@ const InvitePage: React.FC = () => {
           message.success(t("invite.success"));
           navigate("/dashboard", { replace: true });
         } else {
-          const errorMessage =
-            (result.payload as string) || t("invite.acceptance_error");
+          const errorKey = result.payload as string;
+          
+          // Check if the error is an i18n key (starts with "errors.")
+          const errorMessage = errorKey && errorKey.startsWith("errors.") 
+            ? t(errorKey) 
+            : errorKey || t("invite.acceptance_error");
+          
           message.error(errorMessage);
         }
       } catch (error) {
@@ -263,7 +242,7 @@ const InvitePage: React.FC = () => {
 
         {error && (
           <Alert
-            message={error}
+            message={error.startsWith("errors.") ? t(error) : error}
             type="error"
             closable
             onClose={() => dispatch(setError(null))}

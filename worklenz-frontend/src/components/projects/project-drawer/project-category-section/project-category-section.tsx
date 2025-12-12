@@ -10,8 +10,9 @@ import {
   InputRef,
   Select,
   Typography,
+  Tooltip,
 } from '@/shared/antd-imports';
-import { PlusOutlined } from '@/shared/antd-imports';
+import { PlusOutlined, CrownOutlined } from '@/shared/antd-imports';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
@@ -20,6 +21,10 @@ import {
 } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
 import { colors } from '@/styles/colors';
 import { IProjectCategory } from '@/types/project/projectCategory.types';
+import { useAuthService } from '@/hooks/useAuth';
+import { isFreeUser } from '@/utils/subscription-utils';
+import { useTranslation } from 'react-i18next';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 
 interface ProjectCategorySectionProps {
   categories: IProjectCategory[];
@@ -32,6 +37,10 @@ const defaultColorCode = '#ee87c5';
 
 const ProjectCategorySection = ({ categories, form, t, disabled }: ProjectCategorySectionProps) => {
   const dispatch = useAppDispatch();
+  const { t: tCommon } = useTranslation('common');
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
+  const isFree = isFreeUser(currentSession);
 
   const [isAddCategoryInputShow, setIsAddCategoryInputShow] = useState(false);
   const [categoryText, setCategoryText] = useState('');
@@ -51,8 +60,18 @@ const ProjectCategorySection = ({ categories, form, t, disabled }: ProjectCatego
   };
 
   const handleShowAddCategoryInput = () => {
+    if (isFree) {
+      dispatch(toggleUpgradeModal());
+      return;
+    }
     setIsAddCategoryInputShow(true);
     handleCategoryInputFocus();
+  };
+
+  const handleSelectClick = () => {
+    if (isFree) {
+      dispatch(toggleUpgradeModal());
+    }
   };
 
   const handleAddCategoryInputBlur = (category: string) => {
@@ -108,7 +127,19 @@ const ProjectCategorySection = ({ categories, form, t, disabled }: ProjectCatego
 
   return (
     <>
-      <Form.Item name="category_id" label={t('category')}>
+      <Form.Item name="category_id" label={
+        <Flex align="center" gap={4}>
+          <span>{t('category')}</span>
+          {isFree && (
+            <Tooltip title={tCommon('upgrade-plan')} placement="top">
+              <CrownOutlined 
+                style={{ fontSize: '14px', color: '#faad14', cursor: 'pointer' }}
+                onClick={handleSelectClick}
+              />
+            </Tooltip>
+          )}
+        </Flex>
+      }>
         {!isAddCategoryInputShow ? (
           <Select
             options={categoryOptions}
@@ -130,6 +161,7 @@ const ProjectCategorySection = ({ categories, form, t, disabled }: ProjectCatego
               </>
             )}
             disabled={disabled}
+            onClick={handleSelectClick}
           />
         ) : (
           <Flex vertical gap={4}>

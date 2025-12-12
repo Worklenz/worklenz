@@ -27,8 +27,8 @@ export async function on_gannt_drag_change(_io: Server, socket: Socket, data?: s
       task_id: body.task_id,
       task_width: body.task_width,
       task_offset: body.task_offset,
-      start_date: d.start_date,
-      end_date: d.end_date,
+      start_date: d.start_date ? momentTime.utc(d.start_date).format('YYYY-MM-DD') : null,
+      end_date: d.end_date ? momentTime.utc(d.end_date).format('YYYY-MM-DD') : null,
       group_id: body.group_id
     });
 
@@ -37,15 +37,15 @@ export async function on_gannt_drag_change(_io: Server, socket: Socket, data?: s
     logStartDateChange({
       task_id: body.task_id,
       socket,
-      new_value: body.time_zone && d.start_date ? momentTime.tz(d.start_date, `${body.time_zone}`) : d.start_date,
-      old_value: body.time_zone && task_start_date_data.start_date ? momentTime.tz(task_start_date_data.start_date, `${body.time_zone}`) : task_start_date_data.start_date
+      new_value: d.start_date ? momentTime.utc(d.start_date).format('YYYY-MM-DD') : null,
+      old_value: task_start_date_data.start_date ? momentTime.utc(task_start_date_data.start_date).format('YYYY-MM-DD') : null
     });
 
     logEndDateChange({
       task_id: body.task_id,
       socket,
-      new_value:  body.time_zone && d.end_date ? momentTime.tz(d.end_date, `${body.time_zone}`) : d.end_date,
-      old_value:  body.time_zone && task_end_date_data.end_date ? momentTime.tz(task_end_date_data.end_date, `${body.time_zone}`) : task_end_date_data.end_date
+      new_value: d.end_date ? momentTime.utc(d.end_date).format('YYYY-MM-DD') : null,
+      old_value: task_end_date_data.end_date ? momentTime.utc(task_end_date_data.end_date).format('YYYY-MM-DD') : null
     });
 
   } catch (e) {

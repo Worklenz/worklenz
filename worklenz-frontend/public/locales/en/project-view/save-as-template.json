@@ -1,17 +1,30 @@
 {
   "title": "Save as Template",
   "templateName": "Template Name",
-  "includes": "What should be included in the template from the project ?",
+  "templateNamePlaceholder": "Enter template name",
+  "templateInfo": "Template Information",
+  "includes": "Project Elements",
+  "taskIncludes": "Task Elements",
+  "cancel": "Cancel",
+  "save": "Save",
+  "creating": "Creating template...",
+  "created": "Template Created!",
+  "quickSelect": "Quick Select:",
+  "selectAll": "Select All",
+  "essentialOnly": "Essential Only",
+  "clearAll": "Clear All",
+  "itemsSelected": "items selected",
+  "readyToSave": "Ready to save",
+  "validName": "Valid name",
+  "required": "Required",
+  "proTips": "Pro Tips",
   "includesOptions": {
     "statuses": "Statuses",
     "phases": "Phases",
-    "labels": "Labels"
-  },
-  "taskIncludes": "What should be included in the template from the tasks ?",
-  "taskIncludesOptions": {
-    "statuses": "Statuses",
-    "phases": "Phases",
     "labels": "Labels",
+    "customColumns": "Custom Columns"
+  },
+  "taskIncludesOptions": {
     "name": "Name",
     "priority": "Priority",
     "status": "Status",
@@ -21,7 +34,40 @@
     "description": "Description",
     "subTasks": "Sub Tasks"
   },
-  "cancel": "Cancel",
-  "save": "Save",
-  "templateNamePlaceholder": "Enter template name"
+  "descriptions": {
+    "statuses": "Project status workflow configuration",
+    "phases": "Project phases and milestones",
+    "labels": "Custom labels for categorization",
+    "customColumns": "Custom fields and metadata",
+    "taskName": "Task names and titles",
+    "taskPriority": "Task priority levels",
+    "taskStatus": "Task completion status",
+    "taskPhase": "Associated project phase",
+    "taskLabel": "Task labels and tags",
+    "timeEstimate": "Time estimates and duration",
+    "description": "Task descriptions and details",
+    "subTasks": "Subtasks and checklist items"
+  },
+  "tooltips": {
+    "projectElements": "Choose what project elements to include in your template",
+    "taskElements": "Choose what task elements to include in your template",
+    "required": "This item is required and cannot be deselected"
+  },
+  "tips": {
+    "line1": "Templates preserve your project structure for quick reuse",
+    "line2": "Essential items are always included and cannot be removed",
+    "line3": "You can customize the template when creating new projects",
+    "line4": "Select the elements you want to include in your template"
+  },
+  "validation": {
+    "nameRequired": "Please enter a template name",
+    "nameMinLength": "Template name must be at least 3 characters",
+    "nameMaxLength": "Template name must be less than 50 characters"
+  },
+  "notifications": {
+    "createSuccess": "Template Created",
+    "createSuccessDesc": "Your project template has been successfully created and is ready to use.",
+    "createError": "Template Creation Failed",
+    "error": "Error"
+  }
 }

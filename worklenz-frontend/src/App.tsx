@@ -7,6 +7,7 @@ import i18next from 'i18next';
 import ThemeWrapper from './features/theme/ThemeWrapper';
 import ModuleErrorBoundary from './components/ModuleErrorBoundary';
 import { UpdateNotificationProvider } from './components/update-notification';
+import CookieConsentBanner from './components/CookieConsentBanner';
 
 // Routes
 import router from './app/routes';
@@ -16,6 +17,7 @@ import { useAppSelector } from './hooks/useAppSelector';
 import { initMixpanel } from './utils/mixpanelInit';
 import { initializeCsrfToken } from './api/api-client';
 import CacheCleanup from './utils/cache-cleanup';
+import { consentManager } from './utils/consentManager';
 
 // Types & Constants
 import { Language } from './features/i18n/localesSlice';
@@ -94,6 +96,9 @@ const App: React.FC = memo(() => {
       try {
         // Initialize CSRF token immediately as it's needed for API calls
         await initializeCsrfToken();
+
+        // Initialize consent manager for cookie consent
+        consentManager.initialize();
 
         // Start CSS performance monitoring
         CSSPerformanceMonitor.monitorLayoutShifts();
@@ -217,6 +222,7 @@ const App: React.FC = memo(() => {
                 v7_startTransition: true,
               }}
             />
+            <CookieConsentBanner />
           </ModuleErrorBoundary>
         </UpdateNotificationProvider>
       </ThemeWrapper>

@@ -14,8 +14,8 @@ export class AppSumoService {
     ENTERPRISE_ANNUAL: 82950,  // AppSumo Promo - Enterprise (Annual) - $1,794.00
   };
 
-  private static readonly LICENSING_API_URL = process.env.LICENSING_API_URL || 'http://localhost:3001';
-  private static readonly APPSUMO_CAMPAIGN_CODE = 'APPSUMO_5DAY_50OFF';
+  private static readonly LICENSING_API_URL = process.env.LICENSING_API_URL || "http://localhost:3001";
+  private static readonly APPSUMO_CAMPAIGN_CODE = "APPSUMO_5DAY_50OFF";
 
   /**
    * Check if user is AppSumo customer based on subscription type
@@ -23,13 +23,13 @@ export class AppSumoService {
   public static isAppSumoUser(subscriptionType?: string, planName?: string): boolean {
     if (!subscriptionType && !planName) return false;
     
-    const lowerType = subscriptionType?.toLowerCase() || '';
-    const lowerPlan = planName?.toLowerCase() || '';
+    const lowerType = subscriptionType?.toLowerCase() || "";
+    const lowerPlan = planName?.toLowerCase() || "";
     
-    return lowerType.includes('appsumo') || 
-           lowerType.includes('lifetime') ||
-           lowerPlan.includes('appsumo') ||
-           lowerPlan.includes('lifetime');
+    return lowerType.includes("appsumo") || 
+           lowerType.includes("lifetime") ||
+           lowerPlan.includes("appsumo") ||
+           lowerPlan.includes("lifetime");
   }
 
   /**
@@ -37,10 +37,10 @@ export class AppSumoService {
    */
   public static getAppSumoPaddlePlanId(
     planTier: string, 
-    billingCycle: 'monthly' | 'annual'
+    billingCycle: "monthly" | "annual"
   ): number | null {
-    const tierKey = planTier.toLowerCase().includes('business') ? 'BUSINESS' : 
-                    planTier.toLowerCase().includes('enterprise') ? 'ENTERPRISE' : null;
+    const tierKey = planTier.toLowerCase().includes("business") ? "BUSINESS" : 
+                    planTier.toLowerCase().includes("enterprise") ? "ENTERPRISE" : null;
     
     if (!tierKey) return null;
     
@@ -67,13 +67,13 @@ export class AppSumoService {
     try {
       // Call licensing backend campaign eligibility function
       const response = await fetch(`${this.LICENSING_API_URL}/api/campaigns/check/${this.APPSUMO_CAMPAIGN_CODE}`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           organization_id: organizationId,
-          target_tier: 'BUSINESS_SMALL'  // Default check
+          target_tier: "BUSINESS_SMALL"  // Default check
         })
       });
 
@@ -107,7 +107,7 @@ export class AppSumoService {
 
       return {
         eligible: false,
-        message: data.eligibility_reasons?.[0]?.reason || 'Campaign not available'
+        message: data.eligibility_reasons?.[0]?.reason || "Campaign not available"
       };
 
     } catch (error) {
@@ -116,7 +116,7 @@ export class AppSumoService {
       // Fallback for when licensing backend is not available
       return {
         eligible: false,
-        message: 'Unable to check campaign eligibility'
+        message: "Unable to check campaign eligibility"
       };
     }
   }
@@ -146,13 +146,13 @@ export class AppSumoService {
       const remainingMinutes = campaignData.remainingMinutes || 0;
 
       // Determine urgency level
-      let urgencyLevel = 'low';
+      let urgencyLevel = "low";
       if (remainingDays === 0 && remainingHours <= 6) {
-        urgencyLevel = 'critical';
+        urgencyLevel = "critical";
       } else if (remainingDays === 0) {
-        urgencyLevel = 'high';
+        urgencyLevel = "high";
       } else if (remainingDays === 1) {
-        urgencyLevel = 'medium';
+        urgencyLevel = "medium";
       }
 
       return {
@@ -161,15 +161,40 @@ export class AppSumoService {
         remainingHours,
         remainingMinutes,
         urgencyLevel,
-        message: campaignData.message || '🚨 Limited time AppSumo offer!',
-        ctaText: 'Upgrade Now',
-        ctaUrl: '/settings/billing'
+        message: campaignData.message || "🚨 Limited time AppSumo offer!",
+        ctaText: "Upgrade Now",
+        ctaUrl: "/settings/billing"
       };
 
     } catch (error) {
       log_error(error);
       return null;
     }
+  }
+
+  /**
+   * Get the user limit for a plan, accounting for AppSumo special limits
+   */
+  public static getBusinessPlanUserLimit(
+    subscriptionType?: string, 
+    planName?: string,
+    defaultLimit = 25
+  ): number {
+    // ANNUAL_BUSINESS subscription type gets business plan limits
+    if (subscriptionType === "ANNUAL_BUSINESS") {
+      return 100; // Annual business plan gets 100 users
+    }
+    
+    // Check if this is an AppSumo user
+    if (this.isAppSumoUser(subscriptionType, planName)) {
+      // Check if this is a business plan
+      const planLower = planName?.toLowerCase() || "";
+      if (planLower.includes("business")) {
+        return 50; // AppSumo business plan gets 50 users
+      }
+    }
+    
+    return defaultLimit;
   }
 
   /**
@@ -198,7 +223,7 @@ export class AppSumoService {
       }
 
       // For AppSumo users, Business plans allow up to 50 users (normally 25)
-      const specialUserLimit = planTier.toLowerCase().includes('business') ? 50 : undefined;
+      const specialUserLimit = planTier.toLowerCase().includes("business") ? 50 : undefined;
 
       return {
         discountApplied: true,

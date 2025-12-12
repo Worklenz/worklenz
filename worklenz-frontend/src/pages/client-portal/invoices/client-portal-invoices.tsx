@@ -2,21 +2,19 @@ import { Flex, Typography, Card } from '@/shared/antd-imports';
 import Button from 'antd/lib/button';
 import { useTranslation } from 'react-i18next';
 import { PlusOutlined, FileTextOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import InvoicesTable from './Invoices-table/invoices-table';
-import AddInvoiceDrawer from '../../../features/clients-portal/invoices/add-invoice-drawer';
-import { useAppDispatch } from '../../../hooks/useAppDispatch';
-import { toggleAddInvoiceDrawer } from '../../../features/clients-portal/invoices/invoices-slice';
 import { useResponsive } from '../../../hooks/useResponsive';
 
 const ClientPortalInvoices = () => {
   // localization
   const { t } = useTranslation('client-portal-invoices');
   const { isDesktop } = useResponsive();
-  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
-  // function to handle add invoices
+  // function to handle add invoices - navigate to invoice builder
   const handleAddInvoice = () => {
-    dispatch(toggleAddInvoiceDrawer());
+    navigate('/worklenz/client-portal/invoices/create');
   };
 
   return (
@@ -68,9 +66,6 @@ const ClientPortalInvoices = () => {
       >
         <InvoicesTable />
       </Card>
-
-      {/* drawers  */}
-      <AddInvoiceDrawer />
     </div>
   );
 };

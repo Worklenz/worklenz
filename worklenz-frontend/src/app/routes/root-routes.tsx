@@ -6,6 +6,14 @@ const OrganizationInvitePage = lazy(
   () => import('@/pages/client-view/organization-invite/organization-invite')
 );
 
+const TeamInvitePage = lazy(
+  () => import('@/pages/invite/team/TeamInvitePage')
+);
+
+const ProjectInvitePage = lazy(
+  () => import('@/pages/invite/project/ProjectInvitePage')
+);
+
 const rootRoutes: RouteObject[] = [
   {
     path: '/',
@@ -16,6 +24,22 @@ const rootRoutes: RouteObject[] = [
     element: (
       <Suspense fallback={<SuspenseFallback />}>
         <OrganizationInvitePage />
+      </Suspense>
+    ),
+  },
+  {
+    path: '/invite/team/:token',
+    element: (
+      <Suspense fallback={<SuspenseFallback />}>
+        <TeamInvitePage />
+      </Suspense>
+    ),
+  },
+  {
+    path: '/invite/project/:token',
+    element: (
+      <Suspense fallback={<SuspenseFallback />}>
+        <ProjectInvitePage />
       </Suspense>
     ),
   },

@@ -1,13 +1,11 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Flex,
   DatePicker,
   Select,
   Button,
   Switch,
-  Space,
   Popover,
-  Badge,
   theme,
   Dropdown,
   Card,
@@ -15,12 +13,12 @@ import {
   Typography,
   Divider,
   Checkbox,
+  InputNumber,
 } from '@/shared/antd-imports';
 import {
   FilterOutlined,
+  FilterFilled,
   ReloadOutlined,
-  DownloadOutlined,
-  SettingOutlined,
   DownOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
@@ -32,22 +30,26 @@ import {
   clearFilters,
   setTimeScale,
   toggleWeekends,
+  setWorkingHoursPerDay,
   toggleWorkingDay,
   setWorkingDays,
 } from '@/features/project-workload/projectWorkloadSlice';
+import projectWorkloadApi from '@/api/project-workload/project-workload.api.service';
 import dayjs from 'dayjs';
 
 const { RangePicker } = DatePicker;
 
 interface WorkloadFiltersProps {
   onRefresh: () => void;
+  isLoading?: boolean;
+  isFetching?: boolean;
 }
 
-const WorkloadFilters = ({ onRefresh }: WorkloadFiltersProps) => {
+const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: WorkloadFiltersProps) => {
   const { t } = useTranslation('workload');
   const dispatch = useAppDispatch();
   const { token } = theme.useToken();
-  const { dateRange, filters, timeScale, showWeekends, workingDays } = useAppSelector(
+  const { dateRange, filters, timeScale, capacityUnit, showWeekends, workingHoursPerDay, workingDays } = useAppSelector(
     state => state.projectWorkload
   );
 
@@ -55,6 +57,18 @@ const WorkloadFilters = ({ onRefresh }: WorkloadFiltersProps) => {
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
   const [selectedTimeFrame, setSelectedTimeFrame] = useState<string>('thisWeek');
   const [customRange, setCustomRange] = useState<[string, string] | null>(null);
+
+  // Enhanced refresh handler with error handling
+  const handleRefresh = useCallback(() => {
+    try {
+      onRefresh();
+    } catch (error) {
+      console.error('Error in refresh handler:', error);
+    }
+  }, [onRefresh, dateRange, filters, timeScale, capacityUnit]);
+
+  // Show loading state when fetching
+  const isRefreshing = isLoading || isFetching;
 
   const handleDateRangeChange = (dates: any) => {
     if (dates) {
@@ -69,6 +83,10 @@ const WorkloadFilters = ({ onRefresh }: WorkloadFiltersProps) => {
     if (customRange) {
       setSelectedTimeFrame('custom');
       setIsDateDropdownOpen(false);
+      
+      // Invalidate cache before setting new date range to ensure fresh data
+      dispatch(projectWorkloadApi.util.invalidateTags(['ProjectWorkload']));
+      
       dispatch(
         setDateRange({
           startDate: dayjs(customRange[0]).format('YYYY-MM-DD'),
@@ -154,9 +172,9 @@ const WorkloadFilters = ({ onRefresh }: WorkloadFiltersProps) => {
       key: 'thisQuarter',
       label: 'thisQuarter',
       dates:
-        dayjs().startOf('quarter').format('YYYY-MM-DD') +
+        dayjs().startOf('month').format('YYYY-MM-DD') +
         ' - ' +
-        dayjs().endOf('quarter').format('YYYY-MM-DD'),
+        dayjs().endOf('month').format('YYYY-MM-DD'),
     },
   ];
 
@@ -164,6 +182,10 @@ const WorkloadFilters = ({ onRefresh }: WorkloadFiltersProps) => {
     setSelectedTimeFrame(item.label);
     setCustomRange(null);
     const [startDate, endDate] = item.dates.split(' - ');
+    
+    // Invalidate cache before setting new date range to ensure fresh data
+    dispatch(projectWorkloadApi.util.invalidateTags(['ProjectWorkload']));
+    
     dispatch(
       setDateRange({
         startDate,
@@ -173,9 +195,39 @@ const WorkloadFilters = ({ onRefresh }: WorkloadFiltersProps) => {
     setIsDateDropdownOpen(false);
   };
 
-  const defaultWorkingDaysCount = 5; // Monday to Friday
-  const currentWorkingDaysCount = Object.values(workingDays).filter(Boolean).length;
-  const workingDaysChanged = currentWorkingDaysCount !== defaultWorkingDaysCount;
+  // Default values from the initial state
+  const defaultWorkingDays = {
+    monday: true,
+    tuesday: true,
+    wednesday: true,
+    thursday: true,
+    friday: true,
+    saturday: false,
+    sunday: false,
+  };
+  const defaultTimeScale = 'week';
+  const defaultShowWeekends = false;
+  const defaultWorkingHoursPerDay = 8;
+  const defaultDateRange = {
+    startDate: dayjs().startOf('week').format('YYYY-MM-DD'),
+    endDate: dayjs().endOf('week').format('YYYY-MM-DD'),
+  };
+
+  // Check if values have changed from defaults
+  const workingDaysChanged = 
+    workingDays.monday !== defaultWorkingDays.monday ||
+    workingDays.tuesday !== defaultWorkingDays.tuesday ||
+    workingDays.wednesday !== defaultWorkingDays.wednesday ||
+    workingDays.thursday !== defaultWorkingDays.thursday ||
+    workingDays.friday !== defaultWorkingDays.friday ||
+    workingDays.saturday !== defaultWorkingDays.saturday ||
+    workingDays.sunday !== defaultWorkingDays.sunday;
+  const timeScaleChanged = timeScale !== defaultTimeScale;
+  const showWeekendsChanged = showWeekends !== defaultShowWeekends;
+  const workingHoursChanged = workingHoursPerDay !== defaultWorkingHoursPerDay;
+  const dateRangeChanged =
+    dateRange.startDate !== defaultDateRange.startDate ||
+    dateRange.endDate !== defaultDateRange.endDate;
 
   const activeFiltersCount =
     (filters.showOverallocated ? 1 : 0) +
@@ -184,7 +236,11 @@ const WorkloadFilters = ({ onRefresh }: WorkloadFiltersProps) => {
     (filters.teamIds?.length || 0) +
     (filters.taskStatuses?.length || 0) +
     (filters.taskPriorities?.length || 0) +
-    (workingDaysChanged ? 1 : 0);
+    (workingDaysChanged ? 1 : 0) +
+    (timeScaleChanged ? 1 : 0) +
+    (showWeekendsChanged ? 1 : 0) +
+    (workingHoursChanged ? 1 : 0) +
+    (dateRangeChanged ? 1 : 0);
 
   const filterContent = (
     <Flex vertical gap={16} style={{ width: 300 }}>
@@ -199,6 +255,19 @@ const WorkloadFilters = ({ onRefresh }: WorkloadFiltersProps) => {
             { label: t('filters.weekly'), value: 'week' },
             { label: t('filters.monthly'), value: 'month' },
           ]}
+        />
+      </div>
+
+      <div>
+        <label style={{ display: 'block', marginBottom: 8 }}>{t('filters.workingHoursPerDay')}</label>
+        <InputNumber
+          value={workingHoursPerDay}
+          onChange={value => dispatch(setWorkingHoursPerDay(value || 8))}
+          style={{ width: '100%' }}
+          min={1}
+          max={24}
+          step={0.5}
+          addonAfter={t('table.hours')}
         />
       </div>
 
@@ -287,26 +356,28 @@ const WorkloadFilters = ({ onRefresh }: WorkloadFiltersProps) => {
         />
       </Flex>
 
-      <Button
-        type="text"
-        danger
-        onClick={() => {
-          dispatch(clearFilters());
-          // Reset working days to default (Monday-Friday)
-          dispatch(setWorkingDays({
-            monday: true,
-            tuesday: true,
-            wednesday: true,
-            thursday: true,
-            friday: true,
-            saturday: false,
-            sunday: false,
-          }));
-        }}
-        disabled={activeFiltersCount === 0}
-      >
-        {t('filters.clearAll')}
-      </Button>
+             <Button
+         type="text"
+         danger
+         onClick={() => {
+           dispatch(clearFilters());
+           // Reset all values to defaults
+           dispatch(setWorkingDays(defaultWorkingDays));
+           dispatch(setTimeScale(defaultTimeScale));
+           dispatch(setWorkingHoursPerDay(defaultWorkingHoursPerDay));
+           // Reset showWeekends to false only if it's currently true
+           if (showWeekends) {
+             dispatch(toggleWeekends());
+           }
+           dispatch(setDateRange(defaultDateRange));
+           // Reset local state
+           setSelectedTimeFrame('thisWeek');
+           setCustomRange(null);
+         }}
+         disabled={activeFiltersCount === 0}
+       >
+         {t('filters.clearAll')}
+       </Button>
     </Flex>
   );
 
@@ -398,12 +469,17 @@ const WorkloadFilters = ({ onRefresh }: WorkloadFiltersProps) => {
         onOpenChange={setFilterPopoverOpen}
         placement="bottomRight"
       >
-        <Badge count={activeFiltersCount} offset={[-5, 5]}>
-          <Button icon={<FilterOutlined />}>{t('filters.filters')}</Button>
-        </Badge>
+          <Button 
+          icon={activeFiltersCount > 0 ? <FilterFilled/> : <FilterOutlined />}>{t('filters.filters')}</Button>
       </Popover>
 
-      <Button icon={<ReloadOutlined />} onClick={onRefresh} title={t('filters.refresh')} />
+      <Button 
+        icon={<ReloadOutlined spin={isRefreshing} />} 
+        onClick={handleRefresh} 
+        title={t('filters.refresh')}
+        loading={isRefreshing}
+        disabled={isRefreshing}
+      />
     </Flex>
   );
 };

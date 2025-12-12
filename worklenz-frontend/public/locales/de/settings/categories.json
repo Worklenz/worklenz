@@ -6,5 +6,7 @@
   "associatedTaskColumn": "Zugehörige Projekte",
   "searchPlaceholder": "Nach Namen suchen",
   "emptyText": "Kategorien können beim Aktualisieren oder Erstellen von Projekten angelegt werden.",
-  "colorChangeTooltip": "Zum Farbwechsel klicken"
+  "colorChangeTooltip": "Zum Farbwechsel klicken",
+  "deleteSuccessMessage": "Kategorie erfolgreich gelöscht",
+  "deleteErrorMessage": "Fehler beim Löschen der Kategorie"
 }

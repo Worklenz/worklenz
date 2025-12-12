@@ -2,9 +2,11 @@ import {Server, Socket} from "socket.io";
 import db from "../../config/db";
 import {SocketEvents} from "../events";
 
-import {log_error, notifyProjectUpdates} from "../util";
+import {getLoggedInUserIdFromSocket, notifyProjectUpdates} from "../util";
 import {getTaskDetails, logEndDateChange} from "../../services/activity-logs/activity-logs.service";
 import momentTime from "moment-timezone";
+import { ExternalNotificationsService } from "../../services/external-notifications.service";
+import { log_error } from "../../shared/utils";
 
 export async function on_task_end_date_change(_io: Server, socket: Socket, data?: string) {
   try {
@@ -17,8 +19,8 @@ export async function on_task_end_date_change(_io: Server, socket: Socket, data?
     socket.emit(SocketEvents.TASK_END_DATE_CHANGE.toString(), {
       id: body.task_id,
       parent_task: body.parent_task,
-      end_date: d.end_date,
-      start_date: d.start_date,
+      end_date: d.end_date ? momentTime.utc(d.end_date).format('YYYY-MM-DD') : null,
+      start_date: d.start_date ? momentTime.utc(d.start_date).format('YYYY-MM-DD') : null,
       group_id: body.group_id
     });
 
@@ -26,9 +28,33 @@ export async function on_task_end_date_change(_io: Server, socket: Socket, data?
     logEndDateChange({
       task_id: body.task_id,
       socket,
-      new_value: body.time_zone && d.end_date ? momentTime.tz(d.end_date, `${body.time_zone}`) : d.end_date,
-      old_value: body.time_zone && task_data.end_date ? momentTime.tz(task_data.end_date, `${body.time_zone}`) : task_data.end_date
+      new_value: d.end_date ? momentTime.utc(d.end_date).format('YYYY-MM-DD') : null,
+      old_value: task_data.end_date ? momentTime.utc(task_data.end_date).format('YYYY-MM-DD') : null
     });
+
+    // Send external notifications (Slack, Teams)
+    try {
+      const userId = getLoggedInUserIdFromSocket(socket);
+      const userQuery = `SELECT name FROM users WHERE id = $1`;
+      const userResult = await db.query(userQuery, [userId]);
+      const userName = userResult.rows[0]?.name || "Unknown User";
+
+      const projectQuery = `SELECT project_id FROM tasks WHERE id = $1`;
+      const projectResult = await db.query(projectQuery, [body.task_id]);
+      const projectId = projectResult.rows[0]?.project_id;
+
+      if (projectId) {
+        await ExternalNotificationsService.sendExternalNotifications(
+          projectId,
+          body.task_id,
+          "due_date_changed",
+          userName
+        );
+      }
+    } catch (notifError) {
+      log_error("Error sending external notifications:", notifError);
+      // Don't throw - continue even if notifications fail
+    }
 
     return;
   } catch (error) {

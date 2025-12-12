@@ -1,0 +1,11 @@
+.team-member-row .action-buttons {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease-in-out, visibility 0.15s ease-in-out;
+}
+
+.team-member-row:hover .action-buttons {
+  opacity: 1;
+  visibility: visible;
+}
+

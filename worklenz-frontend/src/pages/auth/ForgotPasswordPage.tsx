@@ -23,6 +23,7 @@ const ForgotPasswordPage = () => {
   const [form] = Form.useForm();
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isOAuthUser, setIsOAuthUser] = useState(false);
   const [urlParams, setUrlParams] = useState({
     teamId: '',
   });
@@ -64,21 +65,38 @@ const ForgotPasswordPage = () => {
       if (values.email.trim() === '') return;
       try {
         setIsLoading(true);
+        setIsOAuthUser(false); // Reset OAuth user state
         // Normalize email to lowercase for case-insensitive comparison
         const normalizedEmail = values.email.toLowerCase().trim();
         const result = await dispatch(resetPassword(normalizedEmail)).unwrap();
         if (result.done) {
           trackMixpanelEvent(evt_reset_password_click);
           setIsSuccess(true);
+        } else if (result.body === 'oauth_user') {
+          setIsOAuthUser(true);
         }
-      } catch (error) {
+      } catch (error: any) {
         logger.error('Failed to reset password', error);
+        // Check if the error response indicates an OAuth user
+        if (error?.response?.data?.body === 'oauth_user') {
+          setIsOAuthUser(true);
+        }
       } finally {
         setIsLoading(false);
       }
     },
-    [dispatch, t]
+    [dispatch, trackMixpanelEvent]
   );
+
+  const handleGoogleSignIn = useCallback(() => {
+    const googleAuthUrl = `/api/auth/google${urlParams.teamId ? `?state=${JSON.stringify({ team: urlParams.teamId })}` : ''}`;
+    window.location.href = googleAuthUrl;
+  }, [urlParams.teamId]);
+
+  const handleTryDifferentEmail = useCallback(() => {
+    setIsOAuthUser(false);
+    form.resetFields();
+  }, [form]);
 
   return (
     <Card
@@ -95,6 +113,32 @@ const ForgotPasswordPage = () => {
     >
       {isSuccess ? (
         <Result status="success" title={t('successTitle')} subTitle={t('successMessage')} />
+      ) : isOAuthUser ? (
+        <Result
+          status="info"
+          title={t('oauthUserTitle')}
+          subTitle={t('oauthUserMessage')}
+          extra={[
+            <Button
+              key="google-signin"
+              type="primary"
+              size="large"
+              onClick={handleGoogleSignIn}
+              style={{ borderRadius: 4 }}
+            >
+              {t('signInWithGoogleButton')}
+            </Button>,
+            <Button
+              key="try-different"
+              type="default"
+              size="large"
+              onClick={handleTryDifferentEmail}
+              style={{ borderRadius: 4 }}
+            >
+              {t('tryDifferentEmailButton')}
+            </Button>,
+          ]}
+        />
       ) : (
         <>
           <PageHeader description={t('headerDescription')} />

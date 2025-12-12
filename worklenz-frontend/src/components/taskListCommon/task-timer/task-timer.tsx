@@ -9,6 +9,9 @@ import { PlayCircleFilled } from '@/shared/antd-imports';
 import { Flex, Button, Popover, Typography, Divider, Skeleton } from '@/shared/antd-imports';
 import React from 'react';
 import { useState } from 'react';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_timer_started } from '@/shared/worklenz-analytics-events';
+import { TimerEventProps } from '@/types/mixpanel-events.types';
 
 interface TaskTimerProps {
   started: boolean;
@@ -27,6 +30,7 @@ const TaskTimer = ({
 }: TaskTimerProps) => {
   const [timeLogs, setTimeLogs] = useState<ITaskLogViewModel[]>([]);
   const [loading, setLoading] = useState(false);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const renderStopIcon = () => {
     return (
@@ -128,7 +132,11 @@ const TaskTimer = ({
         <Button
           type="text"
           icon={<PlayCircleFilled style={{ color: colors.skyBlue, fontSize: 16 }} />}
-          onClick={handleStartTimer}
+          onClick={() => {
+            const props: TimerEventProps = { task_id: taskId, project_id: '' };
+            trackMixpanelEvent(evt_timer_started, props);
+            handleStartTimer();
+          }}
         />
       )}
       <Popover

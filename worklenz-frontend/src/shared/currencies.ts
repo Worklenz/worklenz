@@ -15,6 +15,7 @@ export const CURRENCY_OPTIONS: CurrencyOption[] = [
   { value: 'cny', label: 'CNY - Chinese Yuan', symbol: '¥' },
   { value: 'inr', label: 'INR - Indian Rupee', symbol: '₹' },
   { value: 'lkr', label: 'LKR - Sri Lankan Rupee', symbol: 'Rs' },
+  { value: 'npr', label: 'NPR - Nepalese Rupee', symbol: 'Rs' },
   { value: 'sgd', label: 'SGD - Singapore Dollar', symbol: 'S$' },
   { value: 'hkd', label: 'HKD - Hong Kong Dollar', symbol: 'HK$' },
   { value: 'nzd', label: 'NZD - New Zealand Dollar', symbol: 'NZ$' },

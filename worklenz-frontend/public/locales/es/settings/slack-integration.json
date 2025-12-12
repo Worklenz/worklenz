@@ -1,0 +1,136 @@
+{
+  "title": "Integración de Slack",
+  "connectWorkspace": "Conectar Espacio de Trabajo de Slack",
+  "addChannelConfig": "Agregar Configuración de Canal",
+  "manageConfigurations": "Gestionar",
+  "manageTitle": "Gestionar Configuraciones de Slack",
+  "defaultWorkspaceName": "Espacio de Trabajo de Slack",
+  "connectedDescription": "El espacio de trabajo de Slack de tu equipo está conectado. Configura qué canales reciben notificaciones para cada proyecto.",
+  "status": {
+    "connected": "Conectado"
+  },
+  "stats": {
+    "total": "Total",
+    "active": "Activo",
+    "available": "Disponible"
+  },
+  "setup": {
+    "title": "Instrucciones de Configuración",
+    "step1": {
+      "title": "1. Conectar tu Espacio de Trabajo",
+      "description": "Haz clic en el botón 'Conectar Espacio de Trabajo de Slack' a continuación para autorizar a Worklenz a acceder a tu espacio de trabajo de Slack."
+    },
+    "step2": {
+      "title": "2. Invitar Bot a los Canales",
+      "description": "En cada canal de Slack donde desees recibir notificaciones, escribe:",
+      "command": "/invite @Worklenz",
+      "note": "Solo necesitas hacer esto una vez por canal."
+    },
+    "step3": {
+      "title": "3. Configurar Notificaciones",
+      "description": "Después de conectar, haz clic en 'Gestionar' para configurar qué proyectos envían notificaciones a qué canales."
+    }
+  },
+  "instructions": {
+    "inviteBot": {
+      "title": "¡No olvides invitar al bot!",
+      "description": "Antes de que puedas recibir notificaciones en un canal de Slack, debes invitar al bot de Worklenz a ese canal.",
+      "step": "En tu canal de Slack, escribe: <code>/invite @Worklenz</code>",
+      "note": "Esto solo necesita hacerse una vez por canal."
+    },
+    "getStarted": "Comienza agregando una configuración de canal para recibir notificaciones de tus proyectos."
+  },
+  "disconnect": {
+    "title": "¿Desconectar Slack?",
+    "content": "Esto eliminará todas las configuraciones de Slack y detendrá las notificaciones para tu equipo.",
+    "okText": "Desconectar"
+  },
+  "deleteConfig": {
+    "title": "¿Eliminar Configuración?",
+    "content": "¿Estás seguro de que quieres eliminar esta configuración de canal?",
+    "okText": "Eliminar"
+  },
+  "notConnected": {
+    "title": "Conecta tu Espacio de Trabajo de Slack",
+    "description": "Integra Slack con tu equipo de Worklenz para recibir notificaciones en tiempo real, crear tareas desde Slack y mantener tu equipo sincronizado en ambas plataformas."
+  },
+  "features": {
+    "notifications": {
+      "title": "Notificaciones en Tiempo Real",
+      "description": "Recibe notificaciones sobre actualizaciones de tareas, comentarios y fechas límite"
+    },
+    "createTasks": {
+      "title": "Crear Tareas desde Slack",
+      "description": "Usa comandos slash para crear rápidamente tareas sin salir de Slack"
+    },
+    "collaboration": {
+      "title": "Colaboración en Equipo",
+      "description": "Mantén todo tu equipo sincronizado entre Worklenz y Slack"
+    }
+  },
+  "table": {
+    "project": "Proyecto",
+    "slackChannel": "Canal de Slack",
+    "notifications": "Notificaciones",
+    "active": "Activo",
+    "actions": "Acciones",
+    "channelConfigs": "Configuraciones de Canales de Slack",
+    "toggleStatus": "Cambiar estado para {{channel}}",
+    "editConfig": "Editar configuración para {{channel}}",
+    "deleteConfig": "Eliminar configuración para {{channel}}"
+  },
+  "modal": {
+    "configureChannel": "Configurar Canal de Slack",
+    "editChannel": "Editar Canal de Slack",
+    "project": "Proyecto",
+    "selectProject": "Seleccionar un proyecto",
+    "slackChannel": "Canal de Slack",
+    "selectSlackChannel": "Seleccionar un canal de Slack",
+    "notificationTypes": "Tipos de Notificación",
+    "selectNotificationTypes": "Seleccionar tipos de notificación",
+    "refreshChannels": "Actualizar",
+    "notificationOptions": {
+      "taskCreated": "Tarea creada",
+      "taskUpdated": "Tarea actualizada",
+      "taskCompleted": "Tarea completada",
+      "taskAssigned": "Tarea asignada",
+      "commentAdded": "Comentario agregado",
+      "statusChanged": "Estado cambiado",
+      "dueDateChanged": "Fecha de vencimiento cambiada",
+      "dueDateReminder": "Recordatorio de fecha de vencimiento",
+      "assigneeChanged": "Responsable cambiado",
+      "priorityChanged": "Prioridad cambiada"
+    },
+    "addConfiguration": "Agregar Configuración",
+    "updateConfiguration": "Actualizar Configuración"
+  },
+  "validation": {
+    "selectProject": "Por favor selecciona un proyecto",
+    "selectChannel": "Por favor selecciona un canal de Slack",
+    "selectNotifications": "Por favor selecciona al menos un tipo de notificación"
+  },
+  "messages": {
+    "connectedSuccess": "¡Espacio de trabajo de Slack conectado exitosamente!",
+    "installationCancelled": "Instalación de Slack cancelada",
+    "disconnectedSuccess": "Espacio de trabajo de Slack desconectado exitosamente",
+    "configAdded": "Configuración de canal agregada exitosamente",
+    "configUpdated": "Configuración de canal actualizada exitosamente",
+    "statusUpdated": "Estado del canal actualizado exitosamente",
+    "configRemoved": "Configuración de canal eliminada exitosamente",
+    "channelsRefreshed": "Canales actualizados exitosamente"
+  },
+  "errors": {
+    "connectionCheckFailed": "Falló la verificación de conexión de Slack",
+    "loadConfigsFailed": "Falló la carga de configuraciones de canales",
+    "loadChannelsFailed": "Falló la carga de canales disponibles",
+    "loadProjectsFailed": "Falló la carga de proyectos",
+    "initiateConnectionFailed": "Falló el inicio de conexión de Slack",
+    "connectionFailed": "Falló la conexión al espacio de trabajo de Slack",
+    "disconnectFailed": "Falló la desconexión del espacio de trabajo de Slack",
+    "addConfigFailed": "Falló agregar la configuración del canal",
+    "updateConfigFailed": "Falló actualizar la configuración del canal",
+    "updateStatusFailed": "Falló actualizar el estado del canal",
+    "removeConfigFailed": "Falló eliminar la configuración del canal",
+    "refreshChannelsFailed": "Falló actualizar los canales"
+  }
+}

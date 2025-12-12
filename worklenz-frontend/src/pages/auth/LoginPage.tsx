@@ -20,6 +20,7 @@ import {
   evt_login_with_email_click,
   evt_login_with_google_click,
   evt_login_remember_me_click,
+  evt_login_page_login,
 } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
@@ -100,6 +101,7 @@ const LoginPage: React.FC = () => {
   const onFinish = useCallback(
     async (values: LoginFormValues) => {
       try {
+        trackMixpanelEvent(evt_login_page_login);
         trackMixpanelEvent(evt_login_with_email_click);
 
         // if (teamId) {
@@ -132,6 +134,7 @@ const LoginPage: React.FC = () => {
 
   const handleGoogleLogin = useCallback(() => {
     try {
+      trackMixpanelEvent(evt_login_page_login);
       trackMixpanelEvent(evt_login_with_google_click);
       window.location.href = `${import.meta.env.VITE_API_URL}/secure/google`;
     } catch (error) {

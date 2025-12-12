@@ -1,88 +1,277 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAppSelector } from '../../../../hooks/useAppSelector';
 import {
   Button,
   Card,
   Flex,
-  Radio,
   Select,
+  Spin,
   Tabs,
   TabsProps,
+  Tag,
   Typography,
+  theme,
 } from '@/shared/antd-imports';
-import { ArrowLeftOutlined, DownOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, DownOutlined, PaperClipOutlined, FileTextOutlined } from '@ant-design/icons';
 import { colors } from '../../../../styles/colors';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useGetRequestDetailsQuery, useUpdateOrganizationRequestStatusMutation } from '../../../../api/client-portal/client-portal-api';
+import { message } from 'antd';
+import { durationDateFormat } from '../../../../utils/durationDateFormat';
+import ChatBoxWrapper from '../../chats/chat-container/chat-box/chat-box-wrapper';
+
+interface Attachment {
+  id: string;
+  url: string;
+  size: string;
+  filename: string;
+  originalName: string;
+}
 
 const ClientPortalRequestDetails = () => {
   // localization
   const { t: t1 } = useTranslation('client-portal-requests');
   const { t: t2 } = useTranslation('client-portal-common');
 
-  const { selectedRequestNo, requests } = useAppSelector(
-    state => state.clientsPortalReducer.requestsReducer
-  );
+  // Theme tokens for dark/light mode support
+  const { token } = theme.useToken();
 
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  // filter the seleted request
-  const selectedRequest = useMemo(() => {
-    return requests.find((request: any) => request.req_no === selectedRequestNo);
-  }, [requests, selectedRequestNo]);
+  // Fetch request details from API
+  const { data: requestData, isLoading } = useGetRequestDetailsQuery(id || '');
+  const selectedRequest = requestData?.body;
+
+  // Status update mutation
+  const [updateStatus, { isLoading: isUpdatingStatus }] = useUpdateOrganizationRequestStatusMutation();
+
+  // Check if request can be invoiced (not pending or rejected)
+  const canCreateInvoice = selectedRequest?.status && 
+    !['pending', 'rejected'].includes(selectedRequest.status);
+
+  // Navigate to invoice builder with request ID
+  const handleCreateInvoice = () => {
+    navigate(`/worklenz/client-portal/invoices/create?requestId=${id}`);
+  };
+
+  // Handle status change
+  const handleStatusChange = async (newStatus: string) => {
+    if (!id) return;
+    try {
+      await updateStatus({ id, status: newStatus }).unwrap();
+      message.success('Status updated successfully');
+    } catch (error) {
+      message.error('Failed to update status');
+    }
+  };
+
+  // Extract request_data fields
+  const requestInfo = selectedRequest?.request_data || {};
+  const attachments: Attachment[] = requestInfo.attachments || [];
+
+  // Helper to format file size
+  const formatFileSize = (bytes: string) => {
+    const size = parseInt(bytes, 10);
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  // Helper to get priority color
+  const getPriorityColor = (priority: string) => {
+    switch (priority?.toLowerCase()) {
+      case 'high':
+        return 'red';
+      case 'medium':
+        return 'orange';
+      case 'low':
+        return 'green';
+      default:
+        return 'default';
+    }
+  };
 
   const items: TabsProps['items'] = [
     {
       key: 'submission',
       label: t1('submissionTab'),
       children: (
-        <Flex vertical gap={24} style={{ height: 'calc(100vh - 400px)', overflowY: 'auto' }}>
+        <Flex vertical gap={24} style={{ height: 'calc(100vh - 400px)', overflowY: 'auto', paddingRight: 8 }}>
+          {/* Title */}
           <Flex vertical gap={4}>
-            <Typography.Text style={{ fontWeight: 600 }}>{t1('projectTitle')}</Typography.Text>
-            <Typography.Text>Animation video for worklenz</Typography.Text>
+            <Typography.Text style={{ fontWeight: 600 }}>{t1('titleLabel') || 'Title'}</Typography.Text>
+            <Typography.Text>{requestInfo.title || '-'}</Typography.Text>
           </Flex>
+
+          {/* Service */}
           <Flex vertical gap={4}>
-            <Typography.Text style={{ fontWeight: 600 }}>{t1('desiredLength')}</Typography.Text>
-            <Typography.Text>5</Typography.Text>
+            <Typography.Text style={{ fontWeight: 600 }}>{t1('serviceLabel') || 'Service'}</Typography.Text>
+            <Typography.Text>{selectedRequest?.service_name || '-'}</Typography.Text>
           </Flex>
+
+          {/* Client */}
           <Flex vertical gap={4}>
-            <Typography.Text style={{ fontWeight: 600 }}>
-              {t1('preferredVideoStyle')}
+            <Typography.Text style={{ fontWeight: 600 }}>{t1('clientLabel') || 'Client'}</Typography.Text>
+            <Typography.Text style={{ textTransform: 'capitalize' }}>
+              {selectedRequest?.client_name || '-'}
             </Typography.Text>
-            <Typography.Text>Animation</Typography.Text>
           </Flex>
+
+          {/* Priority */}
           <Flex vertical gap={4}>
-            <Typography.Text style={{ fontWeight: 600 }}>{t1('script')}</Typography.Text>
-            <Typography.Text>Animation</Typography.Text>
+            <Typography.Text style={{ fontWeight: 600 }}>{t1('priorityLabel') || 'Priority'}</Typography.Text>
+            {requestInfo.priority ? (
+              <Tag color={getPriorityColor(requestInfo.priority)} style={{ width: 'fit-content', textTransform: 'capitalize' }}>
+                {requestInfo.priority}
+              </Tag>
+            ) : (
+              <Typography.Text>-</Typography.Text>
+            )}
           </Flex>
+
+          {/* Description */}
           <Flex vertical gap={4}>
-            <Typography.Text style={{ fontWeight: 600 }}>{t1('voiceOver')}</Typography.Text>
-            <Radio.Group
-              name="radiogroup"
-              defaultValue={'option1'}
-              options={[
-                { value: 'option1', label: t1('iWillProvide') },
-                { value: 'option2', label: t1('needThatOneToo') },
-              ]}
-            />
+            <Typography.Text style={{ fontWeight: 600 }}>{t1('descriptionLabel') || 'Description'}</Typography.Text>
+            <Typography.Paragraph style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+              {requestInfo.description || selectedRequest?.notes || '-'}
+            </Typography.Paragraph>
           </Flex>
-          <Flex vertical gap={8}>
-            <Typography.Text style={{ fontWeight: 600 }}>{t1('samples')}</Typography.Text>
-            <img
-              src="https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcTNHXGJR2Nbpk5ntKmK7AXUjQXHNmPD2r1BZVj9ClQvMBpmzipx"
-              alt="sample"
-              style={{ width: 150, height: 150, objectFit: 'cover' }}
-            />
+
+          {/* Created At */}
+          <Flex vertical gap={4}>
+            <Typography.Text style={{ fontWeight: 600 }}>{t1('createdAtLabel') || 'Created At'}</Typography.Text>
+            <Typography.Text>
+              {selectedRequest?.created_at
+                ? durationDateFormat(new Date(selectedRequest.created_at))
+                : '-'}
+            </Typography.Text>
           </Flex>
+
+          {/* Attachments */}
+          {attachments.length > 0 && (
+            <Flex vertical gap={8}>
+              <Typography.Text style={{ fontWeight: 600 }}>
+                {t1('attachmentsLabel') || 'Attachments'} ({attachments.length})
+              </Typography.Text>
+              <Flex vertical gap={8}>
+                {attachments.map((attachment) => (
+                  <a
+                    key={attachment.id}
+                    href={attachment.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <Flex
+                      align="center"
+                      gap={8}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: 6,
+                        border: `1px solid ${token.colorBorder}`,
+                        background: token.colorBgLayout,
+                        cursor: 'pointer',
+                        width: 'fit-content',
+                      }}
+                    >
+                      <PaperClipOutlined />
+                      <Typography.Text ellipsis style={{ maxWidth: 300 }}>
+                        {attachment.originalName}
+                      </Typography.Text>
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        ({formatFileSize(attachment.size)})
+                      </Typography.Text>
+                    </Flex>
+                  </a>
+                ))}
+              </Flex>
+            </Flex>
+          )}
+
+          {/* Question Answers */}
+          {requestInfo.questionAnswers && requestInfo.questionAnswers.length > 0 && (
+            <Flex vertical gap={16}>
+              <Typography.Text style={{ fontWeight: 600, fontSize: 16 }}>
+                {t1('serviceQuestionsLabel') || 'Service Questions'}
+              </Typography.Text>
+              {requestInfo.questionAnswers.map((qa: {
+                question: string;
+                type: string;
+                answer: string | string[] | null;
+                attachments?: Array<{
+                  id?: string;
+                  url: string;
+                  filename: string;
+                  originalName: string;
+                  size: number;
+                }>;
+              }, index: number) => (
+                <Flex key={index} vertical gap={4} style={{ 
+                  padding: '12px 16px', 
+                  background: token.colorBgLayout, 
+                  borderRadius: 8,
+                  border: `1px solid ${token.colorBorderSecondary}`
+                }}>
+                  <Typography.Text style={{ fontWeight: 500 }}>
+                    {qa.question}
+                  </Typography.Text>
+                  {qa.type === 'attachment' ? (
+                    qa.attachments && qa.attachments.length > 0 ? (
+                      <Flex gap={8} wrap="wrap" style={{ marginTop: 4 }}>
+                        {qa.attachments.map((att, attIndex) => (
+                          <a
+                            key={attIndex}
+                            href={att.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ textDecoration: 'none' }}
+                          >
+                            <Tag icon={<PaperClipOutlined />} style={{ cursor: 'pointer' }}>
+                              {att.originalName}
+                            </Tag>
+                          </a>
+                        ))}
+                      </Flex>
+                    ) : (
+                      <Typography.Text type="secondary" style={{ fontStyle: 'italic' }}>
+                        {t1('noFilesUploaded') || 'No files uploaded'}
+                      </Typography.Text>
+                    )
+                  ) : (
+                    <Typography.Text style={{ whiteSpace: 'pre-wrap' }}>
+                      {qa.answer || (
+                        <Typography.Text type="secondary" style={{ fontStyle: 'italic' }}>
+                          {t1('noAnswer') || 'No answer provided'}
+                        </Typography.Text>
+                      )}
+                    </Typography.Text>
+                  )}
+                </Flex>
+              ))}
+            </Flex>
+          )}
         </Flex>
       ),
     },
     {
       key: 'chat',
       label: t1('chatTab'),
-      children: <div>chats</div>,
+      children: (
+        <div style={{ height: 'calc(100vh - 400px)', overflow: 'hidden' }}>
+          <ChatBoxWrapper />
+        </div>
+      ),
     },
   ];
+
+  if (isLoading) {
+    return (
+      <Flex justify="center" align="center" style={{ height: 'calc(100vh - 200px)' }}>
+        <Spin size="large" />
+      </Flex>
+    );
+  }
 
   return (
     <Flex vertical gap={24} style={{ width: '100%' }}>
@@ -100,20 +289,35 @@ const ClientPortalRequestDetails = () => {
           </Typography.Title>
         </Flex>
 
-        <Select
-          value={selectedRequest?.status}
-          options={[
-            { label: t2('pendingStatus'), value: 'pending' },
-            { label: t2('inProgressStatus'), value: 'inProgress' },
-            { label: t2('acceptedStatus'), value: 'accepted' },
-          ]}
-          onChange={value => console.log(value)}
-          variant="borderless"
-          labelRender={value => (
-            <Typography.Text style={{ color: colors.skyBlue }}>{value.label}</Typography.Text>
+        <Flex gap={12} align="center">
+          {canCreateInvoice && (
+            <Button
+              type="primary"
+              icon={<FileTextOutlined />}
+              onClick={handleCreateInvoice}
+            >
+              {t1('createInvoiceButton') || 'Create Invoice'}
+            </Button>
           )}
-          suffixIcon={<DownOutlined style={{ color: colors.skyBlue }} />}
-        />
+          <Select
+            value={selectedRequest?.status}
+            options={[
+              { label: t2('pending'), value: 'pending' },
+              { label: t2('accepted'), value: 'accepted' },
+              { label: t2('inProgress'), value: 'in_progress' },
+              { label: t2('completed'), value: 'completed' },
+              { label: t2('rejected'), value: 'rejected' },
+            ]}
+            onChange={handleStatusChange}
+            loading={isUpdatingStatus}
+            disabled={isUpdatingStatus}
+            variant="borderless"
+            labelRender={value => (
+              <Typography.Text style={{ color: colors.skyBlue }}>{value.label}</Typography.Text>
+            )}
+            suffixIcon={<DownOutlined style={{ color: colors.skyBlue }} />}
+          />
+        </Flex>
       </Flex>
       <Card style={{ height: 'cal(100vh - 330px)' }}>
         <Tabs

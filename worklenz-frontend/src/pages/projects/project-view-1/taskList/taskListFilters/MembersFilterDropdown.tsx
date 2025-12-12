@@ -19,6 +19,10 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { colors } from '@/styles/colors';
 import CustomAvatar from '@components/CustomAvatar';
 import { useTranslation } from 'react-i18next';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_project_task_list_search_task } from '@/shared/worklenz-analytics-events';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { FilterSortEventProps } from '@/types/mixpanel-events.types';
 
 const MembersFilterDropdown = () => {
   const [selectedCount, setSelectedCount] = useState<number>(0);
@@ -29,6 +33,8 @@ const MembersFilterDropdown = () => {
   const { t } = useTranslation('task-list-filters');
 
   const membersList = [...members, useAppSelector(state => state.memberReducer.owner)];
+  const { projectId } = useAppSelector(state => state.projectReducer);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
@@ -45,6 +51,12 @@ const MembersFilterDropdown = () => {
   // handle selected filters count
   const handleSelectedFiltersCount = (checked: boolean) => {
     setSelectedCount(prev => (checked ? prev + 1 : prev - 1));
+    const props: FilterSortEventProps = {
+      filter_type: 'assignee',
+      sort_order: 'asc',
+      project_id: projectId || undefined,
+    };
+    trackMixpanelEvent(evt_project_task_list_search_task, props);
   };
 
   // custom dropdown content

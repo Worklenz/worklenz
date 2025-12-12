@@ -1,4 +1,4 @@
-import { Flex, Typography, Button, Badge, Tooltip } from '@/shared/antd-imports';
+import { Flex, Typography, Button, Tooltip } from '@/shared/antd-imports';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import ChatBoxWrapper from './chat-container/chat-box/chat-box-wrapper';
@@ -6,43 +6,40 @@ import { MessageOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useGetChatsQuery } from '../../../api/client-portal/client-portal-api';
 import { useAppSelector } from '../../../hooks/useAppSelector';
 import { useResponsive } from '../../../hooks/useResponsive';
+import { useMixpanelTracking } from '../../../hooks/useMixpanelTracking';
+import { MixpanelEvents, ClientPortalEventProps, ClientPortalActionEventProps } from '../../../types/mixpanel-events.types';
 
 const ClientPortalChats = () => {
   // localization
   const { t } = useTranslation('client-portal-chats');
   const { isDesktop } = useResponsive();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   // API hooks
   const { data: chats, isLoading, error, refetch } = useGetChatsQuery();
 
-  // Get unread count from local state or API
-  const localChatList = useAppSelector(state => state.clientsPortalReducer.chatsReducer.chatList);
+  // Track page visit
+  useEffect(() => {
+    const pageEventProps: ClientPortalEventProps = {
+      page: 'chats',
+      section: 'client_portal',
+      total_items: chats?.length || 0,
+      source: 'direct_visit'
+    };
 
-  // Safely calculate unread count with comprehensive error handling
-  const unreadCount = React.useMemo(() => {
-    try {
-      // Check if chats from API is available and is an array
-      if (chats && Array.isArray(chats)) {
-        return chats.reduce((total, chat) => {
-          const unread = chat?.unreadCount || 0;
-          return total + (typeof unread === 'number' ? unread : 0);
-        }, 0);
-      }
-
-      // Fallback to local chat list
-      if (localChatList && Array.isArray(localChatList)) {
-        return localChatList.filter(chat => chat?.status === 'unread').length;
-      }
-
-      // Default to 0 if neither is available
-      return 0;
-    } catch (error) {
-      console.error('Error calculating unread count:', error);
-      return 0;
-    }
-  }, [chats, localChatList]);
+    trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_PAGE_VISITED, pageEventProps);
+  }, [trackMixpanelEvent, chats]);
 
   const handleRefresh = () => {
+    const actionProps: ClientPortalActionEventProps = {
+      action_type: 'refresh',
+      item_type: 'chat',
+      page: 'chats',
+      section: 'client_portal',
+      source: 'refresh_button'
+    };
+
+    trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_CHAT_REFRESHED, actionProps);
     refetch();
   };
 
@@ -68,15 +65,6 @@ const ClientPortalChats = () => {
               >
                 {t('title') || 'Messages'}
               </Typography.Title>
-              {unreadCount > 0 && (
-                <Badge
-                  count={unreadCount}
-                  style={{
-                    backgroundColor: '#ff4d4f',
-                    marginLeft: 8,
-                  }}
-                />
-              )}
             </Flex>
             <Typography.Text
               type="secondary"

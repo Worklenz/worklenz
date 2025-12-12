@@ -125,7 +125,12 @@
     "toggleTheme": "Ndryshoni temën",
     "switchToLight": "Kaloni në temën e ndriçuar",
     "switchToDark": "Kaloni në temën e errët",
-    "closeModal": "Mbyllni modalin e çmimeve"
+    "closeModal": "Mbyllni modalin e çmimeve",
+    "loadingPlans": "Duke ngarkuar planet...",
+    "selectPlan": "Zgjidhni një Plan",
+    "switchToFree": "Kaloni në Planin Falas",
+    "planSummary": "Plani {{planName}} - ${{total}}{{period}}{{userText}}",
+    "planSummaryNoName": "${{total}}{{period}}{{userText}}"
   },
   "userTypes": {
     "trial": {

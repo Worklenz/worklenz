@@ -21,7 +21,7 @@ i18n
       caches: ['localStorage'],
     },
 
-    debug: process.env.NODE_ENV === 'development',
+    debug: false,
 
     backend: {
       loadPath: '/locales/{{lng}}/{{ns}}.json',

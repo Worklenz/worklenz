@@ -10,5 +10,9 @@
   "team-members": "Teammitglieder",
   "teams": "Teams",
   "change-password": "Passwort ändern",
-  "language-and-region": "Sprache und Region"
+  "language-and-region": "Sprache und Region",
+  "appearance": "Erscheinungsbild",
+  "integrations": "Integrationen",
+  "account-deletion": "Konto löschen",
+  "team-hierarchy": "Teamhierarchie"
 }

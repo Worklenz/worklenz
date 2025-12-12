@@ -83,6 +83,7 @@ import taskManagementReducer from '@/features/task-management/task-management.sl
 import groupingReducer from '@/features/task-management/grouping.slice';
 import selectionReducer from '@/features/task-management/selection.slice';
 import homePageApiService from '@/api/home-page/home-page.api.service';
+import personalOverviewApi from '@/api/personal-overview/personal-overview.api.service';
 import { projectsApi } from '@/api/projects/projects.v1.api.service';
 import { userActivityApiService } from '@/api/home-page/user-activity.api.service';
 import { roadmapApi } from '@/pages/projects/projectView/gantt/services/roadmap-api.service';
@@ -114,6 +115,7 @@ export const store = configureStore({
       serializableCheck: false,
     }).concat(
       homePageApiService.middleware,
+      personalOverviewApi.middleware,
       projectsApi.middleware,
       clientPortalApi.middleware,
       userActivityApiService.middleware,
@@ -132,6 +134,7 @@ export const store = configureStore({
     // Home Page
     homePageReducer: homePageReducer,
     [homePageApiService.reducerPath]: homePageApiService.reducer,
+    [personalOverviewApi.reducerPath]: personalOverviewApi.reducer,
     [projectsApi.reducerPath]: projectsApi.reducer,
     [clientPortalApi.reducerPath]: clientPortalApi.reducer,
     [roadmapApi.reducerPath]: roadmapApi.reducer,

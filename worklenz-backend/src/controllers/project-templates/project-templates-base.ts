@@ -5,7 +5,7 @@ import { logStatusChange } from "../../services/activity-logs/activity-logs.serv
 import { getColor, int, log_error } from "../../shared/utils";
 import { generateProjectKey } from "../../utils/generate-project-key";
 import WorklenzControllerBase from "../worklenz-controller-base";
-import { ICustomProjectTemplate, ICustomTemplatePhase, IProjectTemplate, IProjectTemplateLabel, IProjectTemplatePhase, IProjectTemplateStatus, IProjectTemplateTask, ITaskIncludes } from "./interfaces";
+import { ICustomProjectTemplate, ICustomTemplatePhase, IProjectTemplate, IProjectTemplateLabel, IProjectTemplatePhase, IProjectTemplateStatus, IProjectTemplateTask, ITaskIncludes, ICustomColumnWithConfig, IColumnConfiguration, ISelectionOption, ILabelOption } from "./interfaces";
 
 export default abstract class ProjectTemplatesControllerBase extends WorklenzControllerBase {
 
@@ -516,6 +516,296 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
       }
     } catch (error) {
       log_error(error);
+    }
+  }
+
+  @HandleExceptions()
+  protected static async getProjectCustomColumns(project_id: string): Promise<ICustomColumnWithConfig[]> {
+    const q = `
+      SELECT 
+        cc.id,
+        cc.name,
+        cc.key,
+        cc.field_type,
+        cc.width,
+        cc.is_visible,
+        cc.is_custom_column,
+        (
+          SELECT ROW_TO_JSON(config) 
+          FROM (
+            SELECT 
+              field_title,
+              field_type,
+              number_type,
+              decimals,
+              label,
+              label_position,
+              expression,
+              first_numeric_column_key,
+              second_numeric_column_key
+            FROM cc_column_configurations 
+            WHERE column_id = cc.id
+          ) config
+        ) AS configuration,
+        (
+          SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(sel))), '[]'::JSON)
+          FROM (
+            SELECT 
+              selection_id,
+              selection_name,
+              selection_color,
+              selection_order
+            FROM cc_selection_options
+            WHERE column_id = cc.id
+            ORDER BY selection_order
+          ) sel
+        ) AS selection_options,
+        (
+          SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(lbl))), '[]'::JSON)
+          FROM (
+            SELECT 
+              label_id,
+              label_name,
+              label_color,
+              label_order
+            FROM cc_label_options
+            WHERE column_id = cc.id
+            ORDER BY label_order
+          ) lbl
+        ) AS label_options
+      FROM cc_custom_columns cc
+      WHERE cc.project_id = $1
+      ORDER BY cc.created_at;
+    `;
+    const result = await db.query(q, [project_id]);
+    return result.rows;
+  }
+
+  @HandleExceptions()
+  protected static async insertCustomTemplateColumns(columns: ICustomColumnWithConfig[], template_id: string): Promise<void> {
+    for (const column of columns) {
+      // Insert the custom column
+      const columnQuery = `
+        INSERT INTO cpt_custom_columns (
+          template_id, name, key, field_type, width, 
+          is_visible, is_custom_column, sort_order
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING id;
+      `;
+      const columnResult = await db.query(columnQuery, [
+        template_id,
+        column.name,
+        column.key,
+        column.field_type,
+        column.width || 150,
+        column.is_visible !== false,
+        column.is_custom_column !== false,
+        column.sort_order || 0
+      ]);
+      const columnId = columnResult.rows[0].id;
+
+      // Insert column configuration if exists
+      if (column.configuration) {
+        const configQuery = `
+          INSERT INTO cpt_column_configurations (
+            column_id, field_title, field_type, number_type, decimals,
+            label, label_position, expression, first_numeric_column_id, second_numeric_column_id
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);
+        `;
+        await db.query(configQuery, [
+          columnId,
+          column.configuration.field_title,
+          column.configuration.field_type,
+          column.configuration.number_type,
+          column.configuration.decimals,
+          column.configuration.label,
+          column.configuration.label_position,
+          column.configuration.expression,
+          column.configuration.first_numeric_column_id,
+          column.configuration.second_numeric_column_id
+        ]);
+      }
+
+      // Insert selection options if they exist
+      if (column.selection_options && column.selection_options.length > 0) {
+        for (const option of column.selection_options) {
+          const selectionQuery = `
+            INSERT INTO cpt_selection_options (
+              column_id, selection_id, selection_name, selection_color, selection_order
+            ) VALUES ($1, $2, $3, $4, $5);
+          `;
+          await db.query(selectionQuery, [
+            columnId,
+            option.selection_id,
+            option.selection_name,
+            option.selection_color,
+            option.selection_order
+          ]);
+        }
+      }
+
+      // Insert label options if they exist
+      if (column.label_options && column.label_options.length > 0) {
+        for (const option of column.label_options) {
+          const labelQuery = `
+            INSERT INTO cpt_label_options (
+              column_id, label_id, label_name, label_color, label_order
+            ) VALUES ($1, $2, $3, $4, $5);
+          `;
+          await db.query(labelQuery, [
+            columnId,
+            option.label_id,
+            option.label_name,
+            option.label_color,
+            option.label_order
+          ]);
+        }
+      }
+    }
+  }
+
+  @HandleExceptions()
+  protected static async getTemplateCustomColumns(template_id: string): Promise<ICustomColumnWithConfig[]> {
+    const q = `
+      SELECT 
+        cc.id,
+        cc.name,
+        cc.key,
+        cc.field_type,
+        cc.width,
+        cc.is_visible,
+        cc.is_custom_column,
+        cc.sort_order,
+        (
+          SELECT ROW_TO_JSON(config) 
+          FROM (
+            SELECT 
+              field_title,
+              field_type,
+              number_type,
+              decimals,
+              label,
+              label_position,
+              expression,
+              first_numeric_column_id,
+              second_numeric_column_id
+            FROM cpt_column_configurations 
+            WHERE column_id = cc.id
+          ) config
+        ) AS configuration,
+        (
+          SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(sel))), '[]'::JSON)
+          FROM (
+            SELECT 
+              selection_id,
+              selection_name,
+              selection_color,
+              selection_order
+            FROM cpt_selection_options
+            WHERE column_id = cc.id
+            ORDER BY selection_order
+          ) sel
+        ) AS selection_options,
+        (
+          SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(lbl))), '[]'::JSON)
+          FROM (
+            SELECT 
+              label_id,
+              label_name,
+              label_color,
+              label_order
+            FROM cpt_label_options
+            WHERE column_id = cc.id
+            ORDER BY label_order
+          ) lbl
+        ) AS label_options
+      FROM cpt_custom_columns cc
+      WHERE cc.template_id = $1
+      ORDER BY cc.sort_order, cc.created_at;
+    `;
+    const result = await db.query(q, [template_id]);
+    return result.rows;
+  }
+
+  @HandleExceptions()
+  protected static async insertProjectCustomColumns(columns: ICustomColumnWithConfig[], project_id: string): Promise<void> {
+    for (const column of columns) {
+      // Insert the custom column for the new project
+      const columnQuery = `
+        INSERT INTO cc_custom_columns (
+          project_id, name, key, field_type, width, 
+          is_visible, is_custom_column
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING id;
+      `;
+      const columnResult = await db.query(columnQuery, [
+        project_id,
+        column.name,
+        column.key,
+        column.field_type,
+        column.width || 150,
+        column.is_visible !== false,
+        column.is_custom_column !== false
+      ]);
+      const columnId = columnResult.rows[0].id;
+
+      // Insert column configuration if exists
+      if (column.configuration) {
+        const configQuery = `
+          INSERT INTO cc_column_configurations (
+            column_id, field_title, field_type, number_type, decimals,
+            label, label_position, expression, first_numeric_column_key, second_numeric_column_key
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);
+        `;
+        await db.query(configQuery, [
+          columnId,
+          column.configuration.field_title,
+          column.configuration.field_type,
+          column.configuration.number_type,
+          column.configuration.decimals,
+          column.configuration.label,
+          column.configuration.label_position,
+          column.configuration.expression,
+          column.configuration.first_numeric_column_key || column.configuration.first_numeric_column_id,
+          column.configuration.second_numeric_column_key || column.configuration.second_numeric_column_id
+        ]);
+      }
+
+      // Insert selection options if they exist
+      if (column.selection_options && column.selection_options.length > 0) {
+        for (const option of column.selection_options) {
+          const selectionQuery = `
+            INSERT INTO cc_selection_options (
+              column_id, selection_id, selection_name, selection_color, selection_order
+            ) VALUES ($1, $2, $3, $4, $5);
+          `;
+          await db.query(selectionQuery, [
+            columnId,
+            option.selection_id,
+            option.selection_name,
+            option.selection_color,
+            option.selection_order
+          ]);
+        }
+      }
+
+      // Insert label options if they exist
+      if (column.label_options && column.label_options.length > 0) {
+        for (const option of column.label_options) {
+          const labelQuery = `
+            INSERT INTO cc_label_options (
+              column_id, label_id, label_name, label_color, label_order
+            ) VALUES ($1, $2, $3, $4, $5);
+          `;
+          await db.query(labelQuery, [
+            columnId,
+            option.label_id,
+            option.label_name,
+            option.label_color,
+            option.label_order
+          ]);
+        }
+      }
     }
   }
 }

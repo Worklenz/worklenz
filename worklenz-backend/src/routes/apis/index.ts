@@ -20,6 +20,8 @@ import taskCommentsApiRouter from "./task-comments-api-router";
 import taskWorkLogApiRouter from "./task-work-log-api-router";
 import tasksApiRouter from "./tasks-api-router";
 import teamMembersApiRouter from "./team-members-api-router";
+import teamManagementApiRouter from "./team-management-api-router";
+import teamLeadReportsApiRouter from "./team-lead-reports-api-router";
 import teamsApiRouter from "./teams-api-router";
 import timezonesApiRouter from "./timezones-api-router";
 import todoListApiRouter from "./todo-list-api-router";
@@ -32,6 +34,7 @@ import projectInsightsApiRouter from "./project-insights-api-router";
 import passwordValidator from "../../middlewares/validators/password-validator";
 import adminCenterApiRouter from "./admin-center-api-router";
 import reportingApiRouter from "./reporting-api-router";
+import teamLeadReportingApiRouter from "./team-lead-reporting-api-router";
 import activityLogsApiRouter from "./activity-logs-api-router";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import projectFoldersApiRouter from "./project-folders-api-router";
@@ -54,6 +57,7 @@ import projectManagerApiRouter from "./project-managers-api-router";
 import surveyApiRouter from "./survey-api-router";
 
 import billingApiRouter from "./billing-api-router";
+import planTrialApiRouter from "./plan-trial-api-router";
 import taskDependenciesApiRouter from "./task-dependencies-api-router";
 
 import taskRecurringApiRouter from "./task-recurring-api-router";
@@ -71,11 +75,15 @@ import migrationApiRouter from "./migration-api-router";
 import subscriptionsApiRouter from "./subscriptions-api-router";
 import plansApiRouter from "./plans-api-router";
 import usersApiRouter from "./users-api-router";
+import clientPortalApiRouter from "./client-portal-api-router";
+import slackApiRouter from "./slack-api-router";
 
 const api = express.Router();
 
 api.use("/projects", projectsApiRouter);
 api.use("/team-members", teamMembersApiRouter);
+api.use("/team-management", teamManagementApiRouter);
+api.use("/team-lead-reports", teamLeadReportsApiRouter);
 api.use("/job-titles", jobTitlesApiRouter);
 api.use("/clients", clientsApiRouter);
 api.use("/teams", teamsApiRouter);
@@ -99,6 +107,7 @@ api.use("/task-templates", taskTemplatesApiRouter);
 api.use("/project-insights", projectInsightsApiRouter);
 api.use("/admin-center", adminCenterApiRouter);
 api.use("/reporting", reportingApiRouter);
+api.use("/reporting", teamLeadReportingApiRouter);
 api.use("/activity-logs", activityLogsApiRouter);
 api.use("/projects-folders", projectFoldersApiRouter);
 api.use("/task-phases", taskPhasesApiRouter);
@@ -126,6 +135,7 @@ api.get("/access-controls/roles", safeControllerFunction(AccessControlsControlle
 api.get("/logs/my-dashboard", safeControllerFunction(LogsController.getActivityLog));
 
 api.use("/billing", billingApiRouter);
+api.use("/plan-trials", planTrialApiRouter);
 api.use("/task-dependencies", taskDependenciesApiRouter);
 
 api.use("/task-recurring", taskRecurringApiRouter);
@@ -151,5 +161,11 @@ api.use("/migration", migrationApiRouter);
 api.use("/subscriptions", subscriptionsApiRouter);
 api.use("/plans", plansApiRouter);
 api.use("/users", usersApiRouter);
+
+// Client portal APIs
+api.use("/client-portal", clientPortalApiRouter);
+
+// Slack integration APIs
+api.use("/slack", slackApiRouter);
 
 export default api;

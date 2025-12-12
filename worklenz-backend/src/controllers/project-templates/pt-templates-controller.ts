@@ -137,7 +137,7 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
         }
     })
     public static async createCustomTemplate(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-        const { project_id, templateName, projectIncludes, taskIncludes } = req.body;
+        const { project_id, templateName, projectIncludes, taskIncludes, includeCustomColumns } = req.body;
         const team_id = req.user?.team_id || null;
 
         if (!team_id || !project_id) return res.status(400).send(new ServerResponse(false, {}));
@@ -172,6 +172,17 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
             if (phases) await this.insertCustomTemplatePhases(phases, template_id);
             if (status) await this.insertCustomTemplateStatus(status, template_id, team_id);
             if (tasks) await this.insertCustomTemplateTasks(tasks, template_id, team_id);
+            
+            // Handle custom columns if requested
+            if (includeCustomColumns) {
+                const customColumns = await this.getProjectCustomColumns(project_id);
+                if (customColumns && customColumns.length > 0) {
+                    await this.insertCustomTemplateColumns(customColumns, template_id);
+                    // Update the template to indicate it includes custom columns
+                    const updateQuery = `UPDATE custom_project_templates SET include_custom_columns = TRUE WHERE id = $1;`;
+                    await db.query(updateQuery, [template_id]);
+                }
+            }
         }
 
         return res.status(200).send(new ServerResponse(true, {}, "Project template created successfully."));
@@ -246,6 +257,16 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
             await this.insertProjectPhases(data.phases, project_id as string);
             await this.insertProjectStatuses(data.status, project_id as string, data.team_id);
             await this.insertProjectTasksFromCustom(data.tasks, data.team_id, project_id as string, data.user_id, IO.getSocketById(req.user?.socket_id as string));
+
+            // Check if template includes custom columns and import them
+            const templateInfoQuery = `SELECT include_custom_columns FROM custom_project_templates WHERE id = $1;`;
+            const templateInfo = await db.query(templateInfoQuery, [template_id]);
+            if (templateInfo.rows[0]?.include_custom_columns) {
+                const customColumns = await this.getTemplateCustomColumns(template_id);
+                if (customColumns && customColumns.length > 0) {
+                    await this.insertProjectCustomColumns(customColumns, project_id as string);
+                }
+            }
 
             return res.status(200).send(new ServerResponse(true, { project_id }));
         }

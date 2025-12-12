@@ -20,7 +20,14 @@ export function isTeamAdmin(user: IPassportSession | undefined): boolean {
 }
 
 /**
- * Check if user is team lead specifically
+ * Check if user is team lead specifically (from session)
+ */
+export function isTeamLeadFromSession(user: IPassportSession | undefined): boolean {
+  return user?.role_name === "Team Lead";
+}
+
+/**
+ * Check if user is team lead specifically (database query)
  */
 export async function isTeamLead(userId: string, teamId: string): Promise<boolean> {
   if (!userId || !teamId) return false;
@@ -65,6 +72,19 @@ export function canManageTeamProjects(user: IPassportSession | undefined): boole
 /**
  * Get user's role name within a team
  */
+export async function getManagedMembers(teamMemberId: string): Promise<string[]> {
+  if (!teamMemberId) return [];
+
+  const q = `
+    SELECT managed_member_id 
+    FROM team_lead_managed_members 
+    WHERE manager_id = $1::UUID;
+  `;
+
+  const result = await db.query(q, [teamMemberId]);
+  return result.rows.map(row => row.managed_member_id);
+}
+
 export async function getUserRoleInTeam(userId: string, teamId: string): Promise<string | null> {
   if (!userId || !teamId) return null;
   

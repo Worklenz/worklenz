@@ -165,30 +165,6 @@ const CustomColumnModal = () => {
       label: t('customColumns.fieldTypes.selection'),
       disabled: false,
     },
-    {
-      key: 'checkbox',
-      value: 'checkbox',
-      label: t('customColumns.fieldTypes.checkbox'),
-      disabled: true,
-    },
-    {
-      key: 'labels',
-      value: 'labels',
-      label: t('customColumns.fieldTypes.labels'),
-      disabled: true,
-    },
-    {
-      key: 'key',
-      value: 'key',
-      label: t('customColumns.fieldTypes.key'),
-      disabled: true,
-    },
-    {
-      key: 'formula',
-      value: 'formula',
-      label: t('customColumns.fieldTypes.formula'),
-      disabled: true,
-    },
   ];
 
   // function to handle form submit

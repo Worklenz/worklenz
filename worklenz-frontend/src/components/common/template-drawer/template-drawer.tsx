@@ -25,6 +25,8 @@ import {
 import './template-drawer.css';
 import { SearchOutlined } from '@/shared/antd-imports';
 import logger from '@/utils/errorLogger';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_project_import_from_template_click, evt_project_import_tasks_click } from '@/shared/worklenz-analytics-events';
 
 const { Title, Text } = Typography;
 
@@ -44,6 +46,7 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
   const themeMode = useSelector((state: RootState) => state.themeReducer.mode);
   const { token } = theme.useToken();
   const { t } = useTranslation('template-drawer');
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [templates, setTemplates] = useState<IWorklenzTemplate[]>([]);
@@ -103,6 +106,8 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
 
   useEffect(() => {
     getTemplates();
+    // Track opening of the template drawer
+    trackMixpanelEvent(evt_project_import_from_template_click, { source: 'template_drawer' });
   }, []);
 
   const menuItems: MenuProps['items'] = templates.map(template => ({
@@ -114,6 +119,11 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
   const handleMenuClick = (templateId: string) => {
     templateSelected(templateId);
     getSelectedTemplate(templateId);
+    // Track Worklenz template selection
+    trackMixpanelEvent(evt_project_import_tasks_click, {
+      selected_template_id: templateId,
+      template_type: 'worklenz',
+    });
   };
 
   const filteredCustomTemplates = customTemplates.filter(template =>
@@ -329,6 +339,11 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
     setCustomTemplates(updatedCustomTemplates);
     templateSelected(templateId);
     selectedTemplateType('custom');
+    // Track Custom template selection
+    trackMixpanelEvent(evt_project_import_tasks_click, {
+      selected_template_id: templateId,
+      template_type: 'custom',
+    });
   };
 
   const customTemplatesContent = (
@@ -398,9 +413,11 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
     if (key === '1') {
       getTemplates();
       selectedTemplateType('worklenz');
+      trackMixpanelEvent(evt_project_import_from_template_click, { template_tab: 'worklenz' });
     } else {
       getCustomTemplates();
       selectedTemplateType('custom');
+      trackMixpanelEvent(evt_project_import_from_template_click, { template_tab: 'custom' });
     }
   };
 

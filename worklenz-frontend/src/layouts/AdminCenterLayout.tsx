@@ -1,12 +1,12 @@
 import { Flex, Typography } from '@/shared/antd-imports';
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { useMediaQuery } from 'react-responsive';
+import { useDebouncedMediaQuery } from '@/hooks/useDebouncedMediaQuery';
 import AdminCenterSidebar from '@/pages/admin-center/sidebar/sidebar';
 import { useTranslation } from 'react-i18next';
 
 const AdminCenterLayout: React.FC = () => {
-  const isTablet = useMediaQuery({ query: '(min-width:768px)' });
+  const isTablet = useDebouncedMediaQuery({ query: '(min-width:768px)' });
   const { t } = useTranslation('admin-center/sidebar');
 
   return (

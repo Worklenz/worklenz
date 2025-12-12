@@ -29,7 +29,7 @@ const api = createApi({
     },
     credentials: 'include',
   }),
-  tagTypes: ['personalTasks', 'projects', 'teamProjects'],
+  tagTypes: ['personalTasks', 'projects', 'teamProjects', 'myTasks', 'taskCounts'],
   endpoints: builder => ({
     getPersonalTasks: builder.query<IServerResponse<IMyTask[]>, void>({
       query: () => `${rootUrl}/personal-tasks`,
@@ -60,12 +60,22 @@ const api = createApi({
         })}`;
         return url;
       },
+      providesTags: ['myTasks'],
     }),
     getProjects: builder.query<IServerResponse<IProject[]>, { view: number }>({
       query: ({ view }) => `${rootUrl}/projects?view=${view}`,
     }),
     getProjectsByTeam: builder.query<IServerResponse<IProject[]>, void>({
       query: () => `${rootUrl}/team-projects`,
+    }),
+    getTaskCountsByMonth: builder.query<
+      IServerResponse<Array<{ date: string; count: number }>>,
+      { month: string; group_by: number; time_zone: string }
+    >({
+      query: ({ month, group_by, time_zone }) =>
+        `${rootUrl}/task-counts${toQueryString({ month, group_by, time_zone })}`,
+      providesTags: ['taskCounts'],
+      keepUnusedDataFor: 300, // Cache for 5 minutes
     }),
   }),
 });
@@ -77,6 +87,8 @@ export const {
   useGetProjectsQuery,
   useGetProjectsByTeamQuery,
   useMarkPersonalTaskAsDoneMutation,
+  useGetTaskCountsByMonthQuery,
+  util: { invalidateTags },
 } = api;
 
 export default api;

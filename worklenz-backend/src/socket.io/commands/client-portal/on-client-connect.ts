@@ -43,7 +43,7 @@ export async function on_client_connect(io: Server, socket: Socket, data: any) {
         id: client.id,
         name: client.name || client.user_name,
         type: 'client',
-        organizationId: client.organization_team_id,
+        organizationId: client.organization_id,
         email: client.email
       };
 
