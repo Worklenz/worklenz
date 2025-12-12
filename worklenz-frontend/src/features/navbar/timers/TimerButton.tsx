@@ -1,4 +1,4 @@
-import { ClockCircleOutlined } from '@/shared/antd-imports';
+import { FieldTimeOutlined } from '@/shared/antd-imports';
 import {
   Badge,
   Button,
@@ -581,15 +581,17 @@ const TimerButton = () => {
       >
         <Tooltip title={t('timerButton.runningTimers')}>
           <Button
-            style={{ height: '62px', width: '60px' }}
+            style={
+              { height: '62px', width: '60px' }
+            }
             type="text"
             icon={
               hasRunningTimers() ? (
                 <Badge count={timerCount()}>
-                  <ClockCircleOutlined style={{ fontSize: 20 }} />
+                  <FieldTimeOutlined style={{ fontSize: 22 }} />
                 </Badge>
               ) : (
-                <ClockCircleOutlined style={{ fontSize: 20 }} />
+                <FieldTimeOutlined style={{ fontSize: 22 }} />
               )
             }
             loading={loading}
@@ -604,7 +606,7 @@ const TimerButton = () => {
         <Button
           style={{ height: '62px', width: '60px' }}
           type="text"
-          icon={<ClockCircleOutlined style={{ fontSize: 24 }} />}
+          icon={<FieldTimeOutlined style={{ fontSize: 24 }} />}
           disabled
         />
       </Tooltip>
