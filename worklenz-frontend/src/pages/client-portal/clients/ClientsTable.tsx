@@ -58,7 +58,7 @@ import {
   useResendClientInvitationMutation,
 } from '@/api/client-portal/client-portal-api';
 import { TempClientPortalClientType } from '@/types/client-portal/temp-client-portal.types';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import './clients-table.css';
 
@@ -90,6 +90,18 @@ const ClientsTable = () => {
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [currentClientId, setCurrentClientId] = useState<string>('');
 
+  // Memoize query parameters to ensure RTK Query detects changes correctly
+  const queryParams = useMemo(
+    () => ({
+      page: pagination.page,
+      limit: pagination.limit,
+      search: filters.search,
+      status: filters.status === 'all' ? undefined : filters.status,
+      sortBy: filters.sortBy,
+      sortOrder: filters.sortOrder,
+    }),
+    [pagination.page, pagination.limit, filters.search, filters.status, filters.sortBy, filters.sortOrder]
+  );
 
   // RTK Query hooks
   const {
@@ -97,13 +109,8 @@ const ClientsTable = () => {
     isLoading,
     error,
     refetch,
-  } = useGetClientsQuery({
-    page: pagination.page,
-    limit: pagination.limit,
-    search: filters.search,
-    status: filters.status === 'all' ? undefined : filters.status,
-    sortBy: filters.sortBy,
-    sortOrder: filters.sortOrder,
+  } = useGetClientsQuery(queryParams, {
+    refetchOnMountOrArgChange: true, // Ensure query refetches when parameters change
   });
 
   const [deactivateClient, { isLoading: isDeactivating }] = useDeactivateClientMutation();
@@ -191,8 +198,19 @@ const ClientsTable = () => {
 
   // Handle pagination
   const handlePaginationChange = (page: number, pageSize: number) => {
-    dispatch(setPage(page));
-    dispatch(setLimit(pageSize));
+    // Only update what actually changed to avoid unnecessary resets
+    // If we always call setLimit, it will reset page to 1 even when limit hasn't changed
+    if (page !== pagination.page) {
+      dispatch(setPage(page));
+    }
+    if (pageSize !== pagination.limit) {
+      dispatch(setLimit(pageSize));
+    }
+  };
+
+  // Handle page size change separately (resets to page 1)
+  const handlePageSizeChange = (_current: number, size: number) => {
+    dispatch(setLimit(size)); // This will reset page to 1 in the slice
   };
 
   // Handle refresh
@@ -724,12 +742,11 @@ const ClientsTable = () => {
             pageSize={pagination.limit}
             total={totalClients}
             showSizeChanger
-            showQuickJumper
             showTotal={(total, range) =>
               `${t('paginationText', { defaultValue: 'Showing' })} ${range[0]}-${range[1]} ${t('ofText', { defaultValue: 'of' })} ${total} ${t('clientsText', { defaultValue: 'clients' })}`
             }
             onChange={handlePaginationChange}
-            onShowSizeChange={handlePaginationChange}
+            onShowSizeChange={handlePageSizeChange}
           />
         </Flex>
       )}
