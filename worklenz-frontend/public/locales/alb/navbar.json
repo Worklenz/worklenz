@@ -31,5 +31,21 @@
     "accept": "Prano",
     "acceptAndJoin": "Prano & Bashkohu",
     "noNotifications": "Asnjë njoftim"
+  },
+  "timerButton": {
+    "runningTimers": "Kohëmatësit në Punë",
+    "recentTimeLogs": "Regjistrat e Kohës së Fundit",
+    "unnamedTask": "Detyrë pa Emër",
+    "unnamedProject": "Projekt pa Emër",
+    "parent": "Prind",
+    "started": "Filluar",
+    "noTimersOrLogs": "Asnjë kohëmatës ose regjistër",
+    "errorLoadingTimers": "Gabim në ngarkimin e kohëmatësve",
+    "errorRenderingTimers": "Gabim në shfaqjen e kohëmatësve",
+    "timerError": "Gabim Kohëmatësi",
+    "timerRunning": "{{count}} kohëmatës në punë",
+    "timerRunning_other": "{{count}} kohëmatës në punë",
+    "recentLog": "{{count}} regjistër i fundit",
+    "recentLog_other": "{{count}} regjistrat e fundit"
   }
 }
