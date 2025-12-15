@@ -37,10 +37,10 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
       subtasks = false,
       attachments = false,
       dates = false,
-      dependencies = true,
-      assignees = true,
-      labels = true,
-      customFields = true,
+      dependencies = false,
+      assignees = false,
+      labels = false,
+      customFields = false,
       subscribers = false,
       // copyNamePrefix = "Copy - ",
     } = options;
@@ -67,7 +67,7 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
       delete newTask.created_at;
       delete newTask.updated_at;
       delete newTask.completed_at;
-      delete newTask.task_no;
+      // delete newTask.task_no;
 
       newTask.name = originalTask.name;
       newTask.reporter_id = originalTask.reporter_id;
@@ -103,7 +103,7 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
 
       const insertResult = await db.query(
         `INSERT INTO tasks (${keys.join(", ")})
-       VALUES (${placeholders}, $${values.length + 1})
+       VALUES (${placeholders})
        RETURNING id, task_no, name`,
         [...values]
       );
@@ -115,9 +115,9 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
 
       if (assignees) {
         await db.query(
-          `INSERT INTO task_assignees (task_id, team_member_id, project_member_id, role, assigned_by)
-          SELECT $1, team_member_id, project_member_id, role, assigned_by
-          FROM task_assignees WHERE task_id = $2`,
+          `INSERT INTO tasks_assignees (task_id, team_member_id, project_member_id, assigned_by)
+          SELECT $1, team_member_id, project_member_id, assigned_by
+          FROM tasks_assignees WHERE task_id = $2`,
           [newTaskId, taskId]
         );
       }
@@ -153,12 +153,13 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
 
       if (customFields) {
         await db.query(
-          `INSERT INTO task_custom_fields (task_id, custom_field_id, value)
-         SELECT $1, custom_field_id, value
-         FROM task_custom_fields WHERE task_id = $2
-         ON CONFLICT (task_id, custom_field_id) DO NOTHING`,
+          `INSERT INTO cc_column_values (task_id, column_id, text_value, number_value, date_value, boolean_value, json_value)
+         SELECT $1, column_id, text_value, number_value, date_value, boolean_value, json_value
+         FROM cc_column_values
+         WHERE task_id = $2
+         ON CONFLICT (task_id, column_id) DO NOTHING`,
           [newTaskId, taskId]
-        ).catch(() => { }); // silent ignore if table doesn't exist
+        );
       }
 
       if (attachments) {
@@ -192,11 +193,12 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
       // Commit transaction
       await db.query("COMMIT");
 
-      return res.status(201).send(new ServerResponse(true, {
-        task_id: newTaskId,
-        task_no: newTaskNo,
-        name: insertResult.rows[0].name,
-      }, "Task duplicated successfully"));
+      const q = `SELECT get_single_task($1) AS task;`;
+      const result = await db.query(q, [newTaskId]);
+
+      const [singleTask] = result.rows;
+
+      return res.status(201).send(new ServerResponse(true, singleTask.task || {}, "Task duplicated successfully"));
 
     } catch (error) {
       // This will auto-rollback if transaction is active
