@@ -1079,6 +1079,12 @@ const taskManagementSlice = createSlice({
             is_sub_task: true,
             sub_tasks_count: subtask.sub_tasks_count || 0, // Use actual count from backend
             show_sub_tasks: false,
+            // Add indicator fields for icons
+            comments_count: subtask.comments_count || 0,
+            has_subscribers: subtask.has_subscribers || false,
+            attachments_count: subtask.attachments_count || 0,
+            has_dependencies: subtask.has_dependencies || false,
+            schedule_id: subtask.schedule_id || null,
           }));
 
           // Update parent task with subtasks
