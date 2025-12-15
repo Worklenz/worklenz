@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { ApiResponse, ClientSettings, ClientUser, ClientToken, ClientNotification } from '@/types';
+import { ApiResponse, ClientSettings, ClientUser, ClientToken, ClientNotification, ProfileUpdateData } from '@/types';
 
 class ClientPortalAPI {
   private api: AxiosInstance;
@@ -409,7 +409,7 @@ class ClientPortalAPI {
     return this.request('/profile');
   }
 
-  async updateProfile(profileData: Partial<ClientUser>) {
+  async updateProfile(profileData: ProfileUpdateData) {
     return this.request('/profile', {
       method: 'PUT',
       data: profileData,
