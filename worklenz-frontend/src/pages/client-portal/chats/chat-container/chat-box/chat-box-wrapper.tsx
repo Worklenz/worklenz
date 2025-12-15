@@ -3,7 +3,7 @@ import React, { ReactNode, useState, useEffect } from 'react';
 import ChatList from '../chat-list';
 import ChatBox from './chat-box';
 import { useAppSelector } from '../../../../../hooks/useAppSelector';
-import { useGetChatsQuery } from '../../../../../api/client-portal/client-portal-api';
+import { useGetOrganizationChatsQuery, useCreateOrganizationChatMutation } from '../../../../../api/client-portal/client-portal-api';
 import { useTranslation } from 'react-i18next';
 import { MessageOutlined } from '@ant-design/icons';
 import NewChatModal from '../../../../../components/client-portal/NewChatModal';
@@ -31,18 +31,20 @@ const ChatBoxWrapper = () => {
   // localization
   const { t } = useTranslation('client-portal-chats');
 
-  // Fetch chats from API
+  // Fetch chats from API - using organization-side endpoint
   const {
-    data: apiChats,
+    data: apiChatsData,
     isLoading,
     error,
     refetch,
-  } = useGetChatsQuery(undefined, {
+  } = useGetOrganizationChatsQuery({}, {
     // Force skip cache and make fresh request
     refetchOnMountOrArgChange: true,
     // Skip the query if we don't have auth
     skip: false,
   });
+  
+  const apiChats = apiChatsData?.chats || [];
 
   // Debug logging
   React.useEffect(() => {
@@ -181,6 +183,16 @@ const ChatBoxWrapper = () => {
             type="primary"
             icon={<MessageOutlined />}
             onClick={() => setIsNewChatModalOpen(true)}
+            size="large"
+            style={{
+              height: '40px',
+              fontSize: '14px',
+              fontWeight: 500,
+              padding: '0 24px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
           >
             {t('startConversation') || 'Start Conversation'}
           </Button>

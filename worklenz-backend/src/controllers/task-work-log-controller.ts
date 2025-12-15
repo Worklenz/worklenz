@@ -255,4 +255,50 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     const result = await db.query(q, params);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
+
+  @HandleExceptions()
+  public static async getRecentTimeLogs(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const q = `
+      WITH recent_logs AS (
+        SELECT DISTINCT ON (twl.task_id)
+          twl.task_id,
+          twl.created_at,
+          t1.name AS task_name,
+          pr.id AS project_id,
+          pr.name AS project_name,
+          pr.color_code AS project_color,
+          t1.parent_task_id,
+          t2.name AS parent_task_name
+        FROM task_work_log twl
+        INNER JOIN tasks t1 ON twl.task_id = t1.id
+        INNER JOIN projects pr ON t1.project_id = pr.id
+        LEFT JOIN tasks t2 ON t1.parent_task_id = t2.id
+        WHERE twl.user_id = $1
+          AND pr.team_id = $2
+          AND t1.archived = FALSE
+          AND NOT EXISTS (
+            SELECT 1
+            FROM archived_projects ap
+            WHERE ap.project_id = pr.id
+              AND ap.user_id = $1
+          )
+        ORDER BY twl.task_id, twl.created_at DESC
+      )
+      SELECT 
+        task_id,
+        created_at,
+        task_name,
+        project_id,
+        project_name,
+        project_color,
+        parent_task_id,
+        parent_task_name
+      FROM recent_logs
+      ORDER BY created_at DESC
+      LIMIT 5;
+    `;
+    const params = [req.user?.id, req.user?.team_id];
+    const result = await db.query(q, params);
+    return res.status(200).send(new ServerResponse(true, result.rows));
+  }
 }

@@ -1,5 +1,6 @@
 {
   "title": "Mensajes",
+  "chatsTitle": "Conversaciones",
   "description": "Comunícate con tu equipo y clientes",
   "refresh": "Actualizar",
   "noChatsTitle": "No se encontraron mensajes",
@@ -7,5 +8,22 @@
   "errorLoadingChats": "Error al cargar mensajes",
   "errorLoadingChatsDescription": "Hubo un error al cargar tus mensajes. Por favor, inténtalo de nuevo más tarde.",
   "selectChatMessage": "Selecciona un chat para comenzar a enviar mensajes",
-  "startConversation": "Iniciar Conversación"
+  "startConversation": "Iniciar Conversación",
+  "newChat": "Nueva Conversación",
+  "newChatDescription": "Inicia una nueva conversación con tu equipo",
+  "subject": "Asunto",
+  "subjectPlaceholder": "Ingresa un asunto breve para tu mensaje",
+  "subjectHelper": "Un asunto claro ayuda a tu equipo a responder más rápido",
+  "message": "Mensaje",
+  "messagePlaceholder": "Escribe tu mensaje aquí...",
+  "messageHelper": "Describe tu pregunta o solicitud en detalle",
+  "sendMessage": "Enviar Mensaje",
+  "newChatCreatedSuccessfully": "¡Conversación creada exitosamente!",
+  "newChatFailed": "Error al crear la conversación. Por favor, inténtalo de nuevo.",
+  "subjectRequired": "Por favor ingresa un asunto",
+  "subjectMinLength": "El asunto debe tener al menos 3 caracteres",
+  "subjectMaxLength": "El asunto debe tener menos de 100 caracteres",
+  "messageRequired": "Por favor ingresa un mensaje",
+  "messageMinLength": "El mensaje debe tener al menos 10 caracteres",
+  "messageMaxLength": "El mensaje debe tener menos de 1000 caracteres"
 }

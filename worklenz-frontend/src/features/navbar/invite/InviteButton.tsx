@@ -20,6 +20,7 @@ const InviteButton = () => {
         style={{
           color: colors.skyBlue,
           borderColor: colors.skyBlue,
+          padding: '10px 16px',
         }}
         onClick={() => dispatch(toggleInviteMemberDrawer())}
       >

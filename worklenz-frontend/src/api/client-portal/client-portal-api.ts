@@ -542,14 +542,20 @@ export const clientPortalApi = createApi({
       invalidatesTags: ['Invoices', 'Dashboard'],
     }),
 
-    // Chat
+    // Chat (Client Portal Side - uses client token auth)
     getChats: builder.query<ClientPortalChat[], void>({
-      query: () => '/clients/portal/chats',
+      query: () => ({
+        url: `${config.apiUrl}/api/client-portal/chats`,
+        method: 'GET',
+      }),
       providesTags: ['Chats'],
     }),
 
     getChatDetails: builder.query<ClientPortalChat, string>({
-      query: id => `/clients/portal/chats/${id}`,
+      query: id => ({
+        url: `${config.apiUrl}/api/client-portal/chats/${id}`,
+        method: 'GET',
+      }),
       providesTags: (result, error, id) => [{ type: 'Chats', id }],
     }),
 
@@ -563,7 +569,7 @@ export const clientPortalApi = createApi({
       }
     >({
       query: (chatData) => ({
-        url: '/clients/portal/chats',
+        url: `${config.apiUrl}/api/client-portal/chats`,
         method: 'POST',
         body: chatData,
       }),
@@ -575,7 +581,7 @@ export const clientPortalApi = createApi({
       { chatId: string; messageData: { content: string; attachments?: any[] } }
     >({
       query: ({ chatId, messageData }) => ({
-        url: `/clients/portal/chats/${chatId}/messages`,
+        url: `${config.apiUrl}/api/client-portal/chats/${chatId}/messages`,
         method: 'POST',
         body: messageData,
       }),
@@ -583,8 +589,73 @@ export const clientPortalApi = createApi({
     }),
 
     getMessages: builder.query<ClientPortalMessage[], string>({
-      query: chatId => `/clients/portal/chats/${chatId}/messages`,
+      query: chatId => ({
+        url: `${config.apiUrl}/api/client-portal/chats/${chatId}/messages`,
+        method: 'GET',
+      }),
       providesTags: (result, error, chatId) => [{ type: 'Chats', id: chatId }],
+    }),
+
+    // Organization-side Client Portal Chats Management (for admin/organization users)
+    getOrganizationChats: builder.query<
+      ClientPortalChat[],
+      { clientId?: string; page?: number; limit?: number }
+    >({
+      query: ({ clientId, page, limit }) => ({
+        url: '/clients/portal/chats',
+        params: clientId ? { clientId, page, limit } : { page, limit },
+      }),
+      providesTags: ['Chats'],
+    }),
+
+    getOrganizationChatById: builder.query<ClientPortalChat, { id: string; clientId: string }>({
+      query: ({ id, clientId }) => ({
+        url: `/clients/portal/chats/${id}`,
+        params: { clientId },
+      }),
+      providesTags: (result, error, { id }) => [{ type: 'Chats', id }],
+    }),
+
+    createOrganizationChat: builder.mutation<
+      { chatId: string; message: string },
+      {
+        clientId: string;
+        recipientType: 'client' | 'team';
+        recipientId: string;
+        subject: string;
+        message: string;
+      }
+    >({
+      query: ({ clientId, ...chatData }) => ({
+        url: '/clients/portal/chats',
+        method: 'POST',
+        body: { ...chatData, clientId },
+      }),
+      invalidatesTags: ['Chats'],
+    }),
+
+    sendOrganizationMessage: builder.mutation<
+      any,
+      { chatId: string; clientId: string; messageData: { content: string; attachments?: any[] } }
+    >({
+      query: ({ chatId, clientId, messageData }) => ({
+        url: `/clients/portal/chats/${chatId}/messages`,
+        method: 'POST',
+        body: messageData,
+        params: { clientId },
+      }),
+      invalidatesTags: (result, error, { chatId }) => [{ type: 'Chats', id: chatId }, 'Chats'],
+    }),
+
+    getOrganizationMessages: builder.query<
+      ClientPortalMessage[],
+      { chatId: string; clientId: string }
+    >({
+      query: ({ chatId, clientId }) => ({
+        url: `/clients/portal/chats/${chatId}/messages`,
+        params: { clientId },
+      }),
+      providesTags: (result, error, { chatId }) => [{ type: 'Chats', id: chatId }],
     }),
 
     // Settings
@@ -1117,6 +1188,13 @@ export const {
   useCreateOrganizationServiceMutation,
   useUpdateOrganizationServiceMutation,
   useDeleteOrganizationServiceMutation,
+
+  // Organization-side Client Portal Chats
+  useGetOrganizationChatsQuery,
+  useGetOrganizationChatByIdQuery,
+  useCreateOrganizationChatMutation,
+  useSendOrganizationMessageMutation,
+  useGetOrganizationMessagesQuery,
 
   // Client Invitation Management
   useGenerateClientInvitationLinkMutation,

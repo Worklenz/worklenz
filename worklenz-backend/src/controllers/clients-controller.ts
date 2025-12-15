@@ -1061,11 +1061,131 @@ export default class ClientsController extends WorklenzControllerBase {
   
   @HandleExceptions()
   public static async getPortalChats(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // Extract clientId from query params (optional) and organizationId from user's team
+    const clientId = req.query?.clientId as string | undefined;
+    const organizationId = req.user?.team_id;
+    
+    if (!organizationId) {
+      return res.status(400).json(new ServerResponse(false, null, "Organization ID is required"));
+    }
+    
+    // If clientId is provided, use the client-specific endpoint
+    // Otherwise, get all chats for the organization
+    if (clientId) {
+      const modifiedReq = {
+        ...req,
+        user: req.user,
+        clientId,
+        organizationId
+      } as any;
+      return ClientPortalController.getChats(modifiedReq, res as any);
+    } else {
+      // Get all chats for the organization (across all clients)
+      try {
+        const { page = 1, limit = 20 } = req.query;
+        const offset = (Number(page) - 1) * Number(limit);
+        
+        const query = `
+          WITH chat_summary AS (
+            SELECT 
+              c.id as client_id,
+              c.name as client_name,
+              c.email as client_email,
+              DATE(m.created_at) as chat_date,
+              COUNT(*) as message_count,
+              MAX(m.created_at) as last_message_at,
+              MAX(CASE WHEN m.sender_type = 'team_member' THEN m.created_at END) as last_team_message_at,
+              COUNT(CASE WHEN m.read_at IS NULL AND m.sender_type = 'team_member' THEN 1 END) as unread_count
+            FROM client_portal_chat_messages m
+            JOIN clients c ON m.client_id = c.id
+            WHERE m.organization_team_id = $1
+            GROUP BY c.id, c.name, c.email, DATE(m.created_at)
+          )
+          SELECT 
+            client_id,
+            client_name,
+            client_email,
+            chat_date,
+            message_count,
+            last_message_at,
+            last_team_message_at,
+            unread_count
+          FROM chat_summary
+          ORDER BY last_message_at DESC
+          LIMIT $2 OFFSET $3
+        `;
+        
+        const result = await db.query(query, [organizationId, Number(limit), offset]);
+        
+        const countQuery = `
+          SELECT COUNT(DISTINCT (client_id, DATE(created_at))) as total
+          FROM client_portal_chat_messages
+          WHERE organization_team_id = $1
+        `;
+        const countResult = await db.query(countQuery, [organizationId]);
+        const total = parseInt(countResult.rows[0]?.total || "0");
+        
+        const chats = result.rows.map((row: any) => ({
+          id: `${row.client_id}-${row.chat_date}`,
+          clientId: row.client_id,
+          clientName: row.client_name,
+          clientEmail: row.client_email,
+          date: row.chat_date,
+          messageCount: parseInt(row.message_count || "0"),
+          lastMessageAt: row.last_message_at,
+          lastTeamMessageAt: row.last_team_message_at,
+          unreadCount: parseInt(row.unread_count || "0"),
+          hasNewMessages: row.unread_count > 0
+        }));
+        
+        return res.json(new ServerResponse(true, {
+          chats,
+          total,
+          page: Number(page),
+          limit: Number(limit)
+        }, "Chats retrieved successfully"));
+      } catch (error) {
+        console.error("Error fetching organization chats:", error);
+        return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve chats"));
+      }
+    }
+  }
+
+  @HandleExceptions()
+  public static async createPortalChat(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // For organization-side, we need to extract clientId from request body or query
+    // and organizationId from user's team
+    const clientId = req.body?.clientId || req.query?.clientId;
+    const organizationId = req.user?.team_id;
+    
+    if (!clientId) {
+      return res.status(400).json(new ServerResponse(false, null, "Client ID is required"));
+    }
+    
+    if (!organizationId) {
+      return res.status(400).json(new ServerResponse(false, null, "Organization ID is required"));
+    }
+    
+    // Get client email from the client record
+    const clientQuery = await db.query(
+      "SELECT email FROM clients WHERE id = $1 AND organization_team_id = $2",
+      [clientId, organizationId]
+    );
+    
+    if (clientQuery.rows.length === 0) {
+      return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+    }
+    
+    const clientEmail = clientQuery.rows[0].email;
+    
     const modifiedReq = {
       ...req,
-      user: req.user
+      user: req.user,
+      clientId,
+      organizationId,
+      clientEmail
     } as any;
-    return ClientPortalController.getChats(modifiedReq, res as any);
+    return ClientPortalController.createChat(modifiedReq, res as any);
   }
 
   @HandleExceptions()
