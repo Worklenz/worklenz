@@ -149,16 +149,37 @@ export default class TasksControllerV2 extends TasksControllerBase {
           "CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no)",
         ]
       : defaultSortColumn;
-    const { searchQuery, sortField } = TasksControllerV2.toPaginationOptions(
+    const { searchQuery, sortField, sortOrder } = TasksControllerV2.toPaginationOptions(
       options,
       searchField
     );
 
     const isSubTasks = !!options.parent_task;
 
-    const sortFields =
-      sortField.replace(/ascend/g, "ASC").replace(/descend/g, "DESC") ||
-      defaultSortColumn;
+    // Map frontend field names to backend column names
+    const fieldMapping: Record<string, string> = {
+      'name': 't.name',
+      'status': 't.status_id',
+      'priority': 't.priority_id',
+      'start_date': 't.start_date',
+      'end_date': 't.end_date',
+      'completed_at': 't.completed_at',
+      'created_at': 't.created_at',
+      'updated_at': 't.updated_at',
+    };
+
+    // Apply field mapping if needed
+    let mappedSortField = sortField;
+    if (typeof sortField === 'string' && sortField !== defaultSortColumn) {
+      if (fieldMapping[sortField]) {
+        mappedSortField = fieldMapping[sortField];
+      }
+    }
+
+    // Construct final sort clause
+    const sortFields = mappedSortField && sortOrder 
+      ? `${mappedSortField} ${sortOrder.toUpperCase()}`
+      : defaultSortColumn;
 
     // Filter tasks by statuses
     const statusesFilter = TasksControllerV2.getFilterByStatusWhereClosure(
