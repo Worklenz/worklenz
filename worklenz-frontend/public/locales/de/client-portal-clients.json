@@ -301,6 +301,10 @@
   "portalUrlLabel": "Portal-URL:",
   "invitationLinkCopiedSuccess": "Einladungslink in die Zwischenablage kopiert!",
   "invitationLinkCopyError": "Fehler beim Kopieren des Links in die Zwischenablage",
+  "emailRequiredTitle": "E-Mail erforderlich",
+  "emailRequiredMessage": "Dieser Kunde hat keine E-Mail-Adresse. Eine E-Mail ist erforderlich, um ihn zum Portal einzuladen.",
+  "emailRequiredQuestion": "Möchten Sie eine E-Mail-Adresse hinzufügen und ihn erneut einladen?",
+  "addEmailButton": "E-Mail hinzufügen & einladen",
 
   "assignProjectTitle": "Neues Projekt zuweisen",
   "assignButton": "Projekt zuweisen",

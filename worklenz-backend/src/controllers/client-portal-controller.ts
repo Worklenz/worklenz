@@ -3468,6 +3468,15 @@ class ClientPortalController {
 
       const client = clientResult.rows[0];
 
+      // Validate that client has an email address
+      if (!client.email || client.email.trim() === '') {
+        return res.status(400).json(new ServerResponse(false, {
+          errorCode: 'EMAIL_REQUIRED',
+          clientId: client.id,
+          clientName: client.name
+        }, "Email address is required to invite the client to the portal"));
+      }
+
       // Check if this email already exists as a Worklenz user
       const existingUserQuery = `
         SELECT u.id, u.email, u.name 

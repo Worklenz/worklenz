@@ -292,5 +292,9 @@
   "invitationModalCopyLink": "Copy Link",
   "portalUrlLabel": "Portal URL:",
   "invitationLinkCopiedSuccess": "Invitation link copied to clipboard!",
-  "invitationLinkCopyError": "Failed to copy link to clipboard"
+  "invitationLinkCopyError": "Failed to copy link to clipboard",
+  "emailRequiredTitle": "Email Required",
+  "emailRequiredMessage": "This client does not have an email address. An email is required to invite them to the portal.",
+  "emailRequiredQuestion": "Would you like to add an email address and invite them again?",
+  "addEmailButton": "Add Email & Invite"
 }

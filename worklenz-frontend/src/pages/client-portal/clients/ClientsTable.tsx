@@ -324,9 +324,44 @@ const ClientsTable = () => {
       } else {
         message.error(t('inviteLinkGeneratedError', { defaultValue: 'Failed to generate invitation link' }));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to generate invitation link:', error);
-      message.error(t('inviteLinkGeneratedError', { defaultValue: 'Failed to generate invitation link' }));
+      
+      // Check if error is due to missing email
+      // RTK Query errors can have different structures, so check multiple paths
+      const errorData = error?.data?.body || error?.data || error?.response?.data?.body || error?.response?.data;
+      const errorCode = errorData?.errorCode;
+      
+      if (errorCode === 'EMAIL_REQUIRED') {
+        // Show confirmation modal asking if user wants to add email
+        Modal.confirm({
+          title: t('emailRequiredTitle', { defaultValue: 'Email Required' }),
+          content: (
+            <div>
+              <p>{t('emailRequiredMessage', { 
+                defaultValue: 'This client does not have an email address. An email is required to invite them to the portal.'
+              })}</p>
+              <p style={{ marginTop: 8, marginBottom: 0 }}>
+                {t('emailRequiredQuestion', { defaultValue: 'Would you like to add an email address and invite them again?' })}
+              </p>
+            </div>
+          ),
+          okText: t('addEmailButton', { defaultValue: 'Add Email & Invite' }),
+          cancelText: t('cancelButton', { defaultValue: 'Cancel' }),
+          okType: 'primary',
+          onOk: () => {
+            // Open edit client drawer
+            dispatch(toggleEditClientDrawer(clientId));
+          },
+        });
+      } else {
+        // Show generic error for other cases
+        const errorMessage = error?.data?.message || 
+                            error?.response?.data?.message ||
+                            error?.message || 
+                            t('inviteLinkGeneratedError', { defaultValue: 'Failed to generate invitation link' });
+        message.error(errorMessage);
+      }
     } finally {
       setIsGeneratingLink(false);
     }

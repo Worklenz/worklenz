@@ -289,5 +289,9 @@
   "invitationModalCopyLink": "Copiar Enlace",
   "portalUrlLabel": "URL del Portal:",
   "invitationLinkCopiedSuccess": "¡Enlace de invitación copiado al portapapeles!",
-  "invitationLinkCopyError": "Error al copiar enlace al portapapeles"
+  "invitationLinkCopyError": "Error al copiar enlace al portapapeles",
+  "emailRequiredTitle": "Correo Electrónico Requerido",
+  "emailRequiredMessage": "Este cliente no tiene una dirección de correo electrónico. Se requiere un correo electrónico para invitarlo al portal.",
+  "emailRequiredQuestion": "¿Le gustaría agregar una dirección de correo electrónico e invitarlo nuevamente?",
+  "addEmailButton": "Agregar Correo e Invitar"
 }

@@ -235,5 +235,9 @@
   "invitationModalCopyLink": "Copiar Link",
   "portalUrlLabel": "URL do Portal:",
   "invitationLinkCopiedSuccess": "Link de convite copiado para a área de transferência!",
-  "invitationLinkCopyError": "Falha ao copiar link para a área de transferência"
+  "invitationLinkCopyError": "Falha ao copiar link para a área de transferência",
+  "emailRequiredTitle": "E-mail Obrigatório",
+  "emailRequiredMessage": "Este cliente não possui um endereço de e-mail. Um e-mail é necessário para convidá-lo ao portal.",
+  "emailRequiredQuestion": "Gostaria de adicionar um endereço de e-mail e convidá-lo novamente?",
+  "addEmailButton": "Adicionar E-mail e Convidar"
 }
