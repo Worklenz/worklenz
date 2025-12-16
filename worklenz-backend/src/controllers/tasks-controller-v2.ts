@@ -63,23 +63,50 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   private static getFilterByPriorityWhereClosure(text: string) {
-    return text ? `priority_id IN (${this.flatString(text)})` : "";
+    if (!text) return "";
+    
+    const priorityIds = this.flatString(text);
+    return `(
+      priority_id IN (${priorityIds})
+      OR EXISTS (
+        SELECT 1 FROM tasks subtask
+        WHERE subtask.parent_task_id = t.id
+        AND subtask.priority_id IN (${priorityIds})
+        AND subtask.archived IS FALSE
+      )
+    )`;
   }
 
   private static getFilterByLabelsWhereClosure(text: string) {
-    return text
-      ? `id IN (SELECT task_id FROM task_labels WHERE label_id IN (${this.flatString(
-          text
-        )}))`
-      : "";
+    if (!text) return "";
+    
+    const labelIds = this.flatString(text);
+    return `(
+      id IN (SELECT task_id FROM task_labels WHERE label_id IN (${labelIds}))
+      OR EXISTS (
+        SELECT 1 FROM tasks subtask
+        JOIN task_labels tl ON tl.task_id = subtask.id
+        WHERE subtask.parent_task_id = t.id
+        AND tl.label_id IN (${labelIds})
+        AND subtask.archived IS FALSE
+      )
+    )`;
   }
 
   private static getFilterByMembersWhereClosure(text: string) {
-    return text
-      ? `id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${this.flatString(
-          text
-        )}))`
-      : "";
+    if (!text) return "";
+    
+    const memberIds = this.flatString(text);
+    return `(
+      id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${memberIds}))
+      OR EXISTS (
+        SELECT 1 FROM tasks subtask
+        JOIN tasks_assignees ta ON ta.task_id = subtask.id
+        WHERE subtask.parent_task_id = t.id
+        AND ta.team_member_id IN (${memberIds})
+        AND subtask.archived IS FALSE
+      )
+    )`;
   }
 
   private static getFilterByProjectsWhereClosure(text: string) {
