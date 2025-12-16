@@ -748,12 +748,20 @@ BEGIN
     _team_id = (_body ->> 'team_id')::UUID;
     _project_id = (_body ->> 'project_id')::UUID;
     _user_id = (_body ->> 'user_id')::UUID;
-    _access_level = (_body ->> 'access_level')::TEXT;
+    _access_level = COALESCE(NULLIF(TRIM((_body ->> 'access_level')::TEXT), ''), 'MEMBER');
+
+    -- Map team-lead access level to PROJECT_MANAGER since Team Lead is a role, not a project access level
+    IF UPPER(_access_level) IN ('TEAM-LEAD', 'TEAM_LEAD') THEN
+        _access_level = 'PROJECT_MANAGER';
+    END IF;
 
     SELECT user_id FROM team_members WHERE id = _team_member_id INTO _member_user_id;
 
     INSERT INTO project_members (team_member_id, project_access_level_id, project_id, role_id)
-    VALUES (_team_member_id, (SELECT id FROM project_access_levels WHERE key = _access_level)::UUID,
+    VALUES (_team_member_id, COALESCE(
+            (SELECT id FROM project_access_levels WHERE key = _access_level),
+            (SELECT id FROM project_access_levels WHERE key = 'MEMBER')
+        )::UUID,
             _project_id,
             (SELECT id FROM roles WHERE team_id = _team_id AND default_role IS TRUE))
     RETURNING id INTO _id;
