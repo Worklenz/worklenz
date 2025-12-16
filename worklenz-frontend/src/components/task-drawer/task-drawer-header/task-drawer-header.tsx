@@ -1,4 +1,4 @@
-import { Button, Dropdown, Flex, Input, InputRef, MenuProps } from '@/shared/antd-imports';
+import { Button, Dropdown, Flex, Input, InputRef, MenuProps, Skeleton } from '@/shared/antd-imports';
 import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { EllipsisOutlined } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
@@ -45,7 +45,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
   const isDeleting = useRef(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  const { taskFormViewModel, selectedTaskId, navigationContext } = useAppSelector(
+  const { taskFormViewModel, selectedTaskId, navigationContext, loadingTask } = useAppSelector(
     state => state.taskDrawerReducer
   );
   const [taskName, setTaskName] = useState<string>(taskFormViewModel?.task?.name ?? '');
@@ -176,7 +176,8 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
     }
   };
 
-  const displayTaskName = taskName || t('taskHeader.taskNamePlaceholder');
+  // Show loading skeleton if task is loading OR if we don't have task name yet
+  const isLoadingTaskName = loadingTask || !taskFormViewModel?.task?.name;
 
   return (
     <div>
@@ -185,7 +186,9 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
 
       <Flex gap={8} align="center" style={{ marginBlockEnd: 2 }}>
         <Flex style={{ position: 'relative', width: '100%', alignItems: 'center' }}>
-          {isEditing ? (
+          {isLoadingTaskName ? (
+            <Skeleton.Input active size="large" style={{ width: '100%' }} />
+          ) : isEditing ? (
             <Input
               ref={inputRef}
               size="large"
@@ -204,7 +207,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
             />
           ) : (
             <p onClick={() => setIsEditing(true)} className="task-name-display">
-              {displayTaskName}
+              {taskName}
             </p>
           )}
         </Flex>
