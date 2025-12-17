@@ -183,6 +183,29 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     const isSubTasks = !!options.parent_task;
 
+    // Enhanced search query that includes subtasks
+    // If a subtask matches the search, show the parent task too
+    let enhancedSearchQuery = searchQuery;
+    if (options.search && !isSubTasks) {
+      const searchTerm = options.search.toString().trim();
+      if (searchTerm) {
+        // Build a search condition that checks both parent and subtasks
+        enhancedSearchQuery = `AND (
+          t.name ILIKE '%${searchTerm}%'
+          OR CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no) ILIKE '%${searchTerm}%'
+          OR EXISTS (
+            SELECT 1 FROM tasks subtask
+            WHERE subtask.parent_task_id = t.id
+            AND subtask.archived IS FALSE
+            AND (
+              subtask.name ILIKE '%${searchTerm}%'
+              OR CONCAT((SELECT key FROM projects WHERE id = subtask.project_id), '-', subtask.task_no) ILIKE '%${searchTerm}%'
+            )
+          )
+        )`;
+      }
+    }
+
     const sortFields =
       sortField.replace(/ascend/g, "ASC").replace(/descend/g, "DESC") ||
       defaultSortColumn;
@@ -298,6 +321,17 @@ export default class TasksControllerV2 extends TasksControllerBase {
       subtaskFilters.push(`subtask.id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${memberIds}))`);
     }
 
+    // Apply search filter to subtasks if present
+    if (options.search && !isSubTasks) {
+      const searchTerm = options.search.toString().trim();
+      if (searchTerm) {
+        subtaskFilters.push(`(
+          subtask.name ILIKE '%${searchTerm}%'
+          OR CONCAT((SELECT key FROM projects WHERE id = subtask.project_id), '-', subtask.task_no) ILIKE '%${searchTerm}%'
+        )`);
+      }
+    }
+
     const subtaskFilterClause = subtaskFilters.length > 0 
       ? `AND ${subtaskFilters.join(' AND ')}` 
       : '';
@@ -393,7 +427,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
              schedule_id,
              END_DATE ${customColumnsQuery} ${statusesQuery}
       FROM tasks t
-      WHERE ${filters} ${searchQuery}
+      WHERE ${filters} ${enhancedSearchQuery}
       ORDER BY ${sortFields}
     `;
   }
