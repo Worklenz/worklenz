@@ -104,7 +104,9 @@
     "failed_to_accept_invite": "Fehler beim Annehmen der Einladung",
     "failed_to_validate_invite": "Fehler beim Validieren der Einladung",
     "network_error": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung.",
-    "server_error": "Serverfehler. Bitte versuchen Sie es später erneut."
+    "server_error": "Serverfehler. Bitte versuchen Sie es später erneut.",
+    "worklenz_account_found_title": "Worklenz-Konto gefunden",
+    "worklenz_account_found_message": "Diese E-Mail ist bereits mit einem Worklenz-Konto registriert. Bitte verwenden Sie Ihr Worklenz-Passwort, um sich für das Kundenportal anzumelden."
   },
   "dashboard": {
     "title": "Dashboard",

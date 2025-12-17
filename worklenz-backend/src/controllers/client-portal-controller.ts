@@ -12,6 +12,7 @@ import { IO } from "../shared/io";
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import crypto from "crypto";
+import bcrypt from "bcrypt";
 import { generateUniqueSlug, suggestSlug, isValidSlug } from "../utils/slug";
 
 class ClientPortalController {
@@ -5679,6 +5680,31 @@ class ClientPortalController {
             });
           }
 
+          // Check if email exists in Worklenz users table for linking
+          const existingWorklenzUserQuery = `
+            SELECT id, email, name, password FROM users
+            WHERE LOWER(email) = LOWER($1)
+          `;
+          const existingWorklenzUserResult = await db.query(existingWorklenzUserQuery, [email]);
+          
+          let worklenzUserId = null;
+          if (existingWorklenzUserResult.rows.length > 0) {
+            // User already exists in Worklenz - verify their Worklenz password before linking
+            const worklenzUser = existingWorklenzUserResult.rows[0];
+            const passwordMatch = bcrypt.compareSync(password, worklenzUser.password);
+            
+            if (!passwordMatch) {
+              return res.status(401).json({
+                done: false,
+                body: { isWorklenzUser: true },
+                titleKey: "errors.worklenz_account_found_title",
+                messageKey: "errors.worklenz_account_found_message"
+              });
+            }
+            
+            worklenzUserId = worklenzUser.id;
+          }
+
           // Create a client record for this organization
           const clientResult = await db.query(
             `INSERT INTO clients (name, email, team_id, status, client_portal_enabled, created_at, updated_at)
@@ -5689,18 +5715,30 @@ class ClientPortalController {
 
           const clientId = clientResult.rows[0].id;
 
-          // Create the client user
-          const userResult = await db.query(
-            `INSERT INTO client_users (id, client_id, email, name, password_hash, role, status, created_at)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
-           RETURNING id, email, name, role, client_id`,
-            [
-              clientId,
-              email,
-              name,
-              crypto.createHash("sha256").update(password).digest("hex"),
-            ]
-          );
+          // Create the client user - link to Worklenz user if exists, otherwise use password_hash
+          let userResult;
+          if (worklenzUserId) {
+            // Link to existing Worklenz user - they will authenticate with their Worklenz password
+            userResult = await db.query(
+              `INSERT INTO client_users (id, client_id, user_id, email, name, role, status, created_at)
+             VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
+             RETURNING id, email, name, role, client_id`,
+              [clientId, worklenzUserId, email, name]
+            );
+          } else {
+            // Standalone client portal user - create with password_hash
+            userResult = await db.query(
+              `INSERT INTO client_users (id, client_id, email, name, password_hash, role, status, created_at)
+             VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
+             RETURNING id, email, name, role, client_id`,
+              [
+                clientId,
+                email,
+                name,
+                crypto.createHash("sha256").update(password).digest("hex"),
+              ]
+            );
+          }
 
           const newUser = userResult.rows[0];
 
@@ -5749,15 +5787,27 @@ class ClientPortalController {
 
       // Check if user email exists in Worklenz users table
       const existingWorklenzUserQuery = `
-        SELECT id, email, name FROM users
+        SELECT id, email, name, password FROM users
         WHERE LOWER(email) = LOWER($1)
       `;
       const existingWorklenzUserResult = await db.query(existingWorklenzUserQuery, [invitation.email]);
 
       let userId = null;
       if (existingWorklenzUserResult.rows.length > 0) {
-        // User already exists in Worklenz - link them instead of creating password
-        userId = existingWorklenzUserResult.rows[0].id;
+        // User already exists in Worklenz - verify their Worklenz password before linking
+        const worklenzUser = existingWorklenzUserResult.rows[0];
+        const passwordMatch = bcrypt.compareSync(password, worklenzUser.password);
+        
+        if (!passwordMatch) {
+          return res.status(401).json({
+            done: false,
+            body: { isWorklenzUser: true },
+            titleKey: "errors.worklenz_account_found_title",
+            messageKey: "errors.worklenz_account_found_message"
+          });
+        }
+        
+        userId = worklenzUser.id;
       }
 
       // Accept the invitation (will link if userId is provided, otherwise create password)

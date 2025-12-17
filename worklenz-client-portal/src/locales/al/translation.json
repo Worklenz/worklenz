@@ -159,5 +159,22 @@
     "fileTypeError": "Lloji i skedarit nuk lejohet. Llojet e pranuara: {{types}}",
     "maxFilesError": "Mund të ngarkoni vetëm deri në {{count}} skedarë",
     "uploadedOn": "Ngarkuar më {{date}}"
+  },
+  "errors": {
+    "email_already_registered_title": "Email-i Tashmë i Regjistruar",
+    "email_already_registered_message": "Një përdorues me këtë email ekziston tashmë. Ju lutem hyni.",
+    "invalid_credentials": "Email ose fjalëkalim i pavlefshëm",
+    "token_required": "Kërkohet token",
+    "token_invalid": "Token i pavlefshëm ose i skaduar",
+    "invitation_invalid": "Ftesë e pavlefshme ose e skaduar",
+    "invitation_required": "Kërkohet token i ftesës",
+    "password_required": "Kërkohet fjalëkalimi",
+    "name_required": "Kërkohet emri",
+    "failed_to_accept_invite": "Dështoi pranimi i ftesës",
+    "failed_to_validate_invite": "Dështoi vërtetimi i ftesës",
+    "network_error": "Gabim rrjeti. Ju lutem kontrolloni lidhjen tuaj.",
+    "server_error": "Gabim serveri. Ju lutem provoni përsëri më vonë.",
+    "worklenz_account_found_title": "U gjet llogari Worklenz",
+    "worklenz_account_found_message": "Ky email është tashmë i regjistruar me një llogari Worklenz. Ju lutem përdorni fjalëkalimin tuaj të Worklenz për t'u regjistruar në portalin e klientit."
   }
 }

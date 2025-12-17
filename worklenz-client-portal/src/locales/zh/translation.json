@@ -159,5 +159,22 @@
     "fileTypeError": "不允许的文件类型。接受的类型：{{types}}",
     "maxFilesError": "最多只能上传{{count}}个文件",
     "uploadedOn": "上传于 {{date}}"
+  },
+  "errors": {
+    "email_already_registered_title": "邮箱已注册",
+    "email_already_registered_message": "该邮箱的用户已存在。请直接登录。",
+    "invalid_credentials": "邮箱或密码无效",
+    "token_required": "需要令牌",
+    "token_invalid": "令牌无效或已过期",
+    "invitation_invalid": "邀请无效或已过期",
+    "invitation_required": "需要邀请令牌",
+    "password_required": "需要密码",
+    "name_required": "需要姓名",
+    "failed_to_accept_invite": "接受邀请失败",
+    "failed_to_validate_invite": "验证邀请失败",
+    "network_error": "网络错误。请检查您的连接。",
+    "server_error": "服务器错误。请稍后重试。",
+    "worklenz_account_found_title": "发现 Worklenz 账户",
+    "worklenz_account_found_message": "该邮箱已注册 Worklenz 账户。请使用您的 Worklenz 密码注册客户门户。"
   }
 }

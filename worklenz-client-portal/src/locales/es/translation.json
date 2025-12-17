@@ -102,7 +102,9 @@
     "failed_to_accept_invite": "Error al aceptar la invitación",
     "failed_to_validate_invite": "Error al validar la invitación",
     "network_error": "Error de red. Por favor verifica tu conexión.",
-    "server_error": "Error del servidor. Por favor intenta de nuevo más tarde."
+    "server_error": "Error del servidor. Por favor intenta de nuevo más tarde.",
+    "worklenz_account_found_title": "Cuenta de Worklenz encontrada",
+    "worklenz_account_found_message": "Este correo electrónico ya está registrado con una cuenta de Worklenz. Por favor usa tu contraseña de Worklenz para registrarte en el portal del cliente."
   },
   "dashboard": {
     "title": "Panel",
