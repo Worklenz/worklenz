@@ -55,5 +55,7 @@
   "messageSent": "Message sent",
   "messageFailed": "Failed to send message",
   "attachFile": "Attach file",
-  "emojiPicker": "Add emoji"
+  "emojiPicker": "Add emoji",
+  "noChatsWithClient": "No conversations with this client yet",
+  "startConversationWithClient": "Start a conversation to discuss this request with the client."
 }

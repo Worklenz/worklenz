@@ -23,5 +23,12 @@
   "serviceQuestionsLabel": "Perguntas do serviço",
   "noFilesUploaded": "Nenhum arquivo enviado",
   "noAnswer": "Nenhuma resposta fornecida",
-  "createInvoiceButton": "Criar Fatura"
+  "createInvoiceButton": "Criar Fatura",
+  "untitledRequest": "Solicitação sem título",
+  "backToRequests": "Voltar para Solicitações",
+  "requestDetails": "Detalhes da Solicitação",
+  "statusUpdateSuccess": "Status atualizado com sucesso",
+  "statusUpdateError": "Falha ao atualizar o status",
+  "downloadAttachment": "Baixar",
+  "viewAttachment": "Visualizar"
 }

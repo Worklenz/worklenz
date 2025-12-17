@@ -55,5 +55,7 @@
   "messageSent": "Mesazhi u dërgua",
   "messageFailed": "Dështoi dërgimi i mesazhit",
   "attachFile": "Bashkëngjit skedar",
-  "emojiPicker": "Shto emoji"
+  "emojiPicker": "Shto emoji",
+  "noChatsWithClient": "Ende nuk ka biseda me këtë klient",
+  "startConversationWithClient": "Filloni një bisedë për të diskutuar këtë kërkesë me klientin."
 }

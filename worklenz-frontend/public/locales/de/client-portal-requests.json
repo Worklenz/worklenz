@@ -23,5 +23,12 @@
   "serviceQuestionsLabel": "Service-Fragen",
   "noFilesUploaded": "Keine Dateien hochgeladen",
   "noAnswer": "Keine Antwort angegeben",
-  "createInvoiceButton": "Rechnung erstellen"
+  "createInvoiceButton": "Rechnung erstellen",
+  "untitledRequest": "Unbenannte Anfrage",
+  "backToRequests": "Zurück zu Anfragen",
+  "requestDetails": "Anfragedetails",
+  "statusUpdateSuccess": "Status erfolgreich aktualisiert",
+  "statusUpdateError": "Status konnte nicht aktualisiert werden",
+  "downloadAttachment": "Herunterladen",
+  "viewAttachment": "Ansehen"
 }

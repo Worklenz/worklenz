@@ -55,5 +55,7 @@
   "messageSent": "Nachricht gesendet",
   "messageFailed": "Nachricht konnte nicht gesendet werden",
   "attachFile": "Datei anhängen",
-  "emojiPicker": "Emoji hinzufügen"
+  "emojiPicker": "Emoji hinzufügen",
+  "noChatsWithClient": "Noch keine Konversationen mit diesem Kunden",
+  "startConversationWithClient": "Starten Sie eine Konversation, um diese Anfrage mit dem Kunden zu besprechen."
 }
