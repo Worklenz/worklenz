@@ -269,6 +269,39 @@ export default class TasksControllerV2 extends TasksControllerBase {
       .filter((i) => !!i)
       .join(" AND ");
 
+    // Build filtered subtask count query - apply same filters to subtasks
+    const subtaskFilters = [];
+    
+    // Always filter by archived status for subtasks
+    subtaskFilters.push(archivedFilter);
+    
+    // Apply status filter to subtasks if present
+    if (statusesFilter) {
+      subtaskFilters.push(statusesFilter.replace(/\bt\./g, 'subtask.'));
+    }
+    
+    // Apply priority filter to subtasks if present
+    if (options.priorities) {
+      const priorityIds = this.flatString(options.priorities as string);
+      subtaskFilters.push(`subtask.priority_id IN (${priorityIds})`);
+    }
+    
+    // Apply labels filter to subtasks if present
+    if (options.labels) {
+      const labelIds = this.flatString(options.labels as string);
+      subtaskFilters.push(`subtask.id IN (SELECT task_id FROM task_labels WHERE label_id IN (${labelIds}))`);
+    }
+    
+    // Apply members filter to subtasks if present
+    if (options.members) {
+      const memberIds = this.flatString(options.members as string);
+      subtaskFilters.push(`subtask.id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${memberIds}))`);
+    }
+
+    const subtaskFilterClause = subtaskFilters.length > 0 
+      ? `AND ${subtaskFilters.join(' AND ')}` 
+      : '';
+
     return `
       SELECT id,
              name,
@@ -279,8 +312,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
              t.parent_task_id IS NOT NULL AS is_sub_task,
              (SELECT name FROM tasks WHERE id = t.parent_task_id) AS parent_task_name,
              (SELECT COUNT(*)
-              FROM tasks
-              WHERE parent_task_id = t.id)::INT AS sub_tasks_count,
+              FROM tasks subtask
+              WHERE subtask.parent_task_id = t.id ${subtaskFilterClause})::INT AS sub_tasks_count,
 
              t.status_id AS status,
              t.archived,
