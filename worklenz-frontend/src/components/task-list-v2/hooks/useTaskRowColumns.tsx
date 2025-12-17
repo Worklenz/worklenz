@@ -122,6 +122,16 @@ export const useTaskRowColumns = ({
         : {};
 
       const renderColumnContent = () => {
+        // Debug log for all columns
+        if (columnId?.toLowerCase().includes('complet')) {
+          console.log(
+            '[DEBUG switch statement] columnId:',
+            columnId,
+            'for task:',
+            task.name || task.title
+          );
+        }
+
         switch (columnId) {
           case 'dragHandle':
             return (
@@ -256,6 +266,13 @@ export const useTaskRowColumns = ({
             return <EstimationColumn width={width} task={task} />;
 
           case 'completedDate':
+            console.log('[DEBUG completedDate column]', {
+              taskId: task.id,
+              taskName: task.name || task.title,
+              columnId,
+              formattedDate: formattedDates.completed,
+              taskCompletedAt: task.completedAt,
+            });
             return <DateColumn width={width} formattedDate={formattedDates.completed} />;
 
           case 'createdDate':
@@ -270,6 +287,15 @@ export const useTaskRowColumns = ({
           default:
             // Handle custom columns
             const column = visibleColumns.find(col => col.id === columnId);
+            if (columnId?.toLowerCase().includes('complet')) {
+              console.log('[DEBUG default case - completed related]', {
+                taskId: task.id,
+                taskName: task.name || task.title,
+                columnId,
+                column,
+                isCustom: column?.custom_column || column?.isCustom,
+              });
+            }
             if (
               column &&
               (column.custom_column || column.isCustom) &&

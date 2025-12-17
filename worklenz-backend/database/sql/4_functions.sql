@@ -4104,7 +4104,19 @@ BEGIN
 
     IF (_previous_status_name != _new_status_name)
     THEN
-        UPDATE tasks SET status_id = _status_id WHERE id = _task_id;
+        -- Update status_id and completed_at in a single statement
+        -- Set completed_at based on whether the new status is "done"
+        UPDATE tasks 
+        SET status_id = _status_id,
+            completed_at = CASE 
+                WHEN EXISTS(SELECT 1 
+                           FROM sys_task_status_categories 
+                           WHERE id = (SELECT category_id FROM task_statuses WHERE id = _status_id) 
+                           AND is_done IS TRUE) 
+                THEN CURRENT_TIMESTAMP 
+                ELSE NULL 
+            END
+        WHERE id = _task_id;
 
         SELECT get_task_complete_info(_task_id, _status_id) INTO _task_info;
 
@@ -5306,9 +5318,9 @@ BEGIN
          FROM sys_task_status_categories
          WHERE id = (SELECT category_id FROM task_statuses WHERE id = NEW.status_id)) IS TRUE)
     THEN
-        UPDATE tasks SET completed_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+        NEW.completed_at = CURRENT_TIMESTAMP;
     ELSE
-        UPDATE tasks SET completed_at = NULL WHERE id = NEW.id;
+        NEW.completed_at = NULL;
     END IF;
 
     RETURN NEW;
