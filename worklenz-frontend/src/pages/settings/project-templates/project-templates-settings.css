@@ -1,0 +1,5 @@
+.button-visibilty {
+  display: flex;
+  gap: 10px;
+  justify-content: right;
+}
