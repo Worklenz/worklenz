@@ -2,16 +2,7 @@ import { useMemo } from 'react';
 
 import { Flex, Typography } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
-
-const LOGO_LIGHT =
-  'https://s3.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-light-mode.png';
-const LOGO_DARK =
-  'https://s3.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-dark-mode.png';
-
-const XMAS_LOGO_LIGHT =
-  'https://s3.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-xmas-light.webp';
-const XMAS_LOGO_DARK =
-  'https://s3.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-xmas-dark.webp';
+import { LOGO_LIGHT, LOGO_DARK, XMAS_LOGO_LIGHT, XMAS_LOGO_DARK } from '@/shared/constants';
 
 type AuthPageHeaderProp = {
   description: string;
