@@ -59,17 +59,6 @@ async function handleMobileGoogleAuth(req: Request, done: any) {
       return done(null, false, { message: "Email not verified" });
     }
 
-    // Check for existing local account
-    const localAccountResult = await db.query(
-      "SELECT 1 FROM users WHERE email = $1 AND password IS NOT NULL AND is_deleted IS FALSE;",
-      [profile.email]
-    );
-
-    if (localAccountResult.rowCount) {
-      const message = `No Google account exists for email ${profile.email}.`;
-      return done(null, false, { message });
-    }
-
     // Check if user exists
     const userResult = await db.query(
       "SELECT id, google_id, name, email, active_team FROM users WHERE google_id = $1 OR email = $2;",
@@ -79,6 +68,17 @@ async function handleMobileGoogleAuth(req: Request, done: any) {
     if (userResult.rowCount) {
       // Existing user - login
       const user = userResult.rows[0];
+
+      // Link Google account if user signed up with email/password but google_id is not set
+      if (!user.google_id && profile.sub) {
+        try {
+          await db.query("UPDATE users SET google_id = $1 WHERE id = $2;", [profile.sub, user.id]);
+          user.google_id = profile.sub;
+        } catch (error) {
+          log_error(error);
+        }
+      }
+
       return done(null, user, { message: "User successfully logged in" });
     }
 
