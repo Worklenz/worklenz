@@ -3530,11 +3530,12 @@ class ClientPortalController {
           await db.query(updateClientQuery, [client.id, teamId]);
 
           // Create client portal access record with full permissions
+          // For linked Worklenz users, we use a placeholder password_hash since they authenticate via users table
           await db.query(
-            `INSERT INTO client_portal_access (client_id, is_active, created_at, updated_at)
-             VALUES ($1, TRUE, NOW(), NOW())
-             ON CONFLICT (client_id) DO UPDATE SET is_active = TRUE, updated_at = NOW()`,
-            [client.id]
+            `INSERT INTO client_portal_access (client_id, email, password_hash, is_active, created_at, updated_at)
+             VALUES ($1, $2, 'LINKED_USER', TRUE, NOW(), NOW())
+             ON CONFLICT (client_id) DO UPDATE SET is_active = TRUE, email = $2, updated_at = NOW()`,
+            [client.id, client.email]
           );
         }
 
@@ -3665,22 +3666,31 @@ class ClientPortalController {
       // Generate invitation link
       const inviteLink = `${getClientPortalBaseUrl()}/invite?token=${inviteToken}`;
 
-      // Generate email HTML
-      const emailHtml = ClientPortalController.generateInvitationEmailHTML({
-        inviteeName: client.name,
-        inviterName,
-        clientName: client.name,
-        companyName: client.company_name,
-        inviteLink,
-        expiresAt: new Date(expiresAt),
-        role: "member"
-      });
+      // Get team name for email
+      const teamQuery = `SELECT name FROM teams WHERE id = $1`;
+      const teamResult = await db.query(teamQuery, [teamId]);
+      const teamName = teamResult.rows[0]?.name || "Worklenz Team";
+
+      // Get the email template (same as initial invitation)
+      const template = FileConstants.getEmailTemplate(IEmailTemplateType.ClientInvitation) as string;
+      if (!template) {
+        return res.status(500).json(new ServerResponse(false, null, "Email template not found"));
+      }
+
+      // Replace template variables
+      const emailContent = template
+        .replace(/\[VAR_CLIENT_NAME\]/g, client.name || "Client")
+        .replace(/\[VAR_CLIENT_EMAIL\]/g, client.email || "")
+        .replace(/\[VAR_COMPANY_NAME\]/g, client.company_name || "N/A")
+        .replace(/\[VAR_CLIENT_PHONE\]/g, client.phone || "N/A")
+        .replace(/\[VAR_TEAM_NAME\]/g, teamName)
+        .replace(/\[VAR_PORTAL_LINK\]/g, inviteLink);
 
       // Send invitation email
       const emailRequest = new EmailRequest(
         [client.email],
-        `You're invited to join ${client.name} on Worklenz`,
-        emailHtml
+        `Welcome to your Client Portal - ${teamName}`,
+        emailContent
       );
 
       const emailResult = await sendEmailEnhanced(emailRequest);
