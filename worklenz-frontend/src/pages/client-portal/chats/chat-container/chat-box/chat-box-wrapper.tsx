@@ -1,12 +1,13 @@
-import { Card, Divider, Flex, Typography, Spin, Empty, Button } from '@/shared/antd-imports';
-import React, { ReactNode, useState, useEffect } from 'react';
+import { Card, Flex, Typography, Spin, Button } from '@/shared/antd-imports';
+import React, { ReactNode, useState } from 'react';
 import ChatList from '../chat-list';
 import ChatBox from './chat-box';
 import { useAppSelector } from '../../../../../hooks/useAppSelector';
-import { useGetOrganizationChatsQuery, useCreateOrganizationChatMutation } from '../../../../../api/client-portal/client-portal-api';
+import { useGetOrganizationChatsQuery } from '../../../../../api/client-portal/client-portal-api';
 import { useTranslation } from 'react-i18next';
-import { MessageOutlined } from '@ant-design/icons';
+import { MessageOutlined, ReloadOutlined, InboxOutlined } from '@ant-design/icons';
 import NewChatModal from '../../../../../components/client-portal/NewChatModal';
+import { themeWiseColor } from '../../../../../utils/themeWiseColor';
 
 export type TempChatsType = {
   id: string;
@@ -27,73 +28,45 @@ export type TempChatsType = {
 const ChatBoxWrapper = () => {
   const [openedChatId, setOpenedChatId] = useState<string | null>(null);
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
 
-  // localization
   const { t } = useTranslation('client-portal-chats');
 
-  // Fetch chats from API - using organization-side endpoint
   const {
     data: apiChatsData,
     isLoading,
     error,
     refetch,
   } = useGetOrganizationChatsQuery({}, {
-    // Force skip cache and make fresh request
     refetchOnMountOrArgChange: true,
-    // Skip the query if we don't have auth
     skip: false,
   });
-  
-  const apiChats = apiChatsData?.chats || [];
 
-  // Debug logging
-  React.useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Chat API Query State:', {
-        isLoading,
-        error,
-        apiChats,
-        hasData: !!apiChats,
-      });
-    }
-  }, [isLoading, error, apiChats]);
-
-  // Force refetch when component mounts
-  React.useEffect(() => {
-    console.log('ChatBoxWrapper mounted, triggering refetch...');
-    console.log('RTK Query hook state:', { isLoading, error, apiChats });
-    refetch();
-  }, [refetch]);
-
-  // get chat list from redux (fallback to local state)
   const localChatList = useAppSelector(state => state.clientsPortalReducer.chatsReducer.chatList);
 
-  // Convert API chats to local format or use local data
   const chatList = React.useMemo(() => {
     try {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('API Chats Response:', apiChats);
-        console.log('Is apiChats an array?', Array.isArray(apiChats));
-      }
-
-      // Handle different response formats
-      let chatsArray = apiChats;
-
-      // If the response is wrapped in an object (like { body: [...] })
-      if (apiChats && typeof apiChats === 'object' && !Array.isArray(apiChats)) {
-        const apiChatsObj = apiChats as any;
-        if (apiChatsObj.body && Array.isArray(apiChatsObj.body)) {
-          chatsArray = apiChatsObj.body;
-        } else if (apiChatsObj.data && Array.isArray(apiChatsObj.data)) {
-          chatsArray = apiChatsObj.data;
+      // Handle the API response - it could be an array directly or wrapped
+      let chatsArray: any[] = [];
+      
+      if (Array.isArray(apiChatsData)) {
+        chatsArray = apiChatsData;
+      } else if (apiChatsData && typeof apiChatsData === 'object') {
+        const data = apiChatsData as any;
+        if (data.chats && Array.isArray(data.chats)) {
+          chatsArray = data.chats;
+        } else if (data.body && Array.isArray(data.body)) {
+          chatsArray = data.body;
+        } else if (data.data && Array.isArray(data.data)) {
+          chatsArray = data.data;
         }
       }
 
-      if (chatsArray && Array.isArray(chatsArray)) {
-        return chatsArray.map(chat => ({
+      if (chatsArray.length > 0) {
+        return chatsArray.map((chat: any) => ({
           id: chat.id || '',
           name: chat.title || chat.participants?.join(', ') || 'Unknown',
-          chats_data: [], // Will be loaded when chat is opened
+          chats_data: [],
           status: (chat.unreadCount > 0 ? 'unread' : 'read') as 'read' | 'unread',
           lastMessage: chat.lastMessage || '',
           lastMessageTime: chat.lastMessageTime || '',
@@ -102,101 +75,140 @@ const ChatBoxWrapper = () => {
         }));
       }
       return localChatList || [];
-    } catch (error) {
-      console.error('Error processing chat list:', error);
+    } catch (err) {
+      console.error('Error processing chat list:', err);
       return localChatList || [];
     }
-  }, [apiChats, localChatList]);
+  }, [apiChatsData, localChatList]);
 
-  // get the opened chat
   const openedChat = Array.isArray(chatList)
     ? chatList.find(chat => chat.id === openedChatId)
     : null;
 
-  // Handle new chat success
   const handleNewChatSuccess = (chatId: string) => {
     setOpenedChatId(chatId);
     setIsNewChatModalOpen(false);
+    refetch();
   };
 
+  // Loading state
   if (isLoading) {
     return (
       <Card
-        style={{ height: 'calc(100vh - 280px)', overflow: 'hidden' }}
-        styles={{ body: { padding: 0 } }}
+        style={{
+          height: 'calc(100vh - 280px)',
+          overflow: 'hidden',
+          borderRadius: 12,
+        }}
+        styles={{ body: { padding: 0, height: '100%' } }}
       >
         <Flex align="center" justify="center" style={{ height: '100%' }}>
           <Flex vertical align="center" gap={16}>
             <Spin size="large" />
-            <Typography.Text type="secondary">Loading chats...</Typography.Text>
+            <Typography.Text type="secondary">{t('loadingChats')}</Typography.Text>
           </Flex>
         </Flex>
       </Card>
     );
   }
 
+  // Error state
   if (error) {
     return (
       <Card
-        style={{ height: 'calc(100vh - 280px)', overflow: 'hidden' }}
-        styles={{ body: { padding: 0 } }}
+        style={{
+          height: 'calc(100vh - 280px)',
+          overflow: 'hidden',
+          borderRadius: 12,
+        }}
+        styles={{ body: { padding: 0, height: '100%' } }}
       >
         <Flex align="center" justify="center" style={{ height: '100%' }}>
-          <Flex vertical align="center" gap={16}>
-            <Typography.Text type="danger">Error loading chats</Typography.Text>
-            <Typography.Text type="secondary">
-              {error && 'data' in error ? String(error.data) : 'Something went wrong'}
+          <Flex vertical align="center" gap={16} style={{ textAlign: 'center', padding: 24 }}>
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                backgroundColor: themeWiseColor('#fff1f0', '#2a1215', themeMode),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <InboxOutlined style={{ fontSize: 28, color: '#ff4d4f' }} />
+            </div>
+            <Typography.Title level={5} style={{ margin: 0 }}>
+              {t('errorLoadingChats')}
+            </Typography.Title>
+            <Typography.Text type="secondary" style={{ maxWidth: 300 }}>
+              {t('errorLoadingChatsDescription')}
             </Typography.Text>
-            <button onClick={() => refetch()}>Retry</button>
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={() => refetch()}
+              style={{ marginTop: 8 }}
+            >
+              {t('retryButton')}
+            </Button>
           </Flex>
         </Flex>
       </Card>
     );
   }
 
-  // Handle empty state
+  // Empty state
   if (!chatList || chatList.length === 0) {
     return (
       <Card
-        style={{ height: 'calc(100vh - 280px)', overflow: 'hidden' }}
-        styles={{ body: { padding: 0 } }}
+        style={{
+          height: 'calc(100vh - 280px)',
+          overflow: 'hidden',
+          borderRadius: 12,
+        }}
+        styles={{ body: { padding: 0, height: '100%' } }}
       >
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={
-            <div>
-              <Typography.Title level={4} style={{ marginBottom: 8 }}>
-                {t('noChatsTitle')}
-              </Typography.Title>
-              <Typography.Text type="secondary">{t('noChatsDescription')}</Typography.Text>
+        <Flex align="center" justify="center" style={{ height: '100%' }}>
+          <Flex vertical align="center" gap={20} style={{ textAlign: 'center', padding: 24 }}>
+            <div
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: '50%',
+                backgroundColor: themeWiseColor('#e6f4ff', '#111d2c', themeMode),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <MessageOutlined style={{ fontSize: 36, color: '#1890ff' }} />
             </div>
-          }
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: 'calc(100vh - 320px)',
-          }}
-        >
-          <Button
-            type="primary"
-            icon={<MessageOutlined />}
-            onClick={() => setIsNewChatModalOpen(true)}
-            size="large"
-            style={{
-              height: '40px',
-              fontSize: '14px',
-              fontWeight: 500,
-              padding: '0 24px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            {t('startConversation') || 'Start Conversation'}
-          </Button>
-        </Empty>
+            <div>
+              <Typography.Title level={4} style={{ margin: '0 0 8px 0' }}>
+                {t('emptyStateTitle')}
+              </Typography.Title>
+              <Typography.Text type="secondary" style={{ maxWidth: 320, display: 'block' }}>
+                {t('emptyStateDescription')}
+              </Typography.Text>
+            </div>
+            <Button
+              type="primary"
+              icon={<MessageOutlined />}
+              onClick={() => setIsNewChatModalOpen(true)}
+              size="large"
+              style={{
+                height: 44,
+                fontSize: 14,
+                fontWeight: 500,
+                paddingInline: 28,
+                borderRadius: 8,
+              }}
+            >
+              {t('startConversation')}
+            </Button>
+          </Flex>
+        </Flex>
         <NewChatModal
           open={isNewChatModalOpen}
           onClose={() => setIsNewChatModalOpen(false)}
@@ -206,31 +218,66 @@ const ChatBoxWrapper = () => {
     );
   }
 
+  // Main chat view
   return (
     <Card
-      style={{ height: 'calc(100vh - 280px)', overflow: 'hidden' }}
-      styles={{ body: { padding: 0 } }}
+      style={{
+        height: 'calc(100vh - 280px)',
+        overflow: 'hidden',
+        borderRadius: 12,
+      }}
+      styles={{ body: { padding: 0, height: '100%' } }}
     >
-      <Flex>
-        {/* chat list */}
-        <ChatList chatList={chatList} setOpenedChatId={setOpenedChatId} />
+      <Flex style={{ height: '100%' }}>
+        {/* Chat list sidebar */}
+        <ChatList
+          chatList={chatList}
+          setOpenedChatId={setOpenedChatId}
+          selectedChatId={openedChatId}
+        />
 
-        <Divider type="vertical" style={{ height: 'calc(100vh - 300px)', marginInline: 0 }} />
-
-        {/* chat box */}
+        {/* Chat content area */}
         {openedChat ? (
           <ChatBox openedChat={openedChat} />
         ) : (
           <Flex
             align="center"
             justify="center"
+            vertical
+            gap={16}
             style={{
-              width: '100%',
+              flex: 1,
               height: '100%',
-              marginBlock: 24,
+              backgroundColor: themeWiseColor('#fafafa', '#141414', themeMode),
             }}
           >
-            <Typography.Text type="secondary">{t('selectChatMessage')}</Typography.Text>
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                backgroundColor: themeWiseColor('#f0f0f0', '#262626', themeMode),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <MessageOutlined
+                style={{
+                  fontSize: 28,
+                  color: themeWiseColor('#bfbfbf', '#595959', themeMode),
+                }}
+              />
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <Typography.Text type="secondary" style={{ fontSize: 15 }}>
+                {t('selectChatMessage')}
+              </Typography.Text>
+              <br />
+              <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+                {t('selectChatDescription')}
+              </Typography.Text>
+            </div>
           </Flex>
         )}
       </Flex>
