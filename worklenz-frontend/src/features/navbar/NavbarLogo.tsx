@@ -30,7 +30,7 @@ const NavbarLogo = () => {
                 : LOGO_LIGHT
           }
           alt={t('logoAlt')}
-          style={{ height: 26, display: 'block' }}
+          style={{ height: isChristmasSeason ? 36 : 26, display: 'block', marginBottom: isChristmasSeason ? 12 : 0 }}
         />
       </div>
     </Link>
