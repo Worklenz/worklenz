@@ -149,18 +149,72 @@ const CustomMentionsInput = ({
     setTimeout(() => {
       if (editableRef.current) {
         editableRef.current.focus();
+        
+        // Calculate the correct position after the mention
+        const newCursorPos = lastAtIndex + option.value.length + 2; // +2 for @ and space
+        
         const selection = window.getSelection();
         const range = document.createRange();
-        const textNode = editableRef.current.childNodes[0];
-        if (textNode) {
-          const newPos = lastAtIndex + option.value.length + 2; // +2 for @ and space
-          range.setStart(textNode, Math.min(newPos, textNode.textContent?.length || 0));
-          range.collapse(true);
-          selection?.removeAllRanges();
-          selection?.addRange(range);
+        
+        // Find the correct node and offset
+        let currentPos = 0;
+        let targetNode: Node | null = null;
+        let targetOffset = 0;
+        
+        const findPosition = (node: Node): boolean => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            const textLength = node.textContent?.length || 0;
+            if (currentPos + textLength >= newCursorPos) {
+              targetNode = node;
+              targetOffset = newCursorPos - currentPos;
+              return true;
+            }
+            currentPos += textLength;
+          } else if (node.nodeType === Node.ELEMENT_NODE) {
+            for (let i = 0; i < node.childNodes.length; i++) {
+              if (findPosition(node.childNodes[i])) {
+                return true;
+              }
+            }
+          }
+          return false;
+        };
+        
+        findPosition(editableRef.current);
+        
+        if (targetNode) {
+          try {
+            range.setStart(targetNode, targetOffset);
+            range.collapse(true);
+            selection?.removeAllRanges();
+            selection?.addRange(range);
+          } catch (e) {
+            // If positioning fails, try to place cursor at the end
+            try {
+              const lastChild = editableRef.current.lastChild;
+              if (lastChild) {
+                range.selectNodeContents(lastChild);
+                range.collapse(false);
+                selection?.removeAllRanges();
+                selection?.addRange(range);
+              }
+            } catch (err) {
+              console.error('Cursor positioning failed:', err);
+            }
+          }
+        } else {
+          // Fallback: place cursor at the end
+          try {
+            range.selectNodeContents(editableRef.current);
+            range.collapse(false);
+            selection?.removeAllRanges();
+            selection?.addRange(range);
+          } catch (e) {
+            console.error('Cursor positioning failed:', e);
+          }
         }
       }
-    }, 0);
+    }, 10); // Slightly longer delay to ensure DOM updates
   };
 
   // Handle keyboard navigation
@@ -197,9 +251,33 @@ const CustomMentionsInput = ({
         if (editableRef.current.childNodes.length > 0) {
           try {
             const newRange = document.createRange();
-            const textNode = editableRef.current.childNodes[0];
-            if (textNode) {
-              newRange.setStart(textNode, Math.min(offset, textNode.textContent?.length || 0));
+            let currentPos = 0;
+            let targetNode: Node | null = null;
+            let targetOffset = 0;
+            
+            const findPosition = (node: Node): boolean => {
+              if (node.nodeType === Node.TEXT_NODE) {
+                const textLength = node.textContent?.length || 0;
+                if (currentPos + textLength >= offset) {
+                  targetNode = node;
+                  targetOffset = offset - currentPos;
+                  return true;
+                }
+                currentPos += textLength;
+              } else if (node.nodeType === Node.ELEMENT_NODE) {
+                for (let i = 0; i < node.childNodes.length; i++) {
+                  if (findPosition(node.childNodes[i])) {
+                    return true;
+                  }
+                }
+              }
+              return false;
+            };
+            
+            findPosition(editableRef.current);
+            
+            if (targetNode) {
+              newRange.setStart(targetNode, Math.min(targetOffset, targetNode.textContent?.length || 0));
               newRange.collapse(true);
               selection?.removeAllRanges();
               selection?.addRange(newRange);
