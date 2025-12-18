@@ -190,7 +190,7 @@ const CategoriesSettings = () => {
               <Input
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.currentTarget.value)}
-                placeholder={t('searchPlaceholder')}
+                placeholder={t('search', { defaultValue: 'Search' })}
                 style={{ maxWidth: 232 }}
                 suffix={<SearchOutlined />}
               />

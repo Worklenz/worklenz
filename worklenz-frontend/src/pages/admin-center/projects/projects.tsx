@@ -196,7 +196,7 @@ const Projects: React.FC = () => {
               />
             </Tooltip>
             <Input
-              placeholder={t('searchPlaceholder')}
+              placeholder={t('search', { defaultValue: 'Search' })}
               suffix={<SearchOutlined />}
               type="text"
               value={requestParams.search}

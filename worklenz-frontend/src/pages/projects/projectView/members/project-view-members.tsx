@@ -282,7 +282,7 @@ const ProjectViewMembers = () => {
           <Flex gap={8} align="center">
             <Input.Search
               allowClear
-              placeholder={t('searchPlaceholder')}
+              placeholder={t('search', { defaultValue: 'Search' })}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onSearch={value => {
