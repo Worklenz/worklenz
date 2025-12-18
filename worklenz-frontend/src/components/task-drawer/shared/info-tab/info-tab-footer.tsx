@@ -88,17 +88,32 @@ const CustomMentionsInput = ({
     return temp.textContent || '';
   };
 
+  // Get cursor position in contenteditable
+  const getCursorPosition = () => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const preCaretRange = range.cloneRange();
+      preCaretRange.selectNodeContents(editableRef.current!);
+      preCaretRange.setEnd(range.endContainer, range.endOffset);
+      return preCaretRange.toString().length;
+    }
+    return 0;
+  };
+
   // Handle input changes
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
     const text = extractPlainText(e.currentTarget.innerHTML);
+    const currentCursorPos = getCursorPosition();
+    setCursorPosition(currentCursorPos);
     onChange(text);
 
     // Check if user is typing a mention
-    const lastAtIndex = text.lastIndexOf('@', cursorPosition);
+    const lastAtIndex = text.lastIndexOf('@', currentCursorPos);
     if (lastAtIndex !== -1) {
-      const textAfterAt = text.slice(lastAtIndex + 1, cursorPosition);
+      const textAfterAt = text.slice(lastAtIndex + 1, currentCursorPos);
       
-      if (!textAfterAt.includes(' ') && textAfterAt.length >= 0) {
+      if (!textAfterAt.includes(' ')) {
         // Filter options
         const filtered = options.filter((opt: any) => 
           filterOption ? filterOption(textAfterAt, opt) : true
@@ -117,7 +132,7 @@ const CustomMentionsInput = ({
   // Handle option selection
   const selectOption = (option: any) => {
     const text = value || '';
-    const lastAtIndex = text.lastIndexOf('@');
+    const lastAtIndex = text.lastIndexOf('@', cursorPosition);
     
     if (lastAtIndex !== -1) {
       const beforeAt = text.slice(0, lastAtIndex);
@@ -129,7 +144,23 @@ const CustomMentionsInput = ({
     }
     
     setIsDropdownOpen(false);
-    editableRef.current?.focus();
+    
+    // Focus back and set cursor after the mention
+    setTimeout(() => {
+      if (editableRef.current) {
+        editableRef.current.focus();
+        const selection = window.getSelection();
+        const range = document.createRange();
+        const textNode = editableRef.current.childNodes[0];
+        if (textNode) {
+          const newPos = lastAtIndex + option.value.length + 2; // +2 for @ and space
+          range.setStart(textNode, Math.min(newPos, textNode.textContent?.length || 0));
+          range.collapse(true);
+          selection?.removeAllRanges();
+          selection?.addRange(range);
+        }
+      }
+    }, 0);
   };
 
   // Handle keyboard navigation
@@ -145,6 +176,7 @@ const CustomMentionsInput = ({
         e.preventDefault();
         selectOption(filteredOptions[selectedIndex]);
       } else if (e.key === 'Escape') {
+        e.preventDefault();
         setIsDropdownOpen(false);
       }
     }
@@ -157,18 +189,21 @@ const CustomMentionsInput = ({
       if (editableRef.current.innerHTML !== highlighted) {
         const selection = window.getSelection();
         const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
-        const offset = range ? range.startOffset : 0;
+        const offset = range ? getCursorPosition() : 0;
         
         editableRef.current.innerHTML = highlighted;
         
         // Restore cursor position
-        if (range && editableRef.current.childNodes.length > 0) {
+        if (editableRef.current.childNodes.length > 0) {
           try {
             const newRange = document.createRange();
-            newRange.setStart(editableRef.current.childNodes[0] || editableRef.current, offset);
-            newRange.collapse(true);
-            selection?.removeAllRanges();
-            selection?.addRange(newRange);
+            const textNode = editableRef.current.childNodes[0];
+            if (textNode) {
+              newRange.setStart(textNode, Math.min(offset, textNode.textContent?.length || 0));
+              newRange.collapse(true);
+              selection?.removeAllRanges();
+              selection?.addRange(newRange);
+            }
           } catch (e) {
             // Cursor positioning failed, ignore
           }
@@ -183,6 +218,25 @@ const CustomMentionsInput = ({
       editableRef.current.focus();
     }
   }, [autoFocus]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current && 
+        !dropdownRef.current.contains(event.target as Node) &&
+        editableRef.current &&
+        !editableRef.current.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="custom-mentions-wrapper" style={{ position: 'relative' }}>
@@ -215,18 +269,9 @@ const CustomMentionsInput = ({
           ref={dropdownRef}
           className={`mentions-dropdown theme-${themeMode}`}
           style={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
-            right: 0,
-            marginTop: 4,
             backgroundColor: themeWiseColor('#fff', '#1f1f1f', themeMode),
-            border: `1px solid ${themeWiseColor('#d9d9d9', '#434343', themeMode)}`,
-            borderRadius: 4,
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-            maxHeight: 200,
-            overflowY: 'auto',
-            zIndex: 1050,
+            borderColor: themeWiseColor('#d9d9d9', '#434343', themeMode),
+            color: themeWiseColor('rgba(0, 0, 0, 0.85)', 'rgba(255, 255, 255, 0.85)', themeMode),
           }}
         >
           {filteredOptions.map((option, index) => (
@@ -234,14 +279,7 @@ const CustomMentionsInput = ({
               key={option.key}
               className={`mentions-option ${index === selectedIndex ? 'selected' : ''}`}
               onClick={() => selectOption(option)}
-              style={{
-                padding: '8px 12px',
-                cursor: 'pointer',
-                backgroundColor: index === selectedIndex 
-                  ? themeWiseColor('#f5f5f5', '#2a2a2a', themeMode)
-                  : 'transparent',
-                color: themeWiseColor('rgba(0, 0, 0, 0.85)', 'rgba(255, 255, 255, 0.85)', themeMode),
-              }}
+              onMouseEnter={() => setSelectedIndex(index)}
             >
               {option.label}
             </div>
