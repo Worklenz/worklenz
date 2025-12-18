@@ -24,7 +24,8 @@ import { useTranslation } from "react-i18next";
 import {
   useGetRequestDetailsQuery,
   useGetRequestStatusHistoryQuery,
-  useUpdateRequestMutation,
+  useGetRequestCommentsQuery,
+  useAddRequestCommentMutation,
 } from "@/store/api";
 
 const { Title, Text } = Typography;
@@ -39,10 +40,12 @@ const RequestDetailsPage: React.FC = () => {
 
   const { data, isLoading, refetch } = useGetRequestDetailsQuery(id!);
   const { data: historyData } = useGetRequestStatusHistoryQuery(id!);
-  const [updateRequest] = useUpdateRequestMutation();
+  const { data: commentsData, refetch: refetchComments } = useGetRequestCommentsQuery(id!);
+  const [addRequestComment] = useAddRequestCommentMutation();
 
   const request = data?.body;
   const statusHistory = historyData?.body || [];
+  const comments = commentsData?.body || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -79,47 +82,20 @@ const RequestDetailsPage: React.FC = () => {
   const handleAddComment = async (values: { comment: string }) => {
     try {
       setAddingComment(true);
-      // In a real implementation, this would add a comment to the request
-      const currentNotes = request?.notes || '';
-      await updateRequest({
+      await addRequestComment({
         id: id!,
-        data: {
-          // Add comment logic here
-          notes: `${currentNotes}\n\n---\nComment: ${values.comment}`,
-        },
+        comment: values.comment,
       }).unwrap();
 
       message.success(t('requests.commentAdded'));
       form.resetFields();
-      refetch();
-    } catch {
-      message.error(t('requests.commentError'));
+      refetchComments();
+    } catch (error: any) {
+      message.error(error?.data?.message || t('requests.commentError'));
     } finally {
       setAddingComment(false);
     }
   };
-
-  // Error handling removed for now
-  // eslint-disable-next-line no-constant-condition
-  if (false) {
-    return (
-      <Card>
-        <Alert
-          message={t('common.error')}
-          description={t('requests.errorLoadingDescription')}
-          type="error"
-          showIcon
-        />
-        <Button
-          icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/requests")}
-          style={{ marginTop: 16 }}
-        >
-          {t('requests.backToRequests')}
-        </Button>
-      </Card>
-    );
-  }
 
   if (isLoading) {
     return (
@@ -315,6 +291,33 @@ const RequestDetailsPage: React.FC = () => {
       </Card>
 
       <Card title={t('requests.commentsUpdates')}>
+        {/* Comments List */}
+        {comments.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            {comments.map((comment) => (
+              <div
+                key={comment.id}
+                style={{
+                  padding: 16,
+                  marginBottom: 16,
+                  backgroundColor: 'var(--ant-color-bg-container)',
+                  border: '1px solid var(--ant-color-border-secondary)',
+                  borderRadius: 8,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <Text strong>{comment.sender_name}</Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {new Date(comment.created_at).toLocaleString()}
+                  </Text>
+                </div>
+                <Text style={{ whiteSpace: 'pre-wrap' }}>{comment.comment}</Text>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add Comment Form */}
         <Form form={form} onFinish={handleAddComment}>
           <Form.Item
             name="comment"
