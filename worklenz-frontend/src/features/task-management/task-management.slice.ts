@@ -364,19 +364,35 @@ export const fetchSubTasks = createAsyncThunk(
       const state = getState() as RootState;
       const currentGrouping = state.grouping.currentGrouping;
 
+      // Get active filters from taskReducer (same as fetchTasksV3)
+      const selectedLabels = state.taskReducer.labels
+        .filter((l: any) => l.selected && l.id)
+        .map((l: any) => l.id)
+        .join(' ');
+
+      const selectedAssignees = state.taskReducer.taskAssignees
+        .filter((m: any) => m.selected && m.id)
+        .map((m: any) => m.id)
+        .join(' ');
+
+      const selectedPriorities = state.taskReducer.priorities.join(' ');
+
+      // Get search value from taskManagement slice
+      const searchValue = state.taskManagement.search || '';
+
       const config: ITaskListConfigV2 = {
         id: projectId,
         archived: false,
         group: currentGrouping || '',
         field: '',
         order: '',
-        search: '',
-        statuses: '',
-        members: '',
+        search: searchValue,
+        statuses: '', // Status filter not typically applied to subtasks
+        members: selectedAssignees,
         projects: '',
         isSubtasksInclude: false,
-        labels: '',
-        priorities: '',
+        labels: selectedLabels,
+        priorities: selectedPriorities,
         parent_task: taskId,
       };
 

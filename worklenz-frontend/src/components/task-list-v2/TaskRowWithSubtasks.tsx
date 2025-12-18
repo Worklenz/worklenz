@@ -279,6 +279,28 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
     const isLoadingSubtasks = useAppSelector(state => selectSubtaskLoading(state, taskId));
     const dispatch = useAppDispatch();
 
+    // Get active filters from Redux (tasks.slice - used by improved-task-filters)
+    const activeFilters = useAppSelector(state => ({
+      members: state.taskReducer?.taskAssignees?.filter((m: any) => m.selected).map((m: any) => m.id) || [],
+      labels: state.taskReducer?.labels?.filter((l: any) => l.selected).map((l: any) => l.id) || [],
+      priorities: state.taskReducer?.priorities || []
+    }));
+
+    // Get all priorities to create ID-to-name mapping
+    const allPriorities = useAppSelector(state => state.priorityReducer?.priorities || []);
+    
+    // Create priority ID to name mapping
+    const priorityIdToName = React.useMemo(() => {
+      const map: Record<string, string> = {};
+      allPriorities.forEach((p: any) => {
+        // Map priority value (0=low, 1=medium, 2=high) to name
+        if (p.value === 0) map[p.id] = 'low';
+        if (p.value === 1) map[p.id] = 'medium';
+        if (p.value === 2) map[p.id] = 'high';
+      });
+      return map;
+    }, [allPriorities]);
+
     const handleSubtaskAdded = useCallback(() => {
       // After adding a subtask, the AddSubtaskRow will handle its own state reset
       // We don't need to do anything here
@@ -290,6 +312,57 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
 
     // Don't render subtasks if we've reached the maximum depth
     const canHaveSubtasks = depth < maxDepth;
+
+    // Filter subtasks based on active filters
+    const filteredSubtasks = React.useMemo(() => {
+      if (!task.sub_tasks || task.sub_tasks.length === 0) return [];
+
+      // If no filters are active, show all subtasks
+      const hasActiveFilters = 
+        activeFilters.members.length > 0 || 
+        activeFilters.labels.length > 0 || 
+        activeFilters.priorities.length > 0;
+
+      if (!hasActiveFilters) {
+        return task.sub_tasks;
+      }
+
+      // Filter subtasks based on active filters
+      return task.sub_tasks.filter((subtask: Task) => {
+        // Check member filter
+        if (activeFilters.members.length > 0) {
+          const hasMatchingMember = subtask.assignees?.some((a: any) => {
+            // Assignees can be either strings (IDs) or objects with team_member_id/id
+            const assigneeId = typeof a === 'string' ? a : (a.team_member_id || a.id);
+            return activeFilters.members.includes(assigneeId);
+          });
+          if (!hasMatchingMember) return false;
+        }
+
+        // Check label filter
+        if (activeFilters.labels.length > 0) {
+          const hasMatchingLabel = subtask.labels?.some((l: any) => 
+            activeFilters.labels.includes(l.id)
+          );
+          if (!hasMatchingLabel) return false;
+        }
+
+        // Check priority filter
+        if (activeFilters.priorities.length > 0) {
+          // Subtask has priority name (low/medium/high), but filter has priority IDs
+          // Convert filter IDs to names and check if subtask priority matches
+          const filterPriorityNames = activeFilters.priorities
+            .map(id => priorityIdToName[id])
+            .filter(Boolean);
+          
+          if (!filterPriorityNames.includes(subtask.priority)) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+    }, [task.sub_tasks, activeFilters, priorityIdToName]);
 
     return (
       <>
@@ -316,7 +389,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
 
             {/* Render existing subtasks when not loading - RECURSIVELY */}
             {!isLoadingSubtasks &&
-              task.sub_tasks?.map((subtask: Task) => (
+              filteredSubtasks.map((subtask: Task) => (
                 <div
                   key={subtask.id}
                   className={`${getSubtaskBackgroundColor(depth + 1)} border-l-2 ${getBorderColor(depth + 1)}`}
