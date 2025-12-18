@@ -8,6 +8,8 @@ import GoogleMobileLogin from "./passport-strategies/passport-google-mobile";
 import LocalLogin from "./passport-strategies/passport-local-login";
 import LocalSignup from "./passport-strategies/passport-local-signup";
 
+const isGoogleAuthEnabled = process.env.ENABLE_GOOGLE_AUTH === "true";
+
 /**
  * Use any passport middleware before the serialize and deserialize
  * @param {Passport} passport
@@ -15,8 +17,10 @@ import LocalSignup from "./passport-strategies/passport-local-signup";
 export default (passport: PassportStatic) => {
   passport.use("local-login", LocalLogin);
   passport.use("local-signup", LocalSignup);
-  passport.use(GoogleLogin);
-  passport.use("google-mobile", GoogleMobileLogin);
+  if (isGoogleAuthEnabled) {
+    passport.use(GoogleLogin);
+    passport.use("google-mobile", GoogleMobileLogin);
+  }
   passport.serializeUser(serialize);
   passport.deserializeUser(deserialize);
 };

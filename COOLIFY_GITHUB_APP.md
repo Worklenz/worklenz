@@ -49,6 +49,10 @@ Guia rapido para subir o Worklenz no Coolify usando a integracao oficial com o G
      - `S3_URL` (endpoint S3, ex.: `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`)
      - `WEB_APP_URL` = URL publica do frontend
      - (opcional SMTP) `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL`
+   - Gerar secrets com `openssl` (use direto no valor da env, sem aspas):
+     - `SESSION_SECRET`: `openssl rand -hex 64`
+     - `JWT_SECRET`: `openssl rand -hex 64`
+     - `DB_PASSWORD` (se for criar um usuario proprio): `openssl rand -base64 24`
    - Se usar Postgres gerenciado pelo Coolify, crie o recurso de banco e aponte `DB_HOST` para o host interno indicado pelo Coolify.
    - Deploy o backend primeiro e confirme que sobe sem erro.
 

@@ -10,6 +10,8 @@ import passwordValidator from "../../middlewares/validators/password-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import FileConstants from "../../shared/file-constants";
 
+const isGoogleAuthEnabled = process.env.ENABLE_GOOGLE_AUTH === "true";
+
 const authRouter = express.Router();
 
 // Local authentication
@@ -29,35 +31,37 @@ authRouter.post("/update-password", updatePasswordValidator, passwordValidator, 
 
 authRouter.post("/verify-captcha", safeControllerFunction(AuthController.verifyCaptcha));
 
-// Google authentication
-authRouter.get("/google", (req, res) => {
-  return passport.authenticate("google", {
-    scope: ["email", "profile"],
-    state: JSON.stringify({
-      teamMember: req.query.teamMember || null,
-      team: req.query.team || null,
-      teamName: req.query.teamName || null,
-      project: req.query.project || null
-    })
-  })(req, res);
-});
+if (isGoogleAuthEnabled) {
+  // Google authentication
+  authRouter.get("/google", (req, res) => {
+    return passport.authenticate("google", {
+      scope: ["email", "profile"],
+      state: JSON.stringify({
+        teamMember: req.query.teamMember || null,
+        team: req.query.team || null,
+        teamName: req.query.teamName || null,
+        project: req.query.project || null
+      })
+    })(req, res);
+  });
 
-authRouter.get("/google/verify", (req, res) => {
-  let error = "";
-  if ((req.session as any).error) {
-    error = `?error=${encodeURIComponent((req.session as any).error as string)}`;
-    delete (req.session as any).error;
-  }
+  authRouter.get("/google/verify", (req, res) => {
+    let error = "";
+    if ((req.session as any).error) {
+      error = `?error=${encodeURIComponent((req.session as any).error as string)}`;
+      delete (req.session as any).error;
+    }
 
-  const failureRedirect = process.env.LOGIN_FAILURE_REDIRECT + error;
-  return passport.authenticate("google", {
-    failureRedirect,
-    successRedirect: process.env.LOGIN_SUCCESS_REDIRECT
-  })(req, res);
-});
+    const failureRedirect = process.env.LOGIN_FAILURE_REDIRECT + error;
+    return passport.authenticate("google", {
+      failureRedirect,
+      successRedirect: process.env.LOGIN_SUCCESS_REDIRECT
+    })(req, res);
+  });
 
-// Mobile Google Sign-In using Passport strategy
-authRouter.post("/google/mobile", AuthController.googleMobileAuthPassport);
+  // Mobile Google Sign-In using Passport strategy
+  authRouter.post("/google/mobile", AuthController.googleMobileAuthPassport);
+}
 
 // Passport logout
 authRouter.get("/logout", AuthController.logout);
