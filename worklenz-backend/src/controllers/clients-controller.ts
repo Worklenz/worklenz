@@ -1282,15 +1282,17 @@ export default class ClientsController extends WorklenzControllerBase {
 
     const result = await db.query(q, [requestId, teamId]);
 
-    // Count new comments (comments created after last admin view, or all if never viewed)
+    // Count new comments from CLIENTS only (not team member messages)
     let newCommentsCount = 0;
     if (adminViewedAt) {
       newCommentsCount = result.rows.filter(
-        (comment: any) => new Date(comment.created_at) > new Date(adminViewedAt)
+        (comment: any) => new Date(comment.created_at) > new Date(adminViewedAt) && comment.sender_type === 'client'
       ).length;
     } else {
-      // If never viewed, all comments are new
-      newCommentsCount = result.rows.length;
+      // If never viewed, count only client comments as new
+      newCommentsCount = result.rows.filter(
+        (comment: any) => comment.sender_type === 'client'
+      ).length;
     }
 
     return res.status(200).send(new ServerResponse(true, {
@@ -1363,11 +1365,12 @@ export default class ClientsController extends WorklenzControllerBase {
       // Get request details and client email
       const requestDetails = await db.query(
         `SELECT r.req_no, s.name as service_name, c.name as client_name, 
-                cr.email as client_email, t.name as team_name, cps.slug as portal_slug
+                u.email as client_email, t.name as team_name, cps.slug as portal_slug
          FROM client_portal_requests r
          JOIN client_portal_services s ON r.service_id = s.id
          JOIN clients c ON r.client_id = c.id
          LEFT JOIN client_relationships cr ON cr.client_id = c.id AND cr.organization_team_id = r.organization_team_id
+         LEFT JOIN users u ON cr.user_id = u.id
          JOIN teams t ON t.id = r.organization_team_id
          LEFT JOIN client_portal_settings cps ON cps.organization_team_id = r.organization_team_id
          WHERE r.id = $1`,
