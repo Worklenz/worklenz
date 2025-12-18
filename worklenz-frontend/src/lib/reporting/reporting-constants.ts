@@ -2,6 +2,7 @@ import React, { ReactNode, lazy } from 'react';
 const OverviewReports = lazy(() => import('@/pages/reporting/overview-reports/overview-reports'));
 const ProjectsReports = lazy(() => import('@/pages/reporting/projects-reports/projects-reports'));
 const MembersReports = lazy(() => import('@/pages/reporting/members-reports/members-reports'));
+const AllTasksReports = lazy(() => import('@/pages/reporting/all-tasks-reports/all-tasks-reports'));
 const OverviewTimeReports = lazy(
   () => import('@/pages/reporting/timeReports/overview-time-reports')
 );
@@ -46,6 +47,13 @@ export const reportingsItems: ReportingMenuItems[] = [
     defaultValue: 'Members',
     endpoint: 'members',
     element: React.createElement(MembersReports),
+  },
+  {
+    key: 'all-tasks',
+    name: 'allTasks',
+    defaultValue: 'All Tasks',
+    endpoint: 'all-tasks',
+    element: React.createElement(AllTasksReports),
   },
   {
     key: 'time-sheet',
