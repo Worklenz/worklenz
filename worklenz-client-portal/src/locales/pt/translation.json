@@ -19,6 +19,18 @@
     "no_account": "Não tem uma conta?",
     "invite_only": "Acesso apenas por convite. Entre em contato com seu gerente de conta para obter acesso."
   },
+  "forgotPassword": {
+    "description": "Digite seu e-mail para redefinir sua senha",
+    "emailRequired": "Por favor, insira um endereço de e-mail válido",
+    "emailPlaceholder": "Digite seu e-mail",
+    "resetPasswordButton": "Redefinir Senha",
+    "orText": "ou",
+    "returnToLoginButton": "Voltar ao Login",
+    "successTitle": "E-mail de Redefinição de Senha Enviado",
+    "successMessage": "Se uma conta existir com este e-mail, você receberá instruções de redefinição de senha em breve.",
+    "backToLogin": "Voltar ao Login",
+    "errorMessage": "Falha ao enviar e-mail de redefinição de senha. Por favor, tente novamente."
+  },
   "invite": {
     "description": "Complete a configuração da sua conta",
     "welcome_message": "Você foi convidado para acessar o portal do cliente. Por favor, complete a configuração da sua conta abaixo.",

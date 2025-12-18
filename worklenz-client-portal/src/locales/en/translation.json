@@ -17,6 +17,18 @@
     "failed": "Login failed. Please try again.",
     "invite_only": "Access by invitation only. Contact your account manager for access."
   },
+  "forgotPassword": {
+    "description": "Enter your email to reset your password",
+    "emailRequired": "Please enter a valid email address",
+    "emailPlaceholder": "Enter your email",
+    "resetPasswordButton": "Reset Password",
+    "orText": "or",
+    "returnToLoginButton": "Return to Login",
+    "successTitle": "Password Reset Email Sent",
+    "successMessage": "If an account exists with this email, you will receive password reset instructions shortly.",
+    "backToLogin": "Back to Login",
+    "errorMessage": "Failed to send password reset email. Please try again."
+  },
   "invite": {
     "description": "Complete your account setup",
     "welcome_message": "You've been invited to access the client portal. Please complete your account setup below.",

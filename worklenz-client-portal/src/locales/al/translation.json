@@ -19,6 +19,18 @@
     "no_account": "Nuk keni llogari?",
     "invite_only": "Qasja vetëm me ftesë. Kontaktoni menaxherin tuaj të llogarisë për qasje."
   },
+  "forgotPassword": {
+    "description": "Shkruani email-in tuaj për të rivendosur fjalëkalimin",
+    "emailRequired": "Ju lutem shkruani një adresë email të vlefshme",
+    "emailPlaceholder": "Shkruani email-in tuaj",
+    "resetPasswordButton": "Rivendos Fjalëkalimin",
+    "orText": "ose",
+    "returnToLoginButton": "Kthehu te Hyrja",
+    "successTitle": "Email për Rivendosjen e Fjalëkalimit u Dërgua",
+    "successMessage": "Nëse ekziston një llogari me këtë email, do të merrni udhëzime për rivendosjen e fjalëkalimit së shpejti.",
+    "backToLogin": "Kthehu te Hyrja",
+    "errorMessage": "Dështoi dërgimi i email-it për rivendosjen e fjalëkalimit. Ju lutem provoni përsëri."
+  },
   "invite": {
     "description": "Plotësoni konfigurimin e llogarisë suaj",
     "welcome_message": "Jeni ftuar të hyni në portalin e klientit. Ju lutem plotësoni konfigurimin e llogarisë suaj më poshtë.",

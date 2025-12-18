@@ -19,6 +19,18 @@
     "signup": "Registrieren",
     "no_account": "Sie haben kein Konto?"
   },
+  "forgotPassword": {
+    "description": "Geben Sie Ihre E-Mail-Adresse ein, um Ihr Passwort zurückzusetzen",
+    "emailRequired": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+    "emailPlaceholder": "Geben Sie Ihre E-Mail-Adresse ein",
+    "resetPasswordButton": "Passwort zurücksetzen",
+    "orText": "oder",
+    "returnToLoginButton": "Zurück zur Anmeldung",
+    "successTitle": "E-Mail zum Zurücksetzen des Passworts gesendet",
+    "successMessage": "Wenn ein Konto mit dieser E-Mail-Adresse existiert, erhalten Sie in Kürze Anweisungen zum Zurücksetzen Ihres Passworts.",
+    "backToLogin": "Zurück zur Anmeldung",
+    "errorMessage": "Fehler beim Senden der E-Mail zum Zurücksetzen des Passworts. Bitte versuchen Sie es erneut."
+  },
   "invite": {
     "description": "Schließen Sie Ihre Kontoeinrichtung ab",
     "welcome_message": "Sie wurden eingeladen, auf das Kundenportal zuzugreifen. Bitte schließen Sie Ihre Kontoeinrichtung unten ab.",

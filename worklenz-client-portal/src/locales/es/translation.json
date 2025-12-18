@@ -17,6 +17,18 @@
     "failed": "Error de inicio de sesión. Por favor intenta de nuevo.",
     "invite_only": "Acceso solo por invitación. Contacta a tu gerente de cuenta para obtener acceso."
   },
+  "forgotPassword": {
+    "description": "Ingresa tu correo electrónico para restablecer tu contraseña",
+    "emailRequired": "Por favor ingresa una dirección de correo electrónico válida",
+    "emailPlaceholder": "Ingresa tu correo electrónico",
+    "resetPasswordButton": "Restablecer Contraseña",
+    "orText": "o",
+    "returnToLoginButton": "Volver al Inicio de Sesión",
+    "successTitle": "Correo de Restablecimiento Enviado",
+    "successMessage": "Si existe una cuenta con este correo electrónico, recibirás instrucciones para restablecer tu contraseña en breve.",
+    "backToLogin": "Volver al Inicio de Sesión",
+    "errorMessage": "Error al enviar el correo de restablecimiento de contraseña. Por favor, inténtalo de nuevo."
+  },
   "invite": {
     "description": "Completa la configuración de tu cuenta",
     "welcome_message": "Has sido invitado a acceder al portal del cliente. Por favor, completa la configuración de tu cuenta a continuación.",

@@ -41,6 +41,7 @@ export {
   Modal,
   Breadcrumb,
   Radio,
+  Result,
 } from "antd/es";
 
 // Types
