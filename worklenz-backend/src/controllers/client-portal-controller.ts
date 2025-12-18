@@ -3498,22 +3498,43 @@ class ClientPortalController {
         const linkResult = await db.query(linkCheckQuery, [existingUser.id, client.id]);
 
         if (linkResult.rows.length === 0) {
-          // Create client_users record linking Worklenz user to client portal
-          // Note: password_hash is NULL since they'll authenticate via users table
-          const linkUserQuery = `
-            INSERT INTO client_users (id, user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, 'member', $6, 'active', NOW(), NOW())
-            RETURNING id
-          `;
-          const newClientUserId = crypto.randomUUID();
-          await db.query(linkUserQuery, [
-            newClientUserId,
-            existingUser.id,
-            client.id,
-            client.email,
-            client.name,
-            teamId
-          ]);
+          // Check if email already exists in client_users (for any client)
+          const emailExistsCheck = await db.query(
+            `SELECT id, client_id FROM client_users WHERE LOWER(email) = LOWER($1)`,
+            [client.email]
+          );
+
+          let newClientUserId: string;
+
+          if (emailExistsCheck.rows.length > 0) {
+            // Email already exists - update the existing record to link to this client
+            const existingClientUser = emailExistsCheck.rows[0];
+            newClientUserId = existingClientUser.id;
+            
+            // Update the existing client_users record to link to this client and user
+            await db.query(
+              `UPDATE client_users 
+               SET user_id = $1, client_id = $2, name = $3, team_id = $4, status = 'active', updated_at = NOW()
+               WHERE id = $5`,
+              [existingUser.id, client.id, client.name, teamId, existingClientUser.id]
+            );
+          } else {
+            // Create client_users record linking Worklenz user to client portal
+            // Note: password_hash is NULL since they'll authenticate via users table (let DB generate UUID)
+            const linkUserQuery = `
+              INSERT INTO client_users (user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
+              VALUES ($1, $2, $3, $4, 'member', $5, 'active', NOW(), NOW())
+              RETURNING id
+            `;
+            const insertResult = await db.query(linkUserQuery, [
+              existingUser.id,
+              client.id,
+              client.email,
+              client.name,
+              teamId
+            ]);
+            newClientUserId = insertResult.rows[0].id;
+          }
 
           // Create organization access record for multi-org support
           const orgAccessQuery = `
@@ -3837,11 +3858,27 @@ class ClientPortalController {
           await db.query(createClientQuery, [clientId, invitation.team_id, user.name, user.email]);
 
           // Link user to client portal with active status
-          const linkUserQuery = `
-            INSERT INTO client_users (user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, 'member', $5, 'active', NOW(), NOW())
-          `;
-          await db.query(linkUserQuery, [userId, clientId, user.email, user.name, invitation.team_id]);
+          // Check if email already exists in client_users to avoid duplicate key error
+          const emailExistsCheck = await db.query(
+            `SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)`,
+            [user.email]
+          );
+
+          if (emailExistsCheck.rows.length > 0) {
+            // Update existing record
+            await db.query(
+              `UPDATE client_users 
+               SET user_id = $1, client_id = $2, name = $3, team_id = $4, status = 'active', updated_at = NOW()
+               WHERE id = $5`,
+              [userId, clientId, user.name, invitation.team_id, emailExistsCheck.rows[0].id]
+            );
+          } else {
+            const linkUserQuery = `
+              INSERT INTO client_users (user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
+              VALUES ($1, $2, $3, $4, 'member', $5, 'active', NOW(), NOW())
+            `;
+            await db.query(linkUserQuery, [userId, clientId, user.email, user.name, invitation.team_id]);
+          }
 
           return res.json(new ServerResponse(true, {
             redirectTo: "client-portal",
@@ -5716,8 +5753,36 @@ class ClientPortalController {
           const clientId = clientResult.rows[0].id;
 
           // Create the client user - link to Worklenz user if exists, otherwise use password_hash
+          // Check if email already exists in client_users to avoid duplicate key error
+          const emailExistsCheck = await db.query(
+            `SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)`,
+            [email]
+          );
+
           let userResult;
-          if (worklenzUserId) {
+          if (emailExistsCheck.rows.length > 0) {
+            // Email already exists - update the existing record
+            const existingClientUserId = emailExistsCheck.rows[0].id;
+            if (worklenzUserId) {
+              await db.query(
+                `UPDATE client_users 
+                 SET user_id = $1, client_id = $2, name = $3, status = 'active', updated_at = NOW()
+                 WHERE id = $4`,
+                [worklenzUserId, clientId, name, existingClientUserId]
+              );
+            } else {
+              await db.query(
+                `UPDATE client_users 
+                 SET client_id = $1, name = $2, password_hash = $3, status = 'active', updated_at = NOW()
+                 WHERE id = $4`,
+                [clientId, name, crypto.createHash("sha256").update(password).digest("hex"), existingClientUserId]
+              );
+            }
+            userResult = await db.query(
+              `SELECT id, email, name, role, client_id FROM client_users WHERE id = $1`,
+              [existingClientUserId]
+            );
+          } else if (worklenzUserId) {
             // Link to existing Worklenz user - they will authenticate with their Worklenz password
             userResult = await db.query(
               `INSERT INTO client_users (id, client_id, user_id, email, name, role, status, created_at)

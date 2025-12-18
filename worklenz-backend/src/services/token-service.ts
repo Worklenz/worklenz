@@ -204,47 +204,83 @@ class TokenService {
       const passwordHash = crypto.createHash("sha256").update(userData.password).digest("hex");
       (invitation as any).password_hash = passwordHash;
 
-      let createUserQuery: string;
-      let queryParams: any[];
-      const clientUserId = crypto.randomUUID();
+      let userResult: any;
+      let actualClientUserId: string;
 
-      if (userData.userId) {
-        // Linking existing Worklenz user - no password_hash needed for client_users table
-        createUserQuery = `
-          INSERT INTO client_users (
-            id, user_id, client_id, email, name, role, team_id, status, created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', NOW(), NOW())
-          RETURNING id, email, name, role, client_id
-        `;
-        queryParams = [
-          clientUserId,
-          userData.userId,
-          invitation.client_id,
-          invitation.email,
-          userData.name,
-          invitation.role,
-          invitation.team_id
-        ];
+      // Check if email already exists in client_users to avoid duplicate key error
+      const emailExistsCheck = await client.query(
+        `SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)`,
+        [invitation.email]
+      );
+
+      if (emailExistsCheck.rows.length > 0) {
+        // Email already exists - update the existing record
+        actualClientUserId = emailExistsCheck.rows[0].id;
+        
+        if (userData.userId) {
+          // Linking existing Worklenz user
+          await client.query(
+            `UPDATE client_users 
+             SET user_id = $1, client_id = $2, name = $3, role = $4, team_id = $5, status = 'active', updated_at = NOW()
+             WHERE id = $6`,
+            [userData.userId, invitation.client_id, userData.name, invitation.role, invitation.team_id, actualClientUserId]
+          );
+        } else {
+          // Standalone client portal user - update with password_hash
+          await client.query(
+            `UPDATE client_users 
+             SET client_id = $1, name = $2, password_hash = $3, role = $4, team_id = $5, status = 'active', updated_at = NOW()
+             WHERE id = $6`,
+            [invitation.client_id, userData.name, passwordHash, invitation.role, invitation.team_id, actualClientUserId]
+          );
+        }
+        
+        userResult = await client.query(
+          `SELECT id, email, name, role, client_id FROM client_users WHERE id = $1`,
+          [actualClientUserId]
+        );
       } else {
-        // Standalone client portal user - create with password_hash
-        createUserQuery = `
-          INSERT INTO client_users (
-            id, client_id, email, name, password_hash, role, team_id, status, created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', NOW(), NOW())
-          RETURNING id, email, name, role, client_id
-        `;
-        queryParams = [
-          clientUserId,
-          invitation.client_id,
-          invitation.email,
-          userData.name,
-          passwordHash, // Use the hash created earlier
-          invitation.role,
-          invitation.team_id
-        ];
-      }
+        // Email doesn't exist - create new record (let DB generate UUID)
+        let createUserQuery: string;
+        let queryParams: any[];
 
-      const userResult = await client.query(createUserQuery, queryParams);
+        if (userData.userId) {
+          // Linking existing Worklenz user - no password_hash needed for client_users table
+          createUserQuery = `
+            INSERT INTO client_users (
+              user_id, client_id, email, name, role, team_id, status, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, 'active', NOW(), NOW())
+            RETURNING id, email, name, role, client_id
+          `;
+          queryParams = [
+            userData.userId,
+            invitation.client_id,
+            invitation.email,
+            userData.name,
+            invitation.role,
+            invitation.team_id
+          ];
+        } else {
+          // Standalone client portal user - create with password_hash
+          createUserQuery = `
+            INSERT INTO client_users (
+              client_id, email, name, password_hash, role, team_id, status, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, 'active', NOW(), NOW())
+            RETURNING id, email, name, role, client_id
+          `;
+          queryParams = [
+            invitation.client_id,
+            invitation.email,
+            userData.name,
+            passwordHash, // Use the hash created earlier
+            invitation.role,
+            invitation.team_id
+          ];
+        }
+
+        userResult = await client.query(createUserQuery, queryParams);
+        actualClientUserId = userResult.rows[0].id;
+      }
 
       // Create organization access record for multi-org support
       const orgAccessQuery = `
@@ -252,7 +288,7 @@ class TokenService {
         VALUES ($1, $2, $3, TRUE, NOW(), NOW())
         ON CONFLICT (client_user_id, team_id) DO NOTHING
       `;
-      await client.query(orgAccessQuery, [clientUserId, invitation.team_id, invitation.client_id]);
+      await client.query(orgAccessQuery, [actualClientUserId, invitation.team_id, invitation.client_id]);
 
       // Update invitation status
       await client.query(
