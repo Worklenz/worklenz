@@ -30,5 +30,14 @@
   "statusUpdateSuccess": "Status atualizado com sucesso",
   "statusUpdateError": "Falha ao atualizar o status",
   "downloadAttachment": "Baixar",
-  "viewAttachment": "Visualizar"
+  "viewAttachment": "Visualizar",
+  "commentsTab": "Comentários",
+  "noComments": "Ainda não há comentários",
+  "addComment": "Adicionar Comentário",
+  "addCommentPlaceholder": "Digite seu comentário aqui...",
+  "commentRequired": "Por favor, insira um comentário",
+  "commentAdded": "Comentário adicionado com sucesso",
+  "commentError": "Falha ao adicionar comentário",
+  "teamMember": "Equipe",
+  "client": "Cliente"
 }

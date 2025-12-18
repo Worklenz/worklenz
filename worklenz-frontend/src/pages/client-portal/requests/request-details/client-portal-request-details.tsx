@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
@@ -13,6 +13,9 @@ import {
   theme,
   Divider,
   Badge,
+  Input,
+  Form,
+  Empty,
 } from '@/shared/antd-imports';
 import { 
   ArrowLeftOutlined, 
@@ -26,13 +29,22 @@ import {
   FileTextOutlined as DescriptionIcon,
   QuestionCircleOutlined,
   MessageOutlined,
+  CommentOutlined,
+  SendOutlined,
 } from '@ant-design/icons';
 import { colors } from '../../../../styles/colors';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useGetRequestDetailsQuery, useUpdateOrganizationRequestStatusMutation } from '../../../../api/client-portal/client-portal-api';
+import { 
+  useGetRequestDetailsQuery, 
+  useUpdateOrganizationRequestStatusMutation,
+  useGetRequestCommentsQuery,
+  useAddRequestCommentMutation,
+} from '../../../../api/client-portal/client-portal-api';
 import { message } from 'antd';
 import { durationDateFormat } from '../../../../utils/durationDateFormat';
 import RequestChatWrapper from './request-chat-wrapper';
+
+const { TextArea } = Input;
 
 interface Attachment {
   id: string;
@@ -60,6 +72,12 @@ const ClientPortalRequestDetails = () => {
   // Status update mutation
   const [updateStatus, { isLoading: isUpdatingStatus }] = useUpdateOrganizationRequestStatusMutation();
 
+  // Comments
+  const { data: commentsData, refetch: refetchComments } = useGetRequestCommentsQuery(id || '', { skip: !id });
+  const [addComment, { isLoading: isAddingComment }] = useAddRequestCommentMutation();
+  const [form] = Form.useForm();
+  const comments = commentsData?.body || [];
+
   // Check if request can be invoiced (not pending or rejected)
   const canCreateInvoice = selectedRequest?.status && 
     !['pending', 'rejected'].includes(selectedRequest.status);
@@ -77,6 +95,19 @@ const ClientPortalRequestDetails = () => {
       message.success('Status updated successfully');
     } catch (error) {
       message.error('Failed to update status');
+    }
+  };
+
+  // Handle add comment
+  const handleAddComment = async (values: { comment: string }) => {
+    if (!id) return;
+    try {
+      await addComment({ id, comment: values.comment }).unwrap();
+      message.success(t1('commentAdded') || 'Comment added successfully');
+      form.resetFields();
+      refetchComments();
+    } catch (error) {
+      message.error(t1('commentError') || 'Failed to add comment');
     }
   };
 
@@ -378,6 +409,126 @@ const ClientPortalRequestDetails = () => {
               </Flex>
             </Card>
           )}
+        </Flex>
+      ),
+    },
+    {
+      key: 'comments',
+      label: (
+        <Flex align="center" gap={6}>
+          <CommentOutlined />
+          {t1('commentsTab') || 'Comments'}
+          {comments.length > 0 && (
+            <Badge 
+              count={comments.length} 
+              style={{ backgroundColor: token.colorPrimary, marginLeft: 4 }} 
+            />
+          )}
+        </Flex>
+      ),
+      children: (
+        <Flex 
+          vertical 
+          gap={16} 
+          style={{ 
+            height: 'calc(100vh - 420px)', 
+            overflow: 'hidden',
+          }}
+        >
+          {/* Comments List */}
+          <div style={{ 
+            flex: 1, 
+            overflowY: 'auto', 
+            paddingRight: 8,
+          }}>
+            {comments.length === 0 ? (
+              <Empty 
+                description={t1('noComments') || 'No comments yet'}
+                style={{ marginTop: 40 }}
+              />
+            ) : (
+              <Flex vertical gap={12}>
+                {comments.map((comment) => (
+                  <Card
+                    key={comment.id}
+                    size="small"
+                    style={{
+                      borderRadius: 8,
+                      border: `1px solid ${token.colorBorderSecondary}`,
+                      backgroundColor: comment.sender_type === 'team_member' 
+                        ? token.colorBgLayout 
+                        : token.colorPrimaryBg,
+                    }}
+                    styles={{ body: { padding: '12px 16px' } }}
+                  >
+                    <Flex justify="space-between" align="center" style={{ marginBottom: 8 }}>
+                      <Flex align="center" gap={8}>
+                        <UserOutlined style={{ color: token.colorTextSecondary }} />
+                        <Typography.Text strong>
+                          {comment.sender_name}
+                        </Typography.Text>
+                        <Tag 
+                          color={comment.sender_type === 'team_member' ? 'blue' : 'green'}
+                          style={{ margin: 0, fontSize: 11 }}
+                        >
+                          {comment.sender_type === 'team_member' 
+                            ? (t1('teamMember') || 'Team') 
+                            : (t1('client') || 'Client')}
+                        </Tag>
+                      </Flex>
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        {durationDateFormat(new Date(comment.created_at))}
+                      </Typography.Text>
+                    </Flex>
+                    <Typography.Paragraph 
+                      style={{ 
+                        margin: 0, 
+                        whiteSpace: 'pre-wrap',
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {comment.comment}
+                    </Typography.Paragraph>
+                  </Card>
+                ))}
+              </Flex>
+            )}
+          </div>
+
+          {/* Add Comment Form */}
+          <Card
+            size="small"
+            style={{
+              borderRadius: 8,
+              border: `1px solid ${token.colorBorderSecondary}`,
+            }}
+            styles={{ body: { padding: '12px 16px' } }}
+          >
+            <Form form={form} onFinish={handleAddComment}>
+              <Form.Item
+                name="comment"
+                rules={[{ required: true, message: t1('commentRequired') || 'Please enter a comment' }]}
+                style={{ marginBottom: 12 }}
+              >
+                <TextArea
+                  rows={3}
+                  placeholder={t1('addCommentPlaceholder') || 'Type your comment here...'}
+                  maxLength={5000}
+                  showCount
+                />
+              </Form.Item>
+              <Flex justify="flex-end">
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  icon={<SendOutlined />}
+                  loading={isAddingComment}
+                >
+                  {t1('addComment') || 'Add Comment'}
+                </Button>
+              </Flex>
+            </Form>
+          </Card>
         </Flex>
       ),
     },

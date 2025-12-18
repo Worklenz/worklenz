@@ -434,6 +434,54 @@ export const clientPortalApi = createApi({
       invalidatesTags: ['Requests', 'Dashboard'],
     }),
 
+    // Request Comments (Admin side)
+    getRequestComments: builder.query<
+      {
+        done: boolean;
+        body: Array<{
+          id: string;
+          comment: string;
+          sender_type: 'client' | 'team_member';
+          sender_id: string;
+          sender_name: string;
+          created_at: string;
+          updated_at: string;
+        }>;
+        message: string;
+      },
+      string
+    >({
+      query: id => `/clients/portal/requests/${id}/comments`,
+      providesTags: (result, error, id) => [{ type: 'Requests', id: `${id}-comments` }],
+    }),
+
+    addRequestComment: builder.mutation<
+      {
+        done: boolean;
+        body: {
+          id: string;
+          comment: string;
+          sender_type: 'client' | 'team_member';
+          sender_id: string;
+          sender_name: string;
+          created_at: string;
+          updated_at: string;
+        };
+        message: string;
+      },
+      { id: string; comment: string }
+    >({
+      query: ({ id, comment }) => ({
+        url: `/clients/portal/requests/${id}/comments`,
+        method: 'POST',
+        body: { comment },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Requests', id: `${id}-comments` },
+        { type: 'Requests', id },
+      ],
+    }),
+
     // Projects
     getProjects: builder.query<ProjectsResponse, void>({
       query: () => '/clients/portal/projects',
@@ -1113,6 +1161,8 @@ export const {
   useGetRequestDetailsQuery,
   useUpdateRequestMutation,
   useDeleteRequestMutation,
+  useGetRequestCommentsQuery,
+  useAddRequestCommentMutation,
 
   // Projects
   useGetProjectsQuery,
