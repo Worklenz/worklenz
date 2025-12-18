@@ -6,7 +6,7 @@ import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { getColor } from "../shared/utils";
-import { WorklenzColorCodes } from "../shared/constants";
+import { WorklenzColorShades } from "../shared/constants";
 
 export default class ProjectCategoriesController extends WorklenzControllerBase {
   private static flatString(text: string) {
@@ -91,9 +91,13 @@ export default class ProjectCategoriesController extends WorklenzControllerBase 
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    // Validate color
-    if (!WorklenzColorCodes.includes(req.body.color)) {
-      return res.status(400).send(new ServerResponse(false, null));
+    // Validate color - accept both base colors and all shade variations
+    const validColors = [
+      ...Object.keys(WorklenzColorShades),
+      ...Object.values(WorklenzColorShades).flat(),
+    ].map((c) => c.toLowerCase());
+    if (!validColors.includes(req.body.color.toLowerCase())) {
+      return res.status(400).send(new ServerResponse(false, "Invalid color"));
     }
 
     // Validate name
