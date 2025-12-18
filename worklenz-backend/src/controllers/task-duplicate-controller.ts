@@ -69,7 +69,7 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
       delete newTask.completed_at;
       // delete newTask.task_no;
 
-      newTask.name = originalTask.name;
+      newTask.name = 'Copy - ' + originalTask.name;
       newTask.reporter_id = originalTask.reporter_id;
       newTask.done = false;
       newTask.archived = false;

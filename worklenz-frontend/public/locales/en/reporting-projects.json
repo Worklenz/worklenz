@@ -48,5 +48,15 @@
 
   "setCategoryText": "Set Category",
   "searchByNameInputPlaceholder": "Search by name",
-  "todayText": "Today"
+  "todayText": "Today",
+
+  "uncategorizedText": "Uncategorized",
+  "noStatusText": "No Status",
+  "noTeamText": "No Team",
+  "noManagerText": "No Manager",
+  "allProjectsText": "All Projects",
+  "noProjectsText": "No projects found",
+  "projectText": "project",
+  "projectsText": "projects",
+  "tasksText": "tasks"
 }
