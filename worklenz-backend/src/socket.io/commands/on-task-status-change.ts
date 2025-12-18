@@ -36,6 +36,8 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
     const [d] = results1.rows;
     const changeResponse = d.res;
 
+    log(`Task status change response - completed_at: ${changeResponse.completed_at}, status_category: ${JSON.stringify(changeResponse.status_category)}`, null);
+
     changeResponse.color_code = changeResponse.color_code + TASK_STATUS_COLOR_ALPHA;
 
     // notify to all task members of the change

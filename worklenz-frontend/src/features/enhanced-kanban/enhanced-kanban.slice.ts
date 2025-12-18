@@ -594,6 +594,7 @@ const enhancedKanbanSlice = createSlice({
         color_code,
         color_code_dark,
         complete_ratio,
+        completed_at,
         statusCategory,
       } = action.payload;
       let oldGroupId: string | null = null;
@@ -617,6 +618,7 @@ const enhancedKanbanSlice = createSlice({
       foundTask.progress_value = +complete_ratio; // Also update progress_value field
       foundTask.status = status_id;
       foundTask.status_category = statusCategory;
+      foundTask.completed_at = completed_at; // Update completed date
 
       // If grouped by status and the group changes, move the task
       if (state.groupBy === IGroupBy.STATUS && oldGroupId && oldGroupId !== status_id) {

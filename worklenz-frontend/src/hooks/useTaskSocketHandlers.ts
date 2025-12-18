@@ -71,7 +71,10 @@ import {
 } from '@/features/task-drawer/task-drawer.slice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import { useMixpanelTracking } from './useMixpanelTracking';
-import { evt_project_task_create, evt_project_task_list_create_subtask } from '@/shared/worklenz-analytics-events';
+import {
+  evt_project_task_create,
+  evt_project_task_list_create_subtask,
+} from '@/shared/worklenz-analytics-events';
 
 export const useTaskSocketHandlers = () => {
   const dispatch = useAppDispatch();
@@ -199,6 +202,12 @@ export const useTaskSocketHandlers = () => {
     (response: ITaskListStatusChangeResponse) => {
       if (!response) return;
 
+      console.log('[DEBUG] Task status change response:', {
+        taskId: response.id,
+        completed_at: response.completed_at,
+        statusCategory: response.statusCategory,
+      });
+
       if (response.completed_deps === false) {
         alertService.error(
           'Task is not completed',
@@ -220,65 +229,87 @@ export const useTaskSocketHandlers = () => {
       const currentTask = state.taskManagement.entities[response.id];
       const currentGrouping = state.taskManagement.grouping;
 
-      if (currentTask) {
-        // Determine the new status value based on status category
-        let newStatusValue: 'todo' | 'doing' | 'done' = 'todo';
-        if (response.statusCategory) {
-          if (response.statusCategory.is_done) {
-            newStatusValue = 'done';
-          } else if (response.statusCategory.is_doing) {
-            newStatusValue = 'doing';
-          } else {
-            newStatusValue = 'todo';
+      // Determine the new status value based on status category
+      let newStatusValue: 'todo' | 'doing' | 'done' = 'todo';
+      if (response.statusCategory) {
+        if (response.statusCategory.is_done) {
+          newStatusValue = 'done';
+        } else if (response.statusCategory.is_doing) {
+          newStatusValue = 'doing';
+        } else {
+          newStatusValue = 'todo';
+        }
+      }
+
+      // Update the task entity (create if it doesn't exist)
+      const taskUpdate = currentTask
+        ? {
+            ...currentTask,
+            status: response.status_id || newStatusValue,
+            progress:
+              typeof response.complete_ratio === 'number'
+                ? response.complete_ratio
+                : currentTask.progress,
+            complete_ratio: response.complete_ratio,
+            completedAt: response.completed_at,
+            completed_at: response.completed_at,
+            updatedAt: new Date().toISOString(),
           }
+        : ({
+            // If task doesn't exist in Redux, create minimal task object
+            id: response.id,
+            status: response.status_id || newStatusValue,
+            progress: typeof response.complete_ratio === 'number' ? response.complete_ratio : 0,
+            complete_ratio: response.complete_ratio,
+            completedAt: response.completed_at,
+            completed_at: response.completed_at,
+            updatedAt: new Date().toISOString(),
+            title: '',
+            name: '',
+          } as Task);
+
+      dispatch(updateTask(taskUpdate));
+
+      console.log('[DEBUG] Updated task in Redux:', {
+        taskId: response.id,
+        completedAt: response.completed_at,
+        completed_at: response.completed_at,
+        currentTaskBefore: currentTask?.completedAt,
+        taskExists: !!currentTask,
+      });
+
+      // Handle group movement ONLY if grouping by status and task exists
+      if (currentTask && groups && groups.length > 0 && currentGrouping === 'status') {
+        // Find current group containing the task
+        const currentGroup = groups.find(group => group.taskIds.includes(response.id));
+
+        // Find target group based on the actual status ID from response
+        let targetGroup = groups.find(group => group.id === response.status_id);
+
+        // If not found by status ID, try matching with group value
+        if (!targetGroup) {
+          targetGroup = groups.find(group => group.groupValue === response.status_id);
         }
 
-        // Update the task entity first
-        dispatch(
-          updateTask({
-            ...currentTask,
-            status: response.status_id || newStatusValue, // Use actual status_id instead of category
-            progress: typeof response.complete_ratio === 'number' ? response.complete_ratio : currentTask.progress,
-            complete_ratio: response.complete_ratio, // Also update complete_ratio field
-            updatedAt: new Date().toISOString(),
-          })
-        );
+        // If still not found, try matching by status name (fallback)
+        if (!targetGroup && (response as any).status) {
+          const statusName = String((response as any).status || '').toLowerCase();
+          targetGroup = groups.find(group => group.title?.toLowerCase() === statusName);
+        }
 
-        // Handle group movement ONLY if grouping by status
-        if (groups && groups.length > 0 && currentGrouping === 'status') {
-          // Find current group containing the task
-          const currentGroup = groups.find(group => group.taskIds.includes(response.id));
-
-          // Find target group based on the actual status ID from response
-          let targetGroup = groups.find(group => group.id === response.status_id);
-
-          // If not found by status ID, try matching with group value
-          if (!targetGroup) {
-            targetGroup = groups.find(group => group.groupValue === response.status_id);
-          }
-
-          // If still not found, try matching by status name (fallback)
-          if (!targetGroup && (response as any).status) {
-            const statusName = String((response as any).status || '').toLowerCase();
-            targetGroup = groups.find(
-              group => group.title?.toLowerCase() === statusName
-            );
-          }
-
-          if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
-            // Use the action to move task between groups
-            dispatch(
-              moveTaskBetweenGroups({
-                taskId: response.id,
-                sourceGroupId: currentGroup.id,
-                targetGroupId: targetGroup.id,
-              })
-            );
-          } else if (!targetGroup) {
-            // Fallback: refetch tasks to ensure consistency
-            if (projectId) {
-              dispatch(fetchTasksV3(projectId));
-            }
+        if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
+          // Use the action to move task between groups
+          dispatch(
+            moveTaskBetweenGroups({
+              taskId: response.id,
+              sourceGroupId: currentGroup.id,
+              targetGroupId: targetGroup.id,
+            })
+          );
+        } else if (!targetGroup) {
+          // Fallback: refetch tasks to ensure consistency
+          if (projectId) {
+            dispatch(fetchTasksV3(projectId));
           }
         }
       }
@@ -693,15 +724,14 @@ export const useTaskSocketHandlers = () => {
           title: data.name || '',
           description: data.description || '',
           // Prefer canonical status ID if provided; otherwise fall back to category value
-          status: (data.status || (
-            data.status_category?.is_todo
+          status: (data.status ||
+            (data.status_category?.is_todo
               ? 'todo'
               : data.status_category?.is_doing
                 ? 'doing'
                 : data.status_category?.is_done
                   ? 'done'
-                  : 'todo'
-          )) as string,
+                  : 'todo')) as string,
           priority: (data.priority_value === 3
             ? 'critical'
             : data.priority_value === 2
@@ -777,13 +807,15 @@ export const useTaskSocketHandlers = () => {
           title: data.name || '',
           description: data.description || '',
           // Prefer concrete status id if provided; fall back to category only if missing
-          status: (data.status || data.status_id || (data.status_category?.is_todo
-            ? 'todo'
-            : data.status_category?.is_doing
-              ? 'doing'
-              : data.status_category?.is_done
-                ? 'done'
-                : 'todo')) as any,
+          status: (data.status ||
+            data.status_id ||
+            (data.status_category?.is_todo
+              ? 'todo'
+              : data.status_category?.is_doing
+                ? 'doing'
+                : data.status_category?.is_done
+                  ? 'done'
+                  : 'todo')) as any,
           priority: (data.priority_value === 3
             ? 'critical'
             : data.priority_value === 2
@@ -865,7 +897,7 @@ export const useTaskSocketHandlers = () => {
         // Always dispatch the update, even if we don't find the task in taskGroups
         let totalTasksCount = 0;
         let completedCount = 0;
-        
+
         if (taskGroups) {
           let taskFound = false;
           for (const group of taskGroups) {
@@ -880,7 +912,9 @@ export const useTaskSocketHandlers = () => {
             // Also check subtasks
             for (const parentTask of group.tasks || []) {
               if (parentTask.sub_tasks) {
-                const subtask = parentTask.sub_tasks.find((st: IProjectTask) => st.id === data.task_id);
+                const subtask = parentTask.sub_tasks.find(
+                  (st: IProjectTask) => st.id === data.task_id
+                );
                 if (subtask) {
                   totalTasksCount = subtask.total_tasks_count || 0;
                   completedCount = subtask.completed_count || 0;
@@ -892,7 +926,7 @@ export const useTaskSocketHandlers = () => {
             if (taskFound) break;
           }
         }
-        
+
         // Always dispatch the update
         dispatch(
           updateTaskProgress({

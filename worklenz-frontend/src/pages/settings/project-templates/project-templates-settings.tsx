@@ -1,3 +1,4 @@
+import './project-templates-settings.css';
 import {
   Button,
   Card,
@@ -10,7 +11,8 @@ import {
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { DeleteOutlined } from '@/shared/antd-imports';
+import { DeleteOutlined, EditOutlined } from '@/shared/antd-imports';
+import { ProjectTemplateRenameModal } from '@/components/project-templates/project-template-rename-modal';
 import { useNavigate } from 'react-router-dom';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
@@ -23,6 +25,10 @@ const ProjectTemplatesSettings = () => {
   const [projectTemplates, setProjectTemplates] = useState<ICustomTemplate[]>([]);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const navigate = useNavigate();
+
+  const [renameModalVisible, setRenameModalVisible] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [selectedTemplateName, setSelectedTemplateName] = useState<string>('');
 
   useDocumentTitle('Project Templates');
 
@@ -55,20 +61,19 @@ const ProjectTemplatesSettings = () => {
     {
       key: 'button',
       render: record => (
-        <div
-          style={{ display: 'flex', gap: '10px', justifyContent: 'right' }}
-          className="button-visibilty"
-        >
-          {/* <Tooltip title={t('editToolTip')}>
+        <div className="button-visibilty">
+          <Tooltip title={t('editToolTip')}>
             <Button
               size="small"
-              onClick={() =>
-                navigate(`/worklenz/settings/project-templates/edit/${record.id}/${record.name}`)
-              }
+              onClick={() => {
+                setSelectedTemplateId(record.id);
+                setSelectedTemplateName(record.name);
+                setRenameModalVisible(true);
+              }}
             >
               <EditOutlined />
             </Button>
-          </Tooltip> */}
+          </Tooltip>
           <Tooltip title={t('deleteToolTip')}>
             <Popconfirm
               title={
@@ -103,6 +108,17 @@ const ProjectTemplatesSettings = () => {
           `no-border-row ${index % 2 === 0 ? '' : themeMode === 'dark' ? 'dark-alternate-row-color' : 'alternate-row-color'}`
         }
         rowKey="id"
+      />
+      <ProjectTemplateRenameModal
+        visible={renameModalVisible}
+        templateId={selectedTemplateId}
+        currentName={selectedTemplateName}
+        onClose={renamed => {
+          setRenameModalVisible(false);
+          setSelectedTemplateId(null);
+          setSelectedTemplateName('');
+          if (renamed) fetchProjectTemplates();
+        }}
       />
     </Card>
   );

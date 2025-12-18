@@ -9,26 +9,39 @@ import { getColor } from "../shared/utils";
 import { WorklenzColorCodes } from "../shared/constants";
 
 export default class ProjectCategoriesController extends WorklenzControllerBase {
-
   private static flatString(text: string) {
-    return (text || "").split(",").map(s => `'${s}'`).join(",");
+    return (text || "")
+      .split(",")
+      .map((s) => `'${s}'`)
+      .join(",");
   }
 
   @HandleExceptions()
-  public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async create(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const q = `
       INSERT INTO project_categories (name, team_id, created_by, color_code)
       VALUES ($1, $2, $3, $4)
       RETURNING id, name, color_code;
     `;
     const name = req.body.name.trim();
-    const result = await db.query(q, [name, req.user?.team_id, req.user?.id, name ? getColor(name) : null]);
+    const result = await db.query(q, [
+      name,
+      req.user?.team_id,
+      req.user?.id,
+      name ? getColor(name) : null,
+    ]);
     const [data] = result.rows;
     return res.status(200).send(new ServerResponse(true, data));
   }
 
   @HandleExceptions()
-  public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async get(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const q = `
       SELECT id, name, color_code, (SELECT COUNT(*) FROM projects WHERE category_id = project_categories.id) AS usage
       FROM project_categories
@@ -39,7 +52,10 @@ export default class ProjectCategoriesController extends WorklenzControllerBase 
   }
 
   @HandleExceptions()
-  public static async getById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getById(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const q = `  
     SELECT id, name, color_code, (SELECT COUNT(*) FROM projects WHERE category_id = project_categories.id) AS usage
     FROM project_categories
@@ -47,7 +63,7 @@ export default class ProjectCategoriesController extends WorklenzControllerBase 
     const result = await db.query(q, [req.params.id]);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
-  
+
   private static async getTeamsByOrg(teamId: string) {
     const q = `SELECT id FROM teams WHERE in_organization(id, $1)`;
     const result = await db.query(q, [teamId]);
@@ -55,36 +71,60 @@ export default class ProjectCategoriesController extends WorklenzControllerBase 
   }
 
   @HandleExceptions()
-  public static async getByMultipleTeams(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-
+  public static async getByMultipleTeams(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const teams = await this.getTeamsByOrg(req.user?.team_id as string);
-    const teamIds = teams.map(team => team.id).join(",");
+    const teamIds = teams.map((team) => team.id).join(",");
 
-    const q = `SELECT id, name, color_code FROM project_categories WHERE team_id IN (${this.flatString(teamIds)});`;
+    const q = `SELECT id, name, color_code FROM project_categories WHERE team_id IN (${this.flatString(
+      teamIds
+    )});`;
 
     const result = await db.query(q);
     return res.status(200).send(new ServerResponse(true, result.rows));
-
   }
 
   @HandleExceptions()
-  public static async update(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async update(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    // Validate color
+    if (!WorklenzColorCodes.includes(req.body.color)) {
+      return res.status(400).send(new ServerResponse(false, null));
+    }
+
+    // Validate name
+    const name =
+      typeof req.body.name === "string" ? req.body.name.trim() : undefined;
+    if (!name || name.length === 0) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, "Category name is required."));
+    }
+
     const q = `
       UPDATE project_categories
-      SET color_code = $2
+      SET name = $2, color_code = $3
       WHERE id = $1
-        AND team_id = $3;
+        AND team_id = $4;
     `;
-
-    if (!WorklenzColorCodes.includes(req.body.color))
-      return res.status(400).send(new ServerResponse(false, null));
-
-    const result = await db.query(q, [req.params.id, req.body.color, req.user?.team_id]);
+    const result = await db.query(q, [
+      req.params.id,
+      name,
+      req.body.color,
+      req.user?.team_id,
+    ]);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
   @HandleExceptions()
-  public static async deleteById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async deleteById(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
     const q = `
       DELETE
       FROM project_categories

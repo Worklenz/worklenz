@@ -113,9 +113,42 @@ const TaskGroupList = ({ taskGroups, groupBy }: TaskGroupListProps) => {
       }
     };
 
+    const handleTaskStatusChange = (response: any) => {
+      if (!response) return;
+
+      console.log('[DEBUG TaskGroupList] Task status changed:', response.id);
+      console.log('[DEBUG TaskGroupList] completed_at:', response.completed_at);
+
+      // Update local groups state with new completed_at
+      setGroups(prevGroups => {
+        return prevGroups.map(group => {
+          const taskIndex = group.tasks.findIndex(task => task.id === response.id);
+          if (taskIndex === -1) return group;
+
+          console.log('[DEBUG TaskGroupList] Found task in group:', group.name);
+
+          const updatedTasks = [...group.tasks];
+          updatedTasks[taskIndex] = {
+            ...updatedTasks[taskIndex],
+            completed_at: response.completed_at,
+            status: response.status_id,
+            status_color: response.color_code,
+          };
+
+          return {
+            ...group,
+            tasks: updatedTasks,
+          };
+        });
+      });
+    };
+
     socket.on(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), handleAssigneesUpdate);
+    socket.on(SocketEvents.TASK_STATUS_CHANGE.toString(), handleTaskStatusChange);
+
     return () => {
       socket.off(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), handleAssigneesUpdate);
+      socket.off(SocketEvents.TASK_STATUS_CHANGE.toString(), handleTaskStatusChange);
     };
   }, [socket, currentSession?.team_id, loadingAssignees, groups]);
 
