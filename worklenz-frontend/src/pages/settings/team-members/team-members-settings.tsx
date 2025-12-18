@@ -497,7 +497,7 @@ const TeamMembersSettings = () => {
               <Input
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder={t('searchPlaceholder')}
+                placeholder={t('search', { defaultValue: 'Search' })}
                 style={{ maxWidth: 250 }}
                 suffix={<SearchOutlined />}
               />

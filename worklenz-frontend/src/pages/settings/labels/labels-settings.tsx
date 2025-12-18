@@ -104,7 +104,7 @@ const LabelsSettings = () => {
             <Input
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder={t('searchPlaceholder')}
+              placeholder={t('search', { defaultValue: 'Search' })}
               style={{ maxWidth: 232 }}
               suffix={<SearchOutlined />}
             />
