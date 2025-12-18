@@ -58,5 +58,28 @@
   "noProjectsText": "No projects found",
   "projectText": "project",
   "projectsText": "projects",
-  "tasksText": "tasks"
+  "tasksText": "tasks",
+
+  "taskNameColumn": "Task",
+  "taskStatusColumn": "Status",
+  "taskPriorityColumn": "Priority",
+  "assigneesColumn": "Assignees",
+  "dueDateColumn": "Due Date",
+  "timeColumn": "Time",
+  "taskProgressColumn": "Progress",
+
+  "searchTasksPlaceholder": "Search tasks...",
+  "allStatusesText": "All Statuses",
+  "allPrioritiesText": "All Priorities",
+  "allAssigneesText": "All Assignees",
+  "lowText": "Low",
+  "mediumText": "Medium",
+  "highText": "High",
+  "showingText": "Showing",
+  "ofText": "of",
+
+  "overdueText": "Overdue",
+  "subtasksText": "subtasks",
+  "taskCompletedText": "Completed",
+  "loggedText": "Logged"
 }

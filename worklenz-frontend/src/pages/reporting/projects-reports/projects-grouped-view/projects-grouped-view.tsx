@@ -1,9 +1,11 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useEffect, useState, useCallback } from 'react';
 import { Collapse, Progress, Typography, Flex, Badge, Empty, Spin } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { IRPTProject } from '@/types/reporting/reporting.types';
-import { ProjectReportsGroupBy } from '@/features/reporting/projectReports/project-reports-slice';
+import { fetchProjectData } from '@/features/reporting/projectReports/project-reports-slice';
+import ProjectTasksModal from './project-tasks-modal';
 import './projects-grouped-view.css';
 
 interface IProjectGroup {
@@ -18,9 +20,45 @@ interface IProjectGroup {
 
 const ProjectsGroupedView = () => {
   const { t } = useTranslation('reporting-projects');
-  const { projectList, groupBy, isLoading } = useAppSelector(
-    state => state.projectReportsReducer
-  );
+  const dispatch = useAppDispatch();
+  const [selectedProject, setSelectedProject] = useState<IRPTProject | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const {
+    projectList,
+    groupBy,
+    isLoading,
+    searchQuery,
+    selectedProjectStatuses,
+    selectedProjectHealths,
+    selectedProjectCategories,
+    selectedProjectManagers,
+    archived,
+  } = useAppSelector(state => state.projectReportsReducer);
+
+  // Handle project click to open modal
+  const handleProjectClick = useCallback((project: IRPTProject) => {
+    setSelectedProject(project);
+    setIsModalOpen(true);
+  }, []);
+
+  // Handle modal close
+  const handleModalClose = useCallback(() => {
+    setIsModalOpen(false);
+  }, []);
+
+  // Fetch project data when filters change
+  useEffect(() => {
+    dispatch(fetchProjectData());
+  }, [
+    dispatch,
+    searchQuery,
+    selectedProjectStatuses,
+    selectedProjectHealths,
+    selectedProjectCategories,
+    selectedProjectManagers,
+    archived,
+  ]);
 
   const groupedProjects = useMemo(() => {
     const groups: Map<string, IProjectGroup> = new Map();
@@ -92,35 +130,49 @@ const ProjectsGroupedView = () => {
     );
   }, [projectList, groupBy, t]);
 
-  const renderProjectItem = (project: IRPTProject) => {
-    const totalTasks = project.tasks_stat?.total || 0;
-    const doneTasks = project.tasks_stat?.done || 0;
-    const progressPercent = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+  const renderProjectItem = useCallback(
+    (project: IRPTProject) => {
+      const totalTasks = project.tasks_stat?.total || 0;
+      const doneTasks = project.tasks_stat?.done || 0;
+      const progressPercent = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
 
-    return (
-      <div key={project.id} className="grouped-project-item">
-        <Flex justify="space-between" align="center" gap={16}>
-          <Flex align="center" gap={8} style={{ flex: 1, minWidth: 0 }}>
-            <Badge color={project.color_code} />
-            <Typography.Text ellipsis style={{ flex: 1 }}>
-              {project.name}
-            </Typography.Text>
+      return (
+        <div
+          key={project.id}
+          className="grouped-project-item"
+          onClick={() => handleProjectClick(project)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              handleProjectClick(project);
+            }
+          }}
+        >
+          <Flex justify="space-between" align="center" gap={16}>
+            <Flex align="center" gap={8} style={{ flex: 1, minWidth: 0 }}>
+              <Badge color={project.color_code} />
+              <Typography.Text ellipsis style={{ flex: 1 }} className="project-name-text">
+                {project.name}
+              </Typography.Text>
+            </Flex>
+            <Flex align="center" gap={16} style={{ flexShrink: 0 }}>
+              <Progress
+                percent={progressPercent}
+                size="small"
+                style={{ width: 100 }}
+                strokeColor={progressPercent === 100 ? '#52c41a' : '#1890ff'}
+              />
+              <Typography.Text type="secondary" style={{ minWidth: 70, textAlign: 'right' }}>
+                {doneTasks}/{totalTasks} {t('tasksText')}
+              </Typography.Text>
+            </Flex>
           </Flex>
-          <Flex align="center" gap={16} style={{ flexShrink: 0 }}>
-            <Progress
-              percent={progressPercent}
-              size="small"
-              style={{ width: 100 }}
-              strokeColor={progressPercent === 100 ? '#52c41a' : '#1890ff'}
-            />
-            <Typography.Text type="secondary" style={{ minWidth: 70, textAlign: 'right' }}>
-              {doneTasks}/{totalTasks} {t('tasksText')}
-            </Typography.Text>
-          </Flex>
-        </Flex>
-      </div>
-    );
-  };
+        </div>
+      );
+    },
+    [handleProjectClick, t]
+  );
 
   const collapseItems = useMemo(
     () =>
@@ -175,6 +227,11 @@ const ProjectsGroupedView = () => {
         items={collapseItems}
         defaultActiveKey={groupedProjects.slice(0, 3).map(g => g.id)}
         expandIconPosition="start"
+      />
+      <ProjectTasksModal
+        open={isModalOpen}
+        project={selectedProject}
+        onClose={handleModalClose}
       />
     </div>
   );

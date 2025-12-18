@@ -48,5 +48,38 @@
 
   "setCategoryText": "Cakto Kategorinë",
   "searchByNameInputPlaceholder": "Kërko sipas emrit",
-  "todayText": "Sot"
+  "todayText": "Sot",
+
+  "uncategorizedText": "Pa kategori",
+  "noStatusText": "Pa status",
+  "noTeamText": "Pa ekip",
+  "noManagerText": "Pa menaxher",
+  "allProjectsText": "Të gjitha projektet",
+  "noProjectsText": "Nuk u gjetën projekte",
+  "projectText": "projekt",
+  "projectsText": "projekte",
+  "tasksText": "detyra",
+
+  "taskNameColumn": "Detyra",
+  "taskStatusColumn": "Statusi",
+  "taskPriorityColumn": "Prioriteti",
+  "assigneesColumn": "Të caktuar",
+  "dueDateColumn": "Data e përfundimit",
+  "timeColumn": "Koha",
+  "taskProgressColumn": "Progresi",
+
+  "searchTasksPlaceholder": "Kërko detyra...",
+  "allStatusesText": "Të gjitha statuset",
+  "allPrioritiesText": "Të gjitha Prioritetet",
+  "allAssigneesText": "Të gjithë të Caktuar",
+  "lowText": "E ulët",
+  "mediumText": "Mesatare",
+  "highText": "E lartë",
+  "showingText": "Duke shfaqur",
+  "ofText": "nga",
+
+  "overdueText": "Vonuar",
+  "subtasksText": "nën-detyra",
+  "taskCompletedText": "Përfunduar",
+  "loggedText": "Regjistruar"
 }

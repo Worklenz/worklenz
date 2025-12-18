@@ -151,6 +151,185 @@ export default abstract class ReportingControllerBase extends WorklenzController
     return result.rows;
   }
 
+  protected static async getTasksPaginated(
+    projectId: string | null,
+    page: number = 1,
+    pageSize: number = 15,
+    search: string = "",
+    statusFilter: string = "all",
+    priorityFilter: string = "all",
+    assigneeFilter: string = "all",
+    sortField: string = "created_at",
+    sortOrder: string = "desc"
+  ) {
+    const offset = (page - 1) * pageSize;
+    
+    let whereClause = "WHERE project_id = $1";
+    const params: any[] = [projectId];
+    let paramIndex = 2;
+
+    if (search) {
+      whereClause += ` AND LOWER(name) LIKE LOWER($${paramIndex})`;
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+
+    if (statusFilter && statusFilter !== "all") {
+      if (statusFilter === "todo") {
+        whereClause += ` AND status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_todo = true))`;
+      } else if (statusFilter === "doing") {
+        whereClause += ` AND status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_doing = true))`;
+      } else if (statusFilter === "done") {
+        whereClause += ` AND status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_done = true))`;
+      }
+    }
+
+    if (priorityFilter && priorityFilter !== "all") {
+      whereClause += ` AND priority_id = (SELECT id FROM task_priorities WHERE LOWER(name) = LOWER($${paramIndex}))`;
+      params.push(priorityFilter);
+      paramIndex++;
+    }
+
+    if (assigneeFilter && assigneeFilter !== "all") {
+      whereClause += ` AND id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id = $${paramIndex}::UUID)`;
+      params.push(assigneeFilter);
+      paramIndex++;
+    }
+
+    // Validate sort field to prevent SQL injection
+    const allowedSortFields: { [key: string]: string } = {
+      'name': 't.name',
+      'end_date': 't.end_date',
+      'created_at': 't.created_at',
+      'priority': '(SELECT value FROM task_priorities WHERE id = t.priority_id)',
+      'status': '(SELECT name FROM task_statuses WHERE id = t.status_id)'
+    };
+    const sortColumn = allowedSortFields[sortField] || 't.created_at';
+    const sortDirection = sortOrder?.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+    const nullsOrder = sortDirection === 'ASC' ? 'NULLS FIRST' : 'NULLS LAST';
+
+    const countQuery = `SELECT COUNT(*) as total FROM tasks ${whereClause}`;
+    const countResult = await db.query(countQuery, params);
+    const total = int(countResult.rows[0]?.total || 0);
+
+    const q = `
+      SELECT  t.id,
+              t.name,
+              t.parent_task_id,
+              t.parent_task_id IS NOT NULL AS is_sub_task,
+              t.status_id AS status,
+              (SELECT name FROM task_statuses WHERE id = t.status_id) AS status_name,
+              (SELECT color_code
+              FROM sys_task_status_categories
+              WHERE id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) AS status_color,
+              (SELECT JSON_BUILD_OBJECT(
+                'is_todo', stc.is_todo,
+                'is_doing', stc.is_doing,
+                'is_done', stc.is_done
+              ) FROM sys_task_status_categories stc WHERE stc.id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) AS status_category,
+              t.priority_id AS priority,
+              (SELECT value FROM task_priorities WHERE id = t.priority_id) AS priority_value,
+              (SELECT name FROM task_priorities WHERE id = t.priority_id) AS priority_name,
+              (SELECT color_code FROM task_priorities WHERE id = t.priority_id) AS priority_color,
+              t.start_date,
+              t.end_date,
+              CASE WHEN t.end_date IS NOT NULL AND t.end_date < CURRENT_DATE 
+                   AND t.status_id NOT IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_done = true))
+                   THEN true ELSE false END AS is_overdue,
+              (SELECT phase_id FROM task_phase WHERE task_id = t.id) AS phase_id,
+              (SELECT name FROM project_phases WHERE id = (SELECT phase_id FROM task_phase WHERE task_id = t.id)) AS phase_name,
+              t.completed_at,
+              t.total_minutes,
+              (SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id) AS total_seconds_spent,
+              (SELECT COUNT(*) FROM tasks st WHERE st.parent_task_id = t.id) AS sub_tasks_count,
+              (SELECT COALESCE(JSON_AGG(JSON_BUILD_OBJECT(
+                'id', ta.team_member_id,
+                'team_member_id', ta.team_member_id,
+                'name', (SELECT name FROM team_member_info_view WHERE team_member_id = ta.team_member_id),
+                'avatar_url', (SELECT avatar_url FROM team_member_info_view WHERE team_member_id = ta.team_member_id)
+              )), '[]'::JSON) FROM tasks_assignees ta WHERE ta.task_id = t.id) AS assignees,
+              (SELECT ROUND(
+                CASE 
+                  WHEN (SELECT COUNT(*) FROM tasks WHERE parent_task_id = t.id) > 0 
+                  THEN (SELECT COUNT(*)::FLOAT FROM tasks WHERE parent_task_id = t.id AND status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_done = true))) / NULLIF((SELECT COUNT(*) FROM tasks WHERE parent_task_id = t.id), 0) * 100
+                  ELSE CASE WHEN t.status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_done = true)) THEN 100 ELSE 0 END
+                END
+              )) AS complete_ratio
+      FROM tasks t
+      ${whereClause.replace("project_id", "t.project_id").replace("status_id", "t.status_id").replace("priority_id", "t.priority_id").replace("LOWER(name)", "LOWER(t.name)")}
+      ORDER BY ${sortColumn} ${sortDirection} ${nullsOrder}
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1};
+    `;
+    params.push(pageSize, offset);
+    
+    const result = await db.query(q, params);
+
+    for (const item of result.rows) {
+      const endDate = moment(item.end_date);
+      const completedDate = moment(item.completed_at);
+      const overdueDays = completedDate.diff(endDate, "days");
+
+      if (overdueDays > 0) {
+        item.overdue_days = overdueDays.toString();
+      } else {
+        item.overdue_days = "0";
+      }
+
+      item.total_minutes_spent = Math.ceil((item.total_seconds_spent || 0) / 60);
+      item.total_time_string = formatDuration(moment.duration(item.total_minutes || 0, "minutes"));
+      item.time_spent_string = formatDuration(moment.duration(item.total_minutes_spent || 0, "minutes"));
+
+      if (~~(item.total_minutes_spent) > ~~(item.total_minutes)) {
+        const overlogged_time = ~~(item.total_minutes_spent) - ~~(item.total_minutes);
+        item.overlogged_time_string = formatDuration(moment.duration(overlogged_time, "minutes"));
+      } else {
+        item.overlogged_time_string = `0h 0m`;
+      }
+    }
+
+    return {
+      data: result.rows,
+      total,
+      page,
+      pageSize
+    };
+  }
+
+  protected static async getTasksStats(projectId: string | null) {
+    const q = `
+      SELECT 
+        COUNT(*) AS total,
+        COUNT(*) FILTER (WHERE status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_done = true))) AS completed,
+        COUNT(*) FILTER (WHERE status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_doing = true))) AS in_progress,
+        COUNT(*) FILTER (WHERE end_date IS NOT NULL AND end_date < CURRENT_DATE 
+          AND status_id NOT IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_done = true))) AS overdue
+      FROM tasks
+      WHERE project_id = $1;
+    `;
+    const result = await db.query(q, [projectId]);
+    return {
+      total: int(result.rows[0]?.total || 0),
+      completed: int(result.rows[0]?.completed || 0),
+      inProgress: int(result.rows[0]?.in_progress || 0),
+      overdue: int(result.rows[0]?.overdue || 0)
+    };
+  }
+
+  protected static async getProjectMembersForFilter(projectId: string | null) {
+    const q = `
+      SELECT DISTINCT
+        tm.id AS team_member_id,
+        (SELECT name FROM team_member_info_view WHERE team_member_id = tm.id) AS name,
+        (SELECT avatar_url FROM team_member_info_view WHERE team_member_id = tm.id) AS avatar_url
+      FROM project_members pm
+      INNER JOIN team_members tm ON pm.team_member_id = tm.id
+      WHERE pm.project_id = $1
+      ORDER BY name;
+    `;
+    const result = await db.query(q, [projectId]);
+    return result.rows;
+  }
+
   protected static getDateRangeClause(key: string, dateRange: string[]) {
     if (dateRange.length === 2) {
       const start = moment(dateRange[0]).format("YYYY-MM-DD");

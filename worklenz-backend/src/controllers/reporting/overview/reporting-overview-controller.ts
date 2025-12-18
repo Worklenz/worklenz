@@ -294,6 +294,25 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
   }
 
   @HandleExceptions()
+  public static async getProjectTasksPaginated(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const projectId = req.params.project_id?.trim() || null;
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 15;
+    const search = (req.query.search as string) || "";
+    const statusFilter = (req.query.status as string) || "all";
+    const priorityFilter = (req.query.priority as string) || "all";
+    const assigneeFilter = (req.query.assignee as string) || "all";
+    const sortField = (req.query.sortField as string) || "created_at";
+    const sortOrder = (req.query.sortOrder as string) || "desc";
+
+    const result = await this.getTasksPaginated(projectId, page, pageSize, search, statusFilter, priorityFilter, assigneeFilter, sortField, sortOrder);
+    const stats = await this.getTasksStats(projectId);
+    const members = await this.getProjectMembersForFilter(projectId);
+
+    return res.status(200).send(new ServerResponse(true, { ...result, stats, members }));
+  }
+
+  @HandleExceptions()
   public static async getTeamMemberOverview(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teamMemberId = req.query.teamMemberId as string;
     const archived = req.query.archived === "true";
