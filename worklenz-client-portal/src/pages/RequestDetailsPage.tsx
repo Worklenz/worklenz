@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Card,
   Typography,
@@ -13,11 +13,18 @@ import {
   Alert,
   Row,
   Col,
+  Empty,
+  Avatar,
+  Flex,
+  theme,
 } from "@/shared/antd-imports";
 import {
   ArrowLeftOutlined,
   SendOutlined,
   PaperClipOutlined,
+  UserOutlined,
+  TeamOutlined,
+  CommentOutlined,
 } from "@/shared/antd-imports";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -37,6 +44,9 @@ const RequestDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [addingComment, setAddingComment] = useState(false);
+  const { token } = theme.useToken();
+  const commentValue = Form.useWatch('comment', form) || '';
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading } = useGetRequestDetailsQuery(id!);
   const { data: historyData } = useGetRequestStatusHistoryQuery(id!);
@@ -46,6 +56,11 @@ const RequestDetailsPage: React.FC = () => {
   const request = data?.body;
   const statusHistory = historyData?.body || [];
   const comments = commentsData?.body || [];
+
+  // Auto-scroll to bottom when comments change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [comments]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -290,81 +305,185 @@ const RequestDetailsPage: React.FC = () => {
         </Row>
       </Card>
 
-      <Card title={t('requests.commentsUpdates')}>
-        {/* Comments List */}
-        {comments.length > 0 && (
-          <div style={{ marginBottom: 24 }}>
-            {comments.map((comment) => (
-              <div
-                key={comment.id}
-                style={{
-                  padding: 16,
-                  marginBottom: 16,
-                  backgroundColor: 'var(--ant-color-bg-container)',
-                  border: '1px solid var(--ant-color-border-secondary)',
-                  borderRadius: 8,
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <Text strong>{comment.sender_name}</Text>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    {new Date(comment.created_at).toLocaleString()}
-                  </Text>
-                </div>
-                <Text style={{ whiteSpace: 'pre-wrap' }}>{comment.comment}</Text>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Add Comment Form */}
-        <Form form={form} onFinish={handleAddComment}>
-          <Form.Item
-            name="comment"
-            rules={[{ required: true, message: t('requests.commentRequired') }]}
-          >
-            <TextArea
-              rows={3}
-              placeholder={t('requests.addCommentPlaceholder')}
-              disabled={
-                request.status === "completed" || request.status === "rejected"
+      {/* Chat-style Comments Section */}
+      <Card 
+        title={
+          <Flex align="center" gap={8}>
+            <CommentOutlined />
+            <span>{t('requests.commentsUpdates')}</span>
+            {comments.length > 0 && (
+              <Tag color={token.colorPrimary} style={{ marginLeft: 8 }}>
+                {comments.length}
+              </Tag>
+            )}
+          </Flex>
+        }
+        styles={{ 
+          body: { 
+            padding: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            height: 450,
+          } 
+        }}
+      >
+        {/* Chat Messages Area */}
+        <div 
+          style={{ 
+            flex: 1,
+            overflowY: 'auto',
+            padding: '16px 20px',
+            backgroundColor: token.colorBgLayout,
+          }}
+        >
+          {comments.length === 0 ? (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={
+                <Text type="secondary">{t('requests.noComments') || 'No comments yet. Start the conversation!'}</Text>
               }
+              style={{ padding: '60px 0' }}
             />
-          </Form.Item>
-          <Form.Item>
-            <Button
-              type="primary"
-              htmlType="submit"
-              icon={<SendOutlined />}
-              loading={addingComment}
-              disabled={
-                request.status === "completed" || request.status === "rejected"
-              }
-            >
-              {t('requests.addComment')}
-            </Button>
-          </Form.Item>
-        </Form>
+          ) : (
+            <>
+              {comments.map((comment) => {
+                const isTeamMember = comment.sender_type === 'team_member';
+                const isOwnMessage = !isTeamMember; // Client's own messages
+                return (
+                  <Flex 
+                    key={comment.id}
+                    justify={isOwnMessage ? 'flex-end' : 'flex-start'}
+                    style={{ marginBottom: 16 }}
+                  >
+                    <Flex 
+                      gap={8} 
+                      align="flex-start"
+                      style={{ 
+                        maxWidth: '75%',
+                        flexDirection: isOwnMessage ? 'row-reverse' : 'row',
+                      }}
+                    >
+                      <Avatar 
+                        size={32}
+                        icon={isTeamMember ? <TeamOutlined /> : <UserOutlined />}
+                        style={{ 
+                          backgroundColor: isTeamMember ? token.colorPrimary : token.colorSuccess,
+                          flexShrink: 0,
+                        }}
+                      />
+                      <div style={{ minWidth: 0 }}>
+                        <Flex 
+                          align="center" 
+                          gap={8} 
+                          style={{ 
+                            marginBottom: 4,
+                            flexDirection: isOwnMessage ? 'row-reverse' : 'row',
+                          }}
+                        >
+                          <Text strong style={{ fontSize: 13 }}>{comment.sender_name}</Text>
+                          <Text type="secondary" style={{ fontSize: 11 }}>
+                            {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </Text>
+                        </Flex>
+                        <div
+                          style={{
+                            padding: '10px 14px',
+                            borderRadius: isOwnMessage ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                            backgroundColor: isOwnMessage ? token.colorPrimary : token.colorBgContainer,
+                            color: isOwnMessage ? '#fff' : token.colorText,
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
+                            wordBreak: 'break-word',
+                          }}
+                        >
+                          <Text 
+                            style={{ 
+                              whiteSpace: 'pre-wrap', 
+                              lineHeight: 1.5,
+                              color: 'inherit',
+                            }}
+                          >
+                            {comment.comment}
+                          </Text>
+                        </div>
+                        <Text 
+                          type="secondary" 
+                          style={{ 
+                            fontSize: 10, 
+                            marginTop: 4, 
+                            display: 'block',
+                            textAlign: isOwnMessage ? 'right' : 'left',
+                          }}
+                        >
+                          {new Date(comment.created_at).toLocaleDateString()}
+                        </Text>
+                      </div>
+                    </Flex>
+                  </Flex>
+                );
+              })}
+              <div ref={messagesEndRef} />
+            </>
+          )}
+        </div>
 
-        {request.status === "completed" && (
-          <Alert
-            message={t('requests.requestCompletedMessage')}
-            description={t('requests.requestCompletedDescription')}
-            type="info"
-            showIcon
-            style={{ marginTop: 16 }}
-          />
-        )}
-
-        {request.status === "rejected" && (
-          <Alert
-            message={t('requests.requestRejectedMessage')}
-            description={t('requests.requestRejectedDescription')}
-            type="warning"
-            showIcon
-            style={{ marginTop: 16 }}
-          />
-        )}
+        {/* Compact Input Area */}
+        <div 
+          style={{ 
+            padding: '12px 16px',
+            borderTop: `1px solid ${token.colorBorderSecondary}`,
+            backgroundColor: token.colorBgContainer,
+          }}
+        >
+          {(request.status === "completed" || request.status === "rejected") ? (
+            <Alert
+              message={request.status === "completed" 
+                ? t('requests.requestCompletedMessage') 
+                : t('requests.requestRejectedMessage')}
+              type={request.status === "completed" ? "info" : "warning"}
+              showIcon
+              style={{ marginBottom: 0 }}
+            />
+          ) : (
+            <Form form={form} onFinish={handleAddComment}>
+              <Flex gap={12} align="flex-end">
+                <Form.Item
+                  name="comment"
+                  rules={[{ required: true, message: t('requests.commentRequired') }]}
+                  style={{ marginBottom: 0, flex: 1 }}
+                >
+                  <TextArea
+                    rows={2}
+                    placeholder={t('requests.addCommentPlaceholder')}
+                    maxLength={5000}
+                    style={{ 
+                      borderRadius: 20,
+                      resize: 'none',
+                      paddingRight: 50,
+                    }}
+                    onPressEnter={(e) => {
+                      if (!e.shiftKey) {
+                        e.preventDefault();
+                        form.submit();
+                      }
+                    }}
+                  />
+                </Form.Item>
+                <Button
+                  type="primary"
+                  shape="circle"
+                  htmlType="submit"
+                  icon={<SendOutlined />}
+                  loading={addingComment}
+                  size="large"
+                  style={{ marginBottom: 4 }}
+                />
+              </Flex>
+              <Text type="secondary" style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
+                {commentValue.length}/5000 · {t('requests.pressEnterToSend') || 'Press Enter to send, Shift+Enter for new line'}
+              </Text>
+            </Form>
+          )}
+        </div>
       </Card>
     </>
   );

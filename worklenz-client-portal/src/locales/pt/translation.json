@@ -258,7 +258,11 @@
     "noAnswer": "Nenhuma resposta fornecida",
     "noFilesUploaded": "Nenhum arquivo enviado",
     "loadingQuestions": "Carregando perguntas...",
-    "enterAnswer": "Digite sua resposta"
+    "enterAnswer": "Digite sua resposta",
+    "noComments": "Ainda não há comentários. Inicie a conversa!",
+    "teamMember": "Equipe",
+    "client": "Cliente",
+    "pressEnterToSend": "Pressione Enter para enviar, Shift+Enter para nova linha"
   },
   "invoices": {
     "title": "Faturas",

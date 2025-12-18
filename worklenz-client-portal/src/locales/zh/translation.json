@@ -188,7 +188,11 @@
     "noAnswer": "未提供回答",
     "noFilesUploaded": "未上传文件",
     "loadingQuestions": "正在加载问题...",
-    "enterAnswer": "请输入您的回答"
+    "enterAnswer": "请输入您的回答",
+    "noComments": "暂无评论。开始对话吧！",
+    "teamMember": "团队",
+    "client": "客户",
+    "pressEnterToSend": "按 Enter 发送，Shift+Enter 换行"
   },
   "common": {
     "loading": "加载中...",

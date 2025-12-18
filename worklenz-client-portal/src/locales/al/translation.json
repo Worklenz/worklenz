@@ -188,7 +188,11 @@
     "noAnswer": "Nuk është dhënë përgjigje",
     "noFilesUploaded": "Nuk janë ngarkuar skedarë",
     "loadingQuestions": "Duke ngarkuar pyetjet...",
-    "enterAnswer": "Shkruani përgjigjen tuaj"
+    "enterAnswer": "Shkruani përgjigjen tuaj",
+    "noComments": "Ende nuk ka komente. Filloni bisedën!",
+    "teamMember": "Ekipi",
+    "client": "Klienti",
+    "pressEnterToSend": "Shtypni Enter për të dërguar, Shift+Enter për rresht të ri"
   },
   "common": {
     "loading": "Duke u ngarkuar...",

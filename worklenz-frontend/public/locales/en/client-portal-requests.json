@@ -32,12 +32,13 @@
   "statusUpdateError": "Failed to update status",
   "downloadAttachment": "Download",
   "viewAttachment": "View",
-  "noComments": "No comments yet",
+  "noComments": "No comments yet. Start the conversation!",
   "addComment": "Add Comment",
   "addCommentPlaceholder": "Type your comment here...",
   "commentRequired": "Please enter a comment",
   "commentAdded": "Comment added successfully",
   "commentError": "Failed to add comment",
   "teamMember": "Team",
-  "client": "Client"
+  "client": "Client",
+  "pressEnterToSend": "Press Enter to send, Shift+Enter for new line"
 }

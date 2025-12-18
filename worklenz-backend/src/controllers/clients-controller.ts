@@ -9,6 +9,8 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import ClientPortalController from "./client-portal-controller";
 import {uploadBase64, deleteObject} from "../shared/storage";
+import {sendClientPortalRequestCommentNotification} from "../shared/email-notifications";
+import {getClientPortalBaseUrl} from "../cron_jobs/helpers";
 
 export default class ClientsController extends WorklenzControllerBase {
 
@@ -1247,7 +1249,7 @@ export default class ClientsController extends WorklenzControllerBase {
 
     // Verify request belongs to this team
     const requestCheck = await db.query(
-      "SELECT id FROM client_portal_requests WHERE id = $1 AND organization_team_id = $2",
+      "SELECT id, admin_comments_viewed_at FROM client_portal_requests WHERE id = $1 AND organization_team_id = $2",
       [requestId, teamId]
     );
 
@@ -1255,6 +1257,15 @@ export default class ClientsController extends WorklenzControllerBase {
       return res.status(404).send(new ServerResponse(false, null, "Request not found"));
     }
 
+    // Update admin_comments_viewed_at timestamp when admin views comments
+    await db.query(
+      "UPDATE client_portal_requests SET admin_comments_viewed_at = NOW() WHERE id = $1 AND organization_team_id = $2",
+      [requestId, teamId]
+    );
+
+    const adminViewedAt = requestCheck.rows[0].admin_comments_viewed_at;
+
+    // Get all comments
     const q = `
       SELECT 
         c.id,
@@ -1271,7 +1282,22 @@ export default class ClientsController extends WorklenzControllerBase {
 
     const result = await db.query(q, [requestId, teamId]);
 
-    return res.status(200).send(new ServerResponse(true, result.rows));
+    // Count new comments (comments created after last admin view, or all if never viewed)
+    let newCommentsCount = 0;
+    if (adminViewedAt) {
+      newCommentsCount = result.rows.filter(
+        (comment: any) => new Date(comment.created_at) > new Date(adminViewedAt)
+      ).length;
+    } else {
+      // If never viewed, all comments are new
+      newCommentsCount = result.rows.length;
+    }
+
+    return res.status(200).send(new ServerResponse(true, {
+      comments: result.rows,
+      totalCount: result.rows.length,
+      newCommentsCount: newCommentsCount
+    }));
   }
 
   @HandleExceptions()

@@ -438,7 +438,19 @@ export const clientPortalApi = createApi({
     getRequestComments: builder.query<
       {
         done: boolean;
-        body: Array<{
+        body: {
+          comments: Array<{
+            id: string;
+            comment: string;
+            sender_type: 'client' | 'team_member';
+            sender_id: string;
+            sender_name: string;
+            created_at: string;
+            updated_at: string;
+          }>;
+          totalCount: number;
+          newCommentsCount: number;
+        } | Array<{
           id: string;
           comment: string;
           sender_type: 'client' | 'team_member';
@@ -446,7 +458,7 @@ export const clientPortalApi = createApi({
           sender_name: string;
           created_at: string;
           updated_at: string;
-        }>;
+        }>; // Support both old format (array) and new format (object)
         message: string;
       },
       string

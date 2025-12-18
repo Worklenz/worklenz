@@ -99,4 +99,5 @@ export {
   LeftOutlined,
   SyncOutlined,
   LoadingOutlined,
+  CommentOutlined,
 } from "@ant-design/icons";

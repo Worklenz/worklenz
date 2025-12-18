@@ -14,6 +14,10 @@ import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { generateUniqueSlug, suggestSlug, isValidSlug } from "../utils/slug";
+import { 
+  sendClientPortalNewRequestNotification, 
+  sendClientPortalRequestCommentNotification 
+} from "../shared/email-notifications";
 
 class ClientPortalController {
 
@@ -332,6 +336,56 @@ class ClientPortalController {
 
       // Get service name for response
       const service = serviceCheck.rows[0];
+
+      // Send email notification to team admins
+      try {
+        // Get client name
+        const clientQuery = await db.query(
+          "SELECT name FROM clients WHERE id = $1",
+          [clientId]
+        );
+        const clientName = clientQuery.rows[0]?.name || "Client";
+
+        // Get team name and admin emails
+        const teamQuery = await db.query(
+          `SELECT t.name as team_name, u.email, u.name as user_name
+           FROM teams t
+           JOIN team_members tm ON tm.team_id = t.id
+           JOIN users u ON u.id = tm.user_id
+           WHERE t.id = $1 AND (tm.role_id IN (SELECT id FROM roles WHERE admin_role = true) OR t.user_id = u.id)`,
+          [organizationId]
+        );
+
+        if (teamQuery.rows.length > 0) {
+          const teamName = teamQuery.rows[0].team_name;
+          const adminEmails = teamQuery.rows.map((row: any) => row.email).filter(Boolean);
+          
+          if (adminEmails.length > 0) {
+            const baseUrl = getBaseUrl();
+            const requestUrl = `${baseUrl}/worklenz/client-portal/requests/${newRequest.id}`;
+            
+            // Get request title from requestData if available
+            let requestTitle = "";
+            if (requestData) {
+              const parsedData = typeof requestData === 'string' ? JSON.parse(requestData) : requestData;
+              requestTitle = parsedData.title || parsedData.name || "";
+            }
+
+            await sendClientPortalNewRequestNotification(adminEmails, {
+              greeting: "Hello",
+              requestNumber: newRequest.req_no,
+              serviceName: service.name,
+              clientName: clientName,
+              submittedAt: new Date(newRequest.created_at).toLocaleString(),
+              requestTitle: requestTitle,
+              requestUrl: requestUrl,
+              teamName: teamName
+            });
+          }
+        }
+      } catch (emailError) {
+        console.error("Error sending new request notification email:", emailError);
+      }
 
       return res.json(new ServerResponse(true, {
         id: newRequest.id,
@@ -688,6 +742,56 @@ class ClientPortalController {
         }
       } catch (socketError) {
         console.error("Error emitting comment socket event:", socketError);
+      }
+
+      // Send email notification to team admins
+      try {
+        // Get request details for notification
+        const requestDetails = await db.query(
+          `SELECT r.req_no, s.name as service_name
+           FROM client_portal_requests r
+           JOIN client_portal_services s ON r.service_id = s.id
+           WHERE r.id = $1`,
+          [id]
+        );
+
+        if (requestDetails.rows.length > 0) {
+          const { req_no, service_name } = requestDetails.rows[0];
+
+          // Get team name and admin emails
+          const teamQuery = await db.query(
+            `SELECT t.name as team_name, u.email
+             FROM teams t
+             JOIN team_members tm ON tm.team_id = t.id
+             JOIN users u ON u.id = tm.user_id
+             WHERE t.id = $1 AND (tm.role_id IN (SELECT id FROM roles WHERE admin_role = true) OR t.user_id = u.id)`,
+            [organizationId]
+          );
+
+          if (teamQuery.rows.length > 0) {
+            const teamName = teamQuery.rows[0].team_name;
+            const adminEmails = teamQuery.rows.map((row: any) => row.email).filter(Boolean);
+            const baseUrl = getBaseUrl();
+            const requestUrl = `${baseUrl}/worklenz/client-portal/requests/${id}`;
+
+            // Send to each admin
+            for (const adminEmail of adminEmails) {
+              await sendClientPortalRequestCommentNotification(adminEmail, {
+                greeting: "Hello",
+                summary: `New comment on request ${req_no} from ${senderName}`,
+                senderName: senderName,
+                senderType: 'client',
+                comment: comment.trim().substring(0, 500) + (comment.trim().length > 500 ? '...' : ''),
+                requestNumber: req_no,
+                serviceName: service_name,
+                requestUrl: requestUrl,
+                teamName: teamName
+              });
+            }
+          }
+        }
+      } catch (emailError) {
+        console.error("Error sending comment notification email:", emailError);
       }
 
       return res.json(new ServerResponse(true, newComment, "Comment added successfully"));

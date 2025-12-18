@@ -82,6 +82,10 @@ class FileConstants {
         return FileConstants.readPugEmailTemplate("task-comment");
       case IEmailTemplateType.ClientInvitation:
         return FileConstants.readHtmlEmailTemplate("client-invitation");
+      case IEmailTemplateType.ClientPortalNewRequest:
+        return FileConstants.readPugEmailTemplate("client-portal-new-request");
+      case IEmailTemplateType.ClientPortalRequestComment:
+        return FileConstants.readPugEmailTemplate("client-portal-request-comment");
       default:
         return null;
     }

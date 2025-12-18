@@ -258,7 +258,11 @@
     "noAnswer": "Keine Antwort angegeben",
     "noFilesUploaded": "Keine Dateien hochgeladen",
     "loadingQuestions": "Fragen werden geladen...",
-    "enterAnswer": "Geben Sie Ihre Antwort ein"
+    "enterAnswer": "Geben Sie Ihre Antwort ein",
+    "noComments": "Noch keine Kommentare. Starten Sie das Gespräch!",
+    "teamMember": "Team",
+    "client": "Kunde",
+    "pressEnterToSend": "Enter zum Senden, Shift+Enter für neue Zeile"
   },
   "invoices": {
     "title": "Rechnungen",

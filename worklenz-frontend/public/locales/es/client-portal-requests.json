@@ -32,12 +32,13 @@
   "downloadAttachment": "Descargar",
   "viewAttachment": "Ver",
   "commentsTab": "Comentarios",
-  "noComments": "Aún no hay comentarios",
+  "noComments": "Aún no hay comentarios. ¡Inicia la conversación!",
   "addComment": "Agregar Comentario",
   "addCommentPlaceholder": "Escribe tu comentario aquí...",
   "commentRequired": "Por favor ingresa un comentario",
   "commentAdded": "Comentario agregado exitosamente",
   "commentError": "Error al agregar comentario",
   "teamMember": "Equipo",
-  "client": "Cliente"
+  "client": "Cliente",
+  "pressEnterToSend": "Presiona Enter para enviar, Shift+Enter para nueva línea"
 }

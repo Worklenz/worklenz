@@ -256,7 +256,11 @@
     "noAnswer": "No answer provided",
     "noFilesUploaded": "No files uploaded",
     "loadingQuestions": "Loading questions...",
-    "enterAnswer": "Enter your answer"
+    "enterAnswer": "Enter your answer",
+    "noComments": "No comments yet. Start the conversation!",
+    "teamMember": "Team",
+    "client": "Client",
+    "pressEnterToSend": "Press Enter to send, Shift+Enter for new line"
   },
   "invoices": {
     "title": "Invoices",

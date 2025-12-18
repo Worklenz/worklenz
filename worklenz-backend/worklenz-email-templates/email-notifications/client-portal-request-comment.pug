@@ -1,0 +1,111 @@
+- const button_style = 'white-space:nowrap;text-overflow:ellipsis;overflow:hidden;display:inline-block;width:100%;font-size: 15px;font-family:Helvetica,Arial,sans-serif;text-decoration:none;line-height: 32px;color:#fff'
+- const container_style = "margin : 0;padding : 0;background : #fff;text-align : left;font-size  : 15px;line-height: 1.4;font-family: 'Helvetica Neue', helvetica, 'Segoe UI', arial, sans-serif;font-weight: 400;"
+
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(http-equiv='X-UA-Compatible' content='IE=edge')
+    meta(name='viewport' content='width=device-width, initial-scale=1.0')
+    title New Comment on Request
+  body
+    style.
+      td {
+        font-family: 'Helvetica Neue', helvetica, arial, sans-serif;
+        background: #fff;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-collapse: collapse;
+        border-spacing: 0;
+      }
+      .comment-box {
+        background: #f5f5f5;
+        border-radius: 8px;
+        padding: 16px;
+        margin: 16px 0;
+        border-left: 4px solid #1890ff;
+      }
+      .comment-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .sender-name {
+        font-weight: 600;
+        color: #2b2b2b;
+        font-size: 14px;
+      }
+      .sender-type {
+        background: #e6f7ff;
+        color: #1890ff;
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        margin-left: 8px;
+      }
+      .comment-text {
+        color: #4a4a4a;
+        font-size: 14px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+      .request-info {
+        color: #6d6e6f;
+        font-size: 12px;
+        margin-top: 8px;
+      }
+    div(style=container_style)
+      div(style='padding:15px 25px')
+        table(style='width: 100%;max-width: 40em;')
+          tbody
+            tr
+              td
+                table(width='100%')
+                  tbody
+                    tr
+                      td
+                        img(width='50' height='50' src='https://s3.us-west-2.amazonaws.com/worklenz.com/assets/icon-96x96.png')
+                    tr
+                      td(style='height:0.625em')
+                table(width='100%')
+                  tbody
+                    tr
+                      td
+                        h3(style='margin:0;line-height:1.2;font-size:1.3em')
+                          | #{greeting},
+                    tr
+                      td
+                        p(style='margin-top: 16px; margin-bottom: 8px; color: #2b2b2b;')
+                          | #{summary}
+                    tr
+                      td
+                        .comment-box
+                          div(style='margin-bottom: 8px;')
+                            span.sender-name #{senderName}
+                            if senderType === 'client'
+                              span(style='background: #f6ffed; color: #52c41a; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-left: 8px;') Client
+                            else
+                              span(style='background: #e6f7ff; color: #1890ff; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-left: 8px;') Team
+                          .comment-text #{comment}
+                          .request-info
+                            | Request: #{requestNumber} • #{serviceName}
+                    tr
+                      td(style='padding-top:20px')
+                        table
+                          tbody
+                            tr
+                              td(bgcolor='#1890ff' style='display:block;height:32px;padding:0 20px;text-align:center;background-color:#1890ff;border-radius:4px;color:#fff')
+                                a(style=button_style href=requestUrl target='_blank')
+                                  span(style='color:#fff') View & Reply
+            tr
+              td
+                table(width='100%')
+                  tbody
+                    tr
+                      td(style='padding-bottom: 6px;padding-top: 20px;')
+                        hr(style='margin:0;border-left:0;border-right:0;border-top:0;border-bottom:1px solid #d8d8d8')
+                    tr
+                      td(style='padding-top:10px;padding-bottom:10px')
+                        p(style='color:#000;margin:0 0 19px;font-size:12px;line-height:15px;color:#6d6d6d;margin-bottom:0')
+                          | This email was sent because you have a request on #{teamName}.
