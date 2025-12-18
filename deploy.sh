@@ -7,118 +7,228 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}Starting deployment process...${NC}"
+# Deployment start time
+DEPLOY_START=$(date +%s)
+
+# Store current directory
+ROOT_DIR=$(pwd)
+
+echo -e "${BLUE}════════════════════════════════════════${NC}"
+echo -e "${BLUE}Starting Worklenz Deployment Process${NC}"
+echo -e "${BLUE}════════════════════════════════════════${NC}"
+echo ""
 
 # Function to handle errors
 handle_error() {
-    echo -e "${RED}Error occurred during deployment!${NC}"
-    echo -e "${RED}Keeping maintenance mode active for safety.${NC}"
-    echo -e "${YELLOW}Please check the error and run deployment again.${NC}"
+    local component=$1
+    local exit_code=$2
+    echo ""
+    echo -e "${RED}═══ ERROR ═══${NC}"
+    echo -e "${RED}Error in: ${component}${NC}"
+    echo -e "${RED}Exit code: ${exit_code}${NC}"
+    echo -e "${RED}Keeping maintenance mode active for safety${NC}"
+    echo -e "${RED}═════════════${NC}"
+
+    # Don't cleanup - keep maintenance mode active
+    trap - EXIT
     exit 1
 }
 
-# Function to disable maintenance mode on script exit
+# Function to disable maintenance mode on successful exit only
 cleanup() {
-    echo -e "${YELLOW}Cleaning up...${NC}"
-    sudo rm -f /var/www/maintenance-mode
-    sudo nginx -s reload
-    echo -e "${GREEN}Maintenance mode disabled${NC}"
+    if [ $? -eq 0 ]; then
+        echo -e "${YELLOW}Disabling maintenance mode...${NC}"
+        sudo rm -f /var/www/maintenance-mode
+        sudo nginx -s reload
+        echo -e "${GREEN}✅ Maintenance mode disabled${NC}"
+    fi
 }
 
-# Set trap to cleanup on script exit (success or failure)
+# Set trap to cleanup only on successful exit
 trap cleanup EXIT
 
 # 1. Enable maintenance mode
-echo -e "${YELLOW}Enabling maintenance mode...${NC}"
+echo -e "${YELLOW}▶ Enabling maintenance mode...${NC}"
 sudo touch /var/www/maintenance-mode
 sudo nginx -s reload
 echo -e "${RED}🔧 Site is now in maintenance mode${NC}"
+echo ""
 
 # 2. Pull latest changes
-echo -e "${YELLOW}Pulling latest changes...${NC}"
-git pull || handle_error
+echo -e "${YELLOW}▶ Pulling latest changes from git...${NC}"
+git pull
+if [ $? -ne 0 ]; then
+    handle_error "Git pull" $?
+fi
+echo -e "${GREEN}✅ Git pull completed${NC}"
+echo ""
 
-# 3. Build frontend
-echo -e "${YELLOW}Building frontend application...${NC}"
-cd worklenz-frontend
+# 3. Build Frontend and Client Portal in PARALLEL
+echo -e "${YELLOW}▶ Building Frontend and Client Portal (parallel)...${NC}"
 
-# Install dependencies
-npm i || handle_error
+# Frontend build function
+build_frontend() {
+    local start_time=$(date +%s)
+    cd "$ROOT_DIR/worklenz-frontend" || return 1
 
-# Build the application
-npm run build || handle_error
+    echo -e "${BLUE}[Frontend]${NC} Installing dependencies..."
+    npm ci --prefer-offline --no-audit --progress=false > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}[Frontend]${NC} npm ci failed"
+        return 1
+    fi
 
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Frontend build successful!${NC}"
-else
-    echo -e "${RED}❌ Frontend build failed!${NC}"
-    handle_error
+    echo -e "${BLUE}[Frontend]${NC} Building application..."
+    NODE_OPTIONS="--max-old-space-size=4096" npm run build > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}[Frontend]${NC} Build failed"
+        return 1
+    fi
+
+    local end_time=$(date +%s)
+    local duration=$((end_time - start_time))
+    echo -e "${GREEN}[Frontend]${NC} ✅ Build completed in ${duration}s"
+    return 0
+}
+
+# Client Portal build function
+build_client_portal() {
+    local start_time=$(date +%s)
+    cd "$ROOT_DIR/worklenz-client-portal" || return 1
+
+    echo -e "${BLUE}[Client Portal]${NC} Installing dependencies..."
+    npm ci --prefer-offline --no-audit --progress=false > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}[Client Portal]${NC} npm ci failed"
+        return 1
+    fi
+
+    echo -e "${BLUE}[Client Portal]${NC} Building application..."
+    npm run build > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}[Client Portal]${NC} Build failed"
+        return 1
+    fi
+
+    local end_time=$(date +%s)
+    local duration=$((end_time - start_time))
+    echo -e "${GREEN}[Client Portal]${NC} ✅ Build completed in ${duration}s"
+    return 0
+}
+
+# Run builds in parallel
+PARALLEL_START=$(date +%s)
+build_frontend &
+FRONTEND_PID=$!
+
+build_client_portal &
+CLIENT_PORTAL_PID=$!
+
+# Wait for both builds to complete
+FRONTEND_EXIT=0
+CLIENT_PORTAL_EXIT=0
+
+wait $FRONTEND_PID
+FRONTEND_EXIT=$?
+
+wait $CLIENT_PORTAL_PID
+CLIENT_PORTAL_EXIT=$?
+
+PARALLEL_END=$(date +%s)
+PARALLEL_DURATION=$((PARALLEL_END - PARALLEL_START))
+
+# Check if both builds succeeded
+if [ $FRONTEND_EXIT -ne 0 ]; then
+    handle_error "Frontend build" $FRONTEND_EXIT
 fi
 
-# 4. Return to root directory
-cd ..
-
-# 5. Build client portal
-echo -e "${YELLOW}Building client portal application...${NC}"
-cd worklenz-client-portal
-
-# Install dependencies
-npm i || handle_error
-
-# Build the application
-npm run build || handle_error
-
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Client portal build successful!${NC}"
-else
-    echo -e "${RED}❌ Client portal build failed!${NC}"
-    handle_error
+if [ $CLIENT_PORTAL_EXIT -ne 0 ]; then
+    handle_error "Client Portal build" $CLIENT_PORTAL_EXIT
 fi
+
+echo -e "${GREEN}✅ Frontend and Client Portal built successfully in ${PARALLEL_DURATION}s${NC}"
+echo ""
+
+# 4. Build Backend
+echo -e "${YELLOW}▶ Building Backend application...${NC}"
+BACKEND_START=$(date +%s)
+
+cd "$ROOT_DIR/worklenz-backend" || handle_error "Backend directory not found" 1
+
+echo -e "${BLUE}[Backend]${NC} Installing dependencies..."
+npm ci --prefer-offline --no-audit --progress=false > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    handle_error "Backend npm ci" $?
+fi
+
+echo -e "${BLUE}[Backend]${NC} Building application..."
+npm run build > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    handle_error "Backend build" $?
+fi
+
+BACKEND_END=$(date +%s)
+BACKEND_DURATION=$((BACKEND_END - BACKEND_START))
+echo -e "${GREEN}✅ Backend built successfully in ${BACKEND_DURATION}s${NC}"
+echo ""
+
+# 5. Restart Backend with PM2
+echo -e "${YELLOW}▶ Restarting Backend service with PM2...${NC}"
+pm2 restart 4 --update-env > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    handle_error "PM2 restart" $?
+fi
+
+# Wait for service to stabilize
+sleep 5
+
+# 6. Health Check
+echo -e "${YELLOW}▶ Performing health check...${NC}"
+HEALTH_CHECK_ATTEMPTS=0
+MAX_HEALTH_CHECKS=10
+
+while [ $HEALTH_CHECK_ATTEMPTS -lt $MAX_HEALTH_CHECKS ]; do
+    if pm2 describe 4 2>&1 | grep -q "online"; then
+        echo -e "${GREEN}✅ Backend service is running${NC}"
+        break
+    fi
+
+    HEALTH_CHECK_ATTEMPTS=$((HEALTH_CHECK_ATTEMPTS + 1))
+    if [ $HEALTH_CHECK_ATTEMPTS -lt $MAX_HEALTH_CHECKS ]; then
+        echo -e "${YELLOW}Waiting for service to come online (attempt ${HEALTH_CHECK_ATTEMPTS}/${MAX_HEALTH_CHECKS})...${NC}"
+        sleep 2
+    else
+        echo -e "${RED}Health check failed - service not responding${NC}"
+        pm2 logs 4 --lines 20
+        handle_error "Health check" 1
+    fi
+done
+
+echo ""
+
+# Calculate total deployment time
+DEPLOY_END=$(date +%s)
+TOTAL_DURATION=$((DEPLOY_END - DEPLOY_START))
+MINUTES=$((TOTAL_DURATION / 60))
+SECONDS=$((TOTAL_DURATION % 60))
 
 # Return to root directory
-cd ..
+cd "$ROOT_DIR"
 
-# 7. Build backend and restart with PM2
-echo -e "${YELLOW}Building backend application and restarting service...${NC}"
-cd worklenz-backend
-
-# Install backend dependencies
-npm i || handle_error
-
-# Build backend
-npm run build || handle_error
-
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Backend build successful!${NC}"
-else
-    echo -e "${RED}❌ Backend build failed!${NC}"
-    handle_error
-fi
-
-# Restart PM2 service
-echo -e "${YELLOW}Restarting PM2 service...${NC}"
-pm2 restart 4 --update-env || handle_error
-
-# Wait a moment for the service to fully restart
-sleep 3
-
-# Check if PM2 service is running
-if pm2 describe 4 | grep -q "online"; then
-    echo -e "${GREEN}✅ Backend service restarted successfully!${NC}"
-else
-    echo -e "${RED}❌ Backend service failed to restart!${NC}"
-    handle_error
-fi
-
-# 8. Disable maintenance mode (handled by cleanup function)
-echo -e "${GREEN}🚀 Deployment completed successfully!${NC}"
-echo -e "${GREEN}Site is now live with latest changes${NC}"
-
-# Optional: Show deployment summary
-echo -e "${BLUE}=== Deployment Summary ===${NC}"
+# Success summary
+echo ""
+echo -e "${GREEN}════════════════════════════════════════${NC}"
+echo -e "${GREEN}🚀 Deployment Completed Successfully!${NC}"
+echo -e "${GREEN}════════════════════════════════════════${NC}"
+echo ""
+echo -e "${BLUE}📊 Build Time Summary:${NC}"
+echo -e "  Frontend + Client Portal: ${PARALLEL_DURATION}s (parallel)"
+echo -e "  Backend: ${BACKEND_DURATION}s"
+echo -e "  Total deployment: ${MINUTES}m ${SECONDS}s"
+echo ""
 echo -e "${GREEN}✅ Git pull completed${NC}"
 echo -e "${GREEN}✅ Frontend built and deployed${NC}"
-echo -e "${GREEN}✅ Client portal built and deployed${NC}"
+echo -e "${GREEN}✅ Client Portal built and deployed${NC}"
 echo -e "${GREEN}✅ Backend built and restarted${NC}"
-echo -e "${GREEN}✅ Maintenance mode disabled${NC}"
-echo -e "${BLUE}=========================${NC}"
+echo -e "${GREEN}✅ Health check passed${NC}"
+echo -e "${GREEN}════════════════════════════════════════${NC}"
