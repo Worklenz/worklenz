@@ -309,8 +309,13 @@ class ClientPortalController {
         return res.status(404).json(new ServerResponse(false, null, "Service not found or not accessible"));
       }
 
-      // Generate request number
-      const requestNumber = `REQ-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+      // Generate request number (sequential per organization)
+      const countResult = await db.query(
+        "SELECT COUNT(*) + 1 as next_num FROM client_portal_requests WHERE organization_team_id = $1",
+        [organizationId]
+      );
+      const nextNum = countResult.rows[0]?.next_num || 1;
+      const requestNumber = `REQ-${String(nextNum).padStart(4, '0')}`;
 
       // Create request
       const query = `

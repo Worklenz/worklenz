@@ -1358,6 +1358,47 @@ export default class ClientsController extends WorklenzControllerBase {
 
     const newComment = result.rows[0];
 
+    // Send email notification to client
+    try {
+      // Get request details and client email
+      const requestDetails = await db.query(
+        `SELECT r.req_no, s.name as service_name, c.name as client_name, 
+                cr.email as client_email, t.name as team_name, cps.slug as portal_slug
+         FROM client_portal_requests r
+         JOIN client_portal_services s ON r.service_id = s.id
+         JOIN clients c ON r.client_id = c.id
+         LEFT JOIN client_relationships cr ON cr.client_id = c.id AND cr.organization_team_id = r.organization_team_id
+         JOIN teams t ON t.id = r.organization_team_id
+         LEFT JOIN client_portal_settings cps ON cps.organization_team_id = r.organization_team_id
+         WHERE r.id = $1`,
+        [requestId]
+      );
+
+      if (requestDetails.rows.length > 0 && requestDetails.rows[0].client_email) {
+        const { req_no, service_name, client_name, client_email, team_name, portal_slug } = requestDetails.rows[0];
+        
+        // Build client portal URL
+        const clientPortalBaseUrl = getClientPortalBaseUrl();
+        const requestUrl = portal_slug 
+          ? `${clientPortalBaseUrl}/${portal_slug}/requests/${requestId}`
+          : `${clientPortalBaseUrl}/requests/${requestId}`;
+
+        await sendClientPortalRequestCommentNotification(client_email, {
+          greeting: `Hello ${client_name}`,
+          summary: `New reply on your request ${req_no}`,
+          senderName: userName || "Team Member",
+          senderType: 'team_member',
+          comment: comment.trim().substring(0, 500) + (comment.trim().length > 500 ? '...' : ''),
+          requestNumber: req_no,
+          serviceName: service_name,
+          requestUrl: requestUrl,
+          teamName: team_name
+        });
+      }
+    } catch (emailError) {
+      console.error("Error sending comment notification email to client:", emailError);
+    }
+
     return res.status(200).send(new ServerResponse(true, newComment, "Comment added successfully"));
   }
 
