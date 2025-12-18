@@ -9,7 +9,6 @@ import {
   Col, 
   Spin, 
   Alert, 
-  Space,
   message,
   UserOutlined, 
   LockOutlined
@@ -112,7 +111,7 @@ const ProfilePage: React.FC = () => {
       
       // Transform form values to match backend API expectations
       const updateData = {
-        name: values.userName,
+        userName: values.userName,
         currentPassword: values.currentPassword,
         newPassword: values.newPassword
       };
@@ -199,6 +198,16 @@ const ProfilePage: React.FC = () => {
               <Form.Item
                 label="Current Password"
                 name="currentPassword"
+                rules={[
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value && getFieldValue('newPassword')) {
+                        return Promise.reject(new Error('Please enter your current password'));
+                      }
+                      return Promise.resolve();
+                    },
+                  }),
+                ]}
               >
                 <Input.Password 
                   prefix={<LockOutlined />} 
@@ -217,6 +226,9 @@ const ProfilePage: React.FC = () => {
                       if (!value && getFieldValue('currentPassword')) {
                         return Promise.reject(new Error('Please enter new password'));
                       }
+                      if (value && !getFieldValue('currentPassword')) {
+                        return Promise.reject(new Error('Please enter your current password'));
+                      }
                       if (value && value.length < 6) {
                         return Promise.reject(new Error('Password must be at least 6 characters'));
                       }
@@ -233,20 +245,15 @@ const ProfilePage: React.FC = () => {
               </Form.Item>
 
               <Form.Item style={{ marginTop: 32, marginBottom: 0 }}>
-                <Space>
-                  <Button 
-                    type="primary" 
-                    htmlType="submit" 
-                    loading={isUpdating}
-                    icon={<UserOutlined />}
-                    size="large"
-                  >
-                    Update Profile
-                  </Button>
-                  <Button onClick={() => form.resetFields()} size="large">
-                    Reset
-                  </Button>
-                </Space>
+                <Button 
+                  type="primary" 
+                  htmlType="submit" 
+                  loading={isUpdating}
+                  icon={<UserOutlined />}
+                  size="large"
+                >
+                  Update Profile
+                </Button>
               </Form.Item>
             </Form>
           </Card>

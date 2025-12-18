@@ -102,7 +102,7 @@
   "generateLink": "生成链接",
   "regenerateLink": "重新生成",
   "linkExpiresAt": "链接过期时间",
-  "noInviteLinkGenerated": "尚未生成组织邀请链接。点击"生成链接"为所有客户创建可分享的链接。",
+  "noInviteLinkGenerated": "尚未生成组织邀请链接。点击\"生成链接\"为所有客户创建可分享的链接。",
   "generateLinkSuccess": "组织邀请链接生成成功！",
   "generateLinkError": "生成组织邀请链接失败",
   "regenerateLinkSuccess": "组织邀请链接重新生成成功！",
@@ -212,5 +212,32 @@
   "selectClientsToInvite": "请选择要邀请的客户",
   "bulkInviteSuccessMessage": "成功生成邀请",
   "bulkInvitePartialFailMessage": "邀请失败",
-  "bulkInviteErrorMessage": "生成邀请失败"
+  "bulkInviteErrorMessage": "生成邀请失败",
+
+  "deactivateConfirmationTitle": "停用客户",
+  "deactivateConfirmationDescription": "您确定要停用此客户吗？他们将失去门户访问权限，但所有数据将被保留。",
+  "deactivateConfirmationOk": "停用",
+  "deactivateConfirmationCancel": "取消",
+  "deactivateClientSuccessMessage": "客户停用成功",
+  "deactivateClientErrorMessage": "停用客户失败",
+  "deactivateTooltip": "停用客户",
+  "deactivateSelected": "停用选中项",
+  "selectClientsToDeactivate": "请选择要停用的客户",
+  "bulkDeactivateSuccessMessage": "选中的客户停用成功",
+  "bulkDeactivateErrorMessage": "停用选中的客户失败",
+
+  "inviteLinkGeneratedSuccess": "邀请链接生成成功！",
+  "inviteLinkGeneratedError": "生成邀请链接失败",
+
+  "invitationModalTitle": "邀请链接已生成",
+  "invitationModalDescription": "与客户分享此链接以邀请他们创建门户账户。链接将在7天后过期。",
+  "invitationModalFooterText": "当客户点击此链接时，他们将能够创建门户账户并访问其项目和服务。",
+  "invitationModalCopyLink": "复制链接",
+  "portalUrlLabel": "门户URL：",
+  "invitationLinkCopiedSuccess": "邀请链接已复制到剪贴板！",
+  "invitationLinkCopyError": "复制链接到剪贴板失败",
+  "emailRequiredTitle": "需要电子邮件",
+  "emailRequiredMessage": "此客户没有电子邮件地址。需要电子邮件才能邀请他们访问门户。",
+  "emailRequiredQuestion": "您想添加电子邮件地址并再次邀请他们吗？",
+  "addEmailButton": "添加电子邮件并邀请"
 }

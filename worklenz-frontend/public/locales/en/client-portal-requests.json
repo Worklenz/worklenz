@@ -23,5 +23,12 @@
   "serviceQuestionsLabel": "Service Questions",
   "noFilesUploaded": "No files uploaded",
   "noAnswer": "No answer provided",
-  "createInvoiceButton": "Create Invoice"
+  "createInvoiceButton": "Create Invoice",
+  "untitledRequest": "Untitled Request",
+  "backToRequests": "Back to Requests",
+  "requestDetails": "Request Details",
+  "statusUpdateSuccess": "Status updated successfully",
+  "statusUpdateError": "Failed to update status",
+  "downloadAttachment": "Download",
+  "viewAttachment": "View"
 }

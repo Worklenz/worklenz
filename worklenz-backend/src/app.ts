@@ -62,6 +62,7 @@ const allowedOrigins = [
         `https://clients.worklenz.com`,
         `https://react.worklenz.com`,
         `https://www.react.worklenz.com`,
+        `https://wl-client.ceydigital.dev`,
         process.env.SERVER_CORS || "",  // Add hostname from env
         process.env.FRONTEND_URL || ""  // Support FRONTEND_URL as well
       ].filter(Boolean)  // Remove empty strings

@@ -41,6 +41,7 @@ export {
   Modal,
   Breadcrumb,
   Radio,
+  Result,
 } from "antd/es";
 
 // Types
@@ -85,6 +86,8 @@ export {
   VideoCameraOutlined,
   FilePdfOutlined,
   CheckCircleOutlined,
+  CheckCircleTwoTone,
+  CloseCircleTwoTone,
   ClockCircleOutlined,
   DollarOutlined,
   ReloadOutlined,

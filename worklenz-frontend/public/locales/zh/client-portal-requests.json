@@ -23,5 +23,12 @@
   "serviceQuestionsLabel": "服务问题",
   "noFilesUploaded": "未上传文件",
   "noAnswer": "未提供答案",
-  "createInvoiceButton": "创建发票"
+  "createInvoiceButton": "创建发票",
+  "untitledRequest": "无标题请求",
+  "backToRequests": "返回请求列表",
+  "requestDetails": "请求详情",
+  "statusUpdateSuccess": "状态更新成功",
+  "statusUpdateError": "状态更新失败",
+  "downloadAttachment": "下载",
+  "viewAttachment": "查看"
 }

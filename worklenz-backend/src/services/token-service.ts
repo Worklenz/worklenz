@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import db from "../config/db";
+import { generatePrefixedToken, isValidBase62 } from "../utils/base62";
 
 interface ClientOrganization {
   id: string;
@@ -52,13 +53,13 @@ class TokenService {
     });
   }
 
-  // Generate invitation token
-  generateInviteToken(payload: InviteTokenPayload): string {
-    return jwt.sign(payload, this.INVITE_SECRET, {
-      expiresIn: "7d", // Invitations expire in 7 days
-      issuer: "worklenz-client-portal",
-      audience: "invite"
-    });
+  // Generate invitation token (short Base62 token with prefix)
+  generateInviteToken(payload?: InviteTokenPayload): string {
+    // Generate a secure Base62 token with "wli" prefix (Worklenz Invite)
+    // 10 bytes = ~14 base62 characters + prefix = ~18 total characters
+    // This is much shorter than the previous 64-character hex token
+    // Example: wli_aB3xK9pL2mN4qR
+    return generatePrefixedToken('wli', 10);
   }
 
   // Generate organization invitation token
@@ -68,6 +69,13 @@ class TokenService {
       issuer: "worklenz-client-portal",
       audience: "organization_invite"
     });
+  }
+
+  // Check if a token is an organization invite token (JWT format)
+  isOrganizationInviteToken(token: string): boolean {
+    // Organization invite tokens are JWTs (3 parts separated by dots)
+    // Regular invite tokens start with a prefix like `wli_`
+    return token.split('.').length === 3;
   }
 
   // Verify client token
@@ -84,20 +92,26 @@ class TokenService {
     }
   }
 
-  // Verify invitation token
-  verifyInviteToken(token: string): InviteTokenPayload | null {
+  // Verify invitation token (now uses database lookup instead of JWT verification)
+  async verifyInviteToken(token: string): Promise<InviteTokenPayload | null> {
     try {
-      const decoded = jwt.verify(token, this.INVITE_SECRET, {
-        issuer: "worklenz-client-portal",
-        audience: "invite"
-      }) as InviteTokenPayload;
+      // Look up invitation from database
+      const invitation = await this.getInvitationByToken(token);
       
-      // Check if token is expired
-      if (Date.now() > decoded.expiresAt) {
+      if (!invitation) {
         return null;
       }
       
-      return decoded;
+      // Return token payload structure for backward compatibility
+      return {
+        clientId: invitation.client_id,
+        email: invitation.email,
+        name: invitation.name,
+        role: invitation.role,
+        invitedBy: invitation.invited_by,
+        expiresAt: new Date(invitation.expires_at).getTime(),
+        type: "invite"
+      };
     } catch (error) {
       console.error("Invite token verification failed:", error);
       return null;
@@ -186,48 +200,87 @@ class TokenService {
     try {
       await client.query("BEGIN");
 
-      let createUserQuery: string;
-      let queryParams: any[];
-      const clientUserId = crypto.randomUUID();
+      // Always hash password and attach to invitation object for use in subsequent queries
+      const passwordHash = crypto.createHash("sha256").update(userData.password).digest("hex");
+      (invitation as any).password_hash = passwordHash;
 
-      if (userData.userId) {
-        // Linking existing Worklenz user - no password_hash needed
-        createUserQuery = `
-          INSERT INTO client_users (
-            id, user_id, client_id, email, name, role, team_id, status, created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', NOW(), NOW())
-          RETURNING id, email, name, role, client_id
-        `;
-        queryParams = [
-          clientUserId,
-          userData.userId,
-          invitation.client_id,
-          invitation.email,
-          userData.name,
-          invitation.role,
-          invitation.team_id
-        ];
+      let userResult: any;
+      let actualClientUserId: string;
+
+      // Check if email already exists in client_users to avoid duplicate key error
+      const emailExistsCheck = await client.query(
+        `SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)`,
+        [invitation.email]
+      );
+
+      if (emailExistsCheck.rows.length > 0) {
+        // Email already exists - update the existing record
+        actualClientUserId = emailExistsCheck.rows[0].id;
+        
+        if (userData.userId) {
+          // Linking existing Worklenz user
+          await client.query(
+            `UPDATE client_users 
+             SET user_id = $1, client_id = $2, name = $3, role = $4, team_id = $5, status = 'active', updated_at = NOW()
+             WHERE id = $6`,
+            [userData.userId, invitation.client_id, userData.name, invitation.role, invitation.team_id, actualClientUserId]
+          );
+        } else {
+          // Standalone client portal user - update with password_hash
+          await client.query(
+            `UPDATE client_users 
+             SET client_id = $1, name = $2, password_hash = $3, role = $4, team_id = $5, status = 'active', updated_at = NOW()
+             WHERE id = $6`,
+            [invitation.client_id, userData.name, passwordHash, invitation.role, invitation.team_id, actualClientUserId]
+          );
+        }
+        
+        userResult = await client.query(
+          `SELECT id, email, name, role, client_id FROM client_users WHERE id = $1`,
+          [actualClientUserId]
+        );
       } else {
-        // Standalone client portal user - create with password_hash
-        const passwordHash = crypto.createHash("sha256").update(userData.password).digest("hex");
-        createUserQuery = `
-          INSERT INTO client_users (
-            id, client_id, email, name, password_hash, role, team_id, status, created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', NOW(), NOW())
-          RETURNING id, email, name, role, client_id
-        `;
-        queryParams = [
-          clientUserId,
-          invitation.client_id,
-          invitation.email,
-          userData.name,
-          passwordHash,
-          invitation.role,
-          invitation.team_id
-        ];
-      }
+        // Email doesn't exist - create new record (let DB generate UUID)
+        let createUserQuery: string;
+        let queryParams: any[];
 
-      const userResult = await client.query(createUserQuery, queryParams);
+        if (userData.userId) {
+          // Linking existing Worklenz user - no password_hash needed for client_users table
+          createUserQuery = `
+            INSERT INTO client_users (
+              user_id, client_id, email, name, role, team_id, status, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, 'active', NOW(), NOW())
+            RETURNING id, email, name, role, client_id
+          `;
+          queryParams = [
+            userData.userId,
+            invitation.client_id,
+            invitation.email,
+            userData.name,
+            invitation.role,
+            invitation.team_id
+          ];
+        } else {
+          // Standalone client portal user - create with password_hash
+          createUserQuery = `
+            INSERT INTO client_users (
+              client_id, email, name, password_hash, role, team_id, status, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, 'active', NOW(), NOW())
+            RETURNING id, email, name, role, client_id
+          `;
+          queryParams = [
+            invitation.client_id,
+            invitation.email,
+            userData.name,
+            passwordHash, // Use the hash created earlier
+            invitation.role,
+            invitation.team_id
+          ];
+        }
+
+        userResult = await client.query(createUserQuery, queryParams);
+        actualClientUserId = userResult.rows[0].id;
+      }
 
       // Create organization access record for multi-org support
       const orgAccessQuery = `
@@ -235,7 +288,7 @@ class TokenService {
         VALUES ($1, $2, $3, TRUE, NOW(), NOW())
         ON CONFLICT (client_user_id, team_id) DO NOTHING
       `;
-      await client.query(orgAccessQuery, [clientUserId, invitation.team_id, invitation.client_id]);
+      await client.query(orgAccessQuery, [actualClientUserId, invitation.team_id, invitation.client_id]);
 
       // Update invitation status
       await client.query(
@@ -250,12 +303,13 @@ class TokenService {
       );
 
       // Create client portal access record with full permissions
+      // Create client portal access record with full permissions
       const portalAccessQuery = `
-        INSERT INTO client_portal_access (client_id, is_active, created_at, updated_at)
-        VALUES ($1, TRUE, NOW(), NOW())
-        ON CONFLICT (client_id) DO UPDATE SET is_active = TRUE, updated_at = NOW()
+        INSERT INTO client_portal_access (client_id, email, password_hash, is_active, created_at, updated_at)
+        VALUES ($1, $2, $3, TRUE, NOW(), NOW())
+        ON CONFLICT (client_id) DO UPDATE SET is_active = TRUE, email = $2, password_hash = $3, updated_at = NOW()
       `;
-      await client.query(portalAccessQuery, [invitation.client_id]);
+      await client.query(portalAccessQuery, [invitation.client_id, invitation.email, (invitation as any).password_hash]);
 
       await client.query("COMMIT");
 

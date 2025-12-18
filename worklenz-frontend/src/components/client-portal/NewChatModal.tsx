@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   Form,
@@ -8,11 +8,14 @@ import {
   Space,
   message,
   Divider,
+  Select,
+  Spin,
 } from '@/shared/antd-imports';
-import { MessageOutlined } from '@ant-design/icons';
+import { MessageOutlined, UserOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import {
   useCreateOrganizationChatMutation,
+  useGetClientsQuery,
 } from '@/api/client-portal/client-portal-api';
 
 const { TextArea } = Input;
@@ -25,21 +28,43 @@ interface NewChatModalProps {
 }
 
 interface NewChatForm {
+  clientId?: string;
   subject: string;
   message: string;
 }
 
-const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess, clientId }) => {
+const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess, clientId: propClientId }) => {
   const { t } = useTranslation('client-portal-chats');
   const { t: tCommon } = useTranslation('common');
   const [form] = Form.useForm<NewChatForm>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string | undefined>(propClientId);
 
   const [createChat] = useCreateOrganizationChatMutation();
+  
+  // Fetch clients list when no clientId is provided as prop
+  const { data: clientsData, isLoading: isLoadingClients } = useGetClientsQuery(
+    { page: 1, limit: 100, status: 'active' },
+    { skip: !!propClientId }
+  );
+
+  const clients = clientsData?.body?.clients || [];
+
+  // Reset selected client when modal opens/closes or prop changes
+  useEffect(() => {
+    if (open) {
+      setSelectedClientId(propClientId);
+      if (propClientId) {
+        form.setFieldValue('clientId', propClientId);
+      }
+    }
+  }, [open, propClientId, form]);
 
   const handleSubmit = async (values: NewChatForm) => {
-    if (!clientId) {
-      message.error(t('clientIdRequired') || 'Client ID is required to create a chat');
+    const effectiveClientId = propClientId || values.clientId || selectedClientId;
+    
+    if (!effectiveClientId) {
+      message.error(t('clientIdRequired') || 'Please select a client to start a chat');
       return;
     }
 
@@ -48,7 +73,7 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess, c
 
       // For organization-side, create chat for the specified client
       const response = await createChat({
-        clientId,
+        clientId: effectiveClientId,
         recipientType: 'team',
         recipientId: 'organization',
         subject: values.subject,
@@ -108,6 +133,47 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess, c
         onFinish={handleSubmit}
         validateTrigger={['onBlur', 'onSubmit']}
       >
+        {/* Client selector - only show when clientId is not provided as prop */}
+        {!propClientId && (
+          <Form.Item
+            name="clientId"
+            label={
+              <Typography.Text strong style={{ fontSize: '14px' }}>
+                {t('selectClient') || 'Select Client'}
+              </Typography.Text>
+            }
+            tooltip={t('selectClientHelper') || 'Choose which client to start a conversation with'}
+            rules={[
+              { required: true, message: t('clientRequired') || 'Please select a client' },
+            ]}
+          >
+            <Select
+              placeholder={t('selectClientPlaceholder') || 'Select a client...'}
+              size="large"
+              showSearch
+              optionFilterProp="label"
+              loading={isLoadingClients}
+              notFoundContent={isLoadingClients ? <Spin size="small" /> : t('noClientsFound') || 'No clients found'}
+              onChange={(value) => setSelectedClientId(value)}
+              style={{ borderRadius: '6px' }}
+              options={clients.map((client) => ({
+                value: client.id,
+                label: (
+                  <Space>
+                    <UserOutlined />
+                    <span>{client.name}</span>
+                    {client.company_name && (
+                      <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+                        ({client.company_name})
+                      </Typography.Text>
+                    )}
+                  </Space>
+                ),
+              }))}
+            />
+          </Form.Item>
+        )}
+
         <Form.Item
           name="subject"
           label={

@@ -70,7 +70,7 @@ const NotificationCenter: React.FC = () => {
     try {
       const response = await clientPortalAPI.markAllNotificationsRead();
       if (response.done) {
-        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       }
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);
@@ -112,11 +112,11 @@ const NotificationCenter: React.FC = () => {
     return notificationTime.toLocaleDateString();
   };
 
-  const handleNotificationClick = (notification: ClientNotification) => {
+  const handleNotificationClick = async (notification: ClientNotification) => {
     if (!notification.isRead) {
-      markAsRead(notification.id);
+      await markAsRead(notification.id);
     }
-    
+
     // Handle navigation based on notification type and reference
     switch (notification.type) {
       case 'request_update':
@@ -138,7 +138,7 @@ const NotificationCenter: React.FC = () => {
         window.location.href = '/chats';
         break;
     }
-    
+
     setDropdownVisible(false);
   };
 

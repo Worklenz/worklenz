@@ -58,7 +58,8 @@ export default class ProjectMembersController extends WorklenzControllerBase {
   public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     req.body.user_id = req.user?.id;
     req.body.team_id = req.user?.team_id;
-    req.body.access_level = req.body.access_level ? req.body.access_level : "MEMBER";
+    // Default to MEMBER access level - can be changed later if needed
+    req.body.access_level = req.body.access_level || "MEMBER";
     const data = await this.createOrInviteMembers(req.body);
     return res.status(200).send(new ServerResponse(true, data));
   }
@@ -87,26 +88,35 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     // Handle self-hosted subscriptions differently
     if (subscriptionData.subscription_type === 'SELF_HOSTED') {
       // Adding as a team member
-      const teamMemberReq: { team_id?: string; emails: string[], project_id?: string; } = {
+      const teamMemberReq: { team_id?: string; emails: string[], project_id?: string; role_name?: string; is_admin?: boolean; job_title_id?: string; } = {
         team_id: req.user?.team_id,
         emails: [req.body.email]
       };
 
       if (req.body.project_id)
         teamMemberReq.project_id = req.body.project_id;
+      
+      // Pass role information for team member creation
+      if (req.body.role_name)
+        teamMemberReq.role_name = req.body.role_name;
+      if (req.body.is_admin !== undefined)
+        teamMemberReq.is_admin = req.body.is_admin;
+      if (req.body.job_title_id)
+        teamMemberReq.job_title_id = req.body.job_title_id;
 
       const [member] = await TeamMembersController.createOrInviteMembers(teamMemberReq, req.user);
 
       if (!member)
         return res.status(200).send(new ServerResponse(true, null, "Failed to add the member to the project. Please try again."));
 
-      // Adding to the project
+      // Adding to the project - default to MEMBER access level
+      // Access level can be changed later if needed
       const projectMemberReq = {
         team_member_id: member.team_member_id,
         team_id: req.user?.team_id,
         project_id: req.body.project_id,
         user_id: req.user?.id,
-        access_level: req.body.access_level ? req.body.access_level : "MEMBER"
+        access_level: "MEMBER" // Always default to MEMBER for new invitations
       };
       const data = await this.createOrInviteMembers(projectMemberReq);
       return res.status(200).send(new ServerResponse(true, data.member));
@@ -151,26 +161,35 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     }
 
     // Adding as a team member
-    const teamMemberReq: { team_id?: string; emails: string[], project_id?: string; } = {
+    const teamMemberReq: { team_id?: string; emails: string[], project_id?: string; role_name?: string; is_admin?: boolean; job_title_id?: string; } = {
       team_id: req.user?.team_id,
       emails: [req.body.email]
     };
 
     if (req.body.project_id)
       teamMemberReq.project_id = req.body.project_id;
+    
+    // Pass role information for team member creation
+    if (req.body.role_name)
+      teamMemberReq.role_name = req.body.role_name;
+    if (req.body.is_admin !== undefined)
+      teamMemberReq.is_admin = req.body.is_admin;
+    if (req.body.job_title_id)
+      teamMemberReq.job_title_id = req.body.job_title_id;
 
     const [member] = await TeamMembersController.createOrInviteMembers(teamMemberReq, req.user);
 
     if (!member)
       return res.status(200).send(new ServerResponse(true, null, "Failed to add the member to the project. Please try again."));
 
-    // Adding to the project
+    // Adding to the project - default to MEMBER access level
+    // Access level can be changed later if needed
     const projectMemberReq = {
       team_member_id: member.team_member_id,
       team_id: req.user?.team_id,
       project_id: req.body.project_id,
       user_id: req.user?.id,
-      access_level: req.body.access_level ? req.body.access_level : "MEMBER"
+      access_level: "MEMBER" // Always default to MEMBER for new invitations
     };
     const data = await this.createOrInviteMembers(projectMemberReq);
     return res.status(200).send(new ServerResponse(true, data.member));

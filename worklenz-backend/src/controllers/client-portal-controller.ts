@@ -1,7 +1,7 @@
 import { ServerResponse } from "../models/server-response";
 import db from "../config/db";
 import TokenService from "../services/token-service";
-import { sendEmail, EmailRequest } from "../shared/email";
+import { sendEmail, sendEmailEnhanced, EmailRequest } from "../shared/email";
 import { AuthenticatedClientRequest } from "../middlewares/client-auth-middleware";
 import FileConstants from "../shared/file-constants";
 import { IEmailTemplateType } from "../interfaces/email-template-type";
@@ -12,6 +12,8 @@ import { IO } from "../shared/io";
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import crypto from "crypto";
+import bcrypt from "bcrypt";
+import { generateUniqueSlug, suggestSlug, isValidSlug } from "../utils/slug";
 
 class ClientPortalController {
 
@@ -557,6 +559,141 @@ class ClientPortalController {
     } catch (error) {
       console.error("Error fetching request status options:", error);
       return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve request status options"));
+    }
+  }
+
+  // Request Comments
+  static async getRequestComments(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const { id } = req.params;
+      const { clientId, organizationId } = req;
+
+      // Verify request exists and belongs to client or organization
+      // First check if request exists with exact client match
+      let requestCheck = await db.query(
+        "SELECT id, client_id, organization_team_id FROM client_portal_requests WHERE id = $1 AND client_id = $2 AND organization_team_id = $3",
+        [id, clientId, organizationId]
+      );
+
+      // If not found, check if request exists in the same organization (for multi-client scenarios)
+      if (requestCheck.rows.length === 0) {
+        requestCheck = await db.query(
+          "SELECT id, client_id, organization_team_id FROM client_portal_requests WHERE id = $1 AND organization_team_id = $2",
+          [id, organizationId]
+        );
+      }
+
+      if (requestCheck.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Request not found"));
+      }
+
+      // Get comments for the request
+      const query = `
+        SELECT 
+          c.id,
+          c.comment,
+          c.sender_type,
+          c.sender_id,
+          c.sender_name,
+          c.created_at,
+          c.updated_at
+        FROM client_portal_request_comments c
+        WHERE c.request_id = $1 AND c.organization_team_id = $2
+        ORDER BY c.created_at ASC
+      `;
+
+      const result = await db.query(query, [id, organizationId]);
+
+      return res.json(new ServerResponse(true, result.rows, "Comments retrieved successfully"));
+    } catch (error) {
+      console.error("Error fetching request comments:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve comments"));
+    }
+  }
+
+  static async addRequestComment(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const { id } = req.params;
+      const { clientId, organizationId, clientRelationshipId } = req;
+      const { comment } = req.body;
+
+      if (!comment || !comment.trim()) {
+        return res.status(400).json(new ServerResponse(false, null, "Comment is required"));
+      }
+
+      // Validate comment length (max 5000 characters)
+      const MAX_COMMENT_LENGTH = 5000;
+      if (comment.trim().length > MAX_COMMENT_LENGTH) {
+        return res.status(400).json(new ServerResponse(false, null, `Comment must not exceed ${MAX_COMMENT_LENGTH} characters`));
+      }
+
+      // Verify request exists and belongs to client
+      const requestCheck = await db.query(
+        "SELECT id, status FROM client_portal_requests WHERE id = $1 AND client_id = $2 AND organization_team_id = $3",
+        [id, clientId, organizationId]
+      );
+
+      if (requestCheck.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Request not found"));
+      }
+
+      // Get client name for sender_name
+      const clientQuery = await db.query(
+        "SELECT name FROM clients WHERE id = $1",
+        [clientId]
+      );
+      const senderName = clientQuery.rows[0]?.name || "Client";
+
+      // Use clientRelationshipId from request if available, otherwise fallback to clientId
+      const relationshipId = clientRelationshipId || clientId;
+
+      // Insert comment
+      const insertQuery = `
+        INSERT INTO client_portal_request_comments (
+          request_id,
+          organization_team_id,
+          client_id,
+          comment,
+          sender_type,
+          sender_id,
+          sender_name,
+          created_at,
+          updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+        RETURNING id, comment, sender_type, sender_id, sender_name, created_at, updated_at
+      `;
+
+      const result = await db.query(insertQuery, [
+        id,
+        organizationId,
+        clientId,
+        comment.trim(),
+        'client',
+        relationshipId,
+        senderName
+      ]);
+
+      const newComment = result.rows[0];
+
+      // Emit socket event for new comment
+      try {
+        const io = IO.getInstance();
+        if (io) {
+          io.emit(`client_portal:request_comment_added`, {
+            requestId: id,
+            comment: newComment,
+            clientId,
+            organizationId
+          });
+        }
+      } catch (socketError) {
+        console.error("Error emitting comment socket event:", socketError);
+      }
+
+      return res.json(new ServerResponse(true, newComment, "Comment added successfully"));
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to add comment"));
     }
   }
 
@@ -1667,6 +1804,25 @@ class ClientPortalController {
       ]);
 
       const newInvoice = result.rows[0];
+
+      // Create notification for the client about new invoice
+      if (request.client_id && organizationId) {
+        await this.createNotification(
+          request.client_id,
+          organizationId,
+          "invoice_created",
+          "New Invoice",
+          `New invoice ${newInvoice.invoice_no} for ${currency} ${amount}`,
+          newInvoice.id,
+          newInvoice.invoice_no,
+          {
+            amount: parseFloat(newInvoice.amount),
+            currency: newInvoice.currency,
+            dueDate: newInvoice.due_date,
+            serviceName: request.service_name
+          }
+        );
+      }
 
       return res.json(new ServerResponse(true, {
         id: newInvoice.id,
@@ -2916,165 +3072,124 @@ class ClientPortalController {
   }
 
   // Notifications
+
+  /**
+   * Helper method to create a notification in the client_portal_notifications table
+   */
+  static async createNotification(
+    clientId: string,
+    organizationId: string,
+    type: string,
+    title: string,
+    message: string,
+    referenceId?: string,
+    referenceNumber?: string,
+    metadata?: Record<string, any>
+  ) {
+    try {
+      const query = `
+        INSERT INTO client_portal_notifications 
+          (client_id, organization_team_id, type, title, message, reference_id, reference_number, metadata)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING id
+      `;
+      const result = await db.query(query, [
+        clientId,
+        organizationId,
+        type,
+        title,
+        message,
+        referenceId || null,
+        referenceNumber || null,
+        JSON.stringify(metadata || {})
+      ]);
+      return result.rows[0]?.id;
+    } catch (error) {
+      console.error("Error creating notification:", error);
+      return null;
+    }
+  }
+
   static async getNotifications(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
       const { page = 1, limit = 20, unread_only = false } = req.query;
 
-      // Since there's no dedicated notifications table, we'll aggregate activities that would be notifications
-      const notifications = [];
+      const pageNum = Number(page);
+      const limitNum = Number(limit);
+      const offset = (pageNum - 1) * limitNum;
 
-      // Get request status updates
-      const requestNotificationsQuery = `
-        SELECT
-          'request_update' as type,
-          r.id as reference_id,
-          r.req_no as reference_number,
-          r.status,
-          r.updated_at as created_at,
-          s.name as service_name,
-          'Request ' || r.req_no || ' status changed to ' || r.status as message,
-          CASE WHEN nr.id IS NOT NULL THEN true ELSE false END as is_read
-        FROM client_portal_requests r
-        JOIN client_portal_services s ON r.service_id = s.id
-        LEFT JOIN client_portal_notification_reads nr
-          ON nr.reference_id = r.id
-          AND nr.notification_type = 'request'
-          AND nr.client_id = $1
-          AND nr.organization_team_id = $2
-        WHERE r.client_id = $1 AND r.organization_team_id = $2
-        AND r.updated_at >= NOW() - INTERVAL '30 days'
-        ORDER BY r.updated_at DESC
-        LIMIT $3
+      // Build query based on unread_only filter
+      let whereClause = "WHERE client_id = $1 AND organization_team_id = $2";
+      if (String(unread_only) === "true") {
+        whereClause += " AND is_read = false";
+      }
+
+      // Get notifications from the centralized table
+      const notificationsQuery = `
+        SELECT 
+          id,
+          type,
+          reference_id,
+          reference_number,
+          title,
+          message,
+          metadata,
+          is_read,
+          read_at,
+          created_at
+        FROM client_portal_notifications
+        ${whereClause}
+        ORDER BY created_at DESC
+        LIMIT $3 OFFSET $4
       `;
 
-      const requestResult = await db.query(requestNotificationsQuery, [
-        clientId, 
-        organizationId, 
-        Number(limit)
+      const notificationsResult = await db.query(notificationsQuery, [
+        clientId,
+        organizationId,
+        limitNum,
+        offset
       ]);
 
-      notifications.push(...requestResult.rows.map((row: any) => ({
-        id: `request_${row.reference_id}`,
+      // Get total count
+      const countQuery = `
+        SELECT COUNT(*) as total
+        FROM client_portal_notifications
+        ${whereClause}
+      `;
+      const countResult = await db.query(countQuery, [clientId, organizationId]);
+      const total = parseInt(countResult.rows[0]?.total || "0", 10);
+
+      // Get unread count
+      const unreadCountQuery = `
+        SELECT COUNT(*) as unread_count
+        FROM client_portal_notifications
+        WHERE client_id = $1 AND organization_team_id = $2 AND is_read = false
+      `;
+      const unreadCountResult = await db.query(unreadCountQuery, [clientId, organizationId]);
+      const unreadCount = parseInt(unreadCountResult.rows[0]?.unread_count || "0", 10);
+
+      // Map notifications to response format
+      const notifications = notificationsResult.rows.map((row: any) => ({
+        id: row.id,
         type: row.type,
         referenceId: row.reference_id,
         referenceNumber: row.reference_number,
-        title: `Request Update`,
+        title: row.title,
         message: row.message,
+        metadata: row.metadata || {},
         isRead: row.is_read,
-        createdAt: row.created_at,
-        metadata: {
-          serviceName: row.service_name,
-          status: row.status
-        }
-      })));
-
-      // Get new invoice notifications
-      const invoiceNotificationsQuery = `
-        SELECT
-          'new_invoice' as type,
-          i.id as reference_id,
-          i.invoice_no as reference_number,
-          i.amount,
-          i.currency,
-          i.due_date,
-          i.created_at,
-          'New invoice ' || i.invoice_no || ' for ' || i.currency || ' ' || i.amount as message,
-          CASE WHEN nr.id IS NOT NULL THEN true ELSE false END as is_read
-        FROM client_portal_invoices i
-        LEFT JOIN client_portal_notification_reads nr
-          ON nr.reference_id = i.id
-          AND nr.notification_type = 'invoice'
-          AND nr.client_id = $1
-          AND nr.organization_team_id = $2
-        WHERE i.client_id = $1 AND i.organization_team_id = $2
-        AND i.created_at >= NOW() - INTERVAL '30 days'
-        ORDER BY i.created_at DESC
-        LIMIT $3
-      `;
-
-      const invoiceResult = await db.query(invoiceNotificationsQuery, [
-        clientId, 
-        organizationId, 
-        Number(limit)
-      ]);
-
-      notifications.push(...invoiceResult.rows.map((row: any) => ({
-        id: `invoice_${row.reference_id}`,
-        type: row.type,
-        referenceId: row.reference_id,
-        referenceNumber: row.reference_number,
-        title: `New Invoice`,
-        message: row.message,
-        isRead: row.is_read,
-        createdAt: row.created_at,
-        metadata: {
-          amount: parseFloat(row.amount || "0"),
-          currency: row.currency,
-          dueDate: row.due_date
-        }
-      })));
-
-      // Get new chat messages as notifications
-      const chatNotificationsQuery = `
-        SELECT
-          'new_message' as type,
-          m.id as reference_id,
-          DATE(m.created_at)::text as reference_number,
-          m.message,
-          m.created_at,
-          u.name as sender_name,
-          'New message from ' || u.name as notification_message,
-          CASE WHEN m.read_at IS NULL THEN false ELSE true END as is_read
-        FROM client_portal_chat_messages m
-        LEFT JOIN users u ON m.sender_type = 'team_member' AND m.sender_id = u.id
-        WHERE m.client_id = $1 AND m.organization_team_id = $2
-        AND m.sender_type = 'team_member'
-        AND m.created_at >= NOW() - INTERVAL '7 days'
-        ORDER BY m.created_at DESC
-        LIMIT $3
-      `;
-
-      const chatResult = await db.query(chatNotificationsQuery, [
-        clientId, 
-        organizationId, 
-        Math.floor(Number(limit) / 2) // Limit chat notifications
-      ]);
-
-      notifications.push(...chatResult.rows.map((row: any) => ({
-        id: `message_${row.reference_id}`,
-        type: row.type,
-        referenceId: row.reference_id,
-        referenceNumber: row.reference_number,
-        title: `New Message`,
-        message: row.notification_message,
-        isRead: row.is_read,
-        createdAt: row.created_at,
-        metadata: {
-          senderName: row.sender_name,
-          messagePreview: row.message.substring(0, 100)
-        }
-      })));
-
-      // Sort all notifications by creation date
-      notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-      // Filter unread only if requested
-      const filteredNotifications = String(unread_only) === "true"
-        ? notifications.filter(n => !n.isRead) 
-        : notifications;
-
-      // Paginate
-      const offset = (Number(page) - 1) * Number(limit);
-      const paginatedNotifications = filteredNotifications.slice(offset, offset + Number(limit));
+        readAt: row.read_at,
+        createdAt: row.created_at
+      }));
 
       return res.json(new ServerResponse(true, {
-        notifications: paginatedNotifications,
-        total: filteredNotifications.length,
-        unreadCount: notifications.filter(n => !n.isRead).length,
-        page: Number(page),
-        limit: Number(limit)
+        notifications,
+        total,
+        unreadCount,
+        page: pageNum,
+        limit: limitNum
       }, "Notifications retrieved successfully"));
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -3085,63 +3200,29 @@ class ClientPortalController {
   static async markNotificationRead(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
       const { id } = req.params;
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
 
-      // Parse notification ID to determine type and reference
-      const [type, referenceId] = id.split("_");
+      // Update the notification in the centralized table
+      const updateQuery = `
+        UPDATE client_portal_notifications 
+        SET is_read = true, read_at = NOW(), updated_at = NOW()
+        WHERE id = $1 AND client_id = $2 AND organization_team_id = $3
+        RETURNING id, type, reference_id
+      `;
 
-      if (!type || !referenceId) {
-        return res.status(400).json(new ServerResponse(false, null, "Invalid notification ID"));
-      }
-
-      let updateResult;
-
-      switch (type) {
-        case "message":
-          // Mark chat message as read
-          updateResult = await db.query(
-            "UPDATE client_portal_chat_messages SET read_at = NOW() WHERE id = $1 AND client_id = $2 AND organization_team_id = $3 AND sender_type = 'team_member'",
-            [referenceId, clientId, organizationId]
-          );
-          break;
-
-        case "request":
-          // Insert into notification_reads table to track read status
-          updateResult = await db.query(
-            `INSERT INTO client_portal_notification_reads
-            (client_id, organization_team_id, notification_type, reference_id)
-            VALUES ($1, $2, 'request', $3)
-            ON CONFLICT (client_id, organization_team_id, notification_type, reference_id)
-            DO UPDATE SET read_at = NOW()`,
-            [clientId, organizationId, referenceId]
-          );
-          break;
-
-        case "invoice":
-          // Insert into notification_reads table to track read status
-          updateResult = await db.query(
-            `INSERT INTO client_portal_notification_reads
-            (client_id, organization_team_id, notification_type, reference_id)
-            VALUES ($1, $2, 'invoice', $3)
-            ON CONFLICT (client_id, organization_team_id, notification_type, reference_id)
-            DO UPDATE SET read_at = NOW()`,
-            [clientId, organizationId, referenceId]
-          );
-          break;
-
-        default:
-          return res.status(400).json(new ServerResponse(false, null, "Unknown notification type"));
-      }
+      const updateResult = await db.query(updateQuery, [id, clientId, organizationId]);
 
       if (updateResult.rowCount === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Notification not found or already read"));
+        return res.status(404).json(new ServerResponse(false, null, "Notification not found"));
       }
 
+      const notification = updateResult.rows[0];
+
       return res.json(new ServerResponse(true, {
-        id,
-        type,
-        referenceId,
+        id: notification.id,
+        type: notification.type,
+        referenceId: notification.reference_id,
         markedAt: new Date()
       }, "Notification marked as read"));
     } catch (error) {
@@ -3152,54 +3233,22 @@ class ClientPortalController {
 
   static async markAllNotificationsRead(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
 
-      let totalMarked = 0;
+      // Mark all unread notifications as read
+      const updateQuery = `
+        UPDATE client_portal_notifications 
+        SET is_read = true, read_at = NOW(), updated_at = NOW()
+        WHERE client_id = $1 AND organization_team_id = $2 AND is_read = false
+      `;
 
-      // Mark all unread chat messages as read
-      const chatUpdateResult = await db.query(
-        "UPDATE client_portal_chat_messages SET read_at = NOW() WHERE client_id = $1 AND organization_team_id = $2 AND sender_type = 'team_member' AND read_at IS NULL",
-        [clientId, organizationId]
-      );
-      totalMarked += chatUpdateResult.rowCount || 0;
-
-      // Mark all request notifications as read
-      // Insert records for all requests from the last 30 days that aren't already marked as read
-      const requestUpdateResult = await db.query(
-        `INSERT INTO client_portal_notification_reads
-        (client_id, organization_team_id, notification_type, reference_id)
-        SELECT $1, $2, 'request', r.id
-        FROM client_portal_requests r
-        WHERE r.client_id = $1
-        AND r.organization_team_id = $2
-        AND r.updated_at >= NOW() - INTERVAL '30 days'
-        ON CONFLICT (client_id, organization_team_id, notification_type, reference_id)
-        DO UPDATE SET read_at = NOW()`,
-        [clientId, organizationId]
-      );
-      totalMarked += requestUpdateResult.rowCount || 0;
-
-      // Mark all invoice notifications as read
-      // Insert records for all invoices from the last 30 days that aren't already marked as read
-      const invoiceUpdateResult = await db.query(
-        `INSERT INTO client_portal_notification_reads
-        (client_id, organization_team_id, notification_type, reference_id)
-        SELECT $1, $2, 'invoice', i.id
-        FROM client_portal_invoices i
-        WHERE i.client_id = $1
-        AND i.organization_team_id = $2
-        AND i.created_at >= NOW() - INTERVAL '30 days'
-        ON CONFLICT (client_id, organization_team_id, notification_type, reference_id)
-        DO UPDATE SET read_at = NOW()`,
-        [clientId, organizationId]
-      );
-      totalMarked += invoiceUpdateResult.rowCount || 0;
+      const updateResult = await db.query(updateQuery, [clientId, organizationId]);
+      const markedCount = updateResult.rowCount || 0;
 
       return res.json(new ServerResponse(true, {
-        markedCount: totalMarked,
-        markedAt: new Date(),
-        types: ["chat_messages", "requests", "invoices"]
+        markedCount,
+        markedAt: new Date()
       }, "All notifications marked as read"));
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
@@ -3543,7 +3592,7 @@ class ClientPortalController {
 
       // Get client information
       const clientQuery = `
-        SELECT c.id, c.name, c.email, c.company_name, c.phone
+        SELECT c.id, c.name, c.email, c.company_name, c.phone, c.invite_slug
         FROM clients c
         WHERE c.id = $1 AND c.team_id = $2
       `;
@@ -3554,6 +3603,15 @@ class ClientPortalController {
       }
 
       const client = clientResult.rows[0];
+
+      // Validate that client has an email address
+      if (!client.email || client.email.trim() === '') {
+        return res.status(400).json(new ServerResponse(false, {
+          errorCode: 'EMAIL_REQUIRED',
+          clientId: client.id,
+          clientName: client.name
+        }, "Email address is required to invite the client to the portal"));
+      }
 
       // Check if this email already exists as a Worklenz user
       const existingUserQuery = `
@@ -3575,22 +3633,43 @@ class ClientPortalController {
         const linkResult = await db.query(linkCheckQuery, [existingUser.id, client.id]);
 
         if (linkResult.rows.length === 0) {
-          // Create client_users record linking Worklenz user to client portal
-          // Note: password_hash is NULL since they'll authenticate via users table
-          const linkUserQuery = `
-            INSERT INTO client_users (id, user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, 'member', $6, 'active', NOW(), NOW())
-            RETURNING id
-          `;
-          const newClientUserId = crypto.randomUUID();
-          await db.query(linkUserQuery, [
-            newClientUserId,
-            existingUser.id,
-            client.id,
-            client.email,
-            client.name,
-            teamId
-          ]);
+          // Check if email already exists in client_users (for any client)
+          const emailExistsCheck = await db.query(
+            `SELECT id, client_id FROM client_users WHERE LOWER(email) = LOWER($1)`,
+            [client.email]
+          );
+
+          let newClientUserId: string;
+
+          if (emailExistsCheck.rows.length > 0) {
+            // Email already exists - update the existing record to link to this client
+            const existingClientUser = emailExistsCheck.rows[0];
+            newClientUserId = existingClientUser.id;
+            
+            // Update the existing client_users record to link to this client and user
+            await db.query(
+              `UPDATE client_users 
+               SET user_id = $1, client_id = $2, name = $3, team_id = $4, status = 'active', updated_at = NOW()
+               WHERE id = $5`,
+              [existingUser.id, client.id, client.name, teamId, existingClientUser.id]
+            );
+          } else {
+            // Create client_users record linking Worklenz user to client portal
+            // Note: password_hash is NULL since they'll authenticate via users table (let DB generate UUID)
+            const linkUserQuery = `
+              INSERT INTO client_users (user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
+              VALUES ($1, $2, $3, $4, 'member', $5, 'active', NOW(), NOW())
+              RETURNING id
+            `;
+            const insertResult = await db.query(linkUserQuery, [
+              existingUser.id,
+              client.id,
+              client.email,
+              client.name,
+              teamId
+            ]);
+            newClientUserId = insertResult.rows[0].id;
+          }
 
           // Create organization access record for multi-org support
           const orgAccessQuery = `
@@ -3608,11 +3687,12 @@ class ClientPortalController {
           await db.query(updateClientQuery, [client.id, teamId]);
 
           // Create client portal access record with full permissions
+          // For linked Worklenz users, we use a placeholder password_hash since they authenticate via users table
           await db.query(
-            `INSERT INTO client_portal_access (client_id, is_active, created_at, updated_at)
-             VALUES ($1, TRUE, NOW(), NOW())
-             ON CONFLICT (client_id) DO UPDATE SET is_active = TRUE, updated_at = NOW()`,
-            [client.id]
+            `INSERT INTO client_portal_access (client_id, email, password_hash, is_active, created_at, updated_at)
+             VALUES ($1, $2, 'LINKED_USER', TRUE, NOW(), NOW())
+             ON CONFLICT (client_id) DO UPDATE SET is_active = TRUE, email = $2, updated_at = NOW()`,
+            [client.id, client.email]
           );
         }
 
@@ -3626,17 +3706,9 @@ class ClientPortalController {
         }, "Client is existing Worklenz user - access granted"));
       }
 
-      // Generate secure token for invitation for new users
+      // Generate secure short random token for invitation (64 characters, same as team/project invitations)
       const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
-      const inviteToken = TokenService.generateInviteToken({
-        clientId: client.id,
-        email: client.email,
-        name: client.name,
-        role: "member",
-        invitedBy: userId,
-        expiresAt,
-        type: "invite"
-      });
+      const inviteToken = TokenService.generateInviteToken();
 
       // Create invitation record in database
       await TokenService.createInvitation({
@@ -3648,15 +3720,24 @@ class ClientPortalController {
         token: inviteToken
       });
 
-      // Generate client portal link with secure token (URL-encode to handle + characters in JWT)
-      const portalLink = `${getClientPortalBaseUrl()}/invite?token=${encodeURIComponent(inviteToken)}`;
+      // Generate client portal link with secure token
+      const baseUrl = getClientPortalBaseUrl();
+      const tokenLink = `${baseUrl}/invite?token=${inviteToken}`;
+
+      // Also provide vanity URL option if client has invite_slug
+      let vanityLink = null;
+      if (client.invite_slug) {
+        vanityLink = `${baseUrl}/i/${client.invite_slug}`;
+      }
 
       return res.json(new ServerResponse(true, {
-        invitationLink: portalLink,
+        invitationLink: tokenLink,
+        vanityLink: vanityLink,
         token: inviteToken,
         expiresAt: new Date(expiresAt).toISOString(),
         clientName: client.name,
-        clientEmail: client.email
+        clientEmail: client.email,
+        inviteSlug: client.invite_slug
       }, "Invitation link generated successfully"));
     } catch (error) {
       console.error("Error generating client invitation link:", error);
@@ -3705,33 +3786,29 @@ class ClientPortalController {
 
       // Check if there's a pending invitation
       const pendingInviteCheck = await db.query(
-        `SELECT id, email, name FROM client_invitations 
+        `SELECT id, email, name, token FROM client_invitations 
          WHERE client_id = $1 AND status = 'pending' 
          ORDER BY created_at DESC LIMIT 1`,
         [clientId]
       );
 
-      // Generate new invitation token
+      // Generate new invitation token (short random token)
       const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
-      const inviteToken = TokenService.generateInviteToken({
-        clientId: client.id,
-        email: client.email,
-        name: client.name,
-        role: "member",
-        invitedBy: userId,
-        expiresAt,
-        type: "invite"
-      });
+      let inviteToken: string;
 
       if (pendingInviteCheck.rows.length > 0) {
-        // Update existing invitation with new token and expiry
+        const existingInvitation = pendingInviteCheck.rows[0];
+        inviteToken = TokenService.generateInviteToken();
+        
+        // Update only this specific invitation by ID with new token and expiry
         await db.query(
           `UPDATE client_invitations 
            SET token = $1, expires_at = $2, updated_at = NOW() 
-           WHERE client_id = $3 AND status = 'pending'`,
-          [inviteToken, new Date(expiresAt), clientId]
+           WHERE id = $3`,
+          [inviteToken, new Date(expiresAt), existingInvitation.id]
         );
       } else {
+        inviteToken = TokenService.generateInviteToken();
         // Create new invitation record
         await TokenService.createInvitation({
           clientId: client.id,
@@ -3743,31 +3820,42 @@ class ClientPortalController {
         });
       }
 
-      // Generate invitation link (URL-encode to handle + characters in JWT)
-      const inviteLink = `${getClientPortalBaseUrl()}/invite?token=${encodeURIComponent(inviteToken)}`;
+      // Generate invitation link
+      const inviteLink = `${getClientPortalBaseUrl()}/invite?token=${inviteToken}`;
 
-      // Generate email HTML
-      const emailHtml = ClientPortalController.generateInvitationEmailHTML({
-        inviteeName: client.name,
-        inviterName,
-        clientName: client.name,
-        companyName: client.company_name,
-        inviteLink,
-        expiresAt: new Date(expiresAt),
-        role: "member"
-      });
+      // Get team name for email
+      const teamQuery = `SELECT name FROM teams WHERE id = $1`;
+      const teamResult = await db.query(teamQuery, [teamId]);
+      const teamName = teamResult.rows[0]?.name || "Worklenz Team";
+
+      // Get the email template (same as initial invitation)
+      const template = FileConstants.getEmailTemplate(IEmailTemplateType.ClientInvitation) as string;
+      if (!template) {
+        return res.status(500).json(new ServerResponse(false, null, "Email template not found"));
+      }
+
+      // Replace template variables
+      const emailContent = template
+        .replace(/\[VAR_CLIENT_NAME\]/g, client.name || "Client")
+        .replace(/\[VAR_CLIENT_EMAIL\]/g, client.email || "")
+        .replace(/\[VAR_COMPANY_NAME\]/g, client.company_name || "N/A")
+        .replace(/\[VAR_CLIENT_PHONE\]/g, client.phone || "N/A")
+        .replace(/\[VAR_TEAM_NAME\]/g, teamName)
+        .replace(/\[VAR_PORTAL_LINK\]/g, inviteLink);
 
       // Send invitation email
       const emailRequest = new EmailRequest(
         [client.email],
-        `You're invited to join ${client.name} on Worklenz`,
-        emailHtml
+        `Welcome to your Client Portal - ${teamName}`,
+        emailContent
       );
 
-      const messageId = await sendEmail(emailRequest);
+      const emailResult = await sendEmailEnhanced(emailRequest);
 
-      if (!messageId) {
-        return res.status(500).json(new ServerResponse(false, null, "Failed to send invitation email"));
+      if (!emailResult.success) {
+        console.error("Failed to send client invitation email:", emailResult.error);
+        const errorMessage = emailResult.error?.message || "Failed to send invitation email";
+        return res.status(500).json(new ServerResponse(false, null, errorMessage));
       }
 
       return res.json(new ServerResponse(true, {
@@ -3905,11 +3993,27 @@ class ClientPortalController {
           await db.query(createClientQuery, [clientId, invitation.team_id, user.name, user.email]);
 
           // Link user to client portal with active status
-          const linkUserQuery = `
-            INSERT INTO client_users (user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, 'member', $5, 'active', NOW(), NOW())
-          `;
-          await db.query(linkUserQuery, [userId, clientId, user.email, user.name, invitation.team_id]);
+          // Check if email already exists in client_users to avoid duplicate key error
+          const emailExistsCheck = await db.query(
+            `SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)`,
+            [user.email]
+          );
+
+          if (emailExistsCheck.rows.length > 0) {
+            // Update existing record
+            await db.query(
+              `UPDATE client_users 
+               SET user_id = $1, client_id = $2, name = $3, team_id = $4, status = 'active', updated_at = NOW()
+               WHERE id = $5`,
+              [userId, clientId, user.name, invitation.team_id, emailExistsCheck.rows[0].id]
+            );
+          } else {
+            const linkUserQuery = `
+              INSERT INTO client_users (user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
+              VALUES ($1, $2, $3, $4, 'member', $5, 'active', NOW(), NOW())
+            `;
+            await db.query(linkUserQuery, [userId, clientId, user.email, user.name, invitation.team_id]);
+          }
 
           return res.json(new ServerResponse(true, {
             redirectTo: "client-portal",
@@ -3938,17 +4042,9 @@ class ClientPortalController {
       const teamResult = await db.query(teamQuery, [teamId]);
       const teamName = teamResult.rows[0]?.name || "Worklenz Team";
 
-      // Generate secure token for invitation
+      // Generate secure token for invitation (short random token)
       const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
-      const inviteToken = TokenService.generateInviteToken({
-        clientId: client.id,
-        email: client.email,
-        name: client.name,
-        role: "member",
-        invitedBy,
-        expiresAt,
-        type: "invite"
-      });
+      const inviteToken = TokenService.generateInviteToken();
 
       // Create invitation record in database
       await TokenService.createInvitation({
@@ -3966,8 +4062,8 @@ class ClientPortalController {
         throw new Error("Client invitation email template not found");
       }
 
-      // Generate client portal link with secure token (URL-encode to handle + characters in JWT)
-      const portalLink = `${getClientPortalBaseUrl()}/invite?token=${encodeURIComponent(inviteToken)}`;
+      // Generate client portal link with secure token
+      const portalLink = `${getClientPortalBaseUrl()}/invite?token=${inviteToken}`;
 
       // Replace template variables
       const emailContent = template
@@ -4254,6 +4350,22 @@ class ClientPortalController {
 
       const updatedClient = result.rows[0];
 
+      // If status was updated, also update related tables
+      if (updateData.status) {
+        // Update client_users status
+        await db.query(
+          "UPDATE client_users SET status = $1 WHERE client_id = $2",
+          [updateData.status, id]
+        );
+
+        // Update client_portal_access is_active based on status
+        const isActive = updateData.status === 'active';
+        await db.query(
+          "UPDATE client_portal_access SET is_active = $1, updated_at = NOW() WHERE client_id = $2",
+          [isActive, id]
+        );
+      }
+
       return res.json(new ServerResponse(true, {
         id: updatedClient.id,
         name: updatedClient.name,
@@ -4268,6 +4380,110 @@ class ClientPortalController {
     } catch (error) {
       console.error("Error updating client:", error);
       return res.status(500).json(new ServerResponse(false, null, "Failed to update client"));
+    }
+  }
+
+  // Set or update client invite slug (vanity URL)
+  static async setClientInviteSlug(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const { id } = req.params;
+      const { invite_slug } = req.body;
+      const teamId = (req.user as any)?.team_id;
+
+      // Verify client exists and belongs to team
+      const clientCheck = await db.query(
+        "SELECT id, name, company_name FROM clients WHERE id = $1 AND team_id = $2",
+        [id, teamId]
+      );
+
+      if (clientCheck.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+      }
+
+      const client = clientCheck.rows[0];
+
+      // If invite_slug is null or empty, remove it
+      if (!invite_slug || invite_slug.trim() === '') {
+        await db.query(
+          "UPDATE clients SET invite_slug = NULL, updated_at = NOW() WHERE id = $1",
+          [id]
+        );
+
+        return res.json(new ServerResponse(true, {
+          id,
+          invite_slug: null
+        }, "Invite slug removed successfully"));
+      }
+
+      // Validate slug format
+      if (!isValidSlug(invite_slug)) {
+        return res.status(400).json(new ServerResponse(false, null, "Invalid slug format. Use lowercase letters, numbers, and hyphens only (3-50 characters)"));
+      }
+
+      // Check if slug is already taken
+      const slugCheck = await db.query(
+        "SELECT id FROM clients WHERE LOWER(invite_slug) = LOWER($1) AND id != $2",
+        [invite_slug, id]
+      );
+
+      if (slugCheck.rows.length > 0) {
+        return res.status(400).json(new ServerResponse(false, null, "This invite slug is already taken. Please choose another."));
+      }
+
+      // Update client with new slug
+      const result = await db.query(
+        "UPDATE clients SET invite_slug = LOWER($1), updated_at = NOW() WHERE id = $2 RETURNING invite_slug",
+        [invite_slug, id]
+      );
+
+      return res.json(new ServerResponse(true, {
+        id,
+        invite_slug: result.rows[0].invite_slug,
+        vanity_url: `${getClientPortalBaseUrl()}/i/${result.rows[0].invite_slug}`
+      }, "Invite slug updated successfully"));
+    } catch (error) {
+      console.error("Error setting client invite slug:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to update invite slug"));
+    }
+  }
+
+  // Generate suggested slug from client name
+  static async suggestClientInviteSlug(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const { id } = req.params;
+      const teamId = (req.user as any)?.team_id;
+
+      // Get client information
+      const client = await db.query(
+        "SELECT id, name, company_name FROM clients WHERE id = $1 AND team_id = $2",
+        [id, teamId]
+      );
+
+      if (client.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+      }
+
+      const clientData = client.rows[0];
+      const baseName = clientData.company_name || clientData.name;
+
+      // Generate unique slug
+      const checkSlugExists = async (slug: string): Promise<boolean> => {
+        const result = await db.query(
+          "SELECT id FROM clients WHERE LOWER(invite_slug) = LOWER($1)",
+          [slug]
+        );
+        return result.rows.length > 0;
+      };
+
+      const suggestedSlug = await generateUniqueSlug(baseName, checkSlugExists);
+
+      return res.json(new ServerResponse(true, {
+        suggested_slug: suggestedSlug,
+        vanity_url: `${getClientPortalBaseUrl()}/i/${suggestedSlug}`
+      }, "Slug suggestion generated successfully"));
+    } catch (error) {
+      console.error("Error suggesting client invite slug:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to generate slug suggestion"));
     }
   }
 
@@ -4299,6 +4515,12 @@ class ClientPortalController {
       // Also deactivate all client users for this client
       await db.query(
         "UPDATE client_users SET status = 'inactive' WHERE client_id = $1",
+        [id]
+      );
+
+      // Deactivate client portal access
+      await db.query(
+        "UPDATE client_portal_access SET is_active = FALSE, updated_at = NOW() WHERE client_id = $1",
         [id]
       );
 
@@ -4717,8 +4939,8 @@ class ClientPortalController {
         token: inviteToken
       });
 
-      // Generate invitation link (URL-encode to handle + characters in JWT)
-      const inviteLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/invitation?token=${encodeURIComponent(inviteToken)}`;
+      // Generate invitation link
+      const inviteLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/invitation?token=${inviteToken}`;
 
       // Generate email HTML
       const emailHtml = ClientPortalController.generateInvitationEmailHTML({
@@ -5437,10 +5659,23 @@ class ClientPortalController {
         return res.status(400).json(new ServerResponse(false, null, "Some clients not found or not accessible"));
       }
 
-      // Update all clients
+      // Update all clients status
       const updateResult = await db.query(
-        "UPDATE clients SET updated_at = NOW() WHERE id = ANY($1) AND team_id = $2",
-        [client_ids, teamId]
+        "UPDATE clients SET status = $1, updated_at = NOW() WHERE id = ANY($2) AND team_id = $3",
+        [status, client_ids, teamId]
+      );
+
+      // Update client_users status accordingly
+      await db.query(
+        "UPDATE client_users SET status = $1 WHERE client_id = ANY($2)",
+        [status, client_ids]
+      );
+
+      // Update client_portal_access based on status
+      const isActive = status === 'active';
+      await db.query(
+        "UPDATE client_portal_access SET is_active = $1, updated_at = NOW() WHERE client_id = ANY($2)",
+        [isActive, client_ids]
       );
 
       return res.json(new ServerResponse(true, { updated_count: updateResult.rowCount }, "Clients updated successfully"));
@@ -5481,6 +5716,12 @@ class ClientPortalController {
         [client_ids]
       );
 
+      // Deactivate client portal access for all clients
+      await db.query(
+        "UPDATE client_portal_access SET is_active = FALSE, updated_at = NOW() WHERE client_id = ANY($1)",
+        [client_ids]
+      );
+
       return res.json(new ServerResponse(true, { deactivated_count: deactivateResult.rowCount }, "Clients deactivated successfully"));
     } catch (error) {
       console.error("Error bulk deactivating clients:", error);
@@ -5489,6 +5730,48 @@ class ClientPortalController {
   }
 
   // Client Portal Authentication Endpoints
+  // Validate invitation via vanity slug
+  static async validateInvitationBySlug(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    try {
+      const { slug } = req.params;
+
+      if (!slug) {
+        return res.status(400).json(new ServerResponse(false, null, "Invitation slug is required"));
+      }
+
+      // Get client by invite_slug
+      const clientQuery = `
+        SELECT c.id, c.name, c.email, c.company_name, c.status, c.invite_slug, t.name as team_name
+        FROM clients c
+        JOIN teams t ON c.team_id = t.id
+        WHERE LOWER(c.invite_slug) = LOWER($1) AND c.status = 'pending'
+      `;
+      const clientResult = await db.query(clientQuery, [slug]);
+
+      if (clientResult.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Invalid invitation link"));
+      }
+
+      const client = clientResult.rows[0];
+
+      // Return client details for the frontend (similar to token-based invitation)
+      return res.json(new ServerResponse(true, {
+        valid: true,
+        email: client.email,
+        clientId: client.id,
+        clientName: client.name,
+        companyName: client.company_name,
+        teamName: client.team_name,
+        inviteSlug: client.invite_slug,
+        type: 'vanity_url'
+      }, "Invitation is valid"));
+    } catch (error) {
+      console.error("Error validating invitation by slug:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to validate invitation"));
+    }
+  }
+
+  // Validate invitation via token (existing method - supports both old hex tokens and new base62 tokens)
   static async validateInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
       const { token } = req.query;
@@ -5497,7 +5780,7 @@ class ClientPortalController {
         return res.status(400).json(new ServerResponse(false, null, "Invitation token is required"));
       }
 
-      // Get invitation details
+      // Get invitation details (TokenService handles both old hex and new base62 tokens)
       const invitation = await TokenService.getInvitationByToken(token as string);
 
       if (!invitation) {
@@ -5516,7 +5799,8 @@ class ClientPortalController {
         companyName: invitation.company_name,
         teamName: invitation.team_name,
         expiresAt: invitation.expires_at,
-        status: invitation.status
+        status: invitation.status,
+        type: 'token'
       }, "Invitation is valid"));
     } catch (error) {
       console.error("Error validating invitation:", error);
@@ -5533,82 +5817,165 @@ class ClientPortalController {
       }
 
       // Check if this is an organization invite token
-      const orgInvitePayload = TokenService.verifyOrganizationInviteToken(token);
-      
-      if (orgInvitePayload && orgInvitePayload.type === "organization_invite") {
-        
-        // For organization invites, email is required
-        if (!email) {
-          return res.status(400).json(new ServerResponse(false, null, "Email is required for organization invites"));
-        }
+      if (TokenService.isOrganizationInviteToken(token)) {
+        const orgInvitePayload = TokenService.verifyOrganizationInviteToken(token);
 
-        // For organization invites, create a new client user account
-        // First, check if user already exists
-        const existingUserCheck = await db.query(
-          "SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)",
-          [email]
-        );
+        if (orgInvitePayload && orgInvitePayload.type === "organization_invite") {
+          // For organization invites, email is required
+          if (!email) {
+            return res
+              .status(400)
+              .json(
+                new ServerResponse(
+                  false,
+                  null,
+                  "Email is required for organization invites"
+                )
+              );
+          }
 
-        if (existingUserCheck.rows.length > 0) {
-          return res.status(400).json({
-            done: false,
-            body: null,
-            title: "Email Already Registered",
-            message: "A user with this email already exists. Please login instead.",
-            messageKey: "errors.email_already_registered_message" // For frontend i18n
-          });
-        }
+          // For organization invites, create a new client user account
+          // First, check if user already exists
+          const existingUserCheck = await db.query(
+            "SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)",
+            [email]
+          );
 
-        // Create a client record for this organization
-        const clientResult = await db.query(
-          `INSERT INTO clients (name, email, team_id, status, client_portal_enabled, created_at, updated_at)
+          if (existingUserCheck.rows.length > 0) {
+            return res.status(400).json({
+              done: false,
+              body: null,
+              title: "Email Already Registered",
+              message:
+                "A user with this email already exists. Please login instead.",
+              messageKey: "errors.email_already_registered_message", // For frontend i18n
+            });
+          }
+
+          // Check if email exists in Worklenz users table for linking
+          const existingWorklenzUserQuery = `
+            SELECT id, email, name, password FROM users
+            WHERE LOWER(email) = LOWER($1)
+          `;
+          const existingWorklenzUserResult = await db.query(existingWorklenzUserQuery, [email]);
+          
+          let worklenzUserId = null;
+          if (existingWorklenzUserResult.rows.length > 0) {
+            // User already exists in Worklenz - verify their Worklenz password before linking
+            const worklenzUser = existingWorklenzUserResult.rows[0];
+            const passwordMatch = bcrypt.compareSync(password, worklenzUser.password);
+            
+            if (!passwordMatch) {
+              return res.status(401).json({
+                done: false,
+                body: { isWorklenzUser: true },
+                titleKey: "errors.worklenz_account_found_title",
+                messageKey: "errors.worklenz_account_found_message"
+              });
+            }
+            
+            worklenzUserId = worklenzUser.id;
+          }
+
+          // Create a client record for this organization
+          const clientResult = await db.query(
+            `INSERT INTO clients (name, email, team_id, status, client_portal_enabled, created_at, updated_at)
            VALUES ($1, $2, $3, 'active', TRUE, NOW(), NOW())
            RETURNING id`,
-          [name, email, orgInvitePayload.teamId]
-        );
-        
-        const clientId = clientResult.rows[0].id;
-        
-        // Create the client user
-        const userResult = await db.query(
-          `INSERT INTO client_users (id, client_id, email, name, password_hash, role, status, created_at)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
-           RETURNING id, email, name, role, client_id`,
-          [
+            [name, email, orgInvitePayload.teamId]
+          );
+
+          const clientId = clientResult.rows[0].id;
+
+          // Create the client user - link to Worklenz user if exists, otherwise use password_hash
+          // Check if email already exists in client_users to avoid duplicate key error
+          const emailExistsCheck = await db.query(
+            `SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)`,
+            [email]
+          );
+
+          let userResult;
+          if (emailExistsCheck.rows.length > 0) {
+            // Email already exists - update the existing record
+            const existingClientUserId = emailExistsCheck.rows[0].id;
+            if (worklenzUserId) {
+              await db.query(
+                `UPDATE client_users 
+                 SET user_id = $1, client_id = $2, name = $3, status = 'active', updated_at = NOW()
+                 WHERE id = $4`,
+                [worklenzUserId, clientId, name, existingClientUserId]
+              );
+            } else {
+              await db.query(
+                `UPDATE client_users 
+                 SET client_id = $1, name = $2, password_hash = $3, status = 'active', updated_at = NOW()
+                 WHERE id = $4`,
+                [clientId, name, crypto.createHash("sha256").update(password).digest("hex"), existingClientUserId]
+              );
+            }
+            userResult = await db.query(
+              `SELECT id, email, name, role, client_id FROM client_users WHERE id = $1`,
+              [existingClientUserId]
+            );
+          } else if (worklenzUserId) {
+            // Link to existing Worklenz user - they will authenticate with their Worklenz password
+            userResult = await db.query(
+              `INSERT INTO client_users (id, client_id, user_id, email, name, role, status, created_at)
+             VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
+             RETURNING id, email, name, role, client_id`,
+              [clientId, worklenzUserId, email, name]
+            );
+          } else {
+            // Standalone client portal user - create with password_hash
+            userResult = await db.query(
+              `INSERT INTO client_users (id, client_id, email, name, password_hash, role, status, created_at)
+             VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
+             RETURNING id, email, name, role, client_id`,
+              [
+                clientId,
+                email,
+                name,
+                crypto.createHash("sha256").update(password).digest("hex"),
+              ]
+            );
+          }
+
+          const newUser = userResult.rows[0];
+
+          // Generate client access token
+          const permissions = await TokenService.getClientPermissions(clientId);
+          const tokenPayload = {
             clientId,
-            email,
-            name,
-            crypto.createHash("sha256").update(password).digest("hex")
-          ]
-        );
-
-        const newUser = userResult.rows[0];
-
-        // Generate client access token
-        const permissions = await TokenService.getClientPermissions(clientId);
-        const tokenPayload = {
-          clientId,
-          organizationId: orgInvitePayload.teamId,
-          email: newUser.email,
-          permissions,
-          type: "client" as const
-        };
-
-        const accessToken = TokenService.generateClientToken(tokenPayload);
-
-        return res.json(new ServerResponse(true, {
-          token: accessToken,
-          user: {
-            id: newUser.id,
+            organizationId: orgInvitePayload.teamId,
             email: newUser.email,
-            name: newUser.name,
-            role: newUser.role,
-            clientId,
-            clientName: name,
-            companyName: orgInvitePayload.organizationName
-          },
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-        }, "Account created successfully"));
+            permissions,
+            type: "client" as const,
+          };
+
+          const accessToken = TokenService.generateClientToken(tokenPayload);
+
+          return res.json(
+            new ServerResponse(
+              true,
+              {
+                token: accessToken,
+                user: {
+                  id: newUser.id,
+                  email: newUser.email,
+                  name: newUser.name,
+                  role: newUser.role,
+                  clientId,
+                  clientName: name,
+                  companyName: orgInvitePayload.organizationName,
+                },
+                expiresAt: new Date(
+                  Date.now() + 24 * 60 * 60 * 1000
+                ).toISOString(),
+              },
+              "Account created successfully"
+            )
+          );
+        }
       }
 
       // Regular invitation flow
@@ -5620,15 +5987,27 @@ class ClientPortalController {
 
       // Check if user email exists in Worklenz users table
       const existingWorklenzUserQuery = `
-        SELECT id, email, name FROM users
+        SELECT id, email, name, password FROM users
         WHERE LOWER(email) = LOWER($1)
       `;
       const existingWorklenzUserResult = await db.query(existingWorklenzUserQuery, [invitation.email]);
 
       let userId = null;
       if (existingWorklenzUserResult.rows.length > 0) {
-        // User already exists in Worklenz - link them instead of creating password
-        userId = existingWorklenzUserResult.rows[0].id;
+        // User already exists in Worklenz - verify their Worklenz password before linking
+        const worklenzUser = existingWorklenzUserResult.rows[0];
+        const passwordMatch = bcrypt.compareSync(password, worklenzUser.password);
+        
+        if (!passwordMatch) {
+          return res.status(401).json({
+            done: false,
+            body: { isWorklenzUser: true },
+            titleKey: "errors.worklenz_account_found_title",
+            messageKey: "errors.worklenz_account_found_message"
+          });
+        }
+        
+        userId = worklenzUser.id;
       }
 
       // Accept the invitation (will link if userId is provided, otherwise create password)

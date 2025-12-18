@@ -39,6 +39,10 @@ clientsApiRouter.get("/portal/clients/:id/details", idParamValidator, safeContro
 clientsApiRouter.put("/portal/clients/:id", idParamValidator, safeControllerFunction(ClientsController.updatePortalClient));
 clientsApiRouter.delete("/portal/clients/:id", idParamValidator, safeControllerFunction(ClientsController.deletePortalClient));
 
+// Organization-side Client Portal Invite Slug (Vanity URLs)
+clientsApiRouter.put("/portal/clients/:id/invite-slug", idParamValidator, safeControllerFunction(ClientsController.setClientInviteSlug));
+clientsApiRouter.get("/portal/clients/:id/invite-slug/suggest", idParamValidator, safeControllerFunction(ClientsController.suggestClientInviteSlug));
+
 // Organization-side Client Portal Projects
 clientsApiRouter.get("/portal/clients/:id/projects", idParamValidator, safeControllerFunction(ClientsController.getPortalClientProjects));
 clientsApiRouter.post("/portal/clients/:id/projects", idParamValidator, safeControllerFunction(ClientsController.assignProjectToPortalClient));

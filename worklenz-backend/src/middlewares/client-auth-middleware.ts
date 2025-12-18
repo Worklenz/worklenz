@@ -6,6 +6,7 @@ export interface AuthenticatedClientRequest extends Request {
   clientId?: string;
   organizationId?: string;
   clientUserId?: string;
+  clientRelationshipId?: string;
   clientAccess?: any;
   clientEmail?: string;
   availableOrganizations?: any[];

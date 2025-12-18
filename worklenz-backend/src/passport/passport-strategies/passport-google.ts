@@ -11,14 +11,6 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
     if (Array.isArray(profile.emails) && profile.emails.length) body.email = profile.emails[0].value;
     if (Array.isArray(profile.photos) && profile.photos.length) body.picture = profile.photos[0].value;
 
-    // Check for existing accounts signed up using OAuth
-    const localAccountResult = await db.query("SELECT 1 FROM users WHERE email = $1 AND password IS NOT NULL AND is_deleted IS FALSE;", [body.email]);
-    if (localAccountResult.rowCount) {
-      const message = `No Google account exists for email ${body.email}.`;
-      (req.session as any).error = message;
-      return done(null, undefined, { message: req.flash(ERROR_KEY, message) });
-    }
-
     // If the user came from an invitation, this exists
     const state = JSON.parse(req.query.state as string || "{}");
     if (state) {
@@ -34,6 +26,16 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
 
     if (result1.rowCount) { // Login
       const [user] = result1.rows;
+
+      // Link Google account if user signed up with email/password but google_id is not set
+      if (!user.google_id && body.id) {
+        try {
+          await db.query("UPDATE users SET google_id = $1 WHERE id = $2;", [body.id, user.id]);
+          user.google_id = body.id;
+        } catch (error) {
+          log_error(error, user);
+        }
+      }
 
       // Update active team of users who came from an invitation
       try {

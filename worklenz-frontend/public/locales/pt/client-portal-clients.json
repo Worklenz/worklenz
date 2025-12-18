@@ -212,5 +212,32 @@
   "selectClientsToInvite": "Por favor selecione clientes para convidar",
   "bulkInviteSuccessMessage": "convite(s) gerado(s) com sucesso",
   "bulkInvitePartialFailMessage": "convite(s) falhado(s)",
-  "bulkInviteErrorMessage": "Falha ao gerar convites"
+  "bulkInviteErrorMessage": "Falha ao gerar convites",
+
+  "deactivateConfirmationTitle": "Desativar Cliente",
+  "deactivateConfirmationDescription": "Tem certeza de que deseja desativar este cliente? Eles perderão o acesso ao portal, mas todos os dados serão preservados.",
+  "deactivateConfirmationOk": "Desativar",
+  "deactivateConfirmationCancel": "Cancelar",
+  "deactivateClientSuccessMessage": "Cliente desativado com sucesso",
+  "deactivateClientErrorMessage": "Falha ao desativar cliente",
+  "deactivateTooltip": "Desativar Cliente",
+  "deactivateSelected": "Desativar Selecionados",
+  "selectClientsToDeactivate": "Por favor selecione clientes para desativar",
+  "bulkDeactivateSuccessMessage": "Clientes selecionados desativados com sucesso",
+  "bulkDeactivateErrorMessage": "Falha ao desativar clientes selecionados",
+
+  "inviteLinkGeneratedSuccess": "Link de convite gerado com sucesso!",
+  "inviteLinkGeneratedError": "Falha ao gerar link de convite",
+
+  "invitationModalTitle": "Link de Convite Gerado",
+  "invitationModalDescription": "Compartilhe este link com o cliente para convidá-lo a criar sua conta do portal. O link expirará em 7 dias.",
+  "invitationModalFooterText": "Quando o cliente clicar neste link, ele poderá criar sua conta do portal e acessar seus projetos e serviços.",
+  "invitationModalCopyLink": "Copiar Link",
+  "portalUrlLabel": "URL do Portal:",
+  "invitationLinkCopiedSuccess": "Link de convite copiado para a área de transferência!",
+  "invitationLinkCopyError": "Falha ao copiar link para a área de transferência",
+  "emailRequiredTitle": "E-mail Obrigatório",
+  "emailRequiredMessage": "Este cliente não possui um endereço de e-mail. Um e-mail é necessário para convidá-lo ao portal.",
+  "emailRequiredQuestion": "Gostaria de adicionar um endereço de e-mail e convidá-lo novamente?",
+  "addEmailButton": "Adicionar E-mail e Convidar"
 }
