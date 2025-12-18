@@ -39,8 +39,10 @@ export const loginUser = createAsyncThunk(
       } else {
         throw new Error(response.message || 'Login failed');
       }
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Login failed');
+    } catch (error: any) {
+      // Extract error message from API response
+      const errorMessage = error?.response?.data?.message || error?.message || 'Login failed';
+      return rejectWithValue(errorMessage);
     }
   }
 );

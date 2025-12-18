@@ -44,7 +44,12 @@ class ClientPortalAPI {
           return Promise.reject(error);
         }
 
-        if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
+        // Skip token refresh for auth endpoints (login, register, etc.)
+        const isAuthEndpoint = originalRequest.url?.includes('/auth/login') || 
+                               originalRequest.url?.includes('/auth/register') ||
+                               originalRequest.url?.includes('/auth/accept-invite');
+        
+        if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry && !isAuthEndpoint) {
           originalRequest._retry = true;
 
           try {

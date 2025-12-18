@@ -3,12 +3,21 @@
     "title": "Portali i Klientit",
     "description": "Hyni në llogarinë tuaj të klientit",
     "email": "Email",
+    "emailLabel": "Adresa e Email-it",
+    "emailRequired": "Ju lutem vendosni adresën tuaj të email-it",
+    "emailInvalid": "Ju lutem vendosni një adresë email të vlefshme",
     "password": "Fjalëkalimi",
+    "passwordLabel": "Fjalëkalimi",
+    "passwordRequired": "Ju lutem vendosni fjalëkalimin tuaj",
+    "passwordMin": "Fjalëkalimi duhet të ketë të paktën 8 karaktere",
     "remember": "Më mbaj mend",
     "forgot": "Keni harruar fjalëkalimin?",
     "signin": "Hyr",
+    "success": "Hyrja u krye me sukses! Duke ridrejtuar...",
+    "failed": "Hyrja dështoi. Ju lutem provoni përsëri.",
     "signup": "Regjistrohu",
-    "no_account": "Nuk keni llogari?"
+    "no_account": "Nuk keni llogari?",
+    "invite_only": "Qasja vetëm me ftesë. Kontaktoni menaxherin tuaj të llogarisë për qasje."
   },
   "organizations": {
     "switch": "Ndrysho Organizatën",

@@ -3,10 +3,18 @@
     "title": "Portal del Cliente",
     "description": "Inicia sesión en tu cuenta de cliente",
     "email": "Correo electrónico",
+    "emailLabel": "Dirección de Correo Electrónico",
+    "emailRequired": "Por favor ingresa tu correo electrónico",
+    "emailInvalid": "Por favor ingresa un correo electrónico válido",
     "password": "Contraseña",
+    "passwordLabel": "Contraseña",
+    "passwordRequired": "Por favor ingresa tu contraseña",
+    "passwordMin": "La contraseña debe tener al menos 8 caracteres",
     "remember": "Recuérdame",
     "forgot": "¿Olvidaste tu contraseña?",
     "signin": "Iniciar sesión",
+    "success": "¡Inicio de sesión exitoso! Redirigiendo...",
+    "failed": "Error de inicio de sesión. Por favor intenta de nuevo.",
     "invite_only": "Acceso solo por invitación. Contacta a tu gerente de cuenta para obtener acceso."
   },
   "invite": {

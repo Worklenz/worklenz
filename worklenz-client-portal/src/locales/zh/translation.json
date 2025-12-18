@@ -3,12 +3,21 @@
     "title": "客户门户",
     "description": "登录您的客户账户",
     "email": "电子邮件",
+    "emailLabel": "电子邮件地址",
+    "emailRequired": "请输入您的电子邮件地址",
+    "emailInvalid": "请输入有效的电子邮件地址",
     "password": "密码",
+    "passwordLabel": "密码",
+    "passwordRequired": "请输入您的密码",
+    "passwordMin": "密码必须至少8个字符",
     "remember": "记住我",
     "forgot": "忘记密码？",
     "signin": "登录",
+    "success": "登录成功！正在跳转...",
+    "failed": "登录失败。请重试。",
     "signup": "注册",
-    "no_account": "没有账户？"
+    "no_account": "没有账户？",
+    "invite_only": "仅限邀请访问。请联系您的客户经理获取访问权限。"
   },
   "organizations": {
     "switch": "切换组织",

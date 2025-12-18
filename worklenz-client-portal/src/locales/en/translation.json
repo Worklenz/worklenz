@@ -3,10 +3,18 @@
     "title": "Client Portal",
     "description": "Sign in to your client account",
     "email": "Email",
+    "emailLabel": "Email Address",
+    "emailRequired": "Please enter your email address",
+    "emailInvalid": "Please enter a valid email address",
     "password": "Password",
+    "passwordLabel": "Password",
+    "passwordRequired": "Please enter your password",
+    "passwordMin": "Password must be at least 8 characters",
     "remember": "Remember me",
     "forgot": "Forgot password?",
     "signin": "Sign In",
+    "success": "Login successful! Redirecting...",
+    "failed": "Login failed. Please try again.",
     "invite_only": "Access by invitation only. Contact your account manager for access."
   },
   "invite": {
