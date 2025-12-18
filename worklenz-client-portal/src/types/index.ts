@@ -271,7 +271,7 @@ export interface InvoiceDetails {
 }
 
 export interface ProfileUpdateData {
-  userName: string;
+  name: string;
   currentPassword?: string;
   newPassword?: string;
 }

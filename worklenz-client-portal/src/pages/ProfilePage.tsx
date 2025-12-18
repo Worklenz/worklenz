@@ -30,7 +30,7 @@ interface ClientProfileApiResponse {
 }
 
 interface ProfileFormValues {
-  userName: string;
+  name: string;
   currentPassword?: string;
   newPassword?: string;
 }
@@ -88,7 +88,7 @@ const ProfilePage: React.FC = () => {
         
         // Populate form with current data
         form.setFieldsValue({
-          userName: rawData.name,
+          name: rawData.name,
         });
       } else {
         setError('Failed to load profile');
@@ -111,7 +111,7 @@ const ProfilePage: React.FC = () => {
       
       // Transform form values to match backend API expectations
       const updateData = {
-        userName: values.userName,
+        name: values.name,
         currentPassword: values.currentPassword,
         newPassword: values.newPassword
       };
@@ -187,7 +187,7 @@ const ProfilePage: React.FC = () => {
             >
               <Form.Item
                 label="Display Name"
-                name="userName"
+                name="name"
                 rules={[{ required: true, message: 'Please enter your name' }]}
               >
                 <Input prefix={<UserOutlined />} placeholder="Your name" size="large" />
