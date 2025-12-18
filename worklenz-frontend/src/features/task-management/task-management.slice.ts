@@ -821,10 +821,10 @@ const taskManagementSlice = createSlice({
     setArchived: (state, action: PayloadAction<boolean>) => {
       state.archived = action.payload;
     },
-    setDuplicateTaskModalStatus: (state, action: PayloadAction<boolean>) => {      
+    setDuplicateTaskModalStatus: (state, action: PayloadAction<boolean>) => {
       state.isOpenDuplicateTaskModal = action.payload;
     },
-    setDuplicateTask: (state, action: PayloadAction<DuplicateTask>) => {      
+    setDuplicateTask: (state, action: PayloadAction<DuplicateTask>) => {
       state.duplicateTask = action.payload;
     },
     toggleArchived: state => {

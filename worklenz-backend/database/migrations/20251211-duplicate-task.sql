@@ -2,7 +2,7 @@ CREATE OR REPLACE FUNCTION duplicate_task_shallow(
   p_original_task_id uuid,
   p_new_parent_task_id uuid DEFAULT NULL,
   p_options jsonb DEFAULT '{}'
-) 
+)
 RETURNS uuid AS $$
 DECLARE
   new_task_id uuid;

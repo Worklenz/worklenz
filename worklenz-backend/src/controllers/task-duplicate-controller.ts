@@ -166,7 +166,7 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
         await db.query(
           `INSERT INTO task_attachments (name, size, type, task_id, team_id, project_id, uploaded_by)
           SELECT name, size, type, $1, team_id, project_id, uploaded_by
-          FROM task_attachments 
+          FROM task_attachments
           WHERE task_id = $2`,
           [newTaskId, taskId]
         );
