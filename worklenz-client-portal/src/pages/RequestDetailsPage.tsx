@@ -38,7 +38,7 @@ const RequestDetailsPage: React.FC = () => {
   const [form] = Form.useForm();
   const [addingComment, setAddingComment] = useState(false);
 
-  const { data, isLoading, refetch } = useGetRequestDetailsQuery(id!);
+  const { data, isLoading } = useGetRequestDetailsQuery(id!);
   const { data: historyData } = useGetRequestStatusHistoryQuery(id!);
   const { data: commentsData, refetch: refetchComments } = useGetRequestCommentsQuery(id!);
   const [addRequestComment] = useAddRequestCommentMutation();

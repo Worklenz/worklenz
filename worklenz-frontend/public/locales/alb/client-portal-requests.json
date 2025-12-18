@@ -30,5 +30,14 @@
   "statusUpdateSuccess": "Statusi u përditësua me sukses",
   "statusUpdateError": "Dështoi përditësimi i statusit",
   "downloadAttachment": "Shkarko",
-  "viewAttachment": "Shiko"
+  "viewAttachment": "Shiko",
+  "commentsTab": "Komentet",
+  "noComments": "Ende nuk ka komente",
+  "addComment": "Shto Koment",
+  "addCommentPlaceholder": "Shkruani komentin tuaj këtu...",
+  "commentRequired": "Ju lutemi shkruani një koment",
+  "commentAdded": "Komenti u shtua me sukses",
+  "commentError": "Dështoi shtimi i komentit",
+  "teamMember": "Ekipi",
+  "client": "Klienti"
 }
