@@ -33,7 +33,17 @@
     "email_placeholder": "Dirección de Correo Electrónico",
     "password_required": "Por favor ingresa una contraseña",
     "password_min": "La contraseña debe tener al menos 8 caracteres",
+    "password_max": "La contraseña debe tener como máximo 32 caracteres",
+    "password_pattern": "La contraseña debe incluir mayúsculas, minúsculas, número y carácter especial",
+    "password_guideline": "La contraseña debe tener al menos 8 caracteres, incluir letras mayúsculas y minúsculas, un número y un carácter especial.",
     "password_placeholder": "Crear Contraseña",
+    "passwordChecklist": {
+      "minLength": "Al menos 8 caracteres",
+      "uppercase": "Una letra mayúscula",
+      "lowercase": "Una letra minúscula",
+      "number": "Un número",
+      "special": "Un carácter especial"
+    },
     "confirm_password_required": "Por favor confirma tu contraseña",
     "confirm_password_placeholder": "Confirmar Contraseña",
     "password_mismatch": "Las contraseñas no coinciden",

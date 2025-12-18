@@ -85,6 +85,8 @@ export {
   VideoCameraOutlined,
   FilePdfOutlined,
   CheckCircleOutlined,
+  CheckCircleTwoTone,
+  CloseCircleTwoTone,
   ClockCircleOutlined,
   DollarOutlined,
   ReloadOutlined,

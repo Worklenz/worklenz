@@ -35,7 +35,17 @@
     "email_placeholder": "Endereço de E-mail",
     "password_required": "Por favor, insira uma senha",
     "password_min": "A senha deve ter pelo menos 8 caracteres",
+    "password_max": "A senha deve ter no máximo 32 caracteres",
+    "password_pattern": "A senha deve incluir letras maiúsculas, minúsculas, número e caractere especial",
+    "password_guideline": "A senha deve ter pelo menos 8 caracteres, incluir letras maiúsculas e minúsculas, um número e um caractere especial.",
     "password_placeholder": "Criar Senha",
+    "passwordChecklist": {
+      "minLength": "Pelo menos 8 caracteres",
+      "uppercase": "Uma letra maiúscula",
+      "lowercase": "Uma letra minúscula",
+      "number": "Um número",
+      "special": "Um caractere especial"
+    },
     "confirm_password_required": "Por favor, confirme sua senha",
     "confirm_password_placeholder": "Confirmar Senha",
     "password_mismatch": "As senhas não coincidem",

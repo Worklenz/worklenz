@@ -33,7 +33,17 @@
     "email_placeholder": "Email Address",
     "password_required": "Please enter a password",
     "password_min": "Password must be at least 8 characters",
+    "password_max": "Password must be at most 32 characters",
+    "password_pattern": "Password must include uppercase, lowercase, number, and special character",
+    "password_guideline": "Password must be at least 8 characters, include uppercase and lowercase letters, a number, and a special character.",
     "password_placeholder": "Create Password",
+    "passwordChecklist": {
+      "minLength": "At least 8 characters",
+      "uppercase": "One uppercase letter",
+      "lowercase": "One lowercase letter",
+      "number": "One number",
+      "special": "One special character"
+    },
     "confirm_password_required": "Please confirm your password",
     "confirm_password_placeholder": "Confirm Password",
     "password_mismatch": "Passwords do not match",

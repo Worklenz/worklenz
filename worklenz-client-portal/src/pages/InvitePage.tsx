@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Card,
   Input,
@@ -7,9 +7,12 @@ import {
   Form,
   message,
   Alert,
+  Flex,
   LockOutlined,
   UserOutlined,
   MailOutlined,
+  CheckCircleTwoTone,
+  CloseCircleTwoTone,
 } from "@/shared/antd-imports";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -17,12 +20,12 @@ import { useTranslation } from "react-i18next";
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/useAppSelector";
 import AuthPageHeader from "@/components/AuthPageHeader";
+import type { RootState } from "@/store";
 import {
   validateInviteToken,
   acceptInvite,
   setError,
 } from "@/store/slices/authSlice";
-import type { RootState } from "@/store";
 
 interface InviteFormValues {
   name: string;
@@ -47,6 +50,47 @@ const InvitePage: React.FC = () => {
     isAuthenticated,
   } = useAppSelector((state: RootState) => state.auth);
   const [form] = Form.useForm<InviteFormValues>();
+  const [passwordValue, setPasswordValue] = useState("");
+  const [passwordActive, setPasswordActive] = useState(false);
+  const themeMode = useAppSelector((state: RootState) => state.ui.theme);
+
+  const passwordChecklistItems = [
+    {
+      key: "minLength",
+      test: (v: string) => v.length >= 8,
+      label: t("invite.passwordChecklist.minLength", {
+        defaultValue: "At least 8 characters",
+      }),
+    },
+    {
+      key: "uppercase",
+      test: (v: string) => /[A-Z]/.test(v),
+      label: t("invite.passwordChecklist.uppercase", {
+        defaultValue: "One uppercase letter",
+      }),
+    },
+    {
+      key: "lowercase",
+      test: (v: string) => /[a-z]/.test(v),
+      label: t("invite.passwordChecklist.lowercase", {
+        defaultValue: "One lowercase letter",
+      }),
+    },
+    {
+      key: "number",
+      test: (v: string) => /\d/.test(v),
+      label: t("invite.passwordChecklist.number", {
+        defaultValue: "One number",
+      }),
+    },
+    {
+      key: "special",
+      test: (v: string) => /[@$!%*?&#]/.test(v),
+      label: t("invite.passwordChecklist.special", {
+        defaultValue: "One special character",
+      }),
+    },
+  ];
 
   const validationRules = {
     name: [
@@ -60,6 +104,19 @@ const InvitePage: React.FC = () => {
     password: [
       { required: true, message: t("invite.password_required") },
       { min: 8, message: t("invite.password_min") },
+      {
+        max: 32,
+        message: t("invite.password_max", {
+          defaultValue: "Password must be at most 32 characters",
+        }),
+      },
+      {
+        pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])/,
+        message: t("invite.password_pattern", {
+          defaultValue:
+            "Password must include uppercase, lowercase, number, and special character",
+        }),
+      },
     ],
     confirmPassword: [
       { required: true, message: t("invite.confirm_password_required") },
@@ -279,13 +336,80 @@ const InvitePage: React.FC = () => {
             />
           </Form.Item>
 
-          <Form.Item name="password" rules={validationRules.password}>
-            <Input.Password
-              prefix={<LockOutlined />}
-              placeholder={t("invite.password_placeholder")}
-              size="large"
-              style={styles.button}
-            />
+          <Form.Item
+            name="password"
+            rules={validationRules.password}
+            validateTrigger={["onBlur", "onSubmit"]}
+          >
+            <div>
+              <Input.Password
+                prefix={<LockOutlined />}
+                placeholder={t("invite.password_placeholder")}
+                size="large"
+                style={styles.button}
+                value={passwordValue}
+                onFocus={() => setPasswordActive(true)}
+                onChange={(e) => {
+                  setPasswordValue(e.target.value);
+                  setPasswordActive(true);
+                }}
+                onBlur={() => {
+                  if (!passwordValue) setPasswordActive(false);
+                }}
+              />
+              <Typography.Text
+                type="secondary"
+                style={{
+                  fontSize: 12,
+                  marginTop: 4,
+                  marginBottom: 0,
+                  display: "block",
+                }}
+              >
+                {t("invite.password_guideline", {
+                  defaultValue:
+                    "Password must be at least 8 characters, include uppercase and lowercase letters, a number, and a special character.",
+                })}
+              </Typography.Text>
+              {passwordActive && (
+                <div style={{ marginTop: 8, marginBottom: 4 }}>
+                  {passwordChecklistItems.map((item) => {
+                    const passed = item.test(passwordValue);
+                    // Only green if passed, otherwise neutral (never red)
+                    const color = passed
+                      ? themeMode === "dark"
+                        ? "#52c41a"
+                        : "#389e0d"
+                      : themeMode === "dark"
+                        ? "#b0b3b8"
+                        : "#bfbfbf";
+                    return (
+                      <Flex
+                        key={item.key}
+                        align="center"
+                        gap={8}
+                        style={{ color, fontSize: 13 }}
+                      >
+                        {passed ? (
+                          <CheckCircleTwoTone
+                            twoToneColor={
+                              themeMode === "dark" ? "#52c41a" : "#52c41a"
+                            }
+                          />
+                        ) : (
+                          <CloseCircleTwoTone
+                            twoToneColor={
+                              themeMode === "dark" ? "#b0b3b8" : "#bfbfbf"
+                            }
+                          />
+                        )}
+                        <span>{item.label}</span>
+                      </Flex>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </Form.Item>
 
           <Form.Item
