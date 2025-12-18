@@ -38,6 +38,7 @@ import {
   selectCustomColumns,
   selectLoadingColumns,
   updateColumnVisibility,
+  setDuplicateTaskModalStatus,
 } from '@/features/task-management/task-management.slice';
 import {
   selectCurrentGrouping,
@@ -208,6 +209,7 @@ import { BASE_COLUMNS, ColumnStyle } from './constants/columns';
 import { Task } from '@/types/task-management.types';
 import { SocketEvents } from '@/shared/socket-events';
 import { evt_project_task_list_visit } from '@/shared/worklenz-analytics-events';
+import DuplicateTaskModal from './components/DuplicateTaskModal';
 
 const TaskListV2Section: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -228,6 +230,7 @@ const TaskListV2Section: React.FC = () => {
   const selectedTaskIds = useAppSelector(selectSelectedTaskIds);
   const lastSelectedTaskId = useAppSelector(selectLastSelectedTaskId);
   const collapsedGroups = useAppSelector(selectCollapsedGroups);
+  const isOpenDuplicateTaskModal = useAppSelector(state => state.taskManagement.isOpenDuplicateTaskModal);
 
   const fields = useAppSelector(state => state.taskManagementFields) || [];
   const columns = useAppSelector(selectColumns);
@@ -1010,6 +1013,9 @@ const TaskListV2Section: React.FC = () => {
 
           {/* Convert To Subtask Drawer */}
           {createPortal(<ConvertToSubtaskDrawer />, document.body, 'convert-to-subtask-drawer')}
+
+          {/* Duplicate Task Modal */}
+          {createPortal(<DuplicateTaskModal open={isOpenDuplicateTaskModal} onClose={() => dispatch(setDuplicateTaskModalStatus(false))}/>, document.body, 'duplicate-task-modal')}
         </div>
       </DndContext>
     </>

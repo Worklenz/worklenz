@@ -13,6 +13,7 @@ import {
   TaskGroup,
   TaskGrouping,
   getSortOrderField,
+  DuplicateTask,
 } from '@/types/task-management.types';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
 import { RootState } from '@/app/store';
@@ -21,6 +22,7 @@ import {
   ITaskListConfigV2,
   ITaskListV3Response,
 } from '@/api/tasks/tasks.api.service';
+import duplicateTaskApiService from '@/api/tasks/task-duplicate.api.service';
 import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';
 import logger from '@/utils/errorLogger';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
@@ -73,6 +75,8 @@ const initialState: TaskManagementState = {
   // Add sort-related state
   sortField: '',
   sortOrder: 'ASC',
+  isOpenDuplicateTaskModal: false,
+  duplicateTask: {}
 };
 
 // Async thunk to fetch tasks from API
@@ -420,6 +424,23 @@ export const refreshTaskProgress = createAsyncThunk(
         return rejectWithValue(error.message);
       }
       return rejectWithValue('Failed to refresh task progress');
+    }
+  }
+);
+
+export const duplicateTask = createAsyncThunk(
+  'taskManagement/duplicateTask',
+  async ({projectId, taskId, duplicateOptions}: {projectId: string, taskId: string, duplicateOptions: any },{ rejectWithValue }) => {
+    try {
+      // console.log('Duplicate Task Thunk', projectId, taskId, duplicateOptions);
+      const response = await duplicateTaskApiService.duplicate({task_id: taskId, project_id: projectId, options: duplicateOptions});
+      return response;
+    } catch (error) {
+      logger.error('Failed to duplicate task', error);
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to duplicate task');
     }
   }
 );
@@ -799,6 +820,12 @@ const taskManagementSlice = createSlice({
     },
     setArchived: (state, action: PayloadAction<boolean>) => {
       state.archived = action.payload;
+    },
+    setDuplicateTaskModalStatus: (state, action: PayloadAction<boolean>) => {      
+      state.isOpenDuplicateTaskModal = action.payload;
+    },
+    setDuplicateTask: (state, action: PayloadAction<DuplicateTask>) => {      
+      state.duplicateTask = action.payload;
     },
     toggleArchived: state => {
       state.archived = !state.archived;
@@ -1217,6 +1244,8 @@ export const {
   setSelectedPriorities,
   setSearch,
   setArchived,
+  setDuplicateTaskModalStatus,
+  setDuplicateTask,
   toggleArchived,
   setSortField,
   setSortOrder,
