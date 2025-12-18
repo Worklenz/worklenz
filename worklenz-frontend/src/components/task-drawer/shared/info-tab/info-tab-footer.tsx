@@ -23,6 +23,7 @@ import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { ITeamMember } from '@/types/teamMembers/teamMember.types';
 import { fromNow } from '@/utils/dateUtils';
+import './info-tab-footer.css';
 
 // Utility function to convert file to base64
 const getBase64 = (file: File): Promise<string> => {
@@ -41,6 +42,214 @@ const formatFileSize = (bytes: number): string => {
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+// Component to render mentions with highlighting using contenteditable
+const CustomMentionsInput = ({
+  value,
+  onChange,
+  onSelect,
+  themeMode,
+  options,
+  placeholder,
+  autoFocus,
+  onClick,
+  prefix = '@',
+  filterOption,
+  style,
+  ...props
+}: any) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [filteredOptions, setFilteredOptions] = useState<any[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [cursorPosition, setCursorPosition] = useState(0);
+  const editableRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Process text to create HTML with highlighted mentions
+  const createHighlightedHTML = (text: string) => {
+    if (!text) return '';
+    
+    const parts = text.split(/(@\w+(?:\s+\w+)*)/g);
+    const highlightClass = themeMode === 'light' ? 'mention-highlight-light' : 'mention-highlight-dark';
+    
+    return parts.map(part => {
+      if (part.startsWith('@')) {
+        return `<span class="${highlightClass}" contenteditable="false">${part}</span>`;
+      }
+      return part.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }).join('');
+  };
+
+  // Extract plain text from HTML
+  const extractPlainText = (html: string) => {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    return temp.textContent || '';
+  };
+
+  // Handle input changes
+  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
+    const text = extractPlainText(e.currentTarget.innerHTML);
+    onChange(text);
+
+    // Check if user is typing a mention
+    const lastAtIndex = text.lastIndexOf('@', cursorPosition);
+    if (lastAtIndex !== -1) {
+      const textAfterAt = text.slice(lastAtIndex + 1, cursorPosition);
+      
+      if (!textAfterAt.includes(' ') && textAfterAt.length >= 0) {
+        // Filter options
+        const filtered = options.filter((opt: any) => 
+          filterOption ? filterOption(textAfterAt, opt) : true
+        );
+        setFilteredOptions(filtered);
+        setIsDropdownOpen(filtered.length > 0);
+        setSelectedIndex(0);
+      } else {
+        setIsDropdownOpen(false);
+      }
+    } else {
+      setIsDropdownOpen(false);
+    }
+  };
+
+  // Handle option selection
+  const selectOption = (option: any) => {
+    const text = value || '';
+    const lastAtIndex = text.lastIndexOf('@');
+    
+    if (lastAtIndex !== -1) {
+      const beforeAt = text.slice(0, lastAtIndex);
+      const afterMention = text.slice(cursorPosition);
+      const newText = beforeAt + '@' + option.value + ' ' + afterMention;
+      
+      onChange(newText);
+      if (onSelect) onSelect(option);
+    }
+    
+    setIsDropdownOpen(false);
+    editableRef.current?.focus();
+  };
+
+  // Handle keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (isDropdownOpen) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex(prev => Math.min(prev + 1, filteredOptions.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex(prev => Math.max(prev - 1, 0));
+      } else if (e.key === 'Enter' && filteredOptions.length > 0) {
+        e.preventDefault();
+        selectOption(filteredOptions[selectedIndex]);
+      } else if (e.key === 'Escape') {
+        setIsDropdownOpen(false);
+      }
+    }
+  };
+
+  // Update contenteditable with highlighted HTML
+  useEffect(() => {
+    if (editableRef.current && value !== undefined) {
+      const highlighted = createHighlightedHTML(value);
+      if (editableRef.current.innerHTML !== highlighted) {
+        const selection = window.getSelection();
+        const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+        const offset = range ? range.startOffset : 0;
+        
+        editableRef.current.innerHTML = highlighted;
+        
+        // Restore cursor position
+        if (range && editableRef.current.childNodes.length > 0) {
+          try {
+            const newRange = document.createRange();
+            newRange.setStart(editableRef.current.childNodes[0] || editableRef.current, offset);
+            newRange.collapse(true);
+            selection?.removeAllRanges();
+            selection?.addRange(newRange);
+          } catch (e) {
+            // Cursor positioning failed, ignore
+          }
+        }
+      }
+    }
+  }, [value, themeMode]);
+
+  // Auto focus
+  useEffect(() => {
+    if (autoFocus && editableRef.current) {
+      editableRef.current.focus();
+    }
+  }, [autoFocus]);
+
+  return (
+    <div className="custom-mentions-wrapper" style={{ position: 'relative' }}>
+      <div
+        ref={editableRef}
+        contentEditable
+        className={`custom-mentions-editable theme-${themeMode}`}
+        onInput={handleInput}
+        onKeyDown={handleKeyDown}
+        onClick={onClick}
+        data-placeholder={placeholder}
+        style={{
+          ...style,
+          minHeight: style?.minHeight || 60,
+          maxHeight: style?.maxHeight || 200,
+          overflowY: 'auto',
+          padding: '4px 11px',
+          border: `1px solid ${themeWiseColor('#d9d9d9', '#434343', themeMode)}`,
+          borderRadius: style?.borderRadius || 4,
+          backgroundColor: themeWiseColor('#fff', '#141414', themeMode),
+          color: themeWiseColor('rgba(0, 0, 0, 0.85)', 'rgba(255, 255, 255, 0.85)', themeMode),
+          outline: 'none',
+          whiteSpace: 'pre-wrap',
+          wordWrap: 'break-word',
+        }}
+      />
+      
+      {isDropdownOpen && filteredOptions.length > 0 && (
+        <div 
+          ref={dropdownRef}
+          className={`mentions-dropdown theme-${themeMode}`}
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            marginTop: 4,
+            backgroundColor: themeWiseColor('#fff', '#1f1f1f', themeMode),
+            border: `1px solid ${themeWiseColor('#d9d9d9', '#434343', themeMode)}`,
+            borderRadius: 4,
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+            maxHeight: 200,
+            overflowY: 'auto',
+            zIndex: 1050,
+          }}
+        >
+          {filteredOptions.map((option, index) => (
+            <div
+              key={option.key}
+              className={`mentions-option ${index === selectedIndex ? 'selected' : ''}`}
+              onClick={() => selectOption(option)}
+              style={{
+                padding: '8px 12px',
+                cursor: 'pointer',
+                backgroundColor: index === selectedIndex 
+                  ? themeWiseColor('#f5f5f5', '#2a2a2a', themeMode)
+                  : 'transparent',
+                color: themeWiseColor('rgba(0, 0, 0, 0.85)', 'rgba(255, 255, 255, 0.85)', themeMode),
+              }}
+            >
+              {option.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };
 
 const InfoTabFooter = () => {
@@ -68,13 +277,9 @@ const InfoTabFooter = () => {
   const [form] = Form.useForm();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // get theme details from theme slice
   const themeMode = useAppSelector(state => state.themeReducer.mode);
-
-  // get member list from project members slice
   const projectMembersList = useAppSelector(state => state.projectMemberReducer.membersList);
 
-  // Calculate relative time values
   const createdFromNow = useMemo(() => {
     const createdAt = taskFormViewModel?.task?.created_at;
     if (!createdAt) return 'N/A';
@@ -99,7 +304,6 @@ const InfoTabFooter = () => {
     }
   }, [taskFormViewModel?.task?.updated_at]);
 
-  // function to handle cancel
   const handleCancel = () => {
     form.resetFields(['comment']);
     setCharacterLength(0);
@@ -110,7 +314,6 @@ const InfoTabFooter = () => {
     setSelectedMembers([]);
   };
 
-  // Check if comment is valid (either has text or files)
   const isCommentValid = useCallback(() => {
     return characterLength > 0 || selectedFiles.length > 0;
   }, [characterLength, selectedFiles.length]);
@@ -131,7 +334,6 @@ const InfoTabFooter = () => {
     }
   }, [projectId]);
 
-  // mentions options
   const mentionsOptions =
     members?.map(member => ({
       value: member.name,
@@ -143,11 +345,9 @@ const InfoTabFooter = () => {
     (member: IMentionMemberSelectOption) => {
       if (!member?.value || !member?.label) return;
 
-      // Find the member ID from the members list using the name
       const selectedMember = members.find(m => m.name === member.value);
       if (!selectedMember) return;
 
-      // Add to selected members if not already present
       setSelectedMembers(prev =>
         prev.some(mention => mention.team_member_id === selectedMember.id)
           ? prev
@@ -191,8 +391,6 @@ const InfoTabFooter = () => {
         setCommentValue('');
         setSelectedMembers([]);
 
-        // Dispatch event to notify that a comment was created
-        // This will trigger the task comments component to refresh and update Redux
         document.dispatchEvent(
           new CustomEvent('task-comment-create', {
             detail: { taskId: selectedTaskId },
@@ -204,15 +402,7 @@ const InfoTabFooter = () => {
     } finally {
       setUploading(false);
     }
-  }, [
-    commentValue,
-    selectedMembers,
-    selectedFiles,
-    selectedTaskId,
-    projectId,
-    form,
-    isCommentValid,
-  ]);
+  }, [commentValue, selectedMembers, selectedFiles, selectedTaskId, projectId, form, isCommentValid, t]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || !event.target.files.length || !selectedTaskId || !projectId) return;
@@ -245,7 +435,6 @@ const InfoTabFooter = () => {
 
       setSelectedFiles(prev => [...prev, ...newFiles]);
 
-      // Expand the comment box if it's not already expanded
       if (!isCommentBoxExpand) {
         setIsCommentBoxExpand(true);
       }
@@ -255,7 +444,6 @@ const InfoTabFooter = () => {
     } finally {
       setUploading(false);
 
-      // Reset the file input so the same file can be selected again
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -301,7 +489,6 @@ const InfoTabFooter = () => {
       />
 
       {!isCommentBoxExpand ? (
-        // Collapsed state - simple textarea with counter
         <Flex
           vertical
           style={{
@@ -310,17 +497,19 @@ const InfoTabFooter = () => {
             transition: 'all 0.3s ease-in-out',
           }}
         >
-          <Mentions
+          <CustomMentionsInput
             placeholder={t('taskInfoTab.comments.addCommentPlaceholder')}
             options={mentionsOptions}
-            autoSize
-            maxLength={5000}
+            value={commentValue}
             onClick={() => setIsCommentBoxExpand(true)}
-            onChange={e => setCharacterLength(e.length)}
+            onChange={(e: string) => {
+              setCommentValue(e);
+              setCharacterLength(e.length);
+            }}
             prefix="@"
-            filterOption={(input, option) => {
+            filterOption={(input: string, option: any) => {
               if (!input) return true;
-              const optionLabel = (option as any)?.label || '';
+              const optionLabel = option?.label || '';
               return optionLabel.toLowerCase().includes(input.toLowerCase());
             }}
             style={{
@@ -329,10 +518,10 @@ const InfoTabFooter = () => {
               borderRadius: 4,
               transition: 'all 0.3s ease-in-out',
             }}
+            themeMode={themeMode}
           />
         </Flex>
       ) : (
-        // Expanded state - textarea with buttons
         <Form
           form={form}
           style={{
@@ -408,31 +597,27 @@ const InfoTabFooter = () => {
           )}
 
           <Form.Item name={'comment'} style={{ marginBlock: 12 }}>
-            <div>
-              <Mentions
+            <div style={{ position: 'relative' }}>
+              <CustomMentionsInput
                 placeholder={t('taskInfoTab.comments.addCommentPlaceholder')}
                 options={mentionsOptions}
-                autoSize
                 autoFocus
-                maxLength={5000}
                 value={commentValue}
-                onSelect={option => memberSelectHandler(option as IMentionMemberSelectOption)}
+                onSelect={(option: any) => memberSelectHandler(option as IMentionMemberSelectOption)}
                 onChange={handleCommentChange}
                 prefix="@"
-                filterOption={(input, option) => {
+                filterOption={(input: string, option: any) => {
                   if (!input) return true;
-                  const optionLabel = (option as any)?.label || '';
+                  const optionLabel = option?.label || '';
                   return optionLabel.toLowerCase().includes(input.toLowerCase());
                 }}
                 style={{
                   minHeight: 100,
                   maxHeight: 200,
-                  overflow: 'auto',
                   paddingBlockEnd: 24,
-                  resize: 'none',
                   borderRadius: 4,
-                  transition: 'all 0.3s ease-in-out',
                 }}
+                themeMode={themeMode}
               />
               <span
                 style={{
@@ -441,6 +626,8 @@ const InfoTabFooter = () => {
                   right: 12,
                   color: colors.lightGray,
                   fontSize: 12,
+                  zIndex: 10,
+                  pointerEvents: 'none',
                 }}
               >{`${characterLength}/5000`}</span>
             </div>
