@@ -12,6 +12,8 @@
   transition: border-color 0.3s;
   position: relative;
   cursor: text;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 .custom-mentions-editable:focus {
@@ -62,7 +64,7 @@
   -ms-user-select: none !important;
   pointer-events: none !important;
   cursor: default !important;
-  line-height: inherit !important;
+  line-height: 1.5715 !important;
   vertical-align: baseline !important;
 }
 
@@ -83,19 +85,16 @@
   -ms-user-select: none !important;
   pointer-events: none !important;
   cursor: default !important;
-  line-height: inherit !important;
+  line-height: 1.5715 !important;
   vertical-align: baseline !important;
 }
 
-/* Add visual space after mentions */
-.mention-highlight-light::after,
-.mention-highlight-dark::after {
-  content: '\u00A0' !important; /* Non-breaking space */
-  font-size: 0 !important;
-  display: inline-block !important;
-  width: 0 !important;
-  height: 0 !important;
-  opacity: 0 !important;
+/* Ensure mentions have proper spacing */
+.mention-highlight-light + .mention-highlight-light,
+.mention-highlight-dark + .mention-highlight-dark,
+.mention-highlight-light + .mention-highlight-dark,
+.mention-highlight-dark + .mention-highlight-light {
+  margin-left: 2px !important;
 }
 
 /* Dropdown styling */
@@ -145,6 +144,7 @@
 
 .mentions-option.selected {
   background-color: #f5f5f5;
+  font-weight: 500;
 }
 
 .mentions-dropdown.theme-dark .mentions-option.selected {
@@ -242,4 +242,27 @@
 .custom-mentions-editable[contenteditable="true"] {
   -webkit-user-modify: read-write-plaintext-only;
   -moz-user-modify: read-write-plaintext-only;
+}
+
+/* Add space after mentions automatically */
+.mention-highlight-light::after,
+.mention-highlight-dark::after {
+  content: '\00a0'; /* Non-breaking space */
+  font-size: 0;
+  display: inline-block;
+  width: 0;
+  height: 0;
+  visibility: hidden;
+}
+
+/* Ensure proper spacing between elements */
+.custom-mentions-editable * {
+  margin: 0;
+  padding: 0;
+}
+
+/* Special handling for when mention is at the end */
+.custom-mentions-editable > .mention-highlight-light:last-child::after,
+.custom-mentions-editable > .mention-highlight-dark:last-child::after {
+  content: '';
 }

@@ -233,8 +233,8 @@ const CustomMentionsInput = ({
     return false;
   };
 
-  // Move cursor outside of mention
-  const moveCursorOutsideMention = (direction: 'after' | 'before' = 'after') => {
+  // Move cursor after mention with a space
+  const moveCursorAfterMentionWithSpace = () => {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
     
@@ -247,36 +247,26 @@ const CustomMentionsInput = ({
     
     const newRange = document.createRange();
     
-    if (direction === 'after') {
-      // Find next text node after mention
-      let nextNode = mention.nextSibling;
-      while (nextNode && (nextNode.nodeType !== Node.TEXT_NODE || !nextNode.textContent?.trim())) {
-        nextNode = nextNode.nextSibling;
-      }
+    // Check if there's already a space after the mention
+    let nextSibling = mention.nextSibling;
+    
+    if (nextSibling && nextSibling.nodeType === Node.TEXT_NODE) {
+      const textContent = nextSibling.textContent || '';
       
-      if (nextNode && nextNode.nodeType === Node.TEXT_NODE) {
-        newRange.setStart(nextNode, 0);
+      // If the text node starts with a space, move cursor after it
+      if (textContent.startsWith(' ')) {
+        newRange.setStart(nextSibling, 1);
       } else {
-        // Insert a space after mention if no text node exists
-        const space = document.createTextNode('\u00A0'); // Non-breaking space
-        mention.parentNode?.insertBefore(space, mention.nextSibling);
+        // Insert a space at the beginning of the text node
+        const space = document.createTextNode(' ');
+        mention.parentNode?.insertBefore(space, nextSibling);
         newRange.setStart(space, 1);
       }
     } else {
-      // Move before mention
-      let prevNode = mention.previousSibling;
-      while (prevNode && (prevNode.nodeType !== Node.TEXT_NODE || !prevNode.textContent?.trim())) {
-        prevNode = prevNode.previousSibling;
-      }
-      
-      if (prevNode && prevNode.nodeType === Node.TEXT_NODE) {
-        newRange.setStart(prevNode, prevNode.textContent?.length || 0);
-      } else {
-        // Insert a space before mention if no text node exists
-        const space = document.createTextNode('\u00A0');
-        mention.parentNode?.insertBefore(space, mention);
-        newRange.setStart(space, 1);
-      }
+      // Create a space text node after the mention
+      const space = document.createTextNode(' ');
+      mention.parentNode?.insertBefore(space, mention.nextSibling);
+      newRange.setStart(space, 1);
     }
     
     newRange.collapse(true);
@@ -299,7 +289,7 @@ const CustomMentionsInput = ({
     
     // Check if cursor is inside a mention
     if (isCursorInMention()) {
-      moveCursorOutsideMention('after');
+      moveCursorAfterMentionWithSpace();
     }
     
     // Check if user is typing a mention
@@ -348,7 +338,7 @@ const CustomMentionsInput = ({
     // Check if cursor is in mention and user tries to type
     if (isCursorInMention() && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
-      moveCursorOutsideMention('after');
+      moveCursorAfterMentionWithSpace();
       
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
@@ -374,7 +364,7 @@ const CustomMentionsInput = ({
     // Handle arrow keys inside mentions
     if (isCursorInMention() && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
       e.preventDefault();
-      moveCursorOutsideMention(e.key === 'ArrowLeft' ? 'before' : 'after');
+      moveCursorAfterMentionWithSpace();
       return;
     }
 
@@ -389,7 +379,19 @@ const CustomMentionsInput = ({
           if (previousNode && previousNode.nodeType === Node.ELEMENT_NODE && 
               (previousNode as Element).getAttribute('data-mention') === 'true') {
             e.preventDefault();
+            
+            // Remove the mention
             previousNode.remove();
+            
+            // Also remove any space after it if it exists
+            const nextNode = previousNode.nextSibling;
+            if (nextNode && nextNode.nodeType === Node.TEXT_NODE && nextNode.textContent?.startsWith(' ')) {
+              if (nextNode.textContent.length === 1) {
+                nextNode.remove();
+              } else {
+                nextNode.textContent = nextNode.textContent.substring(1);
+              }
+            }
             
             setTimeout(() => {
               if (editableRef.current) {
@@ -447,6 +449,8 @@ const CustomMentionsInput = ({
       const beforeAt = plainText.slice(0, lastAtIndex);
       const textAfterAt = plainText.slice(lastAtIndex + 1, cursorPosition);
       const afterCursor = plainText.slice(cursorPosition);
+      
+      // Ensure there's a space after the mention
       const newText = beforeAt + '@' + option.value + ' ' + afterCursor;
       
       onChange(newText);
@@ -458,9 +462,12 @@ const CustomMentionsInput = ({
     
     setIsDropdownOpen(false);
     
+    // Focus back on the input after a short delay
     setTimeout(() => {
       if (editableRef.current) {
         editableRef.current.focus();
+        // Ensure cursor is placed after the mention with a space
+        moveCursorAfterMentionWithSpace();
       }
     }, 10);
   };
@@ -491,19 +498,17 @@ const CustomMentionsInput = ({
         if ((node as Element).getAttribute('data-mention') === 'true') {
           const textLength = node.textContent?.length || 0;
           if (currentPos + textLength >= offset) {
-            if (offset - currentPos >= textLength) {
-              const nextNode = node.nextSibling;
-              if (nextNode && nextNode.nodeType === Node.TEXT_NODE) {
-                newRange.setStart(nextNode, Math.min(offset - currentPos - textLength, nextNode.textContent?.length || 0));
-              } else {
-                const space = document.createTextNode('\u00A0');
-                node.parentNode?.insertBefore(space, node.nextSibling);
-                newRange.setStart(space, 0);
-              }
+            // Cursor should be after the mention with a space
+            // Insert a space after the mention if needed
+            const nextSibling = node.nextSibling;
+            if (nextSibling && nextSibling.nodeType === Node.TEXT_NODE && nextSibling.textContent?.startsWith(' ')) {
+              // Place cursor after the space
+              newRange.setStart(nextSibling, 1);
             } else {
-              const space = document.createTextNode('\u00A0');
-              node.parentNode?.insertBefore(space, node.nextSibling);
-              newRange.setStart(space, 0);
+              // Create a space after the mention
+              const spaceNode = document.createTextNode(' ');
+              node.parentNode?.insertBefore(spaceNode, node.nextSibling);
+              newRange.setStart(spaceNode, 1);
             }
             newRange.collapse(true);
             found = true;
@@ -529,6 +534,7 @@ const CustomMentionsInput = ({
       selection.removeAllRanges();
       selection.addRange(newRange);
     } else {
+      // Place cursor at end
       const lastNode = editableRef.current.lastChild;
       if (lastNode) {
         if (lastNode.nodeType === Node.TEXT_NODE) {
@@ -616,7 +622,7 @@ const CustomMentionsInput = ({
     if (onClick) onClick(e);
     
     if (isCursorInMention()) {
-      moveCursorOutsideMention('after');
+      moveCursorAfterMentionWithSpace();
     }
   };
 
