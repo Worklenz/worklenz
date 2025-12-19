@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { ConfigProvider } from '@/shared/antd-imports';
+import { App as AntdApp } from 'antd';
 
 import { store } from '@/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -21,11 +22,13 @@ const AppContent: React.FC = () => {
 
   return (
     <ConfigProvider theme={getThemeConfig(currentTheme)}>
-      <AuthProvider>
-        <Router>
-          <AppRoutes />
-        </Router>
-      </AuthProvider>
+      <AntdApp>
+        <AuthProvider>
+          <Router>
+            <AppRoutes />
+          </Router>
+        </AuthProvider>
+      </AntdApp>
     </ConfigProvider>
   );
 };
