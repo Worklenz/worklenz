@@ -147,6 +147,39 @@ const Navbar = () => {
     }
   }, [currentRoute, current]);
 
+  // Move useCallback outside of JSX to prevent hooks error on resize
+  const handleMenuClick = useCallback((menuInfo: { key: string }) => {
+    const { key } = menuInfo;
+    // Handle clicks on disabled items to open upgrade modal
+    const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+    const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
+
+    const clickedRoute = navRoutesList.find(r => {
+      const routeKey = r.path.split('/').pop() || r.name;
+      return routeKey === key || r.name === key;
+    });
+
+    if (clickedRoute) {
+      // Track navigation clicks for client portal
+      if (clickedRoute.name === 'client-portal') {
+        trackMixpanelEvent('client_portal_nav_clicked', {
+          source: 'navbar',
+          user_type: isFreePlan ? 'free' : currentSession?.subscription_type?.toLowerCase(),
+          is_admin: isOwnerOrAdmin,
+        });
+      }
+
+      const isBusinessRoute = clickedRoute.businessPlanRequired;
+      const isFreePlanRoute = !clickedRoute.freePlanFeature;
+      const shouldOpenModal =
+        (isBusinessRoute && !hasBusinessAccess) || (isFreePlanRoute && isFreePlan);
+
+      if (shouldOpenModal) {
+        dispatch(toggleUpgradeModal());
+      }
+    }
+  }, [currentSession, navRoutesList, trackMixpanelEvent, isOwnerOrAdmin, dispatch]);
+
   return (
     <Col
       style={{
@@ -188,37 +221,7 @@ const Navbar = () => {
                 border: 'none',
               }}
               items={navlinkItems}
-              onClick={useCallback((menuInfo: { key: string }) => {
-                const { key } = menuInfo;
-                // Handle clicks on disabled items to open upgrade modal
-                const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
-                const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
-
-                const clickedRoute = navRoutesList.find(r => {
-                  const routeKey = r.path.split('/').pop() || r.name;
-                  return routeKey === key || r.name === key;
-                });
-
-                if (clickedRoute) {
-                  // Track navigation clicks for client portal
-                  if (clickedRoute.name === 'client-portal') {
-                    trackMixpanelEvent('client_portal_nav_clicked', {
-                      source: 'navbar',
-                      user_type: isFreePlan ? 'free' : currentSession?.subscription_type?.toLowerCase(),
-                      is_admin: isOwnerOrAdmin,
-                    });
-                  }
-
-                  const isBusinessRoute = clickedRoute.businessPlanRequired;
-                  const isFreePlanRoute = !clickedRoute.freePlanFeature;
-                  const shouldOpenModal =
-                    (isBusinessRoute && !hasBusinessAccess) || (isFreePlanRoute && isFreePlan);
-
-                  if (shouldOpenModal) {
-                    dispatch(toggleUpgradeModal());
-                  }
-                }
-              }, [currentSession, navRoutesList, trackMixpanelEvent, isOwnerOrAdmin, dispatch])}
+              onClick={handleMenuClick}
             />
           )}
 
