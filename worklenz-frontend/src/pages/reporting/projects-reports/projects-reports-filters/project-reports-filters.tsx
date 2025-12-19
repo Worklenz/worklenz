@@ -7,6 +7,8 @@ import ProjectHealthFilterDropdown from './project-health-filter-dropdown';
 import ProjectCategoriesFilterDropdown from './project-categories-filter-dropdown';
 import ProjectManagersFilterDropdown from './project-managers-filter-dropdown';
 import ProjectTableShowFieldsDropdown from './project-table-show-fields-dropdown';
+import ProjectViewModeToggle from './project-view-mode-toggle';
+import ProjectGroupByDropdown from './project-group-by-dropdown';
 import CustomSearchbar from '@/components/CustomSearchbar';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -42,7 +44,9 @@ const ProjectsReportsFilters = () => {
   // Memoize the right side controls to prevent recreation on every render
   const rightControls = useMemo(
     () => (
-      <Flex gap={12}>
+      <Flex gap={12} align="center">
+        <ProjectViewModeToggle />
+        <ProjectGroupByDropdown />
         <ProjectTableShowFieldsDropdown />
         <CustomSearchbar
           placeholderText={t('searchByNamePlaceholder')}

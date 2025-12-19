@@ -23,6 +23,9 @@ const selectedTeams = (state: ProjectReportsState) => {
   return state.teams.filter(team => team.selected).map(team => team.id) as string[];
 };
 
+export type ProjectReportsViewMode = 'table' | 'grouped';
+export type ProjectReportsGroupBy = 'category' | 'status' | 'health' | 'team' | 'client' | 'manager';
+
 type ProjectReportsState = {
   isProjectReportsDrawerOpen: boolean;
 
@@ -34,6 +37,10 @@ type ProjectReportsState = {
   total: number;
   isLoading: boolean;
   error: string | null;
+
+  // View mode
+  viewMode: ProjectReportsViewMode;
+  groupBy: ProjectReportsGroupBy;
 
   // filters
   index: number;
@@ -103,6 +110,10 @@ const initialState: ProjectReportsState = {
   total: 0,
   isLoading: false,
   error: null,
+
+  // View mode
+  viewMode: 'table',
+  groupBy: 'category',
 
   // filters
   index: 1,
@@ -229,6 +240,12 @@ const projectReportsSlice = createSlice({
         project.category_color = category.color_code;
       }
     },
+    setViewMode: (state, action) => {
+      state.viewMode = action.payload;
+    },
+    setGroupBy: (state, action) => {
+      state.groupBy = action.payload;
+    },
     resetProjectReports: state => {
       state.projectList = [];
       state.total = 0;
@@ -246,6 +263,8 @@ const projectReportsSlice = createSlice({
       state.searchQuery = '';
       state.archived = false;
       state.index = 1;
+      state.viewMode = 'table';
+      state.groupBy = 'category';
       state.teams.forEach(team => {
         team.selected = true;
       });
@@ -329,6 +348,8 @@ export const {
   setSelectedMember,
   setSelectedProject,
   setSelectedProjectCategory,
+  setViewMode,
+  setGroupBy,
   resetProjectReports,
   resetAllFilters,
 } = projectReportsSlice.actions;

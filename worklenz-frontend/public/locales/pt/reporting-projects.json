@@ -48,5 +48,38 @@
 
   "setCategoryText": "Definir Categoria",
   "searchByNameInputPlaceholder": "Pesquisar por nome",
-  "todayText": "Hoje"
+  "todayText": "Hoje",
+
+  "uncategorizedText": "Sem categoria",
+  "noStatusText": "Sem status",
+  "noTeamText": "Sem equipe",
+  "noManagerText": "Sem gerente",
+  "allProjectsText": "Todos os projetos",
+  "noProjectsText": "Nenhum projeto encontrado",
+  "projectText": "projeto",
+  "projectsText": "projetos",
+  "tasksText": "tarefas",
+
+  "taskNameColumn": "Tarefa",
+  "taskStatusColumn": "Status",
+  "taskPriorityColumn": "Prioridade",
+  "assigneesColumn": "Responsáveis",
+  "dueDateColumn": "Data limite",
+  "timeColumn": "Tempo",
+  "taskProgressColumn": "Progresso",
+
+  "searchTasksPlaceholder": "Pesquisar tarefas...",
+  "allStatusesText": "Todos os status",
+  "allPrioritiesText": "Todas as Prioridades",
+  "allAssigneesText": "Todos os Atribuídos",
+  "lowText": "Baixa",
+  "mediumText": "Média",
+  "highText": "Alta",
+  "showingText": "Mostrando",
+  "ofText": "de",
+
+  "overdueText": "Atrasado",
+  "subtasksText": "subtarefas",
+  "taskCompletedText": "Concluídas",
+  "loggedText": "Registrado"
 }

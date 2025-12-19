@@ -48,5 +48,38 @@
 
   "setCategoryText": "Set Category",
   "searchByNameInputPlaceholder": "Search by name",
-  "todayText": "Today"
+  "todayText": "Today",
+
+  "uncategorizedText": "Uncategorized",
+  "noStatusText": "No Status",
+  "noTeamText": "No Team",
+  "noManagerText": "No Manager",
+  "allProjectsText": "All Projects",
+  "noProjectsText": "No projects found",
+  "projectText": "project",
+  "projectsText": "projects",
+  "tasksText": "tasks",
+
+  "taskNameColumn": "Task",
+  "taskStatusColumn": "Status",
+  "taskPriorityColumn": "Priority",
+  "assigneesColumn": "Assignees",
+  "dueDateColumn": "Due Date",
+  "timeColumn": "Time",
+  "taskProgressColumn": "Progress",
+
+  "searchTasksPlaceholder": "Search tasks...",
+  "allStatusesText": "All Statuses",
+  "allPrioritiesText": "All Priorities",
+  "allAssigneesText": "All Assignees",
+  "lowText": "Low",
+  "mediumText": "Medium",
+  "highText": "High",
+  "showingText": "Showing",
+  "ofText": "of",
+
+  "overdueText": "Overdue",
+  "subtasksText": "subtasks",
+  "taskCompletedText": "Completed",
+  "loggedText": "Logged"
 }
