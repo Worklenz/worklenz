@@ -1,9 +1,23 @@
 import { Strategy as AppleStrategy } from "passport-apple";
 import { Request } from "express";
+import jwt from "jsonwebtoken";
 import db from "../../config/db";
 import { log_error } from "../../shared/utils";
 import { ERROR_KEY } from "./passport-constants";
 import { sendWelcomeEmail } from "../../shared/email-templates";
+
+/**
+ * Apple ID Token Payload Interface
+ */
+interface AppleTokenPayload {
+  sub: string;              // Apple user ID (unique identifier)
+  email?: string;           // Email
+  email_verified?: boolean; // Email verification status
+  aud: string;              // Audience (client ID)
+  iss: string;              // Issuer (https://appleid.apple.com)
+  exp: number;              // Expiration timestamp
+  iat: number;              // Issued at timestamp
+}
 
 /**
  * Apple Web OAuth Handler
@@ -20,7 +34,7 @@ import { sendWelcomeEmail } from "../../shared/email-templates";
  * @param accessToken - OAuth access token (not used by Apple)
  * @param refreshToken - OAuth refresh token (not used by Apple)
  * @param idToken - Apple ID token containing user info
- * @param profile - User profile from Apple
+ * @param profile - User profile from Apple (often empty on subsequent logins)
  * @param done - Passport callback function
  */
 async function handleAppleWebAuth(
@@ -32,11 +46,35 @@ async function handleAppleWebAuth(
   done: any
 ) {
   try {
-    const appleId = profile.id;
-    const email = profile.email?.toLowerCase().trim();
-    const name = profile.name
-      ? `${profile.name.firstName || ""} ${profile.name.lastName || ""}`.trim()
-      : "Apple User";
+    // Extract data from ID token (more reliable than profile)
+    let appleId: string | undefined;
+    let email: string | undefined;
+    let name = "Apple User";
+
+    // Try to get data from profile first (first-time login)
+    if (profile && profile.id) {
+      appleId = profile.id;
+      email = profile.email?.toLowerCase().trim();
+      if (profile.name) {
+        name = `${profile.name.firstName || ""} ${profile.name.lastName || ""}`.trim() || "Apple User";
+      }
+    }
+
+    // If profile is empty or missing data, decode ID token
+    // Apple only sends profile data on first authorization, so we extract from token on subsequent logins
+    if ((!appleId || !email) && idToken) {
+      try {
+        // Decode ID token without verification (passport-apple already verified it)
+        const tokenPayload = jwt.decode(idToken) as AppleTokenPayload;
+
+        if (tokenPayload) {
+          appleId = appleId || tokenPayload.sub;
+          email = email || tokenPayload.email?.toLowerCase().trim();
+        }
+      } catch (error) {
+        log_error("Failed to decode Apple ID token:", error);
+      }
+    }
 
     // Validate Apple ID
     if (!appleId) {
