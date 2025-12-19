@@ -84,7 +84,7 @@ const AllTasksReportsTable = () => {
     {
       key: 'taskName',
       dataIndex: 'name',
-      title: <CustomTableTitle title={t('taskNameColumn')} />,
+      title: <CustomTableTitle title={t('taskNameColumn', { defaultValue: 'Task' })} />,
       fixed: 'left' as const,
       width: 200,
       ellipsis: true,
@@ -106,7 +106,7 @@ const AllTasksReportsTable = () => {
     {
       key: 'taskKey',
       dataIndex: 'task_key',
-      title: <CustomTableTitle title={t('taskKeyColumn')} />,
+      title: <CustomTableTitle title={t('taskKeyColumn', { defaultValue: 'Key' })} />,
       width: 90,
       render: (value) => (
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>{value || '-'}</Typography.Text>
@@ -115,7 +115,7 @@ const AllTasksReportsTable = () => {
     {
       key: 'project',
       dataIndex: 'project_name',
-      title: <CustomTableTitle title={t('projectColumn')} />,
+      title: <CustomTableTitle title={t('projectColumn', { defaultValue: 'Project' })} />,
       width: 140,
       ellipsis: true,
       sorter: true,
@@ -131,7 +131,7 @@ const AllTasksReportsTable = () => {
     {
       key: 'status',
       dataIndex: 'status_name',
-      title: <CustomTableTitle title={t('statusColumn')} />,
+      title: <CustomTableTitle title={t('statusColumn', { defaultValue: 'Status' })} />,
       width: 100,
       sorter: true,
       render: (_, record) => (
@@ -146,7 +146,7 @@ const AllTasksReportsTable = () => {
     {
       key: 'priority',
       dataIndex: 'priority_name',
-      title: <CustomTableTitle title={t('priorityColumn')} />,
+      title: <CustomTableTitle title={t('priorityColumn', { defaultValue: 'Priority' })} />,
       width: 90,
       sorter: true,
       render: (_, record) => (
@@ -163,7 +163,7 @@ const AllTasksReportsTable = () => {
     {
       key: 'assignees',
       dataIndex: 'names',
-      title: <CustomTableTitle title={t('assigneesColumn')} />,
+      title: <CustomTableTitle title={t('assigneesColumn', { defaultValue: 'Assignees' })} />,
       width: 100,
       render: (_, record) => {
         const assignees = record.names || [];
@@ -186,7 +186,7 @@ const AllTasksReportsTable = () => {
     {
       key: 'startDate',
       dataIndex: 'start_date',
-      title: <CustomTableTitle title={t('startDateColumn')} />,
+      title: <CustomTableTitle title={t('startDateColumn', { defaultValue: 'Start Date' })} />,
       width: 95,
       sorter: true,
       render: (value) => (
@@ -198,7 +198,7 @@ const AllTasksReportsTable = () => {
     {
       key: 'dueDate',
       dataIndex: 'end_date',
-      title: <CustomTableTitle title={t('dueDateColumn')} />,
+      title: <CustomTableTitle title={t('dueDateColumn', { defaultValue: 'Due Date' })} />,
       width: 95,
       sorter: true,
       render: (value, record) => (
@@ -210,7 +210,7 @@ const AllTasksReportsTable = () => {
     {
       key: 'createdDate',
       dataIndex: 'created_at',
-      title: <CustomTableTitle title={t('createdDateColumn')} />,
+      title: <CustomTableTitle title={t('createdDateColumn', { defaultValue: 'Created' })} />,
       width: 95,
       sorter: true,
       render: (value) => (
@@ -222,7 +222,7 @@ const AllTasksReportsTable = () => {
     {
       key: 'completedDate',
       dataIndex: 'completed_at',
-      title: <CustomTableTitle title={t('completedDateColumn')} />,
+      title: <CustomTableTitle title={t('completedDateColumn', { defaultValue: 'Completed' })} />,
       width: 95,
       sorter: true,
       render: (value) => (
@@ -234,7 +234,7 @@ const AllTasksReportsTable = () => {
     {
       key: 'lastUpdated',
       dataIndex: 'updated_at',
-      title: <CustomTableTitle title={t('lastUpdatedColumn')} />,
+      title: <CustomTableTitle title={t('lastUpdatedColumn', { defaultValue: 'Last Updated' })} />,
       width: 95,
       sorter: true,
       render: (value) => (
@@ -246,7 +246,7 @@ const AllTasksReportsTable = () => {
     {
       key: 'daysOverdue',
       dataIndex: 'overdue_days',
-      title: <CustomTableTitle title={t('daysOverdueColumn')} />,
+      title: <CustomTableTitle title={t('daysOverdueColumn', { defaultValue: 'Days Overdue' })} />,
       width: 70,
       align: 'center' as const,
       sorter: true,
@@ -259,7 +259,7 @@ const AllTasksReportsTable = () => {
     {
       key: 'estimatedTime',
       dataIndex: 'total_time_string',
-      title: <CustomTableTitle title={t('estimatedTimeColumn')} />,
+      title: <CustomTableTitle title={t('estimatedTimeColumn', { defaultValue: 'Estimated' })} />,
       width: 80,
       align: 'center' as const,
       render: (value) => (
@@ -269,7 +269,7 @@ const AllTasksReportsTable = () => {
     {
       key: 'loggedTime',
       dataIndex: 'time_spent_string',
-      title: <CustomTableTitle title={t('loggedTimeColumn')} />,
+      title: <CustomTableTitle title={t('loggedTimeColumn', { defaultValue: 'Logged' })} />,
       width: 80,
       align: 'center' as const,
       render: (value) => (
@@ -279,7 +279,7 @@ const AllTasksReportsTable = () => {
     {
       key: 'overloggedTime',
       dataIndex: 'overlogged_time_string',
-      title: <CustomTableTitle title={t('overloggedTimeColumn')} />,
+      title: <CustomTableTitle title={t('overloggedTimeColumn', { defaultValue: 'Overlogged' })} />,
       width: 80,
       align: 'center' as const,
       render: (value) => (
@@ -291,7 +291,7 @@ const AllTasksReportsTable = () => {
     {
       key: 'phase',
       dataIndex: 'phase_name',
-      title: <CustomTableTitle title={t('phaseColumn')} />,
+      title: <CustomTableTitle title={t('phaseColumn', { defaultValue: 'Phase' })} />,
       width: 100,
       render: (_, record) => (
         record.phase_name ? (
@@ -307,7 +307,7 @@ const AllTasksReportsTable = () => {
     {
       key: 'labels',
       dataIndex: 'labels',
-      title: <CustomTableTitle title={t('labelsColumn')} />,
+      title: <CustomTableTitle title={t('labelsColumn', { defaultValue: 'Labels' })} />,
       width: 120,
       render: (_, record) => {
         const labels = record.labels || [];
@@ -331,7 +331,7 @@ const AllTasksReportsTable = () => {
     {
       key: 'progress',
       dataIndex: 'progress',
-      title: <CustomTableTitle title={t('progressColumn')} />,
+      title: <CustomTableTitle title={t('progressColumn', { defaultValue: 'Progress' })} />,
       width: 70,
       align: 'center' as const,
       sorter: true,
@@ -342,7 +342,7 @@ const AllTasksReportsTable = () => {
     {
       key: 'subtasksCount',
       dataIndex: 'sub_tasks_count',
-      title: <CustomTableTitle title={t('subtasksCountColumn')} />,
+      title: <CustomTableTitle title={t('subtasksCountColumn', { defaultValue: 'Subtasks' })} />,
       width: 70,
       align: 'center' as const,
       sorter: true,
@@ -361,8 +361,8 @@ const AllTasksReportsTable = () => {
       <Empty
         description={
           <Flex vertical align="center" gap={8}>
-            <Typography.Text>{t('noTasksFound')}</Typography.Text>
-            <Typography.Text type="secondary">{t('noTasksDescription')}</Typography.Text>
+            <Typography.Text>{t('noTasksFound', { defaultValue: 'No tasks found' })}</Typography.Text>
+            <Typography.Text type="secondary">{t('noTasksDescription', { defaultValue: 'Try adjusting your filters or search criteria' })}</Typography.Text>
           </Flex>
         }
       />
@@ -396,7 +396,7 @@ const AllTasksReportsTable = () => {
           pageSizeOptions={['25', '50', '100', '200']}
           onChange={handlePaginationChange}
           showTotal={(total, range) =>
-            t('showingResults', { from: range[0], to: range[1], total })
+            t('showingResults', { from: range[0], to: range[1], total, defaultValue: `Showing ${range[0]}-${range[1]} of ${total} tasks` })
           }
         />
       </Flex>

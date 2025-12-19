@@ -14,25 +14,25 @@ const AllTasksShowFieldsDropdown = () => {
   const { visibleColumns } = useAppSelector(state => state.allTasksReportsReducer);
 
   const allColumns = [
-    { key: 'taskName', label: t('taskNameColumn') },
-    { key: 'taskKey', label: t('taskKeyColumn') },
-    { key: 'project', label: t('projectColumn') },
-    { key: 'status', label: t('statusColumn') },
-    { key: 'priority', label: t('priorityColumn') },
-    { key: 'assignees', label: t('assigneesColumn') },
-    { key: 'startDate', label: t('startDateColumn') },
-    { key: 'dueDate', label: t('dueDateColumn') },
-    { key: 'createdDate', label: t('createdDateColumn') },
-    { key: 'completedDate', label: t('completedDateColumn') },
-    { key: 'lastUpdated', label: t('lastUpdatedColumn') },
-    { key: 'daysOverdue', label: t('daysOverdueColumn') },
-    { key: 'estimatedTime', label: t('estimatedTimeColumn') },
-    { key: 'loggedTime', label: t('loggedTimeColumn') },
-    { key: 'overloggedTime', label: t('overloggedTimeColumn') },
-    { key: 'phase', label: t('phaseColumn') },
-    { key: 'labels', label: t('labelsColumn') },
-    { key: 'progress', label: t('progressColumn') },
-    { key: 'subtasksCount', label: t('subtasksCountColumn') },
+    { key: 'taskName', label: t('taskNameColumn', { defaultValue: 'Task' }) },
+    { key: 'taskKey', label: t('taskKeyColumn', { defaultValue: 'Key' }) },
+    { key: 'project', label: t('projectColumn', { defaultValue: 'Project' }) },
+    { key: 'status', label: t('statusColumn', { defaultValue: 'Status' }) },
+    { key: 'priority', label: t('priorityColumn', { defaultValue: 'Priority' }) },
+    { key: 'assignees', label: t('assigneesColumn', { defaultValue: 'Assignees' }) },
+    { key: 'startDate', label: t('startDateColumn', { defaultValue: 'Start Date' }) },
+    { key: 'dueDate', label: t('dueDateColumn', { defaultValue: 'Due Date' }) },
+    { key: 'createdDate', label: t('createdDateColumn', { defaultValue: 'Created' }) },
+    { key: 'completedDate', label: t('completedDateColumn', { defaultValue: 'Completed' }) },
+    { key: 'lastUpdated', label: t('lastUpdatedColumn', { defaultValue: 'Last Updated' }) },
+    { key: 'daysOverdue', label: t('daysOverdueColumn', { defaultValue: 'Days Overdue' }) },
+    { key: 'estimatedTime', label: t('estimatedTimeColumn', { defaultValue: 'Estimated' }) },
+    { key: 'loggedTime', label: t('loggedTimeColumn', { defaultValue: 'Logged' }) },
+    { key: 'overloggedTime', label: t('overloggedTimeColumn', { defaultValue: 'Overlogged' }) },
+    { key: 'phase', label: t('phaseColumn', { defaultValue: 'Phase' }) },
+    { key: 'labels', label: t('labelsColumn', { defaultValue: 'Labels' }) },
+    { key: 'progress', label: t('progressColumn', { defaultValue: 'Progress' }) },
+    { key: 'subtasksCount', label: t('subtasksCountColumn', { defaultValue: 'Subtasks' }) },
   ];
 
   const handleToggle = (columnKey: string) => {
@@ -62,7 +62,7 @@ const AllTasksShowFieldsDropdown = () => {
     >
       <Button>
         <Flex align="center" gap={4}>
-          {t('showFields')}
+          {t('showFields', { defaultValue: 'Show Fields' })}
           <CaretDownFilled />
         </Flex>
       </Button>

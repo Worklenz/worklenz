@@ -15,7 +15,7 @@ import {
 const AllTasksAssigneeFilter = () => {
   const { t } = useTranslation('reporting-all-tasks');
   const dispatch = useAppDispatch();
-  
+
   const { selectedAssignees } = useAppSelector(state => state.allTasksReportsReducer);
   const { teamMembers, loading } = useAppSelector(state => state.teamMembersReducer);
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,7 +45,7 @@ const AllTasksAssigneeFilter = () => {
   const dropdownContent = (
     <Flex vertical gap={8} style={{ padding: 12, minWidth: 250 }}>
       <Input
-        placeholder={t('searchPlaceholder')}
+        placeholder={t('searchPlaceholder', { defaultValue: 'Search by task name, key, or description' })}
         prefix={<SearchOutlined />}
         value={searchQuery}
         onChange={e => setSearchQuery(e.target.value)}
@@ -56,10 +56,10 @@ const AllTasksAssigneeFilter = () => {
           checked={selectedAssignees.includes('unassigned')}
           onChange={() => handleToggle('unassigned')}
         >
-          {t('unassigned')}
+          {t('unassigned', { defaultValue: 'Unassigned' })}
         </Checkbox>
         <Button type="link" size="small" onClick={handleClearAll}>
-          {t('clearAll')}
+          {t('clearAll', { defaultValue: 'Clear All' })}
         </Button>
       </Flex>
       {loading ? (
@@ -98,7 +98,7 @@ const AllTasksAssigneeFilter = () => {
     >
       <Button>
         <Flex align="center" gap={4}>
-          {t('assigneeFilter')}
+          {t('assigneeFilter', { defaultValue: 'Assignee' })}
           {selectedAssignees.length > 0 && (
             <Typography.Text type="secondary">({selectedAssignees.length})</Typography.Text>
           )}

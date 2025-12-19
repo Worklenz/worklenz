@@ -13,7 +13,7 @@ import './all-tasks-reports-filters.css';
 const AllTasksReportsFilters = () => {
   const filterDropdowns = useMemo(
     () => (
-      <Flex gap={6} wrap="wrap" align="center" className="all-tasks-filters-left">
+      <Flex gap={8} wrap="wrap" align="center" className="all-tasks-filters-left">
         <AllTasksTeamFilter />
         <AllTasksProjectFilter />
         <AllTasksStatusFilter />
@@ -26,7 +26,7 @@ const AllTasksReportsFilters = () => {
 
   const rightControls = useMemo(
     () => (
-      <Flex gap={6} align="center" className="all-tasks-filters-right">
+      <Flex gap={8} align="center" className="all-tasks-filters-right">
         {/* TODO: Implement group by functionality with backend support */}
         {/* <AllTasksGroupByDropdown /> */}
         <AllTasksShowFieldsDropdown />
@@ -36,7 +36,7 @@ const AllTasksReportsFilters = () => {
   );
 
   return (
-    <Flex gap={12} align="center" justify="space-between" wrap="wrap" className="all-tasks-filters">
+    <Flex gap={24} align="center" justify="space-between" wrap="wrap" className="all-tasks-filters">
       {filterDropdowns}
       {rightControls}
     </Flex>

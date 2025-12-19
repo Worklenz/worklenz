@@ -83,7 +83,7 @@ const defaultVisibleColumns = [
   'priority',
   'assignees',
   'dueDate',
-  'daysOverdue',
+
   'estimatedTime',
   'loggedTime',
 ];
@@ -162,7 +162,7 @@ export const fetchAllTasks = createAsyncThunk(
   'allTasksReports/fetchAllTasks',
   async (_, { getState }) => {
     const state = (getState() as any).allTasksReportsReducer as AllTasksReportsState;
-    
+
     const body = {
       index: state.index,
       size: state.pageSize,

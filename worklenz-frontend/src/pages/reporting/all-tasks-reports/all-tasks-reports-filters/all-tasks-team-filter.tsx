@@ -32,10 +32,10 @@ const AllTasksTeamFilter = () => {
     <Flex vertical gap={8} style={{ padding: 12, minWidth: 200 }}>
       <Flex justify="space-between" align="center">
         <Checkbox checked={allSelected} onChange={e => handleSelectAll(e.target.checked)}>
-          {t('selectAll')}
+          {t('selectAll', { defaultValue: 'Select All' })}
         </Checkbox>
         <Button type="link" size="small" onClick={() => handleSelectAll(false)}>
-          {t('clearAll')}
+          {t('clearAll', { defaultValue: 'Clear All' })}
         </Button>
       </Flex>
       <Flex vertical gap={4} style={{ maxHeight: 200, overflowY: 'auto' }}>
@@ -60,7 +60,7 @@ const AllTasksTeamFilter = () => {
     >
       <Button loading={loadingTeams}>
         <Flex align="center" gap={4}>
-          {t('teamsFilter')}
+          {t('teamsFilter', { defaultValue: 'Teams' })}
           {selectedCount > 0 && selectedCount < teams.length && (
             <Typography.Text type="secondary">({selectedCount})</Typography.Text>
           )}
