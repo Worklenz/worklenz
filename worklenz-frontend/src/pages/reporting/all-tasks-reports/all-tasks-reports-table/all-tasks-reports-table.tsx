@@ -171,7 +171,7 @@ const AllTasksReportsTable = () => {
           return <Typography.Text type="secondary" style={{ fontSize: 12 }}>-</Typography.Text>;
         }
         return (
-          <Avatar.Group maxCount={3} size={22}>
+          <Avatar.Group max={{ count: 3 }} size={22}>
             {assignees.map((assignee, idx) => (
               <Tooltip key={idx} title={assignee.name}>
                 <Avatar size={22} src={assignee.avatar_url}>
