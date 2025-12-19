@@ -41,7 +41,6 @@
   "setCategoryText": "设置类别",
   "searchByNameInputPlaceholder": "按名称搜索",
   "todayText": "今天",
-
   "uncategorizedText": "未分类",
   "noStatusText": "无状态",
   "noTeamText": "无团队",
@@ -51,7 +50,6 @@
   "projectText": "项目",
   "projectsText": "项目",
   "tasksText": "任务",
-
   "taskNameColumn": "任务",
   "taskStatusColumn": "状态",
   "taskPriorityColumn": "优先级",
@@ -59,7 +57,6 @@
   "dueDateColumn": "截止日期",
   "timeColumn": "时间",
   "taskProgressColumn": "进度",
-
   "searchTasksPlaceholder": "搜索任务...",
   "allStatusesText": "所有状态",
   "allPrioritiesText": "所有优先级",
@@ -69,9 +66,9 @@
   "highText": "高",
   "showingText": "显示",
   "ofText": "/",
-
   "overdueText": "逾期",
   "subtasksText": "子任务",
   "taskCompletedText": "已完成",
-  "loggedText": "已记录"
+  "loggedText": "已记录",
+  "showMoreButton": "显示更多 {{count}} 个项目"
 }

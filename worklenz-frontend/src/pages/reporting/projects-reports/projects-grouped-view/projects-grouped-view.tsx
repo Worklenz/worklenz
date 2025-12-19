@@ -1,5 +1,5 @@
 import { memo, useMemo, useEffect, useState, useCallback } from 'react';
-import { Collapse, Progress, Typography, Flex, Badge, Empty, Spin } from '@/shared/antd-imports';
+import { Collapse, Progress, Typography, Flex, Badge, Empty, Spin, Button } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -7,6 +7,10 @@ import { IRPTProject } from '@/types/reporting/reporting.types';
 import { fetchProjectData } from '@/features/reporting/projectReports/project-reports-slice';
 import ProjectTasksModal from './project-tasks-modal';
 import './projects-grouped-view.css';
+
+// Pagination constants
+const INITIAL_ITEMS_PER_GROUP = 20; // Initial load per group
+const ITEMS_PER_PAGE = 20; // Items to load on "Show More"
 
 interface IProjectGroup {
   id: string;
@@ -23,6 +27,9 @@ const ProjectsGroupedView = () => {
   const dispatch = useAppDispatch();
   const [selectedProject, setSelectedProject] = useState<IRPTProject | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Track visible items per group for pagination
+  const [groupPagination, setGroupPagination] = useState<Record<string, number>>({});
 
   const {
     projectList,
@@ -47,9 +54,24 @@ const ProjectsGroupedView = () => {
     setIsModalOpen(false);
   }, []);
 
+  // Handle loading more projects in a group
+  const handleLoadMore = useCallback((groupId: string) => {
+    setGroupPagination(prev => ({
+      ...prev,
+      [groupId]: (prev[groupId] || INITIAL_ITEMS_PER_GROUP) + ITEMS_PER_PAGE,
+    }));
+  }, []);
+
+  // Get visible count for a group
+  const getVisibleCount = useCallback((groupId: string) => {
+    return groupPagination[groupId] || INITIAL_ITEMS_PER_GROUP;
+  }, [groupPagination]);
+
   // Fetch project data when filters change
   useEffect(() => {
     dispatch(fetchProjectData());
+    // Reset pagination when filters change
+    setGroupPagination({});
   }, [
     dispatch,
     searchQuery,
@@ -176,37 +198,60 @@ const ProjectsGroupedView = () => {
 
   const collapseItems = useMemo(
     () =>
-      groupedProjects.map(group => ({
-        key: group.id,
-        label: (
-          <Flex justify="space-between" align="center" style={{ width: '100%' }}>
-            <Flex align="center" gap={8}>
-              <Badge color={group.color} />
-              <Typography.Text strong>
-                {group.name} ({group.projects.length}{' '}
-                {group.projects.length === 1 ? t('projectText') : t('projectsText')})
-              </Typography.Text>
+      groupedProjects.map(group => {
+        const visibleCount = getVisibleCount(group.id);
+        const visibleProjects = group.projects.slice(0, visibleCount);
+        const hasMore = visibleCount < group.projects.length;
+        const remainingCount = group.projects.length - visibleCount;
+
+        return {
+          key: group.id,
+          label: (
+            <Flex justify="space-between" align="center" style={{ width: '100%' }}>
+              <Flex align="center" gap={8}>
+                <Badge color={group.color} />
+                <Typography.Text strong>
+                  {group.name} ({group.projects.length}{' '}
+                  {group.projects.length === 1 ? t('projectText') : t('projectsText')})
+                </Typography.Text>
+              </Flex>
+              <Flex align="center" gap={16}>
+                <Typography.Text type="secondary">
+                  {group.completedTasks}/{group.totalTasks} {t('tasksText')}
+                </Typography.Text>
+                <Progress
+                  percent={group.progressPercent}
+                  size="small"
+                  style={{ width: 80 }}
+                  strokeColor={group.progressPercent === 100 ? '#52c41a' : '#1890ff'}
+                />
+              </Flex>
             </Flex>
-            <Flex align="center" gap={16}>
-              <Typography.Text type="secondary">
-                {group.completedTasks}/{group.totalTasks} {t('tasksText')}
-              </Typography.Text>
-              <Progress
-                percent={group.progressPercent}
-                size="small"
-                style={{ width: 80 }}
-                strokeColor={group.progressPercent === 100 ? '#52c41a' : '#1890ff'}
-              />
-            </Flex>
-          </Flex>
-        ),
-        children: (
-          <div className="grouped-projects-list">
-            {group.projects.map(renderProjectItem)}
-          </div>
-        ),
-      })),
-    [groupedProjects, t]
+          ),
+          children: (
+            <div className="grouped-projects-list">
+              {visibleProjects.map(renderProjectItem)}
+              {hasMore && (
+                <Flex justify="center" style={{ padding: '16px 0' }}>
+                  <Button
+                    type="link"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLoadMore(group.id);
+                    }}
+                    className="show-more-button"
+                  >
+                    {t('showMoreButton', {
+                      count: Math.min(remainingCount, ITEMS_PER_PAGE)
+                    })}
+                  </Button>
+                </Flex>
+              )}
+            </div>
+          ),
+        };
+      }),
+    [groupedProjects, t, getVisibleCount, handleLoadMore, renderProjectItem]
   );
 
   if (isLoading) {

@@ -4,7 +4,6 @@
   "includeArchivedButton": "Include Archived Projects",
   "exportButton": "Export",
   "excelButton": "Excel",
-
   "projectColumn": "Project",
   "estimatedVsActualColumn": "Estimated Vs Actual",
   "tasksProgressColumn": "Tasks Progress",
@@ -18,16 +17,12 @@
   "clientColumn": "Client",
   "teamColumn": "Team",
   "projectManagerColumn": "Project Manager",
-
   "openButton": "Open",
-
   "estimatedText": "Estimated",
   "actualText": "Actual",
-
   "todoText": "To Do",
   "doingText": "Doing",
   "doneText": "Done",
-
   "cancelledText": "Cancelled",
   "blockedText": "Blocked",
   "onHoldText": "On Hold",
@@ -36,20 +31,16 @@
   "inProgressText": "In Progress",
   "completedText": "Completed",
   "continuousText": "Continuous",
-
   "daysLeftText": "days left",
   "dayLeftText": "day left",
   "daysOverdueText": "days overdue",
-
   "notSetText": "Not Set",
   "needsAttentionText": "Needs Attention",
   "atRiskText": "At Risk",
   "goodText": "Good",
-
   "setCategoryText": "Set Category",
   "searchByNameInputPlaceholder": "Search by name",
   "todayText": "Today",
-
   "uncategorizedText": "Uncategorized",
   "noStatusText": "No Status",
   "noTeamText": "No Team",
@@ -59,7 +50,6 @@
   "projectText": "project",
   "projectsText": "projects",
   "tasksText": "tasks",
-
   "taskNameColumn": "Task",
   "taskStatusColumn": "Status",
   "taskPriorityColumn": "Priority",
@@ -67,7 +57,6 @@
   "dueDateColumn": "Due Date",
   "timeColumn": "Time",
   "taskProgressColumn": "Progress",
-
   "searchTasksPlaceholder": "Search tasks...",
   "allStatusesText": "All Statuses",
   "allPrioritiesText": "All Priorities",
@@ -77,9 +66,9 @@
   "highText": "High",
   "showingText": "Showing",
   "ofText": "of",
-
   "overdueText": "Overdue",
   "subtasksText": "subtasks",
   "taskCompletedText": "Completed",
-  "loggedText": "Logged"
+  "loggedText": "Logged",
+  "showMoreButton": "Show {{count}} more projects"
 }
