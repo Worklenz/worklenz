@@ -70,5 +70,8 @@
   "subtasksText": "Unteraufgaben",
   "taskCompletedText": "Abgeschlossen",
   "loggedText": "Erfasst",
-  "showMoreButton": "{{count}} weitere Projekte anzeigen"
+  "showMoreButton": "{{count}} weitere Projekte anzeigen",
+  "loadMoreProjectsButton": "{{remaining}} weitere Projekte laden",
+  "loadingText": "Laden...",
+  "showingProjectsText": "Zeige {{shown}} von {{total}} Projekten"
 }

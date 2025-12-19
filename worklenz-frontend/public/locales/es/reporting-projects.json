@@ -70,5 +70,8 @@
   "subtasksText": "subtareas",
   "taskCompletedText": "Completadas",
   "loggedText": "Registrado",
-  "showMoreButton": "Mostrar {{count}} proyectos más"
+  "showMoreButton": "Mostrar {{count}} proyectos más",
+  "loadMoreProjectsButton": "Cargar {{remaining}} proyectos más",
+  "loadingText": "Cargando...",
+  "showingProjectsText": "Mostrando {{shown}} de {{total}} proyectos"
 }

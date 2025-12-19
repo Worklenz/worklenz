@@ -4,12 +4,20 @@ import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { IRPTProject } from '@/types/reporting/reporting.types';
-import { fetchProjectData } from '@/features/reporting/projectReports/project-reports-slice';
+import { 
+  fetchProjectData, 
+  fetchMoreProjectsForGroupedView, 
+  setIndex, 
+  setPageSize 
+} from '@/features/reporting/projectReports/project-reports-slice';
 import ProjectTasksModal from './project-tasks-modal';
 import './projects-grouped-view.css';
 
+// For grouped view, use larger page size for better grouping
+const GROUPED_VIEW_PAGE_SIZE = 100;
+
 // Pagination constants
-const INITIAL_ITEMS_PER_GROUP = 20; // Initial load per group
+const INITIAL_ITEMS_PER_GROUP = 20; // Initial display per group
 const ITEMS_PER_PAGE = 20; // Items to load on "Show More"
 
 interface IProjectGroup {
@@ -28,13 +36,17 @@ const ProjectsGroupedView = () => {
   const [selectedProject, setSelectedProject] = useState<IRPTProject | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Track visible items per group for pagination
+  // Track visible items per group for client-side pagination
   const [groupPagination, setGroupPagination] = useState<Record<string, number>>({});
 
   const {
     projectList,
     groupBy,
     isLoading,
+    isLoadingMore,
+    total,
+    index,
+    pageSize,
     searchQuery,
     selectedProjectStatuses,
     selectedProjectHealths,
@@ -54,7 +66,7 @@ const ProjectsGroupedView = () => {
     setIsModalOpen(false);
   }, []);
 
-  // Handle loading more projects in a group
+  // Handle showing more projects within a group (client-side expansion)
   const handleLoadMore = useCallback((groupId: string) => {
     setGroupPagination(prev => ({
       ...prev,
@@ -69,8 +81,10 @@ const ProjectsGroupedView = () => {
 
   // Fetch project data when filters change
   useEffect(() => {
+    dispatch(setIndex(1));
+    dispatch(setPageSize(GROUPED_VIEW_PAGE_SIZE));
     dispatch(fetchProjectData());
-    // Reset pagination when filters change
+    // Reset group pagination when filters change
     setGroupPagination({});
   }, [
     dispatch,
@@ -81,6 +95,15 @@ const ProjectsGroupedView = () => {
     selectedProjectManagers,
     archived,
   ]);
+
+  // Handle loading more projects (pagination at bottom of grouped view)
+  const handleLoadMoreProjects = useCallback(() => {
+    dispatch(setIndex(index + 1));
+    dispatch(fetchMoreProjectsForGroupedView());
+  }, [dispatch, index]);
+
+  // Check if there are more projects to load
+  const hasMoreProjects = projectList.length < total;
 
   const groupedProjects = useMemo(() => {
     const groups: Map<string, IProjectGroup> = new Map();
@@ -273,6 +296,39 @@ const ProjectsGroupedView = () => {
         defaultActiveKey={groupedProjects.slice(0, 3).map(g => g.id)}
         expandIconPosition="start"
       />
+      
+      {/* Load More Projects Button */}
+      {hasMoreProjects && (
+        <Flex justify="center" style={{ padding: '24px 0', marginTop: '16px' }}>
+          <Button
+            type="default"
+            size="large"
+            onClick={handleLoadMoreProjects}
+            loading={isLoadingMore}
+            disabled={isLoadingMore}
+          >
+            {isLoadingMore 
+              ? t('loadingText') 
+              : t('loadMoreProjectsButton', { 
+                  remaining: total - projectList.length 
+                })
+            }
+          </Button>
+        </Flex>
+      )}
+      
+      {/* Show total loaded vs total available */}
+      {!isLoading && projectList.length > 0 && (
+        <Flex justify="center" style={{ padding: '8px 0', color: '#999' }}>
+          <Typography.Text type="secondary">
+            {t('showingProjectsText', { 
+              shown: projectList.length, 
+              total: total 
+            })}
+          </Typography.Text>
+        </Flex>
+      )}
+
       <ProjectTasksModal
         open={isModalOpen}
         project={selectedProject}

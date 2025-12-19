@@ -70,5 +70,8 @@
   "subtasksText": "nën-detyra",
   "taskCompletedText": "Përfunduar",
   "loggedText": "Regjistruar",
-  "showMoreButton": "Shfaq {{count}} projekte të tjera"
+  "showMoreButton": "Shfaq {{count}} projekte të tjera",
+  "loadMoreProjectsButton": "Ngarko {{remaining}} projekte të tjera",
+  "loadingText": "Duke ngarkuar...",
+  "showingProjectsText": "Duke shfaqur {{shown}} nga {{total}} projekte"
 }

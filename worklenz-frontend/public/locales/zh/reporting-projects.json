@@ -70,5 +70,8 @@
   "subtasksText": "子任务",
   "taskCompletedText": "已完成",
   "loggedText": "已记录",
-  "showMoreButton": "显示更多 {{count}} 个项目"
+  "showMoreButton": "显示更多 {{count}} 个项目",
+  "loadMoreProjectsButton": "加载更多 {{remaining}} 个项目",
+  "loadingText": "加载中...",
+  "showingProjectsText": "显示 {{shown}} / {{total}} 个项目"
 }
