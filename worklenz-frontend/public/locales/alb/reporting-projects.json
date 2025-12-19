@@ -4,7 +4,6 @@
   "includeArchivedButton": "Përfshij Projektet e Arkivuara",
   "exportButton": "Eksporto",
   "excelButton": "Excel",
-
   "projectColumn": "Projekti",
   "estimatedVsActualColumn": "Vlerësuar vs Aktual",
   "tasksProgressColumn": "Progresi i Detyrave",
@@ -18,16 +17,12 @@
   "clientColumn": "Klienti",
   "teamColumn": "Ekipi",
   "projectManagerColumn": "Menaxheri i Projektit",
-
   "openButton": "Hap",
-
   "estimatedText": "Vlerësuar",
   "actualText": "Aktual",
-
   "todoText": "Për të Bërë",
   "doingText": "duke bërë",
   "doneText": "E Përfunduar",
-
   "cancelledText": "Anuluar",
   "blockedText": "E Bllokuar",
   "onHoldText": "Në Pritje",
@@ -36,20 +31,16 @@
   "inProgressText": "Në Progres",
   "completedText": "E Përfunduar",
   "continuousText": "E Vazhdueshme",
-
   "daysLeftText": "ditë të mbetura",
   "dayLeftText": "ditë e mbetur",
   "daysOverdueText": "ditë vonuar",
-
   "notSetText": "Pa Caktuar",
   "needsAttentionText": "Kërkon Vëmendje",
   "atRiskText": "Në Rrezik",
   "goodText": "Në Rregull",
-
   "setCategoryText": "Cakto Kategorinë",
   "searchByNameInputPlaceholder": "Kërko sipas emrit",
   "todayText": "Sot",
-
   "uncategorizedText": "Pa kategori",
   "noStatusText": "Pa status",
   "noTeamText": "Pa ekip",
@@ -59,7 +50,6 @@
   "projectText": "projekt",
   "projectsText": "projekte",
   "tasksText": "detyra",
-
   "taskNameColumn": "Detyra",
   "taskStatusColumn": "Statusi",
   "taskPriorityColumn": "Prioriteti",
@@ -67,7 +57,6 @@
   "dueDateColumn": "Data e përfundimit",
   "timeColumn": "Koha",
   "taskProgressColumn": "Progresi",
-
   "searchTasksPlaceholder": "Kërko detyra...",
   "allStatusesText": "Të gjitha statuset",
   "allPrioritiesText": "Të gjitha Prioritetet",
@@ -77,9 +66,9 @@
   "highText": "E lartë",
   "showingText": "Duke shfaqur",
   "ofText": "nga",
-
   "overdueText": "Vonuar",
   "subtasksText": "nën-detyra",
   "taskCompletedText": "Përfunduar",
-  "loggedText": "Regjistruar"
+  "loggedText": "Regjistruar",
+  "showMoreButton": "Shfaq {{count}} projekte të tjera"
 }

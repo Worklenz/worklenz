@@ -56,6 +56,22 @@
   outline-offset: -2px;
 }
 
+/* Show More button styles */
+.show-more-button {
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.show-more-button:hover {
+  transform: translateY(-1px);
+}
+
+.show-more-button:active {
+  transform: translateY(0);
+}
+
+
 /* Dark theme support */
 [data-theme='dark'] .projects-grouped-view .ant-collapse-item {
   border-color: #303030;
