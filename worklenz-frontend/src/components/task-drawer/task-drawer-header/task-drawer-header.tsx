@@ -1,6 +1,6 @@
 import { Button, Dropdown, Flex, Input, InputRef, MenuProps, Skeleton, message } from '@/shared/antd-imports';
 import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
-import { EllipsisOutlined, CopyOutlined } from '@/shared/antd-imports';
+import { EllipsisOutlined, CopyOutlined, DeleteOutlined  } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 
 import './task-drawer-header.css';
@@ -139,7 +139,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
       key: 'copy-link',
       label: (
         <Flex gap={8} align="center">
-          <Button type="text" onClick={handleCopyTaskLink}>
+          <Button type="text" icon={<CopyOutlined />} onClick={handleCopyTaskLink}>
             {t('Copy link to task') || 'Copy link to task'}
           </Button>
         </Flex>
@@ -149,7 +149,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
       key: 'delete',
       label: (
         <Flex gap={8} align="center">
-          <Button type="text" danger onClick={handleDeleteTask}>
+          <Button type="text"  icon={<DeleteOutlined />} danger onClick={handleDeleteTask}>
             {t('taskHeader.deleteTask')}
           </Button>
         </Flex>
