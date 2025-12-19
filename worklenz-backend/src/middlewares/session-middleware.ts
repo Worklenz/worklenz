@@ -16,7 +16,8 @@ const sessionConfig = {
   rolling: true,
   store: new pgSession({
     pool: db.pool,
-    tableName: "pg_sessions"
+    tableName: "pg_sessions",
+    schemaName: process.env.DB_SCHEMA || "public"
   }),
   cookie: {
     path: "/",
