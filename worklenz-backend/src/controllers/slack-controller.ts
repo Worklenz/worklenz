@@ -107,7 +107,7 @@ export default class SlackController extends WorklenzControllerBase {
           : status === "cancelled"
             ? "SLACK_AUTH_CANCELLED"
             : "SLACK_AUTH_ERROR";
-      const fallbackUrl = `${frontendUrl}/settings/integrations?slack=${status}`;
+      const fallbackUrl = `${frontendUrl}/worklenz/settings/integrations?slack=${status}`;
       const html = `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -227,7 +227,7 @@ export default class SlackController extends WorklenzControllerBase {
 
       if (!tokenData.ok) {
         log_error(tokenData);
-        res.redirect(`${frontendUrl}/settings/integrations?slack=error`);
+        res.redirect(`${frontendUrl}/worklenz/settings/integrations?slack=error`);
         return res as IWorkLenzResponse;
       }
 
