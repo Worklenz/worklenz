@@ -20,7 +20,7 @@ const statusCategories = [
 const AllTasksStatusFilter = () => {
   const { t } = useTranslation('reporting-all-tasks');
   const dispatch = useAppDispatch();
-  
+
   const { selectedStatuses } = useAppSelector(state => state.allTasksReportsReducer);
 
   const handleToggle = (statusKey: string) => {
@@ -37,7 +37,7 @@ const AllTasksStatusFilter = () => {
     <Flex vertical gap={8} style={{ padding: 12, minWidth: 180 }}>
       <Flex justify="flex-end">
         <Button type="link" size="small" onClick={handleClearAll}>
-          {t('clearAll')}
+          {t('clearAll', { defaultValue: 'Clear All' })}
         </Button>
       </Flex>
       <Flex vertical gap={4}>
@@ -64,7 +64,7 @@ const AllTasksStatusFilter = () => {
     >
       <Button>
         <Flex align="center" gap={4}>
-          {t('statusFilter')}
+          {t('statusFilter', { defaultValue: 'Status' })}
           {selectedStatuses.length > 0 && (
             <Typography.Text type="secondary">({selectedStatuses.length})</Typography.Text>
           )}

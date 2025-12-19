@@ -22,9 +22,9 @@ const AllTasksProjectFilter = () => {
   const { t } = useTranslation('reporting-all-tasks');
   const dispatch = useAppDispatch();
   const currentSession = useAuthService().getCurrentSession();
-  
+
   const { selectedProjects } = useAppSelector(state => state.allTasksReportsReducer);
-  
+
   const [projects, setProjects] = useState<IProject[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,7 +64,7 @@ const AllTasksProjectFilter = () => {
   const dropdownContent = (
     <Flex vertical gap={8} style={{ padding: 12, minWidth: 250 }}>
       <Input
-        placeholder={t('searchPlaceholder')}
+        placeholder={t('searchPlaceholder', { defaultValue: 'Search by task name, key, or description' })}
         prefix={<SearchOutlined />}
         value={searchQuery}
         onChange={e => setSearchQuery(e.target.value)}
@@ -72,7 +72,7 @@ const AllTasksProjectFilter = () => {
       />
       <Flex justify="flex-end">
         <Button type="link" size="small" onClick={handleClearAll}>
-          {t('clearAll')}
+          {t('clearAll', { defaultValue: 'Clear All' })}
         </Button>
       </Flex>
       {loading ? (
@@ -113,7 +113,7 @@ const AllTasksProjectFilter = () => {
     >
       <Button>
         <Flex align="center" gap={4}>
-          {t('projectsFilter')}
+          {t('projectsFilter', { defaultValue: 'Projects' })}
           {selectedProjects.length > 0 && (
             <Typography.Text type="secondary">({selectedProjects.length})</Typography.Text>
           )}

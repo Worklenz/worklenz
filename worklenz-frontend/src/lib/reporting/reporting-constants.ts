@@ -43,7 +43,7 @@ export const reportingsItems: ReportingMenuItems[] = [
   },
   {
     key: 'members',
-    name: 'members',  
+    name: 'members',
     defaultValue: 'Members',
     endpoint: 'members',
     element: React.createElement(MembersReports),
@@ -51,7 +51,7 @@ export const reportingsItems: ReportingMenuItems[] = [
   {
     key: 'all-tasks',
     name: 'allTasks',
-    defaultValue: 'All Tasks',
+    defaultValue: 'Tasks',
     endpoint: 'all-tasks',
     element: React.createElement(AllTasksReports),
   },

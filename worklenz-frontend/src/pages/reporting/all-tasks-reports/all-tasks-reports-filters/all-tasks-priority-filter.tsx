@@ -14,7 +14,7 @@ import {
 const AllTasksPriorityFilter = () => {
   const { t } = useTranslation('reporting-all-tasks');
   const dispatch = useAppDispatch();
-  
+
   const { selectedPriorities } = useAppSelector(state => state.allTasksReportsReducer);
   const { priorities } = useAppSelector(state => state.priorityReducer);
 
@@ -38,7 +38,7 @@ const AllTasksPriorityFilter = () => {
     <Flex vertical gap={8} style={{ padding: 12, minWidth: 180 }}>
       <Flex justify="flex-end">
         <Button type="link" size="small" onClick={handleClearAll}>
-          {t('clearAll')}
+          {t('clearAll', { defaultValue: 'Clear All' })}
         </Button>
       </Flex>
       <Flex vertical gap={4}>
@@ -65,7 +65,7 @@ const AllTasksPriorityFilter = () => {
     >
       <Button>
         <Flex align="center" gap={4}>
-          {t('priorityFilter')}
+          {t('priorityFilter', { defaultValue: 'Priority' })}
           {selectedPriorities.length > 0 && (
             <Typography.Text type="secondary">({selectedPriorities.length})</Typography.Text>
           )}

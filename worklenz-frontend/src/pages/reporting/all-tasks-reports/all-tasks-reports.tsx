@@ -36,12 +36,12 @@ const AllTasksReports = () => {
 
   const handleSearch = useCallback((value: string) => {
     dispatch(setSearchQuery(value));
-    
+
     // Clear previous debounce timer
     if (searchDebounceRef.current) {
       clearTimeout(searchDebounceRef.current);
     }
-    
+
     // Debounce the API call
     searchDebounceRef.current = setTimeout(() => {
       dispatch(setIndex(1)); // Reset to first page on search
@@ -64,8 +64,8 @@ const AllTasksReports = () => {
   }, []);
 
   const exportMenuItems = [
-    { key: 'csv', label: t('exportToCsv') },
-    { key: 'excel', label: t('exportToExcel') },
+    { key: 'csv', label: t('exportToCsv', { defaultValue: 'Export to CSV' }) },
+    { key: 'excel', label: t('exportToExcel', { defaultValue: 'Export to Excel' }) },
   ];
 
   useEffect(() => {
@@ -77,9 +77,9 @@ const AllTasksReports = () => {
   }, [dispatch]);
 
   return (
-    <Flex vertical gap={16}>
+    <Flex vertical gap={24}>
       <CustomPageHeader
-        title={`${t('pageTitle')} (${total})`}
+        title={`${t('pageTitle', { defaultValue: 'All Tasks' })} (${total})`}
         children={
           <Space>
             <Button>
@@ -87,15 +87,15 @@ const AllTasksReports = () => {
                 checked={includeArchived}
                 onChange={() => dispatch(setIncludeArchived(!includeArchived))}
               >
-                <Typography.Text>{t('archivedFilter')}</Typography.Text>
+                <Typography.Text>{t('archivedFilter', { defaultValue: 'Include Archived' })}</Typography.Text>
               </Checkbox>
             </Button>
 
             <Button icon={<ReloadOutlined />} onClick={handleRefresh} loading={isLoading}>
-              {t('refreshButton')}
+              {t('refreshButton', { defaultValue: 'Refresh' })}
             </Button>
 
-            <Button onClick={() => dispatch(resetAllFilters())}>{t('clearFilters')}</Button>
+            <Button onClick={() => dispatch(resetAllFilters())}>{t('clearFilters', { defaultValue: 'Clear Filters' })}</Button>
 
             <Dropdown
               menu={{
@@ -104,7 +104,7 @@ const AllTasksReports = () => {
               }}
             >
               <Button type="primary" icon={<DownOutlined />} iconPosition="end">
-                {t('exportButton')}
+                {t('exportButton', { defaultValue: 'Export' })}
               </Button>
             </Dropdown>
           </Space>
@@ -115,10 +115,10 @@ const AllTasksReports = () => {
 
       <Card
         title={
-          <Flex justify="space-between" align="center" wrap="wrap" gap={16}>
+          <Flex justify="space-between" align="center" wrap="wrap" gap={24} style={{ paddingBlock: 10 }}>
             <AllTasksReportsFilters />
             <Input
-              placeholder={t('searchPlaceholder')}
+              placeholder={t('searchPlaceholder', { defaultValue: 'Search by task name, key, or description' })}
               value={searchQuery}
               onChange={e => handleSearch(e.target.value)}
               prefix={<SearchOutlined style={{ color: 'var(--ant-color-text-tertiary)' }} />}
