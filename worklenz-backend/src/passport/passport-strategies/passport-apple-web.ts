@@ -60,6 +60,30 @@ async function handleAppleWebAuth(
       }
     }
 
+    // Apple sends user data in req.body.user on first authorization
+    // This is a JSON string containing { name: { firstName, lastName }, email }
+    
+    if (req.body && req.body.user) {
+      try {
+        const userData = typeof req.body.user === 'string' 
+          ? JSON.parse(req.body.user) 
+          : req.body.user;
+        
+        if (userData.name) {
+          const firstName = userData.name.firstName || "";
+          const lastName = userData.name.lastName || "";
+          name = `${firstName} ${lastName}`.trim() || "Apple User";
+        }
+        
+        // Also get email from body if available
+        if (userData.email && !email) {
+          email = userData.email.toLowerCase().trim();
+        }
+      } catch (error) {
+        log_error("Failed to parse Apple user data from request body:", error);
+      }
+    }
+
     // If profile is empty or missing data, decode ID token
     // Apple only sends profile data on first authorization, so we extract from token on subsequent logins
     if ((!appleId || !email) && idToken) {
