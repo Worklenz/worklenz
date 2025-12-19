@@ -1,6 +1,6 @@
-import { Button, Dropdown, Flex, Input, InputRef, MenuProps, Skeleton } from '@/shared/antd-imports';
+import { Button, Dropdown, Flex, Input, InputRef, MenuProps, Skeleton, message } from '@/shared/antd-imports';
 import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
-import { EllipsisOutlined } from '@/shared/antd-imports';
+import { EllipsisOutlined, CopyOutlined } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 
 import './task-drawer-header.css';
@@ -32,6 +32,7 @@ import {
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import TaskHierarchyBreadcrumb from '../task-hierarchy-breadcrumb/task-hierarchy-breadcrumb';
 import TaskDrawerNavigation from '../task-drawer-navigation/task-drawer-navigation';
+import logger from '@/utils/errorLogger';
 
 type TaskDrawerHeaderProps = {
   inputRef: React.RefObject<InputRef | null>;
@@ -68,6 +69,19 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
 
   const onTaskNameChange = (e: ChangeEvent<HTMLInputElement>) => {
     setTaskName(e.currentTarget.value);
+  };
+
+  const handleCopyTaskLink = async () => {
+    if (!selectedTaskId || !taskFormViewModel?.task?.project_id) return;
+
+    try {
+      const taskLink = `${window.location.origin}/worklenz/projects/${taskFormViewModel.task.project_id}?tab=tasks-list&pinned_tab=tasks-list&task=${selectedTaskId}`;
+      await navigator.clipboard.writeText(taskLink);
+      message.success(t('Link copied to clipboard') || 'Task link copied to clipboard');
+    } catch (error) {
+      logger.error('Error copying task link:', error);
+      message.error(t('Failed to copy task link') || 'Failed to copy task link');
+    }
   };
 
   const handleDeleteTask = async () => {
@@ -120,9 +134,19 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
     }
   };
 
-  const deletTaskDropdownItems: MenuProps['items'] = [
+  const taskDrawerDropdownItems: MenuProps['items'] = [
     {
-      key: '1',
+      key: 'copy-link',
+      label: (
+        <Flex gap={8} align="center">
+          <Button type="text" onClick={handleCopyTaskLink}>
+            {t('Copy link to task') || 'Copy link to task'}
+          </Button>
+        </Flex>
+      ),
+    },
+    {
+      key: 'delete',
       label: (
         <Flex gap={8} align="center">
           <Button type="text" danger onClick={handleDeleteTask}>
@@ -231,8 +255,8 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
         />
 
         <Dropdown
-          overlayClassName={'delete-task-dropdown'}
-          menu={{ items: deletTaskDropdownItems }}
+          overlayClassName={'task-drawer-actions-dropdown'}
+          menu={{ items: taskDrawerDropdownItems }}
         >
           <Button type="text" icon={<EllipsisOutlined />} />
         </Dropdown>
