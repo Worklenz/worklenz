@@ -78,9 +78,43 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     // check the subscription status
     const subscriptionData = await checkTeamSubscriptionStatus(req.user?.team_id);
 
+    // Check if user already exists in the team
     const userExists = await this.checkIfUserAlreadyExists(req.user?.owner_id as string, req.body.email);
 
-    // Return error if user already exists
+    // If user exists in the team, check if they're already in the project
+    if (userExists && req.body.project_id) {
+      // Get the team member ID from email
+      const teamMemberQuery = `
+        SELECT team_member_id
+        FROM team_member_info_view
+        WHERE email = $1 AND team_id = $2
+      `;
+      const teamMemberResult = await db.query(teamMemberQuery, [req.body.email, req.user?.team_id]);
+
+      if (teamMemberResult.rows.length > 0) {
+        const teamMemberId = teamMemberResult.rows[0].team_member_id;
+
+        // Check if already a project member
+        const projectMemberExists = await this.checkIfMemberExists(req.body.project_id, teamMemberId);
+
+        if (projectMemberExists) {
+          return res.status(200).send(new ServerResponse(false, null, "User already exists in the project."));
+        }
+
+        // User exists in team but not in project - add them to the project
+        const projectMemberReq = {
+          team_member_id: teamMemberId,
+          team_id: req.user?.team_id,
+          project_id: req.body.project_id,
+          user_id: req.user?.id,
+          access_level: "MEMBER" // Always default to MEMBER for new invitations
+        };
+        const data = await this.createOrInviteMembers(projectMemberReq);
+        return res.status(200).send(new ServerResponse(true, data.member));
+      }
+    }
+
+    // If user exists in team but no project_id provided, return error
     if (userExists) {
       return res.status(200).send(new ServerResponse(false, null, "User already exists in the team."));
     }
@@ -107,7 +141,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       const [member] = await TeamMembersController.createOrInviteMembers(teamMemberReq, req.user);
 
       if (!member)
-        return res.status(200).send(new ServerResponse(true, null, "Failed to add the member to the project. Please try again."));
+        return res.status(200).send(new ServerResponse(false, null, "Failed to add the member to the project. Please try again."));
 
       // Adding to the project - default to MEMBER access level
       // Access level can be changed later if needed
@@ -180,7 +214,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     const [member] = await TeamMembersController.createOrInviteMembers(teamMemberReq, req.user);
 
     if (!member)
-      return res.status(200).send(new ServerResponse(true, null, "Failed to add the member to the project. Please try again."));
+      return res.status(200).send(new ServerResponse(false, null, "Failed to add the member to the project. Please try again."));
 
     // Adding to the project - default to MEMBER access level
     // Access level can be changed later if needed
