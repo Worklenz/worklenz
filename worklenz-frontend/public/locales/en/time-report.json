@@ -105,5 +105,6 @@
   "capacityAvailableForNewProjects": "Capacity available for new projects",
   "optimal": "Optimal",
   "underUtilized": "Under Utilized",
-  "overUtilized": "Over Utilized"
+  "overUtilized": "Over Utilized",
+  "noDataAvailable": "No Data Available"
 }

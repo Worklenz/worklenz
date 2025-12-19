@@ -105,13 +105,13 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
     const endDate = calendarView
       ? homeTasksConfig.selected_date?.format('YYYY-MM-DD')
       : calculateEndDate(values.dueDate);
-
+    
     const newTask = {
       name: values.name,
       project_id: values.project,
       reporter_id: currentSession?.id,
       team_id: currentSession?.team_id,
-      end_date: endDate || new Date().toISOString().split('T')[0], // Fallback to today if undefined
+      end_date: endDate || null,
     };
 
     socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(newTask));

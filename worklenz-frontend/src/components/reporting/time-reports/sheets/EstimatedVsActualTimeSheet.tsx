@@ -78,13 +78,13 @@ const EstimatedVsActualTimeSheet = forwardRef<
   const labels = Array.isArray(jsonData) ? jsonData.map(item => item.name) : [];
   const actualDays = Array.isArray(jsonData)
     ? jsonData.map(item => {
-        const value = item.value ? parseFloat(item.value) : 0;
+        const value = typeof item.value === 'number' ? item.value : parseFloat(item.value || '0');
         return (isNaN(value) ? 0 : value).toString();
       })
     : [];
   const estimatedDays = Array.isArray(jsonData)
     ? jsonData.map(item => {
-        const value = item.estimated_value ? parseFloat(item.estimated_value) : 0;
+        const value = typeof item.estimated_value === 'number' ? item.estimated_value : parseFloat(item.estimated_value || '0');
         return (isNaN(value) ? 0 : value).toString();
       })
     : [];

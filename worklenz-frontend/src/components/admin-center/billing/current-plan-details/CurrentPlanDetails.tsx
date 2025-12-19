@@ -31,7 +31,7 @@ import {
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
-import { WarningTwoTone, PlusOutlined } from '@/shared/antd-imports';
+import { WarningTwoTone, PlusOutlined, TagOutlined } from '@/shared/antd-imports';
 import { calculateTimeGap } from '@/utils/calculate-time-gap';
 import { formatDate } from '@/utils/timeUtils';
 // import UpgradePlansLKR from '../drawers/upgrade-plans-lkr/upgrade-plans-lkr';
@@ -209,10 +209,10 @@ const CurrentPlanDetails = () => {
   );
 
   const shouldShowRedeemButton = useMemo(() => {
-    if (billingInfo?.trial_in_progress) return true;
-    if (billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.FREE) return true;
+    const validSubscriptionTypes = [ISUBSCRIPTION_TYPE.FREE, ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL, ISUBSCRIPTION_TYPE.TRIAL] as ISUBSCRIPTION_TYPE[];
+    if (validSubscriptionTypes.includes(billingInfo?.subscription_type as ISUBSCRIPTION_TYPE)) return true;
     return billingInfo?.ltd_users ? billingInfo.ltd_users < LTD_USER_LIMIT : false;
-  }, [billingInfo?.trial_in_progress, billingInfo?.subscription_type, billingInfo?.ltd_users]);
+  }, [billingInfo?.subscription_type, billingInfo?.ltd_users]);
 
   const showChangeButton = useMemo(() => {
     return checkSubscriptionStatus([SUBSCRIPTION_STATUS.ACTIVE, SUBSCRIPTION_STATUS.PASTDUE]);
@@ -612,6 +612,7 @@ const CurrentPlanDetails = () => {
           <>
             <Button
               type="link"
+              icon={<TagOutlined />}
               style={{ margin: 0, padding: 0, width: '90px' }}
               onClick={() => dispatch(toggleRedeemCodeDrawer())}
             >

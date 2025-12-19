@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import ChatBoxWrapper from './chat-container/chat-box/chat-box-wrapper';
 import { MessageOutlined, ReloadOutlined } from '@ant-design/icons';
-import { useGetChatsQuery } from '../../../api/client-portal/client-portal-api';
+import { useGetOrganizationChatsQuery } from '../../../api/client-portal/client-portal-api';
 import { useAppSelector } from '../../../hooks/useAppSelector';
 import { useResponsive } from '../../../hooks/useResponsive';
 import { useMixpanelTracking } from '../../../hooks/useMixpanelTracking';
@@ -15,8 +15,9 @@ const ClientPortalChats = () => {
   const { isDesktop } = useResponsive();
   const { trackMixpanelEvent } = useMixpanelTracking();
 
-  // API hooks
-  const { data: chats, isLoading, error, refetch } = useGetChatsQuery();
+  // API hooks - using organization-side endpoint (clientId is optional)
+  const { data: chatsData, isLoading, error, refetch } = useGetOrganizationChatsQuery({});
+  const chats = chatsData?.chats || [];
 
   // Track page visit
   useEffect(() => {

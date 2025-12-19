@@ -3047,6 +3047,93 @@ class ClientPortalController {
         readAt: row.read_at,
         createdAt: row.created_at
       }));
+        FROM client_portal_invoices i
+        LEFT JOIN client_portal_notification_reads nr
+          ON nr.reference_id = i.id
+          AND nr.notification_type = 'invoice'
+          AND nr.client_id = $1
+          AND nr.organization_team_id = $2
+        WHERE i.client_id = $1 AND i.organization_team_id = $2
+        AND i.created_at >= NOW() - INTERVAL '30 days'
+        ORDER BY i.created_at DESC
+        LIMIT $3
+      `;
+
+      const invoiceResult = await db.query(invoiceNotificationsQuery, [
+        clientId, 
+        organizationId, 
+        Number(limit)
+      ]);
+
+      notifications.push(...invoiceResult.rows.map((row: any) => ({
+        id: `invoice_${row.reference_id}`,
+        type: row.type,
+        referenceId: row.reference_id,
+        referenceNumber: row.reference_number,
+        title: `New Invoice`,
+        message: row.message,
+        isRead: row.is_read,
+        createdAt: row.created_at,
+        metadata: {
+          amount: parseFloat(row.amount || "0"),
+          currency: row.currency,
+          dueDate: row.due_date
+        }
+      })));
+
+      // Get new chat messages as notifications
+      const chatNotificationsQuery = `
+        SELECT
+          'new_message' as type,
+          m.id as reference_id,
+          DATE(m.created_at)::text as reference_number,
+          m.message,
+          m.created_at,
+          u.name as sender_name,
+          'New message from ' || u.name as notification_message,
+          CASE WHEN m.read_at IS NULL THEN false ELSE true END as is_read
+        FROM client_portal_chat_messages m
+        LEFT JOIN users u ON m.sender_type = 'team_member' AND m.sender_id = u.id
+        WHERE m.client_id = $1 AND m.organization_team_id = $2
+        AND m.sender_type = 'team_member'
+        AND m.created_at >= NOW() - INTERVAL '7 days'
+        ORDER BY m.created_at DESC
+        LIMIT $3
+      `;
+
+      const chatResult = await db.query(chatNotificationsQuery, [
+        clientId, 
+        organizationId, 
+        Math.floor(Number(limit) / 2) // Limit chat notifications
+      ]);
+
+      notifications.push(...chatResult.rows.map((row: any) => ({
+        id: `message_${row.reference_id}`,
+        type: row.type,
+        referenceId: row.reference_id,
+        referenceNumber: row.reference_number,
+        title: `New Message`,
+        message: row.notification_message,
+        isRead: row.is_read,
+        createdAt: row.created_at,
+        metadata: {
+          senderName: row.sender_name,
+          messagePreview: row.message.substring(0, 100)
+        }
+      })));
+
+      // Sort all notifications by creation date
+      notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      // Filter unread only if requested
+      const filteredNotifications = String(unread_only) === "true"
+        ? notifications.filter(n => !n.isRead) 
+        : notifications;
+
+      // Paginate
+      const offset = (Number(page) - 1) * Number(limit);
+      const paginatedNotifications = filteredNotifications.slice(offset, offset + Number(limit));
+>>>>>>> origin/release/v2.2.2
 
       return res.json(new ServerResponse(true, {
         notifications,
@@ -3113,6 +3200,42 @@ class ClientPortalController {
       return res.json(new ServerResponse(true, {
         markedCount,
         markedAt: new Date()
+      // Insert records for all requests from the last 30 days that aren't already marked as read
+      const requestUpdateResult = await db.query(
+        `INSERT INTO client_portal_notification_reads
+        (client_id, organization_team_id, notification_type, reference_id)
+        SELECT $1, $2, 'request', r.id
+        FROM client_portal_requests r
+        WHERE r.client_id = $1
+        AND r.organization_team_id = $2
+        AND r.updated_at >= NOW() - INTERVAL '30 days'
+        ON CONFLICT (client_id, organization_team_id, notification_type, reference_id)
+        DO UPDATE SET read_at = NOW()`,
+        [clientId, organizationId]
+      );
+      totalMarked += requestUpdateResult.rowCount || 0;
+
+      // Mark all invoice notifications as read
+      // Insert records for all invoices from the last 30 days that aren't already marked as read
+      const invoiceUpdateResult = await db.query(
+        `INSERT INTO client_portal_notification_reads
+        (client_id, organization_team_id, notification_type, reference_id)
+        SELECT $1, $2, 'invoice', i.id
+        FROM client_portal_invoices i
+        WHERE i.client_id = $1
+        AND i.organization_team_id = $2
+        AND i.created_at >= NOW() - INTERVAL '30 days'
+        ON CONFLICT (client_id, organization_team_id, notification_type, reference_id)
+        DO UPDATE SET read_at = NOW()`,
+        [clientId, organizationId]
+      );
+      totalMarked += invoiceUpdateResult.rowCount || 0;
+
+      return res.json(new ServerResponse(true, {
+        markedCount: totalMarked,
+        markedAt: new Date(),
+        types: ["chat_messages", "requests", "invoices"]
+>>>>>>> origin/release/v2.2.2
       }, "All notifications marked as read"));
     } catch (error) {
       console.error("Error marking all notifications as read:", error);

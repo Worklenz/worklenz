@@ -31,7 +31,7 @@ export default abstract class WorklenzControllerBase {
     // Pagination
     const size = +(queryParams.size || DEFAULT_PAGE_SIZE);
     const index = +(queryParams.index || 1);
-    const offset = queryParams.search ? 0 : (index - 1) * size;
+    const offset = (index - 1) * size;
     const paging = queryParams.paging || "true";
 
     const search = (queryParams.search as string || "").trim();
