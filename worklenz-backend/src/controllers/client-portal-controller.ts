@@ -6,7 +6,11 @@ import { AuthenticatedClientRequest } from "../middlewares/client-auth-middlewar
 import FileConstants from "../shared/file-constants";
 import { IEmailTemplateType } from "../interfaces/email-template-type";
 import { getBaseUrl, getClientPortalBaseUrl } from "../cron_jobs/helpers";
-import { uploadBase64, getClientPortalLogoKey, deleteObject } from "../shared/storage";
+import {
+  uploadBase64,
+  getClientPortalLogoKey,
+  deleteObject,
+} from "../shared/storage";
 import { log_error } from "../shared/utils";
 import { IO } from "../shared/io";
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
@@ -15,12 +19,14 @@ import crypto from "crypto";
 import { generateUniqueSlug, suggestSlug, isValidSlug } from "../utils/slug";
 
 class ClientPortalController {
-
   // Dashboard
-  static async getDashboard(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getDashboard(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
 
       // Get request statistics
       const requestStatsQuery = `
@@ -35,7 +41,10 @@ class ClientPortalController {
         WHERE client_id = $1 AND organization_team_id = $2
       `;
 
-      const requestStatsResult = await db.query(requestStatsQuery, [clientId, organizationId]);
+      const requestStatsResult = await db.query(requestStatsQuery, [
+        clientId,
+        organizationId,
+      ]);
       const requestStats = requestStatsResult.rows[0];
 
       // Get project statistics (assuming client has access to projects)
@@ -62,7 +71,10 @@ class ClientPortalController {
         WHERE client_id = $1 AND organization_team_id = $2
       `;
 
-      const invoiceStatsResult = await db.query(invoiceStatsQuery, [clientId, organizationId]);
+      const invoiceStatsResult = await db.query(invoiceStatsQuery, [
+        clientId,
+        organizationId,
+      ]);
       const invoiceStats = invoiceStatsResult.rows[0];
 
       const dashboardData = {
@@ -77,21 +89,34 @@ class ClientPortalController {
         rejectedRequests: parseInt(requestStats.rejected_requests || "0"),
         totalInvoices: parseInt(invoiceStats.total_invoices || "0"),
         unpaidInvoices: parseInt(invoiceStats.unpaid_invoices || "0"),
-        unpaidAmount: parseFloat(invoiceStats.unpaid_amount || "0")
+        unpaidAmount: parseFloat(invoiceStats.unpaid_amount || "0"),
       };
 
-      return res.json(new ServerResponse(true, dashboardData, "Dashboard data retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          dashboardData,
+          "Dashboard data retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve dashboard data"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve dashboard data")
+        );
     }
   }
 
   // Services
-  static async getServices(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getServices(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
       const { page = 1, limit = 10, status = "active" } = req.query;
 
       // Get services that are either public or specifically allowed for this client
@@ -125,21 +150,28 @@ class ClientPortalController {
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         price: row.price || 0,
-        currency: row.currency || "USD"
+        currency: row.currency || "USD",
       }));
 
-      return res.json(new ServerResponse(true, services, "Services retrieved successfully"));
+      return res.json(
+        new ServerResponse(true, services, "Services retrieved successfully")
+      );
     } catch (error) {
       console.error("Error fetching services:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve services"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to retrieve services"));
     }
   }
 
-  static async getServiceDetails(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getServiceDetails(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
 
       // Get service details if client has access
       const query = `
@@ -162,36 +194,57 @@ class ClientPortalController {
       `;
 
       const result = await db.query(query, [id, organizationId, clientId]);
-      
+
       if (result.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Service not found or not accessible"));
+        return res
+          .status(404)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Service not found or not accessible"
+            )
+          );
       }
 
       const service = result.rows[0];
 
-      return res.json(new ServerResponse(true, {
-        id: service.id,
-        name: service.name,
-        description: service.description,
-        status: service.status,
-        serviceData: service.service_data,
-        isPublic: service.is_public,
-        createdAt: service.created_at,
-        updatedAt: service.updated_at,
-        price: service.price || 0,
-        currency: service.currency || "USD"
-      }, "Service details retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id: service.id,
+            name: service.name,
+            description: service.description,
+            status: service.status,
+            serviceData: service.service_data,
+            isPublic: service.is_public,
+            createdAt: service.created_at,
+            updatedAt: service.updated_at,
+            price: service.price || 0,
+            currency: service.currency || "USD",
+          },
+          "Service details retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching service details:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve service details"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve service details")
+        );
     }
   }
 
   // Requests
-  static async getRequests(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getRequests(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
       const { page = 1, limit = 10, status, search } = req.query;
 
       // Build query with pagination and filtering
@@ -239,17 +292,30 @@ class ClientPortalController {
         JOIN client_portal_services s ON r.service_id = s.id
         WHERE r.client_id = $1 AND r.organization_team_id = $2
         ${status ? `AND r.status = $${status ? 3 : 3}` : ""}
-        ${search ? `AND (r.req_no ILIKE $${status ? 4 : 3} OR s.name ILIKE $${status ? 4 : 3} OR r.notes ILIKE $${status ? 4 : 3})` : ""}
+        ${
+          search
+            ? `AND (r.req_no ILIKE $${status ? 4 : 3} OR s.name ILIKE $${
+                status ? 4 : 3
+              } OR r.notes ILIKE $${status ? 4 : 3})`
+            : ""
+        }
       `;
-      const countParams = status && search ? [clientId, organizationId, status, `%${search}%`] : 
-                         status ? [clientId, organizationId, status] : 
-                         search ? [clientId, organizationId, `%${search}%`] : [clientId, organizationId];
+      const countParams =
+        status && search
+          ? [clientId, organizationId, status, `%${search}%`]
+          : status
+          ? [clientId, organizationId, status]
+          : search
+          ? [clientId, organizationId, `%${search}%`]
+          : [clientId, organizationId];
       const countResult = await db.query(countQuery, countParams);
       const total = parseInt(countResult.rows[0]?.total || "0");
 
       // Add pagination
       const offset = (Number(page) - 1) * Number(limit);
-      query += ` ORDER BY r.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+      query += ` ORDER BY r.created_at DESC LIMIT $${paramIndex} OFFSET $${
+        paramIndex + 1
+      }`;
       queryParams.push(String(Number(limit)), String(offset));
 
       const result = await db.query(query, queryParams);
@@ -265,31 +331,44 @@ class ClientPortalController {
         created_at: row.created_at,
         updated_at: row.updated_at,
         completed_at: row.completed_at,
-        client_name: row.client_name
+        client_name: row.client_name,
       }));
 
-      return res.json(new ServerResponse(true, { 
-        requests, 
-        total, 
-        page: Number(page), 
-        limit: Number(limit) 
-      }, "Requests retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            requests,
+            total,
+            page: Number(page),
+            limit: Number(limit),
+          },
+          "Requests retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching requests:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve requests"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to retrieve requests"));
     }
   }
 
-  static async createRequest(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async createRequest(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const {clientId} = req;
-      const {organizationId} = req;
-      const {clientEmail} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
+      const { clientEmail } = req;
       const { serviceId, requestData, notes } = req.body;
 
       // Validate required fields
       if (!serviceId) {
-        return res.status(400).json(new ServerResponse(false, null, "Service ID is required"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Service ID is required"));
       }
 
       // Verify service exists and client has access
@@ -301,11 +380,22 @@ class ClientPortalController {
       );
 
       if (serviceCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Service not found or not accessible"));
+        return res
+          .status(404)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Service not found or not accessible"
+            )
+          );
       }
 
       // Generate request number
-      const requestNumber = `REQ-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+      const requestNumber = `REQ-${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 5)
+        .toUpperCase()}`;
 
       // Create request
       const query = `
@@ -323,7 +413,7 @@ class ClientPortalController {
         organizationId,
         "pending",
         requestData ? JSON.stringify(requestData) : null,
-        notes || null
+        notes || null,
       ];
 
       const result = await db.query(query, values);
@@ -332,28 +422,39 @@ class ClientPortalController {
       // Get service name for response
       const service = serviceCheck.rows[0];
 
-      return res.json(new ServerResponse(true, {
-        id: newRequest.id,
-        requestNumber: newRequest.req_no,
-        serviceId: newRequest.service_id,
-        serviceName: service.name,
-        status: newRequest.status,
-        requestData: newRequest.request_data,
-        notes: newRequest.notes,
-        createdAt: newRequest.created_at,
-        updatedAt: newRequest.updated_at
-      }, "Request created successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id: newRequest.id,
+            requestNumber: newRequest.req_no,
+            serviceId: newRequest.service_id,
+            serviceName: service.name,
+            status: newRequest.status,
+            requestData: newRequest.request_data,
+            notes: newRequest.notes,
+            createdAt: newRequest.created_at,
+            updatedAt: newRequest.updated_at,
+          },
+          "Request created successfully"
+        )
+      );
     } catch (error) {
       console.error("Error creating request:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to create request"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to create request"));
     }
   }
 
-  static async getRequestDetails(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getRequestDetails(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
 
       // Get request details with service information
       const query = `
@@ -378,39 +479,54 @@ class ClientPortalController {
       `;
 
       const result = await db.query(query, [id, clientId, organizationId]);
-      
+
       if (result.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Request not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Request not found"));
       }
 
       const request = result.rows[0];
 
-      return res.json(new ServerResponse(true, {
-        id: request.id,
-        req_no: request.req_no,
-        service_id: request.service_id,
-        service_name: request.service_name,
-        service_description: request.service_description,
-        service_config: request.service_config,
-        status: request.status,
-        request_data: request.request_data,
-        notes: request.notes,
-        created_at: request.created_at,
-        updated_at: request.updated_at,
-        completed_at: request.completed_at,
-        client_name: request.client_name
-      }, "Request details retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id: request.id,
+            req_no: request.req_no,
+            service_id: request.service_id,
+            service_name: request.service_name,
+            service_description: request.service_description,
+            service_config: request.service_config,
+            status: request.status,
+            request_data: request.request_data,
+            notes: request.notes,
+            created_at: request.created_at,
+            updated_at: request.updated_at,
+            completed_at: request.completed_at,
+            client_name: request.client_name,
+          },
+          "Request details retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching request details:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve request details"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve request details")
+        );
     }
   }
 
-  static async updateRequest(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async updateRequest(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
       const { requestData, notes } = req.body;
 
       // Verify request exists and belongs to client
@@ -420,14 +536,24 @@ class ClientPortalController {
       );
 
       if (requestCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Request not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Request not found"));
       }
 
       const currentRequest = requestCheck.rows[0];
 
       // Only allow updates if request is in pending status
       if (currentRequest.status !== "pending") {
-        return res.status(400).json(new ServerResponse(false, null, "Cannot update request after it has been accepted"));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Cannot update request after it has been accepted"
+            )
+          );
       }
 
       // Update request data
@@ -448,7 +574,9 @@ class ClientPortalController {
       }
 
       if (updateFields.length === 0) {
-        return res.status(400).json(new ServerResponse(false, null, "No valid fields to update"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "No valid fields to update"));
       }
 
       updateFields.push(`updated_at = NOW()`);
@@ -457,14 +585,18 @@ class ClientPortalController {
       const query = `
         UPDATE client_portal_requests 
         SET ${updateFields.join(", ")}
-        WHERE id = $${paramIndex} AND client_id = $${paramIndex + 1} AND organization_team_id = $${paramIndex + 2}
+        WHERE id = $${paramIndex} AND client_id = $${
+        paramIndex + 1
+      } AND organization_team_id = $${paramIndex + 2}
         RETURNING id, req_no, service_id, status, request_data, notes, created_at, updated_at
       `;
 
       const result = await db.query(query, updateValues);
-      
+
       if (result.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Request not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Request not found"));
       }
 
       const updatedRequest = result.rows[0];
@@ -480,34 +612,48 @@ class ClientPortalController {
             clientId,
             organizationId,
             notes: updatedRequest.notes,
-            updatedAt: updatedRequest.updated_at
+            updatedAt: updatedRequest.updated_at,
           });
         }
       } catch (socketError) {
-        console.error("Error emitting request update socket event:", socketError);
+        console.error(
+          "Error emitting request update socket event:",
+          socketError
+        );
       }
 
-      return res.json(new ServerResponse(true, {
-        id: updatedRequest.id,
-        requestNumber: updatedRequest.req_no,
-        serviceId: updatedRequest.service_id,
-        status: updatedRequest.status,
-        requestData: updatedRequest.request_data,
-        notes: updatedRequest.notes,
-        createdAt: updatedRequest.created_at,
-        updatedAt: updatedRequest.updated_at
-      }, "Request updated successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id: updatedRequest.id,
+            requestNumber: updatedRequest.req_no,
+            serviceId: updatedRequest.service_id,
+            status: updatedRequest.status,
+            requestData: updatedRequest.request_data,
+            notes: updatedRequest.notes,
+            createdAt: updatedRequest.created_at,
+            updatedAt: updatedRequest.updated_at,
+          },
+          "Request updated successfully"
+        )
+      );
     } catch (error) {
       console.error("Error updating request:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to update request"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to update request"));
     }
   }
 
-  static async deleteRequest(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async deleteRequest(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
 
       // Verify request exists and belongs to client
       const requestCheck = await db.query(
@@ -516,14 +662,24 @@ class ClientPortalController {
       );
 
       if (requestCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Request not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Request not found"));
       }
 
       const currentRequest = requestCheck.rows[0];
 
       // Only allow deletion if request is in pending status
       if (currentRequest.status !== "pending") {
-        return res.status(400).json(new ServerResponse(false, null, "Cannot delete request after it has been accepted"));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Cannot delete request after it has been accepted"
+            )
+          );
       }
 
       // Delete the request
@@ -533,39 +689,96 @@ class ClientPortalController {
       );
 
       if (deleteResult.rowCount === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Request not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Request not found"));
       }
 
-      return res.json(new ServerResponse(true, null, "Request deleted successfully"));
+      return res.json(
+        new ServerResponse(true, null, "Request deleted successfully")
+      );
     } catch (error) {
       console.error("Error deleting request:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to delete request"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to delete request"));
     }
   }
 
   // Request Status Options
-  static async getRequestStatusOptions(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getRequestStatusOptions(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const statusOptions = [
-        { value: "pending", label: "Pending", description: "Request is waiting for review", color: "#faad14" },
-        { value: "accepted", label: "Accepted", description: "Request has been accepted and will be processed", color: "#52c41a" },
-        { value: "in_progress", label: "In Progress", description: "Request is currently being worked on", color: "#1890ff" },
-        { value: "completed", label: "Completed", description: "Request has been completed successfully", color: "#52c41a" },
-        { value: "rejected", label: "Rejected", description: "Request has been rejected", color: "#f5222d" }
+        {
+          value: "pending",
+          label: "Pending",
+          description: "Request is waiting for review",
+          color: "#faad14",
+        },
+        {
+          value: "accepted",
+          label: "Accepted",
+          description: "Request has been accepted and will be processed",
+          color: "#52c41a",
+        },
+        {
+          value: "in_progress",
+          label: "In Progress",
+          description: "Request is currently being worked on",
+          color: "#1890ff",
+        },
+        {
+          value: "completed",
+          label: "Completed",
+          description: "Request has been completed successfully",
+          color: "#52c41a",
+        },
+        {
+          value: "rejected",
+          label: "Rejected",
+          description: "Request has been rejected",
+          color: "#f5222d",
+        },
       ];
 
-      return res.json(new ServerResponse(true, statusOptions, "Request status options retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          statusOptions,
+          "Request status options retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching request status options:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve request status options"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(
+            false,
+            null,
+            "Failed to retrieve request status options"
+          )
+        );
     }
   }
 
   // Organization Services Management (for organization users)
-  static async getOrganizationServices(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getOrganizationServices(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const {organizationId} = req;
-      const { page = 1, limit = 10, search, sortBy = "name", sortOrder = "asc" } = req.query;
+      const { organizationId } = req;
+      const {
+        page = 1,
+        limit = 10,
+        search,
+        sortBy = "name",
+        sortOrder = "asc",
+      } = req.query;
 
       let whereClause = "WHERE s.organization_team_id = $1";
       const queryParams = [organizationId];
@@ -600,7 +813,10 @@ class ClientPortalController {
         LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
       `;
 
-      queryParams.push(String(limit), String((Number(page) - 1) * Number(limit)));
+      queryParams.push(
+        String(limit),
+        String((Number(page) - 1) * Number(limit))
+      );
 
       const result = await db.query(query, queryParams);
 
@@ -610,7 +826,10 @@ class ClientPortalController {
         FROM client_portal_services s
         ${whereClause}
       `;
-      const countResult = await db.query(countQuery, queryParams.slice(0, paramCount));
+      const countResult = await db.query(
+        countQuery,
+        queryParams.slice(0, paramCount)
+      );
       const total = parseInt(countResult.rows[0].total);
 
       const services = result.rows.map((row: any) => ({
@@ -623,25 +842,42 @@ class ClientPortalController {
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         createdByName: row.created_by_name,
-        requestsCount: parseInt(row.requests_count || 0)
+        requestsCount: parseInt(row.requests_count || 0),
       }));
 
-      return res.json(new ServerResponse(true, {
-        services,
-        total,
-        page: Number(page),
-        limit: Number(limit)
-      }, "Organization services retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            services,
+            total,
+            page: Number(page),
+            limit: Number(limit),
+          },
+          "Organization services retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching organization services:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve organization services"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(
+            false,
+            null,
+            "Failed to retrieve organization services"
+          )
+        );
     }
   }
 
-  static async getOrganizationServiceById(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getOrganizationServiceById(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
-      const {organizationId} = req;
+      const { organizationId } = req;
 
       const query = `
         SELECT 
@@ -664,41 +900,54 @@ class ClientPortalController {
       `;
 
       const result = await db.query(query, [id, organizationId]);
-      
+
       if (result.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Service not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Service not found"));
       }
 
       const service = result.rows[0];
 
-      return res.json(new ServerResponse(true, {
-        id: service.id,
-        name: service.name,
-        description: service.description,
-        status: service.status,
-        serviceData: service.service_data,
-        isPublic: service.is_public,
-        allowedClientIds: service.allowed_client_ids,
-        price: service.price,
-        currency: service.currency,
-        category: service.category,
-        createdAt: service.created_at,
-        updatedAt: service.updated_at,
-        createdByName: service.created_by_name
-      }, "Service retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id: service.id,
+            name: service.name,
+            description: service.description,
+            status: service.status,
+            serviceData: service.service_data,
+            isPublic: service.is_public,
+            allowedClientIds: service.allowed_client_ids,
+            price: service.price,
+            currency: service.currency,
+            category: service.category,
+            createdAt: service.created_at,
+            updatedAt: service.updated_at,
+            createdByName: service.created_by_name,
+          },
+          "Service retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching service:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve service"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to retrieve service"));
     }
   }
 
-  static async createOrganizationService(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async createOrganizationService(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const { 
-        name, 
-        description, 
-        service_data, 
-        is_public = false, 
+      const {
+        name,
+        description,
+        service_data,
+        is_public = false,
         allowed_client_ids = [],
         price,
         currency,
@@ -706,9 +955,9 @@ class ClientPortalController {
         // Image upload fields
         imageData,
         imageName,
-        imageType
+        imageType,
       } = req.body;
-      const {organizationId, clientUserId} = req;
+      const { organizationId, clientUserId } = req;
 
       console.log("Service creation request received:", {
         name,
@@ -719,11 +968,13 @@ class ClientPortalController {
         imageName,
         imageType,
         imageDataLength: imageData?.length,
-        organizationId
+        organizationId,
       });
 
       if (!name) {
-        return res.status(400).json(new ServerResponse(false, null, "Service name is required"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Service name is required"));
       }
 
       let finalServiceData = { ...service_data };
@@ -731,50 +982,84 @@ class ClientPortalController {
       // Handle image upload if provided
       if (imageData && imageName && imageType) {
         console.log("Processing image upload...");
-        
+
         // Validate image
-        const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+        const allowedImageTypes = [
+          "image/jpeg",
+          "image/png",
+          "image/gif",
+          "image/webp",
+        ];
         if (!allowedImageTypes.includes(imageType)) {
-          return res.status(400).json(new ServerResponse(false, null, "Only JPEG, PNG, GIF, and WebP images are allowed"));
+          return res
+            .status(400)
+            .json(
+              new ServerResponse(
+                false,
+                null,
+                "Only JPEG, PNG, GIF, and WebP images are allowed"
+              )
+            );
         }
 
         // Validate file size (assuming base64 data) - 5MB limit
         const fileSizeBytes = Math.floor((imageData.length * 3) / 4);
         const maxSizeBytes = 5 * 1024 * 1024; // 5MB limit
-        
+
         if (fileSizeBytes > maxSizeBytes) {
-          return res.status(400).json(new ServerResponse(false, null, "Image size exceeds 5MB limit"));
+          return res
+            .status(400)
+            .json(
+              new ServerResponse(false, null, "Image size exceeds 5MB limit")
+            );
         }
 
         // Generate unique filename and storage key
         const fileExtension = imageName.substring(imageName.lastIndexOf("."));
-        const uniqueFileName = `service_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
+        const uniqueFileName = `service_${Date.now()}_${Math.random()
+          .toString(36)
+          .substr(2, 9)}${fileExtension}`;
         const storageKey = `client-portal/service-images/${organizationId}/${uniqueFileName}`;
 
         try {
           // Upload to S3
           const imageUrl = await uploadBase64(imageData, storageKey);
-          
+
           if (!imageUrl) {
-            return res.status(500).json(new ServerResponse(false, null, "Failed to upload service image"));
+            return res
+              .status(500)
+              .json(
+                new ServerResponse(
+                  false,
+                  null,
+                  "Failed to upload service image"
+                )
+              );
           }
 
           // Add image URL to service data
           finalServiceData = {
             ...finalServiceData,
-            images: [imageUrl]
+            images: [imageUrl],
           };
 
-          console.log(`Service image uploaded for organization ${organizationId}:`, {
-            imageName,
-            imageType,
-            storageKey,
-            fileSizeBytes,
-            imageUrl
-          });
+          console.log(
+            `Service image uploaded for organization ${organizationId}:`,
+            {
+              imageName,
+              imageType,
+              storageKey,
+              fileSizeBytes,
+              imageUrl,
+            }
+          );
         } catch (uploadError) {
           console.error("Error uploading service image:", uploadError);
-          return res.status(500).json(new ServerResponse(false, null, "Failed to upload service image"));
+          return res
+            .status(500)
+            .json(
+              new ServerResponse(false, null, "Failed to upload service image")
+            );
         }
       } else {
         console.log("No image data provided in request");
@@ -802,7 +1087,7 @@ class ClientPortalController {
         category,
         organizationId, // team_id
         organizationId, // organization_team_id
-        clientUserId
+        clientUserId,
       ]);
 
       const service = result.rows[0];
@@ -810,38 +1095,49 @@ class ClientPortalController {
       console.log("Service created in database:", {
         id: service.id,
         name: service.name,
-        serviceData: service.service_data
+        serviceData: service.service_data,
       });
 
-      return res.status(201).json(new ServerResponse(true, {
-        id: service.id,
-        name: service.name,
-        description: service.description,
-        status: service.status,
-        serviceData: service.service_data,
-        isPublic: service.is_public,
-        allowedClientIds: service.allowed_client_ids,
-        price: service.price,
-        currency: service.currency,
-        category: service.category,
-        createdAt: service.created_at,
-        updatedAt: service.updated_at
-      }, "Service created successfully"));
+      return res.status(201).json(
+        new ServerResponse(
+          true,
+          {
+            id: service.id,
+            name: service.name,
+            description: service.description,
+            status: service.status,
+            serviceData: service.service_data,
+            isPublic: service.is_public,
+            allowedClientIds: service.allowed_client_ids,
+            price: service.price,
+            currency: service.currency,
+            category: service.category,
+            createdAt: service.created_at,
+            updatedAt: service.updated_at,
+          },
+          "Service created successfully"
+        )
+      );
     } catch (error) {
       console.error("Error creating service:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to create service"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to create service"));
     }
   }
 
-  static async updateOrganizationService(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async updateOrganizationService(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
-      const { 
-        name, 
-        description, 
-        service_data, 
-        is_public, 
-        allowed_client_ids, 
+      const {
+        name,
+        description,
+        service_data,
+        is_public,
+        allowed_client_ids,
         status,
         price,
         currency,
@@ -849,9 +1145,9 @@ class ClientPortalController {
         // Image upload fields
         imageData,
         imageName,
-        imageType
+        imageType,
       } = req.body;
-      const {organizationId} = req;
+      const { organizationId } = req;
 
       console.log("Service update request received:", {
         id,
@@ -863,15 +1159,17 @@ class ClientPortalController {
         imageName,
         imageType,
         imageDataLength: imageData?.length,
-        organizationId
+        organizationId,
       });
 
       // First check if service exists and belongs to organization
       const checkQuery = `SELECT id FROM client_portal_services WHERE id = $1 AND organization_team_id = $2`;
       const checkResult = await db.query(checkQuery, [id, organizationId]);
-      
+
       if (checkResult.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Service not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Service not found"));
       }
 
       let finalServiceData = service_data ? { ...service_data } : undefined;
@@ -879,38 +1177,68 @@ class ClientPortalController {
       // Handle image upload if provided
       if (imageData && imageName && imageType) {
         console.log("Processing image upload for service update...");
-        
+
         // Validate image
-        const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+        const allowedImageTypes = [
+          "image/jpeg",
+          "image/png",
+          "image/gif",
+          "image/webp",
+        ];
         if (!allowedImageTypes.includes(imageType)) {
-          return res.status(400).json(new ServerResponse(false, null, "Only JPEG, PNG, GIF, and WebP images are allowed"));
+          return res
+            .status(400)
+            .json(
+              new ServerResponse(
+                false,
+                null,
+                "Only JPEG, PNG, GIF, and WebP images are allowed"
+              )
+            );
         }
 
         // Validate file size (assuming base64 data) - 5MB limit
         const fileSizeBytes = Math.floor((imageData.length * 3) / 4);
         const maxSizeBytes = 5 * 1024 * 1024; // 5MB limit
-        
+
         if (fileSizeBytes > maxSizeBytes) {
-          return res.status(400).json(new ServerResponse(false, null, "Image size exceeds 5MB limit"));
+          return res
+            .status(400)
+            .json(
+              new ServerResponse(false, null, "Image size exceeds 5MB limit")
+            );
         }
 
         // Generate unique filename and storage key
         const fileExtension = imageName.substring(imageName.lastIndexOf("."));
-        const uniqueFileName = `service_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
+        const uniqueFileName = `service_${Date.now()}_${Math.random()
+          .toString(36)
+          .substr(2, 9)}${fileExtension}`;
         const storageKey = `client-portal/service-images/${organizationId}/${uniqueFileName}`;
 
         try {
           // Upload to S3
           const imageUrl = await uploadBase64(imageData, storageKey);
-          
+
           if (!imageUrl) {
-            return res.status(500).json(new ServerResponse(false, null, "Failed to upload service image"));
+            return res
+              .status(500)
+              .json(
+                new ServerResponse(
+                  false,
+                  null,
+                  "Failed to upload service image"
+                )
+              );
           }
 
           // Get current service data to check for existing images to clean up
           const currentServiceQuery = `SELECT service_data FROM client_portal_services WHERE id = $1`;
-          const currentServiceResult = await db.query(currentServiceQuery, [id]);
-          const currentServiceData = currentServiceResult.rows[0]?.service_data || {};
+          const currentServiceResult = await db.query(currentServiceQuery, [
+            id,
+          ]);
+          const currentServiceData =
+            currentServiceResult.rows[0]?.service_data || {};
           const oldImageUrls = currentServiceData?.images || [];
 
           // Clean up old images from S3 (async, don't wait for completion)
@@ -919,19 +1247,22 @@ class ClientPortalController {
               try {
                 const urlParts = oldImageUrl.split("/");
                 const storageKey = urlParts.slice(-4).join("/");
-                
+
                 console.log("Cleaning up old service image:", {
                   serviceId: id,
                   oldImageUrl,
-                  storageKey
+                  storageKey,
                 });
 
                 await deleteObject(storageKey);
-                console.log("Successfully deleted old service image:", storageKey);
+                console.log(
+                  "Successfully deleted old service image:",
+                  storageKey
+                );
               } catch (deleteError) {
                 console.error("Error deleting old service image:", {
                   oldImageUrl,
-                  error: deleteError
+                  error: deleteError,
                 });
               }
             });
@@ -945,20 +1276,27 @@ class ClientPortalController {
           // Add new image URL to service data
           finalServiceData = {
             ...finalServiceData,
-            images: [imageUrl]
+            images: [imageUrl],
           };
 
-          console.log(`Service image uploaded for organization ${organizationId}:`, {
-            serviceId: id,
-            imageName,
-            imageType,
-            storageKey,
-            fileSizeBytes,
-            imageUrl
-          });
+          console.log(
+            `Service image uploaded for organization ${organizationId}:`,
+            {
+              serviceId: id,
+              imageName,
+              imageType,
+              storageKey,
+              fileSizeBytes,
+              imageUrl,
+            }
+          );
         } catch (uploadError) {
           console.error("Error uploading service image:", uploadError);
-          return res.status(500).json(new ServerResponse(false, null, "Failed to upload service image"));
+          return res
+            .status(500)
+            .json(
+              new ServerResponse(false, null, "Failed to upload service image")
+            );
         }
       }
 
@@ -1015,7 +1353,9 @@ class ClientPortalController {
       }
 
       if (updateFields.length === 0) {
-        return res.status(400).json(new ServerResponse(false, null, "No fields to update"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "No fields to update"));
       }
 
       // Add updated_at
@@ -1040,41 +1380,52 @@ class ClientPortalController {
       console.log("Query params:", queryParams);
 
       const result = await db.query(updateQuery, queryParams);
-      
+
       console.log("Update result:", {
         rowCount: result.rowCount,
-        updatedService: result.rows[0]
+        updatedService: result.rows[0],
       });
       const service = result.rows[0];
 
-      return res.json(new ServerResponse(true, {
-        id: service.id,
-        name: service.name,
-        description: service.description,
-        status: service.status,
-        serviceData: service.service_data,
-        isPublic: service.is_public,
-        allowedClientIds: service.allowed_client_ids,
-        price: service.price,
-        currency: service.currency,
-        category: service.category,
-        createdAt: service.created_at,
-        updatedAt: service.updated_at
-      }, "Service updated successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id: service.id,
+            name: service.name,
+            description: service.description,
+            status: service.status,
+            serviceData: service.service_data,
+            isPublic: service.is_public,
+            allowedClientIds: service.allowed_client_ids,
+            price: service.price,
+            currency: service.currency,
+            category: service.category,
+            createdAt: service.created_at,
+            updatedAt: service.updated_at,
+          },
+          "Service updated successfully"
+        )
+      );
     } catch (error) {
       console.error("Error updating service:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to update service"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to update service"));
     }
   }
 
-  static async deleteOrganizationService(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async deleteOrganizationService(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
-      const {organizationId} = req;
+      const { organizationId } = req;
 
       console.log("Service deletion request received:", {
         serviceId: id,
-        organizationId
+        organizationId,
       });
 
       // Check if service has any requests
@@ -1083,7 +1434,15 @@ class ClientPortalController {
       const requestsCount = parseInt(requestsResult.rows[0].count);
 
       if (requestsCount > 0) {
-        return res.status(400).json(new ServerResponse(false, null, `Cannot delete service with ${requestsCount} existing requests`));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              `Cannot delete service with ${requestsCount} existing requests`
+            )
+          );
       }
 
       // Get service data before deletion to extract image URLs for cleanup
@@ -1093,9 +1452,11 @@ class ClientPortalController {
         WHERE id = $1 AND organization_team_id = $2
       `;
       const serviceResult = await db.query(serviceQuery, [id, organizationId]);
-      
+
       if (serviceResult.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Service not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Service not found"));
       }
 
       const serviceData = serviceResult.rows[0].service_data;
@@ -1111,9 +1472,17 @@ class ClientPortalController {
       `;
 
       const result = await db.query(deleteQuery, [id, organizationId]);
-      
+
       if (result.rows.length === 0) {
-        return res.status(500).json(new ServerResponse(false, null, "Failed to delete service from database"));
+        return res
+          .status(500)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Failed to delete service from database"
+            )
+          );
       }
 
       // Clean up images from S3 storage (async, don't wait for completion)
@@ -1124,10 +1493,10 @@ class ClientPortalController {
             // URL format: https://s3-bucket/client-portal/service-images/orgId/filename
             const urlParts = imageUrl.split("/");
             const storageKey = urlParts.slice(-4).join("/"); // client-portal/service-images/orgId/filename
-            
+
             console.log("Deleting image from S3:", {
               imageUrl,
-              storageKey
+              storageKey,
             });
 
             await deleteObject(storageKey);
@@ -1135,7 +1504,7 @@ class ClientPortalController {
           } catch (deleteError) {
             console.error("Error deleting image from S3:", {
               imageUrl,
-              error: deleteError
+              error: deleteError,
             });
             // Don't fail the service deletion if image cleanup fails
           }
@@ -1143,17 +1512,24 @@ class ClientPortalController {
       }
 
       console.log("Service deleted successfully:", id);
-      return res.json(new ServerResponse(true, null, "Service deleted successfully"));
+      return res.json(
+        new ServerResponse(true, null, "Service deleted successfully")
+      );
     } catch (error) {
       console.error("Error deleting service:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to delete service"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to delete service"));
     }
   }
 
   // Projects
-  static async getProjects(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getProjects(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const {clientId} = req;
+      const { clientId } = req;
       const { page = 1, limit = 10, status, search } = req.query;
 
       // Build query with pagination and filtering - only show projects assigned to this client
@@ -1205,17 +1581,30 @@ class ClientPortalController {
         LEFT JOIN sys_project_statuses sps ON p.status_id = sps.id
         WHERE p.client_id = $1
         ${status ? "AND sps.name = $2" : ""}
-        ${search ? `AND (p.name ILIKE $${status ? 3 : 2} OR p.notes ILIKE $${status ? 3 : 2})` : ""}
+        ${
+          search
+            ? `AND (p.name ILIKE $${status ? 3 : 2} OR p.notes ILIKE $${
+                status ? 3 : 2
+              })`
+            : ""
+        }
       `;
-      const countParams = status && search ? [clientId, status, `%${search}%`] : 
-                         status ? [clientId, status] : 
-                         search ? [clientId, `%${search}%`] : [clientId];
+      const countParams =
+        status && search
+          ? [clientId, status, `%${search}%`]
+          : status
+          ? [clientId, status]
+          : search
+          ? [clientId, `%${search}%`]
+          : [clientId];
       const countResult = await db.query(countQuery, countParams);
       const total = parseInt(countResult.rows[0]?.total || "0");
 
       // Add pagination
       const offset = (Number(page) - 1) * Number(limit);
-      query += ` ORDER BY p.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+      query += ` ORDER BY p.created_at DESC LIMIT $${paramIndex} OFFSET $${
+        paramIndex + 1
+      }`;
       queryParams.push(String(Number(limit)), String(offset));
 
       const result = await db.query(query, queryParams);
@@ -1230,26 +1619,37 @@ class ClientPortalController {
         client_id: row.client_id,
         client_name: row.client_name,
         total_tasks: parseInt(row.total_tasks || "0"),
-        completed_tasks: parseInt(row.completed_tasks || "0")
+        completed_tasks: parseInt(row.completed_tasks || "0"),
       }));
 
-      return res.json(new ServerResponse(true, { 
-        projects, 
-        total, 
-        page: Number(page), 
-        limit: Number(limit) 
-      }, "Projects retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            projects,
+            total,
+            page: Number(page),
+            limit: Number(limit),
+          },
+          "Projects retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching projects:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve projects"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to retrieve projects"));
     }
   }
 
-  static async getProjectDetails(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getProjectDetails(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
 
       // Get project details with client access validation
       const query = `
@@ -1278,9 +1678,17 @@ class ClientPortalController {
       `;
 
       const result = await db.query(query, [id, clientId]);
-      
+
       if (result.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Project not found or not accessible"));
+        return res
+          .status(404)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Project not found or not accessible"
+            )
+          );
       }
 
       const project = result.rows[0];
@@ -1298,18 +1706,36 @@ class ClientPortalController {
         statistics: {
           totalTasks: parseInt(project.total_tasks || "0"),
           completedTasks: parseInt(project.completed_tasks || "0"),
-          progressPercentage: project.total_tasks > 0 ? Math.round((project.completed_tasks / project.total_tasks) * 100) : 0
-        }
+          progressPercentage:
+            project.total_tasks > 0
+              ? Math.round(
+                  (project.completed_tasks / project.total_tasks) * 100
+                )
+              : 0,
+        },
       };
 
-      return res.json(new ServerResponse(true, projectDetails, "Project details retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          projectDetails,
+          "Project details retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching project details:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve project details"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve project details")
+        );
     }
   }
 
-  static async getProjectTasks(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getProjectTasks(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
       const { clientId } = req;
@@ -1322,7 +1748,15 @@ class ClientPortalController {
       );
 
       if (accessCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Project not found or not accessible"));
+        return res
+          .status(404)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Project not found or not accessible"
+            )
+          );
       }
 
       // Build tasks query with pagination
@@ -1366,7 +1800,9 @@ class ClientPortalController {
 
       // Add ordering and pagination - last updated first
       const offset = (Number(page) - 1) * Number(limit);
-      tasksQuery += ` ORDER BY t.updated_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+      tasksQuery += ` ORDER BY t.updated_at DESC LIMIT $${paramIndex} OFFSET $${
+        paramIndex + 1
+      }`;
       queryParams.push(String(Number(limit)), String(offset));
 
       const tasksResult = await db.query(tasksQuery, queryParams);
@@ -1379,26 +1815,39 @@ class ClientPortalController {
         startDate: row.start_date,
         endDate: row.end_date,
         createdAt: row.created_at,
-        updatedAt: row.updated_at
+        updatedAt: row.updated_at,
       }));
 
-      return res.json(new ServerResponse(true, {
-        tasks,
-        total,
-        page: Number(page),
-        limit: Number(limit)
-      }, "Project tasks retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            tasks,
+            total,
+            page: Number(page),
+            limit: Number(limit),
+          },
+          "Project tasks retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching project tasks:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve project tasks"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve project tasks")
+        );
     }
   }
 
   // Invoices
-  static async getInvoices(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getInvoices(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
       const { page = 1, limit = 10, status, search } = req.query;
 
       // Build query with pagination and filtering
@@ -1447,17 +1896,30 @@ class ClientPortalController {
         LEFT JOIN client_portal_services s ON r.service_id = s.id
         WHERE i.client_id = $1 AND i.organization_team_id = $2
         ${status ? `AND i.status = $${status ? 3 : 3}` : ""}
-        ${search ? `AND (i.invoice_no ILIKE $${status ? 4 : 3} OR s.name ILIKE $${status ? 4 : 3})` : ""}
+        ${
+          search
+            ? `AND (i.invoice_no ILIKE $${status ? 4 : 3} OR s.name ILIKE $${
+                status ? 4 : 3
+              })`
+            : ""
+        }
       `;
-      const countParams = status && search ? [clientId, organizationId, status, `%${search}%`] : 
-                         status ? [clientId, organizationId, status] : 
-                         search ? [clientId, organizationId, `%${search}%`] : [clientId, organizationId];
+      const countParams =
+        status && search
+          ? [clientId, organizationId, status, `%${search}%`]
+          : status
+          ? [clientId, organizationId, status]
+          : search
+          ? [clientId, organizationId, `%${search}%`]
+          : [clientId, organizationId];
       const countResult = await db.query(countQuery, countParams);
       const total = parseInt(countResult.rows[0]?.total || "0");
 
       // Add pagination
       const offset = (Number(page) - 1) * Number(limit);
-      query += ` ORDER BY i.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+      query += ` ORDER BY i.created_at DESC LIMIT $${paramIndex} OFFSET $${
+        paramIndex + 1
+      }`;
       queryParams.push(String(Number(limit)), String(offset));
 
       const result = await db.query(query, queryParams);
@@ -1474,29 +1936,45 @@ class ClientPortalController {
         updatedAt: row.updated_at,
         requestNumber: row.request_number,
         serviceName: row.service_name,
-        isOverdue: row.due_date && new Date(row.due_date) < new Date() && row.status !== "paid"
+        isOverdue:
+          row.due_date &&
+          new Date(row.due_date) < new Date() &&
+          row.status !== "paid",
       }));
 
-      return res.json(new ServerResponse(true, { 
-        invoices, 
-        total, 
-        page: Number(page), 
-        limit: Number(limit) 
-      }, "Invoices retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            invoices,
+            total,
+            page: Number(page),
+            limit: Number(limit),
+          },
+          "Invoices retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching invoices:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve invoices"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to retrieve invoices"));
     }
   }
 
   // Organization-side invoice listing (for admin/team members)
-  static async getOrganizationInvoices(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+  static async getOrganizationInvoices(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const organizationId = req.user?.team_id;
       const { page = 1, limit = 10, status, search, clientId } = req.query;
 
       if (!organizationId) {
-        return res.status(401).json(new ServerResponse(false, null, "Unauthorized"));
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Unauthorized"));
       }
 
       // Build query with pagination and filtering
@@ -1579,7 +2057,9 @@ class ClientPortalController {
 
       // Add pagination
       const offset = (Number(page) - 1) * Number(limit);
-      query += ` ORDER BY i.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+      query += ` ORDER BY i.created_at DESC LIMIT $${paramIndex} OFFSET $${
+        paramIndex + 1
+      }`;
       queryParams.push(Number(limit), offset);
 
       const result = await db.query(query, queryParams);
@@ -1597,18 +2077,29 @@ class ClientPortalController {
         requestNumber: row.request_number,
         serviceName: row.service_name,
         clientName: row.client_name,
-        isOverdue: row.due_date && new Date(row.due_date) < new Date() && row.status !== "paid"
+        isOverdue:
+          row.due_date &&
+          new Date(row.due_date) < new Date() &&
+          row.status !== "paid",
       }));
 
-      return res.json(new ServerResponse(true, { 
-        invoices, 
-        total, 
-        page: Number(page), 
-        limit: Number(limit) 
-      }, "Invoices retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            invoices,
+            total,
+            page: Number(page),
+            limit: Number(limit),
+          },
+          "Invoices retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching organization invoices:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve invoices"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to retrieve invoices"));
     }
   }
 
@@ -1619,11 +2110,15 @@ class ClientPortalController {
       const createdBy = req.user?.id;
 
       if (!requestId) {
-        return res.status(400).json(new ServerResponse(false, null, "Request ID is required"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Request ID is required"));
       }
 
       if (!amount || amount <= 0) {
-        return res.status(400).json(new ServerResponse(false, null, "Valid amount is required"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Valid amount is required"));
       }
 
       // Verify request exists and get client info
@@ -1634,16 +2129,24 @@ class ClientPortalController {
         LEFT JOIN client_portal_services s ON r.service_id = s.id
         WHERE r.id = $1 AND r.organization_team_id = $2
       `;
-      const requestResult = await db.query(requestQuery, [requestId, organizationId]);
+      const requestResult = await db.query(requestQuery, [
+        requestId,
+        organizationId,
+      ]);
 
       if (requestResult.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Request not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Request not found"));
       }
 
       const request = requestResult.rows[0];
 
       // Generate invoice number
-      const invoiceNo = `INV-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+      const invoiceNo = `INV-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 7)
+        .toUpperCase()}`;
 
       // Create invoice
       const insertQuery = `
@@ -1664,7 +2167,7 @@ class ClientPortalController {
         currency,
         dueDate || null,
         notes || null,
-        createdBy
+        createdBy,
       ]);
 
       const newInvoice = result.rows[0];
@@ -1683,33 +2186,44 @@ class ClientPortalController {
             amount: parseFloat(newInvoice.amount),
             currency: newInvoice.currency,
             dueDate: newInvoice.due_date,
-            serviceName: request.service_name
+            serviceName: request.service_name,
           }
         );
       }
 
-      return res.json(new ServerResponse(true, {
-        id: newInvoice.id,
-        invoiceNumber: newInvoice.invoice_no,
-        amount: parseFloat(newInvoice.amount),
-        currency: newInvoice.currency,
-        status: newInvoice.status,
-        dueDate: newInvoice.due_date,
-        createdAt: newInvoice.created_at,
-        clientName: request.client_name,
-        serviceName: request.service_name
-      }, "Invoice created successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id: newInvoice.id,
+            invoiceNumber: newInvoice.invoice_no,
+            amount: parseFloat(newInvoice.amount),
+            currency: newInvoice.currency,
+            status: newInvoice.status,
+            dueDate: newInvoice.due_date,
+            createdAt: newInvoice.created_at,
+            clientName: request.client_name,
+            serviceName: request.service_name,
+          },
+          "Invoice created successfully"
+        )
+      );
     } catch (error) {
       console.error("Error creating invoice:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to create invoice"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to create invoice"));
     }
   }
 
-  static async getInvoiceDetails(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getInvoiceDetails(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
 
       // Get invoice details with related information
       const query = `
@@ -1744,9 +2258,11 @@ class ClientPortalController {
       `;
 
       const result = await db.query(query, [id, clientId, organizationId]);
-      
+
       if (result.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Invoice not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Invoice not found"));
       }
 
       const invoice = result.rows[0];
@@ -1762,43 +2278,65 @@ class ClientPortalController {
         paidAt: invoice.paid_at,
         createdAt: invoice.created_at,
         updatedAt: invoice.updated_at,
-        isOverdue: invoice.due_date && new Date(invoice.due_date) < new Date() && invoice.status !== "paid",
-        request: invoice.request_id ? {
-          id: invoice.request_id,
-          requestNumber: invoice.request_number,
-          requestData: invoice.request_data,
-          notes: invoice.request_notes,
-          service: {
-            id: invoice.service_id,
-            name: invoice.service_name,
-            description: invoice.service_description
-          }
-        } : null,
+        isOverdue:
+          invoice.due_date &&
+          new Date(invoice.due_date) < new Date() &&
+          invoice.status !== "paid",
+        request: invoice.request_id
+          ? {
+              id: invoice.request_id,
+              requestNumber: invoice.request_number,
+              requestData: invoice.request_data,
+              notes: invoice.request_notes,
+              service: {
+                id: invoice.service_id,
+                name: invoice.service_name,
+                description: invoice.service_description,
+              },
+            }
+          : null,
         client: {
           name: invoice.client_name,
           companyName: invoice.company_name,
-          email: invoice.client_email
+          email: invoice.client_email,
         },
-        createdBy: invoice.created_by_name ? {
-          name: invoice.created_by_name
-        } : null
+        createdBy: invoice.created_by_name
+          ? {
+              name: invoice.created_by_name,
+            }
+          : null,
       };
 
-      return res.json(new ServerResponse(true, invoiceDetails, "Invoice details retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          invoiceDetails,
+          "Invoice details retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching invoice details:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve invoice details"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve invoice details")
+        );
     }
   }
 
   // Organization-side invoice details (for admin/team members)
-  static async getOrganizationInvoiceDetails(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+  static async getOrganizationInvoiceDetails(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
       const organizationId = req.user?.team_id;
 
       if (!organizationId) {
-        return res.status(401).json(new ServerResponse(false, null, "Unauthorized"));
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Unauthorized"));
       }
 
       // Get invoice details with related information (without client_id filter)
@@ -1839,9 +2377,11 @@ class ClientPortalController {
       `;
 
       const result = await db.query(query, [id, organizationId]);
-      
+
       if (result.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Invoice not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Invoice not found"));
       }
 
       const invoice = result.rows[0];
@@ -1877,18 +2417,23 @@ class ClientPortalController {
         createdAt: invoice.created_at,
         updatedAt: invoice.updated_at,
         notes: invoice.notes,
-        isOverdue: invoice.due_date && new Date(invoice.due_date) < new Date() && invoice.status !== "paid",
-        request: invoice.request_id ? {
-          id: invoice.request_id,
-          requestNumber: invoice.request_number,
-          requestData: invoice.request_data,
-          notes: invoice.request_notes,
-          service: {
-            id: invoice.service_id,
-            name: invoice.service_name,
-            description: invoice.service_description
-          }
-        } : null,
+        isOverdue:
+          invoice.due_date &&
+          new Date(invoice.due_date) < new Date() &&
+          invoice.status !== "paid",
+        request: invoice.request_id
+          ? {
+              id: invoice.request_id,
+              requestNumber: invoice.request_number,
+              requestData: invoice.request_data,
+              notes: invoice.request_notes,
+              service: {
+                id: invoice.service_id,
+                name: invoice.service_name,
+                description: invoice.service_description,
+              },
+            }
+          : null,
         client: {
           id: invoice.client_id,
           name: invoice.client_name,
@@ -1896,35 +2441,51 @@ class ClientPortalController {
           email: invoice.client_email,
           phone: invoice.client_phone,
           address: invoice.client_address,
-          contactPerson: invoice.client_contact_person
+          contactPerson: invoice.client_contact_person,
         },
-        createdBy: invoice.created_by_name ? {
-          name: invoice.created_by_name
-        } : null,
+        createdBy: invoice.created_by_name
+          ? {
+              name: invoice.created_by_name,
+            }
+          : null,
         organization: {
-          name: orgSettings.company_name || orgSettings.organization_name || null,
+          name:
+            orgSettings.company_name || orgSettings.organization_name || null,
           logoUrl: orgSettings.logo_url || null,
           primaryColor: orgSettings.primary_color || null,
           email: orgSettings.contact_email || null,
           phone: orgSettings.contact_phone || null,
           addressLine1: orgSettings.address_line_1 || null,
           addressLine2: orgSettings.address_line_2 || null,
-          invoiceFooterMessage: orgSettings.invoice_footer_message || null
-        }
+          invoiceFooterMessage: orgSettings.invoice_footer_message || null,
+        },
       };
 
-      return res.json(new ServerResponse(true, invoiceDetails, "Invoice details retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          invoiceDetails,
+          "Invoice details retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching organization invoice details:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve invoice details"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve invoice details")
+        );
     }
   }
 
-  static async payInvoice(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async payInvoice(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
       const { paymentMethod, transactionId, notes } = req.body;
 
       // Verify invoice exists and belongs to client
@@ -1934,14 +2495,18 @@ class ClientPortalController {
       );
 
       if (invoiceCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Invoice not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Invoice not found"));
       }
 
       const invoice = invoiceCheck.rows[0];
 
       // Check if invoice is already paid
       if (invoice.status === "paid") {
-        return res.status(400).json(new ServerResponse(false, null, "Invoice is already paid"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Invoice is already paid"));
       }
 
       // Update invoice status to paid
@@ -1962,29 +2527,40 @@ class ClientPortalController {
         transactionId,
         notes,
         amount: invoice.amount,
-        paidAt: updatedInvoice.paid_at
+        paidAt: updatedInvoice.paid_at,
       });
 
-      return res.json(new ServerResponse(true, {
-        id: updatedInvoice.id,
-        invoiceNumber: updatedInvoice.invoice_no,
-        amount: parseFloat(updatedInvoice.amount || "0"),
-        currency: updatedInvoice.currency,
-        status: updatedInvoice.status,
-        paidAt: updatedInvoice.paid_at,
-        updatedAt: updatedInvoice.updated_at
-      }, "Invoice paid successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id: updatedInvoice.id,
+            invoiceNumber: updatedInvoice.invoice_no,
+            amount: parseFloat(updatedInvoice.amount || "0"),
+            currency: updatedInvoice.currency,
+            status: updatedInvoice.status,
+            paidAt: updatedInvoice.paid_at,
+            updatedAt: updatedInvoice.updated_at,
+          },
+          "Invoice paid successfully"
+        )
+      );
     } catch (error) {
       console.error("Error paying invoice:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to pay invoice"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to pay invoice"));
     }
   }
 
-  static async downloadInvoice(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async downloadInvoice(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
       const { format = "pdf" } = req.query;
 
       // Verify invoice exists and belongs to client
@@ -2011,10 +2587,16 @@ class ClientPortalController {
         WHERE i.id = $1 AND i.client_id = $2 AND i.organization_team_id = $3
       `;
 
-      const result = await db.query(invoiceQuery, [id, clientId, organizationId]);
-      
+      const result = await db.query(invoiceQuery, [
+        id,
+        clientId,
+        organizationId,
+      ]);
+
       if (result.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Invoice not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Invoice not found"));
       }
 
       const invoice = result.rows[0];
@@ -2033,34 +2615,45 @@ class ClientPortalController {
           name: invoice.client_name,
           companyName: invoice.company_name,
           email: invoice.client_email,
-          address: invoice.client_address
+          address: invoice.client_address,
         },
         service: {
           name: invoice.service_name,
-          description: invoice.service_description
+          description: invoice.service_description,
         },
-        requestNumber: invoice.request_number
+        requestNumber: invoice.request_number,
       };
 
       // TODO: Generate actual PDF/document using a library like puppeteer or jsPDF
       // For now, return the data that would be used for PDF generation
-      return res.json(new ServerResponse(true, {
-        downloadUrl: `/api/client-portal/invoices/${id}/download?format=${format}`,
-        format,
-        invoiceData,
-        message: "Invoice download link generated"
-      }, "Invoice download initiated"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            downloadUrl: `/api/client-portal/invoices/${id}/download?format=${format}`,
+            format,
+            invoiceData,
+            message: "Invoice download link generated",
+          },
+          "Invoice download initiated"
+        )
+      );
     } catch (error) {
       console.error("Error downloading invoice:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to download invoice"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to download invoice"));
     }
   }
 
   // Chat
-  static async getChats(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getChats(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
       const { page = 1, limit = 20 } = req.query;
 
       // Get chat conversations grouped by date
@@ -2088,7 +2681,12 @@ class ClientPortalController {
       `;
 
       const offset = (Number(page) - 1) * Number(limit);
-      const result = await db.query(query, [clientId, organizationId, Number(limit), offset]);
+      const result = await db.query(query, [
+        clientId,
+        organizationId,
+        Number(limit),
+        offset,
+      ]);
 
       // Get total count
       const countQuery = `
@@ -2096,7 +2694,10 @@ class ClientPortalController {
         FROM client_portal_chat_messages
         WHERE client_id = $1 AND organization_team_id = $2
       `;
-      const countResult = await db.query(countQuery, [clientId, organizationId]);
+      const countResult = await db.query(countQuery, [
+        clientId,
+        organizationId,
+      ]);
       const total = parseInt(countResult.rows[0]?.total || "0");
 
       const chats = result.rows.map((row: any) => ({
@@ -2105,35 +2706,50 @@ class ClientPortalController {
         lastMessageAt: row.last_message_at,
         lastTeamMessageAt: row.last_team_message_at,
         unreadCount: parseInt(row.unread_count || "0"),
-        hasNewMessages: row.unread_count > 0
+        hasNewMessages: row.unread_count > 0,
       }));
 
-      return res.json(new ServerResponse(true, {
-        chats,
-        total,
-        page: Number(page),
-        limit: Number(limit)
-      }, "Chats retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            chats,
+            total,
+            page: Number(page),
+            limit: Number(limit),
+          },
+          "Chats retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching chats:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve chats"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to retrieve chats"));
     }
   }
 
-  static async createChat(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async createChat(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const {clientId} = req;
-      const {organizationId} = req;
-      const {clientEmail} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
+      const { clientEmail } = req;
       const { recipientType, recipientId, subject, message } = req.body;
 
       // Validate required fields
       if (!message || message.trim().length === 0) {
-        return res.status(400).json(new ServerResponse(false, null, "Message content is required"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Message content is required"));
       }
 
       if (!subject || subject.trim().length === 0) {
-        return res.status(400).json(new ServerResponse(false, null, "Subject is required"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Subject is required"));
       }
 
       // Get client user ID
@@ -2143,7 +2759,9 @@ class ClientPortalController {
       );
 
       if (clientUserQuery.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client user not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client user not found"));
       }
 
       const clientUserId = clientUserQuery.rows[0].id;
@@ -2166,7 +2784,7 @@ class ClientPortalController {
         "client",
         clientUserId,
         fullMessage,
-        "text"
+        "text",
       ]);
 
       const newMessage = result.rows[0];
@@ -2184,14 +2802,14 @@ class ClientPortalController {
             senderType: "client",
             message: newMessage.message,
             messageType: newMessage.message_type,
-            createdAt: newMessage.created_at
+            createdAt: newMessage.created_at,
           });
 
           // Emit chat message event
           io.emit("chat:message_received", {
             clientId,
             organizationId,
-            message: newMessage
+            message: newMessage,
           });
         }
       } catch (socketError) {
@@ -2199,21 +2817,32 @@ class ClientPortalController {
         // Continue execution even if socket fails
       }
 
-      return res.json(new ServerResponse(true, {
-        chatId: newMessage.id,
-        message: "Chat created successfully"
-      }, "Chat created successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            chatId: newMessage.id,
+            message: "Chat created successfully",
+          },
+          "Chat created successfully"
+        )
+      );
     } catch (error) {
       console.error("Error creating chat:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to create chat"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to create chat"));
     }
   }
 
-  static async getChatDetails(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getChatDetails(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params; // This would be the date in format YYYY-MM-DD
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
       const { page = 1, limit = 50 } = req.query;
 
       // Get messages for a specific date
@@ -2246,7 +2875,13 @@ class ClientPortalController {
       `;
 
       const offset = (Number(page) - 1) * Number(limit);
-      const result = await db.query(query, [clientId, organizationId, id, Number(limit), offset]);
+      const result = await db.query(query, [
+        clientId,
+        organizationId,
+        id,
+        Number(limit),
+        offset,
+      ]);
 
       // Get total count for the date
       const countQuery = `
@@ -2254,7 +2889,11 @@ class ClientPortalController {
         FROM client_portal_chat_messages
         WHERE client_id = $1 AND organization_team_id = $2 AND DATE(created_at) = $3
       `;
-      const countResult = await db.query(countQuery, [clientId, organizationId, id]);
+      const countResult = await db.query(countQuery, [
+        clientId,
+        organizationId,
+        id,
+      ]);
       const total = parseInt(countResult.rows[0]?.total || "0");
 
       const messages = result.rows.map((row: any) => ({
@@ -2268,7 +2907,7 @@ class ClientPortalController {
         fileUrl: row.file_url,
         readAt: row.read_at,
         createdAt: row.created_at,
-        isFromClient: row.sender_type === "client"
+        isFromClient: row.sender_type === "client",
       }));
 
       // Mark messages as read (for client user)
@@ -2277,29 +2916,44 @@ class ClientPortalController {
         [clientId, organizationId, id]
       );
 
-      return res.json(new ServerResponse(true, {
-        date: id,
-        messages,
-        total,
-        page: Number(page),
-        limit: Number(limit)
-      }, "Chat details retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            date: id,
+            messages,
+            total,
+            page: Number(page),
+            limit: Number(limit),
+          },
+          "Chat details retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching chat details:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve chat details"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve chat details")
+        );
     }
   }
 
-  static async sendMessage(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async sendMessage(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const {clientId} = req;
-      const {organizationId} = req;
-      const {clientEmail} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
+      const { clientEmail } = req;
       const { message, messageType = "text", fileUrl } = req.body;
 
       // Validate required fields
       if (!message || message.trim().length === 0) {
-        return res.status(400).json(new ServerResponse(false, null, "Message content is required"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Message content is required"));
       }
 
       // Get client user ID
@@ -2309,7 +2963,9 @@ class ClientPortalController {
       );
 
       if (clientUserQuery.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client user not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client user not found"));
       }
 
       const clientUserId = clientUserQuery.rows[0].id;
@@ -2330,7 +2986,7 @@ class ClientPortalController {
         clientUserId,
         message.trim(),
         messageType,
-        fileUrl || null
+        fileUrl || null,
       ]);
 
       const newMessage = result.rows[0];
@@ -2349,7 +3005,7 @@ class ClientPortalController {
             message: newMessage.message,
             messageType: newMessage.message_type,
             fileUrl: newMessage.file_url,
-            createdAt: newMessage.created_at
+            createdAt: newMessage.created_at,
           });
 
           // Emit chat message event
@@ -2363,7 +3019,7 @@ class ClientPortalController {
             messageType: newMessage.message_type,
             fileUrl: newMessage.file_url,
             createdAt: newMessage.created_at,
-            isMe: false
+            isMe: false,
           });
         }
       } catch (socketError) {
@@ -2371,26 +3027,37 @@ class ClientPortalController {
         // Don't fail the request if socket fails
       }
 
-      return res.json(new ServerResponse(true, {
-        id: newMessage.id,
-        senderType: newMessage.sender_type,
-        senderId: newMessage.sender_id,
-        message: newMessage.message,
-        messageType: newMessage.message_type,
-        fileUrl: newMessage.file_url,
-        createdAt: newMessage.created_at,
-        isFromClient: true
-      }, "Message sent successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id: newMessage.id,
+            senderType: newMessage.sender_type,
+            senderId: newMessage.sender_id,
+            message: newMessage.message,
+            messageType: newMessage.message_type,
+            fileUrl: newMessage.file_url,
+            createdAt: newMessage.created_at,
+            isFromClient: true,
+          },
+          "Message sent successfully"
+        )
+      );
     } catch (error) {
       console.error("Error sending message:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to send message"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to send message"));
     }
   }
 
-  static async getMessages(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getMessages(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
       const { page = 1, limit = 50, since } = req.query;
 
       // Get recent messages
@@ -2428,7 +3095,9 @@ class ClientPortalController {
         paramIndex++;
       }
 
-      query += ` ORDER BY m.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+      query += ` ORDER BY m.created_at DESC LIMIT $${paramIndex} OFFSET $${
+        paramIndex + 1
+      }`;
       const offset = (Number(page) - 1) * Number(limit);
       queryParams.push(String(Number(limit)), String(offset));
 
@@ -2459,18 +3128,26 @@ class ClientPortalController {
         fileUrl: row.file_url,
         readAt: row.read_at,
         createdAt: row.created_at,
-        isFromClient: row.sender_type === "client"
+        isFromClient: row.sender_type === "client",
       }));
 
-      return res.json(new ServerResponse(true, {
-        messages: messages.reverse(), // Reverse to show oldest first
-        total,
-        page: Number(page),
-        limit: Number(limit)
-      }, "Messages retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            messages: messages.reverse(), // Reverse to show oldest first
+            total,
+            page: Number(page),
+            limit: Number(limit),
+          },
+          "Messages retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching messages:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve messages"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to retrieve messages"));
     }
   }
 
@@ -2479,9 +3156,11 @@ class ClientPortalController {
     try {
       const teamId = req.user?.team_id;
       if (!teamId) {
-        return res.status(400).json(new ServerResponse(false, null, "Team ID not found"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Team ID not found"));
       }
-      
+
       // For client portal settings, we use the team_id as organization_team_id
       const organizationTeamId = teamId;
 
@@ -2493,7 +3172,7 @@ class ClientPortalController {
         FROM client_portal_settings 
         WHERE organization_team_id = $1
       `;
-      
+
       const result = await db.query(q, [organizationTeamId]);
       const settings = result.rows[0] || {
         organization_team_id: organizationTeamId,
@@ -2507,24 +3186,28 @@ class ClientPortalController {
         company_name: null,
         address_line_1: null,
         address_line_2: null,
-        invoice_footer_message: null
+        invoice_footer_message: null,
       };
 
       return res.json(new ServerResponse(true, settings, null));
     } catch (error) {
       log_error(error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve settings"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to retrieve settings"));
     }
   }
 
   static async updateSettings(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
       const teamId = req.user?.team_id;
-      
+
       if (!teamId) {
-        return res.status(400).json(new ServerResponse(false, null, "Team ID not found"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Team ID not found"));
       }
-      
+
       // For client portal settings, we use the team_id as both team_id and organization_team_id
       const organizationTeamId = teamId;
 
@@ -2539,7 +3222,7 @@ class ClientPortalController {
         company_name,
         address_line_1,
         address_line_2,
-        invoice_footer_message
+        invoice_footer_message,
       } = req.body;
 
       // Check if settings exist
@@ -2559,9 +3242,18 @@ class ClientPortalController {
           RETURNING *
         `;
         result = await db.query(updateQ, [
-          logo_url, primary_color, welcome_message, contact_email,
-          contact_phone, terms_of_service, privacy_policy, company_name, address_line_1, address_line_2,
-          invoice_footer_message, organizationTeamId
+          logo_url,
+          primary_color,
+          welcome_message,
+          contact_email,
+          contact_phone,
+          terms_of_service,
+          privacy_policy,
+          company_name,
+          address_line_1,
+          address_line_2,
+          invoice_footer_message,
+          organizationTeamId,
         ]);
       } else {
         // Create new settings
@@ -2574,16 +3266,34 @@ class ClientPortalController {
           RETURNING *
         `;
         result = await db.query(insertQ, [
-          teamId, organizationTeamId, logo_url, primary_color, welcome_message,
-          contact_email, contact_phone, terms_of_service, privacy_policy, company_name, 
-          address_line_1, address_line_2, invoice_footer_message
+          teamId,
+          organizationTeamId,
+          logo_url,
+          primary_color,
+          welcome_message,
+          contact_email,
+          contact_phone,
+          terms_of_service,
+          privacy_policy,
+          company_name,
+          address_line_1,
+          address_line_2,
+          invoice_footer_message,
         ]);
       }
 
-      return res.json(new ServerResponse(true, result.rows[0], "Settings updated successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          result.rows[0],
+          "Settings updated successfully"
+        )
+      );
     } catch (error) {
       log_error(error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to update settings"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to update settings"));
     }
   }
 
@@ -2591,34 +3301,45 @@ class ClientPortalController {
     try {
       const teamId = req.user?.team_id;
       if (!teamId) {
-        return res.status(400).json(new ServerResponse(false, null, "Team ID not found"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Team ID not found"));
       }
-      
+
       // For client portal settings, we use the team_id as both team_id and organization_team_id
       // since client portal settings are organization-wide
       const organizationTeamId = teamId;
 
       const { logoData } = req.body;
       if (!logoData) {
-        return res.status(400).json(new ServerResponse(false, null, "Logo data is required"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Logo data is required"));
       }
 
       // Extract file type from base64 data
       const mimeMatch = logoData.match(/^data:(image\/[a-z]+);base64,/);
       if (!mimeMatch) {
-        return res.status(400).json(new ServerResponse(false, null, "Invalid image format"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Invalid image format"));
       }
 
       const mimeType = mimeMatch[1];
       const fileExtension = mimeType.split("/")[1];
-      
+
       // Generate storage key
-      const storageKey = getClientPortalLogoKey(organizationTeamId, fileExtension);
-      
+      const storageKey = getClientPortalLogoKey(
+        organizationTeamId,
+        fileExtension
+      );
+
       // Upload to storage
       const logoUrl = await uploadBase64(logoData, storageKey);
       if (!logoUrl) {
-        return res.status(500).json(new ServerResponse(false, null, "Failed to upload logo"));
+        return res
+          .status(500)
+          .json(new ServerResponse(false, null, "Failed to upload logo"));
       }
 
       // Update database with logo URL
@@ -2645,20 +3366,33 @@ class ClientPortalController {
         await db.query(insertQ, [teamId, organizationTeamId, logoUrl]);
       }
 
-      return res.json(new ServerResponse(true, { logo_url: logoUrl }, "Logo uploaded successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          { logo_url: logoUrl },
+          "Logo uploaded successfully"
+        )
+      );
     } catch (error) {
       log_error(error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to upload logo"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to upload logo"));
     }
   }
 
   // Get organization settings for client users
-  static async getOrganizationSettings(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getOrganizationSettings(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { organizationId } = req;
-      
+
       if (!organizationId) {
-        return res.status(400).json(new ServerResponse(false, null, "Organization ID not found"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Organization ID not found"));
       }
 
       const q = `
@@ -2669,7 +3403,7 @@ class ClientPortalController {
         FROM client_portal_settings 
         WHERE organization_team_id = $1
       `;
-      
+
       const result = await db.query(q, [organizationId]);
       const settings = result.rows[0] || {
         organization_team_id: organizationId,
@@ -2683,21 +3417,32 @@ class ClientPortalController {
         company_name: null,
         address_line_1: null,
         address_line_2: null,
-        invoice_footer_message: null
+        invoice_footer_message: null,
       };
 
       return res.json(new ServerResponse(true, settings, null));
     } catch (error) {
       log_error(error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve organization settings"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(
+            false,
+            null,
+            "Failed to retrieve organization settings"
+          )
+        );
     }
   }
 
   // Profile
-  static async getProfile(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getProfile(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const {clientId} = req;
-      const {clientEmail} = req;
+      const { clientId } = req;
+      const { clientEmail } = req;
 
       // Get client and client user details
       const query = `
@@ -2724,9 +3469,11 @@ class ClientPortalController {
       `;
 
       const result = await db.query(query, [clientId, clientEmail]);
-      
+
       if (result.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Profile not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Profile not found"));
       }
 
       const profileData = result.rows[0];
@@ -2753,49 +3500,67 @@ class ClientPortalController {
           address: profileData.client_address,
           contactPerson: profileData.contact_person,
           status: profileData.client_status,
-          createdAt: profileData.client_created_at
+          createdAt: profileData.client_created_at,
         },
-        user: profileData.user_id ? {
-          id: profileData.user_id,
-          name: profileData.user_name,
-          email: profileData.user_email,
-          role: profileData.user_role,
-          status: profileData.user_status,
-          createdAt: profileData.user_created_at,
-          lastLogin: profileData.last_login
-        } : null,
+        user: profileData.user_id
+          ? {
+              id: profileData.user_id,
+              name: profileData.user_name,
+              email: profileData.user_email,
+              role: profileData.user_role,
+              status: profileData.user_status,
+              createdAt: profileData.user_created_at,
+              lastLogin: profileData.last_login,
+            }
+          : null,
         statistics: {
           projectCount: parseInt(stats.project_count || "0"),
           requestCount: parseInt(stats.request_count || "0"),
           invoiceCount: parseInt(stats.invoice_count || "0"),
-          unpaidInvoiceCount: parseInt(stats.unpaid_invoice_count || "0")
-        }
+          unpaidInvoiceCount: parseInt(stats.unpaid_invoice_count || "0"),
+        },
       };
 
-      return res.json(new ServerResponse(true, profile, "Profile retrieved successfully"));
+      return res.json(
+        new ServerResponse(true, profile, "Profile retrieved successfully")
+      );
     } catch (error) {
       console.error("Error fetching profile:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve profile"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to retrieve profile"));
     }
   }
 
-  static async updateProfile(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async updateProfile(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const {clientId} = req;
-      const {clientEmail} = req;
-      const { 
-        clientName, 
-        clientPhone, 
-        clientAddress, 
+      const { clientId } = req;
+      const { clientEmail } = req;
+      const {
+        clientName,
+        clientPhone,
+        clientAddress,
         contactPerson,
-        userName, 
-        currentPassword, 
-        newPassword 
+        userName,
+        currentPassword,
+        newPassword,
       } = req.body;
 
       // Validate at least one field is provided
-      if (!clientName && !clientPhone && !clientAddress && !contactPerson && !userName && !newPassword) {
-        return res.status(400).json(new ServerResponse(false, null, "No valid fields to update"));
+      if (
+        !clientName &&
+        !clientPhone &&
+        !clientAddress &&
+        !contactPerson &&
+        !userName &&
+        !newPassword
+      ) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "No valid fields to update"));
       }
 
       const updates = [];
@@ -2843,7 +3608,10 @@ class ClientPortalController {
             RETURNING name, phone, address, contact_person, updated_at
           `;
 
-          const clientResult = await db.query(clientUpdateQuery, clientUpdateValues);
+          const clientResult = await db.query(
+            clientUpdateQuery,
+            clientUpdateValues
+          );
           if (clientResult.rows.length > 0) {
             updates.push("client");
             clientUpdates.push(clientResult.rows[0]);
@@ -2860,7 +3628,9 @@ class ClientPortalController {
         );
 
         if (currentUserQuery.rows.length === 0) {
-          return res.status(404).json(new ServerResponse(false, null, "Client user not found"));
+          return res
+            .status(404)
+            .json(new ServerResponse(false, null, "Client user not found"));
         }
 
         const currentUser = currentUserQuery.rows[0];
@@ -2877,19 +3647,37 @@ class ClientPortalController {
         // Handle password update
         if (newPassword) {
           if (!currentPassword) {
-            return res.status(400).json(new ServerResponse(false, null, "Current password is required to set new password"));
+            return res
+              .status(400)
+              .json(
+                new ServerResponse(
+                  false,
+                  null,
+                  "Current password is required to set new password"
+                )
+              );
           }
 
           // Verify current password
           const crypto = require("crypto");
-          const currentPasswordHash = crypto.createHash("sha256").update(currentPassword).digest("hex");
-          
+          const currentPasswordHash = crypto
+            .createHash("sha256")
+            .update(currentPassword)
+            .digest("hex");
+
           if (currentPasswordHash !== currentUser.password_hash) {
-            return res.status(400).json(new ServerResponse(false, null, "Current password is incorrect"));
+            return res
+              .status(400)
+              .json(
+                new ServerResponse(false, null, "Current password is incorrect")
+              );
           }
 
           // Hash new password
-          const newPasswordHash = crypto.createHash("sha256").update(newPassword).digest("hex");
+          const newPasswordHash = crypto
+            .createHash("sha256")
+            .update(newPassword)
+            .digest("hex");
           userUpdateFields.push(`password_hash = $${userParamIndex}`);
           userUpdateValues.push(newPasswordHash);
           userParamIndex++;
@@ -2915,23 +3703,36 @@ class ClientPortalController {
       }
 
       if (updates.length === 0) {
-        return res.status(400).json(new ServerResponse(false, null, "No updates were made"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "No updates were made"));
       }
 
-      return res.json(new ServerResponse(true, {
-        updatedSections: updates,
-        client: clientUpdates.length > 0 ? clientUpdates[0] : null,
-        user: userUpdates.length > 0 ? {
-          id: userUpdates[0].id,
-          name: userUpdates[0].name,
-          email: userUpdates[0].email,
-          role: userUpdates[0].role,
-          updatedAt: userUpdates[0].updated_at
-        } : null
-      }, "Profile updated successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            updatedSections: updates,
+            client: clientUpdates.length > 0 ? clientUpdates[0] : null,
+            user:
+              userUpdates.length > 0
+                ? {
+                    id: userUpdates[0].id,
+                    name: userUpdates[0].name,
+                    email: userUpdates[0].email,
+                    role: userUpdates[0].role,
+                    updatedAt: userUpdates[0].updated_at,
+                  }
+                : null,
+          },
+          "Profile updated successfully"
+        )
+      );
     } catch (error) {
       console.error("Error updating profile:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to update profile"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to update profile"));
     }
   }
 
@@ -2965,7 +3766,7 @@ class ClientPortalController {
         message,
         referenceId || null,
         referenceNumber || null,
-        JSON.stringify(metadata || {})
+        JSON.stringify(metadata || {}),
       ]);
       return result.rows[0]?.id;
     } catch (error) {
@@ -2974,7 +3775,10 @@ class ClientPortalController {
     }
   }
 
-  static async getNotifications(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getNotifications(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { clientId } = req;
       const { organizationId } = req;
@@ -3013,7 +3817,7 @@ class ClientPortalController {
         clientId,
         organizationId,
         limitNum,
-        offset
+        offset,
       ]);
 
       // Get total count
@@ -3022,7 +3826,10 @@ class ClientPortalController {
         FROM client_portal_notifications
         ${whereClause}
       `;
-      const countResult = await db.query(countQuery, [clientId, organizationId]);
+      const countResult = await db.query(countQuery, [
+        clientId,
+        organizationId,
+      ]);
       const total = parseInt(countResult.rows[0]?.total || "0", 10);
 
       // Get unread count
@@ -3031,8 +3838,14 @@ class ClientPortalController {
         FROM client_portal_notifications
         WHERE client_id = $1 AND organization_team_id = $2 AND is_read = false
       `;
-      const unreadCountResult = await db.query(unreadCountQuery, [clientId, organizationId]);
-      const unreadCount = parseInt(unreadCountResult.rows[0]?.unread_count || "0", 10);
+      const unreadCountResult = await db.query(unreadCountQuery, [
+        clientId,
+        organizationId,
+      ]);
+      const unreadCount = parseInt(
+        unreadCountResult.rows[0]?.unread_count || "0",
+        10
+      );
 
       // Map notifications to response format
       const notifications = notificationsResult.rows.map((row: any) => ({
@@ -3045,110 +3858,36 @@ class ClientPortalController {
         metadata: row.metadata || {},
         isRead: row.is_read,
         readAt: row.read_at,
-        createdAt: row.created_at
+        createdAt: row.created_at,
       }));
-        FROM client_portal_invoices i
-        LEFT JOIN client_portal_notification_reads nr
-          ON nr.reference_id = i.id
-          AND nr.notification_type = 'invoice'
-          AND nr.client_id = $1
-          AND nr.organization_team_id = $2
-        WHERE i.client_id = $1 AND i.organization_team_id = $2
-        AND i.created_at >= NOW() - INTERVAL '30 days'
-        ORDER BY i.created_at DESC
-        LIMIT $3
-      `;
 
-      const invoiceResult = await db.query(invoiceNotificationsQuery, [
-        clientId, 
-        organizationId, 
-        Number(limit)
-      ]);
-
-      notifications.push(...invoiceResult.rows.map((row: any) => ({
-        id: `invoice_${row.reference_id}`,
-        type: row.type,
-        referenceId: row.reference_id,
-        referenceNumber: row.reference_number,
-        title: `New Invoice`,
-        message: row.message,
-        isRead: row.is_read,
-        createdAt: row.created_at,
-        metadata: {
-          amount: parseFloat(row.amount || "0"),
-          currency: row.currency,
-          dueDate: row.due_date
-        }
-      })));
-
-      // Get new chat messages as notifications
-      const chatNotificationsQuery = `
-        SELECT
-          'new_message' as type,
-          m.id as reference_id,
-          DATE(m.created_at)::text as reference_number,
-          m.message,
-          m.created_at,
-          u.name as sender_name,
-          'New message from ' || u.name as notification_message,
-          CASE WHEN m.read_at IS NULL THEN false ELSE true END as is_read
-        FROM client_portal_chat_messages m
-        LEFT JOIN users u ON m.sender_type = 'team_member' AND m.sender_id = u.id
-        WHERE m.client_id = $1 AND m.organization_team_id = $2
-        AND m.sender_type = 'team_member'
-        AND m.created_at >= NOW() - INTERVAL '7 days'
-        ORDER BY m.created_at DESC
-        LIMIT $3
-      `;
-
-      const chatResult = await db.query(chatNotificationsQuery, [
-        clientId, 
-        organizationId, 
-        Math.floor(Number(limit) / 2) // Limit chat notifications
-      ]);
-
-      notifications.push(...chatResult.rows.map((row: any) => ({
-        id: `message_${row.reference_id}`,
-        type: row.type,
-        referenceId: row.reference_id,
-        referenceNumber: row.reference_number,
-        title: `New Message`,
-        message: row.notification_message,
-        isRead: row.is_read,
-        createdAt: row.created_at,
-        metadata: {
-          senderName: row.sender_name,
-          messagePreview: row.message.substring(0, 100)
-        }
-      })));
-
-      // Sort all notifications by creation date
-      notifications.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-      // Filter unread only if requested
-      const filteredNotifications = String(unread_only) === "true"
-        ? notifications.filter(n => !n.isRead) 
-        : notifications;
-
-      // Paginate
-      const offset = (Number(page) - 1) * Number(limit);
-      const paginatedNotifications = filteredNotifications.slice(offset, offset + Number(limit));
->>>>>>> origin/release/v2.2.2
-
-      return res.json(new ServerResponse(true, {
-        notifications,
-        total,
-        unreadCount,
-        page: pageNum,
-        limit: limitNum
-      }, "Notifications retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            notifications,
+            total,
+            unreadCount,
+            page: pageNum,
+            limit: limitNum,
+          },
+          "Notifications retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching notifications:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve notifications"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve notifications")
+        );
     }
   }
 
-  static async markNotificationRead(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async markNotificationRead(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
       const { clientId } = req;
@@ -3162,27 +3901,46 @@ class ClientPortalController {
         RETURNING id, type, reference_id
       `;
 
-      const updateResult = await db.query(updateQuery, [id, clientId, organizationId]);
+      const updateResult = await db.query(updateQuery, [
+        id,
+        clientId,
+        organizationId,
+      ]);
 
       if (updateResult.rowCount === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Notification not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Notification not found"));
       }
 
       const notification = updateResult.rows[0];
 
-      return res.json(new ServerResponse(true, {
-        id: notification.id,
-        type: notification.type,
-        referenceId: notification.reference_id,
-        markedAt: new Date()
-      }, "Notification marked as read"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id: notification.id,
+            type: notification.type,
+            referenceId: notification.reference_id,
+            markedAt: new Date(),
+          },
+          "Notification marked as read"
+        )
+      );
     } catch (error) {
       console.error("Error marking notification as read:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to mark notification as read"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to mark notification as read")
+        );
     }
   }
 
-  static async markAllNotificationsRead(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async markAllNotificationsRead(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { clientId } = req;
       const { organizationId } = req;
@@ -3194,95 +3952,100 @@ class ClientPortalController {
         WHERE client_id = $1 AND organization_team_id = $2 AND is_read = false
       `;
 
-      const updateResult = await db.query(updateQuery, [clientId, organizationId]);
+      const updateResult = await db.query(updateQuery, [
+        clientId,
+        organizationId,
+      ]);
       const markedCount = updateResult.rowCount || 0;
 
-      return res.json(new ServerResponse(true, {
-        markedCount,
-        markedAt: new Date()
-      // Insert records for all requests from the last 30 days that aren't already marked as read
-      const requestUpdateResult = await db.query(
-        `INSERT INTO client_portal_notification_reads
-        (client_id, organization_team_id, notification_type, reference_id)
-        SELECT $1, $2, 'request', r.id
-        FROM client_portal_requests r
-        WHERE r.client_id = $1
-        AND r.organization_team_id = $2
-        AND r.updated_at >= NOW() - INTERVAL '30 days'
-        ON CONFLICT (client_id, organization_team_id, notification_type, reference_id)
-        DO UPDATE SET read_at = NOW()`,
-        [clientId, organizationId]
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            markedCount,
+            markedAt: new Date(),
+          },
+          "All notifications marked as read"
+        )
       );
-      totalMarked += requestUpdateResult.rowCount || 0;
-
-      // Mark all invoice notifications as read
-      // Insert records for all invoices from the last 30 days that aren't already marked as read
-      const invoiceUpdateResult = await db.query(
-        `INSERT INTO client_portal_notification_reads
-        (client_id, organization_team_id, notification_type, reference_id)
-        SELECT $1, $2, 'invoice', i.id
-        FROM client_portal_invoices i
-        WHERE i.client_id = $1
-        AND i.organization_team_id = $2
-        AND i.created_at >= NOW() - INTERVAL '30 days'
-        ON CONFLICT (client_id, organization_team_id, notification_type, reference_id)
-        DO UPDATE SET read_at = NOW()`,
-        [clientId, organizationId]
-      );
-      totalMarked += invoiceUpdateResult.rowCount || 0;
-
-      return res.json(new ServerResponse(true, {
-        markedCount: totalMarked,
-        markedAt: new Date(),
-        types: ["chat_messages", "requests", "invoices"]
->>>>>>> origin/release/v2.2.2
-      }, "All notifications marked as read"));
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to mark notifications as read"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(
+            false,
+            null,
+            "Failed to mark notifications as read"
+          )
+        );
     }
   }
 
   // File upload
-  static async uploadFile(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async uploadFile(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const {clientId} = req;
-      const {organizationId} = req;
+      const { clientId } = req;
+      const { organizationId } = req;
       const { fileData, fileName, fileType, purpose = "general" } = req.body;
 
       // Validate required fields
       if (!fileData || !fileName) {
-        return res.status(400).json(new ServerResponse(false, null, "File data and filename are required"));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "File data and filename are required"
+            )
+          );
       }
 
       // Validate file size (assuming base64 data)
       const fileSizeBytes = Math.floor((fileData.length * 3) / 4);
       const maxSizeBytes = 10 * 1024 * 1024; // 10MB limit
-      
+
       if (fileSizeBytes > maxSizeBytes) {
-        return res.status(400).json(new ServerResponse(false, null, "File size exceeds 10MB limit"));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(false, null, "File size exceeds 10MB limit")
+          );
       }
 
       // Validate file type
       const allowedTypes = [
-        "image/jpeg", "image/png", "image/gif", "image/webp",
-        "application/pdf", "application/msword", 
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "application/pdf",
+        "application/msword",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "application/vnd.ms-excel",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "text/plain", "text/csv"
+        "text/plain",
+        "text/csv",
       ];
 
       if (fileType && !allowedTypes.includes(fileType)) {
-        return res.status(400).json(new ServerResponse(false, null, "File type not allowed"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "File type not allowed"));
       }
 
       // Extract file extension
       const fileExtension = fileName.substring(fileName.lastIndexOf("."));
-      
+
       // Generate unique filename
-      const uniqueFileName = `client_${clientId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
-      
+      const uniqueFileName = `client_${clientId}_${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)}${fileExtension}`;
+
       // Generate storage key based on purpose
       let storageKey;
       switch (purpose) {
@@ -3302,9 +4065,17 @@ class ClientPortalController {
       try {
         // Upload to storage using existing uploadBase64 function
         const fileUrl = await uploadBase64(fileData, storageKey);
-        
+
         if (!fileUrl) {
-          return res.status(500).json(new ServerResponse(false, null, "Failed to upload file to storage"));
+          return res
+            .status(500)
+            .json(
+              new ServerResponse(
+                false,
+                null,
+                "Failed to upload file to storage"
+              )
+            );
         }
 
         // Log file upload for audit purposes
@@ -3313,34 +4084,55 @@ class ClientPortalController {
           fileType,
           purpose,
           storageKey,
-          fileSizeBytes
+          fileSizeBytes,
         });
 
-        return res.json(new ServerResponse(true, {
-          url: fileUrl,
-          filename: uniqueFileName,
-          originalName: fileName,
-          fileType,
-          purpose,
-          size: fileSizeBytes,
-          uploadedAt: new Date()
-        }, "File uploaded successfully"));
+        return res.json(
+          new ServerResponse(
+            true,
+            {
+              url: fileUrl,
+              filename: uniqueFileName,
+              originalName: fileName,
+              fileType,
+              purpose,
+              size: fileSizeBytes,
+              uploadedAt: new Date(),
+            },
+            "File uploaded successfully"
+          )
+        );
       } catch (uploadError) {
         console.error("Error uploading file to storage:", uploadError);
-        return res.status(500).json(new ServerResponse(false, null, "Failed to upload file to storage"));
+        return res
+          .status(500)
+          .json(
+            new ServerResponse(false, null, "Failed to upload file to storage")
+          );
       }
     } catch (error) {
       console.error("Error uploading file:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to upload file"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to upload file"));
     }
   }
 
-
   // Client Management Methods
-  static async getClients(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getClients(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const { page = 1, limit = 10, search, status, sortBy, sortOrder } = req.query;
-      
+      const {
+        page = 1,
+        limit = 10,
+        search,
+        status,
+        sortBy,
+        sortOrder,
+      } = req.query;
+
       // Build query with pagination and filtering
       // Include portal status by checking client_users (active users) and client_invitations (pending invites)
       let query = `
@@ -3394,7 +4186,11 @@ class ClientPortalController {
 
       // Add search filter
       if (search) {
-        whereConditions.push(`(c.name ILIKE $${queryParams.length + 1} OR c.email ILIKE $${queryParams.length + 1} OR c.company_name ILIKE $${queryParams.length + 1})`);
+        whereConditions.push(
+          `(c.name ILIKE $${queryParams.length + 1} OR c.email ILIKE $${
+            queryParams.length + 1
+          } OR c.company_name ILIKE $${queryParams.length + 1})`
+        );
         queryParams.push(`%${search}%`);
       }
 
@@ -3415,14 +4211,20 @@ class ClientPortalController {
       const sortDirection = sortOrder === "desc" ? "DESC" : "ASC";
       // Validate sort field to prevent SQL injection and ensure it's a valid column
       const validSortFields = ["id", "name", "created_at", "updated_at"];
-      const safeSortField = validSortFields.includes(sortField) ? sortField : "name";
+      const safeSortField = validSortFields.includes(sortField)
+        ? sortField
+        : "name";
       query += ` ORDER BY c.${safeSortField} ${sortDirection}`;
 
       // Get total count
       const countQuery = `
         SELECT COUNT(DISTINCT c.id) as total
         FROM clients c
-        ${whereConditions.length > 0 ? `WHERE ${whereConditions.join(" AND ")}` : ""}
+        ${
+          whereConditions.length > 0
+            ? `WHERE ${whereConditions.join(" AND ")}`
+            : ""
+        }
       `;
 
       const countResult = await db.query(countQuery, queryParams);
@@ -3430,28 +4232,44 @@ class ClientPortalController {
 
       // Add pagination
       const offset = (Number(page) - 1) * Number(limit);
-      query += ` LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
+      query += ` LIMIT $${queryParams.length + 1} OFFSET $${
+        queryParams.length + 2
+      }`;
       queryParams.push(Number(limit), offset);
 
       const result = await db.query(query, queryParams);
       const clients = result.rows.map((row: any) => {
         // Determine portal status based on the data
         let portalStatus: { status: string; label: string; color: string };
-        
+
         if (row.has_portal_access) {
-          portalStatus = { status: 'active', label: 'Active', color: 'green' };
+          portalStatus = { status: "active", label: "Active", color: "green" };
         } else if (row.invitation_sent_at && !row.invitation_accepted) {
           const invitationDate = new Date(row.invitation_sent_at);
-          const expiryDate = new Date(invitationDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+          const expiryDate = new Date(
+            invitationDate.getTime() + 7 * 24 * 60 * 60 * 1000
+          );
           const isExpired = expiryDate < new Date();
-          
+
           if (isExpired) {
-            portalStatus = { status: 'expired', label: 'Expired', color: 'red' };
+            portalStatus = {
+              status: "expired",
+              label: "Expired",
+              color: "red",
+            };
           } else {
-            portalStatus = { status: 'invited', label: 'Invited', color: 'orange' };
+            portalStatus = {
+              status: "invited",
+              label: "Invited",
+              color: "orange",
+            };
           }
         } else {
-          portalStatus = { status: 'not_invited', label: 'Not Invited', color: 'default' };
+          portalStatus = {
+            status: "not_invited",
+            label: "Not Invited",
+            color: "default",
+          };
         }
 
         return {
@@ -3472,30 +4290,43 @@ class ClientPortalController {
           has_portal_access: row.has_portal_access || false,
           invitation_sent_at: row.invitation_sent_at,
           invitation_accepted: row.invitation_accepted || false,
-          portal_status: portalStatus
+          portal_status: portalStatus,
         };
       });
 
-      return res.json(new ServerResponse(true, { 
-        clients, 
-        total, 
-        page: Number(page), 
-        limit: Number(limit) 
-      }, null));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            clients,
+            total,
+            page: Number(page),
+            limit: Number(limit),
+          },
+          null
+        )
+      );
     } catch (error) {
       console.error("Error fetching clients:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve clients"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to retrieve clients"));
     }
   }
 
-  static async createClient(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async createClient(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const clientData = req.body;
       const teamId = (req.user as any)?.team_id;
 
       // Validate required fields
       if (!clientData.name) {
-        return res.status(400).json(new ServerResponse(false, null, "Client name is required"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Client name is required"));
       }
 
       // Insert new client
@@ -3521,7 +4352,7 @@ class ClientPortalController {
         clientData.address || null,
         clientData.contact_person || null,
         clientData.status || "pending",
-        teamId
+        teamId,
       ];
 
       const result = await db.query(query, values);
@@ -3531,50 +4362,72 @@ class ClientPortalController {
       if (newClient.email) {
         try {
           const userId = (req.user as any)?.id;
-          await ClientPortalController.sendClientInvitationEmail(newClient, teamId, userId);
+          await ClientPortalController.sendClientInvitationEmail(
+            newClient,
+            teamId,
+            userId
+          );
         } catch (emailError) {
           console.error("Error sending client invitation email:", emailError);
           // Continue with client creation even if email fails
         }
       }
 
-      return res.json(new ServerResponse(true, {
-        id: newClient.id,
-        name: newClient.name,
-        email: newClient.email,
-        company_name: newClient.company_name,
-        phone: newClient.phone,
-        address: newClient.address,
-        contact_person: newClient.contact_person,
-        status: newClient.status,
-        created_at: newClient.created_at,
-        updated_at: newClient.updated_at,
-        assigned_projects_count: 0,
-        team_members: []
-      }, "Client created successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id: newClient.id,
+            name: newClient.name,
+            email: newClient.email,
+            company_name: newClient.company_name,
+            phone: newClient.phone,
+            address: newClient.address,
+            contact_person: newClient.contact_person,
+            status: newClient.status,
+            created_at: newClient.created_at,
+            updated_at: newClient.updated_at,
+            assigned_projects_count: 0,
+            team_members: [],
+          },
+          "Client created successfully"
+        )
+      );
     } catch (error) {
       console.error("Error creating client:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to create client"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to create client"));
     }
   }
 
-  static async generateClientInvitationLink(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+  static async generateClientInvitationLink(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { clientId } = req.body;
       const userId = req.user?.id;
       const teamId = req.user?.team_id;
 
       if (!userId || !teamId) {
-        return res.status(401).json(new ServerResponse(false, null, "Authentication required"));
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Authentication required"));
       }
 
       if (!clientId) {
-        return res.status(400).json(new ServerResponse(false, null, "Client ID is required"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Client ID is required"));
       }
 
       // Handle organization-level invite
       if (clientId === "organization") {
-        return ClientPortalController.generateOrganizationInvitationLink(req, res);
+        return ClientPortalController.generateOrganizationInvitationLink(
+          req,
+          res
+        );
       }
 
       // Get client information
@@ -3586,7 +4439,9 @@ class ClientPortalController {
       const clientResult = await db.query(clientQuery, [clientId, teamId]);
 
       if (!clientResult.rows.length) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       const client = clientResult.rows[0];
@@ -3597,7 +4452,9 @@ class ClientPortalController {
         FROM users u 
         WHERE LOWER(u.email) = LOWER($1)
       `;
-      const existingUserResult = await db.query(existingUserQuery, [client.email]);
+      const existingUserResult = await db.query(existingUserQuery, [
+        client.email,
+      ]);
 
       if (existingUserResult.rows.length > 0) {
         // User already exists in Worklenz - link them to client portal
@@ -3608,7 +4465,10 @@ class ClientPortalController {
           SELECT id FROM client_users
           WHERE user_id = $1 AND client_id = $2
         `;
-        const linkResult = await db.query(linkCheckQuery, [existingUser.id, client.id]);
+        const linkResult = await db.query(linkCheckQuery, [
+          existingUser.id,
+          client.id,
+        ]);
 
         if (linkResult.rows.length === 0) {
           // Create client_users record linking Worklenz user to client portal
@@ -3625,7 +4485,7 @@ class ClientPortalController {
             client.id,
             client.email,
             client.name,
-            teamId
+            teamId,
           ]);
 
           // Create organization access record for multi-org support
@@ -3653,17 +4513,23 @@ class ClientPortalController {
         }
 
         // Return response indicating user can use existing Worklenz credentials
-        return res.json(new ServerResponse(true, {
-          isExistingUser: true,
-          message: "This client is already a Worklenz user!",
-          clientName: client.name,
-          clientEmail: client.email,
-          portalUrl: `${getClientPortalBaseUrl()}/login`
-        }, "Client is existing Worklenz user - access granted"));
+        return res.json(
+          new ServerResponse(
+            true,
+            {
+              isExistingUser: true,
+              message: "This client is already a Worklenz user!",
+              clientName: client.name,
+              clientEmail: client.email,
+              portalUrl: `${getClientPortalBaseUrl()}/login`,
+            },
+            "Client is existing Worklenz user - access granted"
+          )
+        );
       }
 
       // Generate secure short random token for invitation (64 characters, same as team/project invitations)
-      const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
+      const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days from now
       const inviteToken = TokenService.generateInviteToken();
 
       // Create invitation record in database
@@ -3673,7 +4539,7 @@ class ClientPortalController {
         name: client.name,
         role: "member",
         invitedBy: userId,
-        token: inviteToken
+        token: inviteToken,
       });
 
       // Generate client portal link with secure token
@@ -3686,22 +4552,35 @@ class ClientPortalController {
         vanityLink = `${baseUrl}/i/${client.invite_slug}`;
       }
 
-      return res.json(new ServerResponse(true, {
-        invitationLink: tokenLink,
-        vanityLink: vanityLink,
-        token: inviteToken,
-        expiresAt: new Date(expiresAt).toISOString(),
-        clientName: client.name,
-        clientEmail: client.email,
-        inviteSlug: client.invite_slug
-      }, "Invitation link generated successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            invitationLink: tokenLink,
+            vanityLink: vanityLink,
+            token: inviteToken,
+            expiresAt: new Date(expiresAt).toISOString(),
+            clientName: client.name,
+            clientEmail: client.email,
+            inviteSlug: client.invite_slug,
+          },
+          "Invitation link generated successfully"
+        )
+      );
     } catch (error) {
       console.error("Error generating client invitation link:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to generate invitation link"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to generate invitation link")
+        );
     }
   }
 
-  static async resendClientInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+  static async resendClientInvitation(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id: clientId } = req.params;
       const userId = req.user?.id;
@@ -3709,11 +4588,15 @@ class ClientPortalController {
       const inviterName = req.user?.name || "Your team";
 
       if (!userId || !teamId) {
-        return res.status(401).json(new ServerResponse(false, null, "Authentication required"));
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Authentication required"));
       }
 
       if (!clientId) {
-        return res.status(400).json(new ServerResponse(false, null, "Client ID is required"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Client ID is required"));
       }
 
       // Get client information
@@ -3725,7 +4608,9 @@ class ClientPortalController {
       const clientResult = await db.query(clientQuery, [clientId, teamId]);
 
       if (!clientResult.rows.length) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       const client = clientResult.rows[0];
@@ -3737,7 +4622,15 @@ class ClientPortalController {
       );
 
       if (activeUserCheck.rows.length > 0) {
-        return res.status(400).json(new ServerResponse(false, null, "Client has already joined the portal"));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Client has already joined the portal"
+            )
+          );
       }
 
       // Check if there's a pending invitation
@@ -3749,13 +4642,13 @@ class ClientPortalController {
       );
 
       // Generate new invitation token (short random token)
-      const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
+      const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days from now
       let inviteToken: string;
 
       if (pendingInviteCheck.rows.length > 0) {
         const existingInvitation = pendingInviteCheck.rows[0];
         inviteToken = TokenService.generateInviteToken();
-        
+
         // Update only this specific invitation by ID with new token and expiry
         await db.query(
           `UPDATE client_invitations 
@@ -3772,7 +4665,7 @@ class ClientPortalController {
           name: client.name,
           role: "member",
           invitedBy: userId,
-          token: inviteToken
+          token: inviteToken,
         });
       }
 
@@ -3787,7 +4680,7 @@ class ClientPortalController {
         companyName: client.company_name,
         inviteLink,
         expiresAt: new Date(expiresAt),
-        role: "member"
+        role: "member",
       });
 
       // Send invitation email
@@ -3800,31 +4693,50 @@ class ClientPortalController {
       const emailResult = await sendEmailEnhanced(emailRequest);
 
       if (!emailResult.success) {
-        console.error("Failed to send client invitation email:", emailResult.error);
-        const errorMessage = emailResult.error?.message || "Failed to send invitation email";
-        return res.status(500).json(new ServerResponse(false, null, errorMessage));
+        console.error(
+          "Failed to send client invitation email:",
+          emailResult.error
+        );
+        const errorMessage =
+          emailResult.error?.message || "Failed to send invitation email";
+        return res
+          .status(500)
+          .json(new ServerResponse(false, null, errorMessage));
       }
 
-      return res.json(new ServerResponse(true, {
-        invitationLink: inviteLink,
-        clientName: client.name,
-        clientEmail: client.email,
-        expiresAt: new Date(expiresAt).toISOString(),
-        emailSent: true
-      }, "Invitation email sent successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            invitationLink: inviteLink,
+            clientName: client.name,
+            clientEmail: client.email,
+            expiresAt: new Date(expiresAt).toISOString(),
+            emailSent: true,
+          },
+          "Invitation email sent successfully"
+        )
+      );
     } catch (error) {
       console.error("Error resending client invitation:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to resend invitation"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to resend invitation"));
     }
   }
 
-  static async generateOrganizationInvitationLink(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+  static async generateOrganizationInvitationLink(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const userId = req.user?.id;
       const teamId = req.user?.team_id;
 
       if (!userId || !teamId) {
-        return res.status(401).json(new ServerResponse(false, null, "Authentication required"));
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Authentication required"));
       }
 
       // Get team information
@@ -3833,13 +4745,13 @@ class ClientPortalController {
       const teamName = teamResult.rows[0]?.name || "Worklenz Team";
 
       // Generate secure token for organization invitation
-      const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
+      const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days from now
       const inviteToken = TokenService.generateOrganizationInviteToken({
         teamId,
         type: "organization_invite",
         invitedBy: userId,
         expiresAt,
-        organizationName: teamName
+        organizationName: teamName,
       });
 
       // Create or update organization invitation record in database
@@ -3854,37 +4766,73 @@ class ClientPortalController {
           updated_at = NOW()
         RETURNING id
       `;
-      
-      await db.query(upsertQuery, [teamId, inviteToken, userId, new Date(expiresAt)]);
+
+      await db.query(upsertQuery, [
+        teamId,
+        inviteToken,
+        userId,
+        new Date(expiresAt),
+      ]);
 
       // Generate organization portal link with secure token (URL-encode to handle + characters in JWT)
-      const portalLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/organization-invite?token=${encodeURIComponent(inviteToken)}`;
+      const portalLink = `${
+        process.env.CLIENT_PORTAL_HOSTNAME
+          ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}`
+          : "http://localhost:5174"
+      }/organization-invite?token=${encodeURIComponent(inviteToken)}`;
 
-      return res.json(new ServerResponse(true, {
-        invitationLink: portalLink,
-        token: inviteToken,
-        expiresAt: new Date(expiresAt).toISOString(),
-        organizationName: teamName
-      }, "Organization invitation link generated successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            invitationLink: portalLink,
+            token: inviteToken,
+            expiresAt: new Date(expiresAt).toISOString(),
+            organizationName: teamName,
+          },
+          "Organization invitation link generated successfully"
+        )
+      );
     } catch (error) {
       console.error("Error generating organization invitation link:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to generate organization invitation link"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(
+            false,
+            null,
+            "Failed to generate organization invitation link"
+          )
+        );
     }
   }
 
-  static async handleOrganizationInvite(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+  static async handleOrganizationInvite(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { token } = req.body;
 
       if (!token) {
-        return res.status(400).json(new ServerResponse(false, null, "Invalid invitation token"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Invalid invitation token"));
       }
 
       // Verify the organization invitation token
       const decoded = TokenService.verifyOrganizationInviteToken(token);
-      
+
       if (!decoded) {
-        return res.status(400).json(new ServerResponse(false, null, "Invalid or expired invitation token"));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Invalid or expired invitation token"
+            )
+          );
       }
 
       // Check if token exists in database and is still valid
@@ -3897,14 +4845,18 @@ class ClientPortalController {
       const inviteResult = await db.query(inviteQuery, [token]);
 
       if (!inviteResult.rows.length) {
-        return res.status(400).json(new ServerResponse(false, null, "Invalid or expired invitation"));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(false, null, "Invalid or expired invitation")
+          );
       }
 
       const invitation = inviteResult.rows[0];
 
       // Check if user is already authenticated
       const userId = req.user?.id;
-      
+
       if (userId) {
         // User is already authenticated - check if they are linked to this organization's client portal
         const clientCheckQuery = `
@@ -3913,14 +4865,20 @@ class ClientPortalController {
           JOIN clients c ON cu.client_id = c.id
           WHERE cu.user_id = $1 AND c.team_id = $2
         `;
-        const clientResult = await db.query(clientCheckQuery, [userId, invitation.team_id]);
+        const clientResult = await db.query(clientCheckQuery, [
+          userId,
+          invitation.team_id,
+        ]);
 
         if (clientResult.rows.length > 0) {
           // User is already linked to this organization's client portal
-          return res.json(new ServerResponse(true, {
-            redirectTo: "client-portal",
-            message: "You already have access to this organization's client portal"
-          }));
+          return res.json(
+            new ServerResponse(true, {
+              redirectTo: "client-portal",
+              message:
+                "You already have access to this organization's client portal",
+            })
+          );
         }
 
         // User is authenticated but not linked to client portal
@@ -3937,36 +4895,62 @@ class ClientPortalController {
             RETURNING id
           `;
           const clientId = crypto.randomUUID();
-          await db.query(createClientQuery, [clientId, invitation.team_id, user.name, user.email]);
+          await db.query(createClientQuery, [
+            clientId,
+            invitation.team_id,
+            user.name,
+            user.email,
+          ]);
 
           // Link user to client portal with active status
           const linkUserQuery = `
             INSERT INTO client_users (user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
             VALUES ($1, $2, $3, $4, 'member', $5, 'active', NOW(), NOW())
           `;
-          await db.query(linkUserQuery, [userId, clientId, user.email, user.name, invitation.team_id]);
+          await db.query(linkUserQuery, [
+            userId,
+            clientId,
+            user.email,
+            user.name,
+            invitation.team_id,
+          ]);
 
-          return res.json(new ServerResponse(true, {
-            redirectTo: "client-portal",
-            message: "Successfully linked to organization's client portal"
-          }));
+          return res.json(
+            new ServerResponse(true, {
+              redirectTo: "client-portal",
+              message: "Successfully linked to organization's client portal",
+            })
+          );
         }
       }
 
       // User is not authenticated - they need to login/register first
-      return res.json(new ServerResponse(true, {
-        redirectTo: "login",
-        message: "Please login or create an account to accept the invitation",
-        organizationName: invitation.organization_name
-      }));
-
+      return res.json(
+        new ServerResponse(true, {
+          redirectTo: "login",
+          message: "Please login or create an account to accept the invitation",
+          organizationName: invitation.organization_name,
+        })
+      );
     } catch (error) {
       console.error("Error handling organization invitation:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to process organization invitation"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(
+            false,
+            null,
+            "Failed to process organization invitation"
+          )
+        );
     }
   }
 
-  static async sendClientInvitationEmail(client: any, teamId: string, invitedBy: string) {
+  static async sendClientInvitationEmail(
+    client: any,
+    teamId: string,
+    invitedBy: string
+  ) {
     try {
       // Get team information
       const teamQuery = `SELECT name FROM teams WHERE id = $1`;
@@ -3974,7 +4958,7 @@ class ClientPortalController {
       const teamName = teamResult.rows[0]?.name || "Worklenz Team";
 
       // Generate secure token for invitation (short random token)
-      const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
+      const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days from now
       const inviteToken = TokenService.generateInviteToken();
 
       // Create invitation record in database
@@ -3984,11 +4968,13 @@ class ClientPortalController {
         name: client.name,
         role: "member",
         invitedBy,
-        token: inviteToken
+        token: inviteToken,
       });
 
       // Get the email template
-      const template = FileConstants.getEmailTemplate(IEmailTemplateType.ClientInvitation) as string;
+      const template = FileConstants.getEmailTemplate(
+        IEmailTemplateType.ClientInvitation
+      ) as string;
       if (!template) {
         throw new Error("Client invitation email template not found");
       }
@@ -4009,7 +4995,7 @@ class ClientPortalController {
       await sendEmail({
         to: [client.email],
         subject: `Welcome to your Client Portal - ${teamName}`,
-        html: emailContent
+        html: emailContent,
       });
 
       console.log(`Client invitation email sent to ${client.email}`);
@@ -4019,7 +5005,10 @@ class ClientPortalController {
     }
   }
 
-  static async getClientById(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getClientById(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
       const teamId = (req.user as any)?.team_id;
@@ -4046,9 +5035,11 @@ class ClientPortalController {
       `;
 
       const result = await db.query(query, [id, teamId]);
-      
+
       if (result.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       const client = result.rows[0];
@@ -4063,18 +5054,33 @@ class ClientPortalController {
         status: client.status || "active",
         created_at: client.created_at,
         updated_at: client.updated_at,
-        assigned_projects_count: parseInt(client.assigned_projects_count || "0"),
-        team_members: []
+        assigned_projects_count: parseInt(
+          client.assigned_projects_count || "0"
+        ),
+        team_members: [],
       };
 
-      return res.json(new ServerResponse(true, clientData, "Client details retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          clientData,
+          "Client details retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching client by ID:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve client details"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve client details")
+        );
     }
   }
 
-  static async getClientDetails(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getClientDetails(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
       const teamId = (req.user as any)?.team_id;
@@ -4086,7 +5092,9 @@ class ClientPortalController {
       );
 
       if (clientCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       // Get comprehensive client details
@@ -4160,7 +5168,7 @@ class ClientPortalController {
         created_at: row.created_at,
         updated_at: row.updated_at,
         totalTasks: parseInt(row.total_tasks || "0"),
-        completedTasks: parseInt(row.completed_tasks || "0")
+        completedTasks: parseInt(row.completed_tasks || "0"),
       }));
 
       // Prepare comprehensive client details response
@@ -4175,7 +5183,9 @@ class ClientPortalController {
         status: client.status || "active",
         created_at: client.created_at,
         updated_at: client.updated_at,
-        assigned_projects_count: parseInt(client.assigned_projects_count || "0"),
+        assigned_projects_count: parseInt(
+          client.assigned_projects_count || "0"
+        ),
         // Statistics
         stats: {
           totalProjects: parseInt(projectStats.total_projects || "0"),
@@ -4186,22 +5196,35 @@ class ClientPortalController {
           totalRequests: 0, // Placeholder - requests not implemented yet
           pendingRequests: 0, // Placeholder
           totalInvoices: 0, // Placeholder - invoices not implemented yet
-          unpaidInvoices: 0 // Placeholder
+          unpaidInvoices: 0, // Placeholder
         },
         // Projects
         projects,
         // Team members (placeholder)
-        team_members: []
+        team_members: [],
       };
 
-      return res.json(new ServerResponse(true, clientDetails, "Client details retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          clientDetails,
+          "Client details retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching comprehensive client details:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve client details"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve client details")
+        );
     }
   }
 
-  static async updateClient(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async updateClient(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
       const updateData = req.body;
@@ -4214,7 +5237,9 @@ class ClientPortalController {
       );
 
       if (clientCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       // Update client data
@@ -4260,7 +5285,9 @@ class ClientPortalController {
       }
 
       if (updateFields.length === 0) {
-        return res.status(400).json(new ServerResponse(false, null, "No valid fields to update"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "No valid fields to update"));
       }
 
       updateFields.push(`updated_at = NOW()`);
@@ -4274,9 +5301,11 @@ class ClientPortalController {
       `;
 
       const result = await db.query(query, updateValues);
-      
+
       if (result.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       const updatedClient = result.rows[0];
@@ -4290,32 +5319,43 @@ class ClientPortalController {
         );
 
         // Update client_portal_access is_active based on status
-        const isActive = updateData.status === 'active';
+        const isActive = updateData.status === "active";
         await db.query(
           "UPDATE client_portal_access SET is_active = $1, updated_at = NOW() WHERE client_id = $2",
           [isActive, id]
         );
       }
 
-      return res.json(new ServerResponse(true, {
-        id: updatedClient.id,
-        name: updatedClient.name,
-        email: updatedClient.email,
-        company_name: updatedClient.company_name,
-        phone: updatedClient.phone,
-        address: updatedClient.address,
-        status: updatedClient.status || "active",
-        created_at: updatedClient.created_at,
-        updated_at: updatedClient.updated_at
-      }, "Client updated successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id: updatedClient.id,
+            name: updatedClient.name,
+            email: updatedClient.email,
+            company_name: updatedClient.company_name,
+            phone: updatedClient.phone,
+            address: updatedClient.address,
+            status: updatedClient.status || "active",
+            created_at: updatedClient.created_at,
+            updated_at: updatedClient.updated_at,
+          },
+          "Client updated successfully"
+        )
+      );
     } catch (error) {
       console.error("Error updating client:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to update client"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to update client"));
     }
   }
 
   // Set or update client invite slug (vanity URL)
-  static async setClientInviteSlug(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async setClientInviteSlug(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
       const { invite_slug } = req.body;
@@ -4328,27 +5368,43 @@ class ClientPortalController {
       );
 
       if (clientCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       const client = clientCheck.rows[0];
 
       // If invite_slug is null or empty, remove it
-      if (!invite_slug || invite_slug.trim() === '') {
+      if (!invite_slug || invite_slug.trim() === "") {
         await db.query(
           "UPDATE clients SET invite_slug = NULL, updated_at = NOW() WHERE id = $1",
           [id]
         );
 
-        return res.json(new ServerResponse(true, {
-          id,
-          invite_slug: null
-        }, "Invite slug removed successfully"));
+        return res.json(
+          new ServerResponse(
+            true,
+            {
+              id,
+              invite_slug: null,
+            },
+            "Invite slug removed successfully"
+          )
+        );
       }
 
       // Validate slug format
       if (!isValidSlug(invite_slug)) {
-        return res.status(400).json(new ServerResponse(false, null, "Invalid slug format. Use lowercase letters, numbers, and hyphens only (3-50 characters)"));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Invalid slug format. Use lowercase letters, numbers, and hyphens only (3-50 characters)"
+            )
+          );
       }
 
       // Check if slug is already taken
@@ -4358,7 +5414,15 @@ class ClientPortalController {
       );
 
       if (slugCheck.rows.length > 0) {
-        return res.status(400).json(new ServerResponse(false, null, "This invite slug is already taken. Please choose another."));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "This invite slug is already taken. Please choose another."
+            )
+          );
       }
 
       // Update client with new slug
@@ -4367,19 +5431,32 @@ class ClientPortalController {
         [invite_slug, id]
       );
 
-      return res.json(new ServerResponse(true, {
-        id,
-        invite_slug: result.rows[0].invite_slug,
-        vanity_url: `${getClientPortalBaseUrl()}/i/${result.rows[0].invite_slug}`
-      }, "Invite slug updated successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id,
+            invite_slug: result.rows[0].invite_slug,
+            vanity_url: `${getClientPortalBaseUrl()}/i/${
+              result.rows[0].invite_slug
+            }`,
+          },
+          "Invite slug updated successfully"
+        )
+      );
     } catch (error) {
       console.error("Error setting client invite slug:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to update invite slug"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to update invite slug"));
     }
   }
 
   // Generate suggested slug from client name
-  static async suggestClientInviteSlug(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async suggestClientInviteSlug(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
       const teamId = (req.user as any)?.team_id;
@@ -4391,7 +5468,9 @@ class ClientPortalController {
       );
 
       if (client.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       const clientData = client.rows[0];
@@ -4408,17 +5487,30 @@ class ClientPortalController {
 
       const suggestedSlug = await generateUniqueSlug(baseName, checkSlugExists);
 
-      return res.json(new ServerResponse(true, {
-        suggested_slug: suggestedSlug,
-        vanity_url: `${getClientPortalBaseUrl()}/i/${suggestedSlug}`
-      }, "Slug suggestion generated successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            suggested_slug: suggestedSlug,
+            vanity_url: `${getClientPortalBaseUrl()}/i/${suggestedSlug}`,
+          },
+          "Slug suggestion generated successfully"
+        )
+      );
     } catch (error) {
       console.error("Error suggesting client invite slug:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to generate slug suggestion"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to generate slug suggestion")
+        );
     }
   }
 
-  static async deleteClient(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async deleteClient(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
       const teamId = (req.user as any)?.team_id;
@@ -4430,7 +5522,9 @@ class ClientPortalController {
       );
 
       if (clientCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       // Deactivate the client instead of deleting (soft delete)
@@ -4440,7 +5534,9 @@ class ClientPortalController {
       );
 
       if (deactivateResult.rowCount === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       // Also deactivate all client users for this client
@@ -4455,16 +5551,22 @@ class ClientPortalController {
         [id]
       );
 
-      return res.json(new ServerResponse(true, null, "Client deactivated successfully"));
+      return res.json(
+        new ServerResponse(true, null, "Client deactivated successfully")
+      );
     } catch (error) {
       console.error("Error deactivating client:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to deactivate client"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to deactivate client"));
     }
   }
 
-  // Client Projects
-  static async getClientProjects(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
-    // ...
+  // Client Projects Management
+  static async getClientProjects(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
       const { page = 1, limit = 10, status } = req.query;
@@ -4477,7 +5579,9 @@ class ClientPortalController {
       );
 
       if (clientCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       // Build query with pagination and filtering
@@ -4526,7 +5630,9 @@ class ClientPortalController {
 
       // Add pagination
       const offset = (Number(page) - 1) * Number(limit);
-      query += ` ORDER BY p.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+      query += ` ORDER BY p.created_at DESC LIMIT $${paramIndex} OFFSET $${
+        paramIndex + 1
+      }`;
       queryParams.push(String(Number(limit)), String(offset));
 
       const result = await db.query(query, queryParams);
@@ -4539,22 +5645,35 @@ class ClientPortalController {
         created_at: row.created_at,
         updated_at: row.updated_at,
         total_tasks: parseInt(row.total_tasks || "0"),
-        completed_tasks: parseInt(row.completed_tasks || "0")
+        completed_tasks: parseInt(row.completed_tasks || "0"),
       }));
 
-      return res.json(new ServerResponse(true, { 
-        projects, 
-        total, 
-        page: Number(page), 
-        limit: Number(limit) 
-      }, "Client projects retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            projects,
+            total,
+            page: Number(page),
+            limit: Number(limit),
+          },
+          "Client projects retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching client projects:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve client projects"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve client projects")
+        );
     }
   }
 
-  static async assignProjectToClient(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async assignProjectToClient(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params; // client ID
       const { project_id } = req.body;
@@ -4562,7 +5681,9 @@ class ClientPortalController {
 
       // Validate required fields
       if (!project_id) {
-        return res.status(400).json(new ServerResponse(false, null, "Project ID is required"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Project ID is required"));
       }
 
       // Verify client exists and belongs to team
@@ -4572,7 +5693,9 @@ class ClientPortalController {
       );
 
       if (clientCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       // Verify project exists and belongs to team
@@ -4582,7 +5705,9 @@ class ClientPortalController {
       );
 
       if (projectCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Project not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Project not found"));
       }
 
       const project = projectCheck.rows[0];
@@ -4590,12 +5715,28 @@ class ClientPortalController {
 
       // Check if project is already assigned to another client
       if (project.client_id && project.client_id !== id) {
-        return res.status(400).json(new ServerResponse(false, null, "Project is already assigned to another client"));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Project is already assigned to another client"
+            )
+          );
       }
 
       // Check if project is already assigned to this client
       if (project.client_id === id) {
-        return res.status(400).json(new ServerResponse(false, null, "Project is already assigned to this client"));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Project is already assigned to this client"
+            )
+          );
       }
 
       // Assign project to client
@@ -4605,25 +5746,46 @@ class ClientPortalController {
       );
 
       if (updateResult.rowCount === 0) {
-        return res.status(500).json(new ServerResponse(false, null, "Failed to assign project to client"));
+        return res
+          .status(500)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Failed to assign project to client"
+            )
+          );
       }
 
       const updatedProject = updateResult.rows[0];
 
-      return res.json(new ServerResponse(true, {
-        projectId: updatedProject.id,
-        projectName: updatedProject.name,
-        clientId: updatedProject.client_id,
-        clientName: client.name,
-        assignedAt: updatedProject.updated_at
-      }, "Project assigned to client successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            projectId: updatedProject.id,
+            projectName: updatedProject.name,
+            clientId: updatedProject.client_id,
+            clientName: client.name,
+            assignedAt: updatedProject.updated_at,
+          },
+          "Project assigned to client successfully"
+        )
+      );
     } catch (error) {
       console.error("Error assigning project to client:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to assign project to client"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to assign project to client")
+        );
     }
   }
 
-  static async removeProjectFromClient(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async removeProjectFromClient(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id, projectId } = req.params; // id = client ID, projectId = project ID
       const teamId = (req.user as any)?.team_id;
@@ -4635,7 +5797,9 @@ class ClientPortalController {
       );
 
       if (clientCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       // Verify project exists, belongs to team, and is assigned to this client
@@ -4645,7 +5809,15 @@ class ClientPortalController {
       );
 
       if (projectCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Project not found or not assigned to this client"));
+        return res
+          .status(404)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Project not found or not assigned to this client"
+            )
+          );
       }
 
       const project = projectCheck.rows[0];
@@ -4658,26 +5830,51 @@ class ClientPortalController {
       );
 
       if (updateResult.rowCount === 0) {
-        return res.status(500).json(new ServerResponse(false, null, "Failed to remove project from client"));
+        return res
+          .status(500)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Failed to remove project from client"
+            )
+          );
       }
 
       const updatedProject = updateResult.rows[0];
 
-      return res.json(new ServerResponse(true, {
-        projectId: updatedProject.id,
-        projectName: updatedProject.name,
-        clientId: id,
-        clientName: client.name,
-        removedAt: updatedProject.updated_at
-      }, "Project removed from client successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            projectId: updatedProject.id,
+            projectName: updatedProject.name,
+            clientId: id,
+            clientName: client.name,
+            removedAt: updatedProject.updated_at,
+          },
+          "Project removed from client successfully"
+        )
+      );
     } catch (error) {
       console.error("Error removing project from client:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to remove project from client"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(
+            false,
+            null,
+            "Failed to remove project from client"
+          )
+        );
     }
   }
 
   // Client Team Management
-  static async getClientTeam(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getClientTeam(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
       const { page = 1, limit = 10, status } = req.query;
@@ -4690,7 +5887,9 @@ class ClientPortalController {
       );
 
       if (clientCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       // For now, return empty team since client team members are not implemented in the database
@@ -4698,15 +5897,25 @@ class ClientPortalController {
       const teamMembers: any[] = [];
       const total = 0;
 
-      return res.json(new ServerResponse(true, { 
-        team_members: teamMembers, 
-        total, 
-        page: Number(page), 
-        limit: Number(limit) 
-      }, "Client team retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            team_members: teamMembers,
+            total,
+            page: Number(page),
+            limit: Number(limit),
+          },
+          "Client team retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching client team:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve client team"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve client team")
+        );
     }
   }
 
@@ -4720,7 +5929,7 @@ class ClientPortalController {
     role: string;
   }): string {
     const expiryDate = data.expiresAt.toLocaleDateString();
-    
+
     return `
       <!DOCTYPE html>
       <html>
@@ -4812,7 +6021,10 @@ class ClientPortalController {
     `;
   }
 
-  static async inviteTeamMember(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async inviteTeamMember(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
       const { email, name, role = "member" } = req.body;
@@ -4822,7 +6034,9 @@ class ClientPortalController {
 
       // Validate required fields
       if (!email || !name) {
-        return res.status(400).json(new ServerResponse(false, null, "Email and name are required"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Email and name are required"));
       }
 
       // Verify client exists and belongs to team
@@ -4832,7 +6046,9 @@ class ClientPortalController {
       );
 
       if (clientCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       const client = clientCheck.rows[0];
@@ -4844,7 +6060,15 @@ class ClientPortalController {
       );
 
       if (existingInvitation.rows.length > 0) {
-        return res.status(400).json(new ServerResponse(false, null, "User already has a pending invitation"));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "User already has a pending invitation"
+            )
+          );
       }
 
       const existingUser = await db.query(
@@ -4853,7 +6077,15 @@ class ClientPortalController {
       );
 
       if (existingUser.rows.length > 0) {
-        return res.status(400).json(new ServerResponse(false, null, "User already exists for this client"));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "User already exists for this client"
+            )
+          );
       }
 
       // Generate invitation token
@@ -4867,11 +6099,15 @@ class ClientPortalController {
         name,
         role,
         invitedBy: inviterId,
-        token: inviteToken
+        token: inviteToken,
       });
 
       // Generate invitation link
-      const inviteLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/invitation?token=${inviteToken}`;
+      const inviteLink = `${
+        process.env.CLIENT_PORTAL_HOSTNAME
+          ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}`
+          : "http://localhost:5174"
+      }/invitation?token=${inviteToken}`;
 
       // Generate email HTML
       const emailHtml = ClientPortalController.generateInvitationEmailHTML({
@@ -4881,7 +6117,7 @@ class ClientPortalController {
         companyName: client.company_name,
         inviteLink,
         expiresAt,
-        role
+        role,
       });
 
       // Send invitation email using shared email function
@@ -4894,24 +6130,39 @@ class ClientPortalController {
       const messageId = await sendEmail(emailRequest);
 
       if (!messageId) {
-        return res.status(500).json(new ServerResponse(false, null, "Failed to send invitation email"));
+        return res
+          .status(500)
+          .json(
+            new ServerResponse(false, null, "Failed to send invitation email")
+          );
       }
 
-      return res.json(new ServerResponse(true, {
-        invitationId: inviteToken,
-        email,
-        name,
-        role,
-        status: "pending",
-        expiresAt
-      }, "Team member invited successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            invitationId: inviteToken,
+            email,
+            name,
+            role,
+            status: "pending",
+            expiresAt,
+          },
+          "Team member invited successfully"
+        )
+      );
     } catch (error) {
       console.error("Error inviting team member:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to invite team member"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to invite team member"));
     }
   }
 
-  static async updateTeamMember(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async updateTeamMember(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id, memberId } = req.params; // id = client ID, memberId = client user ID or invitation ID
       const { name, role, status } = req.body;
@@ -4924,7 +6175,9 @@ class ClientPortalController {
       );
 
       if (clientCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       // Try to find existing client user first
@@ -4958,7 +6211,9 @@ class ClientPortalController {
         }
 
         if (updateFields.length === 0) {
-          return res.status(400).json(new ServerResponse(false, null, "No valid fields to update"));
+          return res
+            .status(400)
+            .json(new ServerResponse(false, null, "No valid fields to update"));
         }
 
         updateFields.push(`updated_at = NOW()`);
@@ -4974,75 +6229,101 @@ class ClientPortalController {
         const result = await db.query(updateQuery, updateValues);
         const updatedUser = result.rows[0];
 
-        return res.json(new ServerResponse(true, {
-          id: updatedUser.id,
-          name: updatedUser.name,
-          email: updatedUser.email,
-          role: updatedUser.role,
-          status: updatedUser.status,
-          type: "client_user",
-          updatedAt: updatedUser.updated_at
-        }, "Team member updated successfully"));
-      } 
-        // Try to find pending invitation
-        const invitationCheck = await db.query(
-          "SELECT id, email, name, role, status FROM client_invitations WHERE id = $1 AND client_id = $2 AND status = 'pending'",
-          [memberId, id]
+        return res.json(
+          new ServerResponse(
+            true,
+            {
+              id: updatedUser.id,
+              name: updatedUser.name,
+              email: updatedUser.email,
+              role: updatedUser.role,
+              status: updatedUser.status,
+              type: "client_user",
+              updatedAt: updatedUser.updated_at,
+            },
+            "Team member updated successfully"
+          )
         );
+      }
+      // Try to find pending invitation
+      const invitationCheck = await db.query(
+        "SELECT id, email, name, role, status FROM client_invitations WHERE id = $1 AND client_id = $2 AND status = 'pending'",
+        [memberId, id]
+      );
 
-        if (invitationCheck.rows.length === 0) {
-          return res.status(404).json(new ServerResponse(false, null, "Team member or invitation not found"));
-        }
+      if (invitationCheck.rows.length === 0) {
+        return res
+          .status(404)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Team member or invitation not found"
+            )
+          );
+      }
 
-        // Update pending invitation
-        const updateFields = [];
-        const updateValues = [];
-        let paramIndex = 1;
+      // Update pending invitation
+      const updateFields = [];
+      const updateValues = [];
+      let paramIndex = 1;
 
-        if (name) {
-          updateFields.push(`name = $${paramIndex}`);
-          updateValues.push(name);
-          paramIndex++;
-        }
+      if (name) {
+        updateFields.push(`name = $${paramIndex}`);
+        updateValues.push(name);
+        paramIndex++;
+      }
 
-        if (role) {
-          updateFields.push(`role = $${paramIndex}`);
-          updateValues.push(role);
-          paramIndex++;
-        }
+      if (role) {
+        updateFields.push(`role = $${paramIndex}`);
+        updateValues.push(role);
+        paramIndex++;
+      }
 
-        if (updateFields.length === 0) {
-          return res.status(400).json(new ServerResponse(false, null, "No valid fields to update"));
-        }
+      if (updateFields.length === 0) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "No valid fields to update"));
+      }
 
-        updateValues.push(memberId);
+      updateValues.push(memberId);
 
-        const updateQuery = `
+      const updateQuery = `
           UPDATE client_invitations 
           SET ${updateFields.join(", ")}
           WHERE id = $${paramIndex}
           RETURNING id, email, name, role, status
         `;
 
-        const result = await db.query(updateQuery, updateValues);
-        const updatedInvitation = result.rows[0];
+      const result = await db.query(updateQuery, updateValues);
+      const updatedInvitation = result.rows[0];
 
-        return res.json(new ServerResponse(true, {
-          id: updatedInvitation.id,
-          email: updatedInvitation.email,
-          name: updatedInvitation.name,
-          role: updatedInvitation.role,
-          status: updatedInvitation.status,
-          type: "invitation"
-        }, "Team invitation updated successfully"));
-      
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id: updatedInvitation.id,
+            email: updatedInvitation.email,
+            name: updatedInvitation.name,
+            role: updatedInvitation.role,
+            status: updatedInvitation.status,
+            type: "invitation",
+          },
+          "Team invitation updated successfully"
+        )
+      );
     } catch (error) {
       console.error("Error updating team member:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to update team member"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to update team member"));
     }
   }
 
-  static async removeTeamMember(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async removeTeamMember(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id, memberId } = req.params; // id = client ID, memberId = client user ID or invitation ID
       const teamId = (req.user as any)?.team_id;
@@ -5054,7 +6335,9 @@ class ClientPortalController {
       );
 
       if (clientCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       // Try to find existing client user first
@@ -5071,59 +6354,87 @@ class ClientPortalController {
         );
 
         if (deleteResult.rowCount === 0) {
-          return res.status(404).json(new ServerResponse(false, null, "Team member not found"));
+          return res
+            .status(404)
+            .json(new ServerResponse(false, null, "Team member not found"));
         }
 
         const removedUser = clientUserCheck.rows[0];
 
-        return res.json(new ServerResponse(true, {
-          id: removedUser.id,
-          name: removedUser.name,
-          email: removedUser.email,
-          role: removedUser.role,
-          type: "client_user",
-          removedAt: new Date()
-        }, "Team member removed successfully"));
-      } 
-        // Try to find and remove pending invitation
-        const invitationCheck = await db.query(
-          "SELECT id, email, name, role, status FROM client_invitations WHERE id = $1 AND client_id = $2",
-          [memberId, id]
+        return res.json(
+          new ServerResponse(
+            true,
+            {
+              id: removedUser.id,
+              name: removedUser.name,
+              email: removedUser.email,
+              role: removedUser.role,
+              type: "client_user",
+              removedAt: new Date(),
+            },
+            "Team member removed successfully"
+          )
         );
+      }
+      // Try to find and remove pending invitation
+      const invitationCheck = await db.query(
+        "SELECT id, email, name, role, status FROM client_invitations WHERE id = $1 AND client_id = $2",
+        [memberId, id]
+      );
 
-        if (invitationCheck.rows.length === 0) {
-          return res.status(404).json(new ServerResponse(false, null, "Team member or invitation not found"));
-        }
+      if (invitationCheck.rows.length === 0) {
+        return res
+          .status(404)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Team member or invitation not found"
+            )
+          );
+      }
 
-        const invitation = invitationCheck.rows[0];
+      const invitation = invitationCheck.rows[0];
 
-        // Delete the invitation
-        const deleteResult = await db.query(
-          "DELETE FROM client_invitations WHERE id = $1 AND client_id = $2",
-          [memberId, id]
-        );
+      // Delete the invitation
+      const deleteResult = await db.query(
+        "DELETE FROM client_invitations WHERE id = $1 AND client_id = $2",
+        [memberId, id]
+      );
 
-        if (deleteResult.rowCount === 0) {
-          return res.status(404).json(new ServerResponse(false, null, "Invitation not found"));
-        }
+      if (deleteResult.rowCount === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Invitation not found"));
+      }
 
-        return res.json(new ServerResponse(true, {
-          id: invitation.id,
-          email: invitation.email,
-          name: invitation.name,
-          role: invitation.role,
-          status: invitation.status,
-          type: "invitation",
-          removedAt: new Date()
-        }, "Team invitation removed successfully"));
-      
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id: invitation.id,
+            email: invitation.email,
+            name: invitation.name,
+            role: invitation.role,
+            status: invitation.status,
+            type: "invitation",
+            removedAt: new Date(),
+          },
+          "Team invitation removed successfully"
+        )
+      );
     } catch (error) {
       console.error("Error removing team member:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to remove team member"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to remove team member"));
     }
   }
 
-  static async resendTeamInvitation(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async resendTeamInvitation(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id, memberId } = req.params;
       const teamId = (req.user as any)?.team_id;
@@ -5136,7 +6447,9 @@ class ClientPortalController {
       );
 
       if (clientCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       const client = clientCheck.rows[0];
@@ -5148,7 +6461,11 @@ class ClientPortalController {
       );
 
       if (invitationCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Pending invitation not found"));
+        return res
+          .status(404)
+          .json(
+            new ServerResponse(false, null, "Pending invitation not found")
+          );
       }
 
       const invitation = invitationCheck.rows[0];
@@ -5164,7 +6481,11 @@ class ClientPortalController {
       );
 
       // Generate new invitation link (URL-encode to handle + characters in token)
-      const inviteLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/invitation?token=${encodeURIComponent(newToken)}`;
+      const inviteLink = `${
+        process.env.CLIENT_PORTAL_HOSTNAME
+          ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}`
+          : "http://localhost:5174"
+      }/invitation?token=${encodeURIComponent(newToken)}`;
 
       // Generate email HTML
       const emailHtml = ClientPortalController.generateInvitationEmailHTML({
@@ -5174,7 +6495,7 @@ class ClientPortalController {
         companyName: client.company_name,
         inviteLink,
         expiresAt: newExpiresAt,
-        role: invitation.role
+        role: invitation.role,
       });
 
       // Send invitation email using shared email function
@@ -5187,25 +6508,42 @@ class ClientPortalController {
       const messageId = await sendEmail(emailRequest);
 
       if (!messageId) {
-        return res.status(500).json(new ServerResponse(false, null, "Failed to send invitation email"));
+        return res
+          .status(500)
+          .json(
+            new ServerResponse(false, null, "Failed to send invitation email")
+          );
       }
 
-      return res.json(new ServerResponse(true, {
-        id: invitation.id,
-        email: invitation.email,
-        name: invitation.name,
-        role: invitation.role,
-        status: invitation.status,
-        resent_at: new Date()
-      }, "Team invitation resent successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id: invitation.id,
+            email: invitation.email,
+            name: invitation.name,
+            role: invitation.role,
+            status: invitation.status,
+            resent_at: new Date(),
+          },
+          "Team invitation resent successfully"
+        )
+      );
     } catch (error) {
       console.error("Error resending team invitation:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to resend team invitation"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to resend team invitation")
+        );
     }
   }
 
   // Client Analytics
-  static async getClientStats(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getClientStats(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
       const teamId = (req.user as any)?.team_id;
@@ -5217,11 +6555,14 @@ class ClientPortalController {
       );
 
       if (clientCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       // Get project statistics
-      const projectStats = await db.query(`
+      const projectStats = await db.query(
+        `
         SELECT 
           COUNT(*) as total_projects,
           COUNT(CASE WHEN sps.name = 'Active' THEN 1 END) as active_projects,
@@ -5229,46 +6570,67 @@ class ClientPortalController {
         FROM projects p
         LEFT JOIN sys_project_statuses sps ON p.status_id = sps.id
         WHERE p.client_id = $1
-      `, [id]);
+      `,
+        [id]
+      );
 
       // Get team member statistics (placeholder - team members not implemented yet)
       const teamMemberStats = {
         total_team_members: 0,
-        active_team_members: 0
+        active_team_members: 0,
       };
 
       // Get request statistics (placeholder - requests not implemented yet)
       const requestStats = {
         total_requests: 0,
-        pending_requests: 0
+        pending_requests: 0,
       };
 
       // Get invoice statistics (placeholder - invoices not implemented yet)
       const invoiceStats = {
         total_invoices: 0,
-        unpaid_invoices: 0
+        unpaid_invoices: 0,
       };
 
       const stats = {
         totalProjects: parseInt(projectStats.rows[0]?.total_projects || "0"),
         activeProjects: parseInt(projectStats.rows[0]?.active_projects || "0"),
-        completedProjects: parseInt(projectStats.rows[0]?.completed_projects || "0"),
+        completedProjects: parseInt(
+          projectStats.rows[0]?.completed_projects || "0"
+        ),
         totalTeamMembers: teamMemberStats.total_team_members,
         activeTeamMembers: teamMemberStats.active_team_members,
         totalRequests: requestStats.total_requests,
         pendingRequests: requestStats.pending_requests,
         totalInvoices: invoiceStats.total_invoices,
-        unpaidInvoices: invoiceStats.unpaid_invoices
+        unpaidInvoices: invoiceStats.unpaid_invoices,
       };
 
-      return res.json(new ServerResponse(true, stats, "Client statistics retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          stats,
+          "Client statistics retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching client stats:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve client statistics"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(
+            false,
+            null,
+            "Failed to retrieve client statistics"
+          )
+        );
     }
   }
 
-  static async getClientActivity(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getClientActivity(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
       const { page = 1, limit = 20, type, days = 30 } = req.query;
@@ -5281,7 +6643,9 @@ class ClientPortalController {
       );
 
       if (clientCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       const activities = [];
@@ -5378,12 +6742,19 @@ class ClientPortalController {
       }
 
       // Sort all activities by date
-      activities.sort((a, b) => new Date(b.activity_date).getTime() - new Date(a.activity_date).getTime());
+      activities.sort(
+        (a, b) =>
+          new Date(b.activity_date).getTime() -
+          new Date(a.activity_date).getTime()
+      );
 
       // Paginate
       const total = activities.length;
       const offset = (Number(page) - 1) * Number(limit);
-      const paginatedActivities = activities.slice(offset, offset + Number(limit));
+      const paginatedActivities = activities.slice(
+        offset,
+        offset + Number(limit)
+      );
 
       // Format activities
       const formattedActivities = paginatedActivities.map((activity: any) => ({
@@ -5395,20 +6766,30 @@ class ClientPortalController {
         description: activity.description,
         status: activity.status,
         activityDate: activity.activity_date,
-        relativeTime: this.getRelativeTime(new Date(activity.activity_date))
+        relativeTime: this.getRelativeTime(new Date(activity.activity_date)),
       }));
 
-      return res.json(new ServerResponse(true, { 
-        activities: formattedActivities, 
-        total, 
-        page: Number(page), 
-        limit: Number(limit),
-        days: Number(days),
-        filter: type || "all"
-      }, "Client activity retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            activities: formattedActivities,
+            total,
+            page: Number(page),
+            limit: Number(limit),
+            days: Number(days),
+            filter: type || "all",
+          },
+          "Client activity retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching client activity:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve client activity"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve client activity")
+        );
     }
   }
 
@@ -5420,13 +6801,18 @@ class ClientPortalController {
     const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? "s" : ""} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    if (diffMins < 60)
+      return `${diffMins} minute${diffMins > 1 ? "s" : ""} ago`;
+    if (diffHours < 24)
+      return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
     if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
     return date.toLocaleDateString();
   }
 
-  static async exportClientData(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async exportClientData(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { id } = req.params;
       const { format = "csv", include = "all" } = req.query;
@@ -5439,7 +6825,9 @@ class ClientPortalController {
       );
 
       if (clientCheck.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
       }
 
       const client = clientCheck.rows[0];
@@ -5454,12 +6842,15 @@ class ClientPortalController {
           contactPerson: client.contact_person,
           status: client.status,
           createdAt: client.created_at,
-          updatedAt: client.updated_at
-        }
+          updatedAt: client.updated_at,
+        },
       };
 
       // Include projects if requested
-      if (include === "all" || (typeof include === "string" && include.includes("projects"))) {
+      if (
+        include === "all" ||
+        (typeof include === "string" && include.includes("projects"))
+      ) {
         const projectsQuery = `
           SELECT 
             p.id, p.name, p.notes as description, 
@@ -5477,7 +6868,10 @@ class ClientPortalController {
       }
 
       // Include requests if requested
-      if (include === "all" || (typeof include === "string" && include.includes("requests"))) {
+      if (
+        include === "all" ||
+        (typeof include === "string" && include.includes("requests"))
+      ) {
         const requestsQuery = `
           SELECT 
             r.id, r.req_no, r.status, r.request_data, r.notes,
@@ -5493,7 +6887,10 @@ class ClientPortalController {
       }
 
       // Include invoices if requested
-      if (include === "all" || (typeof include === "string" && include.includes("invoices"))) {
+      if (
+        include === "all" ||
+        (typeof include === "string" && include.includes("invoices"))
+      ) {
         const invoicesQuery = `
           SELECT 
             i.id, i.invoice_no, i.amount, i.currency, i.status,
@@ -5507,7 +6904,10 @@ class ClientPortalController {
       }
 
       // Include chat messages if requested
-      if (include === "all" || (typeof include === "string" && include.includes("messages"))) {
+      if (
+        include === "all" ||
+        (typeof include === "string" && include.includes("messages"))
+      ) {
         const messagesQuery = `
           SELECT 
             m.id, m.sender_type, m.message, m.message_type,
@@ -5532,52 +6932,82 @@ class ClientPortalController {
         exportedAt: new Date(),
         exportedBy: (req.user as any)?.email || "system",
         format,
-        includedSections: include === "all" ? ["client", "projects", "requests", "invoices", "messages"] : (typeof include === "string" ? include.split(",") : []),
+        includedSections:
+          include === "all"
+            ? ["client", "projects", "requests", "invoices", "messages"]
+            : typeof include === "string"
+            ? include.split(",")
+            : [],
         clientId: id,
-        clientName: client.name
+        clientName: client.name,
       };
 
       // For CSV format, flatten the data
       if (format === "csv") {
         // In a real implementation, you would convert this to CSV format
         // For now, return instructions for CSV generation
-        return res.json(new ServerResponse(true, {
-          downloadUrl: `/api/client-portal/clients/${id}/export/download?format=csv&include=${include}`,
-          format: "csv",
-          recordCount: {
-            projects: exportData.projects?.length || 0,
-            requests: exportData.requests?.length || 0,
-            invoices: exportData.invoices?.length || 0,
-            messages: exportData.messages?.length || 0
-          },
-          generatedAt: new Date()
-        }, "CSV export prepared"));
+        return res.json(
+          new ServerResponse(
+            true,
+            {
+              downloadUrl: `/api/client-portal/clients/${id}/export/download?format=csv&include=${include}`,
+              format: "csv",
+              recordCount: {
+                projects: exportData.projects?.length || 0,
+                requests: exportData.requests?.length || 0,
+                invoices: exportData.invoices?.length || 0,
+                messages: exportData.messages?.length || 0,
+              },
+              generatedAt: new Date(),
+            },
+            "CSV export prepared"
+          )
+        );
       }
 
       // For JSON format, return the data directly
-      return res.json(new ServerResponse(true, {
-        exportData,
-        downloadUrl: `/api/client-portal/clients/${id}/export/download?format=json&include=${include}`,
-        format: "json"
-      }, "Client data export completed"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            exportData,
+            downloadUrl: `/api/client-portal/clients/${id}/export/download?format=json&include=${include}`,
+            format: "json",
+          },
+          "Client data export completed"
+        )
+      );
     } catch (error) {
       console.error("Error exporting client data:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to export client data"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to export client data"));
     }
   }
 
   // Bulk Operations
-  static async bulkUpdateClients(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async bulkUpdateClients(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { client_ids, status } = req.body;
       const teamId = (req.user as any)?.team_id;
 
-      if (!client_ids || !Array.isArray(client_ids) || client_ids.length === 0) {
-        return res.status(400).json(new ServerResponse(false, null, "Invalid client IDs provided"));
+      if (
+        !client_ids ||
+        !Array.isArray(client_ids) ||
+        client_ids.length === 0
+      ) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Invalid client IDs provided"));
       }
 
       if (!status || !["active", "inactive", "pending"].includes(status)) {
-        return res.status(400).json(new ServerResponse(false, null, "Invalid status provided"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Invalid status provided"));
       }
 
       // Verify all clients belong to the team
@@ -5587,7 +7017,15 @@ class ClientPortalController {
       );
 
       if (clientCheck.rows.length !== client_ids.length) {
-        return res.status(400).json(new ServerResponse(false, null, "Some clients not found or not accessible"));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Some clients not found or not accessible"
+            )
+          );
       }
 
       // Update all clients status
@@ -5603,26 +7041,43 @@ class ClientPortalController {
       );
 
       // Update client_portal_access based on status
-      const isActive = status === 'active';
+      const isActive = status === "active";
       await db.query(
         "UPDATE client_portal_access SET is_active = $1, updated_at = NOW() WHERE client_id = ANY($2)",
         [isActive, client_ids]
       );
 
-      return res.json(new ServerResponse(true, { updated_count: updateResult.rowCount }, "Clients updated successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          { updated_count: updateResult.rowCount },
+          "Clients updated successfully"
+        )
+      );
     } catch (error) {
       console.error("Error bulk updating clients:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to update clients"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to update clients"));
     }
   }
 
-  static async bulkDeleteClients(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async bulkDeleteClients(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { client_ids } = req.body;
       const teamId = (req.user as any)?.team_id;
 
-      if (!client_ids || !Array.isArray(client_ids) || client_ids.length === 0) {
-        return res.status(400).json(new ServerResponse(false, null, "Invalid client IDs provided"));
+      if (
+        !client_ids ||
+        !Array.isArray(client_ids) ||
+        client_ids.length === 0
+      ) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Invalid client IDs provided"));
       }
 
       // Verify all clients belong to the team
@@ -5632,7 +7087,15 @@ class ClientPortalController {
       );
 
       if (clientCheck.rows.length !== client_ids.length) {
-        return res.status(400).json(new ServerResponse(false, null, "Some clients not found or not accessible"));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Some clients not found or not accessible"
+            )
+          );
       }
 
       // Deactivate all clients instead of deleting (soft delete)
@@ -5653,21 +7116,34 @@ class ClientPortalController {
         [client_ids]
       );
 
-      return res.json(new ServerResponse(true, { deactivated_count: deactivateResult.rowCount }, "Clients deactivated successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          { deactivated_count: deactivateResult.rowCount },
+          "Clients deactivated successfully"
+        )
+      );
     } catch (error) {
       console.error("Error bulk deactivating clients:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to deactivate clients"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to deactivate clients"));
     }
   }
 
   // Client Portal Authentication Endpoints
   // Validate invitation via vanity slug
-  static async validateInvitationBySlug(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+  static async validateInvitationBySlug(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { slug } = req.params;
 
       if (!slug) {
-        return res.status(400).json(new ServerResponse(false, null, "Invitation slug is required"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Invitation slug is required"));
       }
 
       // Get client by invite_slug
@@ -5680,62 +7156,93 @@ class ClientPortalController {
       const clientResult = await db.query(clientQuery, [slug]);
 
       if (clientResult.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Invalid invitation link"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Invalid invitation link"));
       }
 
       const client = clientResult.rows[0];
 
       // Return client details for the frontend (similar to token-based invitation)
-      return res.json(new ServerResponse(true, {
-        valid: true,
-        email: client.email,
-        clientId: client.id,
-        clientName: client.name,
-        companyName: client.company_name,
-        teamName: client.team_name,
-        inviteSlug: client.invite_slug,
-        type: 'vanity_url'
-      }, "Invitation is valid"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            valid: true,
+            email: client.email,
+            clientId: client.id,
+            clientName: client.name,
+            companyName: client.company_name,
+            teamName: client.team_name,
+            inviteSlug: client.invite_slug,
+            type: "vanity_url",
+          },
+          "Invitation is valid"
+        )
+      );
     } catch (error) {
       console.error("Error validating invitation by slug:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to validate invitation"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to validate invitation"));
     }
   }
 
   // Validate invitation via token (existing method - supports both old hex tokens and new base62 tokens)
-  static async validateInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+  static async validateInvitation(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { token } = req.query;
 
       if (!token) {
-        return res.status(400).json(new ServerResponse(false, null, "Invitation token is required"));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(false, null, "Invitation token is required")
+          );
       }
 
       // Get invitation details (TokenService handles both old hex and new base62 tokens)
-      const invitation = await TokenService.getInvitationByToken(token as string);
+      const invitation = await TokenService.getInvitationByToken(
+        token as string
+      );
 
       if (!invitation) {
-        return res.status(404).json(new ServerResponse(false, null, "Invalid or expired invitation"));
+        return res
+          .status(404)
+          .json(
+            new ServerResponse(false, null, "Invalid or expired invitation")
+          );
       }
 
       // Return invitation details for the frontend
-      return res.json(new ServerResponse(true, {
-        valid: true,
-        email: invitation.email,
-        organizationName: invitation.team_name,
-        id: invitation.id,
-        name: invitation.name,
-        role: invitation.role,
-        clientName: invitation.client_name,
-        companyName: invitation.company_name,
-        teamName: invitation.team_name,
-        expiresAt: invitation.expires_at,
-        status: invitation.status,
-        type: 'token'
-      }, "Invitation is valid"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            valid: true,
+            email: invitation.email,
+            organizationName: invitation.team_name,
+            id: invitation.id,
+            name: invitation.name,
+            role: invitation.role,
+            clientName: invitation.client_name,
+            companyName: invitation.company_name,
+            teamName: invitation.team_name,
+            expiresAt: invitation.expires_at,
+            status: invitation.status,
+            type: "token",
+          },
+          "Invitation is valid"
+        )
+      );
     } catch (error) {
       console.error("Error validating invitation:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to validate invitation"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to validate invitation"));
     }
   }
 
@@ -5744,14 +7251,26 @@ class ClientPortalController {
       const { token, password, name, email } = req.body;
 
       if (!token || !password || !name) {
-        return res.status(400).json(new ServerResponse(false, null, "Token, password, and name are required"));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Token, password, and name are required"
+            )
+          );
       }
 
       // Check if this is an organization invite token
       if (TokenService.isOrganizationInviteToken(token)) {
-        const orgInvitePayload = TokenService.verifyOrganizationInviteToken(token);
+        const orgInvitePayload =
+          TokenService.verifyOrganizationInviteToken(token);
 
-        if (orgInvitePayload && orgInvitePayload.type === "organization_invite") {
+        if (
+          orgInvitePayload &&
+          orgInvitePayload.type === "organization_invite"
+        ) {
           // For organization invites, email is required
           if (!email) {
             return res
@@ -5848,7 +7367,11 @@ class ClientPortalController {
       const invitation = await TokenService.getInvitationByToken(token);
 
       if (!invitation) {
-        return res.status(400).json(new ServerResponse(false, null, "Invalid or expired invitation"));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(false, null, "Invalid or expired invitation")
+          );
       }
 
       // Check if user email exists in Worklenz users table
@@ -5856,7 +7379,10 @@ class ClientPortalController {
         SELECT id, email, name FROM users
         WHERE LOWER(email) = LOWER($1)
       `;
-      const existingWorklenzUserResult = await db.query(existingWorklenzUserQuery, [invitation.email]);
+      const existingWorklenzUserResult = await db.query(
+        existingWorklenzUserQuery,
+        [invitation.email]
+      );
 
       let userId = null;
       if (existingWorklenzUserResult.rows.length > 0) {
@@ -5868,17 +7394,21 @@ class ClientPortalController {
       const newUser = await TokenService.acceptInvitation(token, {
         password,
         name,
-        userId
+        userId,
       });
 
       // Send welcome email
-      const portalLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/login`;
-      
+      const portalLink = `${
+        process.env.CLIENT_PORTAL_HOSTNAME
+          ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}`
+          : "http://localhost:5174"
+      }/login`;
+
       const emailHtml = ClientPortalController.generateWelcomeEmailHTML({
         userName: newUser.name,
         clientName: invitation.client_name,
         companyName: invitation.company_name,
-        portalLink
+        portalLink,
       });
 
       const emailRequest = new EmailRequest(
@@ -5890,14 +7420,16 @@ class ClientPortalController {
       await sendEmail(emailRequest);
 
       // Generate client access token for automatic login
-      const permissions = await TokenService.getClientPermissions(newUser.client_id);
-      
+      const permissions = await TokenService.getClientPermissions(
+        newUser.client_id
+      );
+
       const tokenPayload = {
         clientId: newUser.client_id,
         organizationId: newUser.team_id,
         email: newUser.email,
         permissions,
-        type: "client" as const
+        type: "client" as const,
       };
 
       const accessToken = TokenService.generateClientToken(tokenPayload);
@@ -5908,22 +7440,30 @@ class ClientPortalController {
         [newUser.id]
       );
 
-      return res.json(new ServerResponse(true, {
-        token: accessToken,
-        user: {
-          id: newUser.id,
-          email: newUser.email,
-          name: newUser.name,
-          role: newUser.role,
-          clientId: newUser.client_id,
-          clientName: newUser.client_name,
-          companyName: newUser.company_name
-        },
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
-      }, "Invitation accepted successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            token: accessToken,
+            user: {
+              id: newUser.id,
+              email: newUser.email,
+              name: newUser.name,
+              role: newUser.role,
+              clientId: newUser.client_id,
+              clientName: newUser.client_name,
+              companyName: newUser.company_name,
+            },
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+          },
+          "Invitation accepted successfully"
+        )
+      );
     } catch (error) {
       console.error("Error accepting invitation:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to accept invitation"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to accept invitation"));
     }
   }
 
@@ -5932,21 +7472,30 @@ class ClientPortalController {
       const { email, password } = req.body;
 
       if (!email || !password) {
-        return res.status(400).json(new ServerResponse(false, null, "Email and password are required"));
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(false, null, "Email and password are required")
+          );
       }
 
       // Authenticate client user
       const clientUser = await TokenService.authenticateClient(email, password);
 
       if (!clientUser) {
-        return res.status(401).json(new ServerResponse(false, null, "Invalid email or password"));
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Invalid email or password"));
       }
 
       // Get all organizations accessible by this user
-      const organizations = await TokenService.getClientUserOrganizations(clientUser.id);
+      const organizations = await TokenService.getClientUserOrganizations(
+        clientUser.id
+      );
 
       // Use default organization or first available
-      const defaultOrg = organizations.find(org => org.isDefault) || organizations[0];
+      const defaultOrg =
+        organizations.find((org) => org.isDefault) || organizations[0];
       const organizationId = defaultOrg?.teamId || clientUser.team_id;
       const clientId = defaultOrg?.clientId || clientUser.client_id;
 
@@ -5958,7 +7507,7 @@ class ClientPortalController {
         email: clientUser.email,
         permissions: await TokenService.getClientPermissions(clientId),
         availableOrganizations: organizations,
-        type: "client" as const
+        type: "client" as const,
       };
 
       const accessToken = TokenService.generateClientToken(tokenPayload);
@@ -5970,42 +7519,60 @@ class ClientPortalController {
       );
 
       if (defaultOrg) {
-        await TokenService.updateOrganizationAccess(clientUser.id, organizationId);
+        await TokenService.updateOrganizationAccess(
+          clientUser.id,
+          organizationId
+        );
       }
 
-      return res.json(new ServerResponse(true, {
-        token: accessToken,
-        user: {
-          id: clientUser.id,
-          email: clientUser.email,
-          name: clientUser.name,
-          role: clientUser.role,
-          clientId,
-          organizationId,
-          clientName: clientUser.client_name,
-          companyName: clientUser.company_name,
-          organizations
-        },
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-      }, "Login successful"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            token: accessToken,
+            user: {
+              id: clientUser.id,
+              email: clientUser.email,
+              name: clientUser.name,
+              role: clientUser.role,
+              clientId,
+              organizationId,
+              clientName: clientUser.client_name,
+              companyName: clientUser.company_name,
+              organizations,
+            },
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          },
+          "Login successful"
+        )
+      );
     } catch (error) {
       console.error("Error during client login:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Login failed"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Login failed"));
     }
   }
 
-  static async refreshClientToken(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+  static async refreshClientToken(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       const { token } = req.body;
 
       if (!token) {
-        return res.status(400).json(new ServerResponse(false, null, "Token is required"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Token is required"));
       }
 
       // Verify the current token
       const decoded = TokenService.verifyClientToken(token);
       if (!decoded) {
-        return res.status(401).json(new ServerResponse(false, null, "Invalid or expired token"));
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Invalid or expired token"));
       }
 
       // Generate new token with updated expiry
@@ -6014,77 +7581,138 @@ class ClientPortalController {
         organizationId: decoded.organizationId,
         email: decoded.email,
         permissions: decoded.permissions || [],
-        type: "client" as const
+        type: "client" as const,
       });
 
-      return res.json(new ServerResponse(true, {
-        token: newToken,
-        expiresAt: new Date(Date.now() + (24 * 60 * 60 * 1000)).toISOString() // 24 hours from now
-      }, "Token refreshed successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            token: newToken,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+          },
+          "Token refreshed successfully"
+        )
+      );
     } catch (error) {
       console.error("Error refreshing client token:", error);
-      return res.status(401).json(new ServerResponse(false, null, "Token refresh failed"));
+      return res
+        .status(401)
+        .json(new ServerResponse(false, null, "Token refresh failed"));
     }
   }
 
-  static async clientLogout(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async clientLogout(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
       // In a more complete implementation, you would invalidate the token
       // For now, we'll just return a success response
       return res.json(new ServerResponse(true, null, "Logout successful"));
     } catch (error) {
       console.error("Error during client logout:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Logout failed"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Logout failed"));
     }
   }
 
-  static async getClientOrganizations(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getClientOrganizations(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const {clientUserId} = (req as any);
+      const { clientUserId } = req as any;
 
       if (!clientUserId) {
-        return res.status(400).json(new ServerResponse(false, null, "Client user ID not found"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Client user ID not found"));
       }
 
       // Get all organizations accessible by this user
-      const organizations = await TokenService.getClientUserOrganizations(clientUserId);
+      const organizations = await TokenService.getClientUserOrganizations(
+        clientUserId
+      );
 
-      return res.json(new ServerResponse(true, { organizations }, "Organizations retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          { organizations },
+          "Organizations retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching client organizations:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve organizations"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve organizations")
+        );
     }
   }
 
-  static async switchOrganization(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async switchOrganization(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const {clientUserId} = (req as any);
+      const { clientUserId } = req as any;
       const { organizationId } = req.body;
 
       if (!clientUserId) {
-        return res.status(400).json(new ServerResponse(false, null, "Client user ID not found"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Client user ID not found"));
       }
 
       if (!organizationId) {
-        return res.status(400).json(new ServerResponse(false, null, "Organization ID is required"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Organization ID is required"));
       }
 
       // Verify user has access to this organization
-      const hasAccess = await TokenService.hasOrganizationAccess(clientUserId, organizationId);
+      const hasAccess = await TokenService.hasOrganizationAccess(
+        clientUserId,
+        organizationId
+      );
 
       if (!hasAccess) {
-        return res.status(403).json(new ServerResponse(false, null, "Access denied to this organization"));
+        return res
+          .status(403)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Access denied to this organization"
+            )
+          );
       }
 
       // Get client_id for this organization
-      const clientId = await TokenService.getClientIdForOrganization(clientUserId, organizationId);
+      const clientId = await TokenService.getClientIdForOrganization(
+        clientUserId,
+        organizationId
+      );
 
       if (!clientId) {
-        return res.status(404).json(new ServerResponse(false, null, "Client not found for this organization"));
+        return res
+          .status(404)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Client not found for this organization"
+            )
+          );
       }
 
       // Get all organizations for token payload
-      const organizations = await TokenService.getClientUserOrganizations(clientUserId);
+      const organizations = await TokenService.getClientUserOrganizations(
+        clientUserId
+      );
 
       // Generate new token with updated organization
       const tokenPayload = {
@@ -6094,7 +7722,7 @@ class ClientPortalController {
         email: (req as any).clientEmail || "",
         permissions: await TokenService.getClientPermissions(clientId),
         availableOrganizations: organizations,
-        type: "client" as const
+        type: "client" as const,
       };
 
       const newToken = TokenService.generateClientToken(tokenPayload);
@@ -6102,22 +7730,33 @@ class ClientPortalController {
       // Update last accessed timestamp
       await TokenService.updateOrganizationAccess(clientUserId, organizationId);
 
-      return res.json(new ServerResponse(true, {
-        token: newToken,
-        organizationId,
-        clientId,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-      }, "Organization switched successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            token: newToken,
+            organizationId,
+            clientId,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          },
+          "Organization switched successfully"
+        )
+      );
     } catch (error) {
       console.error("Error switching organization:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to switch organization"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to switch organization"));
     }
   }
 
-  static async getClientProfile(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async getClientProfile(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const {clientId} = req;
-      const {clientEmail} = req;
+      const { clientId } = req;
+      const { clientEmail } = req;
 
       // Get client user details
       const query = `
@@ -6128,38 +7767,55 @@ class ClientPortalController {
       `;
 
       const result = await db.query(query, [clientId, clientEmail]);
-      
+
       if (result.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client profile not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client profile not found"));
       }
 
       const clientUser = result.rows[0];
 
-      return res.json(new ServerResponse(true, {
-        id: clientUser.id,
-        email: clientUser.email,
-        name: clientUser.name,
-        role: clientUser.role,
-        clientId: clientUser.client_id,
-        clientName: clientUser.client_name,
-        companyName: clientUser.company_name,
-        createdAt: clientUser.created_at,
-        lastLogin: clientUser.last_login
-      }, "Client profile retrieved successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id: clientUser.id,
+            email: clientUser.email,
+            name: clientUser.name,
+            role: clientUser.role,
+            clientId: clientUser.client_id,
+            clientName: clientUser.client_name,
+            companyName: clientUser.company_name,
+            createdAt: clientUser.created_at,
+            lastLogin: clientUser.last_login,
+          },
+          "Client profile retrieved successfully"
+        )
+      );
     } catch (error) {
       console.error("Error fetching client profile:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve client profile"));
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve client profile")
+        );
     }
   }
 
-  static async updateClientProfile(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+  static async updateClientProfile(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
     try {
-      const {clientId} = req;
-      const {clientEmail} = req;
+      const { clientId } = req;
+      const { clientEmail } = req;
       const { name, currentPassword, newPassword } = req.body;
 
       if (!name) {
-        return res.status(400).json(new ServerResponse(false, null, "Name is required"));
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Name is required"));
       }
 
       // Get current client user
@@ -6169,7 +7825,9 @@ class ClientPortalController {
       );
 
       if (currentUser.rows.length === 0) {
-        return res.status(404).json(new ServerResponse(false, null, "Client user not found"));
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client user not found"));
       }
 
       const user = currentUser.rows[0];
@@ -6180,19 +7838,37 @@ class ClientPortalController {
       // Handle password update if provided
       if (newPassword) {
         if (!currentPassword) {
-          return res.status(400).json(new ServerResponse(false, null, "Current password is required to set new password"));
+          return res
+            .status(400)
+            .json(
+              new ServerResponse(
+                false,
+                null,
+                "Current password is required to set new password"
+              )
+            );
         }
 
         // Verify current password
         const crypto = require("crypto");
-        const currentPasswordHash = crypto.createHash("sha256").update(currentPassword).digest("hex");
-        
+        const currentPasswordHash = crypto
+          .createHash("sha256")
+          .update(currentPassword)
+          .digest("hex");
+
         if (currentPasswordHash !== user.password_hash) {
-          return res.status(400).json(new ServerResponse(false, null, "Current password is incorrect"));
+          return res
+            .status(400)
+            .json(
+              new ServerResponse(false, null, "Current password is incorrect")
+            );
         }
 
         // Hash new password
-        const newPasswordHash = crypto.createHash("sha256").update(newPassword).digest("hex");
+        const newPasswordHash = crypto
+          .createHash("sha256")
+          .update(newPassword)
+          .digest("hex");
         updateFields.push(`password_hash = $${paramIndex}`);
         updateValues.push(newPasswordHash);
         paramIndex++;
@@ -6210,18 +7886,26 @@ class ClientPortalController {
       const result = await db.query(updateQuery, updateValues);
       const updatedUser = result.rows[0];
 
-      return res.json(new ServerResponse(true, {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        name: updatedUser.name,
-        role: updatedUser.role,
-        updatedAt: updatedUser.updated_at
-      }, "Profile updated successfully"));
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id: updatedUser.id,
+            email: updatedUser.email,
+            name: updatedUser.name,
+            role: updatedUser.role,
+            updatedAt: updatedUser.updated_at,
+          },
+          "Profile updated successfully"
+        )
+      );
     } catch (error) {
       console.error("Error updating client profile:", error);
-      return res.status(500).json(new ServerResponse(false, null, "Failed to update profile"));
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to update profile"));
     }
   }
 }
 
-export default ClientPortalController; 
+export default ClientPortalController;

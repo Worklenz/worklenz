@@ -182,8 +182,10 @@ export const fetchTasks = createAsyncThunk(
           customFields: {},
           createdAt: task.createdAt || task.created_at || new Date().toISOString(),
           updatedAt: task.updatedAt || task.updated_at || new Date().toISOString(),
+          completedAt: task.completedAt || task.completed_at || undefined,
           created_at: task.createdAt || task.created_at || new Date().toISOString(),
           updated_at: task.updatedAt || task.updated_at || new Date().toISOString(),
+          completed_at: task.completedAt || task.completed_at || undefined,
           order: typeof task.sort_order === 'number' ? task.sort_order : 0,
           // Ensure all Task properties are mapped, even if undefined in API response
           sub_tasks: task.sub_tasks || [],
@@ -268,6 +270,16 @@ export const fetchTasksV3 = createAsyncThunk(
       const tasks: Task[] = response.body.allTasks.map((task: any) => {
         const now = new Date().toISOString();
 
+        // Debug log to check if completedAt is in the API response
+        if (task.completedAt || task.completed_at) {
+          console.log('[DEBUG fetchTasksV3] Task with completed date:', {
+            id: task.id,
+            title: task.title,
+            completedAt: task.completedAt,
+            completed_at: task.completed_at,
+          });
+        }
+
         const transformedTask = {
           id: task.id,
           task_key: task.task_key || task.key || '',
@@ -316,8 +328,10 @@ export const fetchTasksV3 = createAsyncThunk(
           custom_column_values: task.custom_column_values || {},
           createdAt: task.createdAt || task.created_at || now,
           updatedAt: task.updatedAt || task.updated_at || now,
+          completedAt: task.completedAt || task.completed_at || undefined,
           created_at: task.createdAt || task.created_at || now,
           updated_at: task.updatedAt || task.updated_at || now,
+          completed_at: task.completedAt || task.completed_at || undefined,
           order: typeof task.sort_order === 'number' ? task.sort_order : 0,
           sub_tasks: task.sub_tasks || [],
           sub_tasks_count: task.sub_tasks_count || 0,

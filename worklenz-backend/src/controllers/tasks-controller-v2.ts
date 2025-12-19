@@ -924,10 +924,16 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     const q = `SELECT replace_task_labels($1, $2) AS labels;`;
     const result = await db.query(q, [id, labels]);
-    
+
     return res
       .status(200)
-      .send(new ServerResponse(true, result.rows[0]?.labels || [], "Labels assigned successfully"));
+      .send(
+        new ServerResponse(
+          true,
+          result.rows[0]?.labels || [],
+          "Labels assigned successfully"
+        )
+      );
   }
 
   /**
@@ -1240,13 +1246,16 @@ export default class TasksControllerV2 extends TasksControllerBase {
       task.index = index;
 
       // Convert time values to hours
-      const convertToHours = (value: any, isSeconds: boolean = false): number => {
+      const convertToHours = (
+        value: any,
+        isSeconds: boolean = false
+      ): number => {
         if (typeof value === "number") {
           return isSeconds ? value / 3600 : value / 60; // Convert seconds or minutes to hours
         }
         if (typeof value === "string") {
           const parsed = parseFloat(value);
-          return isNaN(parsed) ? 0 : (isSeconds ? parsed / 3600 : parsed / 60);
+          return isNaN(parsed) ? 0 : isSeconds ? parsed / 3600 : parsed / 60;
         }
         if (value && typeof value === "object") {
           if ("hours" in value || "minutes" in value) {
@@ -1258,7 +1267,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
         return 0;
       };
 
-      const calculatedProgress = typeof task.complete_ratio === "number" ? task.complete_ratio : 0;
+      const calculatedProgress =
+        typeof task.complete_ratio === "number" ? task.complete_ratio : 0;
 
       return {
         id: task.id,
@@ -1295,6 +1305,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         custom_column_values: task.custom_column_values || {}, // Include custom column values
         createdAt: task.created_at || new Date().toISOString(),
         updatedAt: task.updated_at || new Date().toISOString(),
+        completedAt: task.completed_at || null,
         order: TasksControllerV2.getTaskSortOrder(task, groupBy),
         // Additional metadata for frontend
         originalStatusId: task.status,
@@ -1312,6 +1323,20 @@ export default class TasksControllerV2 extends TasksControllerBase {
         reporter: task.reporter || null,
       };
     });
+
+    // Debug log to verify completedAt is being sent
+    const completedTasks = transformedTasks.filter((t) => t.completedAt);
+    if (completedTasks.length > 0) {
+      console.log(
+        "[DEBUG getTasksV3] Tasks with completedAt:",
+        completedTasks.map((t) => ({
+          id: t.id,
+          title: t.title,
+          completedAt: t.completedAt,
+        }))
+      );
+    }
+
     const groupedResponse: Record<string, any> = {};
 
     // Initialize groups from database data
