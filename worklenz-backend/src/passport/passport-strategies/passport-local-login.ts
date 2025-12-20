@@ -31,7 +31,9 @@ async function handleLogin(req: Request, email: string, password: string, done: 
           name: "System Administrator",
           is_admin: true,
           owner: true,
-          account_status: "approved"
+          account_status: "approved",
+          team_id: "00000000-0000-0000-0000-000000000000",
+          team_name: "System Admin Team"
         };
         const successMsg = "Admin successfully logged in";
         req.flash(SUCCESS_KEY, successMsg);
