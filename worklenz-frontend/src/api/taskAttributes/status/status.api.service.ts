@@ -40,7 +40,7 @@ export const statusApiService = {
     const q = toQueryString({ current_project_id: currentProjectId });
 
     const response = await apiClient.put<IServerResponse<ITaskStatus>>(
-      `${rootUrl}/${statusId}${q}`,
+      `${rootUrl}/name/${statusId}${q}`,
       body
     );
     return response.data;
