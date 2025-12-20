@@ -3,6 +3,8 @@ import logo from '@/assets/images/worklenz-light-mode.png';
 import logoDark from '@/assets/images/worklenz-dark-mode.png';
 import { useAppSelector } from '@/hooks/useAppSelector';
 
+import { getBrandName } from '@/utils/branding';
+
 type AuthPageHeaderProp = {
   description: string;
 };
@@ -14,7 +16,7 @@ const AuthPageHeader = ({ description }: AuthPageHeaderProp) => {
     <Flex vertical align="center" gap={8} style={{ marginBottom: 24 }}>
       <img
         src={themeMode === 'dark' ? logoDark : logo}
-        alt="worklenz logo"
+        alt={`${getBrandName()} logo`}
         style={{ width: '100%', maxWidth: 220 }}
       />
       <Typography.Text style={{ color: '#8c8c8c', maxWidth: 400, textAlign: 'center' }}>

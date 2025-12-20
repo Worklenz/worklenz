@@ -1,4 +1,4 @@
-import {IUser} from "./user";
+import { IUser } from "./user";
 
 export interface IPassportSession extends IUser {
   id?: string;
@@ -18,4 +18,8 @@ export interface IPassportSession extends IUser {
   is_expired?: boolean;
   owner_id?: string;
   subscription_status?: string;
+  account_status?: "pending" | "approved" | "rejected";
+  rejection_reason?: string | null;
+  valid_till_date?: string;
+  subscription_type?: string;
 }

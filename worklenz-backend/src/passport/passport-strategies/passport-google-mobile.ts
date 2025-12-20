@@ -72,13 +72,25 @@ async function handleMobileGoogleAuth(req: Request, done: any) {
 
     // Check if user exists
     const userResult = await db.query(
-      "SELECT id, google_id, name, email, active_team FROM users WHERE google_id = $1 OR email = $2;",
+      "SELECT id, google_id, name, email, active_team, account_status, rejection_reason FROM users WHERE google_id = $1 OR email = $2;",
       [profile.sub, profile.email]
     );
 
     if (userResult.rowCount) {
       // Existing user - login
       const user = userResult.rows[0];
+
+      if (user.account_status !== "approved") {
+        let message = "Your account is awaiting approval.";
+        if (user.account_status === "rejected") {
+          message = "Your account has been rejected.";
+          if (user.rejection_reason) {
+            message += ` Reason: ${user.rejection_reason}`;
+          }
+        }
+        return done(null, false, { message });
+      }
+
       return done(null, user, { message: "User successfully logged in" });
     }
     // New user - register

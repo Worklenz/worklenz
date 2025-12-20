@@ -6,12 +6,19 @@ export class AuthResponse {
   private title: string | null = null;
   private auth_error: string | null = null;
   private message: string | null = null;
+  private tokens?: {
+    access_token: string;
+    expires_in: number;
+  };
 
-  constructor(title: string | null, authenticated: boolean, user: IPassportSession | null, auth_error: string | null, message: string | null) {
+  constructor(title: string | null, authenticated: boolean, user: IPassportSession | null, auth_error: string | null, message: string | null, tokens?: { access_token: string; expires_in: number; }) {
     this.title = title;
     this.authenticated = !!authenticated;
     this.user = user;
     this.auth_error = auth_error;
     this.message = message;
+    if (tokens) {
+      this.tokens = tokens;
+    }
   }
 }

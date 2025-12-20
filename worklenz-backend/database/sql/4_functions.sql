@@ -1295,6 +1295,8 @@ BEGIN
             u.updated_at AS last_updated,
             u.setup_completed AS my_setup_completed,
             (is_null_or_empty(u.google_id) IS FALSE) AS is_google,
+            u.account_status,
+            u.rejection_reason,
             COALESCE(u.active_team, (SELECT id FROM teams WHERE user_id = u.id LIMIT 1)) AS team_id,
             u.active_team
         FROM users u
@@ -1346,7 +1348,9 @@ BEGIN
                 ELSE TRUE
             END AS setup_completed,
             is_owner(nd.id, nd.active_team) AS owner,
-            is_admin(nd.id, nd.active_team) AS is_admin
+            is_admin(nd.id, nd.active_team) AS is_admin,
+            nd.account_status,
+            nd.rejection_reason
         FROM notification_data nd
         CROSS JOIN alerts_data ad
         LEFT JOIN timezones tz ON tz.id = nd.timezone
@@ -4976,7 +4980,8 @@ BEGIN
     RETURN JSON_BUILD_OBJECT(
             'id', _user_id,
             'email', _email,
-            'google_id', _google_id
+            'google_id', _google_id,
+            'account_status', 'pending'
            );
 END
 $$;
@@ -5062,7 +5067,8 @@ BEGIN
             'id', _user_id,
             'name', _trimmed_name,
             'email', _trimmed_email,
-            'team_id', _team_id
+            'team_id', _team_id,
+            'account_status', 'pending'
            );
 END;
 $$;

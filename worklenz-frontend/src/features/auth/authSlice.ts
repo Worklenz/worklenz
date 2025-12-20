@@ -44,10 +44,17 @@ export const signUp = createAsyncThunk(
   'auth/signup',
   async (credentials: IUserSignUpRequest, { rejectWithValue }) => {
     try {
-      await authApiService.signUp(credentials);
+      const signUpResponse = await authApiService.signUp(credentials);
       const authorizeResponse = await authApiService.verify();
 
       if (!authorizeResponse.authenticated) {
+        // If signup was successful but not authenticated (e.g., pending approval)
+        if (signUpResponse.done) {
+          return {
+            authenticated: false,
+            message: signUpResponse.message || 'Registration successful. Awaiting approval.',
+          };
+        }
         return rejectWithValue(authorizeResponse.auth_error || 'Authorization failed');
       }
 

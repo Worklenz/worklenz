@@ -246,12 +246,17 @@ const SignupPage = () => {
       if (urlParams.projectId) {
         body.project_id = urlParams.projectId;
       }
-      const result = await dispatch(signUp(body)).unwrap();
+      const result = (await dispatch(signUp(body)).unwrap()) as any;
       if (result?.authenticated) {
         message.success('Successfully signed up!');
         setTimeout(() => {
           navigate('/auth/authenticating');
         }, 1000);
+      } else if (result?.message) {
+        alertService.success('Registration Successful', result.message);
+        setTimeout(() => {
+          navigate('/auth/login');
+        }, 3000);
       }
     } catch (error: any) {
       message.error(error?.response?.data?.message || 'Failed to sign up');
@@ -355,7 +360,7 @@ const SignupPage = () => {
       }}
       variant="outlined"
     >
-      <PageHeader description={t('headerDescription', {defaultValue: 'Sign up to get started'})} />
+      <PageHeader description={t('headerDescription', { defaultValue: 'Sign up to get started' })} />
       <Form
         form={form}
         name="signup"
@@ -369,19 +374,19 @@ const SignupPage = () => {
           name: urlParams.name,
         }}
       >
-        <Form.Item name="name" label={t('nameLabel', {defaultValue: 'Full Name'})} rules={formRules.name}>
+        <Form.Item name="name" label={t('nameLabel', { defaultValue: 'Full Name' })} rules={formRules.name}>
           <Input
             prefix={<UserOutlined />}
-            placeholder={t('namePlaceholder', {defaultValue: 'Enter your full name'})}
+            placeholder={t('namePlaceholder', { defaultValue: 'Enter your full name' })}
             size="large"
             style={{ borderRadius: 4 }}
           />
         </Form.Item>
 
-        <Form.Item name="email" label={t('emailLabel', {defaultValue: 'Email'})} rules={formRules.email as Rule[]}>
+        <Form.Item name="email" label={t('emailLabel', { defaultValue: 'Email' })} rules={formRules.email as Rule[]}>
           <Input
             prefix={<MailOutlined />}
-            placeholder={t('emailPlaceholder', {defaultValue: 'Enter your email'})}
+            placeholder={t('emailPlaceholder', { defaultValue: 'Enter your email' })}
             size="large"
             style={{ borderRadius: 4 }}
           />
@@ -389,14 +394,14 @@ const SignupPage = () => {
 
         <Form.Item
           name="password"
-          label={t('passwordLabel', {defaultValue: 'Password'})}
+          label={t('passwordLabel', { defaultValue: 'Password' })}
           rules={formRules.password}
           validateTrigger={['onBlur', 'onSubmit']}
         >
           <div>
             <Input.Password
               prefix={<LockOutlined />}
-              placeholder={t('strongPasswordPlaceholder', {defaultValue: 'Enter a strong password'})}
+              placeholder={t('strongPasswordPlaceholder', { defaultValue: 'Enter a strong password' })}
               size="large"
               style={{ borderRadius: 4 }}
               value={passwordValue}
@@ -491,7 +496,7 @@ const SignupPage = () => {
         <Form.Item>
           <Space>
             <Typography.Text style={{ fontSize: 14 }}>
-              {t('alreadyHaveAccountText', {defaultValue: 'Already have an account?'})}
+              {t('alreadyHaveAccountText', { defaultValue: 'Already have an account?' })}
             </Typography.Text>
 
             <Link

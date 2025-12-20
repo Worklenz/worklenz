@@ -1,4 +1,3 @@
-import createError from "http-errors";
 import express, { NextFunction, Request, Response } from "express";
 import path from "path";
 import cookieParser from "cookie-parser";
@@ -22,6 +21,7 @@ import sessionMiddleware from "./middlewares/session-middleware";
 import safeControllerFunction from "./shared/safe-controller-function";
 import AwsSesController from "./controllers/aws-ses-controller";
 import { CSP_POLICIES } from "./shared/csp";
+import jwtAuthMiddleware from "./middlewares/jwt-auth-middleware";
 
 const app = express();
 
@@ -107,11 +107,6 @@ app.use(passport.session());
 // Flash messages
 app.use(flash());
 
-// Auth check middleware
-function isLoggedIn(req: Request, _res: Response, next: NextFunction) {
-  return req.user ? next() : next(createError(401));
-}
-
 // CSRF configuration using csrf-sync for session-based authentication
 const {
   invalidCsrfTokenError,
@@ -192,7 +187,7 @@ const apiLimiter = rateLimit({
 });
 
 // Routes
-app.use("/api/v1", apiLimiter, isLoggedIn, apiRouter);
+app.use("/api/v1", apiLimiter, jwtAuthMiddleware, apiRouter);
 app.use("/secure", authRouter);
 app.use("/public", public_router);
 

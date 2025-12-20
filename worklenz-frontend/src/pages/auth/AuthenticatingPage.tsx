@@ -34,7 +34,7 @@ const AuthenticatingPage: React.FC = () => {
         const session = await dispatch(verifyAuthentication()).unwrap();
 
         if (!session.authenticated) {
-          return navigate('/auth/login');
+          return navigate('/auth/login', { state: { error: session.auth_error } });
         }
 
         // Set user session and state

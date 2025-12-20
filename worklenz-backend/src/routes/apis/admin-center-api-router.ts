@@ -15,6 +15,8 @@ adminCenterApiRouter.put("/organization/owner/contact-number", teamOwnerOrAdminV
 
 // users
 adminCenterApiRouter.get("/organization/users", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getOrganizationUsers));
+adminCenterApiRouter.post("/organization/users/approve", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.approveUser));
+adminCenterApiRouter.post("/organization/users/reject", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.rejectUser));
 
 adminCenterApiRouter.get("/organization/teams", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getOrganizationTeams));
 adminCenterApiRouter.get("/organization/projects", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getOrganizationProjects));

@@ -3,7 +3,7 @@ import { Card, Input, Flex, Checkbox, Button, Typography, Space, Form, message }
 import { Rule } from 'antd/es/form';
 
 import { LockOutlined, UserOutlined } from '@/shared/antd-imports';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from 'react-responsive';
 
@@ -76,6 +76,8 @@ const LoginPage: React.FC = () => {
     }
   };
 
+  const location = useLocation();
+
   useEffect(() => {
     // Check and unregister ngsw-worker if present
     if ('serviceWorker' in navigator) {
@@ -90,12 +92,19 @@ const LoginPage: React.FC = () => {
     }
 
     trackMixpanelEvent(evt_login_page_visit);
+
+    if (location.state?.error) {
+      alertService.error(t('errorMessages.loginErrorTitle'), location.state.error);
+      // Clear state to avoid showing the error again on refresh
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+
     if (currentSession && !currentSession?.setup_completed) {
       navigate('/worklenz/setup');
       return;
     }
     void verifyAuthStatus();
-  }, [dispatch, navigate, trackMixpanelEvent]);
+  }, [dispatch, navigate, trackMixpanelEvent, location]);
 
   const onFinish = useCallback(
     async (values: LoginFormValues) => {
@@ -119,11 +128,12 @@ const LoginPage: React.FC = () => {
           dispatch(setUser(result.user));
           navigate('/auth/authenticating');
         }
-      } catch (error) {
+      } catch (error: any) {
         logger.error('Login failed', error);
+        const errorMessage = typeof error === 'string' ? error : (error?.message || t('errorMessages.loginErrorMessage'));
         alertService.error(
           t('errorMessages.loginErrorTitle'),
-          t('errorMessages.loginErrorMessage')
+          errorMessage
         );
       }
     },

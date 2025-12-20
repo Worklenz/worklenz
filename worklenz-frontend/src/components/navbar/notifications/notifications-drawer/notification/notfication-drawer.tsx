@@ -28,6 +28,7 @@ import { getUserSession } from '@/utils/session-helper';
 import { setUser } from '@/features/user/userSlice';
 import { useNavigate } from 'react-router-dom';
 import { createAuthService } from '@/services/auth/auth.service';
+import { getBrandName } from '@/utils/branding';
 const HTML_TAG_REGEXP = /<[^>]*>/g;
 
 const NotificationDrawer = () => {
@@ -82,7 +83,7 @@ const NotificationDrawer = () => {
     dispatch(fetchInvitations());
 
     if (isPushEnabled()) {
-      const title = notification.team ? `${notification.team} | Worklenz` : 'Worklenz';
+      const title = notification.team ? `${notification.team} | ${getBrandName()}` : getBrandName();
       let url = notification.url;
       if (url && notification.params && Object.keys(notification.params).length) {
         const q = toQueryString(notification.params);
@@ -107,7 +108,7 @@ const NotificationDrawer = () => {
     if (isPushEnabled()) {
       createPush(
         notification.message,
-        notification.team || 'Worklenz',
+        notification.team || getBrandName(),
         notification.team_id || null
       );
     }

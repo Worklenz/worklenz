@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuthService } from '@/hooks/useAuth';
 
+import { getBrandName } from '@/utils/branding';
+
 // Simple license expired page that doesn't trigger verification
 const LicenseExpired = () => {
   const navigate = useNavigate();
@@ -10,7 +12,7 @@ const LicenseExpired = () => {
   const authService = useAuthService();
 
   // Direct fallback content in case of translation issues
-  const fallbackTitle = 'Your Worklenz trial has expired!';
+  const fallbackTitle = `Your ${getBrandName()} trial has expired!`;
   const fallbackSubtitle = 'Please upgrade now.';
   const fallbackButton = 'Upgrade now';
 

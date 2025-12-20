@@ -4,6 +4,7 @@ import { CheckCircleOutlined, FormOutlined } from '@/shared/antd-imports';
 import { useSurveyStatus } from '@/hooks/useSurveyStatus';
 import { SurveyPromptModal } from './SurveyPromptModal';
 import { useTranslation } from 'react-i18next';
+import { getBrandName } from '@/utils/branding';
 
 export const SurveySettingsCard: React.FC = () => {
   const { t } = useTranslation('settings');
@@ -37,7 +38,7 @@ export const SurveySettingsCard: React.FC = () => {
           <Result
             icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
             title="Survey Completed"
-            subTitle="Thank you for completing the personalization survey. Your responses help us improve Worklenz."
+            subTitle={`Thank you for completing the personalization survey. Your responses help us improve ${getBrandName()}.`}
             extra={
               <Button onClick={() => setShowModal(true)}>
                 Update Your Responses
@@ -48,7 +49,7 @@ export const SurveySettingsCard: React.FC = () => {
           <>
             <Alert
               message="Help us personalize your experience"
-              description="Take a quick survey to tell us about your organization and how you use Worklenz."
+              description={`Take a quick survey to tell us about your organization and how you use ${getBrandName()}.`}
               type="info"
               showIcon
               style={{ marginBottom: 16 }}
@@ -63,9 +64,9 @@ export const SurveySettingsCard: React.FC = () => {
       </Card>
 
       {showModal && (
-        <SurveyPromptModal 
-          forceShow={true} 
-          onClose={() => setShowModal(false)} 
+        <SurveyPromptModal
+          forceShow={true}
+          onClose={() => setShowModal(false)}
         />
       )}
     </>

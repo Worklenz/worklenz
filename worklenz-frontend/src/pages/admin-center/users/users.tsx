@@ -1,6 +1,6 @@
-import { SearchOutlined, SyncOutlined } from '@/shared/antd-imports';
+import { SearchOutlined, SyncOutlined, CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined } from '@/shared/antd-imports';
 import { PageHeader } from '@ant-design/pro-components';
-import { Button, Card, Flex, Input, Table, TableProps, Tooltip, Typography } from '@/shared/antd-imports';
+import { Button, Card, Flex, Input, Table, TableProps, Tooltip, Typography, Tag, Modal, message, Space } from '@/shared/antd-imports';
 import React, { useEffect, useState } from 'react';
 import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -46,6 +46,50 @@ const Users: React.FC = () => {
     }
   };
 
+  const handleApprove = async (email: string) => {
+    try {
+      const res = await adminCenterApiService.approveUser(email);
+      if (res.done) {
+        message.success(t('approveSuccess'));
+        fetchUsers();
+      } else {
+        message.error(res.message || t('approveError'));
+      }
+    } catch (error) {
+      logger.error('Error approving user', error);
+      message.error(t('approveError'));
+    }
+  };
+
+  const handleReject = (email: string) => {
+    let reason = '';
+    Modal.confirm({
+      title: t('rejectTitle'),
+      icon: <ExclamationCircleOutlined />,
+      content: (
+        <Input.TextArea
+          placeholder={t('rejectReasonPlaceholder')}
+          onChange={e => (reason = e.target.value)}
+          style={{ marginTop: 16 }}
+        />
+      ),
+      onOk: async () => {
+        try {
+          const res = await adminCenterApiService.rejectUser(email, reason);
+          if (res.done) {
+            message.success(t('rejectSuccess'));
+            fetchUsers();
+          } else {
+            message.error(res.message || t('rejectError'));
+          }
+        } catch (error) {
+          logger.error('Error rejecting user', error);
+          message.error(t('rejectError'));
+        }
+      },
+    });
+  };
+
   const columns: TableProps<IOrganizationUser>['columns'] = [
     {
       title: t('user'),
@@ -73,6 +117,60 @@ const Users: React.FC = () => {
       dataIndex: 'last_logged',
       key: 'last_logged',
       render: text => <span>{formatDateTimeWithLocale(text) || '-'}</span>,
+    },
+    {
+      title: t('status'),
+      dataIndex: 'account_status',
+      key: 'account_status',
+      render: (status, record) => {
+        let color = 'default';
+        let text = status || 'pending';
+
+        if (status === 'approved') color = 'success';
+        if (status === 'rejected') color = 'error';
+        if (status === 'pending') color = 'processing';
+
+        return (
+          <Tooltip
+            title={
+              status === 'approved'
+                ? `${t('approvedAt')}: ${formatDateTimeWithLocale(record.approved_at || '')}`
+                : status === 'rejected'
+                  ? `${t('rejectedAt')}: ${formatDateTimeWithLocale(record.rejected_at || '')}${record.rejection_reason ? ` - ${record.rejection_reason}` : ''
+                  }`
+                  : t('awaitingApproval')
+            }
+          >
+            <Tag color={color}>{t(text)}</Tag>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: t('actions'),
+      key: 'actions',
+      render: (_, record) => (
+        <Space>
+          {record.account_status !== 'approved' && (
+            <Tooltip title={t('approve')}>
+              <Button
+                type="text"
+                icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
+                onClick={() => handleApprove(record.email || '')}
+              />
+            </Tooltip>
+          )}
+          {record.account_status !== 'rejected' && (
+            <Tooltip title={t('reject')}>
+              <Button
+                type="text"
+                icon={<CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
+                onClick={() => handleReject(record.email || '')}
+              />
+            </Tooltip>
+          )}
+        </Space>
+      ),
     },
   ];
 

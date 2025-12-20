@@ -87,6 +87,22 @@ export const adminCenterApiService = {
     return response.data;
   },
 
+  async approveUser(email: string): Promise<IServerResponse<null>> {
+    const response = await apiClient.post<IServerResponse<null>>(
+      `${rootUrl}/organization/users/approve`,
+      { email }
+    );
+    return response.data;
+  },
+
+  async rejectUser(email: string, reason: string): Promise<IServerResponse<null>> {
+    const response = await apiClient.post<IServerResponse<null>>(
+      `${rootUrl}/organization/users/reject`,
+      { email, reason }
+    );
+    return response.data;
+  },
+
   async getOrganizationTeams(
     requestParams: IOrganizationTeamRequestParams
   ): Promise<IServerResponse<IOrganizationTeamGetRequest>> {

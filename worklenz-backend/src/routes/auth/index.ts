@@ -15,13 +15,8 @@ const isGoogleAuthEnabled = process.env.ENABLE_GOOGLE_AUTH === "true";
 const authRouter = express.Router();
 
 // Local authentication
-const options = (key: string): passport.AuthenticateOptions => ({
-  failureRedirect: `/secure/verify?strategy=${key}`,
-  successRedirect: `/secure/verify?strategy=${key}`
-});
-
-authRouter.post("/login", passport.authenticate("local-login", options("login")));
-authRouter.post("/signup", signUpValidator, passwordValidator, passport.authenticate("local-signup", options("signup")));
+authRouter.post("/login", safeControllerFunction(AuthController.login));
+authRouter.post("/signup", signUpValidator, passwordValidator, safeControllerFunction(AuthController.signUp));
 authRouter.post("/signup/check", signUpValidator, passwordValidator, safeControllerFunction(AuthController.status_check));
 authRouter.get("/verify", AuthController.verify);
 authRouter.get("/check-password", safeControllerFunction(AuthController.checkPasswordStrength));
@@ -30,6 +25,7 @@ authRouter.post("/reset-password", resetEmailValidator, safeControllerFunction(A
 authRouter.post("/update-password", updatePasswordValidator, passwordValidator, safeControllerFunction(AuthController.verify_reset_email));
 
 authRouter.post("/verify-captcha", safeControllerFunction(AuthController.verifyCaptcha));
+authRouter.post("/token/refresh", safeControllerFunction(AuthController.refreshToken));
 
 if (isGoogleAuthEnabled) {
   // Google authentication

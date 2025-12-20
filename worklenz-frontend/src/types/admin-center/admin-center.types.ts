@@ -23,6 +23,10 @@ export interface IOrganizationUser {
   avatar_url?: string;
   last_logged?: string;
   user_id?: string;
+  account_status?: 'pending' | 'approved' | 'rejected';
+  approved_at?: string;
+  rejected_at?: string;
+  rejection_reason?: string;
 }
 
 export interface IOrganizationTeamMember {

@@ -36,6 +36,10 @@ export function isProduction() {
   return process.env.NODE_ENV === "production";
 }
 
+export function getBrandName() {
+  return process.env.APP_BRAND_NAME || "Projetos";
+}
+
 /** Returns true if uat or dev */
 export function isTestServer() {
   const hostname = process.env.HOSTNAME;

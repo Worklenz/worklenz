@@ -4,6 +4,7 @@ import { teamsApiService } from '@/api/teams/teams.api.service';
 import { toQueryString } from '@/utils/toQueryString';
 import { BankOutlined } from '@/shared/antd-imports';
 import './push-notification-template.css';
+import { getBrandName } from '@/utils/branding';
 
 const PushNotificationTemplate = ({
   notification: notificationData,
@@ -52,7 +53,7 @@ const PushNotificationTemplate = ({
             {notificationData.team}
           </>
         )}
-        {!notificationData.team && 'Worklenz'}
+        {!notificationData.team && getBrandName()}
       </div>
       <div
         style={{

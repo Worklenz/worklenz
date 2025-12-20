@@ -16,6 +16,8 @@ CREATE TYPE LANGUAGE_TYPE AS ENUM ('en', 'es', 'pt', 'alb', 'de', 'zh_cn', 'ko')
 
 CREATE TYPE PROGRESS_MODE_TYPE AS ENUM ('manual', 'weighted', 'time', 'default');
 
+CREATE TYPE ACCOUNT_STATUS AS ENUM ('pending', 'approved', 'rejected');
+
 -- START: Users
 CREATE SEQUENCE IF NOT EXISTS users_user_no_seq START 1;
 
@@ -1627,6 +1629,12 @@ CREATE TABLE IF NOT EXISTS users (
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP                      NOT NULL,
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP                      NOT NULL,
     last_active     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP                      NOT NULL,
+    account_status  ACCOUNT_STATUS           DEFAULT 'pending'::ACCOUNT_STATUS               NOT NULL,
+    approved_at     TIMESTAMP WITH TIME ZONE,
+    approved_by     UUID,
+    rejected_at     TIMESTAMP WITH TIME ZONE,
+    rejected_by     UUID,
+    rejection_reason TEXT,
     temp_email      BOOLEAN                  DEFAULT FALSE,
     is_deleted      BOOLEAN                  DEFAULT FALSE,
     deleted_at      TIMESTAMP WITH TIME ZONE,
@@ -1636,6 +1644,32 @@ CREATE TABLE IF NOT EXISTS users (
 ALTER TABLE users
     ADD CONSTRAINT users_pk
         PRIMARY KEY (id);
+
+CREATE TABLE IF NOT EXISTS user_refresh_tokens (
+    id             UUID                     DEFAULT uuid_generate_v4()  NOT NULL,
+    user_id        UUID                                                NOT NULL,
+    token_hash     TEXT                                                NOT NULL,
+    expires_at     TIMESTAMP WITH TIME ZONE                            NOT NULL,
+    created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
+    revoked_at     TIMESTAMP WITH TIME ZONE,
+    created_by_ip  TEXT,
+    user_agent     TEXT
+);
+
+ALTER TABLE user_refresh_tokens
+    ADD CONSTRAINT user_refresh_tokens_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE user_refresh_tokens
+    ADD CONSTRAINT user_refresh_tokens_user_id_fk
+        FOREIGN KEY (user_id) REFERENCES users
+            ON DELETE CASCADE;
+
+CREATE UNIQUE INDEX IF NOT EXISTS user_refresh_tokens_token_hash_idx
+    ON user_refresh_tokens (token_hash);
+
+CREATE INDEX IF NOT EXISTS user_refresh_tokens_user_id_idx
+    ON user_refresh_tokens (user_id);
 
 ALTER TABLE archived_projects
     ADD CONSTRAINT archived_projects_user_id_fk

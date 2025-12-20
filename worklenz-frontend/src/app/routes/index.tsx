@@ -12,6 +12,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import { LicenseExpiredModal } from '@/components/LicenseExpiredModal/LicenseExpiredModal';
+import { getBrandName } from '@/utils/branding';
 
 // Lazy load the NotFoundPage component for better code splitting
 const NotFoundPage = lazy(() => import('@/pages/404-page/404-page'));
@@ -176,10 +177,10 @@ const StaticLicenseExpired = memo(() => {
         }}
       >
         <h1 style={{ fontSize: '24px', color: '#faad14', marginBottom: '16px' }}>
-          Your Worklenz trial has expired!
+          Your {getBrandName()} trial has expired!
         </h1>
         <p style={{ fontSize: '16px', color: '#555', marginBottom: '24px' }}>
-          Please upgrade now to continue using Worklenz.
+          Please upgrade now to continue using {getBrandName()}.
         </p>
         <button
           style={{

@@ -1,9 +1,9 @@
 import GoogleStrategy from "passport-google-oauth20";
-import {sendWelcomeEmail} from "../../shared/email-templates";
-import {log_error} from "../../shared/utils";
+import { sendWelcomeEmail } from "../../shared/email-templates";
+import { log_error } from "../../shared/utils";
 import db from "../../config/db";
-import {ERROR_KEY} from "./passport-constants";
-import {Request} from "express";
+import { ERROR_KEY } from "./passport-constants";
+import { Request } from "express";
 
 async function handleGoogleLogin(req: Request, _accessToken: string, _refreshToken: string, profile: GoogleStrategy.Profile, done: GoogleStrategy.VerifyCallback) {
   try {
@@ -26,7 +26,7 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
       body.member_id = state.teamMember;
     }
 
-    const q1 = `SELECT id, google_id, name, email, active_team
+    const q1 = `SELECT id, google_id, name, email, active_team, account_status, rejection_reason
                 FROM users
                 WHERE google_id = $1
                    OR email = $2;`;
@@ -34,6 +34,18 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
 
     if (result1.rowCount) { // Login
       const [user] = result1.rows;
+
+      if (user.account_status !== "approved") {
+        let message = "Your account is awaiting approval.";
+        if (user.account_status === "rejected") {
+          message = "Your account has been rejected.";
+          if (user.rejection_reason) {
+            message += ` Reason: ${user.rejection_reason}`;
+          }
+        }
+        (req.session as any).error = message;
+        return done(null, undefined, { message: req.flash(ERROR_KEY, message) });
+      }
 
       // Update active team of users who came from an invitation
       try {
@@ -51,7 +63,7 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
       const [data] = result2.rows;
 
       sendWelcomeEmail(data.user.email, body.displayName);
-      return done(null, data.user, {message: "User successfully logged in"});
+      return done(null, data.user, { message: "User successfully logged in" });
     }
 
     return done(null);
@@ -65,9 +77,9 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
  * http://www.passportjs.org/packages/passport-google-oauth20/
  */
 export default new GoogleStrategy.Strategy({
-    clientID: process.env.GOOGLE_CLIENT_ID as string,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL as string,
-    passReqToCallback: true
-  },
+  clientID: process.env.GOOGLE_CLIENT_ID as string,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+  callbackURL: process.env.GOOGLE_CALLBACK_URL as string,
+  passReqToCallback: true
+},
   (req, _accessToken, _refreshToken, profile, done) => void handleGoogleLogin(req, _accessToken, _refreshToken, profile, done));

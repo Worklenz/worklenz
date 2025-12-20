@@ -17,7 +17,7 @@ FROM tasks
          JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
 WHERE tasks.archived IS FALSE;
 
-CREATE OR REPLACE VIEW team_member_info_view(avatar_url, email, name, user_id, team_member_id, team_id, active) AS
+CREATE OR REPLACE VIEW team_member_info_view(avatar_url, email, name, user_id, team_member_id, team_id, active, account_status, approved_at, approved_by, rejected_at, rejected_by, rejection_reason) AS
 SELECT u.avatar_url,
        COALESCE(u.email, (SELECT email_invitations.email
                           FROM email_invitations
@@ -28,7 +28,13 @@ SELECT u.avatar_url,
        u.id AS user_id,
        team_members.id AS team_member_id,
        team_members.team_id,
-       team_members.active
+       team_members.active,
+       u.account_status,
+       u.approved_at,
+       u.approved_by,
+       u.rejected_at,
+       u.rejected_by,
+       u.rejection_reason
 FROM team_members
          LEFT JOIN users u ON team_members.user_id = u.id;
 
