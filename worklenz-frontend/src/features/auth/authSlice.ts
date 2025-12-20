@@ -1,9 +1,9 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { authApiService } from '@/api/auth/auth.api.service';
-import { IAuthState, IUserLoginRequest } from '@/types/auth/login.types';
+import { IAuthState, IAuthorizeResponse, IUserLoginRequest } from '@/types/auth/login.types';
 import { IUserSignUpRequest } from '@/types/auth/signup.types';
 import logger from '@/utils/errorLogger';
-import { setSession } from '@/utils/session-helper';
+import { deleteSession, setSession } from '@/utils/session-helper';
 
 // Initial state
 const initialState: IAuthState = {
@@ -50,6 +50,7 @@ export const signUp = createAsyncThunk(
       if (!authorizeResponse.authenticated) {
         // If signup was successful but not authenticated (e.g., pending approval)
         if (signUpResponse.done) {
+          deleteSession();
           return {
             authenticated: false,
             message: signUpResponse.message || 'Registration successful. Awaiting approval.',
@@ -58,8 +59,8 @@ export const signUp = createAsyncThunk(
         return rejectWithValue(authorizeResponse.auth_error || 'Authorization failed');
       }
 
-      if (authorizeResponse.authenticated) {
-        localStorage.setItem('session', JSON.stringify(authorizeResponse.user));
+      if (authorizeResponse.user) {
+        setSession(authorizeResponse.user);
       }
 
       return authorizeResponse;
@@ -93,6 +94,18 @@ export const updatePassword = createAsyncThunk('auth/updatePassword', async (val
   return await authApiService.updatePassword(values);
 });
 
+const applyAuthorizeResponse = (state: IAuthState, response?: IAuthorizeResponse | null) => {
+  const isAuthenticated = !!response?.authenticated;
+  state.isAuthenticated = isAuthenticated;
+  state.user = isAuthenticated ? response?.user ?? null : null;
+
+  if (isAuthenticated && response?.user) {
+    setSession(response.user);
+  } else {
+    deleteSession();
+  }
+};
+
 // Common state updates
 const setPending = (state: IAuthState) => {
   state.isLoading = true;
@@ -120,26 +133,27 @@ const authSlice = createSlice({
       .addCase(login.pending, setPending)
       .addCase(login.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.isAuthenticated = true;
-        state.user = action.payload.user;
+        applyAuthorizeResponse(state, action.payload);
         state.error = null;
       })
       .addCase(login.rejected, (state, action) => {
         setRejected(state, action);
-        state.isAuthenticated = false;
+        applyAuthorizeResponse(state, null);
       })
 
       // Logout cases
       .addCase(logout.pending, setPending)
       .addCase(logout.fulfilled, state => {
         state.isLoading = false;
-        state.isAuthenticated = false;
-        state.user = null;
+        applyAuthorizeResponse(state, null);
         state.error = null;
         state.teamId = undefined;
         state.projectId = undefined;
       })
-      .addCase(logout.rejected, setRejected)
+      .addCase(logout.rejected, (state, action) => {
+        setRejected(state, action);
+        applyAuthorizeResponse(state, null);
+      })
 
       // Verify authentication cases
       .addCase(verifyAuthentication.pending, state => {
@@ -147,14 +161,11 @@ const authSlice = createSlice({
       })
       .addCase(verifyAuthentication.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.isAuthenticated = !!action.payload;
-        state.user = action.payload.user;
-        setSession(action.payload.user);
+        applyAuthorizeResponse(state, action.payload);
       })
       .addCase(verifyAuthentication.rejected, state => {
         state.isLoading = false;
-        state.isAuthenticated = false;
-        state.user = null;
+        applyAuthorizeResponse(state, null);
       });
   },
 });
