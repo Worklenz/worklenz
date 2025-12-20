@@ -30,9 +30,8 @@
     <!-- Resource hints for better loading performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-    <link rel="dns-prefetch" href="https://js.hs-scripts.com" />
-    
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+
     <!-- Preload critical resources -->
     <link rel="preload" href="/locales/en/common.json" as="fetch" type="application/json" crossorigin />
     <link rel="preload" href="/locales/en/auth/login.json" as="fetch" type="application/json" crossorigin />
@@ -53,19 +52,14 @@
     </noscript>
     
     <title>Worklenz</title>
-    
+
     <!-- Environment configuration -->
     <script src="/env-config.js"></script>
-    
-    <!-- Analytics Module -->
-    <script src="/js/analytics.js"></script>
   </head>
 
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <script type="module" src="./src/index.tsx"></script>
-    <!-- HubSpot Integration Module -->
-    <script src="/js/hubspot.js"></script>
   </body>
 </html>

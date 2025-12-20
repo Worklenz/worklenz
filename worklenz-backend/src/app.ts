@@ -129,7 +129,8 @@ app.use((req, res, next) => {
     req.path.startsWith("/webhook/") ||
     req.path.startsWith("/secure/") ||
     req.path.startsWith("/api/") ||
-    req.path.startsWith("/public/")
+    req.path.startsWith("/public/") ||
+    req.path === "/csrf-token"
   ) {
     next();
   } else {

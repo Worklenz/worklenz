@@ -7,10 +7,12 @@ import { randomBytes } from "crypto";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const pgSession = require("connect-pg-simple")(session);
 
+const isProd = isProduction();
+
 const sessionConfig = {
   name: process.env.SESSION_NAME,
   secret: process.env.SESSION_SECRET || "development-secret-key",
-  proxy: false,
+  proxy: true,
   resave: false,
   saveUninitialized: true,
   rolling: true,
@@ -24,9 +26,9 @@ const sessionConfig = {
     httpOnly: true,
     // For mobile app support in production, use "none", for local development use "lax"
     sameSite: "lax" as const,
-    // Secure only in production (HTTPS required for sameSite: "none")
-    secure: false,
-    domain: undefined,
+    // Secure only in production (HTTPS required)
+    secure: isProd,
+    domain: process.env.SESSION_DOMAIN || undefined,
     maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
   },
   // Custom session ID handling for mobile apps

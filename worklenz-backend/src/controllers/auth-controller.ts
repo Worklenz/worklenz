@@ -51,6 +51,18 @@ export default class AuthController extends WorklenzControllerBase {
 
   private static async respondWithAuthenticatedUser(req: IWorkLenzRequest, res: IWorkLenzResponse, user: IPassportSession, message: string) {
     user.build_v = FileConstants.getRelease();
+
+    // Ensure passport establishes the session before issuing tokens/cookies
+    await new Promise<void>((resolve, reject) => {
+      (req as any).login(user, (err: unknown) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve();
+      });
+    });
+
     const tokens = await TokenService.issueTokens(user, {
       userAgent: req.headers["user-agent"] as string | undefined,
       ip: req.ip
