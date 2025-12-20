@@ -47,7 +47,7 @@ const policies = {
     "https://cdnjs.cloudflare.com",
     "https://cdn.paddle.com",
     "https://sandbox-cdn.paddle.com",
-    "https://projeto.autoarq.com.br"
+    "https://*.autoarq.com.br"
   ],
   "worker-src": [
     "'self'",
@@ -92,6 +92,7 @@ const policies = {
     "https://connect.facebook.net",
     "https://www.google.com",
     "https://www.gstatic.com",
+    "https://*.autoarq.com.br",
     "localhost:*" // For development API calls
   ],
   "img-src": [

@@ -75,7 +75,7 @@ app.use(cors({
   origin: (origin, callback) => {
     // Explicitly allow the known frontend domain and subdomains
     const isAllowed = (origin && allowedOrigins.includes(origin)) ||
-      (origin && /https:\/\/([a-z0-9-]+\.)?autoarq\.com\.br$/.test(origin));
+      (origin && /^https:\/\/([a-z0-9-]+\.)?autoarq\.com\.br$/.test(origin));
 
     if (!isProduction() || !origin || isAllowed) {
       callback(null, true);
