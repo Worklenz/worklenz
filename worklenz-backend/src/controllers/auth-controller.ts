@@ -109,6 +109,20 @@ export default class AuthController extends WorklenzControllerBase {
 
     const normalizedEmail = (email as string).toLowerCase().trim();
 
+    // Super Admin Check
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (adminEmail && adminPassword && normalizedEmail === adminEmail.toLowerCase().trim()) {
+      if (password === adminPassword) {
+        const user = await UserSessionService.loadByUserId("00000000-0000-0000-0000-000000000000");
+        if (user) {
+          return this.respondWithAuthenticatedUser(req, res, user, "Admin successfully logged in");
+        }
+      }
+      return res.status(401).send(new AuthResponse("Login Failed", false, null, "Authentication failed", "Incorrect email or password."));
+    }
+
     const q = `SELECT id, email, password, account_status, rejection_reason
                FROM users
                WHERE LOWER(email) = $1
