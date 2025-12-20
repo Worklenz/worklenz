@@ -1027,19 +1027,20 @@ const enhancedKanbanSlice = createSlice({
           result.task.sub_tasks_loading = true;
         }
       })
-      .addCase(fetchBoardSubTasks.fulfilled, (state, action: PayloadAction<IProjectTask[]>) => {
+      .addCase(fetchBoardSubTasks.fulfilled, (state, action: PayloadAction<IProjectTask[] | null | undefined>) => {
         const taskId = (action as any).meta?.arg?.taskId;
         const result = findTaskInAllGroups(state.taskGroups, taskId);
 
         if (result) {
           result.task.sub_tasks_loading = false;
-          result.task.sub_tasks = action.payload;
+          const payload = Array.isArray(action.payload) ? action.payload : [];
+          result.task.sub_tasks = payload;
           result.task.show_sub_tasks = true;
 
           // Only update the count if we don't have a count yet or if the API returned a different count
           // This preserves the original count from the initial data load
           if (!result.task.sub_tasks_count || result.task.sub_tasks_count === 0) {
-            result.task.sub_tasks_count = action.payload.length;
+            result.task.sub_tasks_count = payload.length;
           }
 
           // Update cache

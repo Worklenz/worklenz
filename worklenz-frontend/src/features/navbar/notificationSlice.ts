@@ -73,8 +73,9 @@ const notificationSlice = createSlice({
     });
     builder.addCase(fetchInvitations.fulfilled, (state, action) => {
       state.loading = false;
-      state.invitations = action.payload;
-      state.invitationsCount = action.payload.length;
+      const invitations = Array.isArray(action.payload) ? action.payload : [];
+      state.invitations = invitations;
+      state.invitationsCount = invitations.length;
 
       state.invitations.map(invitation => {
         state._dataset.push({
@@ -91,8 +92,9 @@ const notificationSlice = createSlice({
     });
     builder.addCase(fetchNotifications.fulfilled, (state, action) => {
       state.loading = false;
-      state.notifications = action.payload;
-      state.notificationsCount = action.payload.length;
+      const notifications = Array.isArray(action.payload) ? action.payload : [];
+      state.notifications = notifications;
+      state.notificationsCount = notifications.length;
 
       state.notifications.map(notification => {
         state._dataset.push({

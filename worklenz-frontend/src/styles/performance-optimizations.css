@@ -280,15 +280,6 @@
   padding: 0;
 }
 
-/* Font display optimization */
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2JL7W0Q5n-wU.woff2') format('woff2');
-}
-
 /* Critical animations only */
 @keyframes fadeIn {
   from {

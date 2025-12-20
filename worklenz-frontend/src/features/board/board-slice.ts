@@ -829,16 +829,18 @@ const boardSlice = createSlice({
           result.task.sub_tasks_loading = true;
         }
       })
-      .addCase(fetchBoardSubTasks.fulfilled, (state, action: PayloadAction<IProjectTask[]>) => {
-        if (action.payload.length > 0) {
-          const taskId = action.payload[0].parent_task_id;
+      .addCase(fetchBoardSubTasks.fulfilled, (state, action: PayloadAction<IProjectTask[] | null | undefined>) => {
+        const payload = Array.isArray(action.payload) ? action.payload : [];
+
+        if (payload.length > 0) {
+          const taskId = payload[0].parent_task_id;
           if (taskId) {
             const result = findTaskInAllGroups(state.taskGroups, taskId);
             if (result) {
-              result.task.sub_tasks = action.payload;
+              result.task.sub_tasks = payload;
               result.task.show_sub_tasks = true;
               result.task.sub_tasks_loading = false;
-              result.task.sub_tasks_count = action.payload.length;
+              result.task.sub_tasks_count = payload.length;
             }
           }
         } else {
