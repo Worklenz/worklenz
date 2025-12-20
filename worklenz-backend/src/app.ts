@@ -74,7 +74,7 @@ const allowedOrigins = [
 app.use(cors({
   origin: (origin, callback) => {
     // Explicitly allow the known frontend domain
-    const isAllowed = allowedOrigins.includes(origin) || origin === "https://projeto.autoarq.com.br";
+    const isAllowed = (origin && allowedOrigins.includes(origin)) || origin === "https://projeto.autoarq.com.br";
 
     if (!isProduction() || !origin || isAllowed) {
       callback(null, true);
