@@ -73,8 +73,9 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Explicitly allow the known frontend domain
-    const isAllowed = (origin && allowedOrigins.includes(origin)) || origin === "https://projeto.autoarq.com.br";
+    // Explicitly allow the known frontend domain and subdomains
+    const isAllowed = (origin && allowedOrigins.includes(origin)) ||
+      (origin && /https:\/\/([a-z0-9-]+\.)?autoarq\.com\.br$/.test(origin));
 
     if (!isProduction() || !origin || isAllowed) {
       callback(null, true);
@@ -95,7 +96,8 @@ app.use(cors({
     "Authorization",
     "X-CSRF-Token"
   ],
-  exposedHeaders: ["Set-Cookie", "X-CSRF-Token"]
+  exposedHeaders: ["Set-Cookie", "X-CSRF-Token"],
+  optionsSuccessStatus: 200
 }));
 
 // Handle preflight requests

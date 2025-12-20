@@ -46,7 +46,8 @@ const policies = {
     "https://fonts.gstatic.com",
     "https://cdnjs.cloudflare.com",
     "https://cdn.paddle.com",
-    "https://sandbox-cdn.paddle.com"
+    "https://sandbox-cdn.paddle.com",
+    "https://projeto.autoarq.com.br"
   ],
   "worker-src": [
     "'self'",
