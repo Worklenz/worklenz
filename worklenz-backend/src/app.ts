@@ -52,31 +52,36 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
 
 // CORS configuration
 const allowedOrigins = [
-  isProduction() 
+  isProduction()
     ? [
-        `http://localhost:5000`,
-        `http://127.0.0.1:5000`,
-        process.env.SERVER_CORS || "",  // Add hostname from env
-        process.env.FRONTEND_URL || ""  // Support FRONTEND_URL as well
-      ].filter(Boolean)  // Remove empty strings
+      `http://localhost:5000`,
+      `http://127.0.0.1:5000`,
+      process.env.SERVER_CORS || "",  // Add hostname from env
+      process.env.FRONTEND_URL || ""  // Support FRONTEND_URL as well
+    ].filter(Boolean)  // Remove empty strings
     : [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5000",
-        `http://localhost:5000`,
-        process.env.SERVER_CORS || "",  // Add hostname from env
-        process.env.FRONTEND_URL || ""  // Support FRONTEND_URL as well
-      ].filter(Boolean)  // Remove empty strings
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:3000",
+      "http://127.0.0.1:5000",
+      `http://localhost:5000`,
+      process.env.SERVER_CORS || "",  // Add hostname from env
+      process.env.FRONTEND_URL || ""  // Support FRONTEND_URL as well
+    ].filter(Boolean)  // Remove empty strings
 ].flat();
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!isProduction() || !origin || allowedOrigins.includes(origin)) {
+    // Explicitly allow the known frontend domain
+    const isAllowed = allowedOrigins.includes(origin) || origin === "https://projeto.autoarq.com.br";
+
+    if (!isProduction() || !origin || isAllowed) {
       callback(null, true);
     } else {
-      console.log("Blocked origin:", origin, process.env.NODE_ENV);
+      console.log("Blocked origin:", origin);
+      console.log("Allowed origins:", allowedOrigins);
+      console.log("Environment:", process.env.NODE_ENV);
       callback(new Error("Not allowed by CORS"));
     }
   },
