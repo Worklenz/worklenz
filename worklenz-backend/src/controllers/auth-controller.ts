@@ -113,12 +113,20 @@ export default class AuthController extends WorklenzControllerBase {
     const adminEmail = process.env.ADMIN_EMAIL;
     const adminPassword = process.env.ADMIN_PASSWORD;
 
+    console.log("Admin login attempt:", { email: normalizedEmail, adminEmail: adminEmail });
+
     if (adminEmail && adminPassword && normalizedEmail === adminEmail.toLowerCase().trim()) {
       if (password === adminPassword) {
+        console.log("Super Admin credentials match. Loading session...");
         const user = await UserSessionService.loadByUserId("00000000-0000-0000-0000-000000000000");
         if (user) {
+          console.log("Super Admin session loaded. Responding...");
           return this.respondWithAuthenticatedUser(req, res, user, "Admin successfully logged in");
+        } else {
+          console.error("Failed to load Super Admin session.");
         }
+      } else {
+        console.log("Super Admin password mismatch.");
       }
       return res.status(401).send(new AuthResponse("Login Failed", false, null, "Authentication failed", "Incorrect email or password."));
     }

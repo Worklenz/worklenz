@@ -39,7 +39,9 @@ export default class UserSessionService {
           timezone_name: "UTC",
           is_expired: false,
           is_member: true,
-          owner_id: userId
+          owner_id: userId,
+          team_id: "00000000-0000-0000-0000-000000000000",
+          team_name: "System Admin Team"
         } as IPassportSession;
       }
     }
