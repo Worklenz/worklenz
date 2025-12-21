@@ -25,6 +25,6 @@ body:
     attributes:
       label: Urgency (Initial Assessment)
       options:
-        - Blocking
-        - Important
-        - Nice to have
+        - P0
+        - P1
+        - P2
