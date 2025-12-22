@@ -9,6 +9,7 @@ import {
   setShowTaskDrawer,
   fetchTask,
 } from '@/features/task-drawer/task-drawer.slice';
+import { setProjectId } from '@/features/project/project.slice';
 import { IUserTimeLoggedTask } from '@/types/home/user-activity.types';
 
 const { Text } = Typography;
@@ -24,6 +25,8 @@ const TimeLoggedTaskList: React.FC<TimeLoggedTaskListProps> = React.memo(({ task
 
   const handleTaskClick = useCallback(
     (taskId: string, projectId: string) => {
+      // Ensure projectId is set so components like AssigneeSelector can function
+      dispatch(setProjectId(projectId || ''));
       dispatch(setSelectedTaskId(taskId));
       dispatch(setShowTaskDrawer(true));
       dispatch(fetchTask({ taskId, projectId }));
