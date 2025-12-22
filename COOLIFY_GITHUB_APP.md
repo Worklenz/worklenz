@@ -28,6 +28,8 @@ Guia rapido para subir o Worklenz no Coolify usando a integracao oficial com o G
    - Dockerfile: `Dockerfile` (context `.`).  
    - Exposed port: `3000`.  
    - Health check sugerido: HTTP em `/health` ou `/` na porta 3000.  
+   - Pre-deploy command (Coolify): `cd /app && bash scripts/predeploy.sh` (roda migrations antes do deploy).  
+   - O container executa migrations no start via `scripts/entrypoint.sh` (desativar: `SKIP_DB_MIGRATE=true`, ajustar espera: `DB_MIGRATE_WAIT_SECONDS=30`, baseline: `MIGRATE_BASELINE=false`).  
    - Variaveis obrigatorias (Environment):
      - `NODE_ENV=production`
      - `PORT=3000`

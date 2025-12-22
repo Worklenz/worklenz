@@ -40,9 +40,10 @@ COPY --from=builder /usr/src/app/worklenz-email-templates ./worklenz-email-templ
 COPY --from=builder /usr/src/app/database ./database
 COPY --from=builder /usr/src/app/scripts ./scripts
 
-RUN chmod +x scripts/db-migrate.sh
+RUN chmod +x scripts/*.sh
 
 
 EXPOSE 3000
+ENTRYPOINT ["bash", "scripts/entrypoint.sh"]
 CMD ["node", "build/bin/www"]
 
