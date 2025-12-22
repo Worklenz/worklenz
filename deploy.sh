@@ -149,7 +149,29 @@ fi
 echo -e "${GREEN}✅ Frontend and Client Portal built successfully in ${PARALLEL_DURATION}s${NC}"
 echo ""
 
-# 4. Build Backend
+# 4. Verify Apple Sign-In key file (if Apple login is enabled)
+if [ -n "$APPLE_PRIVATE_KEY_PATH" ] || grep -q "APPLE_CLIENT_ID" "$ROOT_DIR/worklenz-backend/.env" 2>/dev/null; then
+    echo -e "${YELLOW}▶ Checking Apple Sign-In key file...${NC}"
+    KEY_PATH=$(grep "APPLE_PRIVATE_KEY_PATH" "$ROOT_DIR/worklenz-backend/.env" 2>/dev/null | cut -d '=' -f2 | tr -d '"' | tr -d "'" | xargs)
+    if [ -n "$KEY_PATH" ]; then
+        # Resolve relative path
+        if [[ "$KEY_PATH" == ./* ]]; then
+            FULL_KEY_PATH="$ROOT_DIR/worklenz-backend/${KEY_PATH#./}"
+        else
+            FULL_KEY_PATH="$KEY_PATH"
+        fi
+        if [ -f "$FULL_KEY_PATH" ]; then
+            echo -e "${GREEN}✅ Apple Sign-In key file found${NC}"
+        else
+            echo -e "${RED}⚠️  WARNING: Apple Sign-In key file not found at: $FULL_KEY_PATH${NC}"
+            echo -e "${YELLOW}   Apple Sign-In will not work until the key file is uploaded.${NC}"
+            echo -e "${YELLOW}   See docs/APPLE_P8_KEY_MANAGEMENT.md for instructions.${NC}"
+        fi
+    fi
+    echo ""
+fi
+
+# 5. Build Backend
 echo -e "${YELLOW}▶ Building Backend application...${NC}"
 BACKEND_START=$(date +%s)
 
@@ -172,7 +194,7 @@ BACKEND_DURATION=$((BACKEND_END - BACKEND_START))
 echo -e "${GREEN}✅ Backend built successfully in ${BACKEND_DURATION}s${NC}"
 echo ""
 
-# 5. Restart Backend with PM2
+# 6. Restart Backend with PM2
 echo -e "${YELLOW}▶ Restarting Backend service with PM2...${NC}"
 pm2 restart 4 --update-env > /dev/null 2>&1
 if [ $? -ne 0 ]; then
@@ -182,7 +204,7 @@ fi
 # Wait for service to stabilize
 sleep 5
 
-# 6. Health Check
+# 7. Health Check
 echo -e "${YELLOW}▶ Performing health check...${NC}"
 HEALTH_CHECK_ATTEMPTS=0
 MAX_HEALTH_CHECKS=10
