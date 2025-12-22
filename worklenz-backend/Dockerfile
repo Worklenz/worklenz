@@ -25,6 +25,7 @@ FROM node:20-slim
 
 RUN apt-get update && apt-get install -y \
     libpq5 \
+    postgresql-client \
     curl \
     wget \
   && rm -rf /var/lib/apt/lists/*
@@ -36,6 +37,10 @@ COPY --from=builder /usr/src/app/build ./build
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/release ./release
 COPY --from=builder /usr/src/app/worklenz-email-templates ./worklenz-email-templates
+COPY --from=builder /usr/src/app/database ./database
+COPY --from=builder /usr/src/app/scripts ./scripts
+
+RUN chmod +x scripts/db-migrate.sh
 
 
 EXPOSE 3000
