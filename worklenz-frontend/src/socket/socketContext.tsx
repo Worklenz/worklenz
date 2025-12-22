@@ -83,8 +83,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
 
     // Emit login event
-    if (profile && profile.id) {
-      socket.emit(SocketEvents.LOGIN.toString(), profile.id);
+    if (profile?.id) {
+      socket.emit(SocketEvents.LOGIN.toString());
       socket.once(SocketEvents.LOGIN.toString(), () => {
         logger.info('Socket login success');
       });

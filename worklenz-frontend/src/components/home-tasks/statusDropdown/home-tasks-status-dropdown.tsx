@@ -31,13 +31,12 @@ const HomeTasksStatusDropdown = ({ task, teamId }: HomeTasksStatusDropdownProps)
 
     socket?.emit(
       SocketEvents.TASK_STATUS_CHANGE.toString(),
-      JSON.stringify({
+      {
         task_id: task.id,
         status_id: statusId,
         parent_task: task.parent_task_id || null,
         team_id: teamId,
-      })
-    );
+      });
     getTaskProgress(task.id);
   };
 

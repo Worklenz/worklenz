@@ -82,7 +82,7 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(({
       }
 
       if (socket && connected) {
-        socket.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
+        socket.emit(SocketEvents.QUICK_TASK.toString(), body);
         setTaskName('');
         // Keep the input active and notify parent to create new row
         onTaskAdded(rowId);

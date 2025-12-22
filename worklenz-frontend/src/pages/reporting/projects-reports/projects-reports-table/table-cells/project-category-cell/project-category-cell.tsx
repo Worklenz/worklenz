@@ -69,11 +69,10 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
       // Emit socket event
       socket.emit(
         SocketEvents.PROJECT_CATEGORY_CHANGE.toString(),
-        JSON.stringify({
+        {
           project_id: projectId,
           category_id: newCategory.id,
-        })
-      );
+        });
     }
   };
 

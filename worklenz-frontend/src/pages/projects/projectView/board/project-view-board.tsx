@@ -280,7 +280,7 @@ const ProjectViewBoard = () => {
       team_id: currentSession?.team_id,
     };
 
-    socket.emit(SocketEvents.TASK_PRIORITY_CHANGE.toString(), JSON.stringify(payload));
+    socket.emit(SocketEvents.TASK_PRIORITY_CHANGE.toString(), payload);
     socket.once(SocketEvents.TASK_PRIORITY_CHANGE.toString(), (data: ITaskListPriorityChangeResponse) => {
       dispatch(updateBoardTaskPriority(data));
     });

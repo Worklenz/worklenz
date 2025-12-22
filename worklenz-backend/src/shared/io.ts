@@ -24,11 +24,12 @@ export class IO {
   public static async emitByUserId(id: string, userId: string | null, event: SocketEvents, data?: any) {
     try {
       if (id === userId) return;
-      const q = `SELECT socket_id FROM users WHERE id = $1;`;
+      const q = `SELECT socket_id FROM user_sockets WHERE user_id = $1;`;
       const result = await db.query(q, [id]);
-      const [user] = result.rows;
-      if (!user) return;
-      this.emit(event, user.socket_id, data);
+      if (!result.rows.length) return;
+      result.rows.forEach((row: { socket_id: string }) => {
+        this.emit(event, row.socket_id, data);
+      });
     } catch (error) {
       // ignored
     }
@@ -36,11 +37,18 @@ export class IO {
 
   public static async emitByTeamMemberId(id: string, userId: string | null, event: SocketEvents, data?: any) {
     try {
-      const q = `SELECT socket_id FROM users WHERE id != $1 AND id IN (SELECT user_id FROM team_members WHERE id = $2);`;
+      const q = `
+        SELECT us.socket_id
+        FROM team_members tm
+        JOIN user_sockets us ON us.user_id = tm.user_id
+        WHERE tm.id = $2
+          AND tm.user_id != $1;
+      `;
       const result = await db.query(q, [userId, id]);
-      const [user] = result.rows;
-      if (!user) return;
-      this.emit(event, user.socket_id, data);
+      if (!result.rows.length) return;
+      result.rows.forEach((row: { socket_id: string }) => {
+        this.emit(event, row.socket_id, data);
+      });
     } catch (error) {
       // ignored
     }

@@ -82,7 +82,7 @@ const TimeLogForm = ({
       mode: 0,
       parent_task: taskFormViewModel?.task?.parent_task_id,
     };
-    socket?.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), JSON.stringify(body));
+    socket?.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), body);
     socket?.once(
       SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(),
       (response: ITaskAssigneesUpdateResponse) => {

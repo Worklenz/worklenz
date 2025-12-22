@@ -1,12 +1,12 @@
 import { Server, Socket } from "socket.io";
-import { log_error } from "../util";
+import {log_error, parseSocketPayload} from "../util";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
 
 export async function on_pt_task_name_change(_io: Server, socket: Socket, data?: string) {
     try {
-        const body = JSON.parse(data as string);
-        const name = (body.name || "").trim();
+        const body = parseSocketPayload<any>(data as string);
+    if (!body) return;
 
         const q = `UPDATE cpt_tasks SET name = $2 WHERE id = $1 RETURNING name`;
 

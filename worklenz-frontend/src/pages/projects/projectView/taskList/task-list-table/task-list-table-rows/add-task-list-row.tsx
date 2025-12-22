@@ -172,7 +172,7 @@ const AddTaskListRow = ({ groupId = null, parentTask = null }: IAddTaskListRowPr
 
       setTaskCreationTimeout(timeout);
 
-      socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
+      socket?.emit(SocketEvents.QUICK_TASK.toString(), body);
 
       // Handle success response - the global socket handler will handle task addition
       socket?.once(SocketEvents.QUICK_TASK.toString(), (task: IProjectTask) => {

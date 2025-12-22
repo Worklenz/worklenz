@@ -55,15 +55,14 @@ const TaskDrawerDueDate = ({ task, t, form }: TaskDrawerDueDateProps) => {
     try {
       socket?.emit(
         SocketEvents.TASK_START_DATE_CHANGE.toString(),
-        JSON.stringify({
+        {
           task_id: task.id,
           start_date: date?.format(),
           parent_task: task.parent_task_id,
           time_zone: getUserSession()?.timezone_name
             ? getUserSession()?.timezone_name
             : Intl.DateTimeFormat().resolvedOptions().timeZone,
-        })
-      );
+        });
       socket?.once(SocketEvents.TASK_START_DATE_CHANGE.toString(), (data: IProjectTask) => {
         dispatch(setStartDate(data));
 
@@ -81,15 +80,14 @@ const TaskDrawerDueDate = ({ task, t, form }: TaskDrawerDueDateProps) => {
     try {
       socket?.emit(
         SocketEvents.TASK_END_DATE_CHANGE.toString(),
-        JSON.stringify({
+        {
           task_id: task.id,
           end_date: date?.format(),
           parent_task: task.parent_task_id,
           time_zone: getUserSession()?.timezone_name
             ? getUserSession()?.timezone_name
             : Intl.DateTimeFormat().resolvedOptions().timeZone,
-        })
-      );
+        });
       socket?.once(SocketEvents.TASK_END_DATE_CHANGE.toString(), (data: IProjectTask) => {
         dispatch(setTaskEndDate(data));
 

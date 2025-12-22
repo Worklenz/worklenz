@@ -514,12 +514,11 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
       if (newTaskName && connected && newTaskName !== task.title) {
         socket?.emit(
           SocketEvents.TASK_NAME_CHANGE.toString(),
-          JSON.stringify({
+          {
             task_id: task.id,
             name: newTaskName,
             parent_task: null,
-          })
-        );
+          });
       }
       setEditTaskName(false);
     }, [connected, socket, task.id, task.title, taskName]);
@@ -615,7 +614,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
           parent_task_id: task.id,
         };
 
-        socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(requestBody));
+        socket?.emit(SocketEvents.QUICK_TASK.toString(), requestBody);
 
         // Handle the response
         socket?.once(SocketEvents.QUICK_TASK.toString(), handleSubtaskCreated);
@@ -665,13 +664,12 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
 
         socket.emit(
           eventType.toString(),
-          JSON.stringify({
+          {
             task_id: task.id,
             [dateField]: date?.format('YYYY-MM-DD'),
             parent_task: null,
             time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          })
-        );
+          });
       },
       [connected, socket, task.id]
     );

@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { log_error, notifyProjectUpdates } from "../util";
+import {log_error, notifyProjectUpdates, parseSocketPayload} from "../util";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
 import moment from "moment";
@@ -8,9 +8,9 @@ import { getTaskDetails, logEndDateChange, logStartDateChange } from "../../serv
 
 export async function on_gannt_drag_change(_io: Server, socket: Socket, data?: string) {
   try {
-    const body = JSON.parse(data as string);
+    const body = parseSocketPayload<any>(data as string);
 
-    const chartStartDate = moment(body.chart_start);
+    if (!body) return;
 
     const taskStartDate = chartStartDate.add(body.from_start, "days");
     const taskEndDate = moment(taskStartDate).add(body.task_duration - 1, "days");

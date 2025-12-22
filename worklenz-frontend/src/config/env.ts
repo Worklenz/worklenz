@@ -38,16 +38,16 @@ export const getSocketUrl = (): string => {
     return import.meta.env.VITE_SOCKET_URL;
   }
 
-  // Default based on API URL (convert http->ws or https->wss)
+  // Default based on API host (convert http->ws or https->wss)
   const apiUrl = getApiUrl();
-  if (apiUrl.startsWith('https://')) {
-    return apiUrl.replace('https://', 'wss://');
-  } else if (apiUrl.startsWith('http://')) {
-    return apiUrl.replace('http://', 'ws://');
+  try {
+    const api = new URL(apiUrl);
+    const protocol = api.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${protocol}//${api.host}`;
+  } catch {
+    // Final fallback
+    return 'ws://localhost:3000';
   }
-
-  // Final fallback
-  return 'ws://localhost:3000';
 };
 
 export default {

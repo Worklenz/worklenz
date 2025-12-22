@@ -88,7 +88,7 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
       const body = createRequestBody(taskName);
       if (!body) return;
 
-      socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
+      socket?.emit(SocketEvents.QUICK_TASK.toString(), body);
       socket?.once(SocketEvents.QUICK_TASK.toString(), (task: IProjectTask) => {
         if (task.parent_task_id) {
           refreshSubTasks();

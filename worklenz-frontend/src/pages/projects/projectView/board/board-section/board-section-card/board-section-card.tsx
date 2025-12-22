@@ -100,7 +100,7 @@ const BoardSectionCard = ({ taskGroup }: IBoardSectionCardProps) => {
       status_id: taskGroup.id,
     };
 
-    socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
+    socket?.emit(SocketEvents.QUICK_TASK.toString(), body);
   };
 
   const handleAddTaskToBottom = () => {

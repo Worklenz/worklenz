@@ -2,7 +2,7 @@ import { Server, Socket } from "socket.io";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
 
-import { log_error, notifyProjectUpdates } from "../util";
+import {log_error, notifyProjectUpdates, parseSocketPayload} from "../util";
 import sanitize from "sanitize-html";
 import {
   getTaskDetails,
@@ -15,9 +15,9 @@ export async function on_task_description_change(
   data?: string
 ) {
   try {
-    const body = JSON.parse(data as string);
+    const body = parseSocketPayload<any>(data as string);
 
-    const q = `UPDATE tasks
+    if (!body) return;
                SET description = $2
                WHERE id = $1
                RETURNING description;`;

@@ -1314,7 +1314,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
 
       // Emit socket event to update the custom column value
       if (socket) {
-        socket.emit(SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), JSON.stringify(body));
+        socket.emit(SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), body);
       } else {
         console.warn('Socket not connected, unable to emit TASK_CUSTOM_COLUMN_UPDATE event');
       }

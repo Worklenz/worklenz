@@ -439,7 +439,7 @@ const TaskListV2Section: React.FC = () => {
         }
 
         if (socket && connected) {
-          socket.emit(SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), JSON.stringify(body));
+          socket.emit(SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), body);
         } else {
           console.warn('Socket not connected, unable to emit TASK_CUSTOM_COLUMN_UPDATE event');
         }

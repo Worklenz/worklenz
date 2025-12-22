@@ -58,11 +58,10 @@ const ProjectStatusCell = ({ currentStatus, projectId }: ProjectStatusCellProps)
       // Emit socket event
       socket?.emit(
         SocketEvents.PROJECT_STATUS_CHANGE.toString(),
-        JSON.stringify({
+        {
           project_id: projectId,
           status_id: value,
-        })
-      );
+        });
     } catch (error) {
       logger.error('Error changing project status:', error);
     }

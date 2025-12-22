@@ -14,15 +14,14 @@ const TaskListStartDateCell = ({ task }: { task: IProjectTask }) => {
   const handleStartDateChange = (date: Dayjs | null) => {
     socket?.emit(
       SocketEvents.TASK_START_DATE_CHANGE.toString(),
-      JSON.stringify({
+      {
         task_id: task.id,
         start_date: date?.format(),
         parent_task: task.parent_task_id,
         time_zone: getUserSession()?.timezone_name
           ? getUserSession()?.timezone_name
           : Intl.DateTimeFormat().resolvedOptions().timeZone,
-      })
-    );
+      });
   };
 
   const disabledStartDate = (current: Dayjs) => {

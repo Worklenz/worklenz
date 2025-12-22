@@ -73,12 +73,11 @@ const ConvertToSubtaskDrawer = () => {
 
     socket?.emit(
       SocketEvents.TASK_STATUS_CHANGE.toString(),
-      JSON.stringify({
+      {
         task_id: selectedTask?.id,
         status_id: statusId,
         team_id: currentSession?.team_id,
-      })
-    );
+      });
     socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), selectedTask?.id);
   };
 
@@ -87,12 +86,11 @@ const ConvertToSubtaskDrawer = () => {
 
     socket?.emit(
       SocketEvents.TASK_PRIORITY_CHANGE.toString(),
-      JSON.stringify({
+      {
         task_id: selectedTask?.id,
         priority_id: priorityId,
         team_id: currentSession?.team_id,
-      })
-    );
+      });
   };
 
   const convertToSubTask = async (

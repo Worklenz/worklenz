@@ -1,11 +1,9 @@
 import { Server, Socket } from "socket.io";
 import { NotificationsService } from "../../services/notifications/notifications.service";
 import { SocketEvents } from "../events";
-import { 
-  getLoggedInUserIdFromSocket, 
+import {getLoggedInUserIdFromSocket, 
   log_error, 
-  notifyProjectUpdates 
-} from "../util";
+  notifyProjectUpdates, parseSocketPayload} from "../util";
 import { logMemberAssignment } from "../../services/activity-logs/activity-logs.service";
 import { getAssignees, ITaskAssignee, runAssignOrRemove } from "./on-quick-assign-or-remove";
 
@@ -28,8 +26,9 @@ export async function on_task_assignees_change(
       throw new Error("No data provided.");
     }
 
-    const body: TaskAssigneesChangeData = JSON.parse(rawData);
     const userId = getLoggedInUserIdFromSocket(socket);
+    const body = parseSocketPayload<TaskAssigneesChangeData>(rawData);
+    if (!body) return;
     const newAssignees: string[] = body.team_member_id;
     const prevAssignees: ITaskAssignee[] = await getAssignees(body.task_id);
 

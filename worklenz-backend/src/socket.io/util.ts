@@ -21,6 +21,19 @@ export function getLoggedInUserIdFromSocket(socket: Socket): string | null {
   return null;
 }
 
+export function parseSocketPayload<T>(data: unknown): T | null {
+  if (!data) return null;
+  if (typeof data === "string") {
+    try {
+      return JSON.parse(data) as T;
+    } catch (error) {
+      log_error(error);
+      return null;
+    }
+  }
+  return data as T;
+}
+
 export async function notifyProjectUpdates(socket: Socket, taskId: string) {
   try {
     const result = await db.query("SELECT project_id FROM tasks WHERE id = $1;", [taskId]);

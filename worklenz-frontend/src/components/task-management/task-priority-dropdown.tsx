@@ -43,12 +43,11 @@ const TaskPriorityDropdown: React.FC<TaskPriorityDropdownProps> = ({
 
       socket?.emit(
         SocketEvents.TASK_PRIORITY_CHANGE.toString(),
-        JSON.stringify({
+        {
           task_id: task.id,
           priority_id: priorityId,
           team_id: projectId, // Using projectId as teamId
-        })
-      );
+        });
       setIsOpen(false);
     },
     [task.id, connected, socket, projectId]

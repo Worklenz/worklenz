@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { log_error } from "../util";
+import {log_error, parseSocketPayload} from "../util";
 import { getColor, toMinutes } from "../../shared/utils";
 import { TASK_STATUS_COLOR_ALPHA, UNMAPPED } from "../../shared/constants";
 import db from "../../config/db";
@@ -16,9 +16,9 @@ function updatePhaseInfo(model: any, body: any) {
 
 export async function on_pt_quick_task(_io: Server, socket: Socket, data?: string) {
     try {
-        const body = JSON.parse(data as string);
+        const body = parseSocketPayload<any>(data as string);
 
-        const q = `SELECT create_quick_pt_task($1) AS task`;
+    if (!body) return;
 
         body.name = (body.name || "").trim();
         body.priority_id = body.priority_id?.trim() || null;

@@ -94,7 +94,7 @@ const EnhancedKanbanCreateTaskCard: React.FC<EnhancedKanbanCreateTaskCardProps> 
       resetForNextTask();
     };
     socket?.once(SocketEvents.QUICK_TASK.toString(), eventHandler);
-    socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
+    socket?.emit(SocketEvents.QUICK_TASK.toString(), body);
   };
 
   const handleCancel = () => {

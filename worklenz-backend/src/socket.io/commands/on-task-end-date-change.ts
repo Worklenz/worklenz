@@ -2,15 +2,15 @@ import {Server, Socket} from "socket.io";
 import db from "../../config/db";
 import {SocketEvents} from "../events";
 
-import {log_error, notifyProjectUpdates} from "../util";
+import {log_error, notifyProjectUpdates, parseSocketPayload} from "../util";
 import {getTaskDetails, logEndDateChange} from "../../services/activity-logs/activity-logs.service";
 import momentTime from "moment-timezone";
 
 export async function on_task_end_date_change(_io: Server, socket: Socket, data?: string) {
   try {
     const q = `UPDATE tasks SET end_date = $2 WHERE id = $1 RETURNING end_date, start_date;`;
-    const body = JSON.parse(data as string);
-    const task_data = await getTaskDetails(body.task_id, "end_date");
+    const body = parseSocketPayload<any>(data as string);
+    if (!body) return;
 
     const result = await db.query(q, [body.task_id, body.end_date]);
     const [d] = result.rows;

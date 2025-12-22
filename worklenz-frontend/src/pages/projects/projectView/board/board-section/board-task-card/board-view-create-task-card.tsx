@@ -133,7 +133,7 @@ const BoardViewCreateTaskCard = ({
       socket?.once(SocketEvents.QUICK_TASK.toString(), eventHandler);
 
       // Emit the event
-      socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
+      socket?.emit(SocketEvents.QUICK_TASK.toString(), body);
     } catch (error) {
       console.error('Error adding task:', error);
       setCreatingTask(false);
@@ -177,7 +177,7 @@ const BoardViewCreateTaskCard = ({
       socket?.once(SocketEvents.QUICK_TASK.toString(), eventHandler);
 
       // Emit the event
-      socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
+      socket?.emit(SocketEvents.QUICK_TASK.toString(), body);
     } catch (error) {
       console.error('Error adding task:', error);
       setCreatingTask(false);

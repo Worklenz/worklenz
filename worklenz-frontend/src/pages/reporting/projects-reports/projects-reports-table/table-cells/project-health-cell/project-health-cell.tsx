@@ -49,11 +49,10 @@ const ProjectHealthCell = ({ value, label, color, projectId }: HealthStatusDataT
 
     socket?.emit(
       SocketEvents.PROJECT_HEALTH_CHANGE.toString(),
-      JSON.stringify({
+      {
         project_id: projectId,
         health_id: e.key,
-      })
-    );
+      });
   };
 
   // dropdown items

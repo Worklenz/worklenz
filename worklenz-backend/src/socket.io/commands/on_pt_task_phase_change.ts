@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { log_error } from "../util";
+import {log_error, parseSocketPayload} from "../util";
 import { TASK_STATUS_COLOR_ALPHA, UNMAPPED } from "../../shared/constants";
 import { getColor } from "../../shared/utils";
 import { SocketEvents } from "../events";
@@ -7,7 +7,7 @@ import db from "../../config/db";
 
 export async function on_pt_task_phase_change(_io: Server, socket: Socket, data?: string) {
     try {
-        const body = JSON.parse(data as string);
+        const body = parseSocketPayload<any>(data as string);
 
         if (!body?.task_id) return;
 

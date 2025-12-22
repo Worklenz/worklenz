@@ -35,12 +35,11 @@ const PriorityDropdown = ({ task }: PriorityDropdownProps) => {
 
     socket?.emit(
       SocketEvents.TASK_PRIORITY_CHANGE.toString(),
-      JSON.stringify({
+      {
         task_id: task.id,
         priority_id: priorityId,
         team_id: currentSession?.team_id,
-      })
-    );
+      });
     socket?.once(
       SocketEvents.TASK_PRIORITY_CHANGE.toString(),
       (data: ITaskListPriorityChangeResponse) => {

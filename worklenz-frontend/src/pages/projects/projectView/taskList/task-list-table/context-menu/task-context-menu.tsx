@@ -149,13 +149,12 @@ const TaskContextMenu = ({ visible, position, selectedTask, onClose, t }: TaskCo
     try {
       socket?.emit(
         SocketEvents.TASK_STATUS_CHANGE.toString(),
-        JSON.stringify({
+        {
           task_id: selectedTask.id,
           status_id: targetId,
           parent_task: selectedTask.parent_task_id || null,
           team_id: currentSession?.team_id,
-        })
-      );
+        });
     } catch (error) {
       logger.error('Error moving status', error);
     }
@@ -167,13 +166,12 @@ const TaskContextMenu = ({ visible, position, selectedTask, onClose, t }: TaskCo
     try {
       socket?.emit(
         SocketEvents.TASK_PRIORITY_CHANGE.toString(),
-        JSON.stringify({
+        {
           task_id: selectedTask.id,
           priority_id: targetId,
           parent_task: selectedTask.parent_task_id || null,
           team_id: currentSession?.team_id,
-        })
-      );
+        });
     } catch (error) {
       logger.error('Error moving priority', error);
     }

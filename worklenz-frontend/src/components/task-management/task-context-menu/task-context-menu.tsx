@@ -143,13 +143,12 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
       try {
         socket?.emit(
           SocketEvents.TASK_STATUS_CHANGE.toString(),
-          JSON.stringify({
+          {
             task_id: task.id,
             status_id: targetId,
             parent_task: task.parent_task_id || null,
             team_id: currentSession?.team_id,
-          })
-        );
+          });
       } catch (error) {
         logger.error('Error moving status:', error);
       } finally {
@@ -166,13 +165,12 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
       try {
         socket?.emit(
           SocketEvents.TASK_PRIORITY_CHANGE.toString(),
-          JSON.stringify({
+          {
             task_id: task.id,
             priority_id: targetId,
             parent_task: task.parent_task_id || null,
             team_id: currentSession?.team_id,
-          })
-        );
+          });
       } catch (error) {
         logger.error('Error moving priority:', error);
       } finally {

@@ -26,13 +26,12 @@ const TaskDrawerEstimation = ({ t, task, form }: TaskDrawerEstimationProps) => {
 
     socket?.emit(
       SocketEvents.TASK_TIME_ESTIMATION_CHANGE.toString(),
-      JSON.stringify({
+      {
         task_id: task.id,
         total_hours: currentHours,
         total_minutes: currentMinutes,
         parent_task: task.parent_task_id,
-      })
-    );
+      });
   };
 
   return (

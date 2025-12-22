@@ -89,7 +89,7 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
 
       dispatch(updateTaskTimeTracking({ taskId, timeTracking: now }));
       setLocalStarted(true);
-      socket?.emit(SocketEvents.TASK_TIMER_START.toString(), JSON.stringify({ task_id: taskId }));
+      socket?.emit(SocketEvents.TASK_TIMER_START.toString(), { task_id: taskId });
     } catch (error) {
       logger.error('Error starting timer:', error);
     }
@@ -99,7 +99,7 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
     if (!taskId) return;
 
     resetTimer();
-    socket?.emit(SocketEvents.TASK_TIMER_STOP.toString(), JSON.stringify({ task_id: taskId }));
+    socket?.emit(SocketEvents.TASK_TIMER_STOP.toString(), { task_id: taskId });
     dispatch(updateTaskTimeTracking({ taskId, timeTracking: null }));
   }, [taskId, socket, dispatch, resetTimer]);
 

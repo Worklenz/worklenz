@@ -2,13 +2,13 @@ import { Server, Socket } from "socket.io";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
 
-import { log_error } from "../util";
+import {log_error, parseSocketPayload} from "../util";
 
 export async function on_project_category_change(_io: Server, socket: Socket, data?: string) {
     try {
-        const body = JSON.parse(data as string);
+        const body = parseSocketPayload<any>(data as string);
 
-        const q = `UPDATE projects SET category_id = $2 WHERE id = $1;`;
+    if (!body) return;
         await db.query(q, [body.project_id, body.category_id]);
 
         if (body.is_update) {
