@@ -9,6 +9,7 @@ export async function on_project_start_date_change(_io: Server, socket: Socket, 
     const body = parseSocketPayload<any>(data as string);
 
     if (!body) return;
+    const q = `UPDATE projects SET start_date = $2 WHERE id = $1 RETURNING start_date;`;
     await db.query(q, [body.project_id, body.start_date]);
 
     socket.emit(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), {

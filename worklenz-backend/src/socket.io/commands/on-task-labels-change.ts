@@ -11,6 +11,7 @@ export async function on_task_label_change(_io: Server, socket: Socket, data?: s
     const body = parseSocketPayload<any>(data as string);
 
     if (!body) return;
+    const q = `SELECT add_or_remove_task_label($1, $2) AS labels;`;
     const result = await db.query(q, [body.task_id, body.label_id]);
     const [d] = result.rows;
 

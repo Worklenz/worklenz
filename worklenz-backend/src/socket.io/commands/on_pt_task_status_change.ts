@@ -8,7 +8,8 @@ export async function on_pt_task_status_change(_io: Server, socket: Socket, data
     try {
         const body = parseSocketPayload<any>(data as string);
     
-    if (!body) return;
+        if (!body) return;
+        const q2 = "SELECT handle_on_pt_task_status_change($1, $2) AS res;";
         const results1 = await db.query(q2, [body.task_id, body.status_id]);
         const [d] = results1.rows;
         const changeResponse = d.res;

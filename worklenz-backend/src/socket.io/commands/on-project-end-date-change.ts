@@ -9,6 +9,7 @@ export async function on_project_end_date_change(_io: Server, socket: Socket, da
     const body = parseSocketPayload<any>(data as string);
 
     if (!body) return;
+    const q = `UPDATE projects SET end_date = $2 WHERE id = $1 RETURNING end_date;`;
     await db.query(q, [body.project_id, body.end_date]);
 
     socket.emit(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), {

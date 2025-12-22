@@ -8,8 +8,9 @@ export async function on_pt_task_description_change(_io: Server, socket: Socket,
     try {
         const body = parseSocketPayload<any>(data as string);
 
-    if (!body) return;
+        if (!body) return;
 
+        const q = `UPDATE cpt_tasks SET description = $2 WHERE id = $1 RETURNING description`;
         const description = (body.description || "").replace(/(^([ ]*<p><br><\/p>)*)|((<p><br><\/p>)*[ ]*$)/gi, "").trim() || null;
         await db.query(q, [body.task_id, sanitize(description)]);
 

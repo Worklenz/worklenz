@@ -7,7 +7,9 @@ export async function on_pt_task_start_date_change(_io: Server, socket: Socket, 
     try {
         const body = parseSocketPayload<any>(data as string);
         
-    if (!body) return;
+        if (!body) return;
+
+        const q = `UPDATE tasks SET start_date = $2 WHERE id = $1 RETURNING start_date, end_date`;
 
         const result = await db.query(q, [body.task_id, body.start_date]);
         const [d] = result.rows;

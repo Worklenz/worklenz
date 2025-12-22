@@ -18,6 +18,8 @@ export async function on_task_description_change(
     const body = parseSocketPayload<any>(data as string);
 
     if (!body) return;
+
+    const q = `UPDATE tasks
                SET description = $2
                WHERE id = $1
                RETURNING description;`;

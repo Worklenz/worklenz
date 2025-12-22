@@ -8,7 +8,9 @@ export async function on_pt_task_priority_change(_io: Server, socket: Socket, da
     try {
         const body = parseSocketPayload<any>(data as string);
 
-    if (!body) return;
+        if (!body) return;
+
+        const q = `UPDATE cpt_tasks SET priority_id = $2 WHERE id = $1`;
 
         await db.query(q, [body.task_id, body.priority_id]);
 

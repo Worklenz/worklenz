@@ -8,7 +8,8 @@ export async function on_pt_task_labels_change(_io: Server, socket: Socket, data
     try {
         const body = parseSocketPayload<any>(data as string);
 
-    if (!body) return;
+        if (!body) return;
+        const q = `SELECT add_or_remove_pt_task_label($1, $2) AS labels`;
         const result = await db.query(q, [body.task_id, body.label_id]);
         const [d] = result.rows;
 

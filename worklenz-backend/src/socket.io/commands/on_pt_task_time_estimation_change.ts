@@ -8,7 +8,8 @@ export async function on_pt_task_time_estimation_change(_io: Server, socket: Soc
         const q = `UPDATE cpt_tasks SET total_minutes = $2 WHERE id = $1 RETURNING total_minutes;`;
         const body = parseSocketPayload<any>(data as string);
     
-    if (!body) return;
+        if (!body) return;
+        const hours = body.total_hours || 0;
         const minutes = body.total_minutes || 0;
         const totalMinutes = (hours * 60) + minutes;
     

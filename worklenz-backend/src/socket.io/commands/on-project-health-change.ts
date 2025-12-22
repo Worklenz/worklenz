@@ -9,6 +9,7 @@ export async function on_project_health_change(_io: Server, socket: Socket, data
     const body = parseSocketPayload<any>(data as string);
 
     if (!body) return;
+    const q = `UPDATE projects SET health_id = $2 WHERE id = $1;`;
     await db.query(q, [body.project_id, body.health_id]);
 
     const q2 = "SELECT color_code, name FROM sys_project_healths WHERE id=$1";

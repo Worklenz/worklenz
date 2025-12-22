@@ -57,6 +57,7 @@ export async function on_quick_assign_or_remove(_io: Server, socket: Socket, dat
   try {
     const body = parseSocketPayload<any>(data as string);
     if (!body) return;
+    const isAssign = body.mode == 0;
     const userId = getLoggedInUserIdFromSocket(socket);
 
     const assignment = await runAssignOrRemove(body, isAssign);

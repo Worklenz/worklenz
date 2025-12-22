@@ -9,7 +9,9 @@ export async function on_create_project_category(_io: Server, socket: Socket, da
     try {
         const body = parseSocketPayload<any>(data as string);
 
-    if (!body) return;
+        if (!body) return;
+
+        const q = `
                     INSERT INTO project_categories (name, team_id, created_by, color_code)
                     VALUES ($1, $2, $3, $4)
                     RETURNING id, name, color_code;

@@ -9,6 +9,7 @@ export async function on_project_status_change(_io: Server, socket: Socket, data
     const body = parseSocketPayload<any>(data as string);
 
     if (!body) return;
+    const q = `UPDATE projects SET status_id = $2 WHERE id = $1;`;
     await db.query(q, [body.project_id, body.status_id]);
 
     const q2 = "SELECT id,name,color_code,icon FROM sys_project_statuses WHERE id=$1";

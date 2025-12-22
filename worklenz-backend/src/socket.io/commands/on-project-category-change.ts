@@ -8,7 +8,9 @@ export async function on_project_category_change(_io: Server, socket: Socket, da
     try {
         const body = parseSocketPayload<any>(data as string);
 
-    if (!body) return;
+        if (!body) return;
+
+        const q = `UPDATE projects SET category_id = $2 WHERE id = $1;`;
         await db.query(q, [body.project_id, body.category_id]);
 
         if (body.is_update) {

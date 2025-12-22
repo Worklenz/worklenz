@@ -85,7 +85,7 @@ export async function on_update_task_progress(io: any, socket: Socket, data: str
     const body = parseSocketPayload<UpdateTaskProgressData>(data);
     if (!body) return;
 
-    const {task_id, progress_value} = body;
+    const {task_id, progress_value, parent_task_id} = body;
     if (!task_id || progress_value === undefined) {
       return;
     }

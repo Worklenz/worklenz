@@ -18,7 +18,9 @@ export async function on_pt_quick_task(_io: Server, socket: Socket, data?: strin
     try {
         const body = parseSocketPayload<any>(data as string);
 
-    if (!body) return;
+        if (!body) return;
+
+        const q = `SELECT create_quick_pt_task($1) AS task`;
 
         body.name = (body.name || "").trim();
         body.priority_id = body.priority_id?.trim() || null;

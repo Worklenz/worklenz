@@ -12,6 +12,7 @@ export async function on_gannt_drag_change(_io: Server, socket: Socket, data?: s
 
     if (!body) return;
 
+    const chartStartDate = moment(body.chart_start);
     const taskStartDate = chartStartDate.add(body.from_start, "days");
     const taskEndDate = moment(taskStartDate).add(body.task_duration - 1, "days");
 

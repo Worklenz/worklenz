@@ -79,6 +79,7 @@ export async function on_time_estimation_change(io: Server, socket: Socket, data
     const body = parseSocketPayload<any>(data as string);
 
     if (!body) return;
+    const hours = body.total_hours || 0;
     const minutes = body.total_minutes || 0;
     const totalMinutes = (hours * 60) + minutes;
 

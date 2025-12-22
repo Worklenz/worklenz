@@ -16,7 +16,7 @@ export async function on_update_task_weight(io: any, socket: Socket, data: strin
     const body = parseSocketPayload<UpdateTaskWeightData>(data);
     if (!body) return;
 
-    const {task_id, weight} = body;
+    const {task_id, weight, parent_task_id} = body;
     if (!task_id || weight === undefined) {
       return;
     }

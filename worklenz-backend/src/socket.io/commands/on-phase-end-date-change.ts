@@ -11,8 +11,9 @@ export async function on_phase_end_date_change(_io: Server, socket: Socket, data
                    WHERE id = $1
                    RETURNING start_date, end_date;`;
         const body = parseSocketPayload<any>(data as string);
-    if (!body) return;
-    
+        if (!body) return;
+        const result = await db.query(q, [body.phase_id, body.end_date]);
+
         const [d] = result.rows;
         socket.emit(SocketEvents.PHASE_END_DATE_CHANGE.toString(), {
             phase_id: body.phase_id,

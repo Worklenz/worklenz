@@ -11,6 +11,7 @@ export async function on_task_end_date_change(_io: Server, socket: Socket, data?
     const q = `UPDATE tasks SET end_date = $2 WHERE id = $1 RETURNING end_date, start_date;`;
     const body = parseSocketPayload<any>(data as string);
     if (!body) return;
+    const task_data = await getTaskDetails(body.task_id, "end_date");
 
     const result = await db.query(q, [body.task_id, body.end_date]);
     const [d] = result.rows;

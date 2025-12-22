@@ -14,6 +14,8 @@ export async function on_schedule_member_start_date_change(_io: Server, socket: 
 
     if (!body) return;
 
+    const result = await db.query(q, [body.project_id, body.team_member_is, body.allocation_ids[0], body.allocated_from]);
+
     if (result && body.allocation_ids.length > 1) {
       for (let i = 1; i < body.allocation_ids.length; i++) {
         const dq = `DELETE FROM project_member_allocations WHERE id = $1`;
