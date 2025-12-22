@@ -33,6 +33,20 @@ export const handleNewTaskReceived = (
   const data = Array.isArray(response) ? response[1] : response;
   if (!data) return;
 
+  // Helper to construct assignee_names from assignees array if names is not available
+  const getAssigneeNames = (assignees: any[], names: any[]) => {
+    if (names && names.length > 0) return names;
+    if (!assignees || assignees.length === 0) return [];
+    // Construct names array from assignees
+    return assignees.map((a: any) => ({
+      team_member_id: a.team_member_id,
+      name: a.name || '',
+      user_id: a.user_id,
+      avatar_url: a.avatar_url || '',
+      email: a.email || '',
+    }));
+  };
+
   if (data.parent_task_id) {
     // Handle subtask creation
     const subtask: Task = {
@@ -59,7 +73,7 @@ export const handleNewTaskReceived = (
       phase: data.phase_name || 'Development',
       progress: data.complete_ratio || 0,
       assignees: data.assignees?.map((a: any) => a.team_member_id) || [],
-      assignee_names: data.names || [],
+      assignee_names: getAssigneeNames(data.assignees || [], data.names || []),
       labels:
         data.labels?.map((l: any) => ({
           id: l.id || '',
@@ -145,7 +159,7 @@ export const handleNewTaskReceived = (
       phase: data.phase_name || 'Development',
       progress: data.complete_ratio || 0,
       assignees: data.assignees?.map((a: any) => a.team_member_id) || [],
-      assignee_names: data.names || [],
+      assignee_names: getAssigneeNames(data.assignees || [], data.names || []),
       labels:
         data.labels?.map((l: any) => ({
           id: l.id || '',
@@ -164,7 +178,7 @@ export const handleNewTaskReceived = (
       updated_at: data.updated_at || new Date().toISOString(),
       order: data.sort_order || 0,
       sub_tasks: [],
-      sub_tasks_count: 0,
+      sub_tasks_count: data.sub_tasks_count || 0,
       show_sub_tasks: false,
     };
 

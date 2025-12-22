@@ -191,10 +191,22 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
       // Commit transaction
       await db.query("COMMIT");
 
+      // Manually count subtasks to ensure accurate count after duplication
+      const subtaskCountResult = await db.query(
+        `SELECT COUNT(*)::INT as count FROM tasks WHERE parent_task_id = $1 AND archived IS FALSE`,
+        [newTaskId]
+      );
+      const subtaskCount = subtaskCountResult.rows[0]?.count || 0;
+
       const q = `SELECT get_single_task($1) AS task;`;
       const result = await db.query(q, [newTaskId]);
 
       const [singleTask] = result.rows;
+      
+      // Ensure the subtask count is correct in the response
+      if (singleTask?.task) {
+        singleTask.task.sub_tasks_count = subtaskCount;
+      }
 
       return res.status(201).send(new ServerResponse(true, singleTask.task || {}, "Task duplicated successfully"));
 
