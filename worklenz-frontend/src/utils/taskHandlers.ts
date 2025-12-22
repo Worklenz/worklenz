@@ -92,6 +92,11 @@ export const handleNewTaskReceived = (
       order: data.sort_order || 0,
       parent_task_id: data.parent_task_id,
       is_sub_task: true,
+      custom_column_values: data.custom_column_values || {},
+      comments_count: data.comments_count || 0,
+      attachments_count: data.attachments_count || 0,
+      has_subscribers: data.has_subscribers || false,
+      has_dependencies: data.has_dependencies || false,
     };
 
     // Before adding the real subtask, remove any temporary subtasks with the same name
@@ -180,6 +185,11 @@ export const handleNewTaskReceived = (
       sub_tasks: [],
       sub_tasks_count: data.sub_tasks_count || 0,
       show_sub_tasks: false,
+      custom_column_values: data.custom_column_values || {},
+      comments_count: data.comments_count || 0,
+      attachments_count: data.attachments_count || 0,
+      has_subscribers: data.has_subscribers || false,
+      has_dependencies: data.has_dependencies || false,
     };
 
     // Extract the group UUID from the backend response based on current grouping

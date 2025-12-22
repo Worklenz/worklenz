@@ -198,14 +198,44 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
       );
       const subtaskCount = subtaskCountResult.rows[0]?.count || 0;
 
+      // Fetch custom column values for the duplicated task
+      const customColumnsQuery = `
+        SELECT COALESCE(
+          jsonb_object_agg(
+            custom_cols.key,
+            custom_cols.value
+          ),
+          '{}'::JSONB
+        ) AS custom_column_values
+        FROM (
+          SELECT
+            cc.key,
+            CASE
+              WHEN ccv.text_value IS NOT NULL THEN to_jsonb(ccv.text_value)
+              WHEN ccv.number_value IS NOT NULL THEN to_jsonb(ccv.number_value)
+              WHEN ccv.boolean_value IS NOT NULL THEN to_jsonb(ccv.boolean_value)
+              WHEN ccv.date_value IS NOT NULL THEN to_jsonb(ccv.date_value)
+              WHEN ccv.json_value IS NOT NULL THEN ccv.json_value
+              ELSE NULL::JSONB
+            END AS value
+          FROM cc_column_values ccv
+          JOIN cc_custom_columns cc ON ccv.column_id = cc.id
+          WHERE ccv.task_id = $1
+        ) AS custom_cols
+        WHERE custom_cols.value IS NOT NULL
+      `;
+      const customColumnsResult = await db.query(customColumnsQuery, [newTaskId]);
+      const customColumnValues = customColumnsResult.rows[0]?.custom_column_values || {};
+
       const q = `SELECT get_single_task($1) AS task;`;
       const result = await db.query(q, [newTaskId]);
 
       const [singleTask] = result.rows;
       
-      // Ensure the subtask count is correct in the response
+      // Ensure the subtask count and custom column values are correct in the response
       if (singleTask?.task) {
         singleTask.task.sub_tasks_count = subtaskCount;
+        singleTask.task.custom_column_values = customColumnValues;
       }
 
       return res.status(201).send(new ServerResponse(true, singleTask.task || {}, "Task duplicated successfully"));
