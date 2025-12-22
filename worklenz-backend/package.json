@@ -19,6 +19,7 @@
     "build:dev": "npm run clean && npm run compile:dev && npm run copy",
     "build:prod": "npm run clean && npm run compile:prod && npm run copy && npm run minify && npm run compress",
     "clean": "rimraf build",
+    "db:migrate": "bash scripts/db-migrate.sh",
     "compile": "tsc --build tsconfig.prod.json",
     "compile:dev": "tsc --build tsconfig.json",
     "compile:prod": "tsc --build tsconfig.prod.json",
