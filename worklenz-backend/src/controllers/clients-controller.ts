@@ -12,8 +12,16 @@ export default class ClientsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // Additional validation to ensure team_id is valid
+    const teamId = req.user?.team_id;
+    if (!teamId || teamId === '00000000-0000-0000-0000-000000000000') {
+      return res.status(400).send(
+        new ServerResponse(false, null, "Invalid team. Please ensure you are logged into a valid team.")
+      );
+    }
+
     const q = `INSERT INTO clients (name, team_id) VALUES ($1, $2) RETURNING id, name;`;
-    const result = await db.query(q, [req.body.name, req.user?.team_id || null]);
+    const result = await db.query(q, [req.body.name, teamId]);
     const [data] = result.rows;
     return res.status(200).send(new ServerResponse(true, data));
   }

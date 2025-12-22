@@ -62,6 +62,14 @@ export default class ProjectsController extends WorklenzControllerBase {
     }
   })
   public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // Validate team_id before creating project
+    const teamId = req.user?.team_id;
+    if (!teamId || teamId === '00000000-0000-0000-0000-000000000000') {
+      return res.status(400).send(
+        new ServerResponse(false, null, "Invalid team. Please ensure you are logged into a valid team.")
+      );
+    }
+
     if (req.user?.subscription_status === "free" && req.user?.owner_id) {
       const limits = await getFreePlanSettings();
       const projectsCount = await getCurrentProjectsCount(req.user.owner_id);
@@ -74,7 +82,7 @@ export default class ProjectsController extends WorklenzControllerBase {
 
     const q = `SELECT create_project($1) AS project`;
 
-    req.body.team_id = req.user?.team_id || null;
+    req.body.team_id = teamId;
     req.body.user_id = req.user?.id || null;
 
     req.body.folder_id = req.body.folder_id || null;

@@ -8,6 +8,7 @@ import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-o
 import safeControllerFunction from "../../shared/safe-controller-function";
 import projectManagerValidator from "../../middlewares/validators/project-manager-validator";
 import projectMemberValidator from "../../middlewares/validators/project-member-validator";
+import teamIdValidator from "../../middlewares/validators/team-id-validator";
 
 const projectsApiRouter = express.Router();
 
@@ -16,7 +17,7 @@ projectsApiRouter.get("/update-exist-phase-colors", safeControllerFunction(Proje
 projectsApiRouter.get("/update-exist-sort-order", safeControllerFunction(ProjectsController.updateExistSortOrder));
 
 
-projectsApiRouter.post("/", teamOwnerOrAdminValidator, projectsBodyValidator, safeControllerFunction(ProjectsController.create));
+projectsApiRouter.post("/", teamIdValidator, teamOwnerOrAdminValidator, projectsBodyValidator, safeControllerFunction(ProjectsController.create));
 projectsApiRouter.get("/", safeControllerFunction(ProjectsController.get));
 projectsApiRouter.get("/grouped", safeControllerFunction(ProjectsController.getGrouped));
 projectsApiRouter.get("/my-task-projects", safeControllerFunction(ProjectsController.getMyProjectsToTasks));
