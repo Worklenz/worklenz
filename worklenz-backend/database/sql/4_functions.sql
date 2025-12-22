@@ -4093,6 +4093,7 @@ $$
 DECLARE
     _updater_name         TEXT;
     _task_name            TEXT;
+    _previous_status_id   UUID;
     _previous_status_name TEXT;
     _new_status_name      TEXT;
     _message              TEXT;
@@ -4100,28 +4101,36 @@ DECLARE
     _status_category      JSON;
     _schedule_id          JSON;
     _task_completed_at    TIMESTAMPTZ;
+    _is_new_status_done   BOOLEAN;
 BEGIN
     SELECT COALESCE(name, '') FROM tasks WHERE id = _task_id INTO _task_name;
 
-    SELECT COALESCE(name, '')
-    FROM task_statuses
-    WHERE id = (SELECT status_id FROM tasks WHERE id = _task_id)
-    INTO _previous_status_name;
+    -- Get previous status ID and name
+    SELECT t.status_id, COALESCE(ts.name, '')
+    FROM tasks t
+    LEFT JOIN task_statuses ts ON t.status_id = ts.id
+    WHERE t.id = _task_id
+    INTO _previous_status_id, _previous_status_name;
 
     SELECT COALESCE(name, '') FROM task_statuses WHERE id = _status_id INTO _new_status_name;
 
-    IF (_previous_status_name != _new_status_name)
+    -- Check if the new status is in a "done" category
+    SELECT EXISTS(
+        SELECT 1 
+        FROM sys_task_status_categories 
+        WHERE id = (SELECT category_id FROM task_statuses WHERE id = _status_id) 
+        AND is_done IS TRUE
+    ) INTO _is_new_status_done;
+
+    -- Update if status ID has changed
+    IF (_previous_status_id IS DISTINCT FROM _status_id)
     THEN
         -- Update status_id and completed_at in a single statement
         -- Set completed_at based on whether the new status is "done"
         UPDATE tasks 
         SET status_id = _status_id,
             completed_at = CASE 
-                WHEN EXISTS(SELECT 1 
-                           FROM sys_task_status_categories 
-                           WHERE id = (SELECT category_id FROM task_statuses WHERE id = _status_id) 
-                           AND is_done IS TRUE) 
-                THEN CURRENT_TIMESTAMP 
+                WHEN _is_new_status_done THEN CURRENT_TIMESTAMP 
                 ELSE NULL 
             END
         WHERE id = _task_id;

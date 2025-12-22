@@ -1402,6 +1402,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
         all_labels: task.all_labels || [],
         dueDate: task.end_date || task.END_DATE,
         startDate: task.start_date,
+        completedAt: task.completed_at || undefined,
+        completed_at: task.completed_at || undefined,
         timeTracking: {
           estimated: convertToHours(task.total_minutes, false), // total_minutes is in minutes
           logged: convertToHours(task.total_minutes_spent, true), // total_minutes_spent is in seconds

@@ -179,6 +179,7 @@ export const fetchTasks = createAsyncThunk(
             })) || [],
           dueDate: task.dueDate,
           startDate: task.startDate,
+          completedAt: task.completedAt || task.completed_at || undefined,
           timeTracking: {
             estimated: convertTimeValue(task.total_time),
             logged: convertTimeValue(task.time_spent),
@@ -312,6 +313,7 @@ export const fetchTasksV3 = createAsyncThunk(
             ) || [],
           dueDate: task.dueDate,
           startDate: task.startDate,
+          completedAt: task.completedAt || task.completed_at || undefined,
           timeTracking: {
             estimated: task.timeTracking?.estimated || 0,
             logged: task.timeTracking?.logged || 0,

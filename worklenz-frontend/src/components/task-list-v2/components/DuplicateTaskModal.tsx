@@ -14,6 +14,7 @@ import { duplicateTask, selectCurrentGroupingV3, setDuplicateTask } from '@/feat
 import { evt_project_sub_task_duplicate, evt_project_task_duplicate } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { handleNewTaskReceived as handleTaskReceived } from '@/utils/taskHandlers';
+import logger from '@/utils/errorLogger';
 
 const { Title, Text } = Typography;
 
@@ -86,12 +87,11 @@ const DuplicateTaskModal: React.FC<DuplicateTaskModalProps> = ({
           subtaskEventName: evt_project_sub_task_duplicate,
           taskEventName: evt_project_task_duplicate,
         });
-        message.success(t('taskDuplicatedSuccess') || 'Task duplicated successfully');
         onClose();
       }
 
-    } catch {
-      message.error(t('taskDuplicatedError') || 'Failed to duplicate task');
+    } catch (error) {
+      logger.error('Failed to duplicate task', error);
     } finally {
       setLoading(false);
     }
