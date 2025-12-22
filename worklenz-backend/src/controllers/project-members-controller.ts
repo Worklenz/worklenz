@@ -13,6 +13,7 @@ import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
 import { updateUsers } from "../shared/paddle-requests";
 import { statusExclude, TRIAL_MEMBER_LIMIT } from "../shared/constants";
 import { NotificationsService } from "../services/notifications/notifications.service";
+import { sendInvitationEmail } from "../shared/email-templates";
 
 export default class ProjectMembersController extends WorklenzControllerBase {
 
@@ -83,16 +84,17 @@ export default class ProjectMembersController extends WorklenzControllerBase {
 
     // If user exists in the team, check if they're already in the project
     if (userExists && req.body.project_id) {
-      // Get the team member ID from email
+      // Get the team member information from email
       const teamMemberQuery = `
-        SELECT team_member_id
+        SELECT team_member_id, name, email, user_id
         FROM team_member_info_view
         WHERE email = $1 AND team_id = $2
       `;
       const teamMemberResult = await db.query(teamMemberQuery, [req.body.email, req.user?.team_id]);
 
       if (teamMemberResult.rows.length > 0) {
-        const teamMemberId = teamMemberResult.rows[0].team_member_id;
+        const teamMemberInfo = teamMemberResult.rows[0];
+        const teamMemberId = teamMemberInfo.team_member_id;
 
         // Check if already a project member
         const projectMemberExists = await this.checkIfMemberExists(req.body.project_id, teamMemberId);
@@ -107,9 +109,24 @@ export default class ProjectMembersController extends WorklenzControllerBase {
           team_id: req.user?.team_id,
           project_id: req.body.project_id,
           user_id: req.user?.id,
-          access_level: "MEMBER" // Always default to MEMBER for new invitations
+          access_level: req.body.access_level || "MEMBER" // Use provided access_level or default to MEMBER
         };
         const data = await this.createOrInviteMembers(projectMemberReq);
+        
+        // Send email invitation to existing team member for the project
+        // This ensures they receive an email notification and can access the project
+        if (teamMemberInfo.email && teamMemberInfo.name) {
+          sendInvitationEmail(
+            true, // isNewMember = true (existing team member, not a new user)
+            req.user as IPassportSession,
+            teamMemberInfo.name, // userNameOrId = name for existing members
+            teamMemberInfo.email,
+            teamMemberInfo.user_id || teamMemberId, // userId - use team_member_id as fallback if user_id is null
+            teamMemberInfo.name, // userName
+            req.body.project_id // projectId - this allows them to access the project directly
+          );
+        }
+        
         return res.status(200).send(new ServerResponse(true, data.member));
       }
     }
