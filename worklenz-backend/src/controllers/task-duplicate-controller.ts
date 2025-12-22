@@ -227,15 +227,44 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
       const customColumnsResult = await db.query(customColumnsQuery, [newTaskId]);
       const customColumnValues = customColumnsResult.rows[0]?.custom_column_values || {};
 
+      // Fetch attachment, dependency, subscriber and comment counts for icons
+      const attachmentsResult = await db.query(
+        `SELECT COUNT(*)::INT as count FROM task_attachments WHERE task_id = $1`,
+        [newTaskId]
+      );
+      const attachmentsCount = attachmentsResult.rows[0]?.count || 0;
+
+      const dependenciesResult = await db.query(
+        `SELECT EXISTS(SELECT 1 FROM task_dependencies WHERE task_id = $1) AS has_dependencies`,
+        [newTaskId]
+      );
+      const hasDependencies = !!dependenciesResult.rows[0]?.has_dependencies;
+
+      const subscribersResult = await db.query(
+        `SELECT EXISTS(SELECT 1 FROM task_subscribers WHERE task_id = $1) AS has_subscribers`,
+        [newTaskId]
+      );
+      const hasSubscribers = !!subscribersResult.rows[0]?.has_subscribers;
+
+      const commentsResult = await db.query(
+        `SELECT COUNT(*)::INT as count FROM task_comments WHERE task_id = $1`,
+        [newTaskId]
+      );
+      const commentsCount = commentsResult.rows[0]?.count || 0;
+
       const q = `SELECT get_single_task($1) AS task;`;
       const result = await db.query(q, [newTaskId]);
 
       const [singleTask] = result.rows;
       
-      // Ensure the subtask count and custom column values are correct in the response
+      // Ensure the subtask count, custom column values and icon-related fields are correct in the response
       if (singleTask?.task) {
         singleTask.task.sub_tasks_count = subtaskCount;
         singleTask.task.custom_column_values = customColumnValues;
+        singleTask.task.attachments_count = attachmentsCount;
+        singleTask.task.has_dependencies = hasDependencies;
+        singleTask.task.has_subscribers = hasSubscribers;
+        singleTask.task.comments_count = commentsCount;
       }
 
       return res.status(201).send(new ServerResponse(true, singleTask.task || {}, "Task duplicated successfully"));
