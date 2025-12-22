@@ -159,8 +159,13 @@ const ProjectsGroupedView = () => {
 
       const group = groups.get(groupKey)!;
       group.projects.push(project);
-      group.totalTasks += project.tasks_stat?.total || 0;
-      group.completedTasks += project.tasks_stat?.done || 0;
+      // Calculate total tasks from todo + doing + done (same as TasksProgressCell)
+      const projectTodoTasks = project.tasks_stat?.todo || 0;
+      const projectDoingTasks = project.tasks_stat?.doing || 0;
+      const projectDoneTasks = project.tasks_stat?.done || 0;
+      const projectTotalTasks = projectTodoTasks + projectDoingTasks + projectDoneTasks;
+      group.totalTasks += projectTotalTasks;
+      group.completedTasks += projectDoneTasks;
     });
 
     groups.forEach(group => {
@@ -177,8 +182,11 @@ const ProjectsGroupedView = () => {
 
   const renderProjectItem = useCallback(
     (project: IRPTProject) => {
-      const totalTasks = project.tasks_stat?.total || 0;
+      // Calculate total tasks from todo + doing + done (same as TasksProgressCell)
+      const todoTasks = project.tasks_stat?.todo || 0;
+      const doingTasks = project.tasks_stat?.doing || 0;
       const doneTasks = project.tasks_stat?.done || 0;
+      const totalTasks = todoTasks + doingTasks + doneTasks;
       const progressPercent = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
 
       return (
