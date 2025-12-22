@@ -115,7 +115,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
           })
         );
       } else {
-        dispatch(deleteKanbanTask(selectedTaskId)); // <-- Add this line
+        dispatch(deleteKanbanTask(selectedTaskId));
       }
       dispatch(setShowTaskDrawer(false));
       // Reset the flag after a short delay
@@ -134,28 +134,34 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
     }
   };
 
+  // Menu click handler
+  const handleMenuClick: MenuProps['onClick'] = (e) => {
+    if (e.key === 'copy-link') {
+      handleCopyTaskLink();
+    } else if (e.key === 'delete') {
+      handleDeleteTask();
+    }
+  };
+
+  // Dropdown menu items
   const taskDrawerDropdownItems: MenuProps['items'] = [
     {
       key: 'copy-link',
-      label: (
-        <Flex gap={8} align="center">
-          <Button type="text" icon={<CopyOutlined />} onClick={handleCopyTaskLink}>
-            {t('Copy link to task') || 'Copy link to task'}
-          </Button>
-        </Flex>
-      ),
+      label: t('Copy link to task') || 'Copy link to task',
+      icon: <CopyOutlined />,
     },
     {
       key: 'delete',
-      label: (
-        <Flex gap={8} align="center">
-          <Button type="text"  icon={<DeleteOutlined />} danger onClick={handleDeleteTask}>
-            {t('taskHeader.deleteTask')}
-          </Button>
-        </Flex>
-      ),
+      label: t('taskHeader.deleteTask'),
+      icon: <DeleteOutlined />,
+      danger: true,
     },
   ];
+
+  const menuProps = {
+    items: taskDrawerDropdownItems,
+    onClick: handleMenuClick,
+  };
 
   const handleInputBlur = () => {
     setIsEditing(false);
@@ -256,7 +262,9 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
 
         <Dropdown
           overlayClassName={'task-drawer-actions-dropdown'}
-          menu={{ items: taskDrawerDropdownItems }}
+          menu={menuProps}
+          placement="bottomRight"
+          trigger={['click']}
         >
           <Button type="text" icon={<EllipsisOutlined />} />
         </Dropdown>
