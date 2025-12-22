@@ -4659,6 +4659,7 @@ class ClientPortalController {
       }
 
       // Build query with pagination and filtering
+      // NOTE: Archived tasks should NOT be included in project progress stats
       let query = `
         SELECT 
           p.id,
@@ -4670,10 +4671,20 @@ class ClientPortalController {
           p.created_at,
           p.updated_at,
           COUNT(t.id) as total_tasks,
-          COUNT(CASE WHEN ts.category_id IN (SELECT id FROM sys_task_status_categories WHERE is_done = true) THEN 1 END) as completed_tasks
+          COUNT(
+            CASE 
+              WHEN ts.category_id IN (
+                SELECT id 
+                FROM sys_task_status_categories 
+                WHERE is_done = true
+              ) 
+              THEN 1 
+            END
+          ) as completed_tasks
         FROM projects p
         LEFT JOIN sys_project_statuses sps ON p.status_id = sps.id
-        LEFT JOIN tasks t ON p.id = t.project_id
+        -- Only consider non-archived tasks when calculating progress
+        LEFT JOIN tasks t ON p.id = t.project_id AND t.archived IS FALSE
         LEFT JOIN task_statuses ts ON t.status_id = ts.id
         WHERE p.client_id = $1
       `;
