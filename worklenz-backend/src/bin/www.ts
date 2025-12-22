@@ -15,6 +15,7 @@ import {startCronJobs} from "../cron_jobs";
 import FileConstants from "../shared/file-constants";
 import {initRedis} from "../redis/client";
 import DbTaskStatusChangeListener from "../pg_notify_listeners/db-task-status-changed";
+import { isOriginAllowed } from "../shared/cors";
 
 function normalizePort(val?: string) {
   const p = parseInt(val || "0", 10);
@@ -29,10 +30,16 @@ app.set("port", port);
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  transports: ["websocket"],
+  transports: ["websocket", "polling"],
   path: "/socket",
   cors: {
-    origin: (process.env.SOCKET_IO_CORS || "*").split(",")
+    origin: (origin, callback) => {
+      if (isOriginAllowed(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    }
   },
   cookie: true
 });

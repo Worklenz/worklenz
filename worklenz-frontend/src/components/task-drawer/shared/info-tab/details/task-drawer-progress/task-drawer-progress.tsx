@@ -98,12 +98,11 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
 
       socket?.emit(
         SocketEvents.UPDATE_TASK_PROGRESS.toString(),
-        JSON.stringify({
+        {
           task_id: task.id,
           progress_value: value,
           parent_task_id: parent_task_id,
-        })
-      );
+        });
 
       socket?.once(SocketEvents.GET_TASK_PROGRESS.toString(), (data: any) => {
         if (tab === 'tasks-list') {
@@ -151,12 +150,11 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
 
       socket?.emit(
         SocketEvents.UPDATE_TASK_WEIGHT.toString(),
-        JSON.stringify({
+        {
           task_id: task.id,
           weight: value,
           parent_task_id: parent_task_id,
-        })
-      );
+        });
 
       // If this is a subtask, request the parent's progress to be updated in UI
       if (parent_task_id) {
@@ -185,14 +183,13 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
             // Emit socket event to update the task status
             socket?.emit(
               SocketEvents.TASK_STATUS_CHANGE.toString(),
-              JSON.stringify({
+              {
                 task_id: task.id,
                 status_id: doneStatusId,
                 project_id: task.project_id,
                 team_id: currentSession?.team_id,
                 parent_task: task.parent_task_id || null,
-              })
-            );
+              });
             socket?.once(
               SocketEvents.TASK_STATUS_CHANGE.toString(),
               (data: ITaskListStatusChangeResponse) => {

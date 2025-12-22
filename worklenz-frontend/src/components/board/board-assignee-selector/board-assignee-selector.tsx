@@ -93,7 +93,7 @@ const BoardAssigneeSelector = ({ task, groupId = null }: BoardAssigneeSelectorPr
       parent_task: task.parent_task_id,
     };
 
-    socket?.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), JSON.stringify(body));
+    socket?.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), body);
   };
 
   const checkMemberSelected = (memberId: string) => {

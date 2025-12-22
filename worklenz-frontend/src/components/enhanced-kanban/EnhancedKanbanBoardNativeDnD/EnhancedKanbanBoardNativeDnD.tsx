@@ -328,23 +328,21 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
       if (didStatusChange) {
         socket.emit(
           SocketEvents.TASK_STATUS_CHANGE.toString(),
-          JSON.stringify({
+          {
             task_id: movedTask.id,
             status_id: targetGroupId,
             parent_task: movedTask.parent_task_id || null,
             team_id: teamId,
-          })
-        );
+          });
       }
       if (groupBy === 'priority' && movedTask.id) {
         socket?.emit(
           SocketEvents.TASK_PRIORITY_CHANGE.toString(),
-          JSON.stringify({
+          {
             task_id: movedTask.id,
             priority_id: targetGroupId,
             team_id: teamId,
-          })
-        );
+          });
         socket?.once(
           SocketEvents.TASK_PRIORITY_CHANGE.toString(),
           (data: ITaskListPriorityChangeResponse) => {

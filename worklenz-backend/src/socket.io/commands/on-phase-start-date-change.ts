@@ -2,7 +2,7 @@ import {Server, Socket} from "socket.io";
 import db from "../../config/db";
 import {SocketEvents} from "../events";
 
-import {log_error} from "../util";
+import {log_error, parseSocketPayload} from "../util";
 
 export async function on_phase_start_date_change(_io: Server, socket: Socket, data?: string) {
     try {
@@ -10,8 +10,8 @@ export async function on_phase_start_date_change(_io: Server, socket: Socket, da
                    SET start_date = $2
                    WHERE id = $1
                    RETURNING start_date, end_date;`;
-        const body = JSON.parse(data as string);
-        const result = await db.query(q, [body.phase_id, body.start_date]);
+        const body = parseSocketPayload<any>(data as string);
+    if (!body) return;
     
         const [d] = result.rows;
         socket.emit(SocketEvents.PHASE_START_DATE_CHANGE.toString(), {

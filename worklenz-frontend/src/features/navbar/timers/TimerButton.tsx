@@ -178,7 +178,7 @@ const TimerButton = () => {
     }
 
     try {
-      socket.emit(SocketEvents.TASK_TIMER_STOP.toString(), JSON.stringify({ task_id: taskId }));
+      socket.emit(SocketEvents.TASK_TIMER_STOP.toString(), { task_id: taskId });
       dispatch(updateTaskTimeTracking({ taskId, timeTracking: null }));
     } catch (error) {
       logError(`Error stopping timer for task ${taskId}`, error);

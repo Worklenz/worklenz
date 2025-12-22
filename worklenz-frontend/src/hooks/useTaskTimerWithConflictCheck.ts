@@ -62,9 +62,9 @@ export const useTaskTimerWithConflictCheck = (taskId: string, timerStartTime: st
           onOk: () => {
             // Stop the conflicting timer
             if (socket) {
-              socket.emit(SocketEvents.TASK_TIMER_STOP.toString(), JSON.stringify({ 
+              socket.emit(SocketEvents.TASK_TIMER_STOP.toString(), { 
                 task_id: conflictingTimer.task_id 
-              }));
+              });
             }
             
             // Start the new timer after a short delay

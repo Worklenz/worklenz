@@ -237,7 +237,7 @@ const ProjectViewHeader = memo(() => {
       };
 
       socket.once(SocketEvents.QUICK_TASK.toString(), handleTaskCreated);
-      socket.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
+      socket.emit(SocketEvents.QUICK_TASK.toString(), body);
     } catch (error) {
       logger.error('Error creating task', error);
       setCreatingTask(false);

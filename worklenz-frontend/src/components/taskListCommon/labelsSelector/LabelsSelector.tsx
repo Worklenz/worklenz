@@ -47,7 +47,7 @@ const LabelsSelector = ({ task }: LabelsSelectorProps) => {
       team_id: currentSession?.team_id,
     };
 
-    socket?.emit(SocketEvents.TASK_LABELS_CHANGE.toString(), JSON.stringify(labelData));
+    socket?.emit(SocketEvents.TASK_LABELS_CHANGE.toString(), labelData);
   };
 
   const handleCreateLabel = () => {
@@ -58,7 +58,7 @@ const LabelsSelector = ({ task }: LabelsSelectorProps) => {
       parent_task: task.parent_task_id,
       team_id: currentSession?.team_id,
     };
-    socket?.emit(SocketEvents.CREATE_LABEL.toString(), JSON.stringify(labelData));
+    socket?.emit(SocketEvents.CREATE_LABEL.toString(), labelData);
     setSearchQuery('');
   };
 

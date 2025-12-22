@@ -105,7 +105,7 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
       end_date: endDate || new Date().toISOString().split('T')[0], // Fallback to today if undefined
     };
 
-    socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(newTask));
+    socket?.emit(SocketEvents.QUICK_TASK.toString(), newTask);
     socket?.on(SocketEvents.QUICK_TASK.toString(), (task: IMyTask) => {
       if (task) {
         const taskBody = {
@@ -115,7 +115,7 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
           reporter_id: currentSession?.id,
           mode: 0,
         };
-        socket?.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), JSON.stringify(taskBody));
+        socket?.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), taskBody);
         socket?.once(
           SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(),
           (response: ITaskAssigneesUpdateResponse) => {

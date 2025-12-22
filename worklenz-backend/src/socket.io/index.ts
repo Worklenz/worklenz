@@ -60,7 +60,7 @@ import { on_get_done_statuses } from "./commands/on-get-done-statuses";
 export function register(io: any, socket: Socket) {
   log(socket.id, "client registered");
 
-  socket.on(SocketEvents.LOGIN.toString(), id => on_login(io, socket, id));
+  socket.on(SocketEvents.LOGIN.toString(), () => on_login(io, socket));
   socket.on(SocketEvents.QUICK_TASK.toString(), data => on_quick_task(io, socket, data));
   socket.on(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), data => on_quick_assign_or_remove(io, socket, data));
   socket.on(SocketEvents.TASK_STATUS_CHANGE.toString(), data => on_task_status_change(io, socket, data));

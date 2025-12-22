@@ -2,12 +2,14 @@ import {Server, Socket} from "socket.io";
 import db from "../../config/db";
 import {SocketEvents} from "../events";
 
-import {getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates} from "../util";
+import {getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates, parseSocketPayload} from "../util";
 
 export async function on_task_timer_stop(_io: Server, socket: Socket, data?: string) {
   try {
-    const body = JSON.parse(data as string);
     const userId = getLoggedInUserIdFromSocket(socket);
+    if (!userId) return;
+    const body = parseSocketPayload<any>(data as string);
+    if (!body) return;
     const q = `
     DO
     $$

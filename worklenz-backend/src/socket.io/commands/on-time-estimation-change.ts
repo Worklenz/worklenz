@@ -3,7 +3,7 @@ import db from "../../config/db";
 import TasksController from "../../controllers/tasks-controller";
 import { SocketEvents } from "../events";
 
-import { log_error, notifyProjectUpdates } from "../util";
+import {log_error, notifyProjectUpdates, parseSocketPayload} from "../util";
 import { getTaskDetails, logTotalMinutes } from "../../services/activity-logs/activity-logs.service";
 
 /**
@@ -76,9 +76,9 @@ export async function on_time_estimation_change(io: Server, socket: Socket, data
   try {
     // (SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id) AS total_minutes_spent,
     const q = `UPDATE tasks SET total_minutes = $2 WHERE id = $1 RETURNING total_minutes, project_id, parent_task_id;`;
-    const body = JSON.parse(data as string);
+    const body = parseSocketPayload<any>(data as string);
 
-    const hours = body.total_hours || 0;
+    if (!body) return;
     const minutes = body.total_minutes || 0;
     const totalMinutes = (hours * 60) + minutes;
 

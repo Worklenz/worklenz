@@ -5,7 +5,7 @@ import {NotificationsService} from "../../services/notifications/notifications.s
 import {getColor} from "../../shared/utils";
 import {SocketEvents} from "../events";
 
-import {getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates} from "../util";
+import {getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates, parseSocketPayload} from "../util";
 import {logMemberAssignment} from "../../services/activity-logs/activity-logs.service";
 
 export interface ITaskAssignee {
@@ -55,8 +55,8 @@ export async function runAssignOrRemove(data: any, isAssignment = false) {
 
 export async function on_quick_assign_or_remove(_io: Server, socket: Socket, data?: string) {
   try {
-    const body = JSON.parse(data as string);
-    const isAssign = body.mode == 0;
+    const body = parseSocketPayload<any>(data as string);
+    if (!body) return;
     const userId = getLoggedInUserIdFromSocket(socket);
 
     const assignment = await runAssignOrRemove(body, isAssign);

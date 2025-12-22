@@ -181,7 +181,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
     };
 
     // Emit socket event - the socket handler will update Redux with proper types
-    socket?.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), JSON.stringify(body));
+    socket?.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), body);
     socket?.once(
       SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(),
       (data: any) => {

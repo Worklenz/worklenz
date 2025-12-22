@@ -34,12 +34,11 @@ export const useTaskRowActions = ({
     if (taskName?.trim() !== '' && connected && taskName.trim() !== (task.title || task.name || '').trim()) {
       socket?.emit(
         SocketEvents.TASK_NAME_CHANGE.toString(),
-        JSON.stringify({
+        {
           task_id: task.id,
           name: taskName.trim(),
           parent_task: task.parent_task_id,
-        })
-      );
+        });
     }
     setEditTaskName(false);
   }, [taskName, connected, socket, task.id, task.parent_task_id, task.title, task.name, setEditTaskName]);

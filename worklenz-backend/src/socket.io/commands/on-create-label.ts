@@ -4,13 +4,13 @@ import WorklenzControllerBase from "../../controllers/worklenz-controller-base";
 import {getRandomColorCode} from "../../shared/utils";
 import {SocketEvents} from "../events";
 
-import {log_error} from "../util";
+import {log_error, parseSocketPayload} from "../util";
 import {logLabelsUpdate} from "../../services/activity-logs/activity-logs.service";
 
 export async function on_create_label(_io: Server, socket: Socket, data?: string) {
   try {
-    const body = JSON.parse(data as string);
-    if (body.label?.length > 30) return;
+    const body = parseSocketPayload<any>(data as string);
+    if (!body) return;
 
     body.color = getRandomColorCode();
 

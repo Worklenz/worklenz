@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { log_error } from "../util";
+import {log_error, parseSocketPayload} from "../util";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
 
@@ -11,10 +11,10 @@ interface CustomColumnPinnedChangeData {
 
 export const  on_custom_column_pinned_change = async (io: Server, socket: Socket, data: string) => {
   try {
-    // Parse the data
-    const parsedData: CustomColumnPinnedChangeData = typeof data === "string" ? JSON.parse(data) : data;
-    const { column_id, project_id, is_visible } = parsedData;
+    const body = parseSocketPayload<CustomColumnPinnedChangeData>(data);
+    if (!body) return;
 
+    const {column_id, project_id, is_visible} = body;
     // Validate input data
     if (!column_id || !project_id || is_visible === undefined) {
       log_error("Invalid data for custom column pinned change");

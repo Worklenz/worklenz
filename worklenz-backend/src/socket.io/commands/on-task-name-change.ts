@@ -3,13 +3,15 @@ import db from "../../config/db";
 import {NotificationsService} from "../../services/notifications/notifications.service";
 import {SocketEvents} from "../events";
 
-import {getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates} from "../util";
+import {getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates, parseSocketPayload} from "../util";
 import {getTaskDetails, logNameChange} from "../../services/activity-logs/activity-logs.service";
 
 export async function on_task_name_change(_io: Server, socket: Socket, data?: string) {
   try {
-    const body = JSON.parse(data as string);
     const userId = getLoggedInUserIdFromSocket(socket);
+    if (!userId) return;
+    const body = parseSocketPayload<any>(data as string);
+    if (!body) return;
 
     const name = (body.name || "").trim();
     const task_data = await getTaskDetails(body.task_id, "name");

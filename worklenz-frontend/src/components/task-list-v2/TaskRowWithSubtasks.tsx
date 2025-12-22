@@ -81,14 +81,13 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(({
     if (connected && socket) {
       socket.emit(
         SocketEvents.QUICK_TASK.toString(),
-        JSON.stringify({
+        {
           name: subtaskName.trim(),
           project_id: projectId,
           parent_task_id: parentTaskId,
           reporter_id: currentSession.id,
           team_id: currentSession.team_id,
-        })
-      );
+        });
     }
 
     // Clear the input but keep it focused for the next subtask

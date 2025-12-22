@@ -268,3 +268,6 @@ ON task_timers(user_id, task_id);
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_sys_task_status_categories_covering
 ON sys_task_status_categories(id, color_code, color_code_dark, is_done, is_doing, is_todo);
 
+-- Index for active socket lookups per user
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_user_sockets_user
+ON user_sockets(user_id);

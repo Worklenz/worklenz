@@ -1,7 +1,7 @@
 import { Socket } from "socket.io";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
-import { log, log_error, notifyProjectUpdates } from "../util";
+import {log, log_error, notifyProjectUpdates, parseSocketPayload} from "../util";
 import { logWeightChange } from "../../services/activity-logs/activity-logs.service";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
 
@@ -13,10 +13,10 @@ interface UpdateTaskWeightData {
 
 export async function on_update_task_weight(io: any, socket: Socket, data: string) {
   try {
-    
-    const parsedData = JSON.parse(data) as UpdateTaskWeightData;
-    const { task_id, weight, parent_task_id } = parsedData;
-    
+    const body = parseSocketPayload<UpdateTaskWeightData>(data);
+    if (!body) return;
+
+    const {task_id, weight} = body;
     if (!task_id || weight === undefined) {
       return;
     }

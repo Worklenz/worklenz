@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { SocketEvents } from "../events";
 import db from "../../config/db";
-import { log_error } from "../util";
+import {log_error, parseSocketPayload} from "../util";
 
 interface TaskCustomColumnUpdateData {
   task_id: string;
@@ -12,10 +12,10 @@ interface TaskCustomColumnUpdateData {
 
 export const on_task_custom_column_update = async (_io: Server, socket: Socket, data: string) => {
   try {
-    // Parse the data
-    const parsedData: TaskCustomColumnUpdateData = typeof data === "string" ? JSON.parse(data) : data;
-    const { task_id, column_key, value, project_id } = parsedData;
+    const body = parseSocketPayload<TaskCustomColumnUpdateData>(data);
+    if (!body) return;
 
+    const {task_id, column_key, value, project_id} = body;
     if (!task_id || !column_key || value === undefined || !project_id) {
       console.error("Invalid data for task custom column update", { task_id, column_key, value, project_id });
       return;

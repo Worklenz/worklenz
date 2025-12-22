@@ -17,6 +17,7 @@ import authRouter from "./routes/auth";
 import emailTemplatesRouter from "./routes/email-templates";
 import public_router from "./routes/public";
 import { isInternalServer, isProduction } from "./shared/utils";
+import { getAllowedOrigins, isOriginAllowed } from "./shared/cors";
 import sessionMiddleware from "./middlewares/session-middleware";
 import safeControllerFunction from "./shared/safe-controller-function";
 import AwsSesController from "./controllers/aws-ses-controller";
@@ -51,37 +52,13 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
 });
 
 // CORS configuration
-const allowedOrigins = [
-  isProduction()
-    ? [
-      `http://localhost:5000`,
-      `http://127.0.0.1:5000`,
-      process.env.SERVER_CORS || "",  // Add hostname from env
-      process.env.FRONTEND_URL || ""  // Support FRONTEND_URL as well
-    ].filter(Boolean)  // Remove empty strings
-    : [
-      "http://localhost:3000",
-      "http://localhost:5173",
-      "http://127.0.0.1:5173",
-      "http://127.0.0.1:3000",
-      "http://127.0.0.1:5000",
-      `http://localhost:5000`,
-      process.env.SERVER_CORS || "",  // Add hostname from env
-      process.env.FRONTEND_URL || ""  // Support FRONTEND_URL as well
-    ].filter(Boolean)  // Remove empty strings
-].flat();
-
 app.use(cors({
   origin: (origin, callback) => {
-    // Explicitly allow the known frontend domain and subdomains
-    const isAllowed = (origin && allowedOrigins.includes(origin)) ||
-      (origin && /^https:\/\/([a-z0-9-]+\.)?autoarq\.com\.br$/.test(origin));
-
-    if (!isProduction() || !origin || isAllowed) {
+    if (isOriginAllowed(origin)) {
       callback(null, true);
     } else {
       console.log("Blocked origin:", origin);
-      console.log("Allowed origins:", allowedOrigins);
+      console.log("Allowed origins:", getAllowedOrigins());
       console.log("Environment:", process.env.NODE_ENV);
       callback(new Error("Not allowed by CORS"));
     }

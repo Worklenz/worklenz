@@ -3,7 +3,7 @@ import db from "../../config/db";
 import {getColor, toMinutes} from "../../shared/utils";
 import {SocketEvents} from "../events";
 
-import {log_error, notifyProjectUpdates} from "../util";
+import {log_error, notifyProjectUpdates, parseSocketPayload} from "../util";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
 import {TASK_STATUS_COLOR_ALPHA, UNMAPPED} from "../../shared/constants";
 import moment from "moment";
@@ -54,11 +54,11 @@ function createGaantTask(body: any) {
 export async function on_quick_task(_io: Server, socket: Socket, data?: string) {
   try {
     const q = `SELECT create_quick_task($1) AS task;`;
-    const body = JSON.parse(data as string);
+    const body = parseSocketPayload<any>(data as string);
 
 
 
-    body.name = (body.name || "").trim();
+    if (!body) return;
     body.priority_id = body.priority_id?.trim() || null;
     body.status_id = body.status_id?.trim() || null;
     body.phase_id = body.phase_id?.trim() || null;

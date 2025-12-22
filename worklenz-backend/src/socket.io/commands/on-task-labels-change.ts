@@ -3,14 +3,14 @@ import db from "../../config/db";
 import WorklenzControllerBase from "../../controllers/worklenz-controller-base";
 import {SocketEvents} from "../events";
 
-import {log_error, notifyProjectUpdates} from "../util";
+import {log_error, notifyProjectUpdates, parseSocketPayload} from "../util";
 import {logLabelsUpdate} from "../../services/activity-logs/activity-logs.service";
 
 export async function on_task_label_change(_io: Server, socket: Socket, data?: string) {
   try {
-    const body = JSON.parse(data as string);
+    const body = parseSocketPayload<any>(data as string);
 
-    const q = `SELECT add_or_remove_task_label($1, $2) AS labels;`;
+    if (!body) return;
     const result = await db.query(q, [body.task_id, body.label_id]);
     const [d] = result.rows;
 

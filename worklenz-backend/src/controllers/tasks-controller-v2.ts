@@ -11,6 +11,8 @@ import {
   UNMAPPED,
 } from "../shared/constants";
 import { getColor, log_error } from "../shared/utils";
+import { IO } from "../shared/io";
+import { SocketEvents } from "../socket.io/events";
 import TasksControllerBase, {
   GroupBy,
   ITaskGroup,
@@ -684,9 +686,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
           const progressRatio = progressResult.rows[0]?.ratio?.ratio || 0;
 
-          // Emit the updated progress value to all clients
-          // Note: We don't have socket context here, so we can't directly emit
-          // This will be picked up on the next client refresh
+          // Emit the updated progress value to all clients in the project room
+          IO.getInstance()
+            ?.to(projectId)
+            .emit(SocketEvents.TASK_PROGRESS_UPDATED.toString(), {
+              task_id: parentTaskId,
+              progress_value: progressRatio
+            });
           console.log(
             `Recalculated progress for parent task ${parentTaskId}: ${progressRatio}%`
           );

@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
-import { log_error } from "../util";
+import {log_error, parseSocketPayload} from "../util";
 import momentTime from "moment-timezone";
 import moment from "moment-timezone";
 
@@ -36,9 +36,9 @@ async function checkExists(body: any) {
 
 export async function on_schedule_member_allocation_create(_io: Server, socket: Socket, data?: string) {
   try {
-    const body = JSON.parse(data as string);
+    const body = parseSocketPayload<any>(data as string);
 
-    await createAllocation(body);
+    if (!body) return;
     await checkExists(body);
 
     const q = `INSERT INTO project_member_allocations(project_id, team_member_id, allocated_from, allocated_to)
@@ -55,12 +55,4 @@ export async function on_schedule_member_allocation_create(_io: Server, socket: 
   } catch (error) {
     log_error(error);
   }
-
-  const body = JSON.parse(data as string);
-
-  socket.emit(SocketEvents.SCHEDULE_MEMBER_ALLOCATION_CREATE.toString(), {
-    project_id: body.project_id,
-    team_member_id: body.team_member_id
-  });
-
 }

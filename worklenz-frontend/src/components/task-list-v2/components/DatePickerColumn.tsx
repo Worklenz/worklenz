@@ -44,13 +44,12 @@ export const DatePickerColumn: React.FC<DatePickerColumnProps> = memo(({
 
       socket.emit(
         eventType.toString(),
-        JSON.stringify({
+        {
           task_id: task.id,
           [dateField]: date?.format('YYYY-MM-DD'),
           parent_task: null,
           time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        })
-      );
+        });
 
       // Close the date picker after selection
       onActiveDatePickerChange(null);

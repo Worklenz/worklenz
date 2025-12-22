@@ -1,14 +1,14 @@
 import { Server, Socket } from "socket.io";
-import { log_error } from "../util";
+import {log_error, parseSocketPayload} from "../util";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
 
 export async function on_pt_task_time_estimation_change(_io: Server, socket: Socket, data?: string) {
     try {
         const q = `UPDATE cpt_tasks SET total_minutes = $2 WHERE id = $1 RETURNING total_minutes;`;
-        const body = JSON.parse(data as string);
+        const body = parseSocketPayload<any>(data as string);
     
-        const hours = body.total_hours || 0;
+    if (!body) return;
         const minutes = body.total_minutes || 0;
         const totalMinutes = (hours * 60) + minutes;
     

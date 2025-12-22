@@ -75,7 +75,7 @@ const EnhancedKanbanCreateSubtaskCard = ({
       const body = createRequestBody();
       if (!body) return;
 
-      socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
+      socket?.emit(SocketEvents.QUICK_TASK.toString(), body);
       socket?.once(SocketEvents.QUICK_TASK.toString(), (task: IProjectTask) => {
         if (!task) return;
         setCreatingTask(false);

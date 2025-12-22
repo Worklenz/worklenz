@@ -83,13 +83,12 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
       // Emit socket event for server-side update and real-time sync
       socket?.emit(
         SocketEvents.TASK_STATUS_CHANGE.toString(),
-        JSON.stringify({
+        {
           task_id: task.id,
           status_id: statusId,
           parent_task: task.parent_task_id || null,
           team_id: projectId,
-        })
-      );
+        });
       socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.id);
       setIsOpen(false);
     },

@@ -135,12 +135,11 @@ const TaskListTaskCell = ({
     if (taskName?.trim() !== '' && connected) {
       socket?.emit(
         SocketEvents.TASK_NAME_CHANGE.toString(),
-        JSON.stringify({
+        {
           task_id: task.id,
           name: taskName,
           parent_task: task.parent_task_id,
-        })
-      );
+        });
       setEditTaskName(false);
     }
   };

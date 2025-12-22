@@ -69,12 +69,11 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(({
     if (newTaskName?.trim() !== '' && connected && newTaskName.trim() !== (task.title || task.name || '').trim()) {
       socket?.emit(
         SocketEvents.TASK_NAME_CHANGE.toString(),
-        JSON.stringify({
+        {
           task_id: task.id,
           name: newTaskName.trim(),
           parent_task: task.parent_task_id,
-        })
-      );
+        });
     }
     onEditTaskName(false);
   }, [taskName, connected, socket, task.id, task.parent_task_id, task.title, task.name, onEditTaskName]);

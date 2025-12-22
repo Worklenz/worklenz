@@ -64,7 +64,7 @@ const HomeTasksDatePicker = ({ record }: HomeTasksDatePickerProps) => {
         ? getUserSession()?.timezone_name
         : Intl.DateTimeFormat().resolvedOptions().timeZone,
     };
-    socket?.emit(SocketEvents.TASK_END_DATE_CHANGE.toString(), JSON.stringify(body));
+    socket?.emit(SocketEvents.TASK_END_DATE_CHANGE.toString(), body);
   };
 
   // Function to dynamically format the date based on the calendar rules

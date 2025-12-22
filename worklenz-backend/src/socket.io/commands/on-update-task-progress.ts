@@ -1,7 +1,7 @@
 import { Socket } from "socket.io";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
-import { log, log_error, notifyProjectUpdates } from "../util";
+import {log, log_error, notifyProjectUpdates, parseSocketPayload} from "../util";
 import { logProgressChange } from "../../services/activity-logs/activity-logs.service";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
 
@@ -82,9 +82,10 @@ async function updateTaskAncestors(io: any, socket: Socket, projectId: string, t
 
 export async function on_update_task_progress(io: any, socket: Socket, data: string) {
   try {   
-    const parsedData = JSON.parse(data) as UpdateTaskProgressData;
-    const { task_id, progress_value, parent_task_id } = parsedData;    
-    
+    const body = parseSocketPayload<UpdateTaskProgressData>(data);
+    if (!body) return;
+
+    const {task_id, progress_value} = body;
     if (!task_id || progress_value === undefined) {
       return;
     }

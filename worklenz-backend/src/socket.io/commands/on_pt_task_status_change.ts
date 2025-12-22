@@ -1,14 +1,14 @@
 import { Server, Socket } from "socket.io";
-import { log_error } from "../util";
+import {log_error, parseSocketPayload} from "../util";
 import db from "../../config/db";
 import { TASK_STATUS_COLOR_ALPHA } from "../../shared/constants";
 import { SocketEvents } from "../events";
 
 export async function on_pt_task_status_change(_io: Server, socket: Socket, data?: string) {
     try {
-        const body = JSON.parse(data as string);
+        const body = parseSocketPayload<any>(data as string);
     
-        const q2 = "SELECT handle_on_pt_task_status_change($1, $2) AS res;";
+    if (!body) return;
         const results1 = await db.query(q2, [body.task_id, body.status_id]);
         const [d] = results1.rows;
         const changeResponse = d.res;

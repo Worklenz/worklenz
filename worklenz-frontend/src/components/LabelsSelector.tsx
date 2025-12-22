@@ -133,7 +133,7 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
       team_id: currentSession?.team_id,
     };
 
-    socket?.emit(SocketEvents.TASK_LABELS_CHANGE.toString(), JSON.stringify(labelData));
+    socket?.emit(SocketEvents.TASK_LABELS_CHANGE.toString(), labelData);
   };
 
   const handleCreateLabel = () => {
@@ -146,7 +146,7 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
       team_id: currentSession?.team_id,
     };
 
-    socket?.emit(SocketEvents.CREATE_LABEL.toString(), JSON.stringify(labelData));
+    socket?.emit(SocketEvents.CREATE_LABEL.toString(), labelData);
     setSearchQuery('');
   };
 

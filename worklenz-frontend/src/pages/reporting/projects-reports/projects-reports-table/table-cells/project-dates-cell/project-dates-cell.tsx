@@ -46,11 +46,10 @@ const ProjectDatesCell = ({ projectId, startDate, endDate }: ProjectDatesCellPro
       }
       socket.emit(
         SocketEvents.PROJECT_START_DATE_CHANGE.toString(),
-        JSON.stringify({
+        {
           project_id: projectId,
           start_date: date?.format('YYYY-MM-DD'),
-        })
-      );
+        });
     } catch (error) {
       logger.error('Error sending start date change:', error);
     }
@@ -63,11 +62,10 @@ const ProjectDatesCell = ({ projectId, startDate, endDate }: ProjectDatesCellPro
       }
       socket.emit(
         SocketEvents.PROJECT_END_DATE_CHANGE.toString(),
-        JSON.stringify({
+        {
           project_id: projectId,
           end_date: date?.format('YYYY-MM-DD'),
-        })
-      );
+        });
     } catch (error) {
       logger.error('Error sending end date change:', error);
     }

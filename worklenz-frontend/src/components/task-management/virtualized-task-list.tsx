@@ -96,7 +96,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(
         team_id: currentSession.team_id,
         parent_task_id: parentTaskId,
       };
-      socket.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(requestBody));
+      socket.emit(SocketEvents.QUICK_TASK.toString(), requestBody);
       // Listen for the response and clear input/collapse row
       socket.once(SocketEvents.QUICK_TASK.toString(), (response: any) => {
         setNewSubtaskName('');

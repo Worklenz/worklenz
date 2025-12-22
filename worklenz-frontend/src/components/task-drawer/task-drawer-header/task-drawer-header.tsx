@@ -126,12 +126,11 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
       return;
     socket?.emit(
       SocketEvents.TASK_NAME_CHANGE.toString(),
-      JSON.stringify({
+      {
         task_id: selectedTaskId,
         name: taskName,
         parent_task: taskFormViewModel?.task?.parent_task_id,
-      })
-    );
+      });
     // Note: Real-time updates are handled by the global useTaskSocketHandlers hook
     // No need for local socket listeners that could interfere with global handlers
   };

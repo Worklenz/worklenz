@@ -2385,6 +2385,12 @@ CREATE TABLE IF NOT EXISTS survey_answers (
     updated_at TIMESTAMP DEFAULT now() NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS user_sockets (
+    socket_id VARCHAR(255) PRIMARY KEY,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    connected_at TIMESTAMP DEFAULT now() NOT NULL
+);
+
 -- Survey table indexes
 CREATE INDEX IF NOT EXISTS idx_surveys_type_active ON surveys(survey_type, is_active);
 CREATE INDEX IF NOT EXISTS idx_survey_questions_survey_order ON survey_questions(survey_id, sort_order);

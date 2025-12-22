@@ -1,14 +1,14 @@
 import { Server, Socket } from "socket.io";
-import { log_error } from "../util";
+import {log_error, parseSocketPayload} from "../util";
 import db from "../../config/db";
 import { PriorityColorCodes, TASK_PRIORITY_COLOR_ALPHA } from "../../shared/constants";
 import { SocketEvents } from "../events";
 
 export async function on_pt_task_priority_change(_io: Server, socket: Socket, data?: string) {
     try {
-        const body = JSON.parse(data as string);
+        const body = parseSocketPayload<any>(data as string);
 
-        const q = `UPDATE cpt_tasks SET priority_id = $2 WHERE id = $1`;
+    if (!body) return;
 
         await db.query(q, [body.task_id, body.priority_id]);
 
