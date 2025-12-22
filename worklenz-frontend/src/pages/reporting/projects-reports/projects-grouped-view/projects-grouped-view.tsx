@@ -1,5 +1,5 @@
 import { memo, useMemo, useEffect, useState, useCallback } from 'react';
-import { Collapse, Progress, Typography, Flex, Badge, Empty, Spin, Button } from '@/shared/antd-imports';
+import { Collapse, Progress, Typography, Flex, Badge, Empty, Spin, Button, Tooltip } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -27,8 +27,32 @@ interface IProjectGroup {
   projects: IRPTProject[];
   totalTasks: number;
   completedTasks: number;
+  todoTasks: number;
+  doingTasks: number;
+  doneTasks: number;
   progressPercent: number;
 }
+
+interface IProgressSegments {
+  todo: number;
+  doing: number;
+  done: number;
+  total: number;
+  percentDone: number;
+}
+
+const getProgressSegments = (todo: number, doing: number, done: number): IProgressSegments => {
+  const total = todo + doing + done;
+  const safeTotal = total > 0 ? total : 1;
+
+  return {
+    todo,
+    doing,
+    done,
+    total,
+    percentDone: Math.round((done / safeTotal) * 100),
+  };
+};
 
 const ProjectsGroupedView = () => {
   const { t } = useTranslation('reporting-projects');
@@ -153,6 +177,9 @@ const ProjectsGroupedView = () => {
           projects: [],
           totalTasks: 0,
           completedTasks: 0,
+          todoTasks: 0,
+          doingTasks: 0,
+          doneTasks: 0,
           progressPercent: 0,
         });
       }
@@ -166,6 +193,9 @@ const ProjectsGroupedView = () => {
       const projectTotalTasks = projectTodoTasks + projectDoingTasks + projectDoneTasks;
       group.totalTasks += projectTotalTasks;
       group.completedTasks += projectDoneTasks;
+      group.todoTasks += projectTodoTasks;
+      group.doingTasks += projectDoingTasks;
+      group.doneTasks += projectDoneTasks;
     });
 
     groups.forEach(group => {
@@ -186,8 +216,21 @@ const ProjectsGroupedView = () => {
       const todoTasks = project.tasks_stat?.todo || 0;
       const doingTasks = project.tasks_stat?.doing || 0;
       const doneTasks = project.tasks_stat?.done || 0;
-      const totalTasks = todoTasks + doingTasks + doneTasks;
-      const progressPercent = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+      const { total, percentDone } = getProgressSegments(todoTasks, doingTasks, doneTasks);
+
+      const progressTooltipTitle = (
+        <Flex vertical>
+          <Typography.Text>
+            {t('todoText')}: {todoTasks}
+          </Typography.Text>
+          <Typography.Text>
+            {t('doingText')}: {doingTasks}
+          </Typography.Text>
+          <Typography.Text>
+            {t('doneText')}: {doneTasks}
+          </Typography.Text>
+        </Flex>
+      );
 
       return (
         <div
@@ -210,14 +253,16 @@ const ProjectsGroupedView = () => {
               </Typography.Text>
             </Flex>
             <Flex align="center" gap={16} style={{ flexShrink: 0 }}>
-              <Progress
-                percent={progressPercent}
-                size="small"
-                style={{ width: 100 }}
-                strokeColor={progressPercent === 100 ? '#52c41a' : '#1890ff'}
-              />
+              <Tooltip title={progressTooltipTitle}>
+                <Progress
+                  percent={percentDone}
+                  size="small"
+                  style={{ width: 100 }}
+                  strokeColor={percentDone === 100 ? '#52c41a' : '#1890ff'}
+                />
+              </Tooltip>
               <Typography.Text type="secondary" style={{ minWidth: 70, textAlign: 'right' }}>
-                {doneTasks}/{totalTasks} {t('tasksText')}
+                {doneTasks}/{total} {t('tasksText')}
               </Typography.Text>
             </Flex>
           </Flex>
@@ -250,12 +295,28 @@ const ProjectsGroupedView = () => {
                 <Typography.Text type="secondary">
                   {group.completedTasks}/{group.totalTasks} {t('tasksText')}
                 </Typography.Text>
-                <Progress
-                  percent={group.progressPercent}
-                  size="small"
-                  style={{ width: 80 }}
-                  strokeColor={group.progressPercent === 100 ? '#52c41a' : '#1890ff'}
-                />
+                <Tooltip
+                  title={
+                    <Flex vertical>
+                      <Typography.Text>
+                        {t('todoText')}: {group.todoTasks}
+                      </Typography.Text>
+                      <Typography.Text>
+                        {t('doingText')}: {group.doingTasks}
+                      </Typography.Text>
+                      <Typography.Text>
+                        {t('doneText')}: {group.doneTasks}
+                      </Typography.Text>
+                    </Flex>
+                  }
+                >
+                  <Progress
+                    percent={group.progressPercent}
+                    size="small"
+                    style={{ width: 80 }}
+                    strokeColor={group.progressPercent === 100 ? '#52c41a' : '#1890ff'}
+                  />
+                </Tooltip>
               </Flex>
             </Flex>
           ),
