@@ -229,7 +229,6 @@ const Navbar = () => {
             <ConfigProvider wave={{ disabled: true }}>
               {isDesktop && (
                 <Flex>
-                  <TimerButton />
                   <Flex gap={20} align="center">
                     <TrialDaysBadge />
                     {isOwnerOrAdmin &&
@@ -241,6 +240,7 @@ const Navbar = () => {
                       <ConnectionStatusIndicator />
                       <SwitchTeamButton />
                       <NotificationButton />
+                      <TimerButton />
                       {/* <HelpButton /> */}
                       <ProfileButton isOwnerOrAdmin={isOwnerOrAdmin} />
                     </Flex>
