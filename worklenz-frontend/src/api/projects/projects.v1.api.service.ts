@@ -119,7 +119,7 @@ export const projectsApi = createApi({
     }),
 
     getProjectCategories: builder.query<IProjectCategory[], void>({
-      query: () => `${rootUrl}/categories`,
+      query: () => '/project-categories',
       providesTags: ['ProjectCategories'],
     }),
 

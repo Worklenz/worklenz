@@ -105,9 +105,8 @@ export const projectsApiService = {
     payload: UpdateProjectPayload
   ): Promise<IServerResponse<IProjectViewModel>> => {
     const { id, ...data } = payload;
-    const q = toQueryString({ current_project_id: id });
-    const url = `${API_BASE_URL}/projects/${id}${q}`;
-    const response = await apiClient.patch<IServerResponse<IProjectViewModel>>(url, data);
+    const url = `${API_BASE_URL}/projects/${id}`;
+    const response = await apiClient.put<IServerResponse<IProjectViewModel>>(url, data);
     return response.data;
   },
 

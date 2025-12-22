@@ -40,12 +40,14 @@ export default class ProjectCategoriesController extends WorklenzControllerBase 
 
   @HandleExceptions()
   public static async getById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `  
-    SELECT id, name, color_code, (SELECT COUNT(*) FROM projects WHERE category_id = project_categories.id) AS usage
-    FROM project_categories
-    WHERE team_id = $1;`;
-    const result = await db.query(q, [req.params.id]);
-    return res.status(200).send(new ServerResponse(true, result.rows));
+    const q = `
+      SELECT id, name, color_code, (SELECT COUNT(*) FROM projects WHERE category_id = project_categories.id) AS usage
+      FROM project_categories
+      WHERE id = $1 AND team_id = $2;
+    `;
+    const result = await db.query(q, [req.params.id, req.user?.team_id]);
+    const [data] = result.rows;
+    return res.status(200).send(new ServerResponse(true, data));
   }
   
   private static async getTeamsByOrg(teamId: string) {
