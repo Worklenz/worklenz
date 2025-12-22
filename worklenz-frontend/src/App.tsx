@@ -1,5 +1,5 @@
 // Core dependencies
-import React, { Suspense, useEffect, memo, useMemo, useCallback } from 'react';
+import React, { Suspense, useEffect, memo, useCallback } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import i18next from 'i18next';
 
@@ -13,7 +13,6 @@ import router from './app/routes';
 
 // Hooks & Utils
 import { useAppSelector } from './hooks/useAppSelector';
-import { initMixpanel } from './utils/mixpanelInit';
 import { initializeCsrfToken } from './api/api-client';
 import CacheCleanup from './utils/cache-cleanup';
 
@@ -43,27 +42,6 @@ import { registerSW } from './utils/serviceWorkerRegistration';
 const App: React.FC = memo(() => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const language = useAppSelector(state => state.localesReducer.lng);
-
-  // Memoize mixpanel initialization to prevent re-initialization
-  const mixpanelToken = useMemo(() => import.meta.env.VITE_MIXPANEL_TOKEN as string, []);
-
-  // Defer mixpanel initialization to not block initial render
-  useEffect(() => {
-    const initializeMixpanel = () => {
-      try {
-        initMixpanel(mixpanelToken);
-      } catch (error) {
-        logger.error('Failed to initialize Mixpanel:', error);
-      }
-    };
-
-    // Use requestIdleCallback to defer mixpanel initialization
-    if ('requestIdleCallback' in window) {
-      requestIdleCallback(initializeMixpanel, { timeout: 2000 });
-    } else {
-      setTimeout(initializeMixpanel, 1000);
-    }
-  }, [mixpanelToken]);
 
   // Memoize language change handler
   const handleLanguageChange = useCallback((lng: string) => {
