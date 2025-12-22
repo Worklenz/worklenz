@@ -16,7 +16,11 @@ DECLARE
   include_customfields boolean := COALESCE((p_options->>'customFields')::boolean, true);
   include_subscribers  boolean := COALESCE((p_options->>'subscribers')::boolean, false);
   include_dates        boolean := COALESCE((p_options->>'dates')::boolean, false);
+  include_subtasks     boolean := COALESCE((p_options->>'subtasks')::boolean, false);
   copy_prefix          text    := COALESCE(p_options->>'copyNamePrefix', 'Copy - ');
+  
+  -- For recursive subtask duplication
+  subtask_record RECORD;
 BEGIN
 
   -- Fetch the original task
@@ -114,7 +118,22 @@ BEGIN
     WHERE task_id = p_original_task_id;
   END IF;
 
-  -- No subtasks copying (as requested: do not include subtasks)
+  -- Recursively copy subtasks if enabled
+  IF include_subtasks THEN
+    FOR subtask_record IN
+      SELECT id FROM tasks 
+      WHERE parent_task_id = p_original_task_id 
+        AND archived = false 
+      ORDER BY sort_order
+    LOOP
+      -- Recursively duplicate each subtask with the same options
+      PERFORM duplicate_task_shallow(
+        subtask_record.id,
+        new_task_id,
+        p_options
+      );
+    END LOOP;
+  END IF;
 
   RETURN new_task_id;
 END;

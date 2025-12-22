@@ -172,7 +172,7 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
         );
       }
 
-      // Subtasks: simple loop (non-recursive for now — safe & works)
+      // Subtasks: recursively duplicate all nested subtasks
       if (subtasks) {
         const subtasksRes = await db.query(
           `SELECT id FROM tasks WHERE parent_task_id = $1 AND archived = false ORDER BY sort_order`,
@@ -180,13 +180,11 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
         );
 
         for (const sub of subtasksRes.rows) {
-          // Reuse the same endpoint logic via SQL or call a helper
-          // For now: just copy top-level subtasks (deep clone needs stored proc)
+          // duplicate_task_shallow will recursively handle nested subtasks when subtasks option is enabled
           await db.query(
             `SELECT duplicate_task_shallow($1, $2, $3)`,
             [sub.id, newTaskId, JSON.stringify(options)]
           );
-          // Or just skip deep recursion if not critical
         }
       }
 
