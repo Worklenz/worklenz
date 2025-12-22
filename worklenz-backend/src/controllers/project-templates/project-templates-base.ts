@@ -161,6 +161,8 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                                         parent_task_id,
                                         description,
                                         total_minutes,
+                                        sort_order,
+                                        task_no,
                                         (SELECT name FROM cpt_task_statuses cts WHERE status_id = cts.id) AS status_name,
                                         (SELECT name FROM task_priorities tp WHERE priority_id = tp.id) AS priority_name,
 
@@ -168,7 +170,7 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                                         FROM (SELECT name
                                                 FROM cpt_phases pl
                                                 WHERE pl.id =
-                                                    (SELECT phase_id FROM cpt_task_phases WHERE task_id = cpt_tasks.id)) rec) AS phases,
+                                                (SELECT phase_id FROM cpt_task_phases WHERE task_id = cpt_tasks.id)) rec) AS phases,
                                         (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                                             FROM (SELECT name
                                                     FROM team_labels pl
@@ -176,7 +178,7 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                                                     WHERE cttl.task_id = cpt_tasks.id) rec) AS labels
                                 FROM cpt_tasks
                                 WHERE template_id = pt.id
-                                ORDER BY parent_task_id NULLS FIRST) rec) AS tasks
+                                ORDER BY parent_task_id NULLS FIRST, sort_order ASC, task_no ASC) rec) AS tasks
                     FROM custom_project_templates pt
                     WHERE id =  $1;`;
     const result = await db.query(q, [template_id]);
@@ -381,7 +383,8 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                 priority_id
             FROM tasks t
                 WHERE project_id = $1
-                AND archived IS FALSE ORDER BY parent_task_id NULLS FIRST;`;
+                AND archived IS FALSE
+            ORDER BY parent_task_id NULLS FIRST, sort_order ASC, task_no ASC;`;
     const result = await db.query(q, [project_id]);
     return result.rows;
   }
