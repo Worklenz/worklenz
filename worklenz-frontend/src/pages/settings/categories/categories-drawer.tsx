@@ -12,6 +12,12 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { theme } from '@/shared/antd-imports';
 import { categoriesApiService } from '@/api/settings/categories/categories.api.service';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import {
+  createProjectCategory,
+  updateProjectCategory,
+} from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
+import { IProjectCategoryViewModel } from '@/types/project/projectCategory.types';
 
 // Worklenz color palette - same as Labels
 const WorklenzColorShades = {
@@ -322,6 +328,7 @@ const CategoriesDrawer = ({
   const { t } = useTranslation('settings/categories');
   const { token } = theme.useToken();
   const [form] = Form.useForm();
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
     if (categoryId) {
@@ -352,18 +359,39 @@ const CategoriesDrawer = ({
   const handleFormSubmit = async (values: { name: string; color_code: string }) => {
     try {
       if (categoryId) {
-        const response = await categoriesApiService.updateCategory({
-          id: categoryId,
-          name: values.name,
-          color: values.color_code,
-        });
-        if (response.done) {
+        const result = await dispatch(
+          updateProjectCategory({
+            id: categoryId,
+            name: values.name,
+            color_code: values.color_code,
+          } as IProjectCategoryViewModel)
+        );
+
+        if (updateProjectCategory.fulfilled.match(result)) {
           message.success(t('updateCategorySuccessMessage', 'Category updated successfully'));
           drawerClosed();
         } else {
-          message.error(
-            response.message || t('updateCategoryErrorMessage', 'Failed to update category')
-          );
+          const errorMessage =
+            (result.payload as string) ||
+            t('updateCategoryErrorMessage', 'Failed to update category');
+          message.error(errorMessage);
+        }
+      } else {
+        const result = await dispatch(
+          createProjectCategory({
+            name: values.name,
+            color_code: values.color_code,
+          } as Partial<IProjectCategoryViewModel>)
+        );
+
+        if (createProjectCategory.fulfilled.match(result)) {
+          message.success(t('createCategorySuccessMessage', 'Category created successfully'));
+          drawerClosed();
+        } else {
+          const errorMessage =
+            (result.payload as string) ||
+            t('createCategoryErrorMessage', 'Failed to create category');
+          message.error(errorMessage);
         }
       }
     } catch (error) {
