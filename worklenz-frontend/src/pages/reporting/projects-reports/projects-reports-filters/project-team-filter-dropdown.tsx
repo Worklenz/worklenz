@@ -96,7 +96,7 @@ const ProjectTeamFilterDropdown: React.FC = () => {
                 menu={undefined}
                 placement="bottomLeft"
                 trigger={['click']}
-                dropdownRender={() => (
+                popupRender={() => (
                     <div
                         style={{
                             background: colors.dropdownBg,

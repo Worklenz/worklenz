@@ -83,4 +83,37 @@ export const reportingProjectsApiService = {
     const response = await apiClient.get(url);
     return response.data;
   },
+
+  getProjectsGrouped: async (
+    params: {
+      group_by?: string;
+      search?: string;
+      field?: string;
+      order?: string;
+      statuses?: string;
+      healths?: string;
+      categories?: string;
+      project_managers?: string;
+      teams?: string;
+      archived?: boolean;
+    }
+  ): Promise<IServerResponse<{
+    groups: Array<{
+      group_id: string;
+      group_name: string;
+      group_color: string;
+      project_count: number;
+      total_tasks: number;
+      done_tasks: number;
+      doing_tasks: number;
+      todo_tasks: number;
+      projects: any[];
+    }>;
+    total_groups: number;
+  }>> => {
+    const q = toQueryString(params);
+    const url = `${rootUrl}/grouped${q}`;
+    const response = await apiClient.get(url);
+    return response.data;
+  },
 };
