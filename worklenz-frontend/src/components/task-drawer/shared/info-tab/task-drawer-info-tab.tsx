@@ -130,18 +130,6 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
     {
       key: 'subTasks',
       label: <Typography.Text strong>{t('taskInfoTab.subTasks.title')}</Typography.Text>,
-      extra: (
-        <Tooltip title={t('taskInfoTab.subTasks.refreshSubTasks')} trigger={'hover'}>
-          <Button
-            shape="circle"
-            icon={<ReloadOutlined spin={loadingSubTasks} />}
-            onClick={e => {
-              e.stopPropagation(); // Prevent click from bubbling up
-              fetchSubTasks();
-            }}
-          />
-        </Tooltip>
-      ),
       children: (
         <SubTaskTable
           subTasks={subTasks}

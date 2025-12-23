@@ -1,0 +1,268 @@
+/* Custom Mentions Wrapper */
+.custom-mentions-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* Contenteditable div styling */
+.custom-mentions-editable {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5715;
+  transition: border-color 0.3s;
+  position: relative;
+  cursor: text;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.custom-mentions-editable:focus {
+  border-color: #40a9ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  outline: none;
+}
+
+.custom-mentions-editable.theme-dark:focus {
+  border-color: #177ddc !important;
+  box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.2);
+}
+
+/* Placeholder styling */
+.custom-mentions-editable:empty:before {
+  content: attr(data-placeholder);
+  color: #bfbfbf;
+  pointer-events: none;
+  position: absolute;
+}
+
+.custom-mentions-editable:empty:focus:before {
+  color: #8c8c8c;
+}
+
+.custom-mentions-editable.theme-dark:empty:before {
+  color: #595959;
+}
+
+.custom-mentions-editable.theme-dark:empty:focus:before {
+  color: #8c8c8c;
+}
+
+/* Mention highlight styling - Light theme */
+.mention-highlight-light {
+  background-color: #e1f3ff !important;
+  color: #1890ff !important;
+  border: 1px solid #c2e4f9 !important;
+  border-radius: 4px !important;
+  padding: 1px 4px !important;
+  margin: 0 1px !important;
+  font-weight: 500 !important;
+  display: inline !important;
+  white-space: nowrap !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  pointer-events: none !important;
+  cursor: default !important;
+  line-height: 1.5715 !important;
+  vertical-align: baseline !important;
+}
+
+/* Mention highlight styling - Dark theme */
+.mention-highlight-dark {
+  background-color: #1e3a5f !important;
+  color: #40a9ff !important;
+  border: 1px solid #2a4a6d !important;
+  border-radius: 4px !important;
+  padding: 1px 4px !important;
+  margin: 0 1px !important;
+  font-weight: 500 !important;
+  display: inline !important;
+  white-space: nowrap !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  pointer-events: none !important;
+  cursor: default !important;
+  line-height: 1.5715 !important;
+  vertical-align: baseline !important;
+}
+
+/* Ensure mentions have proper spacing */
+.mention-highlight-light + .mention-highlight-light,
+.mention-highlight-dark + .mention-highlight-dark,
+.mention-highlight-light + .mention-highlight-dark,
+.mention-highlight-dark + .mention-highlight-light {
+  margin-left: 2px !important;
+}
+
+/* Dropdown styling */
+.mentions-dropdown {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  border: 1px solid;
+  border-radius: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  animation: slideIn 0.2s ease-out;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  z-index: 1050;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.mentions-dropdown.theme-light {
+  background-color: #fff;
+  border-color: #d9d9d9;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.mentions-dropdown.theme-dark {
+  background-color: #1f1f1f;
+  border-color: #434343;
+  color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.mentions-option {
+  transition: background-color 0.2s;
+  cursor: pointer;
+  padding: 8px 12px;
+  user-select: none;
+}
+
+.mentions-option:hover {
+  background-color: #f5f5f5;
+}
+
+.mentions-dropdown.theme-dark .mentions-option:hover {
+  background-color: #2a2a2a;
+}
+
+.mentions-option.selected {
+  background-color: #f5f5f5;
+  font-weight: 500;
+}
+
+.mentions-dropdown.theme-dark .mentions-option.selected {
+  background-color: #2a2a2a;
+}
+
+/* Scrollbar styling */
+.custom-mentions-editable::-webkit-scrollbar,
+.mentions-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-mentions-editable::-webkit-scrollbar-track,
+.mentions-dropdown::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 3px;
+}
+
+.custom-mentions-editable::-webkit-scrollbar-thumb,
+.mentions-dropdown::-webkit-scrollbar-thumb {
+  background: #bfbfbf;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.custom-mentions-editable.theme-dark::-webkit-scrollbar-track,
+.mentions-dropdown.theme-dark::-webkit-scrollbar-track {
+  background: #1f1f1f;
+}
+
+.custom-mentions-editable.theme-dark::-webkit-scrollbar-thumb,
+.mentions-dropdown.theme-dark::-webkit-scrollbar-thumb {
+  background: #434343;
+}
+
+.custom-mentions-editable::-webkit-scrollbar-thumb:hover,
+.mentions-dropdown::-webkit-scrollbar-thumb:hover {
+  background: #8c8c8c;
+}
+
+.custom-mentions-editable.theme-dark::-webkit-scrollbar-thumb:hover,
+.mentions-dropdown.theme-dark::-webkit-scrollbar-thumb:hover {
+  background: #595959;
+}
+
+/* Animation for expand */
+@keyframes expandAnimation {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dropdown slide-in animation */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Ensure proper text flow and line breaks */
+.custom-mentions-editable br {
+  display: block;
+  margin: 0;
+  line-height: inherit;
+  content: '';
+}
+
+/* Make sure text nodes flow properly */
+.custom-mentions-editable > * {
+  display: inline;
+}
+
+/* Prevent text selection in mentions */
+.mention-highlight-light *,
+.mention-highlight-dark * {
+  pointer-events: none;
+}
+
+/* Ensure proper cursor behavior */
+.custom-mentions-editable {
+  caret-color: auto;
+}
+
+/* Fix for Firefox contenteditable */
+.custom-mentions-editable[contenteditable="true"] {
+  -webkit-user-modify: read-write-plaintext-only;
+  -moz-user-modify: read-write-plaintext-only;
+}
+
+/* Add space after mentions automatically */
+.mention-highlight-light::after,
+.mention-highlight-dark::after {
+  content: '\00a0'; /* Non-breaking space */
+  font-size: 0;
+  display: inline-block;
+  width: 0;
+  height: 0;
+  visibility: hidden;
+}
+
+/* Ensure proper spacing between elements */
+.custom-mentions-editable * {
+  margin: 0;
+  padding: 0;
+}
+
+/* Special handling for when mention is at the end */
+.custom-mentions-editable > .mention-highlight-light:last-child::after,
+.custom-mentions-editable > .mention-highlight-dark:last-child::after {
+  content: '';
+}

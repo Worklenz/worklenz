@@ -561,7 +561,7 @@ const FilterDropdown: React.FC<{
                 <input
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  placeholder={`${t('searchPlaceholder', { defaultValue: 'Search' })} ${section.label.toLowerCase()}...`}
+                  placeholder={t('search', { defaultValue: 'Search' })}
                   className={`w-full pl-8 pr-2 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${
                     isDarkMode
                       ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
