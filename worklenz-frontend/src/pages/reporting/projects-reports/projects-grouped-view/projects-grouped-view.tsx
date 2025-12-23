@@ -1,5 +1,5 @@
 import { memo, useMemo, useEffect, useState, useCallback } from 'react';
-import { Collapse, Progress, Typography, Flex, Badge, Empty, Spin, Button, Tooltip } from '@/shared/antd-imports';
+import { Collapse, Progress, Typography, Flex, Badge, Empty, Spin, Button, Tooltip, Skeleton, Card } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -243,16 +243,68 @@ const ProjectsGroupedView = () => {
     [transformedGroups, t, getVisibleCount, handleLoadMore, renderProjectItem]
   );
 
-  if (isLoading) {
+  // Skeleton loading component
+  const renderSkeletonLoading = () => {
     return (
-      <Flex justify="center" align="center" style={{ padding: 48 }}>
-        <Spin size="large" />
-      </Flex>
-    );
-  }
+      <div className="projects-grouped-view">
+        {/* Render 3 skeleton groups */}
+        {[1, 2, 3].map(groupIndex => (
+          <Card
+            key={groupIndex}
+            style={{
+              marginBottom: 16,
+              borderRadius: 8,
+            }}
+          >
+            {/* Group Header Skeleton */}
+            <Flex justify="space-between" align="center" style={{ marginBottom: 16 }}>
+              <Flex align="center" gap={8} style={{ flex: 1 }}>
+                <Skeleton.Avatar active size="small" shape="circle" />
+                <Skeleton.Input active size="small" style={{ width: 200 }} />
+              </Flex>
+              <Flex align="center" gap={16}>
+                <Skeleton.Input active size="small" style={{ width: 80 }} />
+                <Skeleton.Input active size="small" style={{ width: 80 }} />
+              </Flex>
+            </Flex>
 
-  if (transformedGroups.length === 0) {
-    return <Empty description={t('noProjectsText')} />;
+            {/* Project Items Skeleton */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[1, 2, 3, 4, 5].map(itemIndex => (
+                <div
+                  key={itemIndex}
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: 6,
+                    border: '1px solid #f0f0f0',
+                  }}
+                >
+                  <Flex justify="space-between" align="center">
+                    <Flex align="center" gap={8} style={{ flex: 1 }}>
+                      <Skeleton.Avatar active size="small" shape="circle" />
+                      <Skeleton.Input active size="small" style={{ width: 250 }} />
+                    </Flex>
+                    <Flex align="center" gap={16}>
+                      <Skeleton.Input active size="small" style={{ width: 100 }} />
+                      <Skeleton.Input active size="small" style={{ width: 70 }} />
+                    </Flex>
+                  </Flex>
+                </div>
+              ))}
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
+  // Show skeleton while loading OR while we have no data yet
+  if (isLoading || transformedGroups.length === 0) {
+    // Only show empty state if we're done loading and confirmed no data
+    if (!isLoading && transformedGroups.length === 0) {
+      return <Empty description={t('noProjectsText')} />;
+    }
+    return renderSkeletonLoading();
   }
 
   return (
