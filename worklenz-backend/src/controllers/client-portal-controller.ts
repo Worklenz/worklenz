@@ -4040,14 +4040,6 @@ class ClientPortalController {
         LIMIT $3 OFFSET $4
       `;
 
-      const notificationsResult = await db.query(notificationsQuery, [
-        clientId,
-        organizationId,
-        limitNum,
-        offset
-      ]);
-      const total = parseInt(countResult.rows[0]?.total || "0", 10);
-
       // Get total count
       const countQuery = `
         SELECT COUNT(*) as total
@@ -4056,6 +4048,13 @@ class ClientPortalController {
       `;
       const countResult = await db.query(countQuery, [clientId, organizationId]);
       const total = parseInt(countResult.rows[0]?.total || "0", 10);
+
+      const notificationsResult = await db.query(notificationsQuery, [
+        clientId,
+        organizationId,
+        limitNum,
+        offset
+      ]);
 
       // Get unread count
       const unreadCountQuery = `
