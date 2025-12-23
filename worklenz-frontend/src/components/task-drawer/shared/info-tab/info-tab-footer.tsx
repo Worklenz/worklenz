@@ -2,11 +2,10 @@ import {
   Button,
   Flex,
   Form,
-  Mentions,
-  Space,
-  Tooltip,
   Typography,
   message,
+  Tooltip,
+  Space,
 } from '@/shared/antd-imports';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -44,6 +43,13 @@ const formatFileSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
+// Helper function to escape HTML
+const escapeHtml = (text: string) => {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+};
+
 // Component to render mentions with highlighting using contenteditable
 const CustomMentionsInput = ({
   value,
@@ -65,106 +71,358 @@ const CustomMentionsInput = ({
   const [cursorPosition, setCursorPosition] = useState(0);
   const editableRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const isComposingRef = useRef(false);
+  const lastMentionedOptionsRef = useRef<Set<string>>(new Set());
+  const isUpdatingRef = useRef(false);
 
   // Process text to create HTML with highlighted mentions
   const createHighlightedHTML = (text: string) => {
     if (!text) return '';
     
-    const parts = text.split(/(@\w+(?:\s+\w+)*)/g);
     const highlightClass = themeMode === 'light' ? 'mention-highlight-light' : 'mention-highlight-dark';
     
-    return parts.map(part => {
-      if (part.startsWith('@')) {
-        return `<span class="${highlightClass}" contenteditable="false">${part}</span>`;
+    // First, identify all mentions in the text
+    const mentions: Array<{start: number; end: number; text: string; option: any}> = [];
+    
+    // Find all @mentions that match options
+    for (const option of options) {
+      const mentionText = `@${option.value}`;
+      let startIndex = 0;
+      
+      while (startIndex < text.length) {
+        const index = text.indexOf(mentionText, startIndex);
+        if (index === -1) break;
+        
+        // Check if it's a valid mention (preceded by whitespace or start of string, followed by whitespace or end)
+        const beforeChar = index === 0 ? '' : text[index - 1];
+        const afterChar = index + mentionText.length < text.length ? text[index + mentionText.length] : '';
+        
+        const isValidBefore = index === 0 || /\s/.test(beforeChar);
+        const isValidAfter = afterChar === '' || /\s/.test(afterChar) || afterChar === ',';
+        
+        if (isValidBefore && isValidAfter) {
+          // Also check that we're not matching part of a longer word
+          const endIndex = index + mentionText.length;
+          if (!mentions.some(m => index >= m.start && index < m.end)) {
+            mentions.push({
+              start: index,
+              end: endIndex,
+              text: mentionText,
+              option
+            });
+          }
+        }
+        
+        startIndex = index + 1;
       }
-      return part.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }).join('');
+    }
+    
+    // Sort mentions by start position (descending) so we can replace from end to beginning
+    mentions.sort((a, b) => b.start - a.start);
+    
+    // Build the HTML string
+    let result = escapeHtml(text);
+    
+    // Replace each mention with highlighted HTML
+    for (const mention of mentions) {
+      const before = result.slice(0, mention.start);
+      const after = result.slice(mention.end);
+      const mentionHtml = `<span class="${highlightClass}" data-mention="true" data-mention-id="${mention.option.key}" contenteditable="false">${escapeHtml(mention.text)}</span>`;
+      result = before + mentionHtml + after;
+    }
+    
+    return result;
   };
 
   // Extract plain text from HTML
   const extractPlainText = (html: string) => {
     const temp = document.createElement('div');
     temp.innerHTML = html;
-    return temp.textContent || '';
+    
+    // Walk through nodes and build plain text
+    let plainText = '';
+    
+    const walkNodes = (node: Node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        plainText += node.textContent || '';
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        if ((node as Element).getAttribute('data-mention') === 'true') {
+          plainText += node.textContent || '';
+        } else {
+          for (let i = 0; i < node.childNodes.length; i++) {
+            walkNodes(node.childNodes[i]);
+          }
+        }
+      }
+    };
+    
+    walkNodes(temp);
+    return plainText;
   };
 
-  // Get cursor position in contenteditable
+  // Get cursor position that respects mention boundaries
   const getCursorPosition = () => {
     const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      const preCaretRange = range.cloneRange();
-      preCaretRange.selectNodeContents(editableRef.current!);
-      preCaretRange.setEnd(range.endContainer, range.endOffset);
-      return preCaretRange.toString().length;
+    if (!selection || selection.rangeCount === 0) return 0;
+    
+    const range = selection.getRangeAt(0);
+    const preCaretRange = range.cloneRange();
+    preCaretRange.selectNodeContents(editableRef.current!);
+    preCaretRange.setEnd(range.endContainer, range.endOffset);
+    
+    // Walk through nodes to count text length
+    let length = 0;
+    const walker = document.createTreeWalker(
+      editableRef.current!,
+      NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
+      {
+        acceptNode: (node) => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            return NodeFilter.FILTER_ACCEPT;
+          }
+          if (node.nodeType === Node.ELEMENT_NODE && (node as Element).getAttribute('data-mention') === 'true') {
+            return NodeFilter.FILTER_ACCEPT;
+          }
+          return NodeFilter.FILTER_SKIP;
+        }
+      }
+    );
+    
+    let currentNode: Node | null;
+    while ((currentNode = walker.nextNode())) {
+      if (currentNode === range.endContainer) {
+        if (currentNode.nodeType === Node.TEXT_NODE) {
+          length += range.endOffset;
+        } else if (currentNode.nodeType === Node.ELEMENT_NODE) {
+          // If inside a mention, count the full mention
+          length += currentNode.textContent?.length || 0;
+        }
+        break;
+      }
+      if (currentNode.nodeType === Node.TEXT_NODE) {
+        length += currentNode.textContent?.length || 0;
+      } else if (currentNode.nodeType === Node.ELEMENT_NODE) {
+        length += currentNode.textContent?.length || 0;
+      }
     }
-    return 0;
+    
+    return length;
+  };
+
+  // Check if cursor is inside a mention
+  const isCursorInMention = () => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return false;
+    
+    const range = selection.getRangeAt(0);
+    let node = range.commonAncestorContainer;
+    
+    // If it's a text node, check its parent
+    if (node.nodeType === Node.TEXT_NODE) {
+      node = node.parentNode!;
+    }
+    
+    // Check if node or any parent is a mention
+    while (node && node !== editableRef.current) {
+      if (node.nodeType === Node.ELEMENT_NODE && (node as Element).getAttribute('data-mention') === 'true') {
+        return true;
+      }
+      node = node.parentNode!;
+    }
+    
+    return false;
+  };
+
+  // Move cursor after mention with a space
+  const moveCursorAfterMentionWithSpace = () => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+    
+    const range = selection.getRangeAt(0);
+    const mention = range.commonAncestorContainer.nodeType === Node.TEXT_NODE 
+      ? range.commonAncestorContainer.parentNode
+      : range.commonAncestorContainer;
+    
+    if (!mention || mention === editableRef.current) return;
+    
+    const newRange = document.createRange();
+    
+    // Check if there's already a space after the mention
+    let nextSibling = mention.nextSibling;
+    
+    if (nextSibling && nextSibling.nodeType === Node.TEXT_NODE) {
+      const textContent = nextSibling.textContent || '';
+      
+      // If the text node starts with a space, move cursor after it
+      if (textContent.startsWith(' ')) {
+        newRange.setStart(nextSibling, 1);
+      } else {
+        // Insert a space at the beginning of the text node
+        const space = document.createTextNode(' ');
+        mention.parentNode?.insertBefore(space, nextSibling);
+        newRange.setStart(space, 1);
+      }
+    } else {
+      // Create a space text node after the mention
+      const space = document.createTextNode(' ');
+      mention.parentNode?.insertBefore(space, mention.nextSibling);
+      newRange.setStart(space, 1);
+    }
+    
+    newRange.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(newRange);
   };
 
   // Handle input changes
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
-    const text = extractPlainText(e.currentTarget.innerHTML);
+    if (isComposingRef.current || isUpdatingRef.current) return;
+    
+    const plainText = extractPlainText(e.currentTarget.innerHTML);
     const currentCursorPos = getCursorPosition();
     setCursorPosition(currentCursorPos);
-    onChange(text);
-
-    // Check if user is typing a mention
-    const lastAtIndex = text.lastIndexOf('@', currentCursorPos);
-    if (lastAtIndex !== -1) {
-      const textAfterAt = text.slice(lastAtIndex + 1, currentCursorPos);
-      
-      if (!textAfterAt.includes(' ')) {
-        // Filter options
-        const filtered = options.filter((opt: any) => 
-          filterOption ? filterOption(textAfterAt, opt) : true
-        );
-        setFilteredOptions(filtered);
-        setIsDropdownOpen(filtered.length > 0);
-        setSelectedIndex(0);
-      } else {
-        setIsDropdownOpen(false);
-      }
-    } else {
-      setIsDropdownOpen(false);
+    
+    // Update the value
+    if (plainText !== value) {
+      onChange(plainText);
     }
-  };
-
-  // Handle option selection
-  const selectOption = (option: any) => {
-    const text = value || '';
-    const lastAtIndex = text.lastIndexOf('@', cursorPosition);
+    
+    // Check if cursor is inside a mention
+    if (isCursorInMention()) {
+      moveCursorAfterMentionWithSpace();
+    }
+    
+    // Check if user is typing a mention
+    const textUpToCursor = plainText.slice(0, currentCursorPos);
+    const lastAtIndex = textUpToCursor.lastIndexOf('@');
     
     if (lastAtIndex !== -1) {
-      const beforeAt = text.slice(0, lastAtIndex);
-      const afterMention = text.slice(cursorPosition);
-      const newText = beforeAt + '@' + option.value + ' ' + afterMention;
+      // Check if @ is part of a completed mention
+      const beforeAt = textUpToCursor.slice(0, lastAtIndex);
+      const afterAt = textUpToCursor.slice(lastAtIndex);
       
-      onChange(newText);
-      if (onSelect) onSelect(option);
+      // Don't trigger mention if @ is in the middle of a word
+      const charBeforeAt = beforeAt.slice(-1);
+      if (!charBeforeAt || /\s/.test(charBeforeAt) || charBeforeAt === '\u00A0' || /[.,;:!?()]/.test(charBeforeAt)) {
+        const textAfterAt = afterAt.slice(1); // Remove @
+        const spaceIndex = textAfterAt.indexOf(' ');
+        
+        if (spaceIndex === -1) {
+          // No space yet, filter options
+          const filtered = options.filter((opt: any) => 
+            filterOption ? filterOption(textAfterAt, opt) : true
+          );
+          setFilteredOptions(filtered);
+          setIsDropdownOpen(filtered.length > 0);
+          setSelectedIndex(0);
+          return;
+        }
+      }
     }
     
     setIsDropdownOpen(false);
-    
-    // Focus back and set cursor after the mention
-    setTimeout(() => {
-      if (editableRef.current) {
-        editableRef.current.focus();
-        const selection = window.getSelection();
-        const range = document.createRange();
-        const textNode = editableRef.current.childNodes[0];
-        if (textNode) {
-          const newPos = lastAtIndex + option.value.length + 2; // +2 for @ and space
-          range.setStart(textNode, Math.min(newPos, textNode.textContent?.length || 0));
-          range.collapse(true);
-          selection?.removeAllRanges();
-          selection?.addRange(range);
-        }
-      }
-    }, 0);
   };
 
-  // Handle keyboard navigation
+  // Handle composition events for IME input
+  const handleCompositionStart = () => {
+    isComposingRef.current = true;
+  };
+
+  const handleCompositionEnd = (e: React.CompositionEvent<HTMLDivElement>) => {
+    isComposingRef.current = false;
+    handleInput(e as unknown as React.FormEvent<HTMLDivElement>);
+  };
+
+  // Handle key down events
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Check if cursor is in mention and user tries to type
+    if (isCursorInMention() && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      moveCursorAfterMentionWithSpace();
+      
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const textNode = document.createTextNode(e.key);
+        range.insertNode(textNode);
+        range.setStartAfter(textNode);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        // Trigger input update
+        setTimeout(() => {
+          if (editableRef.current) {
+            const event = new Event('input', { bubbles: true });
+            editableRef.current.dispatchEvent(event);
+          }
+        }, 0);
+      }
+      return;
+    }
+
+    // Handle arrow keys inside mentions
+    if (isCursorInMention() && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      e.preventDefault();
+      moveCursorAfterMentionWithSpace();
+      return;
+    }
+
+    // Handle backspace/delete at mention boundaries
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        
+        if (e.key === 'Backspace' && range.collapsed) {
+          const previousNode = range.startContainer.childNodes[range.startOffset - 1];
+          if (previousNode && previousNode.nodeType === Node.ELEMENT_NODE && 
+              (previousNode as Element).getAttribute('data-mention') === 'true') {
+            e.preventDefault();
+            
+            // Remove the mention
+            previousNode.remove();
+            
+            // Also remove any space after it if it exists
+            const nextNode = previousNode.nextSibling;
+            if (nextNode && nextNode.nodeType === Node.TEXT_NODE && nextNode.textContent?.startsWith(' ')) {
+              if (nextNode.textContent.length === 1) {
+                nextNode.remove();
+              } else {
+                nextNode.textContent = nextNode.textContent.substring(1);
+              }
+            }
+            
+            setTimeout(() => {
+              if (editableRef.current) {
+                const event = new Event('input', { bubbles: true });
+                editableRef.current.dispatchEvent(event);
+              }
+            }, 0);
+            return;
+          }
+        }
+        
+        if (e.key === 'Delete' && range.collapsed) {
+          const nextNode = range.startContainer.childNodes[range.startOffset];
+          if (nextNode && nextNode.nodeType === Node.ELEMENT_NODE && 
+              (nextNode as Element).getAttribute('data-mention') === 'true') {
+            e.preventDefault();
+            nextNode.remove();
+            
+            setTimeout(() => {
+              if (editableRef.current) {
+                const event = new Event('input', { bubbles: true });
+                editableRef.current.dispatchEvent(event);
+              }
+            }, 0);
+            return;
+          }
+        }
+      }
+    }
+
+    // Handle dropdown navigation
     if (isDropdownOpen) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -182,35 +440,139 @@ const CustomMentionsInput = ({
     }
   };
 
-  // Update contenteditable with highlighted HTML
-  useEffect(() => {
-    if (editableRef.current && value !== undefined) {
-      const highlighted = createHighlightedHTML(value);
-      if (editableRef.current.innerHTML !== highlighted) {
-        const selection = window.getSelection();
-        const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
-        const offset = range ? getCursorPosition() : 0;
-        
-        editableRef.current.innerHTML = highlighted;
-        
-        // Restore cursor position
-        if (editableRef.current.childNodes.length > 0) {
-          try {
-            const newRange = document.createRange();
-            const textNode = editableRef.current.childNodes[0];
-            if (textNode) {
-              newRange.setStart(textNode, Math.min(offset, textNode.textContent?.length || 0));
-              newRange.collapse(true);
-              selection?.removeAllRanges();
-              selection?.addRange(newRange);
+  // Handle option selection
+  const selectOption = (option: any) => {
+    const plainText = value || '';
+    const lastAtIndex = plainText.lastIndexOf('@', cursorPosition);
+    
+    if (lastAtIndex !== -1) {
+      const beforeAt = plainText.slice(0, lastAtIndex);
+      const textAfterAt = plainText.slice(lastAtIndex + 1, cursorPosition);
+      const afterCursor = plainText.slice(cursorPosition);
+      
+      // Ensure there's a space after the mention
+      const newText = beforeAt + '@' + option.value + ' ' + afterCursor;
+      
+      onChange(newText);
+      if (onSelect) onSelect(option);
+      
+      // Track this mention
+      lastMentionedOptionsRef.current.add(option.key);
+    }
+    
+    setIsDropdownOpen(false);
+    
+    // Focus back on the input after a short delay
+    setTimeout(() => {
+      if (editableRef.current) {
+        editableRef.current.focus();
+        // Ensure cursor is placed after the mention with a space
+        moveCursorAfterMentionWithSpace();
+      }
+    }, 10);
+  };
+
+  // Restore cursor position after HTML update
+  const restoreCursorPosition = (offset: number) => {
+    const selection = window.getSelection();
+    if (!selection || !editableRef.current) return;
+    
+    const newRange = document.createRange();
+    let currentPos = 0;
+    let found = false;
+    
+    const walkNodes = (node: Node): boolean => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const textLength = node.textContent?.length || 0;
+        if (currentPos + textLength >= offset) {
+          newRange.setStart(node, offset - currentPos);
+          newRange.collapse(true);
+          found = true;
+          return true;
+        }
+        currentPos += textLength;
+        return false;
+      }
+      
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        if ((node as Element).getAttribute('data-mention') === 'true') {
+          const textLength = node.textContent?.length || 0;
+          if (currentPos + textLength >= offset) {
+            // Cursor should be after the mention with a space
+            // Insert a space after the mention if needed
+            const nextSibling = node.nextSibling;
+            if (nextSibling && nextSibling.nodeType === Node.TEXT_NODE && nextSibling.textContent?.startsWith(' ')) {
+              // Place cursor after the space
+              newRange.setStart(nextSibling, 1);
+            } else {
+              // Create a space after the mention
+              const spaceNode = document.createTextNode(' ');
+              node.parentNode?.insertBefore(spaceNode, node.nextSibling);
+              newRange.setStart(spaceNode, 1);
             }
-          } catch (e) {
-            // Cursor positioning failed, ignore
+            newRange.collapse(true);
+            found = true;
+            return true;
+          }
+          currentPos += textLength;
+          return false;
+        }
+        
+        for (let i = 0; i < node.childNodes.length; i++) {
+          if (walkNodes(node.childNodes[i])) {
+            return true;
           }
         }
       }
+      
+      return false;
+    };
+    
+    walkNodes(editableRef.current);
+    
+    if (found) {
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+    } else {
+      // Place cursor at end
+      const lastNode = editableRef.current.lastChild;
+      if (lastNode) {
+        if (lastNode.nodeType === Node.TEXT_NODE) {
+          newRange.setStart(lastNode, lastNode.textContent?.length || 0);
+        } else {
+          newRange.setStartAfter(lastNode);
+        }
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+      }
     }
-  }, [value, themeMode]);
+  };
+
+  // Update contenteditable with highlighted HTML
+  useEffect(() => {
+    if (editableRef.current && value !== undefined && !isUpdatingRef.current) {
+      isUpdatingRef.current = true;
+      
+      const highlighted = createHighlightedHTML(value);
+      
+      // Only update if HTML has actually changed
+      if (editableRef.current.innerHTML !== highlighted) {
+        const selection = window.getSelection();
+        const offset = selection && selection.rangeCount > 0 ? getCursorPosition() : value.length;
+        
+        editableRef.current.innerHTML = highlighted;
+        
+        if (editableRef.current.childNodes.length > 0 && offset >= 0) {
+          restoreCursorPosition(offset);
+        }
+      }
+      
+      setTimeout(() => {
+        isUpdatingRef.current = false;
+      }, 0);
+    }
+  }, [value, themeMode, options]);
 
   // Auto focus
   useEffect(() => {
@@ -238,6 +600,32 @@ const CustomMentionsInput = ({
     };
   }, []);
 
+  // Handle paste events to prevent HTML paste
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      e.preventDefault();
+      const text = e.clipboardData?.getData('text/plain') || '';
+      document.execCommand('insertText', false, text);
+    };
+
+    const editable = editableRef.current;
+    if (editable) {
+      editable.addEventListener('paste', handlePaste);
+      return () => {
+        editable.removeEventListener('paste', handlePaste);
+      };
+    }
+  }, []);
+
+  // Handle click to move cursor outside mention if clicked inside
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (onClick) onClick(e);
+    
+    if (isCursorInMention()) {
+      moveCursorAfterMentionWithSpace();
+    }
+  };
+
   return (
     <div className="custom-mentions-wrapper" style={{ position: 'relative' }}>
       <div
@@ -246,7 +634,9 @@ const CustomMentionsInput = ({
         className={`custom-mentions-editable theme-${themeMode}`}
         onInput={handleInput}
         onKeyDown={handleKeyDown}
-        onClick={onClick}
+        onClick={handleClick}
+        onCompositionStart={handleCompositionStart}
+        onCompositionEnd={handleCompositionEnd}
         data-placeholder={placeholder}
         style={{
           ...style,
@@ -261,6 +651,7 @@ const CustomMentionsInput = ({
           outline: 'none',
           whiteSpace: 'pre-wrap',
           wordWrap: 'break-word',
+          cursor: 'text',
         }}
       />
       
@@ -272,6 +663,16 @@ const CustomMentionsInput = ({
             backgroundColor: themeWiseColor('#fff', '#1f1f1f', themeMode),
             borderColor: themeWiseColor('#d9d9d9', '#434343', themeMode),
             color: themeWiseColor('rgba(0, 0, 0, 0.85)', 'rgba(255, 255, 255, 0.85)', themeMode),
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            marginTop: 4,
+            zIndex: 1050,
+            maxHeight: 200,
+            overflowY: 'auto',
+            borderRadius: 4,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
           }}
         >
           {filteredOptions.map((option, index) => (
@@ -280,6 +681,11 @@ const CustomMentionsInput = ({
               className={`mentions-option ${index === selectedIndex ? 'selected' : ''}`}
               onClick={() => selectOption(option)}
               onMouseEnter={() => setSelectedIndex(index)}
+              style={{
+                padding: '8px 12px',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s',
+              }}
             >
               {option.label}
             </div>

@@ -9,6 +9,7 @@ import {
   setShowTaskDrawer,
   fetchTask,
 } from '@/features/task-drawer/task-drawer.slice';
+import { setProjectId } from '@/features/project/project.slice';
 import { IUserRecentTask } from '@/types/home/user-activity.types';
 
 const { Text } = Typography;
@@ -24,6 +25,9 @@ const TaskActivityList: React.FC<TaskActivityListProps> = React.memo(({ tasks })
 
   const handleTaskClick = useCallback(
     (taskId: string, projectId: string) => {
+      // Ensure projectId is set in the store so components like AssigneeSelector
+      // which depend on projectId (for example to enable assigning members) work
+      dispatch(setProjectId(projectId || ''));
       dispatch(setSelectedTaskId(taskId));
       dispatch(setShowTaskDrawer(true));
       dispatch(fetchTask({ taskId, projectId }));
