@@ -79,3 +79,7 @@ $RECYCLE.BIN/
 *.tsbuildinfo
 
 
+
+# Arquivos temporários de correções
+worklenz-fixes.tar.gz
+worklenz-fixes.zip
