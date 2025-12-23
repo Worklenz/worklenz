@@ -23,6 +23,9 @@ const selectedTeams = (state: ProjectReportsState) => {
   return state.teams.filter(team => team.selected).map(team => team.id) as string[];
 };
 
+export type ProjectReportsViewMode = 'table' | 'grouped';
+export type ProjectReportsGroupBy = 'category' | 'status' | 'health' | 'team' | 'client' | 'manager';
+
 type ProjectReportsState = {
   isProjectReportsDrawerOpen: boolean;
 
@@ -34,6 +37,10 @@ type ProjectReportsState = {
   total: number;
   isLoading: boolean;
   error: string | null;
+
+  // View mode
+  viewMode: ProjectReportsViewMode;
+  groupBy: ProjectReportsGroupBy;
 
   // filters
   index: number;
@@ -49,6 +56,7 @@ type ProjectReportsState = {
   selectedProjectHealths: IProjectHealth[];
   selectedProjectCategories: IProjectCategory[];
   selectedProjectManagers: IProjectManager[];
+  isLoadingMore: boolean; // For "Load More" button loading state
 };
 
 export const fetchReportingTeams = createAsyncThunk(
@@ -61,6 +69,31 @@ export const fetchReportingTeams = createAsyncThunk(
 
 export const fetchProjectData = createAsyncThunk(
   'projectReports/fetchProjectData',
+  async (_, { getState }) => {
+    const state = (getState() as any).projectReportsReducer;
+    const body: IGetProjectsRequestBody = {
+      index: state.index,
+      size: state.pageSize,
+      field: state.field,
+      order: state.order,
+      search: state.searchQuery,
+      filter: state.filterIndex.toString(),
+      statuses: state.selectedProjectStatuses.map((s: IProjectStatus) => s.id || ''),
+      healths: state.selectedProjectHealths.map((h: IProjectHealth) => h.id || ''),
+      categories: state.selectedProjectCategories.map((c: IProjectCategory) => c.id || ''),
+      project_managers: state.selectedProjectManagers.map((m: IProjectManager) => m.id || ''),
+      archived: state.archived,
+      teams: selectedTeams(state),
+    };
+    const response = await reportingProjectsApiService.getProjects(body);
+    return response.body;
+  }
+);
+
+// Fetch more projects for grouped view (append to existing list)
+// This enables progressive loading with "Load More" button
+export const fetchMoreProjectsForGroupedView = createAsyncThunk(
+  'projectReports/fetchMoreProjectsForGroupedView',
   async (_, { getState }) => {
     const state = (getState() as any).projectReportsReducer;
     const body: IGetProjectsRequestBody = {
@@ -104,6 +137,10 @@ const initialState: ProjectReportsState = {
   isLoading: false,
   error: null,
 
+  // View mode
+  viewMode: 'table',
+  groupBy: 'category',
+
   // filters
   index: 1,
   pageSize: 10,
@@ -118,6 +155,7 @@ const initialState: ProjectReportsState = {
   selectedProjectHealths: [],
   selectedProjectCategories: [],
   selectedProjectManagers: [],
+  isLoadingMore: false,
 };
 
 const projectReportsSlice = createSlice({
@@ -229,6 +267,12 @@ const projectReportsSlice = createSlice({
         project.category_color = category.color_code;
       }
     },
+    setViewMode: (state, action) => {
+      state.viewMode = action.payload;
+    },
+    setGroupBy: (state, action) => {
+      state.groupBy = action.payload;
+    },
     resetProjectReports: state => {
       state.projectList = [];
       state.total = 0;
@@ -246,6 +290,8 @@ const projectReportsSlice = createSlice({
       state.searchQuery = '';
       state.archived = false;
       state.index = 1;
+      state.viewMode = 'table';
+      state.groupBy = 'category';
       state.teams.forEach(team => {
         team.selected = true;
       });
@@ -283,6 +329,20 @@ const projectReportsSlice = createSlice({
       .addCase(fetchProjectData.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.error.message || 'Failed to fetch project data';
+      })
+      .addCase(fetchMoreProjectsForGroupedView.pending, state => {
+        state.isLoadingMore = true;
+        state.error = null;
+      })
+      .addCase(fetchMoreProjectsForGroupedView.fulfilled, (state, action) => {
+        state.isLoadingMore = false;
+        state.total = action.payload.total || 0;
+        // Append new projects to existing list
+        state.projectList = [...state.projectList, ...(action.payload.projects || [])];
+      })
+      .addCase(fetchMoreProjectsForGroupedView.rejected, (state, action) => {
+        state.isLoadingMore = false;
+        state.error = action.error.message || 'Failed to fetch more projects';
       })
       .addCase(updateProjectCategory, (state, action) => {
         const { projectId, category } = action.payload;
@@ -329,6 +389,8 @@ export const {
   setSelectedMember,
   setSelectedProject,
   setSelectedProjectCategory,
+  setViewMode,
+  setGroupBy,
   resetProjectReports,
   resetAllFilters,
 } = projectReportsSlice.actions;

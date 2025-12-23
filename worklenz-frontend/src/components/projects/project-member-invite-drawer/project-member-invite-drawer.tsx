@@ -238,7 +238,7 @@ const ProjectMemberDrawer = () => {
         <Form.Item name="memberName" label={t('searchLabel')}>
           <Select
             loading={teamMembersLoading}
-            placeholder={t('searchPlaceholder')}
+            placeholder={t('search', { defaultValue: 'Search' })}
             showSearch
             onSearch={handleSearch}
             onChange={handleSelectChange}

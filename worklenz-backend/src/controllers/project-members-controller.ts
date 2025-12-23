@@ -13,6 +13,7 @@ import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
 import { updateUsers } from "../shared/paddle-requests";
 import { statusExclude, TRIAL_MEMBER_LIMIT } from "../shared/constants";
 import { NotificationsService } from "../services/notifications/notifications.service";
+import { sendInvitationEmail } from "../shared/email-templates";
 
 export default class ProjectMembersController extends WorklenzControllerBase {
 
@@ -58,7 +59,8 @@ export default class ProjectMembersController extends WorklenzControllerBase {
   public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     req.body.user_id = req.user?.id;
     req.body.team_id = req.user?.team_id;
-    req.body.access_level = req.body.access_level ? req.body.access_level : "MEMBER";
+    // Default to MEMBER access level - can be changed later if needed
+    req.body.access_level = req.body.access_level || "MEMBER";
     const data = await this.createOrInviteMembers(req.body);
     return res.status(200).send(new ServerResponse(true, data));
   }
@@ -77,9 +79,59 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     // check the subscription status
     const subscriptionData = await checkTeamSubscriptionStatus(req.user?.team_id);
 
+    // Check if user already exists in the team
     const userExists = await this.checkIfUserAlreadyExists(req.user?.owner_id as string, req.body.email);
 
-    // Return error if user already exists
+    // If user exists in the team, check if they're already in the project
+    if (userExists && req.body.project_id) {
+      // Get the team member information from email
+      const teamMemberQuery = `
+        SELECT team_member_id, name, email, user_id
+        FROM team_member_info_view
+        WHERE email = $1 AND team_id = $2
+      `;
+      const teamMemberResult = await db.query(teamMemberQuery, [req.body.email, req.user?.team_id]);
+
+      if (teamMemberResult.rows.length > 0) {
+        const teamMemberInfo = teamMemberResult.rows[0];
+        const teamMemberId = teamMemberInfo.team_member_id;
+
+        // Check if already a project member
+        const projectMemberExists = await this.checkIfMemberExists(req.body.project_id, teamMemberId);
+
+        if (projectMemberExists) {
+          return res.status(200).send(new ServerResponse(false, null, "User already exists in the project."));
+        }
+
+        // User exists in team but not in project - add them to the project
+        const projectMemberReq = {
+          team_member_id: teamMemberId,
+          team_id: req.user?.team_id,
+          project_id: req.body.project_id,
+          user_id: req.user?.id,
+          access_level: req.body.access_level || "MEMBER" // Use provided access_level or default to MEMBER
+        };
+        const data = await this.createOrInviteMembers(projectMemberReq);
+        
+        // Send email invitation to existing team member for the project
+        // This ensures they receive an email notification and can access the project
+        if (teamMemberInfo.email && teamMemberInfo.name) {
+          sendInvitationEmail(
+            true, // isNewMember = true (existing team member, not a new user)
+            req.user as IPassportSession,
+            teamMemberInfo.name, // userNameOrId = name for existing members
+            teamMemberInfo.email,
+            teamMemberInfo.user_id || teamMemberId, // userId - use team_member_id as fallback if user_id is null
+            teamMemberInfo.name, // userName
+            req.body.project_id // projectId - this allows them to access the project directly
+          );
+        }
+        
+        return res.status(200).send(new ServerResponse(true, data.member));
+      }
+    }
+
+    // If user exists in team but no project_id provided, return error
     if (userExists) {
       return res.status(200).send(new ServerResponse(false, null, "User already exists in the team."));
     }
@@ -87,26 +139,35 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     // Handle self-hosted subscriptions differently
     if (subscriptionData.subscription_type === 'SELF_HOSTED') {
       // Adding as a team member
-      const teamMemberReq: { team_id?: string; emails: string[], project_id?: string; } = {
+      const teamMemberReq: { team_id?: string; emails: string[], project_id?: string; role_name?: string; is_admin?: boolean; job_title_id?: string; } = {
         team_id: req.user?.team_id,
         emails: [req.body.email]
       };
 
       if (req.body.project_id)
         teamMemberReq.project_id = req.body.project_id;
+      
+      // Pass role information for team member creation
+      if (req.body.role_name)
+        teamMemberReq.role_name = req.body.role_name;
+      if (req.body.is_admin !== undefined)
+        teamMemberReq.is_admin = req.body.is_admin;
+      if (req.body.job_title_id)
+        teamMemberReq.job_title_id = req.body.job_title_id;
 
       const [member] = await TeamMembersController.createOrInviteMembers(teamMemberReq, req.user);
 
       if (!member)
-        return res.status(200).send(new ServerResponse(true, null, "Failed to add the member to the project. Please try again."));
+        return res.status(200).send(new ServerResponse(false, null, "Failed to add the member to the project. Please try again."));
 
-      // Adding to the project
+      // Adding to the project - default to MEMBER access level
+      // Access level can be changed later if needed
       const projectMemberReq = {
         team_member_id: member.team_member_id,
         team_id: req.user?.team_id,
         project_id: req.body.project_id,
         user_id: req.user?.id,
-        access_level: req.body.access_level ? req.body.access_level : "MEMBER"
+        access_level: "MEMBER" // Always default to MEMBER for new invitations
       };
       const data = await this.createOrInviteMembers(projectMemberReq);
       return res.status(200).send(new ServerResponse(true, data.member));
@@ -151,26 +212,35 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     }
 
     // Adding as a team member
-    const teamMemberReq: { team_id?: string; emails: string[], project_id?: string; } = {
+    const teamMemberReq: { team_id?: string; emails: string[], project_id?: string; role_name?: string; is_admin?: boolean; job_title_id?: string; } = {
       team_id: req.user?.team_id,
       emails: [req.body.email]
     };
 
     if (req.body.project_id)
       teamMemberReq.project_id = req.body.project_id;
+    
+    // Pass role information for team member creation
+    if (req.body.role_name)
+      teamMemberReq.role_name = req.body.role_name;
+    if (req.body.is_admin !== undefined)
+      teamMemberReq.is_admin = req.body.is_admin;
+    if (req.body.job_title_id)
+      teamMemberReq.job_title_id = req.body.job_title_id;
 
     const [member] = await TeamMembersController.createOrInviteMembers(teamMemberReq, req.user);
 
     if (!member)
-      return res.status(200).send(new ServerResponse(true, null, "Failed to add the member to the project. Please try again."));
+      return res.status(200).send(new ServerResponse(false, null, "Failed to add the member to the project. Please try again."));
 
-    // Adding to the project
+    // Adding to the project - default to MEMBER access level
+    // Access level can be changed later if needed
     const projectMemberReq = {
       team_member_id: member.team_member_id,
       team_id: req.user?.team_id,
       project_id: req.body.project_id,
       user_id: req.user?.id,
-      access_level: req.body.access_level ? req.body.access_level : "MEMBER"
+      access_level: "MEMBER" // Always default to MEMBER for new invitations
     };
     const data = await this.createOrInviteMembers(projectMemberReq);
     return res.status(200).send(new ServerResponse(true, data.member));

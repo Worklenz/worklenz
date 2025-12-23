@@ -35,6 +35,9 @@ router.delete("/services/organization/:id", safeControllerFunction(ClientPortalC
 router.get("/requests", safeControllerFunction(ClientPortalController.getRequests));
 router.post("/requests", safeControllerFunction(ClientPortalController.createRequest));
 router.get("/requests/status-options", safeControllerFunction(ClientPortalController.getRequestStatusOptions));
+// Comment routes must come before /:id route to avoid route matching conflicts
+router.get("/requests/:id/comments", safeControllerFunction(ClientPortalController.getRequestComments));
+router.post("/requests/:id/comments", safeControllerFunction(ClientPortalController.addRequestComment));
 router.get("/requests/:id", safeControllerFunction(ClientPortalController.getRequestDetails));
 router.put("/requests/:id", safeControllerFunction(ClientPortalController.updateRequest));
 router.delete("/requests/:id", safeControllerFunction(ClientPortalController.deleteRequest));

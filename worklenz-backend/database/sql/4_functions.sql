@@ -748,12 +748,20 @@ BEGIN
     _team_id = (_body ->> 'team_id')::UUID;
     _project_id = (_body ->> 'project_id')::UUID;
     _user_id = (_body ->> 'user_id')::UUID;
-    _access_level = (_body ->> 'access_level')::TEXT;
+    _access_level = COALESCE(NULLIF(TRIM((_body ->> 'access_level')::TEXT), ''), 'MEMBER');
+
+    -- Map team-lead access level to PROJECT_MANAGER since Team Lead is a role, not a project access level
+    IF UPPER(_access_level) IN ('TEAM-LEAD', 'TEAM_LEAD') THEN
+        _access_level = 'PROJECT_MANAGER';
+    END IF;
 
     SELECT user_id FROM team_members WHERE id = _team_member_id INTO _member_user_id;
 
     INSERT INTO project_members (team_member_id, project_access_level_id, project_id, role_id)
-    VALUES (_team_member_id, (SELECT id FROM project_access_levels WHERE key = _access_level)::UUID,
+    VALUES (_team_member_id, COALESCE(
+            (SELECT id FROM project_access_levels WHERE key = _access_level),
+            (SELECT id FROM project_access_levels WHERE key = 'MEMBER')
+        )::UUID,
             _project_id,
             (SELECT id FROM roles WHERE team_id = _team_id AND default_role IS TRUE))
     RETURNING id INTO _id;
@@ -4085,6 +4093,7 @@ $$
 DECLARE
     _updater_name         TEXT;
     _task_name            TEXT;
+    _previous_status_id   UUID;
     _previous_status_name TEXT;
     _new_status_name      TEXT;
     _message              TEXT;
@@ -4092,28 +4101,36 @@ DECLARE
     _status_category      JSON;
     _schedule_id          JSON;
     _task_completed_at    TIMESTAMPTZ;
+    _is_new_status_done   BOOLEAN;
 BEGIN
     SELECT COALESCE(name, '') FROM tasks WHERE id = _task_id INTO _task_name;
 
-    SELECT COALESCE(name, '')
-    FROM task_statuses
-    WHERE id = (SELECT status_id FROM tasks WHERE id = _task_id)
-    INTO _previous_status_name;
+    -- Get previous status ID and name
+    SELECT t.status_id, COALESCE(ts.name, '')
+    FROM tasks t
+    LEFT JOIN task_statuses ts ON t.status_id = ts.id
+    WHERE t.id = _task_id
+    INTO _previous_status_id, _previous_status_name;
 
     SELECT COALESCE(name, '') FROM task_statuses WHERE id = _status_id INTO _new_status_name;
 
-    IF (_previous_status_name != _new_status_name)
+    -- Check if the new status is in a "done" category
+    SELECT EXISTS(
+        SELECT 1 
+        FROM sys_task_status_categories 
+        WHERE id = (SELECT category_id FROM task_statuses WHERE id = _status_id) 
+        AND is_done IS TRUE
+    ) INTO _is_new_status_done;
+
+    -- Update if status ID has changed
+    IF (_previous_status_id IS DISTINCT FROM _status_id)
     THEN
         -- Update status_id and completed_at in a single statement
         -- Set completed_at based on whether the new status is "done"
         UPDATE tasks 
         SET status_id = _status_id,
             completed_at = CASE 
-                WHEN EXISTS(SELECT 1 
-                           FROM sys_task_status_categories 
-                           WHERE id = (SELECT category_id FROM task_statuses WHERE id = _status_id) 
-                           AND is_done IS TRUE) 
-                THEN CURRENT_TIMESTAMP 
+                WHEN _is_new_status_done THEN CURRENT_TIMESTAMP 
                 ELSE NULL 
             END
         WHERE id = _task_id;

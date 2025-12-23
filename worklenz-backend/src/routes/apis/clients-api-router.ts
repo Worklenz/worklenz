@@ -21,6 +21,8 @@ clientsApiRouter.get("/portal/requests", safeControllerFunction(ClientsControlle
 clientsApiRouter.get("/portal/requests/stats", safeControllerFunction(ClientsController.getClientRequestsStats));
 clientsApiRouter.get("/portal/requests/:id", idParamValidator, safeControllerFunction(ClientsController.getClientRequestById));
 clientsApiRouter.get("/portal/requests/:id/history", idParamValidator, safeControllerFunction(ClientsController.getClientRequestStatusHistory));
+clientsApiRouter.get("/portal/requests/:id/comments", idParamValidator, safeControllerFunction(ClientsController.getClientRequestComments));
+clientsApiRouter.post("/portal/requests/:id/comments", idParamValidator, safeControllerFunction(ClientsController.addClientRequestComment));
 clientsApiRouter.put("/portal/requests/:id/status", idParamValidator, safeControllerFunction(ClientsController.updateClientRequestStatus));
 clientsApiRouter.put("/portal/requests/:id/assign", idParamValidator, safeControllerFunction(ClientsController.assignClientRequest));
 

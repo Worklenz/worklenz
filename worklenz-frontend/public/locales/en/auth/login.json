@@ -11,11 +11,13 @@
   "signupButton": "Sign up",
   "forgotPasswordButton": "Forgot password?",
   "signInWithGoogleButton": "Sign in with Google",
-  "dontHaveAccountText": "Don’t have an account?",
+  "signInWithAppleButton": "Sign in with Apple",
+  "dontHaveAccountText": "Don't have an account?",
   "orText": "OR",
   "successMessage": "You have successfully logged in!",
   "loginError": "Login failed",
   "googleLoginError": "Google login failed",
+  "appleLoginError": "Apple login failed",
   "validationMessages": {
     "email": "Please enter a valid email address",
     "password": "Password must be at least 8 characters long"

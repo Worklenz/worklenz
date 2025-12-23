@@ -219,12 +219,27 @@ const TimerButton = () => {
     }
   };
 
+  // Helper function to format time spent in seconds
+  const formatTimeSpent = (seconds: number | undefined): string => {
+    if (!seconds || seconds === 0) return '0m 0s';
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    const h = hours > 0 ? `${hours}h` : '';
+    const m = `${minutes}m`;
+    const s = `${secs}s`;
+    return `${h} ${m} ${s}`.trim();
+  };
+
   // Component to handle timer for recent logs with conflict checking
-  const RecentLogTimerButton = ({ taskId }: { taskId: string }) => {
+  const RecentLogTimerButton = ({ taskId, timeSpent }: { taskId: string; timeSpent?: number }) => {
     const { started, timeString, handleStartTimer, handleStopTimer } = useTaskTimerWithConflictCheck(
       taskId,
       null
     );
+
+    // Use timer's timeString if timer is running, otherwise use the last time log duration
+    const displayTime = started ? timeString : formatTimeSpent(timeSpent);
 
     return (
       <TaskTimer
@@ -240,7 +255,7 @@ const TimerButton = () => {
           // Refresh timer data after stopping
           setTimeout(() => fetchTimerData(), 100);
         }}
-        timeString={timeString}
+        timeString={displayTime}
       />
     );
   };
@@ -529,7 +544,7 @@ const TimerButton = () => {
                             <Text type="secondary" style={{ fontSize: 11 }}>
                               {formatDistanceToNow(parseISO(log.created_at), { addSuffix: true })}
                             </Text>
-                            <RecentLogTimerButton taskId={log.task_id} />
+                            <RecentLogTimerButton taskId={log.task_id} timeSpent={log.time_spent} />
                           </div>
                         </Space>
                       </div>

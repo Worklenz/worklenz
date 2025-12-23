@@ -263,6 +263,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
         SELECT DISTINCT ON (twl.task_id)
           twl.task_id,
           twl.created_at,
+          twl.time_spent,
           t1.name AS task_name,
           pr.id AS project_id,
           pr.name AS project_name,
@@ -287,6 +288,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
       SELECT 
         task_id,
         created_at,
+        time_spent,
         task_name,
         project_id,
         project_name,

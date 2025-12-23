@@ -56,6 +56,7 @@
   "pendingInvitation": "Ftesë në Pritje",
 
   "contextMenu": {
+    "duplicateTask":"Detyrë dublikatë",
     "assignToMe": "Cakto mua",
     "copyLink": "Kopjo lidhjen e detyrës",
     "linkCopied": "Lidhja u kopjua në clipboard",

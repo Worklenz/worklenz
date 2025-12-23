@@ -186,7 +186,10 @@ const CategoriesSettings = () => {
       <Card
         style={{ width: '100%' }}
         title={
-          <Flex justify="flex-end">
+          <Flex justify="space-between" align="center">
+            <Typography.Text strong>
+              {t('title', { defaultValue: 'Categories' })}
+            </Typography.Text>
             <Flex
               gap={8}
               align="center"
@@ -196,10 +199,19 @@ const CategoriesSettings = () => {
               <Input
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.currentTarget.value)}
-                placeholder={t('searchPlaceholder')}
+                placeholder={t('search', { defaultValue: 'Search' })}
                 style={{ maxWidth: 232 }}
                 suffix={<SearchOutlined />}
               />
+              <Button
+                type="primary"
+                onClick={() => {
+                  setSelectedCategoryId(null);
+                  setShowDrawer(true);
+                }}
+              >
+                {t('createCategoryButton', { defaultValue: 'New Category' })}
+              </Button>
             </Flex>
           </Flex>
         }

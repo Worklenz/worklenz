@@ -23,5 +23,22 @@
   "serviceQuestionsLabel": "Preguntas del servicio",
   "noFilesUploaded": "No se han subido archivos",
   "noAnswer": "Sin respuesta proporcionada",
-  "createInvoiceButton": "Crear Factura"
+  "createInvoiceButton": "Crear Factura",
+  "untitledRequest": "Solicitud sin título",
+  "backToRequests": "Volver a Solicitudes",
+  "requestDetails": "Detalles de la Solicitud",
+  "statusUpdateSuccess": "Estado actualizado correctamente",
+  "statusUpdateError": "Error al actualizar el estado",
+  "downloadAttachment": "Descargar",
+  "viewAttachment": "Ver",
+  "commentsTab": "Comentarios",
+  "noComments": "Aún no hay comentarios. ¡Inicia la conversación!",
+  "addComment": "Agregar Comentario",
+  "addCommentPlaceholder": "Escribe tu comentario aquí...",
+  "commentRequired": "Por favor ingresa un comentario",
+  "commentAdded": "Comentario agregado exitosamente",
+  "commentError": "Error al agregar comentario",
+  "teamMember": "Equipo",
+  "client": "Cliente",
+  "pressEnterToSend": "Presiona Enter para enviar, Shift+Enter para nueva línea"
 }

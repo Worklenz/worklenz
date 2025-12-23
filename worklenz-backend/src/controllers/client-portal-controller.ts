@@ -16,7 +16,12 @@ import { IO } from "../shared/io";
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import crypto from "crypto";
+import bcrypt from "bcrypt";
 import { generateUniqueSlug, suggestSlug, isValidSlug } from "../utils/slug";
+import { 
+  sendClientPortalNewRequestNotification, 
+  sendClientPortalRequestCommentNotification 
+} from "../shared/email-notifications";
 
 class ClientPortalController {
   // Dashboard
@@ -391,11 +396,13 @@ class ClientPortalController {
           );
       }
 
-      // Generate request number
-      const requestNumber = `REQ-${Date.now()}-${Math.random()
-        .toString(36)
-        .substr(2, 5)
-        .toUpperCase()}`;
+      // Generate request number (sequential per organization)
+      const countResult = await db.query(
+        "SELECT COUNT(*) + 1 as next_num FROM client_portal_requests WHERE organization_team_id = $1",
+        [organizationId]
+      );
+      const nextNum = countResult.rows[0]?.next_num || 1;
+      const requestNumber = `REQ-${String(nextNum).padStart(4, '0')}`;
 
       // Create request
       const query = `
@@ -422,23 +429,67 @@ class ClientPortalController {
       // Get service name for response
       const service = serviceCheck.rows[0];
 
-      return res.json(
-        new ServerResponse(
-          true,
-          {
-            id: newRequest.id,
-            requestNumber: newRequest.req_no,
-            serviceId: newRequest.service_id,
-            serviceName: service.name,
-            status: newRequest.status,
-            requestData: newRequest.request_data,
-            notes: newRequest.notes,
-            createdAt: newRequest.created_at,
-            updatedAt: newRequest.updated_at,
-          },
-          "Request created successfully"
-        )
-      );
+      // Send email notification to team admins
+      try {
+        // Get client name
+        const clientQuery = await db.query(
+          "SELECT name FROM clients WHERE id = $1",
+          [clientId]
+        );
+        const clientName = clientQuery.rows[0]?.name || "Client";
+
+        // Get team name and admin emails
+        const teamQuery = await db.query(
+          `SELECT t.name as team_name, u.email, u.name as user_name
+           FROM teams t
+           JOIN team_members tm ON tm.team_id = t.id
+           JOIN users u ON u.id = tm.user_id
+           WHERE t.id = $1 AND (tm.role_id IN (SELECT id FROM roles WHERE admin_role = true) OR t.user_id = u.id)`,
+          [organizationId]
+        );
+
+        if (teamQuery.rows.length > 0) {
+          const teamName = teamQuery.rows[0].team_name;
+          const adminEmails = teamQuery.rows.map((row: any) => row.email).filter(Boolean);
+          
+          if (adminEmails.length > 0) {
+            const baseUrl = getBaseUrl();
+            const requestUrl = `${baseUrl}/worklenz/client-portal/requests/${newRequest.id}`;
+            
+            // Get request title from requestData if available
+            let requestTitle = "";
+            if (requestData) {
+              const parsedData = typeof requestData === 'string' ? JSON.parse(requestData) : requestData;
+              requestTitle = parsedData.title || parsedData.name || "";
+            }
+
+            await sendClientPortalNewRequestNotification(adminEmails, {
+              greeting: "Hello",
+              requestNumber: newRequest.req_no,
+              serviceName: service.name,
+              clientName: clientName,
+              submittedAt: new Date(newRequest.created_at).toLocaleString(),
+              requestTitle: requestTitle,
+              requestUrl: requestUrl,
+              teamName: teamName
+            });
+          }
+        }
+      } catch (emailError) {
+        console.error("Error sending new request notification email:", emailError);
+      }
+
+      return res.json(new ServerResponse(true, {
+        id: newRequest.id,
+        requestNumber: newRequest.req_no,
+        serviceId: newRequest.service_id,
+        serviceName: service.name,
+        status: newRequest.status,
+        requestData: newRequest.request_data,
+        notes: newRequest.notes,
+        createdAt: newRequest.created_at,
+        updatedAt: newRequest.updated_at
+      }, "Request created successfully"));
     } catch (error) {
       console.error("Error creating request:", error);
       return res
@@ -762,6 +813,191 @@ class ClientPortalController {
             "Failed to retrieve request status options"
           )
         );
+    }
+  }
+
+  // Request Comments
+  static async getRequestComments(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const { id } = req.params;
+      const { clientId, organizationId } = req;
+
+      // Verify request exists and belongs to client or organization
+      // First check if request exists with exact client match
+      let requestCheck = await db.query(
+        "SELECT id, client_id, organization_team_id FROM client_portal_requests WHERE id = $1 AND client_id = $2 AND organization_team_id = $3",
+        [id, clientId, organizationId]
+      );
+
+      // If not found, check if request exists in the same organization (for multi-client scenarios)
+      if (requestCheck.rows.length === 0) {
+        requestCheck = await db.query(
+          "SELECT id, client_id, organization_team_id FROM client_portal_requests WHERE id = $1 AND organization_team_id = $2",
+          [id, organizationId]
+        );
+      }
+
+      if (requestCheck.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Request not found"));
+      }
+
+      // Get comments for the request
+      const query = `
+        SELECT 
+          c.id,
+          c.comment,
+          c.sender_type,
+          c.sender_id,
+          c.sender_name,
+          c.created_at,
+          c.updated_at
+        FROM client_portal_request_comments c
+        WHERE c.request_id = $1 AND c.organization_team_id = $2
+        ORDER BY c.created_at ASC
+      `;
+
+      const result = await db.query(query, [id, organizationId]);
+
+      return res.json(new ServerResponse(true, result.rows, "Comments retrieved successfully"));
+    } catch (error) {
+      console.error("Error fetching request comments:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve comments"));
+    }
+  }
+
+  static async addRequestComment(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    try {
+      const { id } = req.params;
+      const { clientId, organizationId, clientRelationshipId } = req;
+      const { comment } = req.body;
+
+      if (!comment || !comment.trim()) {
+        return res.status(400).json(new ServerResponse(false, null, "Comment is required"));
+      }
+
+      // Validate comment length (max 5000 characters)
+      const MAX_COMMENT_LENGTH = 5000;
+      if (comment.trim().length > MAX_COMMENT_LENGTH) {
+        return res.status(400).json(new ServerResponse(false, null, `Comment must not exceed ${MAX_COMMENT_LENGTH} characters`));
+      }
+
+      // Verify request exists and belongs to client
+      const requestCheck = await db.query(
+        "SELECT id, status FROM client_portal_requests WHERE id = $1 AND client_id = $2 AND organization_team_id = $3",
+        [id, clientId, organizationId]
+      );
+
+      if (requestCheck.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Request not found"));
+      }
+
+      // Get client name for sender_name
+      const clientQuery = await db.query(
+        "SELECT name FROM clients WHERE id = $1",
+        [clientId]
+      );
+      const senderName = clientQuery.rows[0]?.name || "Client";
+
+      // Use clientRelationshipId from request if available, otherwise fallback to clientId
+      const relationshipId = clientRelationshipId || clientId;
+
+      // Insert comment
+      const insertQuery = `
+        INSERT INTO client_portal_request_comments (
+          request_id,
+          organization_team_id,
+          client_id,
+          comment,
+          sender_type,
+          sender_id,
+          sender_name,
+          created_at,
+          updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+        RETURNING id, comment, sender_type, sender_id, sender_name, created_at, updated_at
+      `;
+
+      const result = await db.query(insertQuery, [
+        id,
+        organizationId,
+        clientId,
+        comment.trim(),
+        'client',
+        relationshipId,
+        senderName
+      ]);
+
+      const newComment = result.rows[0];
+
+      // Emit socket event for new comment
+      try {
+        const io = IO.getInstance();
+        if (io) {
+          io.emit(`client_portal:request_comment_added`, {
+            requestId: id,
+            comment: newComment,
+            clientId,
+            organizationId
+          });
+        }
+      } catch (socketError) {
+        console.error("Error emitting comment socket event:", socketError);
+      }
+
+      // Send email notification to team admins
+      try {
+        // Get request details for notification
+        const requestDetails = await db.query(
+          `SELECT r.req_no, s.name as service_name
+           FROM client_portal_requests r
+           JOIN client_portal_services s ON r.service_id = s.id
+           WHERE r.id = $1`,
+          [id]
+        );
+
+        if (requestDetails.rows.length > 0) {
+          const { req_no, service_name } = requestDetails.rows[0];
+
+          // Get team name and admin emails
+          const teamQuery = await db.query(
+            `SELECT t.name as team_name, u.email
+             FROM teams t
+             JOIN team_members tm ON tm.team_id = t.id
+             JOIN users u ON u.id = tm.user_id
+             WHERE t.id = $1 AND (tm.role_id IN (SELECT id FROM roles WHERE admin_role = true) OR t.user_id = u.id)`,
+            [organizationId]
+          );
+
+          if (teamQuery.rows.length > 0) {
+            const teamName = teamQuery.rows[0].team_name;
+            const adminEmails = teamQuery.rows.map((row: any) => row.email).filter(Boolean);
+            const baseUrl = getBaseUrl();
+            const requestUrl = `${baseUrl}/worklenz/client-portal/requests/${id}`;
+
+            // Send to each admin
+            for (const adminEmail of adminEmails) {
+              await sendClientPortalRequestCommentNotification(adminEmail, {
+                greeting: "Hello",
+                summary: `New comment on request ${req_no} from ${senderName}`,
+                senderName: senderName,
+                senderType: 'client',
+                comment: comment.trim().substring(0, 500) + (comment.trim().length > 500 ? '...' : ''),
+                requestNumber: req_no,
+                serviceName: service_name,
+                requestUrl: requestUrl,
+                teamName: teamName
+              });
+            }
+          }
+        }
+      } catch (emailError) {
+        console.error("Error sending comment notification email:", emailError);
+      }
+
+      return res.json(new ServerResponse(true, newComment, "Comment added successfully"));
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to add comment"));
     }
   }
 
@@ -2186,28 +2422,22 @@ class ClientPortalController {
             amount: parseFloat(newInvoice.amount),
             currency: newInvoice.currency,
             dueDate: newInvoice.due_date,
-            serviceName: request.service_name,
+            serviceName: request.service_name
           }
         );
       }
 
-      return res.json(
-        new ServerResponse(
-          true,
-          {
-            id: newInvoice.id,
-            invoiceNumber: newInvoice.invoice_no,
-            amount: parseFloat(newInvoice.amount),
-            currency: newInvoice.currency,
-            status: newInvoice.status,
-            dueDate: newInvoice.due_date,
-            createdAt: newInvoice.created_at,
-            clientName: request.client_name,
-            serviceName: request.service_name,
-          },
-          "Invoice created successfully"
-        )
-      );
+      return res.json(new ServerResponse(true, {
+        id: newInvoice.id,
+        invoiceNumber: newInvoice.invoice_no,
+        amount: parseFloat(newInvoice.amount),
+        currency: newInvoice.currency,
+        status: newInvoice.status,
+        dueDate: newInvoice.due_date,
+        createdAt: newInvoice.created_at,
+        clientName: request.client_name,
+        serviceName: request.service_name
+      }, "Invoice created successfully"));
     } catch (error) {
       console.error("Error creating invoice:", error);
       return res
@@ -3766,7 +3996,7 @@ class ClientPortalController {
         message,
         referenceId || null,
         referenceNumber || null,
-        JSON.stringify(metadata || {}),
+        JSON.stringify(metadata || {})
       ]);
       return result.rows[0]?.id;
     } catch (error) {
@@ -3775,10 +4005,7 @@ class ClientPortalController {
     }
   }
 
-  static async getNotifications(
-    req: AuthenticatedClientRequest,
-    res: IWorkLenzResponse
-  ) {
+  static async getNotifications(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
       const { clientId } = req;
       const { organizationId } = req;
@@ -3817,8 +4044,9 @@ class ClientPortalController {
         clientId,
         organizationId,
         limitNum,
-        offset,
+        offset
       ]);
+      const total = parseInt(countResult.rows[0]?.total || "0", 10);
 
       // Get total count
       const countQuery = `
@@ -3826,10 +4054,7 @@ class ClientPortalController {
         FROM client_portal_notifications
         ${whereClause}
       `;
-      const countResult = await db.query(countQuery, [
-        clientId,
-        organizationId,
-      ]);
+      const countResult = await db.query(countQuery, [clientId, organizationId]);
       const total = parseInt(countResult.rows[0]?.total || "0", 10);
 
       // Get unread count
@@ -3838,14 +4063,8 @@ class ClientPortalController {
         FROM client_portal_notifications
         WHERE client_id = $1 AND organization_team_id = $2 AND is_read = false
       `;
-      const unreadCountResult = await db.query(unreadCountQuery, [
-        clientId,
-        organizationId,
-      ]);
-      const unreadCount = parseInt(
-        unreadCountResult.rows[0]?.unread_count || "0",
-        10
-      );
+      const unreadCountResult = await db.query(unreadCountQuery, [clientId, organizationId]);
+      const unreadCount = parseInt(unreadCountResult.rows[0]?.unread_count || "0", 10);
 
       // Map notifications to response format
       const notifications = notificationsResult.rows.map((row: any) => ({
@@ -3858,22 +4077,16 @@ class ClientPortalController {
         metadata: row.metadata || {},
         isRead: row.is_read,
         readAt: row.read_at,
-        createdAt: row.created_at,
+        createdAt: row.created_at
       }));
 
-      return res.json(
-        new ServerResponse(
-          true,
-          {
-            notifications,
-            total,
-            unreadCount,
-            page: pageNum,
-            limit: limitNum,
-          },
-          "Notifications retrieved successfully"
-        )
-      );
+      return res.json(new ServerResponse(true, {
+        notifications,
+        total,
+        unreadCount,
+        page: pageNum,
+        limit: limitNum
+      }, "Notifications retrieved successfully"));
     } catch (error) {
       console.error("Error fetching notifications:", error);
       return res
@@ -3901,32 +4114,20 @@ class ClientPortalController {
         RETURNING id, type, reference_id
       `;
 
-      const updateResult = await db.query(updateQuery, [
-        id,
-        clientId,
-        organizationId,
-      ]);
+      const updateResult = await db.query(updateQuery, [id, clientId, organizationId]);
 
       if (updateResult.rowCount === 0) {
-        return res
-          .status(404)
-          .json(new ServerResponse(false, null, "Notification not found"));
+        return res.status(404).json(new ServerResponse(false, null, "Notification not found"));
       }
 
       const notification = updateResult.rows[0];
 
-      return res.json(
-        new ServerResponse(
-          true,
-          {
-            id: notification.id,
-            type: notification.type,
-            referenceId: notification.reference_id,
-            markedAt: new Date(),
-          },
-          "Notification marked as read"
-        )
-      );
+      return res.json(new ServerResponse(true, {
+        id: notification.id,
+        type: notification.type,
+        referenceId: notification.reference_id,
+        markedAt: new Date()
+      }, "Notification marked as read"));
     } catch (error) {
       console.error("Error marking notification as read:", error);
       return res
@@ -3952,22 +4153,13 @@ class ClientPortalController {
         WHERE client_id = $1 AND organization_team_id = $2 AND is_read = false
       `;
 
-      const updateResult = await db.query(updateQuery, [
-        clientId,
-        organizationId,
-      ]);
+      const updateResult = await db.query(updateQuery, [clientId, organizationId]);
       const markedCount = updateResult.rowCount || 0;
 
-      return res.json(
-        new ServerResponse(
-          true,
-          {
-            markedCount,
-            markedAt: new Date(),
-          },
-          "All notifications marked as read"
-        )
-      );
+      return res.json(new ServerResponse(true, {
+        markedCount,
+        markedAt: new Date()
+      }, "All notifications marked as read"));
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
       return res
@@ -4446,6 +4638,15 @@ class ClientPortalController {
 
       const client = clientResult.rows[0];
 
+      // Validate that client has an email address
+      if (!client.email || client.email.trim() === '') {
+        return res.status(400).json(new ServerResponse(false, {
+          errorCode: 'EMAIL_REQUIRED',
+          clientId: client.id,
+          clientName: client.name
+        }, "Email address is required to invite the client to the portal"));
+      }
+
       // Check if this email already exists as a Worklenz user
       const existingUserQuery = `
         SELECT u.id, u.email, u.name 
@@ -4471,22 +4672,43 @@ class ClientPortalController {
         ]);
 
         if (linkResult.rows.length === 0) {
-          // Create client_users record linking Worklenz user to client portal
-          // Note: password_hash is NULL since they'll authenticate via users table
-          const linkUserQuery = `
-            INSERT INTO client_users (id, user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, 'member', $6, 'active', NOW(), NOW())
-            RETURNING id
-          `;
-          const newClientUserId = crypto.randomUUID();
-          await db.query(linkUserQuery, [
-            newClientUserId,
-            existingUser.id,
-            client.id,
-            client.email,
-            client.name,
-            teamId,
-          ]);
+          // Check if email already exists in client_users (for any client)
+          const emailExistsCheck = await db.query(
+            `SELECT id, client_id FROM client_users WHERE LOWER(email) = LOWER($1)`,
+            [client.email]
+          );
+
+          let newClientUserId: string;
+
+          if (emailExistsCheck.rows.length > 0) {
+            // Email already exists - update the existing record to link to this client
+            const existingClientUser = emailExistsCheck.rows[0];
+            newClientUserId = existingClientUser.id;
+            
+            // Update the existing client_users record to link to this client and user
+            await db.query(
+              `UPDATE client_users 
+               SET user_id = $1, client_id = $2, name = $3, team_id = $4, status = 'active', updated_at = NOW()
+               WHERE id = $5`,
+              [existingUser.id, client.id, client.name, teamId, existingClientUser.id]
+            );
+          } else {
+            // Create client_users record linking Worklenz user to client portal
+            // Note: password_hash is NULL since they'll authenticate via users table (let DB generate UUID)
+            const linkUserQuery = `
+              INSERT INTO client_users (user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
+              VALUES ($1, $2, $3, $4, 'member', $5, 'active', NOW(), NOW())
+              RETURNING id
+            `;
+            const insertResult = await db.query(linkUserQuery, [
+              existingUser.id,
+              client.id,
+              client.email,
+              client.name,
+              teamId
+            ]);
+            newClientUserId = insertResult.rows[0].id;
+          }
 
           // Create organization access record for multi-org support
           const orgAccessQuery = `
@@ -4504,32 +4726,27 @@ class ClientPortalController {
           await db.query(updateClientQuery, [client.id, teamId]);
 
           // Create client portal access record with full permissions
+          // For linked Worklenz users, we use a placeholder password_hash since they authenticate via users table
           await db.query(
-            `INSERT INTO client_portal_access (client_id, is_active, created_at, updated_at)
-             VALUES ($1, TRUE, NOW(), NOW())
-             ON CONFLICT (client_id) DO UPDATE SET is_active = TRUE, updated_at = NOW()`,
-            [client.id]
+            `INSERT INTO client_portal_access (client_id, email, password_hash, is_active, created_at, updated_at)
+             VALUES ($1, $2, 'LINKED_USER', TRUE, NOW(), NOW())
+             ON CONFLICT (client_id) DO UPDATE SET is_active = TRUE, email = $2, updated_at = NOW()`,
+            [client.id, client.email]
           );
         }
 
         // Return response indicating user can use existing Worklenz credentials
-        return res.json(
-          new ServerResponse(
-            true,
-            {
-              isExistingUser: true,
-              message: "This client is already a Worklenz user!",
-              clientName: client.name,
-              clientEmail: client.email,
-              portalUrl: `${getClientPortalBaseUrl()}/login`,
-            },
-            "Client is existing Worklenz user - access granted"
-          )
-        );
+        return res.json(new ServerResponse(true, {
+          isExistingUser: true,
+          message: "This client is already a Worklenz user!",
+          clientName: client.name,
+          clientEmail: client.email,
+          portalUrl: `${getClientPortalBaseUrl()}/login`
+        }, "Client is existing Worklenz user - access granted"));
       }
 
       // Generate secure short random token for invitation (64 characters, same as team/project invitations)
-      const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days from now
+      const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
       const inviteToken = TokenService.generateInviteToken();
 
       // Create invitation record in database
@@ -4552,21 +4769,15 @@ class ClientPortalController {
         vanityLink = `${baseUrl}/i/${client.invite_slug}`;
       }
 
-      return res.json(
-        new ServerResponse(
-          true,
-          {
-            invitationLink: tokenLink,
-            vanityLink: vanityLink,
-            token: inviteToken,
-            expiresAt: new Date(expiresAt).toISOString(),
-            clientName: client.name,
-            clientEmail: client.email,
-            inviteSlug: client.invite_slug,
-          },
-          "Invitation link generated successfully"
-        )
-      );
+      return res.json(new ServerResponse(true, {
+        invitationLink: tokenLink,
+        vanityLink: vanityLink,
+        token: inviteToken,
+        expiresAt: new Date(expiresAt).toISOString(),
+        clientName: client.name,
+        clientEmail: client.email,
+        inviteSlug: client.invite_slug
+      }, "Invitation link generated successfully"));
     } catch (error) {
       console.error("Error generating client invitation link:", error);
       return res
@@ -4642,13 +4853,13 @@ class ClientPortalController {
       );
 
       // Generate new invitation token (short random token)
-      const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days from now
+      const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
       let inviteToken: string;
 
       if (pendingInviteCheck.rows.length > 0) {
         const existingInvitation = pendingInviteCheck.rows[0];
         inviteToken = TokenService.generateInviteToken();
-
+        
         // Update only this specific invitation by ID with new token and expiry
         await db.query(
           `UPDATE client_invitations 
@@ -4672,51 +4883,48 @@ class ClientPortalController {
       // Generate invitation link
       const inviteLink = `${getClientPortalBaseUrl()}/invite?token=${inviteToken}`;
 
-      // Generate email HTML
-      const emailHtml = ClientPortalController.generateInvitationEmailHTML({
-        inviteeName: client.name,
-        inviterName,
-        clientName: client.name,
-        companyName: client.company_name,
-        inviteLink,
-        expiresAt: new Date(expiresAt),
-        role: "member",
-      });
+      // Get team name for email
+      const teamQuery = `SELECT name FROM teams WHERE id = $1`;
+      const teamResult = await db.query(teamQuery, [teamId]);
+      const teamName = teamResult.rows[0]?.name || "Worklenz Team";
+
+      // Get the email template (same as initial invitation)
+      const template = FileConstants.getEmailTemplate(IEmailTemplateType.ClientInvitation) as string;
+      if (!template) {
+        return res.status(500).json(new ServerResponse(false, null, "Email template not found"));
+      }
+
+      // Replace template variables
+      const emailContent = template
+        .replace(/\[VAR_CLIENT_NAME\]/g, client.name || "Client")
+        .replace(/\[VAR_CLIENT_EMAIL\]/g, client.email || "")
+        .replace(/\[VAR_COMPANY_NAME\]/g, client.company_name || "N/A")
+        .replace(/\[VAR_CLIENT_PHONE\]/g, client.phone || "N/A")
+        .replace(/\[VAR_TEAM_NAME\]/g, teamName)
+        .replace(/\[VAR_PORTAL_LINK\]/g, inviteLink);
 
       // Send invitation email
       const emailRequest = new EmailRequest(
         [client.email],
-        `You're invited to join ${client.name} on Worklenz`,
-        emailHtml
+        `Welcome to your Client Portal - ${teamName}`,
+        emailContent
       );
 
       const emailResult = await sendEmailEnhanced(emailRequest);
 
       if (!emailResult.success) {
-        console.error(
-          "Failed to send client invitation email:",
-          emailResult.error
-        );
-        const errorMessage =
-          emailResult.error?.message || "Failed to send invitation email";
-        return res
-          .status(500)
-          .json(new ServerResponse(false, null, errorMessage));
+        console.error("Failed to send client invitation email:", emailResult.error);
+        const errorMessage = emailResult.error?.message || "Failed to send invitation email";
+        return res.status(500).json(new ServerResponse(false, null, errorMessage));
       }
 
-      return res.json(
-        new ServerResponse(
-          true,
-          {
-            invitationLink: inviteLink,
-            clientName: client.name,
-            clientEmail: client.email,
-            expiresAt: new Date(expiresAt).toISOString(),
-            emailSent: true,
-          },
-          "Invitation email sent successfully"
-        )
-      );
+      return res.json(new ServerResponse(true, {
+        invitationLink: inviteLink,
+        clientName: client.name,
+        clientEmail: client.email,
+        expiresAt: new Date(expiresAt).toISOString(),
+        emailSent: true
+      }, "Invitation email sent successfully"));
     } catch (error) {
       console.error("Error resending client invitation:", error);
       return res
@@ -4903,17 +5111,27 @@ class ClientPortalController {
           ]);
 
           // Link user to client portal with active status
-          const linkUserQuery = `
-            INSERT INTO client_users (user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, 'member', $5, 'active', NOW(), NOW())
-          `;
-          await db.query(linkUserQuery, [
-            userId,
-            clientId,
-            user.email,
-            user.name,
-            invitation.team_id,
-          ]);
+          // Check if email already exists in client_users to avoid duplicate key error
+          const emailExistsCheck = await db.query(
+            `SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)`,
+            [user.email]
+          );
+
+          if (emailExistsCheck.rows.length > 0) {
+            // Update existing record
+            await db.query(
+              `UPDATE client_users 
+               SET user_id = $1, client_id = $2, name = $3, team_id = $4, status = 'active', updated_at = NOW()
+               WHERE id = $5`,
+              [userId, clientId, user.name, invitation.team_id, emailExistsCheck.rows[0].id]
+            );
+          } else {
+            const linkUserQuery = `
+              INSERT INTO client_users (user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
+              VALUES ($1, $2, $3, $4, 'member', $5, 'active', NOW(), NOW())
+            `;
+            await db.query(linkUserQuery, [userId, clientId, user.email, user.name, invitation.team_id]);
+          }
 
           return res.json(
             new ServerResponse(true, {
@@ -4958,7 +5176,7 @@ class ClientPortalController {
       const teamName = teamResult.rows[0]?.name || "Worklenz Team";
 
       // Generate secure token for invitation (short random token)
-      const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days from now
+      const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
       const inviteToken = TokenService.generateInviteToken();
 
       // Create invitation record in database
@@ -5319,30 +5537,24 @@ class ClientPortalController {
         );
 
         // Update client_portal_access is_active based on status
-        const isActive = updateData.status === "active";
+        const isActive = updateData.status === 'active';
         await db.query(
           "UPDATE client_portal_access SET is_active = $1, updated_at = NOW() WHERE client_id = $2",
           [isActive, id]
         );
       }
 
-      return res.json(
-        new ServerResponse(
-          true,
-          {
-            id: updatedClient.id,
-            name: updatedClient.name,
-            email: updatedClient.email,
-            company_name: updatedClient.company_name,
-            phone: updatedClient.phone,
-            address: updatedClient.address,
-            status: updatedClient.status || "active",
-            created_at: updatedClient.created_at,
-            updated_at: updatedClient.updated_at,
-          },
-          "Client updated successfully"
-        )
-      );
+      return res.json(new ServerResponse(true, {
+        id: updatedClient.id,
+        name: updatedClient.name,
+        email: updatedClient.email,
+        company_name: updatedClient.company_name,
+        phone: updatedClient.phone,
+        address: updatedClient.address,
+        status: updatedClient.status || "active",
+        created_at: updatedClient.created_at,
+        updated_at: updatedClient.updated_at
+      }, "Client updated successfully"));
     } catch (error) {
       console.error("Error updating client:", error);
       return res
@@ -5352,10 +5564,7 @@ class ClientPortalController {
   }
 
   // Set or update client invite slug (vanity URL)
-  static async setClientInviteSlug(
-    req: AuthenticatedClientRequest,
-    res: IWorkLenzResponse
-  ) {
+  static async setClientInviteSlug(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
       const { id } = req.params;
       const { invite_slug } = req.body;
@@ -5368,43 +5577,27 @@ class ClientPortalController {
       );
 
       if (clientCheck.rows.length === 0) {
-        return res
-          .status(404)
-          .json(new ServerResponse(false, null, "Client not found"));
+        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
       }
 
       const client = clientCheck.rows[0];
 
       // If invite_slug is null or empty, remove it
-      if (!invite_slug || invite_slug.trim() === "") {
+      if (!invite_slug || invite_slug.trim() === '') {
         await db.query(
           "UPDATE clients SET invite_slug = NULL, updated_at = NOW() WHERE id = $1",
           [id]
         );
 
-        return res.json(
-          new ServerResponse(
-            true,
-            {
-              id,
-              invite_slug: null,
-            },
-            "Invite slug removed successfully"
-          )
-        );
+        return res.json(new ServerResponse(true, {
+          id,
+          invite_slug: null
+        }, "Invite slug removed successfully"));
       }
 
       // Validate slug format
       if (!isValidSlug(invite_slug)) {
-        return res
-          .status(400)
-          .json(
-            new ServerResponse(
-              false,
-              null,
-              "Invalid slug format. Use lowercase letters, numbers, and hyphens only (3-50 characters)"
-            )
-          );
+        return res.status(400).json(new ServerResponse(false, null, "Invalid slug format. Use lowercase letters, numbers, and hyphens only (3-50 characters)"));
       }
 
       // Check if slug is already taken
@@ -5414,15 +5607,7 @@ class ClientPortalController {
       );
 
       if (slugCheck.rows.length > 0) {
-        return res
-          .status(400)
-          .json(
-            new ServerResponse(
-              false,
-              null,
-              "This invite slug is already taken. Please choose another."
-            )
-          );
+        return res.status(400).json(new ServerResponse(false, null, "This invite slug is already taken. Please choose another."));
       }
 
       // Update client with new slug
@@ -5431,32 +5616,19 @@ class ClientPortalController {
         [invite_slug, id]
       );
 
-      return res.json(
-        new ServerResponse(
-          true,
-          {
-            id,
-            invite_slug: result.rows[0].invite_slug,
-            vanity_url: `${getClientPortalBaseUrl()}/i/${
-              result.rows[0].invite_slug
-            }`,
-          },
-          "Invite slug updated successfully"
-        )
-      );
+      return res.json(new ServerResponse(true, {
+        id,
+        invite_slug: result.rows[0].invite_slug,
+        vanity_url: `${getClientPortalBaseUrl()}/i/${result.rows[0].invite_slug}`
+      }, "Invite slug updated successfully"));
     } catch (error) {
       console.error("Error setting client invite slug:", error);
-      return res
-        .status(500)
-        .json(new ServerResponse(false, null, "Failed to update invite slug"));
+      return res.status(500).json(new ServerResponse(false, null, "Failed to update invite slug"));
     }
   }
 
   // Generate suggested slug from client name
-  static async suggestClientInviteSlug(
-    req: AuthenticatedClientRequest,
-    res: IWorkLenzResponse
-  ) {
+  static async suggestClientInviteSlug(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
       const { id } = req.params;
       const teamId = (req.user as any)?.team_id;
@@ -5468,9 +5640,7 @@ class ClientPortalController {
       );
 
       if (client.rows.length === 0) {
-        return res
-          .status(404)
-          .json(new ServerResponse(false, null, "Client not found"));
+        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
       }
 
       const clientData = client.rows[0];
@@ -5487,30 +5657,17 @@ class ClientPortalController {
 
       const suggestedSlug = await generateUniqueSlug(baseName, checkSlugExists);
 
-      return res.json(
-        new ServerResponse(
-          true,
-          {
-            suggested_slug: suggestedSlug,
-            vanity_url: `${getClientPortalBaseUrl()}/i/${suggestedSlug}`,
-          },
-          "Slug suggestion generated successfully"
-        )
-      );
+      return res.json(new ServerResponse(true, {
+        suggested_slug: suggestedSlug,
+        vanity_url: `${getClientPortalBaseUrl()}/i/${suggestedSlug}`
+      }, "Slug suggestion generated successfully"));
     } catch (error) {
       console.error("Error suggesting client invite slug:", error);
-      return res
-        .status(500)
-        .json(
-          new ServerResponse(false, null, "Failed to generate slug suggestion")
-        );
+      return res.status(500).json(new ServerResponse(false, null, "Failed to generate slug suggestion"));
     }
   }
 
-  static async deleteClient(
-    req: AuthenticatedClientRequest,
-    res: IWorkLenzResponse
-  ) {
+  static async deleteClient(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
       const { id } = req.params;
       const teamId = (req.user as any)?.team_id;
@@ -5551,9 +5708,7 @@ class ClientPortalController {
         [id]
       );
 
-      return res.json(
-        new ServerResponse(true, null, "Client deactivated successfully")
-      );
+      return res.json(new ServerResponse(true, null, "Client deactivated successfully"));
     } catch (error) {
       console.error("Error deactivating client:", error);
       return res
@@ -5585,6 +5740,7 @@ class ClientPortalController {
       }
 
       // Build query with pagination and filtering
+      // NOTE: Archived tasks should NOT be included in project progress stats
       let query = `
         SELECT 
           p.id,
@@ -5596,10 +5752,20 @@ class ClientPortalController {
           p.created_at,
           p.updated_at,
           COUNT(t.id) as total_tasks,
-          COUNT(CASE WHEN ts.category_id IN (SELECT id FROM sys_task_status_categories WHERE is_done = true) THEN 1 END) as completed_tasks
+          COUNT(
+            CASE 
+              WHEN ts.category_id IN (
+                SELECT id 
+                FROM sys_task_status_categories 
+                WHERE is_done = true
+              ) 
+              THEN 1 
+            END
+          ) as completed_tasks
         FROM projects p
         LEFT JOIN sys_project_statuses sps ON p.status_id = sps.id
-        LEFT JOIN tasks t ON p.id = t.project_id
+        -- Only consider non-archived tasks when calculating progress
+        LEFT JOIN tasks t ON p.id = t.project_id AND t.archived IS FALSE
         LEFT JOIN task_statuses ts ON t.status_id = ts.id
         WHERE p.client_id = $1
       `;
@@ -6103,11 +6269,7 @@ class ClientPortalController {
       });
 
       // Generate invitation link
-      const inviteLink = `${
-        process.env.CLIENT_PORTAL_HOSTNAME
-          ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}`
-          : "http://localhost:5174"
-      }/invitation?token=${inviteToken}`;
+      const inviteLink = `${process.env.CLIENT_PORTAL_HOSTNAME ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}` : "http://localhost:5174"}/invitation?token=${inviteToken}`;
 
       // Generate email HTML
       const emailHtml = ClientPortalController.generateInvitationEmailHTML({
@@ -7041,7 +7203,7 @@ class ClientPortalController {
       );
 
       // Update client_portal_access based on status
-      const isActive = status === "active";
+      const isActive = status === 'active';
       await db.query(
         "UPDATE client_portal_access SET is_active = $1, updated_at = NOW() WHERE client_id = ANY($2)",
         [isActive, client_ids]
@@ -7116,13 +7278,7 @@ class ClientPortalController {
         [client_ids]
       );
 
-      return res.json(
-        new ServerResponse(
-          true,
-          { deactivated_count: deactivateResult.rowCount },
-          "Clients deactivated successfully"
-        )
-      );
+      return res.json(new ServerResponse(true, { deactivated_count: deactivateResult.rowCount }, "Clients deactivated successfully"));
     } catch (error) {
       console.error("Error bulk deactivating clients:", error);
       return res
@@ -7133,17 +7289,12 @@ class ClientPortalController {
 
   // Client Portal Authentication Endpoints
   // Validate invitation via vanity slug
-  static async validateInvitationBySlug(
-    req: IWorkLenzRequest,
-    res: IWorkLenzResponse
-  ) {
+  static async validateInvitationBySlug(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
       const { slug } = req.params;
 
       if (!slug) {
-        return res
-          .status(400)
-          .json(new ServerResponse(false, null, "Invitation slug is required"));
+        return res.status(400).json(new ServerResponse(false, null, "Invitation slug is required"));
       }
 
       // Get client by invite_slug
@@ -7156,43 +7307,30 @@ class ClientPortalController {
       const clientResult = await db.query(clientQuery, [slug]);
 
       if (clientResult.rows.length === 0) {
-        return res
-          .status(404)
-          .json(new ServerResponse(false, null, "Invalid invitation link"));
+        return res.status(404).json(new ServerResponse(false, null, "Invalid invitation link"));
       }
 
       const client = clientResult.rows[0];
 
       // Return client details for the frontend (similar to token-based invitation)
-      return res.json(
-        new ServerResponse(
-          true,
-          {
-            valid: true,
-            email: client.email,
-            clientId: client.id,
-            clientName: client.name,
-            companyName: client.company_name,
-            teamName: client.team_name,
-            inviteSlug: client.invite_slug,
-            type: "vanity_url",
-          },
-          "Invitation is valid"
-        )
-      );
+      return res.json(new ServerResponse(true, {
+        valid: true,
+        email: client.email,
+        clientId: client.id,
+        clientName: client.name,
+        companyName: client.company_name,
+        teamName: client.team_name,
+        inviteSlug: client.invite_slug,
+        type: 'vanity_url'
+      }, "Invitation is valid"));
     } catch (error) {
       console.error("Error validating invitation by slug:", error);
-      return res
-        .status(500)
-        .json(new ServerResponse(false, null, "Failed to validate invitation"));
+      return res.status(500).json(new ServerResponse(false, null, "Failed to validate invitation"));
     }
   }
 
   // Validate invitation via token (existing method - supports both old hex tokens and new base62 tokens)
-  static async validateInvitation(
-    req: IWorkLenzRequest,
-    res: IWorkLenzResponse
-  ) {
+  static async validateInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
       const { token } = req.query;
 
@@ -7205,9 +7343,7 @@ class ClientPortalController {
       }
 
       // Get invitation details (TokenService handles both old hex and new base62 tokens)
-      const invitation = await TokenService.getInvitationByToken(
-        token as string
-      );
+      const invitation = await TokenService.getInvitationByToken(token as string);
 
       if (!invitation) {
         return res
@@ -7218,26 +7354,20 @@ class ClientPortalController {
       }
 
       // Return invitation details for the frontend
-      return res.json(
-        new ServerResponse(
-          true,
-          {
-            valid: true,
-            email: invitation.email,
-            organizationName: invitation.team_name,
-            id: invitation.id,
-            name: invitation.name,
-            role: invitation.role,
-            clientName: invitation.client_name,
-            companyName: invitation.company_name,
-            teamName: invitation.team_name,
-            expiresAt: invitation.expires_at,
-            status: invitation.status,
-            type: "token",
-          },
-          "Invitation is valid"
-        )
-      );
+      return res.json(new ServerResponse(true, {
+        valid: true,
+        email: invitation.email,
+        organizationName: invitation.team_name,
+        id: invitation.id,
+        name: invitation.name,
+        role: invitation.role,
+        clientName: invitation.client_name,
+        companyName: invitation.company_name,
+        teamName: invitation.team_name,
+        expiresAt: invitation.expires_at,
+        status: invitation.status,
+        type: 'token'
+      }, "Invitation is valid"));
     } catch (error) {
       console.error("Error validating invitation:", error);
       return res
@@ -7264,13 +7394,9 @@ class ClientPortalController {
 
       // Check if this is an organization invite token
       if (TokenService.isOrganizationInviteToken(token)) {
-        const orgInvitePayload =
-          TokenService.verifyOrganizationInviteToken(token);
+        const orgInvitePayload = TokenService.verifyOrganizationInviteToken(token);
 
-        if (
-          orgInvitePayload &&
-          orgInvitePayload.type === "organization_invite"
-        ) {
+        if (orgInvitePayload && orgInvitePayload.type === "organization_invite") {
           // For organization invites, email is required
           if (!email) {
             return res
@@ -7302,6 +7428,31 @@ class ClientPortalController {
             });
           }
 
+          // Check if email exists in Worklenz users table for linking
+          const existingWorklenzUserQuery = `
+            SELECT id, email, name, password FROM users
+            WHERE LOWER(email) = LOWER($1)
+          `;
+          const existingWorklenzUserResult = await db.query(existingWorklenzUserQuery, [email]);
+          
+          let worklenzUserId = null;
+          if (existingWorklenzUserResult.rows.length > 0) {
+            // User already exists in Worklenz - verify their Worklenz password before linking
+            const worklenzUser = existingWorklenzUserResult.rows[0];
+            const passwordMatch = bcrypt.compareSync(password, worklenzUser.password);
+            
+            if (!passwordMatch) {
+              return res.status(401).json({
+                done: false,
+                body: { isWorklenzUser: true },
+                titleKey: "errors.worklenz_account_found_title",
+                messageKey: "errors.worklenz_account_found_message"
+              });
+            }
+            
+            worklenzUserId = worklenzUser.id;
+          }
+
           // Create a client record for this organization
           const clientResult = await db.query(
             `INSERT INTO clients (name, email, team_id, status, client_portal_enabled, created_at, updated_at)
@@ -7312,18 +7463,58 @@ class ClientPortalController {
 
           const clientId = clientResult.rows[0].id;
 
-          // Create the client user
-          const userResult = await db.query(
-            `INSERT INTO client_users (id, client_id, email, name, password_hash, role, status, created_at)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
-           RETURNING id, email, name, role, client_id`,
-            [
-              clientId,
-              email,
-              name,
-              crypto.createHash("sha256").update(password).digest("hex"),
-            ]
+          // Create the client user - link to Worklenz user if exists, otherwise use password_hash
+          // Check if email already exists in client_users to avoid duplicate key error
+          const emailExistsCheck = await db.query(
+            `SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)`,
+            [email]
           );
+
+          let userResult;
+          if (emailExistsCheck.rows.length > 0) {
+            // Email already exists - update the existing record
+            const existingClientUserId = emailExistsCheck.rows[0].id;
+            if (worklenzUserId) {
+              await db.query(
+                `UPDATE client_users 
+                 SET user_id = $1, client_id = $2, name = $3, status = 'active', updated_at = NOW()
+                 WHERE id = $4`,
+                [worklenzUserId, clientId, name, existingClientUserId]
+              );
+            } else {
+              await db.query(
+                `UPDATE client_users 
+                 SET client_id = $1, name = $2, password_hash = $3, status = 'active', updated_at = NOW()
+                 WHERE id = $4`,
+                [clientId, name, crypto.createHash("sha256").update(password).digest("hex"), existingClientUserId]
+              );
+            }
+            userResult = await db.query(
+              `SELECT id, email, name, role, client_id FROM client_users WHERE id = $1`,
+              [existingClientUserId]
+            );
+          } else if (worklenzUserId) {
+            // Link to existing Worklenz user - they will authenticate with their Worklenz password
+            userResult = await db.query(
+              `INSERT INTO client_users (id, client_id, user_id, email, name, role, status, created_at)
+             VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
+             RETURNING id, email, name, role, client_id`,
+              [clientId, worklenzUserId, email, name]
+            );
+          } else {
+            // Standalone client portal user - create with password_hash
+            userResult = await db.query(
+              `INSERT INTO client_users (id, client_id, email, name, password_hash, role, status, created_at)
+             VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
+             RETURNING id, email, name, role, client_id`,
+              [
+                clientId,
+                email,
+                name,
+                crypto.createHash("sha256").update(password).digest("hex"),
+              ]
+            );
+          }
 
           const newUser = userResult.rows[0];
 
@@ -7376,7 +7567,7 @@ class ClientPortalController {
 
       // Check if user email exists in Worklenz users table
       const existingWorklenzUserQuery = `
-        SELECT id, email, name FROM users
+        SELECT id, email, name, password FROM users
         WHERE LOWER(email) = LOWER($1)
       `;
       const existingWorklenzUserResult = await db.query(
@@ -7386,8 +7577,20 @@ class ClientPortalController {
 
       let userId = null;
       if (existingWorklenzUserResult.rows.length > 0) {
-        // User already exists in Worklenz - link them instead of creating password
-        userId = existingWorklenzUserResult.rows[0].id;
+        // User already exists in Worklenz - verify their Worklenz password before linking
+        const worklenzUser = existingWorklenzUserResult.rows[0];
+        const passwordMatch = bcrypt.compareSync(password, worklenzUser.password);
+        
+        if (!passwordMatch) {
+          return res.status(401).json({
+            done: false,
+            body: { isWorklenzUser: true },
+            titleKey: "errors.worklenz_account_found_title",
+            messageKey: "errors.worklenz_account_found_message"
+          });
+        }
+        
+        userId = worklenzUser.id;
       }
 
       // Accept the invitation (will link if userId is provided, otherwise create password)

@@ -56,7 +56,9 @@ export default abstract class WorklenzControllerBase {
 
     // Sort
     const sortField = /null|undefined/.test(queryParams.field as string) ? searchField : queryParams.field;
-    const sortOrder = queryParams.order === "descend" ? "desc" : "asc";
+    // Handle both uppercase (ASC/DESC) and lowercase (asc/desc/ascend/descend) order values
+    const orderValue = (queryParams.order as string || "").toLowerCase();
+    const sortOrder = (orderValue === "desc" || orderValue === "descend") ? "desc" : "asc";
 
     return {searchQuery, sortField, sortOrder, size, offset, paging};
   }

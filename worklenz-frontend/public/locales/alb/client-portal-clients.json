@@ -184,5 +184,9 @@
   "invitationModalCopyLink": "Kopjo Lidhjen",
   "portalUrlLabel": "URL e Portalit:",
   "invitationLinkCopiedSuccess": "Lidhja e ftesës u kopjua në të papastër!",
-  "invitationLinkCopyError": "Dështoi kopjimi i lidhjes në të papastër"
+  "invitationLinkCopyError": "Dështoi kopjimi i lidhjes në të papastër",
+  "emailRequiredTitle": "Email i Kërkuar",
+  "emailRequiredMessage": "Ky klient nuk ka një adresë email. Një email kërkohet për ta ftuar në portal.",
+  "emailRequiredQuestion": "Dëshironi të shtoni një adresë email dhe ta ftoni përsëri?",
+  "addEmailButton": "Shto Email dhe Fto"
 }

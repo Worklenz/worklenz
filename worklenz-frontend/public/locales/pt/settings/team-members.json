@@ -71,5 +71,20 @@
   "manager_assigned_successfully": "Líder de Equipe atribuído com sucesso",
   "failed_to_assign_manager": "Falha ao atribuir Líder de Equipe",
   "assign": "Atribuir",
-  "cancel": "Cancelar"
+  "cancel": "Cancelar",
+  "projectInvite_emailRequired": "Please enter at least one email address",
+  "projectInvite_inviteFailed": "Failed to invite project members",
+  "projectInvite_linkCreatedSuccess": "Project invitation link created successfully",
+  "projectInvite_linkCreateFailed": "Failed to create project invitation link",
+  "projectInvite_linkCopied": "Project invitation link copied to clipboard",
+  "projectInvite_linkCopyFailed": "Failed to copy link",
+  "projectInvite_copiedShort": "Copied!",
+  "projectInvite_copyLinkButton": "Copy project link",
+  "projectInvite_emailLabel": "Invite with email",
+  "projectInvite_emailInvalid": "Please enter valid email addresses",
+  "projectInvite_emailPlaceholder": "Add people or Email",
+  "projectInvite_emailHelp": "Type email and press Enter",
+  "projectInvite_inviteButton": "Invite",
+  "projectInvite_teamRoleLabel": "Team role",
+  "projectInvite_teamRoleTooltip": "Team role determines team-wide permissions. Project access level defaults to Member and can be changed later."
 }

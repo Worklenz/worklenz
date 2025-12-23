@@ -9,6 +9,7 @@ import { CheckCircleTwoTone, CloseCircleTwoTone } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 
 import googleIcon from '@/assets/images/google-icon.png';
+import appleIcon from '@/assets/images/apple-icon.svg';
 import PageHeader from '@components/AuthPageHeader';
 
 import { authApiService } from '@/api/auth/auth.api.service';
@@ -21,6 +22,9 @@ import {
   evt_signup_with_email_click,
   evt_signup_with_google_click,
 } from '@/shared/worklenz-analytics-events';
+
+// Add Apple signup event (following existing pattern)
+const evt_signup_with_apple_click = 'signup_with_apple_click';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import logger from '@/utils/errorLogger';
 import alertService from '@/services/alerts/alertService';
@@ -70,6 +74,7 @@ const SignupPage = () => {
   };
 
   const enableGoogleLogin = import.meta.env.VITE_ENABLE_GOOGLE_LOGIN === 'true' || false;
+  const enableAppleLogin = import.meta.env.VITE_ENABLE_APPLE_LOGIN === 'true' || false;
   const enableRecaptcha =
     import.meta.env.VITE_ENABLE_RECAPTCHA === 'true' &&
     import.meta.env.VITE_RECAPTCHA_SITE_KEY &&
@@ -268,6 +273,17 @@ const SignupPage = () => {
       window.location.href = url;
     } catch (error) {
       message.error('Failed to redirect to Google sign up');
+    }
+  };
+
+  const onAppleSignUpClick = () => {
+    try {
+      trackMixpanelEvent(evt_signup_with_apple_click);
+      const queryParams = getInvitationQueryParams();
+      const url = `${import.meta.env.VITE_API_URL}/secure/apple${queryParams ? `?${queryParams}` : ''}`;
+      window.location.href = url;
+    } catch (error) {
+      message.error('Failed to redirect to Apple sign up');
     }
   };
 
@@ -489,24 +505,43 @@ const SignupPage = () => {
               {t('signupButton')}
             </Button>
 
-            {enableGoogleLogin && (
+            {(enableGoogleLogin || enableAppleLogin) && (
               <>
                 <Typography.Text style={{ textAlign: 'center' }}>{t('orText')}</Typography.Text>
 
-                <Button
-                  block
-                  type="default"
-                  size="large"
-                  onClick={onGoogleSignUpClick}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    borderRadius: 4,
-                  }}
-                >
-                  <img src={googleIcon} alt="google icon" style={{ maxWidth: 20, width: '100%' }} />
-                  {t('signInWithGoogleButton')}
-                </Button>
+                {enableGoogleLogin && (
+                  <Button
+                    block
+                    type="default"
+                    size="large"
+                    onClick={onGoogleSignUpClick}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      borderRadius: 4,
+                    }}
+                  >
+                    <img src={googleIcon} alt="google icon" style={{ maxWidth: 20, width: '100%' }} />
+                    {t('signInWithGoogleButton')}
+                  </Button>
+                )}
+
+                {enableAppleLogin && (
+                  <Button
+                    block
+                    type="default"
+                    size="large"
+                    onClick={onAppleSignUpClick}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      borderRadius: 4,
+                    }}
+                  >
+                    <img src={appleIcon} alt="apple icon" style={{ maxWidth: 20, width: '100%' }} />
+                    {t('signUpWithAppleButton', { defaultValue: 'Sign up with Apple' })}
+                  </Button>
+                )}
               </>
             )}
           </Flex>

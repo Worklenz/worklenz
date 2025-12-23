@@ -270,6 +270,12 @@ export interface InvoiceDetails {
   };
 }
 
+export interface ProfileUpdateData {
+  name: string;
+  currentPassword?: string;
+  newPassword?: string;
+}
+
 export interface ClientProfile {
   client: {
     id: string;

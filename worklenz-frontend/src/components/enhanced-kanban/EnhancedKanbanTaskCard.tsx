@@ -61,6 +61,28 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
     );
 
     const projectId = useAppSelector(state => state.projectReducer.projectId);
+
+    // Get active filters from Redux (enhancedKanbanReducer)
+    const activeFilters = useAppSelector(state => ({
+      members: state.enhancedKanbanReducer?.taskAssignees?.filter((m: any) => m.selected).map((m: any) => m.id) || [],
+      labels: state.enhancedKanbanReducer?.labels?.filter((l: any) => l.selected).map((l: any) => l.id) || [],
+      priorities: state.enhancedKanbanReducer?.priorities || []
+    }));
+
+    // Get all priorities to create ID-to-name mapping
+    const allPriorities = useAppSelector(state => state.priorityReducer?.priorities || []);
+    
+    // Create priority ID to name mapping
+    const priorityIdToName = React.useMemo(() => {
+      const map: Record<string, string> = {};
+      allPriorities.forEach((p: any) => {
+        // Map priority value (0=low, 1=medium, 2=high) to name
+        if (p.value === 0) map[p.id] = 'low';
+        if (p.value === 1) map[p.id] = 'medium';
+        if (p.value === 2) map[p.id] = 'high';
+      });
+      return map;
+    }, [allPriorities]);
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
       id: task.id!,
       data: {
@@ -110,11 +132,12 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
 
     const handleSubTaskExpand = useCallback(() => {
       if (task && task.id && projectId) {
+        const subtaskCount = task.sub_tasks_count ?? 0;
         // Check if subtasks are already loaded and we have subtask data
-        if (task.sub_tasks && task.sub_tasks.length > 0 && task.sub_tasks_count > 0) {
+        if (task.sub_tasks && task.sub_tasks.length > 0 && subtaskCount > 0) {
           // If subtasks are already loaded, just toggle visibility
           dispatch(toggleTaskExpansion(task.id));
-        } else if (task.sub_tasks_count > 0) {
+        } else if (subtaskCount > 0) {
           // If we have a subtask count but no loaded subtasks, fetch them
           dispatch(toggleTaskExpansion(task.id));
           dispatch(fetchBoardSubTasks({ taskId: task.id, projectId }));
@@ -137,6 +160,54 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
       e.stopPropagation();
       setShowNewSubtaskCard(true);
     }, []);
+
+    // Filter subtasks based on active filters
+    const filteredSubtasks = React.useMemo(() => {
+      if (!task.sub_tasks || task.sub_tasks.length === 0) return [];
+
+      // If no filters are active, show all subtasks
+      const hasActiveFilters = 
+        activeFilters.members.length > 0 || 
+        activeFilters.labels.length > 0 || 
+        activeFilters.priorities.length > 0;
+
+      if (!hasActiveFilters) {
+        return task.sub_tasks;
+      }
+
+      // Filter subtasks based on active filters
+      return task.sub_tasks.filter((subtask: any) => {
+        // Check member filter
+        if (activeFilters.members.length > 0) {
+          const hasMatchingMember = subtask.assignees?.some((a: any) => {
+            const assigneeId = typeof a === 'string' ? a : (a.team_member_id || a.id);
+            return activeFilters.members.includes(assigneeId);
+          });
+          if (!hasMatchingMember) return false;
+        }
+
+        // Check label filter
+        if (activeFilters.labels.length > 0) {
+          const hasMatchingLabel = subtask.labels?.some((l: any) => 
+            activeFilters.labels.includes(l.id)
+          );
+          if (!hasMatchingLabel) return false;
+        }
+
+        // Check priority filter
+        if (activeFilters.priorities.length > 0) {
+          const filterPriorityNames = activeFilters.priorities
+            .map(id => priorityIdToName[id])
+            .filter(Boolean);
+          
+          if (!filterPriorityNames.includes(subtask.priority)) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+    }, [task.sub_tasks, activeFilters, priorityIdToName]);
 
     return (
       <div
@@ -244,14 +315,13 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
                   )}
 
                   {!task.sub_tasks_loading &&
-                    task?.sub_tasks &&
-                    task.sub_tasks.length > 0 &&
-                    task.sub_tasks.map((subtask: any) => (
+                    filteredSubtasks.length > 0 &&
+                    filteredSubtasks.map((subtask: any) => (
                       <BoardSubTaskCard key={subtask.id} subtask={subtask} sectionId={sectionId} />
                     ))}
 
                   {!task.sub_tasks_loading &&
-                    (!task?.sub_tasks || task.sub_tasks.length === 0) &&
+                    filteredSubtasks.length === 0 &&
                     task.sub_tasks_count === 0 && (
                       <List.Item>
                         <div style={{ padding: '8px 0', color: '#999', fontSize: '12px' }}>

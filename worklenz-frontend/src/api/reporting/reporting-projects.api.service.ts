@@ -48,4 +48,39 @@ export const reportingProjectsApiService = {
     const response = await apiClient.get<IServerResponse<ITaskListGroup[]>>(url);
     return response.data;
   },
+
+  getTasksPaginated: async (
+    projectId: string,
+    params: {
+      page?: number;
+      pageSize?: number;
+      search?: string;
+      status?: string;
+      priority?: string;
+      assignee?: string;
+      sortField?: string;
+      sortOrder?: string;
+    }
+  ): Promise<IServerResponse<{
+    data: any[];
+    total: number;
+    page: number;
+    pageSize: number;
+    stats: {
+      total: number;
+      completed: number;
+      inProgress: number;
+      overdue: number;
+    };
+    members: {
+      team_member_id: string;
+      name: string;
+      avatar_url: string;
+    }[];
+  }>> => {
+    const q = toQueryString(params);
+    const url = `${API_BASE_URL}/reporting/overview/project/tasks-paginated/${projectId}${q}`;
+    const response = await apiClient.get(url);
+    return response.data;
+  },
 };

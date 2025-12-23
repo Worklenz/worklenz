@@ -56,6 +56,7 @@
   "pendingInvitation": "Pending Invitation",
 
   "contextMenu": {
+    "duplicateTask":"Duplicate task",
     "assignToMe": "Assign to me",
     "copyLink": "Copy link to task",
     "linkCopied": "Link copied to clipboard",

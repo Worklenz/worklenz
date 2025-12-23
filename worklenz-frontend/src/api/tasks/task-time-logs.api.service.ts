@@ -25,6 +25,7 @@ export interface IRecentTimeLog {
   parent_task_id?: string;
   parent_task_name?: string;
   created_at: string;
+  time_spent?: number;
 }
 
 export const taskTimeLogsApiService = {

@@ -228,9 +228,26 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
       if (currentGrouping === 'status') {
         // Extract status ID from group ID (format: "status-{statusId}")
         const statusId = group.id.replace('status-', '');
+        
+        // Look up the full status object to get category_id (required by backend validator)
+        const currentStatus = statusList.find(s => s.id === statusId);
+        
+        if (!currentStatus || !currentStatus.category_id) {
+          logger.error('Cannot rename status: missing category_id', { 
+            statusId, 
+            projectId,
+            hasStatus: !!currentStatus,
+            hasCategoryId: !!currentStatus?.category_id
+          });
+          setIsEditingName(false);
+          setEditingName(group.name);
+          return;
+        }
+        
         const body: ITaskStatusUpdateModel = {
           name: editingName.trim(),
           project_id: projectId,
+          category_id: currentStatus.category_id, // Required by backend validator
         };
 
         await statusApiService.updateNameOfStatus(statusId, body, projectId);
@@ -264,6 +281,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     dispatch,
     trackMixpanelEvent,
     isRenaming,
+    statusList,
   ]);
 
   const handleNameClick = useCallback(

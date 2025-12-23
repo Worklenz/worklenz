@@ -247,7 +247,9 @@ const InvoiceDetailsPage: React.FC = () => {
                 <br />
                 <Text strong>{invoice.request.service?.name || "N/A"}</Text>
                 <br />
-                <Text>{invoice.request.service?.description || ""}</Text>
+                <Text>
+                  {stripHtmlTags(invoice.request.service?.description || "")}
+                </Text>
               </Col>
             </Row>
           )}
@@ -326,5 +328,8 @@ const InvoiceDetailsPage: React.FC = () => {
     </div>
   );
 };
+
+const stripHtmlTags = (value: string): string =>
+  value.replace(/<[^>]+>/g, "").trim();
 
 export default InvoiceDetailsPage;

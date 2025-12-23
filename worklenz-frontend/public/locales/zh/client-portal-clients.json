@@ -235,5 +235,9 @@
   "invitationModalCopyLink": "复制链接",
   "portalUrlLabel": "门户URL：",
   "invitationLinkCopiedSuccess": "邀请链接已复制到剪贴板！",
-  "invitationLinkCopyError": "复制链接到剪贴板失败"
+  "invitationLinkCopyError": "复制链接到剪贴板失败",
+  "emailRequiredTitle": "需要电子邮件",
+  "emailRequiredMessage": "此客户没有电子邮件地址。需要电子邮件才能邀请他们访问门户。",
+  "emailRequiredQuestion": "您想添加电子邮件地址并再次邀请他们吗？",
+  "addEmailButton": "添加电子邮件并邀请"
 }

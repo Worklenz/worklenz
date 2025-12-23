@@ -95,6 +95,39 @@ export const clientPortalApi = createApi({
       providesTags: (_result, _error, id) => [{ type: 'Requests', id }],
     }),
 
+    getRequestComments: builder.query<ApiResponse<Array<{
+      id: string;
+      comment: string;
+      sender_type: 'client' | 'team_member';
+      sender_id: string;
+      sender_name: string;
+      created_at: string;
+      updated_at: string;
+    }>>, string>({
+      query: (id) => `/requests/${id}/comments`,
+      providesTags: (_result, _error, id) => [{ type: 'Requests', id: `${id}-comments` }],
+    }),
+
+    addRequestComment: builder.mutation<ApiResponse<{
+      id: string;
+      comment: string;
+      sender_type: 'client' | 'team_member';
+      sender_id: string;
+      sender_name: string;
+      created_at: string;
+      updated_at: string;
+    }>, { id: string; comment: string }>({
+      query: ({ id, comment }) => ({
+        url: `/requests/${id}/comments`,
+        method: 'POST',
+        body: { comment },
+      }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: 'Requests', id: `${id}-comments` },
+        { type: 'Requests', id },
+      ],
+    }),
+
     updateRequest: builder.mutation<ApiResponse<ClientRequest>, { id: string; data: Partial<ClientRequest> }>({
       query: ({ id, data }) => ({
         url: `/requests/${id}`,
@@ -298,6 +331,8 @@ export const {
   useCreateRequestMutation,
   useGetRequestDetailsQuery,
   useGetRequestStatusHistoryQuery,
+  useGetRequestCommentsQuery,
+  useAddRequestCommentMutation,
   useUpdateRequestMutation,
   useDeleteRequestMutation,
   

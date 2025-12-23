@@ -9,6 +9,8 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import ClientPortalController from "./client-portal-controller";
 import {uploadBase64, deleteObject} from "../shared/storage";
+import {sendClientPortalRequestCommentNotification} from "../shared/email-notifications";
+import {getClientPortalBaseUrl} from "../cron_jobs/helpers";
 
 export default class ClientsController extends WorklenzControllerBase {
 
@@ -1236,6 +1238,171 @@ export default class ClientsController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async resendClientInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     return ClientPortalController.resendClientInvitation(req, res);
+  }
+
+  // Organization-side Client Portal Request Comments
+
+  @HandleExceptions()
+  public static async getClientRequestComments(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const requestId = req.params.id;
+
+    // Verify request belongs to this team
+    const requestCheck = await db.query(
+      "SELECT id, admin_comments_viewed_at FROM client_portal_requests WHERE id = $1 AND organization_team_id = $2",
+      [requestId, teamId]
+    );
+
+    if (requestCheck.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Request not found"));
+    }
+
+    // Update admin_comments_viewed_at timestamp when admin views comments
+    await db.query(
+      "UPDATE client_portal_requests SET admin_comments_viewed_at = NOW() WHERE id = $1 AND organization_team_id = $2",
+      [requestId, teamId]
+    );
+
+    const adminViewedAt = requestCheck.rows[0].admin_comments_viewed_at;
+
+    // Get all comments
+    const q = `
+      SELECT 
+        c.id,
+        c.comment,
+        c.sender_type,
+        c.sender_id,
+        c.sender_name,
+        c.created_at,
+        c.updated_at
+      FROM client_portal_request_comments c
+      WHERE c.request_id = $1 AND c.organization_team_id = $2
+      ORDER BY c.created_at ASC
+    `;
+
+    const result = await db.query(q, [requestId, teamId]);
+
+    // Count new comments from CLIENTS only (not team member messages)
+    let newCommentsCount = 0;
+    if (adminViewedAt) {
+      newCommentsCount = result.rows.filter(
+        (comment: any) => new Date(comment.created_at) > new Date(adminViewedAt) && comment.sender_type === 'client'
+      ).length;
+    } else {
+      // If never viewed, count only client comments as new
+      newCommentsCount = result.rows.filter(
+        (comment: any) => comment.sender_type === 'client'
+      ).length;
+    }
+
+    return res.status(200).send(new ServerResponse(true, {
+      comments: result.rows,
+      totalCount: result.rows.length,
+      newCommentsCount: newCommentsCount
+    }));
+  }
+
+  @HandleExceptions()
+  public static async addClientRequestComment(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const userId = req.user?.id;
+    const userName = req.user?.name;
+    const requestId = req.params.id;
+    const { comment } = req.body;
+
+    if (!comment || !comment.trim()) {
+      return res.status(400).send(new ServerResponse(false, null, "Comment is required"));
+    }
+
+    // Validate comment length (max 5000 characters)
+    const MAX_COMMENT_LENGTH = 5000;
+    if (comment.trim().length > MAX_COMMENT_LENGTH) {
+      return res.status(400).send(new ServerResponse(false, null, `Comment must not exceed ${MAX_COMMENT_LENGTH} characters`));
+    }
+
+    // Verify request belongs to this team and get client_id
+    const requestCheck = await db.query(
+      "SELECT id, client_id FROM client_portal_requests WHERE id = $1 AND organization_team_id = $2",
+      [requestId, teamId]
+    );
+
+    if (requestCheck.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Request not found"));
+    }
+
+    const clientId = requestCheck.rows[0].client_id;
+
+    // Insert comment
+    const insertQuery = `
+      INSERT INTO client_portal_request_comments (
+        request_id,
+        organization_team_id,
+        client_id,
+        comment,
+        sender_type,
+        sender_id,
+        sender_name,
+        created_at,
+        updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+      RETURNING id, comment, sender_type, sender_id, sender_name, created_at, updated_at
+    `;
+
+    const result = await db.query(insertQuery, [
+      requestId,
+      teamId,
+      clientId,
+      comment.trim(),
+      'team_member',
+      userId,
+      userName
+    ]);
+
+    const newComment = result.rows[0];
+
+    // Send email notification to client
+    try {
+      // Get request details and client email
+      const requestDetails = await db.query(
+        `SELECT r.req_no, s.name as service_name, c.name as client_name, 
+                u.email as client_email, t.name as team_name, cps.slug as portal_slug
+         FROM client_portal_requests r
+         JOIN client_portal_services s ON r.service_id = s.id
+         JOIN clients c ON r.client_id = c.id
+         LEFT JOIN client_relationships cr ON cr.client_id = c.id AND cr.organization_team_id = r.organization_team_id
+         LEFT JOIN users u ON cr.user_id = u.id
+         JOIN teams t ON t.id = r.organization_team_id
+         LEFT JOIN client_portal_settings cps ON cps.organization_team_id = r.organization_team_id
+         WHERE r.id = $1`,
+        [requestId]
+      );
+
+      if (requestDetails.rows.length > 0 && requestDetails.rows[0].client_email) {
+        const { req_no, service_name, client_name, client_email, team_name, portal_slug } = requestDetails.rows[0];
+        
+        // Build client portal URL
+        const clientPortalBaseUrl = getClientPortalBaseUrl();
+        const requestUrl = portal_slug 
+          ? `${clientPortalBaseUrl}/${portal_slug}/requests/${requestId}`
+          : `${clientPortalBaseUrl}/requests/${requestId}`;
+
+        await sendClientPortalRequestCommentNotification(client_email, {
+          greeting: `Hello ${client_name}`,
+          summary: `New reply on your request ${req_no}`,
+          senderName: userName || "Team Member",
+          senderType: 'team_member',
+          comment: comment.trim().substring(0, 500) + (comment.trim().length > 500 ? '...' : ''),
+          requestNumber: req_no,
+          serviceName: service_name,
+          requestUrl: requestUrl,
+          teamName: team_name
+        });
+      }
+    } catch (emailError) {
+      console.error("Error sending comment notification email to client:", emailError);
+    }
+
+    return res.status(200).send(new ServerResponse(true, newComment, "Comment added successfully"));
   }
 
 }
