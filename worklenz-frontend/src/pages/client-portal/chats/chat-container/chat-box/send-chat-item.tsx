@@ -2,8 +2,9 @@ import { Flex, Typography } from '@/shared/antd-imports';
 import React, { ReactNode } from 'react';
 import { durationDateFormat } from '../../../../../utils/durationDateFormat';
 import { useTranslation } from 'react-i18next';
-import { UserOutlined } from '@ant-design/icons';
-import { colors } from '../../../../../styles/colors';
+import { useAppSelector } from '../../../../../hooks/useAppSelector';
+import { themeWiseColor } from '../../../../../utils/themeWiseColor';
+import { CheckOutlined } from '@ant-design/icons';
 
 type SendChatItemProps = {
   chatData: {
@@ -15,60 +16,40 @@ type SendChatItemProps = {
 };
 
 const SendChatItem = ({ chatData }: SendChatItemProps) => {
-  // localization
   const { t } = useTranslation('client-portal-chats');
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   return (
-    <Flex
-      gap={12}
-      style={{
-        maxWidth: 400,
-        width: '100%',
-        padding: 12,
-      }}
-    >
-      <div>
-        <Flex
-          align="center"
-          justify="center"
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: '50%',
-            background: colors.lightGray,
-          }}
-        >
-          <UserOutlined style={{ color: colors.white }} />
-        </Flex>
-      </div>
-
-      <Flex vertical gap={8} flex={1}>
-        <Flex align="center" justify="space-between">
-          <Typography.Text
-            type="secondary"
-            style={{
-              textTransform: 'capitalize',
-              fontWeight: 500,
-              fontSize: 12,
-            }}
-          >
-            {t('youText')}
-          </Typography.Text>
-
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {durationDateFormat(chatData?.time)}
-          </Typography.Text>
-        </Flex>
-
+    <Flex justify="flex-end" style={{ width: '100%' }}>
+      <Flex vertical align="flex-end" style={{ maxWidth: '70%' }}>
         <div
           style={{
+            backgroundColor: '#1890ff',
+            color: '#fff',
+            padding: '10px 14px',
+            borderRadius: '18px 18px 4px 18px',
             wordBreak: 'break-word',
             whiteSpace: 'pre-wrap',
-            lineHeight: '1.4',
+            lineHeight: 1.5,
+            fontSize: 14,
           }}
         >
           {chatData.content}
         </div>
+        <Flex align="center" gap={4} style={{ marginTop: 4, paddingRight: 4 }}>
+          <Typography.Text
+            type="secondary"
+            style={{ fontSize: 11 }}
+          >
+            {durationDateFormat(chatData?.time)}
+          </Typography.Text>
+          <CheckOutlined
+            style={{
+              fontSize: 10,
+              color: themeWiseColor('#8c8c8c', '#595959', themeMode),
+            }}
+          />
+        </Flex>
       </Flex>
     </Flex>
   );

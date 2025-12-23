@@ -31,3 +31,39 @@
 [data-theme="dark"] .task-name-display:hover {
   background-color: rgba(255, 255, 255, 0.05);
 }
+
+/* Task drawer actions dropdown styles */
+.task-drawer-actions-dropdown .ant-dropdown-menu-item-danger {
+  color: #ff4d4f !important;
+}
+
+.task-drawer-actions-dropdown .ant-dropdown-menu-item-danger:hover {
+  color: #ff4d4f !important;
+  background-color: #fff2f0 !important;
+}
+
+.task-drawer-actions-dropdown .ant-dropdown-menu-item-danger .anticon {
+  color: #ff4d4f !important;
+}
+
+.task-drawer-actions-dropdown .ant-dropdown-menu-item-danger:hover .anticon {
+  color: #ff4d4f !important;
+}
+
+/* Dark theme styles for danger item */
+[data-theme="dark"] .task-drawer-actions-dropdown .ant-dropdown-menu-item-danger {
+  color: #ff7875 !important;
+}
+
+[data-theme="dark"] .task-drawer-actions-dropdown .ant-dropdown-menu-item-danger:hover {
+  color: #ff7875 !important;
+  background-color: rgba(255, 77, 79, 0.15) !important;
+}
+
+[data-theme="dark"] .task-drawer-actions-dropdown .ant-dropdown-menu-item-danger .anticon {
+  color: #ff7875 !important;
+}
+
+[data-theme="dark"] .task-drawer-actions-dropdown .ant-dropdown-menu-item-danger:hover .anticon {
+  color: #ff7875 !important;
+}

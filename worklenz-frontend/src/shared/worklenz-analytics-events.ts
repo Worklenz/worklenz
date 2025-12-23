@@ -45,6 +45,8 @@ export const evt_project_insights_members_visit = 'project_insights_members_visi
 export const evt_project_insights_tasks_visit = 'project_insights_tasks_visit';
 export const evt_project_files_visit = 'project_files_visit';
 export const evt_project_members_visit = 'project_members_visit';
+export const evt_project_task_duplicate = 'project_task_duplicate';
+export const evt_project_sub_task_duplicate = 'project_sub_task_duplicate';
 
 // Project Actions
 export const evt_project_task_create = 'project_task_create';

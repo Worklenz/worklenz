@@ -15,6 +15,8 @@ import {
   deleteTask,
   fetchTasksV3,
   IGroupBy,
+  setDuplicateTask,
+  setDuplicateTaskModalStatus,
   toggleTaskExpansion,
   updateTaskAssignees,
 } from '@/features/task-management/task-management.slice';
@@ -37,7 +39,9 @@ import {
   CopyOutlined,
   CrownOutlined,
   message,
+  LinkOutlined,
 } from '@/shared/antd-imports';
+import DuplicateTaskModal from './DuplicateTaskModal';
 
 interface TaskContextMenuProps {
   task: Task;
@@ -369,6 +373,19 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     }
   }, [projectId, task.id, onClose, t]);
 
+  const handleDuplicateTask = useCallback(async () => {
+    if (!projectId || !task.id) return;
+
+    try {
+      dispatch(setDuplicateTask({taskId: task.id, title: task.title}));
+      dispatch(setDuplicateTaskModalStatus(true));
+    } catch (error) {
+      logger.error('Error open duplicate task modal:', error);
+    }finally {
+      onClose();
+    }
+  }, [projectId, task.id, onClose, t]);
+
   const menuItems = useMemo(() => {
     const items = [
       {
@@ -387,6 +404,18 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
             <span>{t('contextMenu.assignToMe')}</span>
           </button>
         ),
+      }, {
+        key: 'duplicateTask',
+        label: (
+          <button
+            onClick={handleDuplicateTask}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+            // disabled={updatingAssignToMe}
+          >
+            <CopyOutlined className="text-gray-500 dark:text-gray-400" />
+            <span>{t('contextMenu.duplicateTask')}</span>
+          </button>
+        ),
       },
       {
         key: 'copyLink',
@@ -395,7 +424,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
             onClick={handleCopyLink}
             className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
           >
-            <CopyOutlined className="text-gray-500 dark:text-gray-400" />
+            <LinkOutlined className="text-gray-500 dark:text-gray-400" />
             <span>{t('contextMenu.copyLink')}</span>
           </button>
         ),
@@ -564,6 +593,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     handleCopyLink,
     getMoveToOptions,
     dispatch,
+    handleDuplicateTask,
     t,
   ]);
 

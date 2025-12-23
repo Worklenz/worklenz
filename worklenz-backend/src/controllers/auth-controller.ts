@@ -381,12 +381,7 @@ export default class AuthController extends WorklenzControllerBase {
         return res.status(400).send(new ServerResponse(false, null, "Email not verified"));
       }
 
-      // Check for existing local account
       const normalizedProfileEmail = profile.email.toLowerCase().trim();
-      const localAccountResult = await db.query("SELECT 1 FROM users WHERE LOWER(email) = $1 AND password IS NOT NULL AND is_deleted IS FALSE;", [normalizedProfileEmail]);
-      if (localAccountResult.rowCount) {
-        return res.status(400).send(new ServerResponse(false, null, `No Google account exists for email ${profile.email}.`));
-      }
 
       // Check if user exists
       const userResult = await db.query(
@@ -398,6 +393,16 @@ export default class AuthController extends WorklenzControllerBase {
       if (userResult.rowCount) {
         // Existing user - login
         user = userResult.rows[0];
+
+        // Link Google account if user signed up with email/password but google_id is not set
+        if (!user.google_id && profile.sub) {
+          try {
+            await db.query("UPDATE users SET google_id = $1 WHERE id = $2;", [profile.sub, user.id]);
+            user.google_id = profile.sub;
+          } catch (error) {
+            log_error(error);
+          }
+        }
       } else {
         // New user - register
         const googleUserData = {

@@ -1,19 +1,24 @@
-import { Button, Flex, Table, Typography, Tooltip } from '@/shared/antd-imports';
+import { Button, Flex, Typography, Badge, Input } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { TempChatsType } from './chat-box/chat-box-wrapper';
-import { PlusOutlined } from '@ant-design/icons';
-import { colors } from '../../../../styles/colors';
+import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import NewChatModal from '@/components/client-portal/NewChatModal';
+import CustomAvatar from '../../../../components/CustomAvatar';
+import { useAppSelector } from '../../../../hooks/useAppSelector';
+import { themeWiseColor } from '../../../../utils/themeWiseColor';
 
 type ChatListProps = {
   chatList: TempChatsType[];
   setOpenedChatId: (id: string) => void;
+  selectedChatId?: string | null;
 };
 
-const ChatList = ({ chatList, setOpenedChatId }: ChatListProps) => {
+const ChatList = ({ chatList, setOpenedChatId, selectedChatId }: ChatListProps) => {
   const { t } = useTranslation('client-portal-chats');
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   const handleNewChat = () => {
     setIsNewChatModalOpen(true);
@@ -21,96 +26,196 @@ const ChatList = ({ chatList, setOpenedChatId }: ChatListProps) => {
 
   const handleNewChatSuccess = (chatId: string) => {
     setOpenedChatId(chatId);
+    setIsNewChatModalOpen(false);
   };
 
-  // Ensure chatList is always an array
+  // Ensure chatList is always an array and filter by search
   const safeChatList = Array.isArray(chatList) ? chatList : [];
+  const filteredChatList = safeChatList.filter(chat =>
+    chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    chat.lastMessage?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const formatTime = (timeString?: string) => {
+    if (!timeString) return '';
+    const date = new Date(timeString);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+
+    if (isToday) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (isYesterday) {
+      return t('yesterday');
+    } else {
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+  };
+
+  const getLastMessagePreview = (record: TempChatsType) => {
+    if (record.lastMessage) {
+      return record.lastMessage;
+    }
+    if (record.chats_data && Array.isArray(record.chats_data) && record.chats_data.length > 0) {
+      const lastMsg = record.chats_data[record.chats_data.length - 1];
+      return lastMsg.is_me ? `${t('youText')}: ${lastMsg.content}` : String(lastMsg.content);
+    }
+    return t('noMessagesYet');
+  };
 
   return (
-    <>
-      <Table
-        dataSource={safeChatList}
-        bordered
-        pagination={false}
-        rowKey="id"
-        scroll={{
-          y: safeChatList.length >= 7 ? 'calc(100vh - 300px)' : undefined,
+    <Flex
+      vertical
+      style={{
+        width: 320,
+        minWidth: 320,
+        height: '100%',
+        borderRight: `1px solid ${themeWiseColor('#f0f0f0', '#303030', themeMode)}`,
+      }}
+    >
+      {/* Header */}
+      <Flex
+        justify="space-between"
+        align="center"
+        style={{
+          padding: '16px',
+          borderBottom: `1px solid ${themeWiseColor('#f0f0f0', '#303030', themeMode)}`,
         }}
-        style={{ minWidth: 320 }}
-        onRow={record => ({
-          style: { cursor: 'pointer' },
-          onClick: () => setOpenedChatId(record.id),
-        })}
-        columns={[
-          {
-            key: 'chatItem',
-            title: (
-              <Flex justify="space-between" align="center">
-                <Typography.Text strong>{t('chatsTitle') || 'Chats'}</Typography.Text>
-                <Tooltip title={t('newChat') || 'New Chat'}>
-                  <Button
-                    type="text"
-                    icon={<PlusOutlined />}
-                    onClick={handleNewChat}
-                    size="small"
-                  />
-                </Tooltip>
-              </Flex>
-            ),
-            render: (record: TempChatsType) => (
-              <Flex vertical gap={8} style={{ maxWidth: 280, overflow: 'hidden' }}>
-                <Flex align="center" justify="space-between">
-                  <Flex align="center" gap={8}>
-                    <Typography.Text
-                      style={{
-                        fontSize: 14,
-                        fontWeight: 500,
-                        textTransform: 'capitalize',
-                      }}
-                      ellipsis={{ tooltip: record.name }}
-                    >
-                      {record.name}
-                    </Typography.Text>
-                  </Flex>
-                </Flex>
+      >
+        <Typography.Text strong style={{ fontSize: 16 }}>
+          {t('chatsTitle')}
+        </Typography.Text>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={handleNewChat}
+          size="small"
+        >
+          {t('startConversation')}
+        </Button>
+      </Flex>
 
-                <Flex vertical gap={4}>
+      {/* Search */}
+      <div style={{ padding: '12px 16px' }}>
+        <Input
+          placeholder={t('searchConversations')}
+          prefix={<SearchOutlined style={{ color: themeWiseColor('#bfbfbf', '#6b6b6b', themeMode) }} />}
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          allowClear
+          style={{
+            borderRadius: 8,
+            backgroundColor: themeWiseColor('#fafafa', '#1f1f1f', themeMode),
+          }}
+        />
+      </div>
+
+      {/* Chat List */}
+      <Flex
+        vertical
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+        }}
+      >
+        {filteredChatList.length === 0 ? (
+          <Flex
+            align="center"
+            justify="center"
+            style={{ padding: 24, height: '100%' }}
+          >
+            <Typography.Text type="secondary">
+              {searchQuery ? t('noClientsFound') : t('noChatsDescription')}
+            </Typography.Text>
+          </Flex>
+        ) : (
+          filteredChatList.map(chat => (
+            <Flex
+              key={chat.id}
+              align="center"
+              gap={12}
+              onClick={() => setOpenedChatId(chat.id)}
+              style={{
+                padding: '12px 16px',
+                cursor: 'pointer',
+                backgroundColor: selectedChatId === chat.id
+                  ? themeWiseColor('#e6f4ff', '#111d2c', themeMode)
+                  : 'transparent',
+                borderLeft: selectedChatId === chat.id
+                  ? '3px solid #1890ff'
+                  : '3px solid transparent',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={e => {
+                if (selectedChatId !== chat.id) {
+                  e.currentTarget.style.backgroundColor = themeWiseColor('#fafafa', '#262626', themeMode);
+                }
+              }}
+              onMouseLeave={e => {
+                if (selectedChatId !== chat.id) {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
+              }}
+            >
+              {/* Avatar with badge */}
+              <Badge
+                count={chat.unreadCount || 0}
+                size="small"
+                offset={[-4, 4]}
+              >
+                <CustomAvatar avatarName={chat.name} size={44} />
+              </Badge>
+
+              {/* Chat info */}
+              <Flex vertical flex={1} style={{ minWidth: 0, overflow: 'hidden' }}>
+                <Flex justify="space-between" align="center" style={{ marginBottom: 4 }}>
+                  <Typography.Text
+                    strong={!!chat.unreadCount}
+                    style={{
+                      fontSize: 14,
+                      textTransform: 'capitalize',
+                      maxWidth: 150,
+                    }}
+                    ellipsis={{ tooltip: chat.name }}
+                  >
+                    {chat.name}
+                  </Typography.Text>
                   <Typography.Text
                     type="secondary"
-                    style={{ fontSize: 12 }}
-                    ellipsis={{ tooltip: true }}
+                    style={{ fontSize: 11, flexShrink: 0 }}
                   >
-                    {record.lastMessage ||
-                      (record.chats_data &&
-                      Array.isArray(record.chats_data) &&
-                      record.chats_data.length > 0
-                        ? record.chats_data[record.chats_data.length - 1].is_me
-                          ? `You: ${record.chats_data[record.chats_data.length - 1].content}`
-                          : record.chats_data[record.chats_data.length - 1].content
-                        : 'No messages yet')}
+                    {formatTime(chat.lastMessageTime)}
                   </Typography.Text>
-
-                  {record.lastMessageTime && (
-                    <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                      {new Date(record.lastMessageTime).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </Typography.Text>
-                  )}
                 </Flex>
+
+                <Typography.Text
+                  type="secondary"
+                  style={{
+                    fontSize: 13,
+                    fontWeight: chat.unreadCount ? 500 : 400,
+                    color: chat.unreadCount
+                      ? themeWiseColor('#262626', '#d9d9d9', themeMode)
+                      : undefined,
+                  }}
+                  ellipsis
+                >
+                  {getLastMessagePreview(chat)}
+                </Typography.Text>
               </Flex>
-            ),
-          },
-        ]}
-      />
+            </Flex>
+          ))
+        )}
+      </Flex>
 
       <NewChatModal
         open={isNewChatModalOpen}
         onClose={() => setIsNewChatModalOpen(false)}
         onSuccess={handleNewChatSuccess}
       />
-    </>
+    </Flex>
   );
 };
 

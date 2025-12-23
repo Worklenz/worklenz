@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   Form,
@@ -7,11 +7,15 @@ import {
   Typography,
   Space,
   message,
+  Divider,
+  Select,
+  Spin,
 } from '@/shared/antd-imports';
-import { MessageOutlined } from '@ant-design/icons';
+import { MessageOutlined, UserOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import {
-  useCreateChatMutation,
+  useCreateOrganizationChatMutation,
+  useGetClientsQuery,
 } from '@/api/client-portal/client-portal-api';
 
 const { TextArea } = Input;
@@ -20,39 +24,69 @@ interface NewChatModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess?: (chatId: string) => void;
+  clientId?: string; // Required for organization-side chat creation
 }
 
 interface NewChatForm {
+  clientId?: string;
   subject: string;
   message: string;
 }
 
-const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess }) => {
-  const { t } = useTranslation(['client-portal-chats', 'common']);
+const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess, clientId: propClientId }) => {
+  const { t } = useTranslation('client-portal-chats');
+  const { t: tCommon } = useTranslation('common');
   const [form] = Form.useForm<NewChatForm>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string | undefined>(propClientId);
 
-  const [createChat] = useCreateChatMutation();
+  const [createChat] = useCreateOrganizationChatMutation();
+  
+  // Fetch clients list when no clientId is provided as prop
+  const { data: clientsData, isLoading: isLoadingClients } = useGetClientsQuery(
+    { page: 1, limit: 100, status: 'active' },
+    { skip: !!propClientId }
+  );
+
+  const clients = clientsData?.body?.clients || [];
+
+  // Reset selected client when modal opens/closes or prop changes
+  useEffect(() => {
+    if (open) {
+      setSelectedClientId(propClientId);
+      if (propClientId) {
+        form.setFieldValue('clientId', propClientId);
+      }
+    }
+  }, [open, propClientId, form]);
 
   const handleSubmit = async (values: NewChatForm) => {
+    const effectiveClientId = propClientId || values.clientId || selectedClientId;
+    
+    if (!effectiveClientId) {
+      message.error(t('clientIdRequired') || 'Please select a client to start a chat');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
-      // For client portal, always message the team (no recipient selection needed)
+      // For organization-side, create chat for the specified client
       const response = await createChat({
+        clientId: effectiveClientId,
         recipientType: 'team',
-        recipientId: 'organization', // Backend will use organization context
+        recipientId: 'organization',
         subject: values.subject,
         message: values.message,
       }).unwrap();
 
-      message.success(t('newChatCreatedSuccessfully', { ns: 'client-portal-chats' }) || 'Chat created successfully!');
+      message.success(t('newChatCreatedSuccessfully') || 'Chat created successfully!');
       form.resetFields();
       onClose();
       onSuccess?.(response.chatId);
     } catch (error) {
       console.error('Failed to create new chat:', error);
-      message.error(t('newChatFailed', { ns: 'client-portal-chats' }) || 'Failed to create chat. Please try again.');
+      message.error(t('newChatFailed') || 'Failed to create chat. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -67,9 +101,9 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess })
     <Modal
       title={
         <Space>
-          <MessageOutlined />
-          <Typography.Text strong>
-            {t('newChat', { ns: 'client-portal-chats' }) || 'New Chat'}
+          <MessageOutlined style={{ fontSize: '18px', color: '#1890ff' }} />
+          <Typography.Text strong style={{ fontSize: '16px' }}>
+            {t('newChat') || 'New Chat'}
           </Typography.Text>
         </Space>
       }
@@ -80,57 +114,139 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess })
       destroyOnClose
       maskClosable={false}
     >
+      <Typography.Text
+        type="secondary"
+        style={{
+          display: 'block',
+          marginBottom: 24,
+          fontSize: '13px',
+        }}
+      >
+        {t('newChatDescription') || 'Start a new conversation with your team'}
+      </Typography.Text>
+
+      <Divider style={{ margin: '0 0 24px 0' }} />
+
       <Form
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
-        style={{ marginTop: 24 }}
+        validateTrigger={['onBlur', 'onSubmit']}
       >
+        {/* Client selector - only show when clientId is not provided as prop */}
+        {!propClientId && (
+          <Form.Item
+            name="clientId"
+            label={
+              <Typography.Text strong style={{ fontSize: '14px' }}>
+                {t('selectClient') || 'Select Client'}
+              </Typography.Text>
+            }
+            tooltip={t('selectClientHelper') || 'Choose which client to start a conversation with'}
+            rules={[
+              { required: true, message: t('clientRequired') || 'Please select a client' },
+            ]}
+          >
+            <Select
+              placeholder={t('selectClientPlaceholder') || 'Select a client...'}
+              size="large"
+              showSearch
+              optionFilterProp="label"
+              loading={isLoadingClients}
+              notFoundContent={isLoadingClients ? <Spin size="small" /> : t('noClientsFound') || 'No clients found'}
+              onChange={(value) => setSelectedClientId(value)}
+              style={{ borderRadius: '6px' }}
+              options={clients.map((client) => ({
+                value: client.id,
+                label: (
+                  <Space>
+                    <UserOutlined />
+                    <span>{client.name}</span>
+                    {client.company_name && (
+                      <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+                        ({client.company_name})
+                      </Typography.Text>
+                    )}
+                  </Space>
+                ),
+              }))}
+            />
+          </Form.Item>
+        )}
+
         <Form.Item
           name="subject"
-          label={t('subject', { ns: 'client-portal-chats' }) || 'Subject'}
+          label={
+            <Typography.Text strong style={{ fontSize: '14px' }}>
+              {t('subject') || 'Subject'}
+            </Typography.Text>
+          }
+          tooltip={t('subjectHelper') || 'A clear subject helps your team respond faster'}
           rules={[
-            { required: true, message: t('subjectRequired', { ns: 'common' }) || 'Please enter a subject' },
-            { min: 3, message: t('subjectTooShort', { ns: 'common' }) || 'Subject must be at least 3 characters' },
-            { max: 100, message: t('subjectTooLong', { ns: 'common' }) || 'Subject must be less than 100 characters' },
+            { required: true, message: t('subjectRequired') || 'Please enter a subject' },
+            { min: 3, message: t('subjectMinLength') || 'Subject must be at least 3 characters' },
+            { max: 100, message: t('subjectMaxLength') || 'Subject must be less than 100 characters' },
           ]}
         >
           <Input
-            placeholder={t('subjectPlaceholder', { ns: 'client-portal-chats' }) || 'Enter chat subject'}
+            placeholder={t('subjectPlaceholder') || 'Enter a brief subject for your message'}
             maxLength={100}
             showCount
+            size="large"
+            style={{
+              borderRadius: '6px',
+            }}
           />
         </Form.Item>
 
         <Form.Item
           name="message"
-          label={t('message', { ns: 'client-portal-chats' }) || 'Initial Message'}
+          label={
+            <Typography.Text strong style={{ fontSize: '14px' }}>
+              {t('message') || 'Message'}
+            </Typography.Text>
+          }
+          tooltip={t('messageHelper') || 'Describe your question or request in detail'}
           rules={[
-            { required: true, message: t('messageRequired', { ns: 'common' }) || 'Please enter a message' },
-            { min: 10, message: t('messageTooShort', { ns: 'common' }) || 'Message must be at least 10 characters' },
-            { max: 1000, message: t('messageTooLong', { ns: 'common' }) || 'Message must be less than 1000 characters' },
+            { required: true, message: t('messageRequired') || 'Please enter a message' },
+            { max: 1000, message: t('messageMaxLength') || 'Message must be less than 1000 characters' },
           ]}
         >
           <TextArea
-            placeholder={t('messagePlaceholder', { ns: 'client-portal-chats' }) || 'Type your message here...'}
-            rows={4}
+            placeholder={t('messagePlaceholder') || 'Type your message here...'}
+            rows={5}
             maxLength={1000}
             showCount
+            style={{
+              borderRadius: '6px',
+              resize: 'vertical',
+            }}
           />
         </Form.Item>
 
         <Form.Item style={{ marginBottom: 0, marginTop: 32 }}>
           <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-            <Button onClick={handleCancel} disabled={isSubmitting}>
-              {t('cancel', { ns: 'common' }) || 'Cancel'}
+            <Button
+              onClick={handleCancel}
+              disabled={isSubmitting}
+              size="large"
+              style={{
+                minWidth: '100px',
+              }}
+            >
+              {tCommon('cancel') || 'Cancel'}
             </Button>
             <Button
               type="primary"
               htmlType="submit"
               loading={isSubmitting}
               icon={<MessageOutlined />}
+              size="large"
+              style={{
+                minWidth: '140px',
+              }}
             >
-              {t('sendMessage', { ns: 'client-portal-chats' }) || 'Send Message'}
+              {t('sendMessage') || 'Send Message'}
             </Button>
           </Space>
         </Form.Item>

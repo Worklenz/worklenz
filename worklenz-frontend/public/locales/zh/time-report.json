@@ -76,5 +76,6 @@
   "capacityAvailableForNewProjects": "可用于新项目的容量",
   "optimal": "最佳",
   "underUtilized": "利用率不足",
-  "overUtilized": "过度利用"
+  "overUtilized": "过度利用",
+  "noDataAvailable": "无可用数据"
 }

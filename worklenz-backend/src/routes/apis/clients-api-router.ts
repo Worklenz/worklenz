@@ -21,6 +21,8 @@ clientsApiRouter.get("/portal/requests", safeControllerFunction(ClientsControlle
 clientsApiRouter.get("/portal/requests/stats", safeControllerFunction(ClientsController.getClientRequestsStats));
 clientsApiRouter.get("/portal/requests/:id", idParamValidator, safeControllerFunction(ClientsController.getClientRequestById));
 clientsApiRouter.get("/portal/requests/:id/history", idParamValidator, safeControllerFunction(ClientsController.getClientRequestStatusHistory));
+clientsApiRouter.get("/portal/requests/:id/comments", idParamValidator, safeControllerFunction(ClientsController.getClientRequestComments));
+clientsApiRouter.post("/portal/requests/:id/comments", idParamValidator, safeControllerFunction(ClientsController.addClientRequestComment));
 clientsApiRouter.put("/portal/requests/:id/status", idParamValidator, safeControllerFunction(ClientsController.updateClientRequestStatus));
 clientsApiRouter.put("/portal/requests/:id/assign", idParamValidator, safeControllerFunction(ClientsController.assignClientRequest));
 
@@ -38,6 +40,10 @@ clientsApiRouter.get("/portal/clients/:id", idParamValidator, safeControllerFunc
 clientsApiRouter.get("/portal/clients/:id/details", idParamValidator, safeControllerFunction(ClientsController.getPortalClientDetails));
 clientsApiRouter.put("/portal/clients/:id", idParamValidator, safeControllerFunction(ClientsController.updatePortalClient));
 clientsApiRouter.delete("/portal/clients/:id", idParamValidator, safeControllerFunction(ClientsController.deletePortalClient));
+
+// Organization-side Client Portal Invite Slug (Vanity URLs)
+clientsApiRouter.put("/portal/clients/:id/invite-slug", idParamValidator, safeControllerFunction(ClientsController.setClientInviteSlug));
+clientsApiRouter.get("/portal/clients/:id/invite-slug/suggest", idParamValidator, safeControllerFunction(ClientsController.suggestClientInviteSlug));
 
 // Organization-side Client Portal Projects
 clientsApiRouter.get("/portal/clients/:id/projects", idParamValidator, safeControllerFunction(ClientsController.getPortalClientProjects));
@@ -77,6 +83,7 @@ clientsApiRouter.get("/portal/invoices/:id/download", idParamValidator, safeCont
 
 // Organization-side Client Portal Chats Management
 clientsApiRouter.get("/portal/chats", safeControllerFunction(ClientsController.getPortalChats));
+clientsApiRouter.post("/portal/chats", safeControllerFunction(ClientsController.createPortalChat));
 clientsApiRouter.get("/portal/chats/:id", idParamValidator, safeControllerFunction(ClientsController.getPortalChatById));
 clientsApiRouter.post("/portal/chats/:chatId/messages", idParamValidator, safeControllerFunction(ClientsController.sendPortalMessage));
 clientsApiRouter.get("/portal/chats/:chatId/messages", idParamValidator, safeControllerFunction(ClientsController.getPortalMessages));

@@ -561,7 +561,7 @@ const FilterDropdown: React.FC<{
                 <input
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  placeholder={`${t('searchPlaceholder', { defaultValue: 'Search' })} ${section.label.toLowerCase()}...`}
+                  placeholder={t('search', { defaultValue: 'Search' })}
                   className={`w-full pl-8 pr-2 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${
                     isDarkMode
                       ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
@@ -824,7 +824,7 @@ const SortDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
     { label: t('statusText', { defaultValue: 'Status' }), key: 'status' },
     { label: t('priorityText', { defaultValue: 'Priority' }), key: 'priority' },
     { label: t('startDateText', { defaultValue: 'Start Date' }), key: 'start_date' },
-    { label: t('endDateText', { defaultValue: 'End Date' }), key: 'end_date' },
+    { label: t('dueDateText', { defaultValue: 'Due Date' }), key: 'end_date' },
     { label: t('completedDateText', { defaultValue: 'Completed Date' }), key: 'completed_at' },
     { label: t('createdDateText', { defaultValue: 'Created Date' }), key: 'created_at' },
     { label: t('lastUpdatedText', { defaultValue: 'Last Updated' }), key: 'updated_at' },

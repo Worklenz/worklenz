@@ -91,7 +91,7 @@ const PreviewAndSubmitStep = ({ setCurrent, service }: PreviewAndSubmitStepProps
           ? service.service_data.description 
           : service.service_data?.description?.toString() || '',
         service_data: serviceDataToSave,
-        is_public: false,
+        is_public: service.is_public ?? true,
         price: service.price,
         currency: service.currency,
         category: service.category,

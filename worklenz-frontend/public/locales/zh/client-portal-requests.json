@@ -23,5 +23,22 @@
   "serviceQuestionsLabel": "服务问题",
   "noFilesUploaded": "未上传文件",
   "noAnswer": "未提供答案",
-  "createInvoiceButton": "创建发票"
+  "createInvoiceButton": "创建发票",
+  "untitledRequest": "无标题请求",
+  "backToRequests": "返回请求列表",
+  "requestDetails": "请求详情",
+  "statusUpdateSuccess": "状态更新成功",
+  "statusUpdateError": "状态更新失败",
+  "downloadAttachment": "下载",
+  "viewAttachment": "查看",
+  "commentsTab": "评论",
+  "noComments": "暂无评论。开始对话吧！",
+  "addComment": "添加评论",
+  "addCommentPlaceholder": "在此输入您的评论...",
+  "commentRequired": "请输入评论",
+  "commentAdded": "评论添加成功",
+  "commentError": "添加评论失败",
+  "teamMember": "团队",
+  "client": "客户",
+  "pressEnterToSend": "按 Enter 发送，Shift+Enter 换行"
 }

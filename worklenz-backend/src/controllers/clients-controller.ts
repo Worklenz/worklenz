@@ -9,6 +9,8 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import ClientPortalController from "./client-portal-controller";
 import {uploadBase64, deleteObject} from "../shared/storage";
+import {sendClientPortalRequestCommentNotification} from "../shared/email-notifications";
+import {getClientPortalBaseUrl} from "../cron_jobs/helpers";
 
 export default class ClientsController extends WorklenzControllerBase {
 
@@ -214,17 +216,21 @@ export default class ClientsController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null, "Invalid status"));
     }
 
-    // Get current status before update
-    const currentStatusResult = await db.query(
-      "SELECT status FROM client_portal_requests WHERE id = $1 AND organization_team_id = $2",
+    // Get current status and request details before update
+    const currentRequestResult = await db.query(
+      `SELECT r.status, r.client_id, r.req_no, s.name as service_name
+       FROM client_portal_requests r
+       LEFT JOIN client_portal_services s ON r.service_id = s.id
+       WHERE r.id = $1 AND r.organization_team_id = $2`,
       [requestId, teamId]
     );
     
-    if (currentStatusResult.rows.length === 0) {
+    if (currentRequestResult.rows.length === 0) {
       return res.status(404).send(new ServerResponse(false, null, "Request not found"));
     }
     
-    const previousStatus = currentStatusResult.rows[0].status;
+    const currentRequest = currentRequestResult.rows[0];
+    const previousStatus = currentRequest.status;
 
     // Build update query
     const updateFields = ["status = $3", "updated_at = NOW()"];
@@ -276,6 +282,24 @@ export default class ClientsController extends WorklenzControllerBase {
          VALUES ($1, $2, $3, $4, $5, NOW())`,
         [requestId, previousStatus, status, userId, notes || null]
       );
+
+      // Create notification for the client
+      if (currentRequest.client_id && teamId) {
+        await ClientPortalController.createNotification(
+          currentRequest.client_id,
+          teamId,
+          "request_update",
+          "Request Update",
+          `Request ${currentRequest.req_no} status changed to ${status}`,
+          requestId,
+          currentRequest.req_no,
+          {
+            serviceName: currentRequest.service_name,
+            status,
+            previousStatus
+          }
+        );
+      }
     }
 
     return res.status(200).send(new ServerResponse(true, data, "Request updated successfully"));
@@ -846,6 +870,24 @@ export default class ClientsController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
+  public static async setClientInviteSlug(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const modifiedReq = {
+      ...req,
+      user: req.user
+    } as any;
+    return ClientPortalController.setClientInviteSlug(modifiedReq, res as any);
+  }
+
+  @HandleExceptions()
+  public static async suggestClientInviteSlug(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const modifiedReq = {
+      ...req,
+      user: req.user
+    } as any;
+    return ClientPortalController.suggestClientInviteSlug(modifiedReq, res as any);
+  }
+
+  @HandleExceptions()
   public static async getPortalClientProjects(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const modifiedReq = {
       ...req,
@@ -1021,11 +1063,131 @@ export default class ClientsController extends WorklenzControllerBase {
   
   @HandleExceptions()
   public static async getPortalChats(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // Extract clientId from query params (optional) and organizationId from user's team
+    const clientId = req.query?.clientId as string | undefined;
+    const organizationId = req.user?.team_id;
+    
+    if (!organizationId) {
+      return res.status(400).json(new ServerResponse(false, null, "Organization ID is required"));
+    }
+    
+    // If clientId is provided, use the client-specific endpoint
+    // Otherwise, get all chats for the organization
+    if (clientId) {
+      const modifiedReq = {
+        ...req,
+        user: req.user,
+        clientId,
+        organizationId
+      } as any;
+      return ClientPortalController.getChats(modifiedReq, res as any);
+    } else {
+      // Get all chats for the organization (across all clients)
+      try {
+        const { page = 1, limit = 20 } = req.query;
+        const offset = (Number(page) - 1) * Number(limit);
+        
+        const query = `
+          WITH chat_summary AS (
+            SELECT 
+              c.id as client_id,
+              c.name as client_name,
+              c.email as client_email,
+              DATE(m.created_at) as chat_date,
+              COUNT(*) as message_count,
+              MAX(m.created_at) as last_message_at,
+              MAX(CASE WHEN m.sender_type = 'team_member' THEN m.created_at END) as last_team_message_at,
+              COUNT(CASE WHEN m.read_at IS NULL AND m.sender_type = 'team_member' THEN 1 END) as unread_count
+            FROM client_portal_chat_messages m
+            JOIN clients c ON m.client_id = c.id
+            WHERE m.organization_team_id = $1
+            GROUP BY c.id, c.name, c.email, DATE(m.created_at)
+          )
+          SELECT 
+            client_id,
+            client_name,
+            client_email,
+            chat_date,
+            message_count,
+            last_message_at,
+            last_team_message_at,
+            unread_count
+          FROM chat_summary
+          ORDER BY last_message_at DESC
+          LIMIT $2 OFFSET $3
+        `;
+        
+        const result = await db.query(query, [organizationId, Number(limit), offset]);
+        
+        const countQuery = `
+          SELECT COUNT(DISTINCT (client_id, DATE(created_at))) as total
+          FROM client_portal_chat_messages
+          WHERE organization_team_id = $1
+        `;
+        const countResult = await db.query(countQuery, [organizationId]);
+        const total = parseInt(countResult.rows[0]?.total || "0");
+        
+        const chats = result.rows.map((row: any) => ({
+          id: `${row.client_id}-${row.chat_date}`,
+          clientId: row.client_id,
+          clientName: row.client_name,
+          clientEmail: row.client_email,
+          date: row.chat_date,
+          messageCount: parseInt(row.message_count || "0"),
+          lastMessageAt: row.last_message_at,
+          lastTeamMessageAt: row.last_team_message_at,
+          unreadCount: parseInt(row.unread_count || "0"),
+          hasNewMessages: row.unread_count > 0
+        }));
+        
+        return res.json(new ServerResponse(true, {
+          chats,
+          total,
+          page: Number(page),
+          limit: Number(limit)
+        }, "Chats retrieved successfully"));
+      } catch (error) {
+        console.error("Error fetching organization chats:", error);
+        return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve chats"));
+      }
+    }
+  }
+
+  @HandleExceptions()
+  public static async createPortalChat(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // For organization-side, we need to extract clientId from request body or query
+    // and organizationId from user's team
+    const clientId = req.body?.clientId || req.query?.clientId;
+    const organizationId = req.user?.team_id;
+    
+    if (!clientId) {
+      return res.status(400).json(new ServerResponse(false, null, "Client ID is required"));
+    }
+    
+    if (!organizationId) {
+      return res.status(400).json(new ServerResponse(false, null, "Organization ID is required"));
+    }
+    
+    // Get client email from the client record
+    const clientQuery = await db.query(
+      "SELECT email FROM clients WHERE id = $1 AND organization_team_id = $2",
+      [clientId, organizationId]
+    );
+    
+    if (clientQuery.rows.length === 0) {
+      return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+    }
+    
+    const clientEmail = clientQuery.rows[0].email;
+    
     const modifiedReq = {
       ...req,
-      user: req.user
+      user: req.user,
+      clientId,
+      organizationId,
+      clientEmail
     } as any;
-    return ClientPortalController.getChats(modifiedReq, res as any);
+    return ClientPortalController.createChat(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -1076,6 +1238,171 @@ export default class ClientsController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async resendClientInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     return ClientPortalController.resendClientInvitation(req, res);
+  }
+
+  // Organization-side Client Portal Request Comments
+
+  @HandleExceptions()
+  public static async getClientRequestComments(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const requestId = req.params.id;
+
+    // Verify request belongs to this team
+    const requestCheck = await db.query(
+      "SELECT id, admin_comments_viewed_at FROM client_portal_requests WHERE id = $1 AND organization_team_id = $2",
+      [requestId, teamId]
+    );
+
+    if (requestCheck.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Request not found"));
+    }
+
+    // Update admin_comments_viewed_at timestamp when admin views comments
+    await db.query(
+      "UPDATE client_portal_requests SET admin_comments_viewed_at = NOW() WHERE id = $1 AND organization_team_id = $2",
+      [requestId, teamId]
+    );
+
+    const adminViewedAt = requestCheck.rows[0].admin_comments_viewed_at;
+
+    // Get all comments
+    const q = `
+      SELECT 
+        c.id,
+        c.comment,
+        c.sender_type,
+        c.sender_id,
+        c.sender_name,
+        c.created_at,
+        c.updated_at
+      FROM client_portal_request_comments c
+      WHERE c.request_id = $1 AND c.organization_team_id = $2
+      ORDER BY c.created_at ASC
+    `;
+
+    const result = await db.query(q, [requestId, teamId]);
+
+    // Count new comments from CLIENTS only (not team member messages)
+    let newCommentsCount = 0;
+    if (adminViewedAt) {
+      newCommentsCount = result.rows.filter(
+        (comment: any) => new Date(comment.created_at) > new Date(adminViewedAt) && comment.sender_type === 'client'
+      ).length;
+    } else {
+      // If never viewed, count only client comments as new
+      newCommentsCount = result.rows.filter(
+        (comment: any) => comment.sender_type === 'client'
+      ).length;
+    }
+
+    return res.status(200).send(new ServerResponse(true, {
+      comments: result.rows,
+      totalCount: result.rows.length,
+      newCommentsCount: newCommentsCount
+    }));
+  }
+
+  @HandleExceptions()
+  public static async addClientRequestComment(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const userId = req.user?.id;
+    const userName = req.user?.name;
+    const requestId = req.params.id;
+    const { comment } = req.body;
+
+    if (!comment || !comment.trim()) {
+      return res.status(400).send(new ServerResponse(false, null, "Comment is required"));
+    }
+
+    // Validate comment length (max 5000 characters)
+    const MAX_COMMENT_LENGTH = 5000;
+    if (comment.trim().length > MAX_COMMENT_LENGTH) {
+      return res.status(400).send(new ServerResponse(false, null, `Comment must not exceed ${MAX_COMMENT_LENGTH} characters`));
+    }
+
+    // Verify request belongs to this team and get client_id
+    const requestCheck = await db.query(
+      "SELECT id, client_id FROM client_portal_requests WHERE id = $1 AND organization_team_id = $2",
+      [requestId, teamId]
+    );
+
+    if (requestCheck.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Request not found"));
+    }
+
+    const clientId = requestCheck.rows[0].client_id;
+
+    // Insert comment
+    const insertQuery = `
+      INSERT INTO client_portal_request_comments (
+        request_id,
+        organization_team_id,
+        client_id,
+        comment,
+        sender_type,
+        sender_id,
+        sender_name,
+        created_at,
+        updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+      RETURNING id, comment, sender_type, sender_id, sender_name, created_at, updated_at
+    `;
+
+    const result = await db.query(insertQuery, [
+      requestId,
+      teamId,
+      clientId,
+      comment.trim(),
+      'team_member',
+      userId,
+      userName
+    ]);
+
+    const newComment = result.rows[0];
+
+    // Send email notification to client
+    try {
+      // Get request details and client email
+      const requestDetails = await db.query(
+        `SELECT r.req_no, s.name as service_name, c.name as client_name, 
+                u.email as client_email, t.name as team_name, cps.slug as portal_slug
+         FROM client_portal_requests r
+         JOIN client_portal_services s ON r.service_id = s.id
+         JOIN clients c ON r.client_id = c.id
+         LEFT JOIN client_relationships cr ON cr.client_id = c.id AND cr.organization_team_id = r.organization_team_id
+         LEFT JOIN users u ON cr.user_id = u.id
+         JOIN teams t ON t.id = r.organization_team_id
+         LEFT JOIN client_portal_settings cps ON cps.organization_team_id = r.organization_team_id
+         WHERE r.id = $1`,
+        [requestId]
+      );
+
+      if (requestDetails.rows.length > 0 && requestDetails.rows[0].client_email) {
+        const { req_no, service_name, client_name, client_email, team_name, portal_slug } = requestDetails.rows[0];
+        
+        // Build client portal URL
+        const clientPortalBaseUrl = getClientPortalBaseUrl();
+        const requestUrl = portal_slug 
+          ? `${clientPortalBaseUrl}/${portal_slug}/requests/${requestId}`
+          : `${clientPortalBaseUrl}/requests/${requestId}`;
+
+        await sendClientPortalRequestCommentNotification(client_email, {
+          greeting: `Hello ${client_name}`,
+          summary: `New reply on your request ${req_no}`,
+          senderName: userName || "Team Member",
+          senderType: 'team_member',
+          comment: comment.trim().substring(0, 500) + (comment.trim().length > 500 ? '...' : ''),
+          requestNumber: req_no,
+          serviceName: service_name,
+          requestUrl: requestUrl,
+          teamName: team_name
+        });
+      }
+    } catch (emailError) {
+      console.error("Error sending comment notification email to client:", emailError);
+    }
+
+    return res.status(200).send(new ServerResponse(true, newComment, "Comment added successfully"));
   }
 
 }

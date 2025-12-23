@@ -10,6 +10,7 @@ interface AuthState {
   error: string | null;
   inviteToken: string | null;
   inviteValid: boolean;
+  inviteChecked: boolean;
   inviteLoading: boolean;
   inviteDetails: {
     email?: string;
@@ -38,8 +39,10 @@ export const loginUser = createAsyncThunk(
       } else {
         throw new Error(response.message || 'Login failed');
       }
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Login failed');
+    } catch (error: any) {
+      // Extract error message from API response
+      const errorMessage = error?.response?.data?.message || error?.message || 'Login failed';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -238,6 +241,7 @@ const initialState: AuthState = {
   error: null,
   inviteToken: null,
   inviteValid: false,
+  inviteChecked: false,
   inviteLoading: false,
   inviteDetails: null,
   tokenExpiry: localStorage.getItem('clientTokenExpiry'),
@@ -355,11 +359,13 @@ const authSlice = createSlice({
     builder
       .addCase(validateInviteToken.pending, (state) => {
         state.inviteLoading = true;
+        state.inviteChecked = false;
         state.error = null;
       })
       .addCase(validateInviteToken.fulfilled, (state, action) => {
         state.inviteLoading = false;
         state.inviteValid = true;
+        state.inviteChecked = true;
         state.inviteToken = action.payload.token;
         state.inviteDetails = {
           email: action.payload.email,
@@ -370,6 +376,7 @@ const authSlice = createSlice({
       .addCase(validateInviteToken.rejected, (state, action) => {
         state.inviteLoading = false;
         state.inviteValid = false;
+        state.inviteChecked = true;
         state.error = action.payload as string;
       });
 

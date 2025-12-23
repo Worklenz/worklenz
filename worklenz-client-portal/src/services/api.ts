@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { ApiResponse, ClientSettings, ClientUser, ClientToken, ClientNotification } from '@/types';
+import { ApiResponse, ClientSettings, ClientUser, ClientToken, ClientNotification, ProfileUpdateData } from '@/types';
 
 class ClientPortalAPI {
   private api: AxiosInstance;
@@ -44,7 +44,12 @@ class ClientPortalAPI {
           return Promise.reject(error);
         }
 
-        if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
+        // Skip token refresh for auth endpoints (login, register, etc.)
+        const isAuthEndpoint = originalRequest.url?.includes('/auth/login') || 
+                               originalRequest.url?.includes('/auth/register') ||
+                               originalRequest.url?.includes('/auth/accept-invite');
+        
+        if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry && !isAuthEndpoint) {
           originalRequest._retry = true;
 
           try {
@@ -409,7 +414,7 @@ class ClientPortalAPI {
     return this.request('/profile');
   }
 
-  async updateProfile(profileData: Partial<ClientUser>) {
+  async updateProfile(profileData: ProfileUpdateData) {
     return this.request('/profile', {
       method: 'PUT',
       data: profileData,

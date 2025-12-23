@@ -31,5 +31,13 @@
   "projectHealthText": "Gjendja e projektit",
   "projectUpdateText": "Përditësimi i projektit",
   "clientText": "Klienti",
-  "teamText": "Ekipi"
+  "teamText": "Ekipi",
+
+  "tableViewText": "Tabelë",
+  "groupedViewText": "Grupuar",
+  "groupByCategoryText": "Kategoria",
+  "groupByStatusText": "Statusi",
+  "groupByHealthText": "Gjendja",
+  "groupByTeamText": "Ekipi",
+  "groupByManagerText": "Menaxheri"
 }

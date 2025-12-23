@@ -18,7 +18,8 @@
       "Bash(rg:*)",
       "Bash(for lang in zh alb)",
       "Bash(do echo \"=== $lang ===\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": [],

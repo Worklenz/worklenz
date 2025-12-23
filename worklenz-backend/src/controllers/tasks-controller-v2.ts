@@ -63,23 +63,50 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   private static getFilterByPriorityWhereClosure(text: string) {
-    return text ? `priority_id IN (${this.flatString(text)})` : "";
+    if (!text) return "";
+
+    const priorityIds = this.flatString(text);
+    return `(
+      priority_id IN (${priorityIds})
+      OR EXISTS (
+        SELECT 1 FROM tasks subtask
+        WHERE subtask.parent_task_id = t.id
+        AND subtask.priority_id IN (${priorityIds})
+        AND subtask.archived IS FALSE
+      )
+    )`;
   }
 
   private static getFilterByLabelsWhereClosure(text: string) {
-    return text
-      ? `id IN (SELECT task_id FROM task_labels WHERE label_id IN (${this.flatString(
-          text
-        )}))`
-      : "";
+    if (!text) return "";
+
+    const labelIds = this.flatString(text);
+    return `(
+      id IN (SELECT task_id FROM task_labels WHERE label_id IN (${labelIds}))
+      OR EXISTS (
+        SELECT 1 FROM tasks subtask
+        JOIN task_labels tl ON tl.task_id = subtask.id
+        WHERE subtask.parent_task_id = t.id
+        AND tl.label_id IN (${labelIds})
+        AND subtask.archived IS FALSE
+      )
+    )`;
   }
 
   private static getFilterByMembersWhereClosure(text: string) {
-    return text
-      ? `id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${this.flatString(
-          text
-        )}))`
-      : "";
+    if (!text) return "";
+
+    const memberIds = this.flatString(text);
+    return `(
+      id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${memberIds}))
+      OR EXISTS (
+        SELECT 1 FROM tasks subtask
+        JOIN tasks_assignees ta ON ta.task_id = subtask.id
+        WHERE subtask.parent_task_id = t.id
+        AND ta.team_member_id IN (${memberIds})
+        AND subtask.archived IS FALSE
+      )
+    )`;
   }
 
   private static getFilterByProjectsWhereClosure(text: string) {
@@ -145,20 +172,64 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     const searchField = options.search
       ? [
-          "t.name",
-          "CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no)",
-        ]
+        "t.name",
+        "CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no)",
+      ]
       : defaultSortColumn;
-    const { searchQuery, sortField } = TasksControllerV2.toPaginationOptions(
+    const { searchQuery, sortField, sortOrder } = TasksControllerV2.toPaginationOptions(
       options,
       searchField
     );
 
     const isSubTasks = !!options.parent_task;
 
-    const sortFields =
-      sortField.replace(/ascend/g, "ASC").replace(/descend/g, "DESC") ||
-      defaultSortColumn;
+    // Map frontend field names to backend column names
+    const fieldMapping: Record<string, string> = {
+      'name': 't.name',
+      'status': 't.status_id',
+      'priority': 't.priority_id',
+      'start_date': 't.start_date',
+      'end_date': 't.end_date',
+      'completed_at': 't.completed_at',
+      'created_at': 't.created_at',
+      'updated_at': 't.updated_at',
+    };
+
+    // Apply field mapping if needed
+    let mappedSortField = sortField;
+    if (typeof sortField === 'string' && sortField !== defaultSortColumn) {
+      if (fieldMapping[sortField]) {
+        mappedSortField = fieldMapping[sortField];
+      }
+    }
+
+    // Construct final sort clause
+    const sortFields = mappedSortField && sortOrder 
+      ? `${mappedSortField} ${sortOrder.toUpperCase()}`
+      : defaultSortColumn;
+
+    // Enhanced search query that includes subtasks
+    // If a subtask matches the search, show the parent task too
+    let enhancedSearchQuery = searchQuery;
+    if (options.search && !isSubTasks) {
+      const searchTerm = options.search.toString().trim();
+      if (searchTerm) {
+        // Build a search condition that checks both parent and subtasks
+        enhancedSearchQuery = `AND (
+          t.name ILIKE '%${searchTerm}%'
+          OR CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no) ILIKE '%${searchTerm}%'
+          OR EXISTS (
+            SELECT 1 FROM tasks subtask
+            WHERE subtask.parent_task_id = t.id
+            AND subtask.archived IS FALSE
+            AND (
+              subtask.name ILIKE '%${searchTerm}%'
+              OR CONCAT((SELECT key FROM projects WHERE id = subtask.project_id), '-', subtask.task_no) ILIKE '%${searchTerm}%'
+            )
+          )
+        )`;
+      }
+    }
 
     // Filter tasks by statuses
     const statusesFilter = TasksControllerV2.getFilterByStatusWhereClosure(
@@ -242,6 +313,50 @@ export default class TasksControllerV2 extends TasksControllerBase {
       .filter((i) => !!i)
       .join(" AND ");
 
+    // Build filtered subtask count query - apply same filters to subtasks
+    const subtaskFilters = [];
+
+    // Always filter by archived status for subtasks
+    subtaskFilters.push(archivedFilter);
+
+    // Apply status filter to subtasks if present
+    if (statusesFilter) {
+      subtaskFilters.push(statusesFilter.replace(/\bt\./g, 'subtask.'));
+    }
+
+    // Apply priority filter to subtasks if present
+    if (options.priorities) {
+      const priorityIds = this.flatString(options.priorities as string);
+      subtaskFilters.push(`subtask.priority_id IN (${priorityIds})`);
+    }
+
+    // Apply labels filter to subtasks if present
+    if (options.labels) {
+      const labelIds = this.flatString(options.labels as string);
+      subtaskFilters.push(`subtask.id IN (SELECT task_id FROM task_labels WHERE label_id IN (${labelIds}))`);
+    }
+
+    // Apply members filter to subtasks if present
+    if (options.members) {
+      const memberIds = this.flatString(options.members as string);
+      subtaskFilters.push(`subtask.id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${memberIds}))`);
+    }
+
+    // Apply search filter to subtasks if present
+    if (options.search && !isSubTasks) {
+      const searchTerm = options.search.toString().trim();
+      if (searchTerm) {
+        subtaskFilters.push(`(
+          subtask.name ILIKE '%${searchTerm}%'
+          OR CONCAT((SELECT key FROM projects WHERE id = subtask.project_id), '-', subtask.task_no) ILIKE '%${searchTerm}%'
+        )`);
+      }
+    }
+
+    const subtaskFilterClause = subtaskFilters.length > 0
+      ? `AND ${subtaskFilters.join(' AND ')}`
+      : '';
+
     return `
       SELECT id,
              name,
@@ -252,8 +367,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
              t.parent_task_id IS NOT NULL AS is_sub_task,
              (SELECT name FROM tasks WHERE id = t.parent_task_id) AS parent_task_name,
              (SELECT COUNT(*)
-              FROM tasks
-              WHERE parent_task_id = t.id)::INT AS sub_tasks_count,
+              FROM tasks subtask
+              WHERE subtask.parent_task_id = t.id ${subtaskFilterClause})::INT AS sub_tasks_count,
 
              t.status_id AS status,
              t.archived,
@@ -333,7 +448,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
              schedule_id,
              END_DATE ${customColumnsQuery} ${statusesQuery}
       FROM tasks t
-      WHERE ${filters} ${searchQuery}
+      WHERE ${filters} ${enhancedSearchQuery}
       ORDER BY ${sortFields}
     `;
   }
@@ -740,11 +855,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
       groupType === "phase"
         ? [req.body.id, req.body.to_group_id]
         : [
-            req.body.id,
-            req.body.project_id,
-            req.body.parent_task_id,
-            req.body.to_group_id,
-          ];
+          req.body.id,
+          req.body.project_id,
+          req.body.parent_task_id,
+          req.body.to_group_id,
+        ];
     await db.query(q, params);
 
     // Reset the parent task's manual progress when converting a task to a subtask
@@ -924,10 +1039,16 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     const q = `SELECT replace_task_labels($1, $2) AS labels;`;
     const result = await db.query(q, [id, labels]);
-    
+
     return res
       .status(200)
-      .send(new ServerResponse(true, result.rows[0]?.labels || [], "Labels assigned successfully"));
+      .send(
+        new ServerResponse(
+          true,
+          result.rows[0]?.labels || [],
+          "Labels assigned successfully"
+        )
+      );
   }
 
   /**
@@ -1240,13 +1361,16 @@ export default class TasksControllerV2 extends TasksControllerBase {
       task.index = index;
 
       // Convert time values to hours
-      const convertToHours = (value: any, isSeconds: boolean = false): number => {
+      const convertToHours = (
+        value: any,
+        isSeconds: boolean = false
+      ): number => {
         if (typeof value === "number") {
           return isSeconds ? value / 3600 : value / 60; // Convert seconds or minutes to hours
         }
         if (typeof value === "string") {
           const parsed = parseFloat(value);
-          return isNaN(parsed) ? 0 : (isSeconds ? parsed / 3600 : parsed / 60);
+          return isNaN(parsed) ? 0 : isSeconds ? parsed / 3600 : parsed / 60;
         }
         if (value && typeof value === "object") {
           if ("hours" in value || "minutes" in value) {
@@ -1258,7 +1382,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
         return 0;
       };
 
-      const calculatedProgress = typeof task.complete_ratio === "number" ? task.complete_ratio : 0;
+      const calculatedProgress =
+        typeof task.complete_ratio === "number" ? task.complete_ratio : 0;
 
       return {
         id: task.id,
@@ -1287,6 +1412,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
         all_labels: task.all_labels || [],
         dueDate: task.end_date || task.END_DATE,
         startDate: task.start_date,
+        completedAt: task.completed_at || undefined,
+        completed_at: task.completed_at || undefined,
         timeTracking: {
           estimated: convertToHours(task.total_minutes, false), // total_minutes is in minutes
           logged: convertToHours(task.total_minutes_spent, true), // total_minutes_spent is in seconds
@@ -1295,6 +1422,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         custom_column_values: task.custom_column_values || {}, // Include custom column values
         createdAt: task.created_at || new Date().toISOString(),
         updatedAt: task.updated_at || new Date().toISOString(),
+        completedAt: task.completed_at || null,
         order: TasksControllerV2.getTaskSortOrder(task, groupBy),
         // Additional metadata for frontend
         originalStatusId: task.status,
@@ -1312,6 +1440,20 @@ export default class TasksControllerV2 extends TasksControllerBase {
         reporter: task.reporter || null,
       };
     });
+
+    // Debug log to verify completedAt is being sent
+    const completedTasks = transformedTasks.filter((t) => t.completedAt);
+    if (completedTasks.length > 0) {
+      console.log(
+        "[DEBUG getTasksV3] Tasks with completedAt:",
+        completedTasks.map((t) => ({
+          id: t.id,
+          title: t.title,
+          completedAt: t.completedAt,
+        }))
+      );
+    }
+
     const groupedResponse: Record<string, any> = {};
 
     // Initialize groups from database data
@@ -1320,9 +1462,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
         groupBy === GroupBy.STATUS
           ? group.name.toLowerCase().replace(/\s+/g, "_")
           : groupBy === GroupBy.PRIORITY
-          ? priorityMap[(group as any).value?.toString()] ||
+            ? priorityMap[(group as any).value?.toString()] ||
             group.name.toLowerCase()
-          : group.name.toLowerCase().replace(/\s+/g, "_");
+            : group.name.toLowerCase().replace(/\s+/g, "_");
 
       groupedResponse[groupKey] = {
         id: group.id,
@@ -1479,9 +1621,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
           groupBy === GroupBy.STATUS
             ? group.name.toLowerCase().replace(/\s+/g, "_")
             : groupBy === GroupBy.PRIORITY
-            ? priorityMap[(group as any).value?.toString()] ||
+              ? priorityMap[(group as any).value?.toString()] ||
               group.name.toLowerCase()
-            : group.name.toLowerCase().replace(/\s+/g, "_");
+              : group.name.toLowerCase().replace(/\s+/g, "_");
 
         return groupedResponse[groupKey];
       })
@@ -1651,10 +1793,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
           completionPercentage:
             stats.total_tasks > 0
               ? Math.round(
-                  (parseInt(stats.completed_tasks) /
-                    parseInt(stats.total_tasks)) *
-                    100
-                )
+                (parseInt(stats.completed_tasks) /
+                  parseInt(stats.total_tasks)) *
+                100
+              )
               : 0,
         })
       );

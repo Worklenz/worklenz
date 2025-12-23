@@ -161,5 +161,32 @@
   "selectClientsToInvite": "Ju lutemi zgjidhni klientët për t'i ftuar",
   "bulkInviteSuccessMessage": "ftesë(a) u gjenerua me sukses",
   "bulkInvitePartialFailMessage": "ftesë(a) dështoi",
-  "bulkInviteErrorMessage": "Dështoi gjenerimi i ftesave"
+  "bulkInviteErrorMessage": "Dështoi gjenerimi i ftesave",
+
+  "deactivateConfirmationTitle": "Çaktivizo Klientin",
+  "deactivateConfirmationDescription": "Jeni i sigurt që doni të çaktivizoni këtë klient? Ata do të humbasin qasjen në portal, por të gjitha të dhënat do të ruhen.",
+  "deactivateConfirmationOk": "Çaktivizo",
+  "deactivateConfirmationCancel": "Anulo",
+  "deactivateClientSuccessMessage": "Klienti u çaktivizua me sukses",
+  "deactivateClientErrorMessage": "Dështoi çaktivizimi i klientit",
+  "deactivateTooltip": "Çaktivizo Klientin",
+  "deactivateSelected": "Çaktivizo të Zgjedhurit",
+  "selectClientsToDeactivate": "Ju lutemi zgjidhni klientët për t'i çaktivizuar",
+  "bulkDeactivateSuccessMessage": "Klientët e zgjedhur u çaktivizuan me sukses",
+  "bulkDeactivateErrorMessage": "Dështoi çaktivizimi i klientëve të zgjedhur",
+
+  "inviteLinkGeneratedSuccess": "Lidhja e ftesës u gjenerua me sukses!",
+  "inviteLinkGeneratedError": "Dështoi gjenerimi i lidhjes së ftesës",
+
+  "invitationModalTitle": "Lidhja e Ftesës u Gjenerua",
+  "invitationModalDescription": "Ndani këtë lidhje me klientin për ta ftuar të krijojë llogarinë e portalit. Lidhja do të skadë pas 7 ditësh.",
+  "invitationModalFooterText": "Kur klienti klikon në këtë lidhje, ai do të jetë në gjendje të krijojë llogarinë e portalit dhe të hyjë në projektet dhe shërbimet e tij.",
+  "invitationModalCopyLink": "Kopjo Lidhjen",
+  "portalUrlLabel": "URL e Portalit:",
+  "invitationLinkCopiedSuccess": "Lidhja e ftesës u kopjua në të papastër!",
+  "invitationLinkCopyError": "Dështoi kopjimi i lidhjes në të papastër",
+  "emailRequiredTitle": "Email i Kërkuar",
+  "emailRequiredMessage": "Ky klient nuk ka një adresë email. Një email kërkohet për ta ftuar në portal.",
+  "emailRequiredQuestion": "Dëshironi të shtoni një adresë email dhe ta ftoni përsëri?",
+  "addEmailButton": "Shto Email dhe Fto"
 }

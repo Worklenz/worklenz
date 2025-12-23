@@ -450,8 +450,6 @@ export const NumberCustomColumnCell: React.FC<{
         placeholder={numberType === 'percentage' ? '0%' : '0'}
         size="small"
         variant="borderless"
-        addonBefore={addonBefore}
-        addonAfter={addonAfter}
         style={{
           textAlign: 'right',
           width: '100%',

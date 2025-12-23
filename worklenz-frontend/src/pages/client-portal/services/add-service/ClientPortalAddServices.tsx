@@ -18,6 +18,7 @@ const ClientPortalAddServices = () => {
     id: nanoid(),
     name: '',
     status: 'pending',
+    is_public: true,
     service_data: {
       description: '',
       images: [],
@@ -73,6 +74,7 @@ const ClientPortalAddServices = () => {
       id: nanoid(),
       name: '',
       status: 'pending',
+      is_public: true,
       service_data: {
         description: '',
         images: [],

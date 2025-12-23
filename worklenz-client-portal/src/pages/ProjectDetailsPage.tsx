@@ -18,8 +18,10 @@ import {
   CheckCircleOutlined,
   ArrowLeftOutlined,
   ClockCircleOutlined,
-  SearchOutlined
+  SearchOutlined,
+  theme
 } from '@/shared/antd-imports';
+import { useAppSelector } from '@/hooks/useAppSelector';
 
 import { useParams, useNavigate } from 'react-router-dom';
 import clientPortalAPI from '@/services/api';
@@ -58,6 +60,8 @@ interface ProjectTask {
 const ProjectDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { token } = theme.useToken();
+  const currentTheme = useAppSelector((state) => state.ui.theme);
   const [projectDetails, setProjectDetails] = useState<ProjectDetails | null>(null);
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -279,16 +283,34 @@ const ProjectDetailsPage: React.FC = () => {
             </Space>
           </Col>
           <Col>
-            <Card size="small" style={{ background: '#fafafa', border: 'none' }}>
+            <Card
+              size="small"
+              style={{
+                background: token.colorBgElevated,
+                border: `1px solid ${token.colorBorderSecondary}`,
+                boxShadow: token.boxShadowTertiary,
+              }}
+            >
               <Space direction="vertical" align="center" size={0}>
-                <Text type="secondary" style={{ fontSize: 12 }}>Progress</Text>
+                <Text type="secondary" style={{ fontSize: 12, color: token.colorTextSecondary }}>
+                  Progress
+                </Text>
                 <Progress 
                   type="circle" 
                   percent={projectDetails.statistics.progressPercentage}
                   size={80}
+                  strokeColor={
+                    projectDetails.statistics.progressPercentage === 100
+                      ? token.colorSuccess
+                      : token.colorPrimary
+                  }
+                  trailColor={
+                    currentTheme === 'dark' ? token.colorBorderSecondary : token.colorFillSecondary
+                  }
+                  format={(percent) => `${percent ?? 0}%`}
                   status={projectDetails.statistics.progressPercentage === 100 ? 'success' : 'active'}
                 />
-                <Text type="secondary" style={{ fontSize: 12 }}>
+                <Text type="secondary" style={{ fontSize: 12, color: token.colorTextSecondary }}>
                   {projectDetails.statistics.completedTasks}/{projectDetails.statistics.totalTasks} tasks
                 </Text>
               </Space>

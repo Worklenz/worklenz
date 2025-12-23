@@ -1,13 +1,13 @@
 import React, { memo, useMemo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Task } from '@/types/task-management.types';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { selectTaskById } from '@/features/task-management/task-management.slice';
 import { selectIsTaskSelected } from '@/features/task-management/selection.slice';
 import { useTaskRowState } from './hooks/useTaskRowState';
 import { useTaskRowActions } from './hooks/useTaskRowActions';
 import { useTaskRowColumns } from './hooks/useTaskRowColumns';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 
 interface TaskRowProps {
   taskId: string;

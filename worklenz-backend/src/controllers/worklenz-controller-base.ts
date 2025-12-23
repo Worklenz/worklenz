@@ -31,7 +31,7 @@ export default abstract class WorklenzControllerBase {
     // Pagination
     const size = +(queryParams.size || DEFAULT_PAGE_SIZE);
     const index = +(queryParams.index || 1);
-    const offset = queryParams.search ? 0 : (index - 1) * size;
+    const offset = (index - 1) * size;
     const paging = queryParams.paging || "true";
 
     const search = (queryParams.search as string || "").trim();
@@ -56,7 +56,9 @@ export default abstract class WorklenzControllerBase {
 
     // Sort
     const sortField = /null|undefined/.test(queryParams.field as string) ? searchField : queryParams.field;
-    const sortOrder = queryParams.order === "descend" ? "desc" : "asc";
+    // Handle both uppercase (ASC/DESC) and lowercase (asc/desc/ascend/descend) order values
+    const orderValue = (queryParams.order as string || "").toLowerCase();
+    const sortOrder = (orderValue === "desc" || orderValue === "descend") ? "desc" : "asc";
 
     return {searchQuery, sortField, sortOrder, size, offset, paging};
   }

@@ -17,6 +17,7 @@ import {
   Alert,
   Form,
   Input,
+  Tabs,
 } from '@/shared/antd-imports';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -442,261 +443,285 @@ const ClientPortalSettings = () => {
       </Flex>
 
       {/* Main Content */}
-      <Row gutter={[24, 24]}>
-        {/* Left Column - Upload Section */}
-        <Col xs={24} lg={14}>
-          <Card
-            title={
+      <Tabs
+        defaultActiveKey="logo"
+        items={[
+          {
+            key: 'logo',
+            label: (
               <Flex align="center" gap={8}>
                 <UploadOutlined />
                 <span>{t('logoManagementTitle')}</span>
               </Flex>
-            }
-            style={{ height: 'fit-content' }}
-          >
-            <Flex vertical gap={24}>
-              {/* Current/Pending Logo Section */}
-              {(customLogo || pendingLogoUrl || pendingLogoRemoval) && (
-                <>
-                  <div>
-                    <Typography.Text strong style={{ display: 'block', marginBottom: 12 }}>
-                      {pendingLogoUrl ? t('newLogoText') : t('currentLogoText')}
-                    </Typography.Text>
+            ),
+            children: (
+              <Row gutter={[24, 24]}>
+                {/* Left Column - Upload Section */}
+                <Col xs={24} lg={14}>
+                  <Card
+                    title={
+                      <Flex align="center" gap={8}>
+                        <UploadOutlined />
+                        <span>{t('logoManagementTitle')}</span>
+                      </Flex>
+                    }
+                    style={{ height: 'fit-content' }}
+                  >
+                    <Flex vertical gap={24}>
+                      {/* Current/Pending Logo Section */}
+                      {(customLogo || pendingLogoUrl || pendingLogoRemoval) && (
+                        <>
+                          <div>
+                            <Typography.Text strong style={{ display: 'block', marginBottom: 12 }}>
+                              {pendingLogoUrl ? t('newLogoText') : t('currentLogoText')}
+                            </Typography.Text>
 
-                    {!pendingLogoRemoval && (
-                      <Flex
-                        align="center"
-                        gap={16}
+                            {!pendingLogoRemoval && (
+                              <Flex
+                                align="center"
+                                gap={16}
+                                style={{
+                                  padding: '16px',
+                                  border: pendingLogoUrl
+                                    ? `2px dashed #1890ff`
+                                    : `1px solid ${colors.deepLightGray}`,
+                                  borderRadius: '8px',
+                                  backgroundColor: 'var(--ant-color-bg-layout)',
+                                }}
+                              >
+                                <img
+                                  src={pendingLogoUrl || customLogo || ''}
+                                  alt={pendingLogoUrl ? "New company logo" : "Current company logo"}
+                                  style={{
+                                    maxWidth: 120,
+                                    maxHeight: 60,
+                                    objectFit: 'contain',
+                                    borderRadius: '4px',
+                                  }}
+                                />
+                                <Space direction="vertical" size="small">
+                                  <Space>
+                                    <Tooltip title={t('previewLogoTooltip')}>
+                                      <Button
+                                        type="text"
+                                        icon={<EyeOutlined />}
+                                        onClick={() => setPreviewVisible(true)}
+                                        size="small"
+                                      />
+                                    </Tooltip>
+                                    <Tooltip title={t('removeLogoTooltip')}>
+                                      <Button
+                                        type="text"
+                                        danger
+                                        icon={<DeleteOutlined />}
+                                        onClick={handleStageLogoRemoval}
+                                        size="small"
+                                      />
+                                    </Tooltip>
+                                  </Space>
+                                  {pendingLogoUrl && (
+                                    <Tag color="blue" size="small">Pending Upload</Tag>
+                                  )}
+                                </Space>
+                              </Flex>
+                            )}
+
+                            {pendingLogoRemoval && (
+                              <Alert
+                                message="Logo will be removed"
+                                type="warning"
+                                showIcon
+                                icon={<ExclamationCircleOutlined />}
+                                style={{ marginBottom: 8 }}
+                              />
+                            )}
+                          </div>
+                          <Divider />
+                        </>
+                      )}
+
+                      {/* Upload Section */}
+                      <div>
+                        <Typography.Text strong style={{ display: 'block', marginBottom: 12 }}>
+                          {t('uploadLogoText')}
+                        </Typography.Text>
+                        <Upload.Dragger
+                          {...props}
+                          style={{
+                            maxWidth: '100%',
+                            border: `2px dashed ${colors.deepLightGray}`,
+                            borderRadius: '8px',
+                            backgroundColor: 'var(--ant-color-bg-layout)',
+                          }}
+                        >
+                          <p className="ant-upload-drag-icon">
+                            <InboxOutlined style={{ fontSize: '32px', color: colors.skyBlue }} />
+                          </p>
+                          <p className="ant-upload-text" style={{ fontSize: '16px', marginBottom: '8px' }}>
+                            {t('uploadLogoText')}
+                          </p>
+                          <p className="ant-upload-hint" style={{ color: colors.lightGray }}>
+                            {t('uploadLogoAltText')}
+                          </p>
+                        </Upload.Dragger>
+                      </div>
+
+                      {/* Guidelines */}
+                      <Alert
+                        message={t('logoGuidelinesTitle')}
+                        description={
+                          <Flex vertical gap={8}>
+                            <Typography.Text>{t('recommendedSizeText')}</Typography.Text>
+                            <Typography.Text>{t('maxFileSizeText')}</Typography.Text>
+                            <Typography.Text>{t('supportedFormatsText')}</Typography.Text>
+                            <Typography.Text>{t('autoScaledInfoText')}</Typography.Text>
+                          </Flex>
+                        }
+                        type="info"
+                        icon={<InfoCircleOutlined />}
+                        showIcon
                         style={{
-                          padding: '16px',
-                          border: pendingLogoUrl
-                            ? `2px dashed #1890ff`
-                            : `1px solid ${colors.deepLightGray}`,
-                          borderRadius: '8px',
+                          border: `1px solid ${colors.midBlue}`,
                           backgroundColor: 'var(--ant-color-bg-layout)',
                         }}
-                      >
-                        <img
-                          src={pendingLogoUrl || customLogo || ''}
-                          alt={pendingLogoUrl ? "New company logo" : "Current company logo"}
-                          style={{
-                            maxWidth: 120,
-                            maxHeight: 60,
-                            objectFit: 'contain',
-                            borderRadius: '4px',
-                          }}
-                        />
-                        <Space direction="vertical" size="small">
-                          <Space>
-                            <Tooltip title={t('previewLogoTooltip')}>
-                              <Button
-                                type="text"
-                                icon={<EyeOutlined />}
-                                onClick={() => setPreviewVisible(true)}
-                                size="small"
-                              />
-                            </Tooltip>
-                            <Tooltip title={t('removeLogoTooltip')}>
-                              <Button
-                                type="text"
-                                danger
-                                icon={<DeleteOutlined />}
-                                onClick={handleStageLogoRemoval}
-                                size="small"
-                              />
-                            </Tooltip>
-                          </Space>
-                          {pendingLogoUrl && (
-                            <Tag color="blue" size="small">Pending Upload</Tag>
-                          )}
-                        </Space>
-                      </Flex>
-                    )}
-
-                    {pendingLogoRemoval && (
-                      <Alert
-                        message="Logo will be removed"
-                        type="warning"
-                        showIcon
-                        icon={<ExclamationCircleOutlined />}
-                        style={{ marginBottom: 8 }}
                       />
-                    )}
-                  </div>
-                  <Divider />
-                </>
-              )}
+                    </Flex>
+                  </Card>
+                </Col>
 
-              {/* Upload Section */}
-              <div>
-                <Typography.Text strong style={{ display: 'block', marginBottom: 12 }}>
-                  {t('uploadLogoText')}
-                </Typography.Text>
-                <Upload.Dragger
-                  {...props}
-                  style={{
-                    maxWidth: '100%',
-                    border: `2px dashed ${colors.deepLightGray}`,
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--ant-color-bg-layout)',
-                  }}
-                >
-                  <p className="ant-upload-drag-icon">
-                    <InboxOutlined style={{ fontSize: '32px', color: colors.skyBlue }} />
-                  </p>
-                  <p className="ant-upload-text" style={{ fontSize: '16px', marginBottom: '8px' }}>
-                    {t('uploadLogoText')}
-                  </p>
-                  <p className="ant-upload-hint" style={{ color: colors.lightGray }}>
-                    {t('uploadLogoAltText')}
-                  </p>
-                </Upload.Dragger>
-              </div>
+                {/* Right Column - Preview */}
+                <Col xs={24} lg={10}>
+                  <LogoPreview />
 
-              {/* Guidelines */}
-              <Alert
-                message={t('logoGuidelinesTitle')}
-                description={
-                  <Flex vertical gap={8}>
-                    <Typography.Text>{t('recommendedSizeText')}</Typography.Text>
-                    <Typography.Text>{t('maxFileSizeText')}</Typography.Text>
-                    <Typography.Text>{t('supportedFormatsText')}</Typography.Text>
-                    <Typography.Text>{t('autoScaledInfoText')}</Typography.Text>
-                  </Flex>
-                }
-                type="info"
-                icon={<InfoCircleOutlined />}
-                showIcon
-                style={{
-                  border: `1px solid ${colors.midBlue}`,
-                  backgroundColor: 'var(--ant-color-bg-layout)',
-                }}
-              />
-            </Flex>
-          </Card>
-
-          {/* Company Details Card */}
-          <Card
-            title={
+                  {/* Additional Info Card */}
+                  <Card
+                    title={
+                      <Flex align="center" gap={8}>
+                        <CheckCircleOutlined style={{ color: colors.limeGreen }} />
+                        <span>{t('benefitsTitle')}</span>
+                      </Flex>
+                    }
+                    size="small"
+                    style={{
+                      marginTop: 16,
+                      border: `1px solid ${colors.lightGreen}`,
+                      backgroundColor: 'var(--ant-color-bg-container)',
+                    }}
+                  >
+                    <Flex vertical gap={12}>
+                      <Flex align="center" gap={8}>
+                        <CheckCircleOutlined style={{ color: colors.limeGreen, fontSize: '12px' }} />
+                        <Typography.Text style={{ fontSize: '13px' }}>
+                          {t('professionalBrandingText')}
+                        </Typography.Text>
+                      </Flex>
+                      <Flex align="center" gap={8}>
+                        <CheckCircleOutlined style={{ color: colors.limeGreen, fontSize: '12px' }} />
+                        <Typography.Text style={{ fontSize: '13px' }}>
+                          {t('consistentIdentityText')}
+                        </Typography.Text>
+                      </Flex>
+                      <Flex align="center" gap={8}>
+                        <CheckCircleOutlined style={{ color: colors.limeGreen, fontSize: '12px' }} />
+                        <Typography.Text style={{ fontSize: '13px' }}>
+                          {t('enhancedTrustText')}
+                        </Typography.Text>
+                      </Flex>
+                    </Flex>
+                  </Card>
+                </Col>
+              </Row>
+            ),
+          },
+          {
+            key: 'company-details',
+            label: (
               <Flex align="center" gap={8}>
                 <InfoCircleOutlined />
                 <span>{t('companyDetailsTitle')}</span>
               </Flex>
-            }
-            style={{ marginTop: 24 }}
-          >
-            <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-              {t('companyDetailsDescription')}
-            </Typography.Text>
-            <Form layout="vertical">
-              <Row gutter={16}>
-                <Col xs={24} sm={12}>
-                  <Form.Item label={t('companyNameLabel')}>
-                    <Input
-                      placeholder={t('companyNamePlaceholder')}
-                      value={companyDetails.company_name}
-                      onChange={(e) => handleCompanyDetailsChange('company_name', e.target.value)}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12}>
-                  <Form.Item label={t('contactEmailLabel')}>
-                    <Input
-                      placeholder={t('contactEmailPlaceholder')}
-                      value={companyDetails.contact_email}
-                      onChange={(e) => handleCompanyDetailsChange('contact_email', e.target.value)}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-              <Row gutter={16}>
-                <Col xs={24} sm={12}>
-                  <Form.Item label={t('contactPhoneLabel')}>
-                    <Input
-                      placeholder={t('contactPhonePlaceholder')}
-                      value={companyDetails.contact_phone}
-                      onChange={(e) => handleCompanyDetailsChange('contact_phone', e.target.value)}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-              <Row gutter={16}>
-                <Col xs={24} sm={12}>
-                  <Form.Item label={t('addressLine1Label')}>
-                    <Input
-                      placeholder={t('addressLine1Placeholder')}
-                      value={companyDetails.address_line_1}
-                      onChange={(e) => handleCompanyDetailsChange('address_line_1', e.target.value)}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12}>
-                  <Form.Item label={t('addressLine2Label')}>
-                    <Input
-                      placeholder={t('addressLine2Placeholder')}
-                      value={companyDetails.address_line_2}
-                      onChange={(e) => handleCompanyDetailsChange('address_line_2', e.target.value)}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-              <Row gutter={16}>
-                <Col xs={24}>
-                  <Form.Item label={t('invoiceFooterLabel')}>
-                    <Input
-                      placeholder={t('invoiceFooterPlaceholder')}
-                      value={companyDetails.invoice_footer_message}
-                      onChange={(e) => handleCompanyDetailsChange('invoice_footer_message', e.target.value)}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </Form>
-          </Card>
-        </Col>
-
-        {/* Right Column - Preview */}
-        <Col xs={24} lg={10}>
-          <LogoPreview />
-
-          {/* Additional Info Card */}
-          <Card
-            title={
-              <Flex align="center" gap={8}>
-                <CheckCircleOutlined style={{ color: colors.limeGreen }} />
-                <span>{t('benefitsTitle')}</span>
-              </Flex>
-            }
-            size="small"
-            style={{
-              marginTop: 16,
-              border: `1px solid ${colors.lightGreen}`,
-              backgroundColor: 'var(--ant-color-bg-container)',
-            }}
-          >
-            <Flex vertical gap={12}>
-              <Flex align="center" gap={8}>
-                <CheckCircleOutlined style={{ color: colors.limeGreen, fontSize: '12px' }} />
-                <Typography.Text style={{ fontSize: '13px' }}>
-                  {t('professionalBrandingText')}
+            ),
+            children: (
+              <Card
+                title={
+                  <Flex align="center" gap={8}>
+                    <InfoCircleOutlined />
+                    <span>{t('companyDetailsTitle')}</span>
+                  </Flex>
+                }
+              >
+                <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                  {t('companyDetailsDescription')}
                 </Typography.Text>
-              </Flex>
-              <Flex align="center" gap={8}>
-                <CheckCircleOutlined style={{ color: colors.limeGreen, fontSize: '12px' }} />
-                <Typography.Text style={{ fontSize: '13px' }}>
-                  {t('consistentIdentityText')}
-                </Typography.Text>
-              </Flex>
-              <Flex align="center" gap={8}>
-                <CheckCircleOutlined style={{ color: colors.limeGreen, fontSize: '12px' }} />
-                <Typography.Text style={{ fontSize: '13px' }}>
-                  {t('enhancedTrustText')}
-                </Typography.Text>
-              </Flex>
-            </Flex>
-          </Card>
-        </Col>
-      </Row>
+                <Form layout="vertical">
+                  <Row gutter={16}>
+                    <Col xs={24} sm={12}>
+                      <Form.Item label={t('companyNameLabel')}>
+                        <Input
+                          placeholder={t('companyNamePlaceholder')}
+                          value={companyDetails.company_name}
+                          onChange={(e) => handleCompanyDetailsChange('company_name', e.target.value)}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <Form.Item label={t('contactEmailLabel')}>
+                        <Input
+                          placeholder={t('contactEmailPlaceholder')}
+                          value={companyDetails.contact_email}
+                          onChange={(e) => handleCompanyDetailsChange('contact_email', e.target.value)}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Row gutter={16}>
+                    <Col xs={24} sm={12}>
+                      <Form.Item label={t('contactPhoneLabel')}>
+                        <Input
+                          placeholder={t('contactPhonePlaceholder')}
+                          value={companyDetails.contact_phone}
+                          onChange={(e) => handleCompanyDetailsChange('contact_phone', e.target.value)}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Row gutter={16}>
+                    <Col xs={24} sm={12}>
+                      <Form.Item label={t('addressLine1Label')}>
+                        <Input
+                          placeholder={t('addressLine1Placeholder')}
+                          value={companyDetails.address_line_1}
+                          onChange={(e) => handleCompanyDetailsChange('address_line_1', e.target.value)}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <Form.Item label={t('addressLine2Label')}>
+                        <Input
+                          placeholder={t('addressLine2Placeholder')}
+                          value={companyDetails.address_line_2}
+                          onChange={(e) => handleCompanyDetailsChange('address_line_2', e.target.value)}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Row gutter={16}>
+                    <Col xs={24}>
+                      <Form.Item label={t('invoiceFooterLabel')}>
+                        <Input
+                          placeholder={t('invoiceFooterPlaceholder')}
+                          value={companyDetails.invoice_footer_message}
+                          onChange={(e) => handleCompanyDetailsChange('invoice_footer_message', e.target.value)}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </Form>
+              </Card>
+            ),
+          },
+        ]}
+      />
 
 
       {/* Image Preview Modal */}

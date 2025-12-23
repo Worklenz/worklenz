@@ -68,7 +68,7 @@ async function logEmailAttempt(email: string, subject: string, html: string): Pr
 
 async function updateEmailLogStatus(
   logId: string,
-  status: 'sent' | 'failed',
+  status: "sent" | "failed",
   messageId?: string,
   errorDetails?: string
 ): Promise<void> {
@@ -85,49 +85,49 @@ async function updateEmailLogStatus(
 }
 
 function categorizeError(error: any): { code: string; message: string; details?: any } {
-  if (error.name === 'MessageRejected') {
+  if (error.name === "MessageRejected") {
     return {
-      code: 'MESSAGE_REJECTED',
-      message: 'Email rejected by Amazon SES',
+      code: "MESSAGE_REJECTED",
+      message: "Email rejected by Amazon SES",
       details: error.message
     };
   }
 
-  if (error.name === 'SendingQuotaExceeded') {
+  if (error.name === "SendingQuotaExceeded") {
     return {
-      code: 'QUOTA_EXCEEDED',
-      message: 'Daily sending quota exceeded',
+      code: "QUOTA_EXCEEDED",
+      message: "Daily sending quota exceeded",
       details: error.message
     };
   }
 
-  if (error.name === 'Throttling') {
+  if (error.name === "Throttling") {
     return {
-      code: 'RATE_LIMITED',
-      message: 'Sending rate exceeded',
+      code: "RATE_LIMITED",
+      message: "Sending rate exceeded",
       details: error.message
     };
   }
 
-  if (error.code === 'InvalidParameterValue') {
+  if (error.code === "InvalidParameterValue") {
     return {
-      code: 'INVALID_EMAIL',
-      message: 'Invalid email address or parameters',
+      code: "INVALID_EMAIL",
+      message: "Invalid email address or parameters",
       details: error.message
     };
   }
 
-  if (error.code === 'NetworkingError') {
+  if (error.code === "NetworkingError") {
     return {
-      code: 'NETWORK_ERROR',
-      message: 'Network connection failed',
+      code: "NETWORK_ERROR",
+      message: "Network connection failed",
       details: error.message
     };
   }
 
   return {
-    code: 'UNKNOWN_ERROR',
-    message: error.message || 'Unknown error occurred',
+    code: "UNKNOWN_ERROR",
+    message: error.message || "Unknown error occurred",
     details: error
   };
 }
@@ -168,8 +168,8 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
       return {
         success: false,
         error: {
-          code: 'NO_VALID_RECIPIENTS',
-          message: 'No valid email addresses after filtering'
+          code: "NO_VALID_RECIPIENTS",
+          message: "No valid email addresses after filtering"
         }
       };
     }
@@ -178,8 +178,8 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
       return {
         success: false,
         error: {
-          code: 'INVALID_EMAIL_BODY',
-          message: 'Email body validation failed'
+          code: "INVALID_EMAIL_BODY",
+          message: "Email body validation failed"
         }
       };
     }
@@ -217,8 +217,10 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
     const messageId = res.MessageId;
 
     // Update log status to sent
-    for (const logId of logIds) {
-      await updateEmailLogStatus(logId, 'sent', messageId);
+    // Append index to messageId to make it unique per recipient when sending to multiple
+    for (let i = 0; i < logIds.length; i++) {
+      const uniqueMessageId = logIds.length > 1 ? `${messageId}-${i}` : messageId;
+      await updateEmailLogStatus(logIds[i], "sent", uniqueMessageId);
     }
 
     return {
@@ -232,7 +234,7 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
 
     // Update log status to failed
     for (const logId of logIds) {
-      await updateEmailLogStatus(logId, 'failed', undefined, JSON.stringify(categorizedError));
+      await updateEmailLogStatus(logId, "failed", undefined, JSON.stringify(categorizedError));
     }
 
     return {

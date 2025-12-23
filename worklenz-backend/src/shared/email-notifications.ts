@@ -111,3 +111,64 @@ export async function sendProjectComment(toEmail: string, data: IProjectCommentE
 
   return null;
 }
+
+// Client Portal Email Notifications
+
+export interface IClientPortalNewRequestNotification {
+  greeting: string;
+  requestNumber: string;
+  serviceName: string;
+  clientName: string;
+  submittedAt: string;
+  requestTitle?: string;
+  requestUrl: string;
+  teamName: string;
+}
+
+export interface IClientPortalRequestCommentNotification {
+  greeting: string;
+  summary: string;
+  senderName: string;
+  senderType: 'client' | 'team_member';
+  comment: string;
+  requestNumber: string;
+  serviceName: string;
+  requestUrl: string;
+  teamName: string;
+}
+
+export async function sendClientPortalNewRequestNotification(toEmails: string[], data: IClientPortalNewRequestNotification) {
+  try {
+    const template = FileConstants.getEmailTemplate(IEmailTemplateType.ClientPortalNewRequest) as compileTemplate;
+    if (!template) {
+      log_error("Client portal new request email template not found");
+      return null;
+    }
+    return await sendEmail({
+      subject: `New Request: ${data.requestNumber} - ${data.serviceName}`,
+      to: toEmails,
+      html: template(data)
+    });
+  } catch (e) {
+    log_error(e);
+  }
+  return null;
+}
+
+export async function sendClientPortalRequestCommentNotification(toEmail: string, data: IClientPortalRequestCommentNotification) {
+  try {
+    const template = FileConstants.getEmailTemplate(IEmailTemplateType.ClientPortalRequestComment) as compileTemplate;
+    if (!template) {
+      log_error("Client portal request comment email template not found");
+      return null;
+    }
+    return await sendEmail({
+      subject: data.summary,
+      to: [toEmail],
+      html: template(data)
+    });
+  } catch (e) {
+    log_error(e);
+  }
+  return null;
+}

@@ -5,6 +5,7 @@ import { evt_reporting_projects_overview } from '@/shared/worklenz-analytics-eve
 import CustomPageHeader from '@/components/reporting/common/CustomPageHeader';
 import { DownOutlined } from '@/shared/antd-imports';
 import ProjectReportsTable from './projects-reports-table/projects-reports-table';
+import ProjectsGroupedView from './projects-grouped-view/projects-grouped-view';
 import ProjectsReportsFilters from './projects-reports-filters/project-reports-filters';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
@@ -22,7 +23,7 @@ const ProjectsReports = () => {
 
   useDocumentTitle('Reporting - Projects');
 
-  const { total, archived } = useAppSelector(state => state.projectReportsReducer);
+  const { total, archived, viewMode } = useAppSelector(state => state.projectReportsReducer);
 
   // Reset filters synchronously before any rendering
   useLayoutEffect(() => {
@@ -80,12 +81,20 @@ const ProjectsReports = () => {
   // Memoize the card title to prevent recreation on every render
   const cardTitle = useMemo(() => <ProjectsReportsFilters />, []);
 
+  // Memoize the content based on view mode
+  const cardContent = useMemo(() => {
+    if (viewMode === 'grouped') {
+      return <ProjectsGroupedView />;
+    }
+    return <ProjectReportsTable />;
+  }, [viewMode]);
+
   return (
     <Flex vertical>
       <CustomPageHeader title={pageTitle} children={headerChildren} />
 
       <Card title={cardTitle}>
-        <ProjectReportsTable />
+        {cardContent}
       </Card>
     </Flex>
   );

@@ -1,4 +1,10 @@
-import { DeleteOutlined, ExclamationCircleFilled, SearchOutlined } from '@/shared/antd-imports';
+import './categories-settings.css';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  ExclamationCircleFilled,
+  SearchOutlined,
+} from '@/shared/antd-imports';
 import {
   Button,
   Card,
@@ -15,6 +21,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { colors } from '@/styles/colors';
 import CustomColorsCategoryTag from '@features/settings/categories/CustomColorsCategoryTag';
+import CategoriesDrawer from './categories-drawer';
 import { deleteCategoryAsync } from '@features/settings/categories/categoriesSlice';
 import { categoriesApiService } from '@/api/settings/categories/categories.api.service';
 import { IProjectCategory, IProjectCategoryViewModel } from '@/types/project/projectCategory.types';
@@ -40,6 +47,10 @@ const CategoriesSettings = () => {
   const [loading, setLoading] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Drawer state
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [showDrawer, setShowDrawer] = useState(false);
 
   const filteredData = useMemo(
     () =>
@@ -70,6 +81,17 @@ const CategoriesSettings = () => {
     getCategories();
   }, [getCategories]);
 
+  const handleEditClick = (id: string) => {
+    setSelectedCategoryId(id);
+    setShowDrawer(true);
+  };
+
+  const handleDrawerClose = () => {
+    setSelectedCategoryId(null);
+    setShowDrawer(false);
+    getCategories();
+  };
+
   // Handle delete category
   const handleDeleteCategory = async (categoryId: string) => {
     try {
@@ -95,6 +117,9 @@ const CategoriesSettings = () => {
     {
       key: 'category',
       title: t('categoryColumn'),
+      onCell: record => ({
+        onClick: () => handleEditClick(record.id!),
+      }),
       render: (record: IProjectCategoryViewModel) => <CustomColorsCategoryTag category={record} />,
     },
     {
@@ -106,9 +131,23 @@ const CategoriesSettings = () => {
     },
     {
       key: 'actionBtns',
-      width: 60,
+      width: 80,
       render: (record: IProjectCategoryViewModel) => (
         <div className="row-action-buttons">
+          {/* Edit Button */}
+          <Tooltip title={t('editCategory', 'Edit')}>
+            <Button
+              shape="default"
+              icon={<EditOutlined />}
+              size="small"
+              style={{ marginRight: 8 }}
+              onClick={e => {
+                e.stopPropagation();
+                handleEditClick(record.id!);
+              }}
+            />
+          </Tooltip>
+          {/* Delete Button */}
           <Popconfirm
             title={t('deleteConfirmationTitle')}
             icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
@@ -116,11 +155,11 @@ const CategoriesSettings = () => {
             cancelText={t('deleteConfirmationCancel')}
             onConfirm={() => record.id && handleDeleteCategory(record.id)}
           >
-            <Tooltip title="Delete">
-              <Button 
-                shape="default" 
-                icon={<DeleteOutlined />} 
-                size="small" 
+            <Tooltip title={t('deleteCategory', 'Delete')}>
+              <Button
+                shape="default"
+                icon={<DeleteOutlined />}
+                size="small"
                 loading={deleteLoading}
               />
             </Tooltip>
@@ -147,41 +186,62 @@ const CategoriesSettings = () => {
       <Card
         style={{ width: '100%' }}
         title={
-          <Flex justify="flex-end">
-            <Flex gap={8} align="center" justify="flex-end" style={{ width: '100%', maxWidth: 400 }}>
+          <Flex justify="space-between" align="center">
+            <Typography.Text strong>
+              {t('title', { defaultValue: 'Categories' })}
+            </Typography.Text>
+            <Flex
+              gap={8}
+              align="center"
+              justify="flex-end"
+              style={{ width: '100%', maxWidth: 400 }}
+            >
               <Input
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.currentTarget.value)}
-                placeholder={t('searchPlaceholder')}
+                placeholder={t('search', { defaultValue: 'Search' })}
                 style={{ maxWidth: 232 }}
                 suffix={<SearchOutlined />}
               />
+              <Button
+                type="primary"
+                onClick={() => {
+                  setSelectedCategoryId(null);
+                  setShowDrawer(true);
+                }}
+              >
+                {t('createCategoryButton', { defaultValue: 'New Category' })}
+              </Button>
             </Flex>
           </Flex>
         }
       >
-      <Table
-        locale={{
-          emptyText: <Typography.Text>{t('emptyText')}</Typography.Text>,
-        }}
-        className="custom-two-colors-row-table"
-        dataSource={filteredData}
-        columns={columns}
-        rowKey={record => record.id}
-        pagination={{
-          showSizeChanger: true,
-          defaultPageSize: 20,
-          pageSizeOptions: ['5', '10', '15', '20', '50', '100'],
-          size: 'small',
-        }}
-        onRow={() => ({
-          style: {
-            cursor: 'pointer',
-            height: 36,
-          },
-        })}
-      />
+        <Table
+          locale={{
+            emptyText: <Typography.Text>{t('emptyText')}</Typography.Text>,
+          }}
+          className="custom-two-colors-row-table"
+          dataSource={filteredData}
+          columns={columns}
+          rowKey={record => record.id}
+          pagination={{
+            showSizeChanger: true,
+            defaultPageSize: 20,
+            pageSizeOptions: ['5', '10', '15', '20', '50', '100'],
+            size: 'small',
+          }}
+          onRow={record => ({
+            style: { cursor: 'pointer' },
+            onClick: () => handleEditClick(record.id!),
+          })}
+        />
       </Card>
+
+      <CategoriesDrawer
+        drawerOpen={showDrawer}
+        categoryId={selectedCategoryId}
+        drawerClosed={handleDrawerClose}
+      />
     </>
   );
 };
