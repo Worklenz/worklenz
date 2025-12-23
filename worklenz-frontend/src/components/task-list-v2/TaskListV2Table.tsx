@@ -230,7 +230,9 @@ const TaskListV2Section: React.FC = () => {
   const selectedTaskIds = useAppSelector(selectSelectedTaskIds);
   const lastSelectedTaskId = useAppSelector(selectLastSelectedTaskId);
   const collapsedGroups = useAppSelector(selectCollapsedGroups);
-  const isOpenDuplicateTaskModal = useAppSelector(state => state.taskManagement.isOpenDuplicateTaskModal);
+  const isOpenDuplicateTaskModal = useAppSelector(
+    state => state.taskManagement.isOpenDuplicateTaskModal
+  );
 
   const fields = useAppSelector(state => state.taskManagementFields) || [];
   const columns = useAppSelector(selectColumns);
@@ -271,6 +273,20 @@ const TaskListV2Section: React.FC = () => {
   // Enable real-time updates via socket handlers
   useTaskSocketHandlers();
 
+  // State to store custom column widths (overrides BASE_COLUMNS widths)
+  // Load from localStorage on mount
+  const [columnWidths, setColumnWidths] = useState<Record<string, string>>(() => {
+    const stored = localStorage.getItem(`columnWidths_${urlProjectId}`);
+    return stored ? JSON.parse(stored) : {};
+  });
+
+  // Save column widths to localStorage whenever they change
+  useEffect(() => {
+    if (urlProjectId && Object.keys(columnWidths).length > 0) {
+      localStorage.setItem(`columnWidths_${urlProjectId}`, JSON.stringify(columnWidths));
+    }
+  }, [columnWidths, urlProjectId]);
+
   // Filter visible columns based on local fields (primary) and backend columns (fallback)
   const visibleColumns = useMemo(() => {
     // Start with base columns
@@ -292,7 +308,11 @@ const TaskListV2Section: React.FC = () => {
 
       // Default: hide if neither local field nor backend column found
       return false;
-    });
+    }).map(column => ({
+      ...column,
+      // Apply custom width if it exists, otherwise use default width
+      width: columnWidths[column.id] || column.width,
+    }));
 
     // Add visible custom columns
     const visibleCustomColumns =
@@ -328,10 +348,11 @@ const TaskListV2Section: React.FC = () => {
             };
           }
 
+          const columnId = column.key || column.id || 'unknown';
           return {
-            id: column.key || column.id || 'unknown',
+            id: columnId,
             label: column.name || t('customColumns.customColumnHeader'),
-            width: `${(column as any).width || defaultWidth}px`,
+            width: columnWidths[columnId] || `${(column as any).width || defaultWidth}px`,
             key: column.key || column.id || 'unknown',
             custom_column: true,
             custom_column_obj: transformedColumnObj,
@@ -342,7 +363,16 @@ const TaskListV2Section: React.FC = () => {
         }) || [];
 
     return [...baseVisibleColumns, ...visibleCustomColumns];
-  }, [fields, columns, customColumns, t]);
+  }, [fields, columns, customColumns, t, columnWidths]);
+
+  // Create CSS style object with column width variables for instant resizing
+  const containerStyle = useMemo(() => {
+    const style: any = {};
+    visibleColumns.forEach(col => {
+      style[`--col-width-${col.id}`] = col.width;
+    });
+    return style;
+  }, [visibleColumns]);
 
   // Effects
   useEffect(() => {
@@ -656,19 +686,17 @@ const TaskListV2Section: React.FC = () => {
           style={{ minWidth: 'max-content', height: '44px' }}
         >
           {visibleColumns.map((column, index) => {
-            // Calculate left position for sticky columns
-            let leftPosition = 0;
+            // Calculate left position for sticky columns - must account for ALL previous columns
+            let leftPosition = 4; // Account for px-1 (4px) padding on container
             if (column.isSticky) {
               for (let i = 0; i < index; i++) {
                 const prevColumn = visibleColumns[i];
-                if (prevColumn.isSticky) {
-                  leftPosition += parseInt(prevColumn.width.replace('px', ''));
-                }
+                leftPosition += parseInt(prevColumn.width.replace('px', ''));
               }
             }
 
             const columnStyle: ColumnStyle = {
-              width: column.width,
+              width: `var(--col-width-${column.id})`,
               flexShrink: 0,
               ...((column as any).minWidth && { minWidth: (column as any).minWidth }),
               ...((column as any).maxWidth && { maxWidth: (column as any).maxWidth }),
@@ -683,6 +711,7 @@ const TaskListV2Section: React.FC = () => {
             return (
               <div
                 key={column.id}
+                data-column-id={column.id}
                 className={`text-sm font-semibold text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 ${
                   column.id === 'dragHandle'
                     ? 'flex items-center justify-center'
@@ -700,7 +729,7 @@ const TaskListV2Section: React.FC = () => {
                                 ? 'flex items-center px-2'
                                 : 'flex items-center justify-center px-2'
                 }`}
-                style={columnStyle}
+                style={{ ...columnStyle, position: 'relative', overflow: 'hidden' }}
               >
                 {column.id === 'dragHandle' || column.id === 'checkbox' ? (
                   <span></span>
@@ -710,7 +739,89 @@ const TaskListV2Section: React.FC = () => {
                     onSettingsClick={handleCustomColumnSettings}
                   />
                 ) : (
-                  t(column.label || '')
+                  <span
+                    style={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      paddingRight: '4px',
+                      flex: 1,
+                    }}
+                  >
+                    {t(column.label || '')}
+                  </span>
+                )}
+
+                {/* Column Resize Handle */}
+                {column.id !== 'dragHandle' && column.id !== 'checkbox' && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: 0,
+                      width: 20,
+                      height: '100%',
+                      cursor: 'col-resize',
+                      zIndex: 100,
+                      backgroundColor: 'transparent',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.backgroundColor = 'rgba(24, 144, 255, 0.2)';
+                      e.currentTarget.style.borderLeft = '3px solid #1890ff';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.borderLeft = 'none';
+                    }}
+                    onMouseDown={e => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const startX = e.clientX;
+                      const startWidth = parseInt(column.width.replace('px', ''));
+                      const columnId = column.id;
+
+                      // Get min/max widths from column config or use defaults
+                      const minWidth = (column as any).minWidth
+                        ? parseInt((column as any).minWidth.replace('px', ''))
+                        : 200;
+                      const maxWidth = (column as any).maxWidth
+                        ? parseInt((column as any).maxWidth.replace('px', ''))
+                        : 1200;
+
+                      const handleMouseMove = (moveEvent: MouseEvent) => {
+                        const diff = moveEvent.clientX - startX;
+                        const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + diff));
+
+                        // Update CSS variable once - all elements update together
+                        document.documentElement.style.setProperty(
+                          `--col-width-${columnId}`,
+                          `${newWidth}px`
+                        );
+                      };
+
+                      const handleMouseUp = (upEvent: MouseEvent) => {
+                        document.removeEventListener('mousemove', handleMouseMove);
+                        document.removeEventListener('mouseup', handleMouseUp);
+                        document.body.style.cursor = '';
+                        document.body.style.userSelect = '';
+
+                        // Calculate final width and update state to persist
+                        const diff = upEvent.clientX - startX;
+                        const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + diff));
+                        setColumnWidths(prev => ({
+                          ...prev,
+                          [columnId]: `${newWidth}px`,
+                        }));
+                      };
+
+                      document.body.style.cursor = 'col-resize';
+                      document.body.style.userSelect = 'none';
+                      document.addEventListener('mousemove', handleMouseMove);
+                      document.addEventListener('mouseup', handleMouseUp);
+                    }}
+                    onClick={e => e.stopPropagation()}
+                    title={`Resize ${t(column.label || '')}`}
+                  />
                 )}
               </div>
             );
@@ -861,7 +972,11 @@ const TaskListV2Section: React.FC = () => {
         onDragEnd={handleDragEnd}
         modifiers={[restrictToVerticalAxis]}
       >
-        <div className="flex flex-col bg-white dark:bg-gray-900 h-full overflow-hidden">
+        <div
+          id="task-list-container"
+          className="flex flex-col bg-white dark:bg-gray-900 h-full overflow-hidden"
+          style={containerStyle}
+        >
           {/* Table Container */}
           <div
             className="border border-gray-200 dark:border-gray-700 rounded-lg"
@@ -1015,7 +1130,14 @@ const TaskListV2Section: React.FC = () => {
           {createPortal(<ConvertToSubtaskDrawer />, document.body, 'convert-to-subtask-drawer')}
 
           {/* Duplicate Task Modal */}
-          {createPortal(<DuplicateTaskModal open={isOpenDuplicateTaskModal} onClose={() => dispatch(setDuplicateTaskModalStatus(false))}/>, document.body, 'duplicate-task-modal')}
+          {createPortal(
+            <DuplicateTaskModal
+              open={isOpenDuplicateTaskModal}
+              onClose={() => dispatch(setDuplicateTaskModalStatus(false))}
+            />,
+            document.body,
+            'duplicate-task-modal'
+          )}
         </div>
       </DndContext>
     </>

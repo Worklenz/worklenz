@@ -1,4 +1,5 @@
 import React, { memo, useState, useCallback, useRef, useEffect } from 'react';
+import { createSelector } from '@reduxjs/toolkit';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
@@ -29,6 +30,18 @@ interface TaskRowWithSubtasksProps {
   depth?: number; // Add depth prop to track nesting level
   maxDepth?: number; // Add maxDepth prop to limit nesting
 }
+
+// Memoized selector to prevent unnecessary rerenders
+const selectActiveFilters = createSelector(
+  (state: any) => state.taskReducer?.taskAssignees,
+  (state: any) => state.taskReducer?.labels,
+  (state: any) => state.taskReducer?.priorities,
+  (taskAssignees, labels, priorities) => ({
+    members: taskAssignees?.filter((m: any) => m.selected).map((m: any) => m.id) || [],
+    labels: labels?.filter((l: any) => l.selected).map((l: any) => l.id) || [],
+    priorities: priorities || [],
+  })
+);
 
 interface AddSubtaskRowProps {
   parentTaskId: string;
@@ -279,16 +292,12 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
     const isLoadingSubtasks = useAppSelector(state => selectSubtaskLoading(state, taskId));
     const dispatch = useAppDispatch();
 
-    // Get active filters from Redux (tasks.slice - used by improved-task-filters)
-    const activeFilters = useAppSelector(state => ({
-      members: state.taskReducer?.taskAssignees?.filter((m: any) => m.selected).map((m: any) => m.id) || [],
-      labels: state.taskReducer?.labels?.filter((l: any) => l.selected).map((l: any) => l.id) || [],
-      priorities: state.taskReducer?.priorities || []
-    }));
+    // Get active filters from Redux using memoized selector
+    const activeFilters = useAppSelector(selectActiveFilters);
 
     // Get all priorities to create ID-to-name mapping
     const allPriorities = useAppSelector(state => state.priorityReducer?.priorities || []);
-    
+
     // Create priority ID to name mapping
     const priorityIdToName = React.useMemo(() => {
       const map: Record<string, string> = {};
@@ -318,9 +327,9 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
       if (!task.sub_tasks || task.sub_tasks.length === 0) return [];
 
       // If no filters are active, show all subtasks
-      const hasActiveFilters = 
-        activeFilters.members.length > 0 || 
-        activeFilters.labels.length > 0 || 
+      const hasActiveFilters =
+        activeFilters.members.length > 0 ||
+        activeFilters.labels.length > 0 ||
         activeFilters.priorities.length > 0;
 
       if (!hasActiveFilters) {
@@ -333,7 +342,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
         if (activeFilters.members.length > 0) {
           const hasMatchingMember = subtask.assignees?.some((a: any) => {
             // Assignees can be either strings (IDs) or objects with team_member_id/id
-            const assigneeId = typeof a === 'string' ? a : (a.team_member_id || a.id);
+            const assigneeId = typeof a === 'string' ? a : a.team_member_id || a.id;
             return activeFilters.members.includes(assigneeId);
           });
           if (!hasMatchingMember) return false;
@@ -341,7 +350,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
 
         // Check label filter
         if (activeFilters.labels.length > 0) {
-          const hasMatchingLabel = subtask.labels?.some((l: any) => 
+          const hasMatchingLabel = subtask.labels?.some((l: any) =>
             activeFilters.labels.includes(l.id)
           );
           if (!hasMatchingLabel) return false;
@@ -354,7 +363,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
           const filterPriorityNames = activeFilters.priorities
             .map(id => priorityIdToName[id])
             .filter(Boolean);
-          
+
           if (!filterPriorityNames.includes(subtask.priority)) {
             return false;
           }

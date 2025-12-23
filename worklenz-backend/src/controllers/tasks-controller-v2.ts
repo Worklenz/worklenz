@@ -172,41 +172,40 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     const searchField = options.search
       ? [
-        "t.name",
-        "CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no)",
-      ]
+          "t.name",
+          "CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no)",
+        ]
       : defaultSortColumn;
-    const { searchQuery, sortField, sortOrder } = TasksControllerV2.toPaginationOptions(
-      options,
-      searchField
-    );
+    const { searchQuery, sortField, sortOrder } =
+      TasksControllerV2.toPaginationOptions(options, searchField);
 
     const isSubTasks = !!options.parent_task;
 
     // Map frontend field names to backend column names
     const fieldMapping: Record<string, string> = {
-      'name': 't.name',
-      'status': 't.status_id',
-      'priority': 't.priority_id',
-      'start_date': 't.start_date',
-      'end_date': 't.end_date',
-      'completed_at': 't.completed_at',
-      'created_at': 't.created_at',
-      'updated_at': 't.updated_at',
+      name: "t.name",
+      status: "t.status_id",
+      priority: "t.priority_id",
+      start_date: "t.start_date",
+      end_date: "t.end_date",
+      completed_at: "t.completed_at",
+      created_at: "t.created_at",
+      updated_at: "t.updated_at",
     };
 
     // Apply field mapping if needed
     let mappedSortField = sortField;
-    if (typeof sortField === 'string' && sortField !== defaultSortColumn) {
+    if (typeof sortField === "string" && sortField !== defaultSortColumn) {
       if (fieldMapping[sortField]) {
         mappedSortField = fieldMapping[sortField];
       }
     }
 
     // Construct final sort clause
-    const sortFields = mappedSortField && sortOrder 
-      ? `${mappedSortField} ${sortOrder.toUpperCase()}`
-      : defaultSortColumn;
+    const sortFields =
+      mappedSortField && sortOrder
+        ? `${mappedSortField} ${sortOrder.toUpperCase()}`
+        : defaultSortColumn;
 
     // Enhanced search query that includes subtasks
     // If a subtask matches the search, show the parent task too
@@ -321,7 +320,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     // Apply status filter to subtasks if present
     if (statusesFilter) {
-      subtaskFilters.push(statusesFilter.replace(/\bt\./g, 'subtask.'));
+      subtaskFilters.push(statusesFilter.replace(/\bt\./g, "subtask."));
     }
 
     // Apply priority filter to subtasks if present
@@ -333,13 +332,17 @@ export default class TasksControllerV2 extends TasksControllerBase {
     // Apply labels filter to subtasks if present
     if (options.labels) {
       const labelIds = this.flatString(options.labels as string);
-      subtaskFilters.push(`subtask.id IN (SELECT task_id FROM task_labels WHERE label_id IN (${labelIds}))`);
+      subtaskFilters.push(
+        `subtask.id IN (SELECT task_id FROM task_labels WHERE label_id IN (${labelIds}))`
+      );
     }
 
     // Apply members filter to subtasks if present
     if (options.members) {
       const memberIds = this.flatString(options.members as string);
-      subtaskFilters.push(`subtask.id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${memberIds}))`);
+      subtaskFilters.push(
+        `subtask.id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${memberIds}))`
+      );
     }
 
     // Apply search filter to subtasks if present
@@ -353,9 +356,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
       }
     }
 
-    const subtaskFilterClause = subtaskFilters.length > 0
-      ? `AND ${subtaskFilters.join(' AND ')}`
-      : '';
+    const subtaskFilterClause =
+      subtaskFilters.length > 0 ? `AND ${subtaskFilters.join(" AND ")}` : "";
 
     return `
       SELECT id,
@@ -855,11 +857,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
       groupType === "phase"
         ? [req.body.id, req.body.to_group_id]
         : [
-          req.body.id,
-          req.body.project_id,
-          req.body.parent_task_id,
-          req.body.to_group_id,
-        ];
+            req.body.id,
+            req.body.project_id,
+            req.body.parent_task_id,
+            req.body.to_group_id,
+          ];
     await db.query(q, params);
 
     // Reset the parent task's manual progress when converting a task to a subtask
@@ -1412,7 +1414,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
         all_labels: task.all_labels || [],
         dueDate: task.end_date || task.END_DATE,
         startDate: task.start_date,
-        completedAt: task.completed_at || undefined,
         completed_at: task.completed_at || undefined,
         timeTracking: {
           estimated: convertToHours(task.total_minutes, false), // total_minutes is in minutes
@@ -1462,9 +1463,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
         groupBy === GroupBy.STATUS
           ? group.name.toLowerCase().replace(/\s+/g, "_")
           : groupBy === GroupBy.PRIORITY
-            ? priorityMap[(group as any).value?.toString()] ||
+          ? priorityMap[(group as any).value?.toString()] ||
             group.name.toLowerCase()
-            : group.name.toLowerCase().replace(/\s+/g, "_");
+          : group.name.toLowerCase().replace(/\s+/g, "_");
 
       groupedResponse[groupKey] = {
         id: group.id,
@@ -1621,9 +1622,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
           groupBy === GroupBy.STATUS
             ? group.name.toLowerCase().replace(/\s+/g, "_")
             : groupBy === GroupBy.PRIORITY
-              ? priorityMap[(group as any).value?.toString()] ||
+            ? priorityMap[(group as any).value?.toString()] ||
               group.name.toLowerCase()
-              : group.name.toLowerCase().replace(/\s+/g, "_");
+            : group.name.toLowerCase().replace(/\s+/g, "_");
 
         return groupedResponse[groupKey];
       })
@@ -1793,10 +1794,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
           completionPercentage:
             stats.total_tasks > 0
               ? Math.round(
-                (parseInt(stats.completed_tasks) /
-                  parseInt(stats.total_tasks)) *
-                100
-              )
+                  (parseInt(stats.completed_tasks) /
+                    parseInt(stats.total_tasks)) *
+                    100
+                )
               : 0,
         })
       );

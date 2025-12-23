@@ -92,6 +92,8 @@ import CustomColumnModal from './custom-columns/custom-column-modal/custom-colum
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { DragEndEvent } from '@/types/task-management.types';
+import { useColumnResize } from '@/hooks/useColumnResize';
+import '../../../project-view-1/taskList/taskListTable/column-resize.css';
 
 interface TaskListTableProps {
   taskList: IProjectTask[] | null;
@@ -1322,6 +1324,25 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
   const { project } = useAppSelector(state => state.projectReducer);
   const { selectedTaskIdsList, selectedTasks } = useAppSelector(state => state.bulkActionReducer);
 
+  // Initialize column widths from columnList
+  const initialWidths = useMemo(() => {
+    const widths: Record<string, number> = { selector: 56, customColumn: 150 };
+    columnList.forEach(col => {
+      if (col.key) {
+        widths[col.key] = col.key === 'TASK' ? 474 : 150;
+      }
+    });
+    return widths;
+  }, [columnList]);
+
+  // Column resize functionality
+  const { columnWidths, handleResizeStart } = useColumnResize({
+    initialWidths,
+    minWidth: 50,
+    maxWidth: 800,
+    storageKey: `worklenz.taskList.columnWidths.${project?.id || 'default'}`,
+  });
+
   // Function to update custom column values
   const updateTaskCustomColumnValue = (taskId: string, columnKey: string, value: string) => {
     try {
@@ -1495,13 +1516,18 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
       }
     })();
 
-    const widthStyles = key === 'TASK' ? 'w-[474px]' : '';
     const heightStyles = isHeader ? 'after:h-[42px]' : 'after:min-h-[40px]';
     const themeStyles = isDarkMode
       ? `bg-${isHeader ? '[#1d1d1d]' : '[#141414]'} border-[#303030]`
       : `bg-${isHeader ? '[#fafafa]' : 'white'}`;
 
-    return `${baseStyles} ${stickyStyles} ${heightStyles} ${themeStyles} ${widthStyles}`;
+    return `${baseStyles} ${stickyStyles} ${heightStyles} ${themeStyles}`;
+  };
+
+  // Helper to get column width
+  const getColumnWidth = (key: string | undefined) => {
+    if (!key) return undefined;
+    return columnWidths[key] || initialWidths[key] || 150;
   };
 
   const renderColumnContent = (
@@ -1600,6 +1626,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                 key={column.key}
                 className={getColumnStyles(column.key, false)}
                 style={{
+                  width: getColumnWidth(column.key),
                   backgroundColor: getRowBackgroundColor(task.id),
                   minWidth: column.custom_column ? '120px' : undefined,
                 }}
@@ -1731,6 +1758,8 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
 
   return (
     <div className={`border-x border-b ${customBorderColor}`}>
+      {/* DEBUG: Verify component is rendering */}
+      {console.log('🔴 TaskListTable RENDERING with', visibleColumns.length, 'visible columns')}
       <DndContext
         sensors={sensors}
         onDragStart={handleDragStart}
@@ -1759,34 +1788,96 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                       <Checkbox checked={isSelectAll} onChange={toggleSelectAll} />
                     </Flex>
                   </th>
+                  {console.log(
+                    '🔵 RENDERING COLUMNS:',
+                    visibleColumns.length,
+                    'columns',
+                    visibleColumns.map(c => c.key)
+                  )}
                   {visibleColumns.map(column => (
                     <th
                       key={column.key}
-                      className={getColumnStyles(column.key, true)}
-                      style={{ fontWeight: 500 }}
+                      className={`${getColumnStyles(column.key, true)} group`}
+                      style={{
+                        width: getColumnWidth(column.key),
+                        fontWeight: 500,
+                        overflow: 'visible',
+                        position: 'relative',
+                        border: '3px solid lime', // DEBUG: Make headers super visible
+                      }}
                     >
-                      <Flex align="center" gap={4}>
-                        {column.key === 'PHASE' && (
-                          <Flex
-                            align="center"
-                            gap={4}
-                            justify="space-between"
-                            className="w-full min-w-[120px]"
-                          >
-                            {project?.phase_label}
-                            <ConfigPhaseButton />
-                          </Flex>
-                        )}
-                        {column.key !== 'PHASE' &&
-                          (column.custom_column && column.pinned ? (
-                            <CustomColumnHeader
-                              column={column}
-                              onSettingsClick={() => handleCustomColumnSettings(column.id || '')}
-                            />
-                          ) : (
-                            t(`${column.key?.replace('_', '').toLowerCase()}Column`)
-                          ))}
-                      </Flex>
+                      <div
+                        style={{
+                          position: 'relative',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        <span>
+                          {column.key === 'PHASE' && (
+                            <Flex
+                              align="center"
+                              gap={4}
+                              justify="space-between"
+                              className="w-full min-w-[120px]"
+                            >
+                              {project?.phase_label}
+                              <ConfigPhaseButton />
+                            </Flex>
+                          )}
+                          {column.key !== 'PHASE' &&
+                            (column.custom_column && column.pinned ? (
+                              <CustomColumnHeader
+                                column={column}
+                                onSettingsClick={() => handleCustomColumnSettings(column.id || '')}
+                              />
+                            ) : (
+                              t(`${column.key?.replace('_', '').toLowerCase()}Column`)
+                            ))}
+                        </span>
+
+                        {/* Column Resize Handle */}
+                        <div
+                          ref={el => {
+                            if (el)
+                              console.log(
+                                '🟣 HANDLE DIV CREATED for',
+                                column.key,
+                                'position:',
+                                el.getBoundingClientRect()
+                              );
+                          }}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            right: 0,
+                            width: 20,
+                            height: '100%',
+                            cursor: 'col-resize',
+                            zIndex: 9999,
+                            backgroundColor: 'rgba(255, 0, 0, 0.8)',
+                            borderLeft: '5px solid red',
+                            border: '5px solid yellow',
+                          }}
+                          onMouseEnter={e => {
+                            console.log('🟢 HOVER on', column.key);
+                            e.currentTarget.style.backgroundColor = 'rgba(24, 144, 255, 0.5)';
+                            e.currentTarget.style.borderLeftColor = '#1890ff';
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+                            e.currentTarget.style.borderLeftColor = 'red';
+                          }}
+                          onMouseDown={e => {
+                            console.log('🎯 CLICKED:', column.key);
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleResizeStart(e, column.key || '');
+                          }}
+                          title={`Drag to resize`}
+                        />
+                      </div>
                     </th>
                   ))}
                   <th className={getColumnStyles('customColumn', true)}>

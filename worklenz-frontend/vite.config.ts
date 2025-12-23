@@ -42,9 +42,9 @@ export default defineConfig(({ command, mode }) => {
               '<head>',
               `<head>\n  <script>window.buildTimestamp = '${buildTimestamp}';</script>`
             );
-          }
-        }
-      }
+          },
+        },
+      },
     ],
 
     // **Resolve**
@@ -63,7 +63,6 @@ export default defineConfig(({ command, mode }) => {
         { find: '@shared', replacement: path.resolve(__dirname, './src/shared') },
         { find: '@layouts', replacement: path.resolve(__dirname, './src/layouts') },
         { find: '@services', replacement: path.resolve(__dirname, './src/services') },
-
       ],
       // **Ensure single React instance**
       dedupe: ['react', 'react-dom'],
@@ -77,9 +76,7 @@ export default defineConfig(({ command, mode }) => {
       },
       // Allow-list specific dev hosts (e.g., ngrok) to prevent blocked host errors
       // Add any local tunneling hosts used for development here.
-      allowedHosts: [
-        '4d51ac803dbd.ngrok-free.app'
-      ],
+      allowedHosts: ['4d51ac803dbd.ngrok-free.app'],
     },
 
     // **Build**

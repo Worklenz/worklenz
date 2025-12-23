@@ -2,7 +2,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { columnList } from './columns/columnList';
 import AddTaskListRow from './taskListTableRows/AddTaskListRow';
 import { Checkbox, Flex, Tag, Tooltip } from '@/shared/antd-imports';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useSelectedProject } from '@/hooks/useSelectedProject';
 import TaskCell from './taskListTableCells/TaskCell';
 import AddSubTaskListRow from './taskListTableRows/AddSubTaskListRow';
@@ -13,6 +13,9 @@ import { deselectAll } from '@features/projects/bulkActions/bulkActionSlice';
 import { useTranslation } from 'react-i18next';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { HolderOutlined } from '@/shared/antd-imports';
+import { useColumnResize } from '@/hooks/useColumnResize';
+import { updateColumnWidth } from '@features/projects/singleProject/taskListColumns/taskColumnsSlice';
+import './column-resize.css';
 
 const TaskListTable = ({
   taskList,
@@ -56,6 +59,34 @@ const TaskListTable = ({
   const visibleColumns = columnList.filter(
     column => columnsVisibility[column.key as keyof typeof columnsVisibility]
   );
+
+  // Initialize column widths from columnList
+  const initialWidths = useMemo(
+    () =>
+      columnList.reduce(
+        (acc, col) => ({ ...acc, [col.key]: col.width }),
+        {} as Record<string, number>
+      ),
+    []
+  );
+
+  // Column resize functionality
+  const { columnWidths, handleResizeStart } = useColumnResize({
+    initialWidths,
+    minWidth: 50,
+    maxWidth: 800,
+    storageKey: `worklenz.taskList.columnWidths.${selectedProject?.id || 'default'}`,
+  });
+
+  // Sync column widths with Redux when they change
+  useEffect(() => {
+    Object.entries(columnWidths).forEach(([key, width]) => {
+      const column = columnList.find(col => col.key === key);
+      if (column && column.width !== width) {
+        dispatch(updateColumnWidth({ key, width }));
+      }
+    });
+  }, [columnWidths, dispatch]);
 
   // toggle subtasks visibility
   const toggleTaskExpansion = (taskId: string) => {
@@ -266,12 +297,45 @@ const TaskListTable = ({
               {visibleColumns.map(column => (
                 <th
                   key={column.key}
-                  className={`${customHeaderColumnStyles(column.key)}`}
-                  style={{ width: column.width, fontWeight: 500 }}
+                  className={`${customHeaderColumnStyles(column.key)} relative group`}
+                  style={{
+                    width: columnWidths[column.key] || column.width,
+                    fontWeight: 500,
+                    overflow: 'visible',
+                    position: 'relative',
+                  }}
                 >
                   {column.key === 'phases'
                     ? column.columnHeader
                     : t(`${column.columnHeader}Column`)}
+
+                  {/* Column Resize Handle */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: 0,
+                      width: 20,
+                      height: '100%',
+                      cursor: 'col-resize',
+                      zIndex: 100,
+                      backgroundColor: 'transparent',
+                      borderLeft: '3px solid transparent',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderLeftColor = '#1890ff';
+                      e.currentTarget.style.backgroundColor = 'rgba(24, 144, 255, 0.2)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderLeftColor = 'transparent';
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                    onMouseDown={e => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleResizeStart(e, column.key);
+                    }}
+                  />
                 </th>
               ))}
             </tr>
@@ -317,7 +381,7 @@ const TaskListTable = ({
                       key={column.key}
                       className={customBodyColumnStyles(column.key)}
                       style={{
-                        width: column.width,
+                        width: columnWidths[column.key] || column.width,
                         backgroundColor: selectedRows.includes(task.id || '')
                           ? themeMode === 'dark'
                             ? '#000'
@@ -377,7 +441,7 @@ const TaskListTable = ({
                           key={column.key}
                           className={customBodyColumnStyles(column.key)}
                           style={{
-                            width: column.width,
+                            width: columnWidths[column.key] || column.width,
                             backgroundColor: selectedRows.includes(subtask.id || '')
                               ? themeMode === 'dark'
                                 ? '#000'
