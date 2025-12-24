@@ -22,7 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { colors } from '@/styles/colors';
 import CustomColorsCategoryTag from '@features/settings/categories/CustomColorsCategoryTag';
 import CategoriesDrawer from './categories-drawer';
-import { deleteCategoryAsync } from '@features/settings/categories/categoriesSlice';
+import { deleteProjectCategory } from '@features/projects/lookups/projectCategories/projectCategoriesSlice';
 import { categoriesApiService } from '@/api/settings/categories/categories.api.service';
 import { IProjectCategory, IProjectCategoryViewModel } from '@/types/project/projectCategory.types';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
@@ -41,8 +41,8 @@ const CategoriesSettings = () => {
 
   const dispatch = useAppDispatch();
 
-  // Get delete loading state from Redux
-  const deleteLoading = useAppSelector(state => state.categoriesReducer.loading);
+  // Get delete loading state from Redux (using projectCategoriesReducer which is used by project drawer)
+  const deleteLoading = useAppSelector(state => state.projectCategoriesReducer.loading);
 
   const [categories, setCategories] = useState<IProjectCategoryViewModel[]>([]);
   const [loading, setLoading] = useState(false);
@@ -96,11 +96,11 @@ const CategoriesSettings = () => {
   // Handle delete category
   const handleDeleteCategory = async (categoryId: string) => {
     try {
-      const result = await dispatch(deleteCategoryAsync(categoryId));
-      if (deleteCategoryAsync.fulfilled.match(result)) {
+      const result = await dispatch(deleteProjectCategory(categoryId));
+      if (deleteProjectCategory.fulfilled.match(result)) {
         getCategories();
         message.success(t('deleteSuccessMessage'));
-      } else if (deleteCategoryAsync.rejected.match(result)) {
+      } else if (deleteProjectCategory.rejected.match(result)) {
         // Show error message from the API
         const errorMessage = result.payload as string;
         message.error(errorMessage || t('deleteErrorMessage'));
