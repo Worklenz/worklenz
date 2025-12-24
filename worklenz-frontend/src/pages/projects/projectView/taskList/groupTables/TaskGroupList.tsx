@@ -216,7 +216,7 @@ const TaskGroupList = ({ taskGroups, groupBy }: TaskGroupListProps) => {
           {groups.map(group => (
             <div key={group.id}>
               <Flex vertical>
-                <Flex style={{ transform: 'translateY(6px)' }}>
+                <Flex style={{ marginTop: '6px' }}>
                   <Button
                     className="custom-collapse-button"
                     style={{

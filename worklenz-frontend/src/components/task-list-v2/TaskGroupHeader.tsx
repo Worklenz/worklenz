@@ -228,22 +228,22 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
       if (currentGrouping === 'status') {
         // Extract status ID from group ID (format: "status-{statusId}")
         const statusId = group.id.replace('status-', '');
-        
+
         // Look up the full status object to get category_id (required by backend validator)
         const currentStatus = statusList.find(s => s.id === statusId);
-        
+
         if (!currentStatus || !currentStatus.category_id) {
-          logger.error('Cannot rename status: missing category_id', { 
-            statusId, 
+          logger.error('Cannot rename status: missing category_id', {
+            statusId,
             projectId,
             hasStatus: !!currentStatus,
-            hasCategoryId: !!currentStatus?.category_id
+            hasCategoryId: !!currentStatus?.category_id,
           });
           setIsEditingName(false);
           setEditingName(group.name);
           return;
         }
-        
+
         const body: ITaskStatusUpdateModel = {
           name: editingName.trim(),
           project_id: projectId,
@@ -407,6 +407,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
           backgroundColor: headerBackgroundColor,
           color: headerTextColor,
           position: 'sticky',
+          left: 0,
           top: 0,
           zIndex: 25, // Higher than task rows but lower than column headers (z-30)
           height: '36px',
