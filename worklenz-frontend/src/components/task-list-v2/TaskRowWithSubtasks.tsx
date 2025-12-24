@@ -328,7 +328,20 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
       }
 
       // Filter subtasks based on active filters
+      // A subtask should be shown if:
+      // 1. It directly matches the filter, OR
+      // 2. It has descendants (sub_tasks_count > 0) that might match the filter
+      //    (the backend already calculated this count considering the filters)
       return task.sub_tasks.filter((subtask: Task) => {
+        // If subtask has descendants with matching filters, always show it
+        // The backend's sub_tasks_count already accounts for filtered descendants
+        if (subtask.sub_tasks_count && subtask.sub_tasks_count > 0) {
+          return true;
+        }
+
+        // Check if subtask directly matches the filters
+        let matchesFilters = true;
+
         // Check member filter
         if (activeFilters.members.length > 0) {
           const hasMatchingMember = subtask.assignees?.some((a: any) => {
@@ -336,19 +349,19 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
             const assigneeId = typeof a === 'string' ? a : (a.team_member_id || a.id);
             return activeFilters.members.includes(assigneeId);
           });
-          if (!hasMatchingMember) return false;
+          if (!hasMatchingMember) matchesFilters = false;
         }
 
         // Check label filter
-        if (activeFilters.labels.length > 0) {
+        if (matchesFilters && activeFilters.labels.length > 0) {
           const hasMatchingLabel = subtask.labels?.some((l: any) => 
             activeFilters.labels.includes(l.id)
           );
-          if (!hasMatchingLabel) return false;
+          if (!hasMatchingLabel) matchesFilters = false;
         }
 
         // Check priority filter
-        if (activeFilters.priorities.length > 0) {
+        if (matchesFilters && activeFilters.priorities.length > 0) {
           // Subtask has priority name (low/medium/high), but filter has priority IDs
           // Convert filter IDs to names and check if subtask priority matches
           const filterPriorityNames = activeFilters.priorities
@@ -356,11 +369,11 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
             .filter(Boolean);
           
           if (!filterPriorityNames.includes(subtask.priority)) {
-            return false;
+            matchesFilters = false;
           }
         }
 
-        return true;
+        return matchesFilters;
       });
     }, [task.sub_tasks, activeFilters, priorityIdToName]);
 
