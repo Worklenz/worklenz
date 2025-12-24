@@ -1,6 +1,6 @@
 {
   "name": "worklenz",
-  "version": "1.0.0",
+  "version": "2.2.3",
   "private": true,
   "scripts": {
     "start": "vite dev",

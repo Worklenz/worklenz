@@ -11,8 +11,8 @@ import { useAppSelector } from '../../../../../hooks/useAppSelector';
 import { themeWiseColor } from '../../../../../utils/themeWiseColor';
 import CustomAvatar from '../../../../../components/CustomAvatar';
 import {
-  useGetMessagesQuery,
-  useSendMessageMutation,
+  useGetOrganizationMessagesQuery,
+  useSendOrganizationMessageMutation,
   ClientPortalMessage,
 } from '../../../../../api/client-portal/client-portal-api';
 
@@ -29,17 +29,65 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const dispatch = useAppDispatch();
 
-  const { data: messages, isLoading, error, refetch } = useGetMessagesQuery(openedChat.id);
-  const [sendMessageMutation, { isLoading: isSending }] = useSendMessageMutation();
+  // Get clientId from chat object or extract from chatId
+  const clientId = React.useMemo(() => {
+    if (openedChat.clientId) {
+      return openedChat.clientId;
+    }
+    // Fallback: Extract clientId from chatId (format: clientId-date)
+    if (!openedChat.id || !openedChat.id.includes('-')) return null;
+    const parts = openedChat.id.split('-');
+    if (parts.length >= 4) {
+      const dateParts = parts.slice(-3);
+      const dateStrTest = dateParts.join('-');
+      // Validate date format (YYYY-MM-DD)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStrTest)) {
+        return parts.slice(0, -3).join('-');
+      }
+    }
+    return null;
+  }, [openedChat.id, openedChat.clientId]);
+
+  const { data: messagesData, isLoading, error, refetch } = useGetOrganizationMessagesQuery(
+    { chatId: openedChat.id, clientId: clientId || '' },
+    { skip: !clientId }
+  );
+  const [sendMessageMutation, { isLoading: isSending }] = useSendOrganizationMessageMutation();
+
+  // Extract messages from response
+  const messages = React.useMemo(() => {
+    if (messagesData) {
+      // Handle different response formats
+      if (Array.isArray(messagesData)) {
+        return messagesData;
+      }
+      // getChatDetails returns { date, messages, total, page, limit }
+      if (messagesData.messages && Array.isArray(messagesData.messages)) {
+        return messagesData.messages;
+      }
+      // Some APIs wrap in body
+      if (messagesData.body) {
+        if (Array.isArray(messagesData.body)) {
+          return messagesData.body;
+        }
+        if (messagesData.body.messages && Array.isArray(messagesData.body.messages)) {
+          return messagesData.body.messages;
+        }
+      }
+    }
+    return [];
+  }, [messagesData]);
 
   const chatData = React.useMemo(() => {
     try {
-      if (messages && Array.isArray(messages)) {
-        return messages.map((msg: ClientPortalMessage) => ({
+      if (messages && Array.isArray(messages) && messages.length > 0) {
+        // Get current user ID from store or context
+        const currentUserId = (window as any).__WORKLENZ_USER__?.id;
+        return messages.map((msg: any) => ({
           id: msg.id || '',
-          content: msg.content || '',
+          content: msg.message || msg.content || '',
           time: new Date(msg.created_at || Date.now()),
-          is_me: msg.sender_id === 'current_user',
+          is_me: msg.senderType === 'team_member' || (currentUserId && msg.senderId === currentUserId),
         }));
       }
       return Array.isArray(openedChat.chats_data) ? openedChat.chats_data : [];
@@ -50,10 +98,11 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
   }, [messages, openedChat.chats_data]);
 
   const handleSendMessage = async () => {
-    if (message.trim()) {
+    if (message.trim() && clientId) {
       try {
         await sendMessageMutation({
           chatId: openedChat.id,
+          clientId: clientId,
           messageData: {
             content: message.trim(),
             attachments: [],

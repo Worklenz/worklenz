@@ -516,25 +516,14 @@ export default class TasksControllerV2 extends TasksControllerBase {
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
     const startTime = performance.now();
-    console.log(
-      `[PERFORMANCE] getList method called for project ${req.params.id} - THIS METHOD IS DEPRECATED, USE getTasksV3 INSTEAD`
-    );
 
     // PERFORMANCE OPTIMIZATION: Skip expensive progress calculation by default
     // Progress values are already calculated and stored in the database
     // Only refresh if explicitly requested via refresh_progress=true query parameter
     if (req.query.refresh_progress === "true" && req.params.id) {
-      console.log(
-        `[PERFORMANCE] Starting progress refresh for project ${req.params.id} (getList)`
-      );
       const progressStartTime = performance.now();
       await this.refreshProjectTaskProgressValues(req.params.id);
       const progressEndTime = performance.now();
-      console.log(
-        `[PERFORMANCE] Progress refresh completed in ${(
-          progressEndTime - progressStartTime
-        ).toFixed(2)}ms`
-      );
     }
 
     const isSubTasks = !!req.query.parent_task;
@@ -575,15 +564,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     const endTime = performance.now();
     const totalTime = endTime - startTime;
-    console.log(
-      `[PERFORMANCE] getList method completed in ${totalTime.toFixed(
-        2
-      )}ms for project ${req.params.id} with ${tasks.length} tasks`
-    );
 
     // Log warning if this deprecated method is taking too long
     if (totalTime > 1000) {
-      console.warn(
+      log_error(
         `[PERFORMANCE WARNING] DEPRECATED getList method taking ${totalTime.toFixed(
           2
         )}ms - Frontend should use getTasksV3 instead!`
@@ -656,25 +640,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
     const startTime = performance.now();
-    console.log(
-      `[PERFORMANCE] getTasksOnly method called for project ${req.params.id} - Consider using getTasksV3 for better performance`
-    );
 
-    // PERFORMANCE OPTIMIZATION: Skip expensive progress calculation by default
-    // Progress values are already calculated and stored in the database
-    // Only refresh if explicitly requested via refresh_progress=true query parameter
     if (req.query.refresh_progress === "true" && req.params.id) {
-      console.log(
-        `[PERFORMANCE] Starting progress refresh for project ${req.params.id} (getTasksOnly)`
-      );
-      const progressStartTime = performance.now();
       await this.refreshProjectTaskProgressValues(req.params.id);
-      const progressEndTime = performance.now();
-      console.log(
-        `[PERFORMANCE] Progress refresh completed in ${(
-          progressEndTime - progressStartTime
-        ).toFixed(2)}ms`
-      );
     }
 
     const isSubTasks = !!req.query.parent_task;
@@ -708,15 +676,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     const endTime = performance.now();
     const totalTime = endTime - startTime;
-    console.log(
-      `[PERFORMANCE] getTasksOnly method completed in ${totalTime.toFixed(
-        2
-      )}ms for project ${req.params.id} with ${data.length} tasks`
-    );
 
-    // Log warning if this method is taking too long
     if (totalTime > 1000) {
-      console.warn(
+      log_error(
         `[PERFORMANCE WARNING] getTasksOnly method taking ${totalTime.toFixed(
           2
         )}ms - Consider using getTasksV3 for better performance!`
@@ -780,9 +742,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
           "UPDATE tasks SET manual_progress = false WHERE id = $1",
           [parentTaskId]
         );
-        console.log(
-          `Reset manual progress for parent task ${parentTaskId} with ${subtaskCount} subtasks`
-        );
 
         // Get the project settings to determine which calculation method to use
         const projectResult = await db.query(
@@ -804,9 +763,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
           // Emit the updated progress value to all clients
           // Note: We don't have socket context here, so we can't directly emit
           // This will be picked up on the next client refresh
-          console.log(
-            `Recalculated progress for parent task ${parentTaskId}: ${progressRatio}%`
-          );
         }
       }
     } catch (error) {
@@ -1235,9 +1191,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
       `;
 
       await db.query(query);
-      console.log(
-        `Finished refreshing progress values for project ${projectId}`
-      );
     } catch (error) {
       log_error("Error refreshing project task progress values", error);
     }
@@ -1260,8 +1213,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
           progressValue,
           taskId,
         ]);
-
-        console.log(`Updated progress for task ${taskId} to ${progressValue}%`);
 
         // If this task has a parent, update the parent's progress as well
         const parentResult = await db.query(
@@ -1423,7 +1374,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
         custom_column_values: task.custom_column_values || {}, // Include custom column values
         createdAt: task.created_at || new Date().toISOString(),
         updatedAt: task.updated_at || new Date().toISOString(),
-        completedAt: task.completed_at || null,
         order: TasksControllerV2.getTaskSortOrder(task, groupBy),
         // Additional metadata for frontend
         originalStatusId: task.status,
@@ -1441,19 +1391,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
         reporter: task.reporter || null,
       };
     });
-
-    // Debug log to verify completedAt is being sent
-    const completedTasks = transformedTasks.filter((t) => t.completedAt);
-    if (completedTasks.length > 0) {
-      console.log(
-        "[DEBUG getTasksV3] Tasks with completedAt:",
-        completedTasks.map((t) => ({
-          id: t.id,
-          title: t.title,
-          completedAt: t.completedAt,
-        }))
-      );
-    }
 
     const groupedResponse: Record<string, any> = {};
 
@@ -1644,7 +1581,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     // Log warning if request is taking too long
     if (totalTime > 1000) {
-      console.warn(
+      log_error(
         `[PERFORMANCE WARNING] Slow request detected: ${totalTime.toFixed(
           2
         )}ms for project ${req.params.id} with ${transformedTasks.length} tasks`
@@ -1712,18 +1649,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
       const startTime = performance.now();
 
       if (req.params.id) {
-        console.log(
-          `[PERFORMANCE] Starting background progress refresh for project ${req.params.id}`
-        );
         await this.refreshProjectTaskProgressValues(req.params.id);
 
         const endTime = performance.now();
         const totalTime = endTime - startTime;
-        console.log(
-          `[PERFORMANCE] Background progress refresh completed in ${totalTime.toFixed(
-            2
-          )}ms for project ${req.params.id}`
-        );
 
         return res.status(200).send(
           new ServerResponse(true, {
@@ -1739,7 +1668,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         .status(400)
         .send(new ServerResponse(false, null, "Project ID is required"));
     } catch (error) {
-      console.error("Error refreshing task progress:", error);
+      log_error("Error refreshing task progress:", error);
       return res
         .status(500)
         .send(
@@ -1802,7 +1731,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         })
       );
     } catch (error) {
-      console.error("Error getting task progress status:", error);
+      log_error("Error getting task progress status:", error);
       return res
         .status(500)
         .send(

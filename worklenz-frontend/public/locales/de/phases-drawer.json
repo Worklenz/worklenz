@@ -20,5 +20,6 @@
   "cancel": "Abbrechen",
   "selectColor": "Farbe auswählen",
   "managePhases": "Phasen verwalten",
-  "close": "Schließen"
+  "close": "Schließen",
+  "apply": "Anwenden"
 }

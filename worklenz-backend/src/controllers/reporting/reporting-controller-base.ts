@@ -256,7 +256,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
                 END
               )) AS complete_ratio
       FROM tasks t
-      ${whereClause.replace("project_id", "t.project_id").replace("status_id", "t.status_id").replace("priority_id", "t.priority_id").replace("LOWER(name)", "LOWER(t.name)")}
+      ${whereClause.replace("project_id", "t.project_id").replace("status_id", "t.status_id").replace("priority_id", "t.priority_id").replace("LOWER(name) LIKE", "LOWER(t.name) LIKE")}
       ORDER BY ${sortColumn} ${sortDirection} ${nullsOrder}
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1};
     `;
@@ -493,7 +493,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
                                          COUNT(CASE WHEN is_doing(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS doing,
                                          COUNT(CASE WHEN is_todo(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS todo
                                   FROM tasks ta
-                                  WHERE project_id = p.id) rec) AS tasks_stat,
+                                  WHERE project_id = p.id AND ta.archived IS FALSE) rec) AS tasks_stat,
 
                            (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                             FROM (SELECT pu.content AS content,
@@ -615,7 +615,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
                                      COUNT(CASE WHEN is_doing(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS doing,
                                      COUNT(CASE WHEN is_todo(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS todo
                               FROM tasks ta
-                              WHERE project_id = p.id) rec) AS tasks_stat,
+                              WHERE project_id = p.id AND ta.archived IS FALSE) rec) AS tasks_stat,
                        (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                         FROM (SELECT pu.content AS content,
                                      (SELECT COALESCE(JSON_AGG(rec), '[]'::JSON)
@@ -755,7 +755,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
                                      COUNT(CASE WHEN is_doing(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS doing,
                                      COUNT(CASE WHEN is_todo(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS todo
                               FROM tasks ta
-                              WHERE project_id = p.id) rec) AS tasks_stat,
+                              WHERE project_id = p.id AND ta.archived IS FALSE) rec) AS tasks_stat,
                        (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                         FROM (SELECT pu.content AS content,
                                      (SELECT COALESCE(JSON_AGG(rec), '[]'::JSON)
