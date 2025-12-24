@@ -11,6 +11,7 @@ import ClientPortalController from "./client-portal-controller";
 import {uploadBase64, deleteObject} from "../shared/storage";
 import {sendClientPortalRequestCommentNotification} from "../shared/email-notifications";
 import {getClientPortalBaseUrl} from "../cron_jobs/helpers";
+import { IO } from "../shared/io";
 
 export default class ClientsController extends WorklenzControllerBase {
 
@@ -1192,29 +1193,244 @@ export default class ClientsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async getPortalChatById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // Parse chatId to extract clientId and date
+    // chatId format: clientId-date (e.g., "uuid-2025-01-30")
+    const chatId = req.params.id;
+    const clientId = req.query?.clientId as string | undefined;
+    
+    if (!chatId) {
+      return res.status(400).json(new ServerResponse(false, null, "Chat ID is required"));
+    }
+    
+    // Try to extract clientId and date from chatId if not provided in query
+    let extractedClientId = clientId;
+    let dateStr = chatId;
+    
+    if (!extractedClientId && chatId.includes('-')) {
+      // Parse format: clientId-date
+      const parts = chatId.split('-');
+      if (parts.length >= 4) {
+        // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        // Date format: YYYY-MM-DD
+        // So we need to find where the date starts (last 3 parts should be date)
+        const dateParts = parts.slice(-3);
+        const dateStrTest = dateParts.join('-');
+        // Validate date format (YYYY-MM-DD)
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStrTest)) {
+          extractedClientId = parts.slice(0, -3).join('-');
+          dateStr = dateStrTest;
+        }
+      }
+    }
+    
+    if (!extractedClientId) {
+      return res.status(400).json(new ServerResponse(false, null, "Client ID is required"));
+    }
+    
+    const organizationId = req.user?.team_id;
+    if (!organizationId) {
+      return res.status(400).json(new ServerResponse(false, null, "Organization ID is required"));
+    }
+    
     const modifiedReq = {
       ...req,
-      user: req.user
+      user: req.user,
+      params: { ...req.params, id: dateStr },
+      clientId: extractedClientId,
+      organizationId
     } as any;
     return ClientPortalController.getChatDetails(modifiedReq, res as any);
   }
 
   @HandleExceptions()
   public static async sendPortalMessage(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const modifiedReq = {
-      ...req,
-      user: req.user
-    } as any;
-    return ClientPortalController.sendMessage(modifiedReq, res as any);
+    // Parse chatId to extract clientId
+    // chatId format: clientId-date (e.g., "uuid-2025-01-30")
+    const chatId = req.params.chatId;
+    const clientId = req.body?.clientId || req.query?.clientId as string | undefined;
+    const { content, message, attachments } = req.body?.messageData || req.body || {};
+    const messageText = content || message;
+    
+    if (!chatId) {
+      return res.status(400).json(new ServerResponse(false, null, "Chat ID is required"));
+    }
+    
+    if (!messageText || messageText.trim().length === 0) {
+      return res.status(400).json(new ServerResponse(false, null, "Message content is required"));
+    }
+    
+    // Try to extract clientId from chatId if not provided
+    let extractedClientId = clientId;
+    
+    if (!extractedClientId && chatId.includes('-')) {
+      // Parse format: clientId-date
+      const parts = chatId.split('-');
+      if (parts.length >= 4) {
+        // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        // Date format: YYYY-MM-DD
+        // So we need to find where the date starts (last 3 parts should be date)
+        const dateParts = parts.slice(-3);
+        const dateStrTest = dateParts.join('-');
+        // Validate date format (YYYY-MM-DD)
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStrTest)) {
+          extractedClientId = parts.slice(0, -3).join('-');
+        }
+      }
+    }
+    
+    if (!extractedClientId) {
+      return res.status(400).json(new ServerResponse(false, null, "Client ID is required"));
+    }
+    
+    const organizationId = req.user?.team_id;
+    if (!organizationId) {
+      return res.status(400).json(new ServerResponse(false, null, "Organization ID is required"));
+    }
+    
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json(new ServerResponse(false, null, "User ID is required"));
+    }
+    
+    // Get user name for sender
+    const userQuery = await db.query(
+      "SELECT name FROM users WHERE id = $1",
+      [userId]
+    );
+    const userName = userQuery.rows[0]?.name || 'Team Member';
+    
+    try {
+      // Insert message as team_member
+      const insertQuery = `
+        INSERT INTO client_portal_chat_messages (
+          client_id, organization_team_id, sender_type, sender_id, 
+          message, message_type, file_url, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+        RETURNING id, sender_type, sender_id, message, message_type, file_url, created_at
+      `;
+
+      const result = await db.query(insertQuery, [
+        extractedClientId,
+        organizationId,
+        "team_member",
+        userId,
+        messageText.trim(),
+        "text",
+        null, // file_url can be added later for attachments
+      ]);
+
+      const newMessage = result.rows[0];
+
+      // Emit socket events for real-time updates
+      try {
+        const io = IO.getInstance();
+        if (io) {
+          // Emit to organization team members and client
+          io.emit(`client_portal:new_message`, {
+            id: newMessage.id,
+            clientId: extractedClientId,
+            organizationId,
+            senderName: userName,
+            senderType: "team_member",
+            message: newMessage.message,
+            messageType: newMessage.message_type,
+            fileUrl: newMessage.file_url,
+            createdAt: newMessage.created_at,
+          });
+
+          // Emit chat message event
+          io.emit("chat:message_received", {
+            id: newMessage.id,
+            chatId: chatId,
+            senderId: userId,
+            senderName: userName,
+            senderType: "team_member",
+            message: newMessage.message,
+            messageType: newMessage.message_type,
+            fileUrl: newMessage.file_url,
+            createdAt: newMessage.created_at,
+            isMe: false,
+          });
+        }
+      } catch (socketError) {
+        console.error("Error emitting socket events:", socketError);
+        // Don't fail the request if socket fails
+      }
+
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id: newMessage.id,
+            senderType: newMessage.sender_type,
+            senderId: newMessage.sender_id,
+            message: newMessage.message,
+            messageType: newMessage.message_type,
+            fileUrl: newMessage.file_url,
+            createdAt: newMessage.created_at,
+            isFromClient: false,
+          },
+          "Message sent successfully"
+        )
+      );
+    } catch (error) {
+      console.error("Error sending message:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to send message"));
+    }
   }
 
   @HandleExceptions()
   public static async getPortalMessages(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // Parse chatId to extract clientId and date
+    // chatId format: clientId-date (e.g., "uuid-2025-01-30")
+    const chatId = req.params.chatId;
+    const clientId = req.query?.clientId as string | undefined;
+    
+    if (!chatId) {
+      return res.status(400).json(new ServerResponse(false, null, "Chat ID is required"));
+    }
+    
+    // Try to extract clientId and date from chatId if not provided in query
+    let extractedClientId = clientId;
+    let dateStr = chatId;
+    
+    if (!extractedClientId && chatId.includes('-')) {
+      // Parse format: clientId-date
+      const parts = chatId.split('-');
+      if (parts.length >= 4) {
+        // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        // Date format: YYYY-MM-DD
+        // So we need to find where the date starts (last 3 parts should be date)
+        const dateParts = parts.slice(-3);
+        const dateStrTest = dateParts.join('-');
+        // Validate date format (YYYY-MM-DD)
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStrTest)) {
+          extractedClientId = parts.slice(0, -3).join('-');
+          dateStr = dateStrTest;
+        }
+      }
+    }
+    
+    if (!extractedClientId) {
+      return res.status(400).json(new ServerResponse(false, null, "Client ID is required"));
+    }
+    
+    const organizationId = req.user?.team_id;
+    if (!organizationId) {
+      return res.status(400).json(new ServerResponse(false, null, "Organization ID is required"));
+    }
+    
+    // Use getChatDetails which filters by date (more appropriate for organization-side)
     const modifiedReq = {
       ...req,
-      user: req.user
+      user: req.user,
+      params: { ...req.params, id: dateStr },
+      clientId: extractedClientId,
+      organizationId
     } as any;
-    return ClientPortalController.getMessages(modifiedReq, res as any);
+    return ClientPortalController.getChatDetails(modifiedReq, res as any);
   }
 
   // Organization-side Client Portal Dashboard (wrapper method)

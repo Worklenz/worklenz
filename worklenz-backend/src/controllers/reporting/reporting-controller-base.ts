@@ -256,7 +256,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
                 END
               )) AS complete_ratio
       FROM tasks t
-      ${whereClause.replace("project_id", "t.project_id").replace("status_id", "t.status_id").replace("priority_id", "t.priority_id").replace("LOWER(name)", "LOWER(t.name)")}
+      ${whereClause.replace("project_id", "t.project_id").replace("status_id", "t.status_id").replace("priority_id", "t.priority_id").replace("LOWER(name) LIKE", "LOWER(t.name) LIKE")}
       ORDER BY ${sortColumn} ${sortDirection} ${nullsOrder}
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1};
     `;
