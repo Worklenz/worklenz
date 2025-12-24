@@ -691,6 +691,13 @@ export const clientPortalApi = createApi({
         method: 'POST',
         body: { ...chatData, clientId },
       }),
+      transformResponse: (response: any) => {
+        // Handle ServerResponse wrapper
+        if (response && response.body) {
+          return response.body;
+        }
+        return response;
+      },
       invalidatesTags: ['Chats'],
     }),
 
@@ -708,13 +715,20 @@ export const clientPortalApi = createApi({
     }),
 
     getOrganizationMessages: builder.query<
-      ClientPortalMessage[],
+      { messages: ClientPortalMessage[]; date: string; total: number; page: number; limit: number } | ClientPortalMessage[],
       { chatId: string; clientId: string }
     >({
       query: ({ chatId, clientId }) => ({
         url: `/clients/portal/chats/${chatId}/messages`,
         params: { clientId },
       }),
+      transformResponse: (response: any) => {
+        // Handle ServerResponse wrapper
+        if (response && response.body) {
+          return response.body;
+        }
+        return response;
+      },
       providesTags: (result, error, { chatId }) => [{ type: 'Chats', id: chatId }],
     }),
 

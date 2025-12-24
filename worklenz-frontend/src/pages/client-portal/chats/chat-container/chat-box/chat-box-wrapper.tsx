@@ -23,6 +23,7 @@ export type TempChatsType = {
   lastMessageTime?: string;
   unreadCount?: number;
   participants?: string[];
+  clientId?: string;
 };
 
 const ChatBoxWrapper = () => {
@@ -63,16 +64,32 @@ const ChatBoxWrapper = () => {
       }
 
       if (chatsArray.length > 0) {
-        return chatsArray.map((chat: any) => ({
-          id: chat.id || '',
-          name: chat.title || chat.participants?.join(', ') || 'Unknown',
-          chats_data: [],
-          status: (chat.unreadCount > 0 ? 'unread' : 'read') as 'read' | 'unread',
-          lastMessage: chat.lastMessage || '',
-          lastMessageTime: chat.lastMessageTime || '',
-          unreadCount: chat.unreadCount || 0,
-          participants: chat.participants || [],
-        }));
+        return chatsArray.map((chat: any) => {
+          // Extract clientId from chatId if not provided directly
+          let clientId = chat.clientId;
+          if (!clientId && chat.id && chat.id.includes('-')) {
+            const parts = chat.id.split('-');
+            if (parts.length >= 4) {
+              const dateParts = parts.slice(-3);
+              const dateStrTest = dateParts.join('-');
+              if (/^\d{4}-\d{2}-\d{2}$/.test(dateStrTest)) {
+                clientId = parts.slice(0, -3).join('-');
+              }
+            }
+          }
+          
+          return {
+            id: chat.id || '',
+            name: chat.clientName || chat.title || chat.participants?.join(', ') || 'Unknown',
+            chats_data: [],
+            status: (chat.unreadCount > 0 ? 'unread' : 'read') as 'read' | 'unread',
+            lastMessage: chat.lastMessage || '',
+            lastMessageTime: chat.lastMessageTime || chat.lastMessageAt || '',
+            unreadCount: chat.unreadCount || 0,
+            participants: chat.participants || [],
+            clientId: clientId || chat.clientId,
+          };
+        });
       }
       return localChatList || [];
     } catch (err) {

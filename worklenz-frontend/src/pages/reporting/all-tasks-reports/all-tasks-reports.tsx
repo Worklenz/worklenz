@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
-import { Button, Card, Checkbox, Dropdown, Flex, Space, Typography, Input } from '@/shared/antd-imports';
-import { DownOutlined, ReloadOutlined, SearchOutlined } from '@/shared/antd-imports';
+import { Button, Card, Checkbox, Dropdown, Flex, Space, Typography } from '@/shared/antd-imports';
+import { DownOutlined, ReloadOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -12,13 +12,9 @@ import AllTasksStatsCards from './all-tasks-stats-cards/all-tasks-stats-cards';
 import {
   fetchAllTasks,
   fetchAllTasksTeams,
-  setSearchQuery,
   setIncludeArchived,
   resetAllFilters,
-  setIndex,
 } from '@/features/reporting/allTasksReports/all-tasks-reports-slice';
-
-const SEARCH_DEBOUNCE_MS = 400;
 
 const AllTasksReports = () => {
   const { t } = useTranslation('reporting-all-tasks');
@@ -26,37 +22,13 @@ const AllTasksReports = () => {
   useDocumentTitle('Reporting - All Tasks');
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { total, isLoading, includeArchived, searchQuery } = useAppSelector(
+  const { total, isLoading, includeArchived } = useAppSelector(
     state => state.allTasksReportsReducer
   );
 
   const handleRefresh = useCallback(() => {
     dispatch(fetchAllTasks());
   }, [dispatch]);
-
-  const handleSearch = useCallback((value: string) => {
-    dispatch(setSearchQuery(value));
-
-    // Clear previous debounce timer
-    if (searchDebounceRef.current) {
-      clearTimeout(searchDebounceRef.current);
-    }
-
-    // Debounce the API call
-    searchDebounceRef.current = setTimeout(() => {
-      dispatch(setIndex(1)); // Reset to first page on search
-      dispatch(fetchAllTasks());
-    }, SEARCH_DEBOUNCE_MS);
-  }, [dispatch]);
-
-  // Cleanup debounce timer on unmount
-  useEffect(() => {
-    return () => {
-      if (searchDebounceRef.current) {
-        clearTimeout(searchDebounceRef.current);
-      }
-    };
-  }, []);
 
   const handleExport = useCallback((key: string) => {
     // TODO: Implement export functionality
@@ -117,14 +89,6 @@ const AllTasksReports = () => {
         title={
           <Flex justify="space-between" align="center" wrap="wrap" gap={24} style={{ paddingBlock: 10 }}>
             <AllTasksReportsFilters />
-            <Input
-              placeholder={t('searchPlaceholder', { defaultValue: 'Search by task name, key, or description' })}
-              value={searchQuery}
-              onChange={e => handleSearch(e.target.value)}
-              prefix={<SearchOutlined style={{ color: 'var(--ant-color-text-tertiary)' }} />}
-              allowClear
-              style={{ width: 220 }}
-            />
           </Flex>
         }
       >

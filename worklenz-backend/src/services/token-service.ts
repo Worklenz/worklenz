@@ -335,54 +335,97 @@ class TokenService {
 
   // Authenticate client user
   async authenticateClient(email: string, password: string): Promise<any> {
-    const passwordHash = crypto.createHash("sha256").update(password).digest("hex");
+    try {
+      const passwordHash = crypto.createHash("sha256").update(password).digest("hex");
+      const normalizedEmail = email.toLowerCase().trim();
 
-    // First, try to find the client user by email
-    const clientUserQuery = `
-      SELECT cu.*, c.name as client_name, c.company_name, c.team_id
-      FROM client_users cu
-      JOIN clients c ON cu.client_id = c.id
-      WHERE LOWER(cu.email) = LOWER($1) AND cu.status = 'active'
-    `;
-
-    const clientUserResult = await db.query(clientUserQuery, [email]);
-
-    if (clientUserResult.rows.length === 0) {
-      return null; // No client user found with this email
-    }
-
-    const clientUser = clientUserResult.rows[0];
-
-    // Check if this is a linked Worklenz user (has user_id)
-    if (clientUser.user_id) {
-      // Authenticate against Worklenz users table
-      const worklenzAuthQuery = `
-        SELECT u.id, u.email, u.name, u.password
-        FROM users u
-        WHERE u.id = $1
+      // First, check if user exists (without status filter for debugging)
+      const userExistsQuery = `
+        SELECT cu.*, c.name as client_name, c.company_name, c.team_id, c.status as client_status
+        FROM client_users cu
+        LEFT JOIN clients c ON cu.client_id = c.id
+        WHERE LOWER(cu.email) = LOWER($1)
       `;
-      const worklenzUserResult = await db.query(worklenzAuthQuery, [clientUser.user_id]);
 
-      if (worklenzUserResult.rows.length === 0) {
-        return null; // Linked Worklenz user not found
+      const userExistsResult = await db.query(userExistsQuery, [normalizedEmail]);
+
+      if (userExistsResult.rows.length === 0) {
+        console.log(`[Client Auth] No client user found with email: ${normalizedEmail}`);
+        return null; // No client user found with this email
       }
 
-      const worklenzUser = worklenzUserResult.rows[0];
+      const clientUser = userExistsResult.rows[0];
 
-      // Verify password against Worklenz user password (bcrypt)
-      const passwordMatch = bcrypt.compareSync(password, worklenzUser.password);
-      if (passwordMatch) {
-        return clientUser; // Password matches, return client user info
+      // Check user status
+      if (clientUser.status !== 'active') {
+        console.log(`[Client Auth] User found but status is '${clientUser.status}', not 'active' for email: ${normalizedEmail}`);
+        return null; // User is not active
       }
 
-      return null; // Password doesn't match
-    } else {
-      // Standalone client portal user - authenticate against password_hash (SHA256)
-      if (clientUser.password_hash === passwordHash) {
-        return clientUser; // Password matches
+      // Check if client exists (required for authentication)
+      if (!clientUser.client_id) {
+        console.log(`[Client Auth] User found but has no client_id for email: ${normalizedEmail}`);
+        return null; // User has no associated client
       }
 
-      return null; // Password doesn't match
+      // Check if client exists in clients table
+      if (!clientUser.client_name) {
+        console.log(`[Client Auth] Client not found in clients table for client_id: ${clientUser.client_id}, email: ${normalizedEmail}`);
+        return null; // Client doesn't exist
+      }
+
+      // Check if this is a linked Worklenz user (has user_id)
+      if (clientUser.user_id) {
+        // Authenticate against Worklenz users table
+        const worklenzAuthQuery = `
+          SELECT u.id, u.email, u.name, u.password
+          FROM users u
+          WHERE u.id = $1 AND u.is_deleted = FALSE
+        `;
+        const worklenzUserResult = await db.query(worklenzAuthQuery, [clientUser.user_id]);
+
+        if (worklenzUserResult.rows.length === 0) {
+          console.log(`[Client Auth] Linked Worklenz user not found or deleted for user_id: ${clientUser.user_id}, email: ${normalizedEmail}`);
+          return null; // Linked Worklenz user not found
+        }
+
+        const worklenzUser = worklenzUserResult.rows[0];
+
+        if (!worklenzUser.password) {
+          console.log(`[Client Auth] Linked Worklenz user has no password set for user_id: ${clientUser.user_id}, email: ${normalizedEmail}`);
+          return null; // No password set for linked user
+        }
+
+        // Verify password against Worklenz user password (bcrypt)
+        const passwordMatch = bcrypt.compareSync(password, worklenzUser.password);
+        if (passwordMatch) {
+          console.log(`[Client Auth] Successfully authenticated linked user: ${normalizedEmail}`);
+          return clientUser; // Password matches, return client user info
+        }
+
+        console.log(`[Client Auth] Password mismatch for linked user: ${normalizedEmail}`);
+        return null; // Password doesn't match
+      } else {
+        // Standalone client portal user - authenticate against password_hash (SHA256)
+        if (!clientUser.password_hash) {
+          console.log(`[Client Auth] Standalone user has no password_hash set for email: ${normalizedEmail}`);
+          return null; // No password hash set
+        }
+
+        // Compare password hashes (case-sensitive comparison)
+        if (clientUser.password_hash === passwordHash) {
+          console.log(`[Client Auth] Successfully authenticated standalone user: ${normalizedEmail}`);
+          return clientUser; // Password matches
+        }
+
+        console.log(`[Client Auth] Password hash mismatch for standalone user: ${normalizedEmail}`);
+        console.log(`[Client Auth] Expected hash (first 20 chars): ${clientUser.password_hash.substring(0, 20)}...`);
+        console.log(`[Client Auth] Received hash (first 20 chars): ${passwordHash.substring(0, 20)}...`);
+        return null; // Password doesn't match
+      }
+    } catch (error) {
+      console.error(`[Client Auth] Error during authentication for email: ${email}`, error);
+      return null;
     }
   }
 

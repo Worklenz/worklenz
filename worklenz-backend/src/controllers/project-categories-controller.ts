@@ -27,11 +27,38 @@ export default class ProjectCategoriesController extends WorklenzControllerBase 
       RETURNING id, name, color_code;
     `;
     const name = req.body.name.trim();
+    
+    // Validate and use provided color_code, or fall back to generated color
+    let colorCode: string | null = null;
+    if (req.body.color_code) {
+      // Validate color - accept both base colors and all shade variations
+      const validColors = [
+        ...Object.keys(WorklenzColorShades),
+        ...Object.values(WorklenzColorShades).flat(),
+      ].map((c) => c.toLowerCase());
+      
+      const providedColor = req.body.color_code.trim().toLowerCase();
+      if (validColors.includes(providedColor)) {
+        // Find the original case color from the valid colors
+        const allColors = [
+          ...Object.keys(WorklenzColorShades),
+          ...Object.values(WorklenzColorShades).flat(),
+        ];
+        colorCode = allColors.find(c => c.toLowerCase() === providedColor) || providedColor;
+      } else {
+        // Invalid color provided, fall back to generated color
+        colorCode = name ? getColor(name) : null;
+      }
+    } else {
+      // No color provided, generate one
+      colorCode = name ? getColor(name) : null;
+    }
+    
     const result = await db.query(q, [
       name,
       req.user?.team_id,
       req.user?.id,
-      name ? getColor(name) : null,
+      colorCode,
     ]);
     const [data] = result.rows;
     return res.status(200).send(new ServerResponse(true, data));

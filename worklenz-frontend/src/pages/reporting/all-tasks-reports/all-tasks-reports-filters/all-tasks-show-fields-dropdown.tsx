@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Button, Checkbox, Dropdown, Flex } from '@/shared/antd-imports';
+import { Button, Card, Checkbox, Dropdown, Flex } from '@/shared/antd-imports';
 import { CaretDownFilled } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -40,22 +40,25 @@ const AllTasksShowFieldsDropdown = () => {
   };
 
   const dropdownContent = (
-    <Flex vertical gap={4} style={{ padding: 12, minWidth: 180, maxHeight: 300, overflowY: 'auto' }}>
-      {allColumns.map(column => (
-        <Checkbox
-          key={column.key}
-          checked={visibleColumns.includes(column.key)}
-          onChange={() => handleToggle(column.key)}
-          disabled={column.key === 'taskName'}
-        >
-          {column.label}
-        </Checkbox>
-      ))}
-    </Flex>
+    <Card className="custom-card" styles={{ body: { padding: 8, width: 220 } }}>
+      <Flex vertical gap={4} style={{ maxHeight: 300, overflowY: 'auto' }}>
+        {allColumns.map(column => (
+          <Checkbox
+            key={column.key}
+            checked={visibleColumns.includes(column.key)}
+            onChange={() => handleToggle(column.key)}
+            disabled={column.key === 'taskName'}
+          >
+            {column.label}
+          </Checkbox>
+        ))}
+      </Flex>
+    </Card>
   );
 
   return (
     <Dropdown
+      overlayClassName="custom-dropdown"
       dropdownRender={() => dropdownContent}
       trigger={['click']}
       placement="bottomRight"

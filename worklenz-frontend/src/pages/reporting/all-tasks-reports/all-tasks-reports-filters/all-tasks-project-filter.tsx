@@ -1,5 +1,5 @@
 import { memo, useState, useEffect } from 'react';
-import { Button, Checkbox, Dropdown, Flex, Input, Typography, Spin } from '@/shared/antd-imports';
+import { Button, Card, Checkbox, Dropdown, Flex, Input, Typography, Spin } from '@/shared/antd-imports';
 import { CaretDownFilled, SearchOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -62,51 +62,54 @@ const AllTasksProjectFilter = () => {
   };
 
   const dropdownContent = (
-    <Flex vertical gap={8} style={{ padding: 12, minWidth: 250 }}>
-      <Input
-        placeholder={t('searchPlaceholder', { defaultValue: 'Search by task name, key, or description' })}
-        prefix={<SearchOutlined />}
-        value={searchQuery}
-        onChange={e => setSearchQuery(e.target.value)}
-        allowClear
-      />
-      <Flex justify="flex-end">
-        <Button type="link" size="small" onClick={handleClearAll}>
-          {t('clearAll', { defaultValue: 'Clear All' })}
-        </Button>
+    <Card className="custom-card" styles={{ body: { padding: 8, width: 280 } }}>
+      <Flex vertical gap={8}>
+        <Input
+          placeholder={t('searchPlaceholder', { defaultValue: 'Search by task name, key, or description' })}
+          prefix={<SearchOutlined />}
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          allowClear
+        />
+        <Flex justify="flex-end">
+          <Button type="link" size="small" onClick={handleClearAll}>
+            {t('clearAll', { defaultValue: 'Clear All' })}
+          </Button>
+        </Flex>
+        {loading ? (
+          <Flex justify="center" style={{ padding: 16 }}>
+            <Spin size="small" />
+          </Flex>
+        ) : (
+          <Flex vertical gap={4} style={{ maxHeight: 200, overflowY: 'auto' }}>
+            {filteredProjects.map(project => (
+              <Checkbox
+                key={project.id}
+                checked={selectedProjects.includes(project.id)}
+                onChange={() => handleToggle(project.id)}
+              >
+                <Flex align="center" gap={8}>
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      backgroundColor: project.color_code || '#1890ff',
+                    }}
+                  />
+                  {project.name}
+                </Flex>
+              </Checkbox>
+            ))}
+          </Flex>
+        )}
       </Flex>
-      {loading ? (
-        <Flex justify="center" style={{ padding: 16 }}>
-          <Spin size="small" />
-        </Flex>
-      ) : (
-        <Flex vertical gap={4} style={{ maxHeight: 200, overflowY: 'auto' }}>
-          {filteredProjects.map(project => (
-            <Checkbox
-              key={project.id}
-              checked={selectedProjects.includes(project.id)}
-              onChange={() => handleToggle(project.id)}
-            >
-              <Flex align="center" gap={8}>
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    backgroundColor: project.color_code || '#1890ff',
-                  }}
-                />
-                {project.name}
-              </Flex>
-            </Checkbox>
-          ))}
-        </Flex>
-      )}
-    </Flex>
+    </Card>
   );
 
   return (
     <Dropdown
+      overlayClassName="custom-dropdown"
       dropdownRender={() => dropdownContent}
       trigger={['click']}
       placement="bottomLeft"
