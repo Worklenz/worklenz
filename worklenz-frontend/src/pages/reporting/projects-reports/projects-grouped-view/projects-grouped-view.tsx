@@ -1,22 +1,16 @@
 import { memo, useMemo, useEffect, useState, useCallback } from 'react';
-import { Collapse, Progress, Typography, Flex, Badge, Empty, Spin, Button, Tooltip } from '@/shared/antd-imports';
+import { Collapse, Progress, Typography, Flex, Badge, Empty, Spin, Button, Tooltip, Skeleton, Card } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { IRPTProject } from '@/types/reporting/reporting.types';
 import { 
-  fetchProjectData, 
-  fetchMoreProjectsForGroupedView, 
-  setIndex, 
-  setPageSize 
+  fetchGroupedProjects
 } from '@/features/reporting/projectReports/project-reports-slice';
 import ProjectTasksModal from './project-tasks-modal';
 import './projects-grouped-view.css';
 
-// For grouped view, use larger page size for better grouping
-const GROUPED_VIEW_PAGE_SIZE = 100;
-
-// Pagination constants
+// Pagination constants for expanding projects within groups (client-side)
 const INITIAL_ITEMS_PER_GROUP = 20; // Initial display per group
 const ITEMS_PER_PAGE = 20; // Items to load on "Show More"
 
@@ -33,27 +27,6 @@ interface IProjectGroup {
   progressPercent: number;
 }
 
-interface IProgressSegments {
-  todo: number;
-  doing: number;
-  done: number;
-  total: number;
-  percentDone: number;
-}
-
-const getProgressSegments = (todo: number, doing: number, done: number): IProgressSegments => {
-  const total = todo + doing + done;
-  const safeTotal = total > 0 ? total : 1;
-
-  return {
-    todo,
-    doing,
-    done,
-    total,
-    percentDone: Math.round((done / safeTotal) * 100),
-  };
-};
-
 const ProjectsGroupedView = () => {
   const { t } = useTranslation('reporting-projects');
   const dispatch = useAppDispatch();
@@ -64,13 +37,9 @@ const ProjectsGroupedView = () => {
   const [groupPagination, setGroupPagination] = useState<Record<string, number>>({});
 
   const {
-    projectList,
+    groupedProjects,
     groupBy,
     isLoading,
-    isLoadingMore,
-    total,
-    index,
-    pageSize,
     searchQuery,
     selectedProjectStatuses,
     selectedProjectHealths,
@@ -103,15 +72,14 @@ const ProjectsGroupedView = () => {
     return groupPagination[groupId] || INITIAL_ITEMS_PER_GROUP;
   }, [groupPagination]);
 
-  // Fetch project data when filters change
+  // Fetch grouped project data when filters or grouping changes
   useEffect(() => {
-    dispatch(setIndex(1));
-    dispatch(setPageSize(GROUPED_VIEW_PAGE_SIZE));
-    dispatch(fetchProjectData());
+    dispatch(fetchGroupedProjects());
     // Reset group pagination when filters change
     setGroupPagination({});
   }, [
     dispatch,
+    groupBy,
     searchQuery,
     selectedProjectStatuses,
     selectedProjectHealths,
@@ -120,103 +88,32 @@ const ProjectsGroupedView = () => {
     archived,
   ]);
 
-  // Handle loading more projects (pagination at bottom of grouped view)
-  const handleLoadMoreProjects = useCallback(() => {
-    dispatch(setIndex(index + 1));
-    dispatch(fetchMoreProjectsForGroupedView());
-  }, [dispatch, index]);
-
-  // Check if there are more projects to load
-  const hasMoreProjects = projectList.length < total;
-
-  const groupedProjects = useMemo(() => {
-    const groups: Map<string, IProjectGroup> = new Map();
-
-    projectList.forEach(project => {
-      let groupKey: string;
-      let groupName: string;
-      let groupColor: string;
-
-      switch (groupBy) {
-        case 'category':
-          groupKey = project.category_id || 'uncategorized';
-          groupName = project.category_name || t('uncategorizedText');
-          groupColor = project.category_color || '#a9a9a9';
-          break;
-        case 'status':
-          groupKey = project.status_id || 'no-status';
-          groupName = project.status_name || t('noStatusText');
-          groupColor = project.status_color || '#a9a9a9';
-          break;
-        case 'health':
-          groupKey = project.project_health || 'not-set';
-          groupName = project.health_name || t('notSetText');
-          groupColor = project.health_color || '#a9a9a9';
-          break;
-        case 'team':
-          groupKey = project.team_id || 'no-team';
-          groupName = project.team_name || t('noTeamText');
-          groupColor = project.team_color || '#a9a9a9';
-          break;
-        case 'manager':
-          groupKey = project.project_manager?.id || 'no-manager';
-          groupName = project.project_manager?.name || t('noManagerText');
-          groupColor = '#1890ff';
-          break;
-        default:
-          groupKey = 'default';
-          groupName = t('allProjectsText');
-          groupColor = '#a9a9a9';
-      }
-
-      if (!groups.has(groupKey)) {
-        groups.set(groupKey, {
-          id: groupKey,
-          name: groupName,
-          color: groupColor,
-          projects: [],
-          totalTasks: 0,
-          completedTasks: 0,
-          todoTasks: 0,
-          doingTasks: 0,
-          doneTasks: 0,
-          progressPercent: 0,
-        });
-      }
-
-      const group = groups.get(groupKey)!;
-      group.projects.push(project);
-      // Calculate total tasks from todo + doing + done (same as TasksProgressCell)
-      const projectTodoTasks = project.tasks_stat?.todo || 0;
-      const projectDoingTasks = project.tasks_stat?.doing || 0;
-      const projectDoneTasks = project.tasks_stat?.done || 0;
-      const projectTotalTasks = projectTodoTasks + projectDoingTasks + projectDoneTasks;
-      group.totalTasks += projectTotalTasks;
-      group.completedTasks += projectDoneTasks;
-      group.todoTasks += projectTodoTasks;
-      group.doingTasks += projectDoingTasks;
-      group.doneTasks += projectDoneTasks;
-    });
-
-    groups.forEach(group => {
-      group.progressPercent =
-        group.totalTasks > 0
-          ? Math.round((group.completedTasks / group.totalTasks) * 100)
-          : 0;
-    });
-
-    return Array.from(groups.values()).sort((a, b) =>
-      a.name.localeCompare(b.name)
-    );
-  }, [projectList, groupBy, t]);
+  // Transform backend grouped data to component format
+  const transformedGroups = useMemo(() => {
+    return groupedProjects.map(group => ({
+      id: group.group_id,
+      name: group.group_name,
+      color: group.group_color,
+      projects: group.projects,
+      totalTasks: group.total_tasks,
+      completedTasks: group.done_tasks,
+      todoTasks: group.todo_tasks,
+      doingTasks: group.doing_tasks,
+      doneTasks: group.done_tasks,
+      progressPercent: group.total_tasks > 0
+        ? Math.round((group.done_tasks / group.total_tasks) * 100)
+        : 0,
+    }));
+  }, [groupedProjects]);
 
   const renderProjectItem = useCallback(
     (project: IRPTProject) => {
-      // Calculate total tasks from todo + doing + done (same as TasksProgressCell)
+      // Use raw task counts from backend (not percentages)
       const todoTasks = project.tasks_stat?.todo || 0;
       const doingTasks = project.tasks_stat?.doing || 0;
       const doneTasks = project.tasks_stat?.done || 0;
-      const { total, percentDone } = getProgressSegments(todoTasks, doingTasks, doneTasks);
+      const total = project.tasks_stat?.total || (todoTasks + doingTasks + doneTasks);
+      const percentDone = total > 0 ? Math.round((doneTasks / total) * 100) : 0;
 
       const progressTooltipTitle = (
         <Flex vertical>
@@ -274,7 +171,7 @@ const ProjectsGroupedView = () => {
 
   const collapseItems = useMemo(
     () =>
-      groupedProjects.map(group => {
+      transformedGroups.map(group => {
         const visibleCount = getVisibleCount(group.id);
         const visibleProjects = group.projects.slice(0, visibleCount);
         const hasMore = visibleCount < group.projects.length;
@@ -343,60 +240,80 @@ const ProjectsGroupedView = () => {
           ),
         };
       }),
-    [groupedProjects, t, getVisibleCount, handleLoadMore, renderProjectItem]
+    [transformedGroups, t, getVisibleCount, handleLoadMore, renderProjectItem]
   );
 
-  if (isLoading) {
+  // Skeleton loading component
+  const renderSkeletonLoading = () => {
     return (
-      <Flex justify="center" align="center" style={{ padding: 48 }}>
-        <Spin size="large" />
-      </Flex>
-    );
-  }
+      <div className="projects-grouped-view">
+        {/* Render 3 skeleton groups */}
+        {[1, 2, 3].map(groupIndex => (
+          <Card
+            key={groupIndex}
+            style={{
+              marginBottom: 16,
+              borderRadius: 8,
+            }}
+          >
+            {/* Group Header Skeleton */}
+            <Flex justify="space-between" align="center" style={{ marginBottom: 16 }}>
+              <Flex align="center" gap={8} style={{ flex: 1 }}>
+                <Skeleton.Avatar active size="small" shape="circle" />
+                <Skeleton.Input active size="small" style={{ width: 200 }} />
+              </Flex>
+              <Flex align="center" gap={16}>
+                <Skeleton.Input active size="small" style={{ width: 80 }} />
+                <Skeleton.Input active size="small" style={{ width: 80 }} />
+              </Flex>
+            </Flex>
 
-  if (groupedProjects.length === 0) {
-    return <Empty description={t('noProjectsText')} />;
+            {/* Project Items Skeleton */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[1, 2, 3, 4, 5].map(itemIndex => (
+                <div
+                  key={itemIndex}
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: 6,
+                    border: '1px solid #f0f0f0',
+                  }}
+                >
+                  <Flex justify="space-between" align="center">
+                    <Flex align="center" gap={8} style={{ flex: 1 }}>
+                      <Skeleton.Avatar active size="small" shape="circle" />
+                      <Skeleton.Input active size="small" style={{ width: 250 }} />
+                    </Flex>
+                    <Flex align="center" gap={16}>
+                      <Skeleton.Input active size="small" style={{ width: 100 }} />
+                      <Skeleton.Input active size="small" style={{ width: 70 }} />
+                    </Flex>
+                  </Flex>
+                </div>
+              ))}
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
+  // Show skeleton while loading OR while we have no data yet
+  if (isLoading || transformedGroups.length === 0) {
+    // Only show empty state if we're done loading and confirmed no data
+    if (!isLoading && transformedGroups.length === 0) {
+      return <Empty description={t('noProjectsText')} />;
+    }
+    return renderSkeletonLoading();
   }
 
   return (
     <div className="projects-grouped-view">
       <Collapse
         items={collapseItems}
-        defaultActiveKey={groupedProjects.slice(0, 3).map(g => g.id)}
+        defaultActiveKey={transformedGroups.slice(0, 3).map(g => g.id)}
         expandIconPosition="start"
       />
-      
-      {/* Load More Projects Button */}
-      {hasMoreProjects && (
-        <Flex justify="center" style={{ padding: '24px 0', marginTop: '16px' }}>
-          <Button
-            type="default"
-            size="large"
-            onClick={handleLoadMoreProjects}
-            loading={isLoadingMore}
-            disabled={isLoadingMore}
-          >
-            {isLoadingMore 
-              ? t('loadingText') 
-              : t('loadMoreProjectsButton', { 
-                  remaining: total - projectList.length 
-                })
-            }
-          </Button>
-        </Flex>
-      )}
-      
-      {/* Show total loaded vs total available */}
-      {!isLoading && projectList.length > 0 && (
-        <Flex justify="center" style={{ padding: '8px 0', color: '#999' }}>
-          <Typography.Text type="secondary">
-            {t('showingProjectsText', { 
-              shown: projectList.length, 
-              total: total 
-            })}
-          </Typography.Text>
-        </Flex>
-      )}
 
       <ProjectTasksModal
         open={isModalOpen}

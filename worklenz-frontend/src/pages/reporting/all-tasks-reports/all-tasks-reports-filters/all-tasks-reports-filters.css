@@ -29,12 +29,6 @@
   line-height: 28px !important;
 }
 
-/* Filter dropdown content */
-.all-tasks-filters .ant-dropdown-menu {
-  max-height: 300px;
-  overflow-y: auto;
-}
-
 /* Responsive */
 @media (max-width: 992px) {
   .all-tasks-filters {

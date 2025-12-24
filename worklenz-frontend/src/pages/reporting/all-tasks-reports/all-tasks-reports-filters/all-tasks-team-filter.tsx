@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react';
-import { Button, Checkbox, Dropdown, Flex, Input, Typography } from '@/shared/antd-imports';
+import { Button, Card, Checkbox, Dropdown, Flex, Typography } from '@/shared/antd-imports';
 import { CaretDownFilled } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -29,32 +29,35 @@ const AllTasksTeamFilter = () => {
   };
 
   const dropdownContent = (
-    <Flex vertical gap={8} style={{ padding: 12, minWidth: 200 }}>
-      <Flex justify="space-between" align="center">
-        <Checkbox checked={allSelected} onChange={e => handleSelectAll(e.target.checked)}>
-          {t('selectAll', { defaultValue: 'Select All' })}
-        </Checkbox>
-        <Button type="link" size="small" onClick={() => handleSelectAll(false)}>
-          {t('clearAll', { defaultValue: 'Clear All' })}
-        </Button>
-      </Flex>
-      <Flex vertical gap={4} style={{ maxHeight: 200, overflowY: 'auto' }}>
-        {teams.map(team => (
-          <Checkbox
-            key={team.id}
-            checked={team.selected}
-            onChange={e => handleTeamToggle(team.id as string, e.target.checked)}
-          >
-            {team.name}
+    <Card className="custom-card" styles={{ body: { padding: 8, width: 240 } }}>
+      <Flex vertical gap={8}>
+        <Flex justify="space-between" align="center">
+          <Checkbox checked={allSelected} onChange={e => handleSelectAll(e.target.checked)}>
+            {t('selectAll', { defaultValue: 'Select All' })}
           </Checkbox>
-        ))}
+          <Button type="link" size="small" onClick={() => handleSelectAll(false)}>
+            {t('clearAll', { defaultValue: 'Clear All' })}
+          </Button>
+        </Flex>
+        <Flex vertical gap={4} style={{ maxHeight: 200, overflowY: 'auto' }}>
+          {teams.map(team => (
+            <Checkbox
+              key={team.id}
+              checked={team.selected}
+              onChange={e => handleTeamToggle(team.id as string, e.target.checked)}
+            >
+              {team.name}
+            </Checkbox>
+          ))}
+        </Flex>
       </Flex>
-    </Flex>
+    </Card>
   );
 
   return (
     <Dropdown
-      popupRender={() => dropdownContent}
+      overlayClassName="custom-dropdown"
+      dropdownRender={() => dropdownContent}
       trigger={['click']}
       placement="bottomLeft"
     >
