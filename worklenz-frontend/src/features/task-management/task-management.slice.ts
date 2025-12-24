@@ -203,6 +203,7 @@ export const fetchTasks = createAsyncThunk(
           comments_count: task.comments_count || 0,
           attachments_count: task.attachments_count || 0,
           has_dependencies: task.has_dependencies || false,
+          has_subscribers: task.has_subscribers || false,
           schedule_id: task.schedule_id || null,
           reporter: task.reporter || undefined,
         }))
@@ -348,6 +349,7 @@ export const fetchTasksV3 = createAsyncThunk(
           comments_count: task.comments_count || 0,
           attachments_count: task.attachments_count || 0,
           has_dependencies: task.has_dependencies || false,
+          has_subscribers: task.has_subscribers || false,
           schedule_id: task.schedule_id || null,
           reporter: task.reporter || undefined,
         };
