@@ -30,6 +30,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_settings_categories_visit } from '@/shared/worklenz-analytics-events';
+import logger from '@/utils/errorLogger';
 
 const CategoriesSettings = () => {
   // localization
@@ -97,8 +98,7 @@ const CategoriesSettings = () => {
     try {
       const result = await dispatch(deleteCategoryAsync(categoryId));
       if (deleteCategoryAsync.fulfilled.match(result)) {
-        // Category deleted successfully, remove from local state
-        setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+        getCategories();
         message.success(t('deleteSuccessMessage'));
       } else if (deleteCategoryAsync.rejected.match(result)) {
         // Show error message from the API
@@ -107,7 +107,7 @@ const CategoriesSettings = () => {
       }
     } catch (error) {
       // Fallback error handling
-      console.error('Failed to delete category:', error);
+      logger.error('Failed to delete category:', error);
       message.error(t('deleteErrorMessage'));
     }
   };
@@ -153,7 +153,13 @@ const CategoriesSettings = () => {
             icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
             okText={t('deleteConfirmationOk')}
             cancelText={t('deleteConfirmationCancel')}
-            onConfirm={() => record.id && handleDeleteCategory(record.id)}
+            onConfirm={(e) => {
+              e?.stopPropagation();
+              if (record.id) {
+                handleDeleteCategory(record.id);
+              }
+            }}
+            onCancel={(e) => e?.stopPropagation()}
           >
             <Tooltip title={t('deleteCategory', 'Delete')}>
               <Button
@@ -161,6 +167,9 @@ const CategoriesSettings = () => {
                 icon={<DeleteOutlined />}
                 size="small"
                 loading={deleteLoading}
+                onClick={e => {
+                  e.stopPropagation();
+                }}
               />
             </Tooltip>
           </Popconfirm>
