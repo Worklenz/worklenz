@@ -3019,6 +3019,10 @@ class ClientPortalController {
 
       const newMessage = result.rows[0];
 
+      // Generate proper chatId format: clientId-date
+      const chatDate = new Date(newMessage.created_at).toISOString().split('T')[0];
+      const chatId = `${clientId}-${chatDate}`;
+
       // Emit socket events for real-time updates
       try {
         const io = IO.getInstance();
@@ -3051,7 +3055,7 @@ class ClientPortalController {
         new ServerResponse(
           true,
           {
-            chatId: newMessage.id,
+            chatId: chatId,
             message: "Chat created successfully",
           },
           "Chat created successfully"
