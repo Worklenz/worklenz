@@ -9,7 +9,13 @@
   "pinTooltip": "Clique para fixar isso no menu principal",
   "colorChangeTooltip": "Clique para mudar a cor",
   "pageTitle": "Gerenciar Rótulos",
-  "deleteConfirmTitle": "Tem certeza de que deseja excluir isto?",
+  "deleteConfirmTitle": "Excluir Rótulo",
   "deleteButton": "Excluir",
-  "cancelButton": "Cancelar"
+  "cancelButton": "Cancelar",
+  "labelInUseMessage": "O rótulo \"{{labelName}}\" está atualmente atribuído a {{count}} tarefa{{plural}}.",
+  "labelDeleteWarning": "⚠️ Excluir este rótulo irá removê-lo de todas as {{count}} tarefa{{plural}} atribuída{{plural}}. Esta ação não pode ser desfeita.",
+  "deleteConfirmMessage": "Tem certeza de que deseja excluir o rótulo \"{{labelName}}\"? Esta ação não pode ser desfeita.",
+  "editTooltip": "Editar",
+  "deleteTooltip": "Excluir",
+  "search": "Pesquisar"
 }

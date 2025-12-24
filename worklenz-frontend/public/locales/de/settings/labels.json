@@ -9,7 +9,13 @@
   "pinTooltip": "Zum Anheften an das Hauptmenü klicken",
   "colorChangeTooltip": "Zum Ändern der Farbe klicken",
   "pageTitle": "Labels verwalten",
-  "deleteConfirmTitle": "Sind Sie sicher, dass Sie dies löschen möchten?",
+  "deleteConfirmTitle": "Label löschen",
   "deleteButton": "Löschen",
-  "cancelButton": "Abbrechen"
+  "cancelButton": "Abbrechen",
+  "labelInUseMessage": "Das Label \"{{labelName}}\" ist derzeit {{count}} Aufgabe{{plural}} zugewiesen.",
+  "labelDeleteWarning": "⚠️ Das Löschen dieses Labels entfernt es von allen {{count}} zugewiesenen Aufgabe{{plural}}. Diese Aktion kann nicht rückgängig gemacht werden.",
+  "deleteConfirmMessage": "Sind Sie sicher, dass Sie das Label \"{{labelName}}\" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+  "editTooltip": "Bearbeiten",
+  "deleteTooltip": "Löschen",
+  "search": "Suchen"
 }
