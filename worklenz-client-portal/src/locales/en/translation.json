@@ -375,5 +375,32 @@
     "fileTypeError": "File type not allowed. Accepted types: {{types}}",
     "maxFilesError": "You can only upload up to {{count}} files",
     "uploadedOn": "Uploaded on {{date}}"
+  },
+  "tasks": {
+    "taskDetails": "Task Details",
+    "detailsTab": "Details",
+    "commentsTab": "Comments",
+    "taskInformation": "Task Information",
+    "teamAndPriority": "Team & Priority",
+    "attachments": "Attachments",
+    "status": "Status",
+    "description": "Description",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "created": "Created",
+    "lastUpdated": "Last Updated",
+    "priority": "Priority",
+    "assignedTo": "Assigned To",
+    "noAssignees": "No assignees",
+    "noAttachments": "No attachments",
+    "noComments": "No comments yet. Be the first to comment!",
+    "commentPlaceholder": "Type your comment... (Shift+Enter for new line)",
+    "commentRequired": "Please enter a comment",
+    "commentAdded": "Comment added successfully",
+    "commentError": "Failed to add comment",
+    "loadingTaskDetails": "Loading task details...",
+    "taskNotAvailable": "Task details not available",
+    "failedToLoad": "Failed to load task details",
+    "download": "Download"
   }
 }

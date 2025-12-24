@@ -1,7 +1,6 @@
 import {
   Card,
   Flex,
-  message,
   Typography,
   Upload,
   UploadProps,
@@ -128,14 +127,12 @@ const ClientPortalSettings = () => {
     // Validate file type
     const isImage = file.type.startsWith('image/');
     if (!isImage) {
-      message.error('You can only upload image files!');
       return false;
     }
 
     // Validate file size (max 2MB)
     const isLt2M = file.size / 1024 / 1024 < 2;
     if (!isLt2M) {
-      message.error('Image must be smaller than 2MB!');
       return false;
     }
 
@@ -147,8 +144,6 @@ const ClientPortalSettings = () => {
     setPendingLogoUrl(previewUrl);
     setPendingLogoRemoval(false);
     setHasUnsavedChanges(true);
-
-    message.success(t('logoUploadedText'));
 
     return false; // Prevent default upload
   };
@@ -170,8 +165,6 @@ const ClientPortalSettings = () => {
     setPendingLogoFile(null);
     setPendingLogoUrl(null);
     setHasUnsavedChanges(true);
-
-    message.success(t('logoRemovedText'));
   };
 
   // Handle company details change
@@ -215,13 +208,11 @@ const ClientPortalSettings = () => {
             }
           } catch (error) {
             console.error('Logo upload error:', error);
-            message.error('Failed to upload logo');
             return;
           } finally {
             // Reset pending states
             resetPendingChanges();
             setSaving(false);
-            message.success(t('settingsSavedText'));
           }
         };
         reader.readAsDataURL(pendingLogoFile);
@@ -246,9 +237,8 @@ const ClientPortalSettings = () => {
 
           setCustomLogo(null);
           resetPendingChanges();
-          message.success(t('settingsSavedText'));
         } else {
-          message.error('Failed to remove logo');
+          console.error('Failed to remove logo');
         }
         setSaving(false);
       }
@@ -262,11 +252,6 @@ const ClientPortalSettings = () => {
 
         if (response.done) {
           setOriginalCompanyDetails(companyDetails);
-          if (!pendingLogoFile && !pendingLogoRemoval) {
-            message.success(t('settingsSavedText'));
-          }
-        } else {
-          message.error('Failed to save company details');
         }
       }
 
@@ -278,7 +263,6 @@ const ClientPortalSettings = () => {
       setSaving(false);
     } catch (error) {
       console.error('Failed to save settings:', error);
-      message.error('Failed to save settings');
       setSaving(false);
     }
   };
@@ -286,7 +270,6 @@ const ClientPortalSettings = () => {
   const handleCancelChanges = () => {
     resetPendingChanges();
     setCompanyDetails(originalCompanyDetails);
-    message.info(t('discardButton'));
   };
 
   const resetPendingChanges = () => {
