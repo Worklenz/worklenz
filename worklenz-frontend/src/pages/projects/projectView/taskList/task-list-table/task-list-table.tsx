@@ -1329,7 +1329,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
     const widths: Record<string, number> = { selector: 56, customColumn: 150 };
     columnList.forEach(col => {
       if (col.key) {
-        widths[col.key] = col.key === 'TASK' ? 474 : 150;
+        widths[col.key] = col.key === 'TASK' ? 300 : 150;
       }
     });
     return widths;
@@ -1506,7 +1506,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
         case 'selector':
           return 'sticky left-0 z-20';
         case 'TASK':
-          return `sticky left-[48px] z-10 after:content after:absolute after:top-0 after:-right-1 after:h-full after:-z-10 after:w-1.5 after:bg-transparent ${
+          return `sticky left-[56px] z-10 after:content after:absolute after:top-0 after:-right-1 after:h-full after:-z-10 after:w-1.5 after:bg-transparent ${
             scrollingTables[tableId]
               ? 'after:bg-linear-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent'
               : ''
@@ -1670,7 +1670,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
     setDragActiveId(event.active.id);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = (event: any) => {
     const { active, over } = event;
     setDragActiveId(null);
     setPlaceholderIndex(null); // Reset placeholder index
@@ -1758,13 +1758,10 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
 
   return (
     <div className={`border-x border-b ${customBorderColor}`}>
-      {/* DEBUG: Verify component is rendering */}
-      {console.log('🔴 TaskListTable RENDERING with', visibleColumns.length, 'visible columns')}
       <DndContext
         sensors={sensors}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        onDragOver={handleDragOver} // Add this line
         autoScroll={false} // Disable auto-scroll animations
       >
         <SortableContext
@@ -1788,13 +1785,20 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                       <Checkbox checked={isSelectAll} onChange={toggleSelectAll} />
                     </Flex>
                   </th>
-                  {console.log(
-                    '🔵 RENDERING COLUMNS:',
-                    visibleColumns.length,
-                    'columns',
-                    visibleColumns.map(c => c.key)
-                  )}
-                  {visibleColumns.map(column => (
+                  {visibleColumns.map((column, index) => {
+                    // DEBUG: Log what we're rendering
+                    if (typeof window !== 'undefined') {
+                      console.log(`Column ${index}:`, {
+                        key: column.key,
+                        name: column.name,
+                        pinned: column.pinned,
+                        width: getColumnWidth(column.key),
+                        translationKey: `${column.key?.replace('_', '').toLowerCase()}Column`,
+                        translation: t(`${column.key?.replace('_', '').toLowerCase()}Column`)
+                      });
+                    }
+                    
+                    return (
                     <th
                       key={column.key}
                       className={`${getColumnStyles(column.key, true)} group`}
@@ -1803,7 +1807,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                         fontWeight: 500,
                         overflow: 'visible',
                         position: 'relative',
-                        border: '3px solid lime', // DEBUG: Make headers super visible
+                        border: column.key === 'DESCRIPTION' ? '3px solid red' : undefined, // DEBUG
                       }}
                     >
                       <div
@@ -1811,75 +1815,55 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                           position: 'relative',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 4,
+                          width: '100%',
+                          minHeight: '42px',
                         }}
                       >
-                        <span>
-                          {column.key === 'PHASE' && (
+                        <div style={{ flex: 1, paddingRight: '10px' }}>
+                          {column.key === 'DESCRIPTION' && (
+                            <div style={{ 
+                              backgroundColor: 'yellow', 
+                              padding: '4px',
+                              border: '2px solid red' 
+                            }}>
+                              DEBUG: DESCRIPTION HEADER
+                            </div>
+                          )}
+                          {column.key === 'PHASE' ? (
                             <Flex
                               align="center"
                               gap={4}
                               justify="space-between"
-                              className="w-full min-w-[120px]"
+                              className="w-full"
                             >
-                              {project?.phase_label}
+                              <span>{project?.phase_label || 'Phase'}</span>
                               <ConfigPhaseButton />
                             </Flex>
+                          ) : column.custom_column ? (
+                            <CustomColumnHeader
+                              column={column}
+                              onSettingsClick={() => handleCustomColumnSettings(column.id || '')}
+                            />
+                          ) : (
+                            <span style={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {t(`${column.key?.replace('_', '').toLowerCase()}Column`)}
+                            </span>
                           )}
-                          {column.key !== 'PHASE' &&
-                            (column.custom_column && column.pinned ? (
-                              <CustomColumnHeader
-                                column={column}
-                                onSettingsClick={() => handleCustomColumnSettings(column.id || '')}
-                              />
-                            ) : (
-                              t(`${column.key?.replace('_', '').toLowerCase()}Column`)
-                            ))}
-                        </span>
+                        </div>
 
                         {/* Column Resize Handle */}
                         <div
-                          ref={el => {
-                            if (el)
-                              console.log(
-                                '🟣 HANDLE DIV CREATED for',
-                                column.key,
-                                'position:',
-                                el.getBoundingClientRect()
-                              );
-                          }}
-                          style={{
-                            position: 'absolute',
-                            top: 0,
-                            right: 0,
-                            width: 20,
-                            height: '100%',
-                            cursor: 'col-resize',
-                            zIndex: 9999,
-                            backgroundColor: 'rgba(255, 0, 0, 0.8)',
-                            borderLeft: '5px solid red',
-                            border: '5px solid yellow',
-                          }}
-                          onMouseEnter={e => {
-                            console.log('🟢 HOVER on', column.key);
-                            e.currentTarget.style.backgroundColor = 'rgba(24, 144, 255, 0.5)';
-                            e.currentTarget.style.borderLeftColor = '#1890ff';
-                          }}
-                          onMouseLeave={e => {
-                            e.currentTarget.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-                            e.currentTarget.style.borderLeftColor = 'red';
-                          }}
+                          className="column-resize-handle"
                           onMouseDown={e => {
-                            console.log('🎯 CLICKED:', column.key);
                             e.preventDefault();
                             e.stopPropagation();
                             handleResizeStart(e, column.key || '');
                           }}
-                          title={`Drag to resize`}
+                          title={`Drag to resize ${column.name || column.key}`}
                         />
                       </div>
                     </th>
-                  ))}
+                  )}))}
                   <th className={getColumnStyles('customColumn', true)}>
                     <Flex justify="flex-start" style={{ marginInlineStart: 22 }}>
                       <AddCustomColumnButton />
@@ -1923,7 +1907,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                                         fontWeight: 500,
                                         background: '#f6f8fa',
                                       }}
-                                      onClick={() => setShowAddSubtaskFor(updatedTask.id)}
+                                      onClick={() => setShowAddSubtaskFor(updatedTask.id || null)}
                                     >
                                       + Add Sub Task
                                     </div>
@@ -1933,11 +1917,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                               {showAddSubtaskFor === updatedTask.id && (
                                 <tr key={`add-subtask-input-${updatedTask.id}`}>
                                   <td colSpan={visibleColumns.length + 1}>
-                                    <AddTaskListRow
-                                      groupId={tableId}
-                                      parentTask={updatedTask.id}
-                                      onCancel={() => setShowAddSubtaskFor(null)}
-                                    />
+                                    <AddTaskListRow groupId={tableId} parentTask={updatedTask.id} />
                                   </td>
                                 </tr>
                               )}

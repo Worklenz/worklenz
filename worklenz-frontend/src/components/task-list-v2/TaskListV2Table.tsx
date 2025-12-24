@@ -277,7 +277,48 @@ const TaskListV2Section: React.FC = () => {
   // Load from localStorage on mount
   const [columnWidths, setColumnWidths] = useState<Record<string, string>>(() => {
     const stored = localStorage.getItem(`columnWidths_${urlProjectId}`);
-    return stored ? JSON.parse(stored) : {};
+    if (!stored) return {};
+
+    const parsed = JSON.parse(stored);
+    // Validate stored widths against minWidth and maxWidth constraints
+    const validated: Record<string, string> = {};
+    Object.entries(parsed).forEach(([columnId, width]) => {
+      const baseColumn = BASE_COLUMNS.find(col => col.id === columnId);
+      let validatedWidth = width as string;
+
+      if (baseColumn) {
+        const currentWidth = parseInt((width as string).replace('px', ''));
+
+        // Check minWidth constraint
+        if ((baseColumn as any).minWidth) {
+          const minWidth = parseInt((baseColumn as any).minWidth.replace('px', ''));
+          if (currentWidth < minWidth) {
+            validatedWidth = (baseColumn as any).minWidth;
+          }
+        }
+
+        // Check maxWidth constraint
+        if ((baseColumn as any).maxWidth) {
+          const maxWidth = parseInt((baseColumn as any).maxWidth.replace('px', ''));
+          if (currentWidth > maxWidth) {
+            validatedWidth = (baseColumn as any).maxWidth;
+          }
+        }
+
+        // Force title column to max 400px
+        if (columnId === 'title' && currentWidth > 400) {
+          validatedWidth = '400px';
+        }
+
+        // Force description column to min 200px
+        if (columnId === 'description' && currentWidth < 200) {
+          validatedWidth = '200px';
+        }
+      }
+
+      validated[columnId] = validatedWidth;
+    });
+    return validated;
   });
 
   // Save column widths to localStorage whenever they change
@@ -308,11 +349,49 @@ const TaskListV2Section: React.FC = () => {
 
       // Default: hide if neither local field nor backend column found
       return false;
-    }).map(column => ({
-      ...column,
+    }).map(column => {
       // Apply custom width if it exists, otherwise use default width
-      width: columnWidths[column.id] || column.width,
-    }));
+      let width = columnWidths[column.id] || column.width;
+
+      // Force title column to maximum 400px to prevent covering other columns
+      if (column.id === 'title') {
+        const currentWidth = parseInt(width.replace('px', ''));
+        if (currentWidth > 400) {
+          width = '400px';
+        }
+      }
+
+      // Force description column to minimum 200px for readability
+      if (column.id === 'description') {
+        const currentWidth = parseInt(width.replace('px', ''));
+        if (currentWidth < 200) {
+          width = '200px';
+        }
+      }
+
+      // Validate width against minWidth constraint
+      if ((column as any).minWidth) {
+        const minWidth = parseInt((column as any).minWidth.replace('px', ''));
+        const currentWidth = parseInt(width.replace('px', ''));
+        if (currentWidth < minWidth) {
+          width = (column as any).minWidth;
+        }
+      }
+
+      // Validate width against maxWidth constraint
+      if ((column as any).maxWidth) {
+        const maxWidth = parseInt((column as any).maxWidth.replace('px', ''));
+        const currentWidth = parseInt(width.replace('px', ''));
+        if (currentWidth > maxWidth) {
+          width = (column as any).maxWidth;
+        }
+      }
+
+      return {
+        ...column,
+        width,
+      };
+    });
 
     // Add visible custom columns
     const visibleCustomColumns =
@@ -686,9 +765,11 @@ const TaskListV2Section: React.FC = () => {
           style={{ minWidth: 'max-content', height: '44px' }}
         >
           {visibleColumns.map((column, index) => {
-            // Calculate left position for sticky columns - must account for ALL previous columns
+            // Calculate left position for sticky columns
             let leftPosition = 4; // Account for px-1 (4px) padding on container
             if (column.isSticky) {
+              // For sticky columns, we need to account for ALL previous columns
+              // because non-sticky columns between sticky ones still take up space
               for (let i = 0; i < index; i++) {
                 const prevColumn = visibleColumns[i];
                 leftPosition += parseInt(prevColumn.width.replace('px', ''));
@@ -722,14 +803,18 @@ const TaskListV2Section: React.FC = () => {
                         : column.id === 'title'
                           ? 'flex items-center justify-between'
                           : column.id === 'description'
-                            ? 'flex items-center px-2'
+                            ? 'flex items-center pl-2'
                             : column.id === 'labels'
                               ? 'flex items-center gap-0.5 flex-wrap min-w-0 px-2'
                               : column.id === 'assignees'
                                 ? 'flex items-center px-2'
                                 : 'flex items-center justify-center px-2'
                 }`}
-                style={{ ...columnStyle, position: 'relative', overflow: 'hidden' }}
+                style={{
+                  ...columnStyle,
+                  // Add position relative for resize handle positioning, but don't override sticky
+                  ...(!column.isSticky && { position: 'relative' }),
+                }}
               >
                 {column.id === 'dragHandle' || column.id === 'checkbox' ? (
                   <span></span>
@@ -744,7 +829,7 @@ const TaskListV2Section: React.FC = () => {
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
-                      paddingRight: '4px',
+                      paddingRight: '20px',
                       flex: 1,
                     }}
                   >
@@ -759,10 +844,10 @@ const TaskListV2Section: React.FC = () => {
                       position: 'absolute',
                       top: 0,
                       right: 0,
-                      width: 20,
+                      width: 16,
                       height: '100%',
                       cursor: 'col-resize',
-                      zIndex: 100,
+                      zIndex: 20,
                       backgroundColor: 'transparent',
                     }}
                     onMouseEnter={e => {
@@ -783,7 +868,7 @@ const TaskListV2Section: React.FC = () => {
                       // Get min/max widths from column config or use defaults
                       const minWidth = (column as any).minWidth
                         ? parseInt((column as any).minWidth.replace('px', ''))
-                        : 200;
+                        : 100;
                       const maxWidth = (column as any).maxWidth
                         ? parseInt((column as any).maxWidth.replace('px', ''))
                         : 1200;
