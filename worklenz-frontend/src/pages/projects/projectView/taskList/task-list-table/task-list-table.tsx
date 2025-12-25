@@ -36,6 +36,8 @@ import { DragOverEvent } from '@dnd-kit/core';
 import { List, Card, Avatar, Dropdown, Empty, Divider, Button } from '@/shared/antd-imports';
 import dayjs from 'dayjs';
 
+import './task-list-table.css';
+
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
@@ -127,7 +129,11 @@ const DraggableRow = ({ task, children, groupId }: DraggableRowProps) => {
   }
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    // Only apply transform when actually dragging to avoid breaking sticky positioning
+    transform:
+      transform && (transform.x !== 0 || transform.y !== 0)
+        ? CSS.Transform.toString(transform)
+        : undefined,
     transition: isDragging ? 'none' : transition, // Disable transition during drag
     opacity: isDragging ? 0.3 : 1,
     position: 'relative' as const,
@@ -1480,28 +1486,25 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
     if (!key) return '';
 
     const baseStyles = `border px-2 text-left`;
-    const stickyStyles = (() => {
-      switch (key) {
-        case 'selector':
-          return 'sticky left-0 z-20';
-        case 'TASK':
-          return `sticky left-[48px] z-10 after:content after:absolute after:top-0 after:-right-1 after:h-full after:-z-10 after:w-1.5 after:bg-transparent ${
-            scrollingTables[tableId]
-              ? 'after:bg-linear-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent'
-              : ''
-          }`;
-        default:
-          return '';
+
+    // Don't add sticky classes here - they're added separately with CSS classes
+    // Only add width styles for TASK column
+    const widthStyles = key === 'TASK' ? 'w-[474px]' : '';
+
+    const heightStyles = isHeader ? 'after:h-[42px]' : 'after:min-h-[40px]';
+
+    // Background colors are handled by inline styles for sticky columns
+    const themeStyles = (() => {
+      // Don't add background for sticky columns (selector, KEY) as it's in inline styles
+      if (key === 'selector' || key === 'KEY') {
+        return isDarkMode ? 'border-[#303030]' : '';
       }
+      return isDarkMode
+        ? `bg-${isHeader ? '[#1d1d1d]' : '[#141414]'} border-[#303030]`
+        : `bg-${isHeader ? '[#fafafa]' : 'white'}`;
     })();
 
-    const widthStyles = key === 'TASK' ? 'w-[474px]' : '';
-    const heightStyles = isHeader ? 'after:h-[42px]' : 'after:min-h-[40px]';
-    const themeStyles = isDarkMode
-      ? `bg-${isHeader ? '[#1d1d1d]' : '[#141414]'} border-[#303030]`
-      : `bg-${isHeader ? '[#fafafa]' : 'white'}`;
-
-    return `${baseStyles} ${stickyStyles} ${heightStyles} ${themeStyles} ${widthStyles}`;
+    return `${baseStyles} ${heightStyles} ${themeStyles} ${widthStyles}`;
   };
 
   const renderColumnContent = (
@@ -1571,16 +1574,19 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
         {(attributes, listeners) => (
           <>
             <td
-              className={getColumnStyles('selector', false)}
+              className={`${getColumnStyles('selector', false)} sticky-selector-column`}
               style={{
                 width: 56,
+                position: 'sticky' as const,
+                left: '0px',
+                zIndex: 20,
                 backgroundColor: selectedTaskIdsList.includes(task.id || '')
                   ? isDarkMode
                     ? colors.skyBlue
                     : '#dceeff'
                   : isDarkMode
-                    ? '#181818'
-                    : '#fff',
+                    ? '#141414'
+                    : '#ffffff',
               }}
             >
               <Flex gap={8} align="center" justify={isSubtask ? 'flex-end' : 'flex-start'}>
@@ -1595,27 +1601,49 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                 />
               </Flex>
             </td>
-            {visibleColumns.map(column => (
-              <td
-                key={column.key}
-                className={getColumnStyles(column.key, false)}
-                style={{
-                  backgroundColor: getRowBackgroundColor(task.id),
-                  minWidth: column.custom_column ? '120px' : undefined,
-                }}
-                data-task-cell
-                onContextMenu={e => handleContextMenu(e, task)}
-              >
-                <CustomCell
-                  column={column}
-                  task={task}
-                  isSubtask={isSubtask}
-                  renderCustomColumnContent={renderCustomColumnContent}
-                  renderColumnContent={renderColumnContent}
-                  updateTaskCustomColumnValue={updateTaskCustomColumnValue}
-                />
-              </td>
-            ))}
+            {visibleColumns.map(column => {
+              const isKeyColumn = column.key === 'KEY';
+              const backgroundColor =
+                isKeyColumn && !selectedTaskIdsList.includes(task.id || '')
+                  ? isDarkMode
+                    ? '#141414'
+                    : '#ffffff'
+                  : getRowBackgroundColor(task.id);
+
+              const cellStyle = isKeyColumn
+                ? {
+                    position: 'sticky' as const,
+                    left: '56px',
+                    zIndex: 20,
+                    backgroundColor,
+                    width: '100px',
+                    minWidth: '100px',
+                    maxWidth: '100px',
+                  }
+                : {
+                    backgroundColor,
+                    minWidth: column.custom_column ? '120px' : undefined,
+                  };
+
+              return (
+                <td
+                  key={column.key}
+                  className={`${getColumnStyles(column.key, false)} ${isKeyColumn ? 'sticky-key-column' : ''}`}
+                  style={cellStyle}
+                  data-task-cell
+                  onContextMenu={e => handleContextMenu(e, task)}
+                >
+                  <CustomCell
+                    column={column}
+                    task={task}
+                    isSubtask={isSubtask}
+                    renderCustomColumnContent={renderCustomColumnContent}
+                    renderColumnContent={renderColumnContent}
+                    updateTaskCustomColumnValue={updateTaskCustomColumnValue}
+                  />
+                </td>
+              );
+            })}
           </>
         )}
       </DraggableRow>
@@ -1747,48 +1775,76 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
           }
           strategy={verticalListSortingStrategy}
         >
-          <div className={`tasklist-container-${tableId} min-h-0 max-w-full overflow-x-auto`}>
-            <table className="rounded-2 w-full min-w-max border-collapse relative">
-              <thead className="h-[42px]">
+          <div
+            className={`tasklist-container-${tableId} overflow-x-auto`}
+            style={{ position: 'relative' }}
+          >
+            <table
+              className="task-list-table-sticky rounded-2 w-full min-w-max relative"
+              style={{ borderCollapse: 'separate', borderSpacing: 0 }}
+            >
+              <thead className="h-[42px] sticky top-0 z-30">
                 <tr>
                   <th
-                    className={getColumnStyles('selector', true)}
-                    style={{ width: 56, fontWeight: 500 }}
+                    className={`${getColumnStyles('selector', true)} sticky-selector-column`}
+                    style={{
+                      width: 56,
+                      fontWeight: 500,
+                      position: 'sticky' as const,
+                      left: '0px',
+                      zIndex: 40,
+                      backgroundColor: isDarkMode ? '#1d1d1d' : '#fafafa',
+                    }}
                   >
                     <Flex justify="flex-start" style={{ marginInlineStart: 22 }}>
                       <Checkbox checked={isSelectAll} onChange={toggleSelectAll} />
                     </Flex>
                   </th>
-                  {visibleColumns.map(column => (
-                    <th
-                      key={column.key}
-                      className={getColumnStyles(column.key, true)}
-                      style={{ fontWeight: 500 }}
-                    >
-                      <Flex align="center" gap={4}>
-                        {column.key === 'PHASE' && (
-                          <Flex
-                            align="center"
-                            gap={4}
-                            justify="space-between"
-                            className="w-full min-w-[120px]"
-                          >
-                            {project?.phase_label}
-                            <ConfigPhaseButton />
-                          </Flex>
-                        )}
-                        {column.key !== 'PHASE' &&
-                          (column.custom_column && column.pinned ? (
-                            <CustomColumnHeader
-                              column={column}
-                              onSettingsClick={() => handleCustomColumnSettings(column.id || '')}
-                            />
-                          ) : (
-                            t(`${column.key?.replace('_', '').toLowerCase()}Column`)
-                          ))}
-                      </Flex>
-                    </th>
-                  ))}
+                  {visibleColumns.map(column => {
+                    const isKeyColumn = column.key === 'KEY';
+                    const stickyStyle = isKeyColumn
+                      ? {
+                          position: 'sticky' as const,
+                          left: '56px',
+                          zIndex: 40,
+                          fontWeight: 500,
+                          backgroundColor: isDarkMode ? '#1d1d1d' : '#fafafa',
+                          width: '100px',
+                          minWidth: '100px',
+                        }
+                      : { fontWeight: 500 };
+
+                    return (
+                      <th
+                        key={column.key}
+                        className={`${getColumnStyles(column.key, true)} ${isKeyColumn ? 'sticky-key-column' : ''}`}
+                        style={stickyStyle}
+                      >
+                        <Flex align="center" gap={4}>
+                          {column.key === 'PHASE' && (
+                            <Flex
+                              align="center"
+                              gap={4}
+                              justify="space-between"
+                              className="w-full min-w-[120px]"
+                            >
+                              {project?.phase_label}
+                              <ConfigPhaseButton />
+                            </Flex>
+                          )}
+                          {column.key !== 'PHASE' &&
+                            (column.custom_column && column.pinned ? (
+                              <CustomColumnHeader
+                                column={column}
+                                onSettingsClick={() => handleCustomColumnSettings(column.id || '')}
+                              />
+                            ) : (
+                              t(`${column.key?.replace('_', '').toLowerCase()}Column`)
+                            ))}
+                        </Flex>
+                      </th>
+                    );
+                  })}
                   <th className={getColumnStyles('customColumn', true)}>
                     <Flex justify="flex-start" style={{ marginInlineStart: 22 }}>
                       <AddCustomColumnButton />

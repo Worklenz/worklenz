@@ -19,6 +19,7 @@ export const BASE_COLUMNS = [
     id: 'taskKey',
     label: 'keyColumn',
     width: '100px',
+    isSticky: true,
     key: COLUMN_KEYS.KEY,
     minWidth: '100px',
     maxWidth: '150px',
