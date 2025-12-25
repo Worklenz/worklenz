@@ -1,10 +1,11 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useMemo } from 'react';
 import { Button, Card, Checkbox, Dropdown, Flex, Space, Typography } from '@/shared/antd-imports';
 import { DownOutlined, ReloadOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import { useAuthService } from '@/hooks/useAuth';
 import CustomPageHeader from '@/components/reporting/common/CustomPageHeader';
 import AllTasksReportsFilters from './all-tasks-reports-filters/all-tasks-reports-filters';
 import AllTasksReportsTable from './all-tasks-reports-table/all-tasks-reports-table';
@@ -21,6 +22,8 @@ const AllTasksReports = () => {
   const dispatch = useAppDispatch();
   useDocumentTitle('Reporting - All Tasks');
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const authService = useAuthService();
+  const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
 
   const { total, isLoading, includeArchived } = useAppSelector(
     state => state.allTasksReportsReducer
@@ -40,9 +43,10 @@ const AllTasksReports = () => {
     { key: 'excel', label: t('exportToExcel', { defaultValue: 'Export to Excel' }) },
   ];
 
+  // Fetch teams on mount and when current team changes
   useEffect(() => {
     dispatch(fetchAllTasksTeams());
-  }, [dispatch]);
+  }, [dispatch, currentSession?.team_id]);
 
   useEffect(() => {
     dispatch(fetchAllTasks());
