@@ -13,18 +13,13 @@ import {
   Button,
   message,
   Collapse,
-  Row,
-  Col,
   theme,
   Form,
   Flex,
   CalendarOutlined,
   UserOutlined,
-  PaperClipOutlined,
   SendOutlined,
-  FileOutlined,
   DownloadOutlined,
-  TeamOutlined,
   FlagOutlined,
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -62,7 +57,6 @@ const TaskDrawer: React.FC<TaskDrawerProps> = ({
   const [activeTab, setActiveTab] = useState('details');
   const [unseenCount, setUnseenCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const commentValue = Form.useWatch('comment', form) || '';
 
   // Sync unseen count from props
   useEffect(() => {
@@ -111,7 +105,7 @@ const TaskDrawer: React.FC<TaskDrawerProps> = ({
       setIsLoading(true);
       const response = await clientPortalAPI.getTaskDetails(taskId);
       if (response.done) {
-        setTaskDetails(response.body);
+        setTaskDetails(response.body as TaskDetails);
       } else {
         message.error(t('tasks.failedToLoad'));
       }
@@ -130,7 +124,7 @@ const TaskDrawer: React.FC<TaskDrawerProps> = ({
       setIsCommentsLoading(true);
       const response = await clientPortalAPI.getTaskComments(taskId);
       if (response.done) {
-        setComments(response.body || []);
+        setComments((response.body as TaskComment[]) || []);
       }
     } catch (error) {
       console.error('Error fetching comments:', error);
