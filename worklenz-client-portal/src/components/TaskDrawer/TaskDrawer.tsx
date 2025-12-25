@@ -214,11 +214,15 @@ const TaskDrawer: React.FC<TaskDrawerProps> = ({
 
     return (
       <Collapse
-        defaultActiveKey={['info', 'team', 'attachments']}
+        defaultActiveKey={['info', 'description', 'team', 'attachments']}
         bordered={false}
         style={{ background: 'transparent' }}
       >
-        <Panel header={t('tasks.taskInformation')} key="info">
+        <Panel 
+          header={<Typography.Text strong>{t('tasks.taskInformation')}</Typography.Text>} 
+          key="info"
+          style={{ border: 'none', paddingBlock: 0 }}
+        >
           <Space direction="vertical" size="middle" style={{ width: '100%' }}>
             <div>
               <Text type="secondary" style={{ fontSize: 12 }}>{t('tasks.status')}</Text>
@@ -226,15 +230,6 @@ const TaskDrawer: React.FC<TaskDrawerProps> = ({
                 <Tag color={taskDetails.statusColor}>{taskDetails.statusName}</Tag>
               </div>
             </div>
-
-            {taskDetails.description && (
-              <div>
-                <Text type="secondary" style={{ fontSize: 12 }}>{t('tasks.description')}</Text>
-                <div style={{ marginTop: 4 }}>
-                  <Text>{taskDetails.description}</Text>
-                </div>
-              </div>
-            )}
 
             <Descriptions column={2} size="small">
               <Descriptions.Item label={t('tasks.startDate')}>
@@ -259,14 +254,22 @@ const TaskDrawer: React.FC<TaskDrawerProps> = ({
           </Space>
         </Panel>
 
+        {taskDetails.description && (
+          <Panel 
+            header={<Typography.Text strong>{t('tasks.description')}</Typography.Text>} 
+            key="description"
+            style={{ border: 'none', paddingBlock: 0 }}
+          >
+            <div style={{ padding: '8px 0' }}>
+              <Text>{taskDetails.description}</Text>
+            </div>
+          </Panel>
+        )}
+
         <Panel
-          header={
-            <Space>
-              <TeamOutlined />
-              {t('tasks.teamAndPriority')}
-            </Space>
-          }
+          header={<Typography.Text strong>{t('tasks.teamAndPriority')}</Typography.Text>}
           key="team"
+          style={{ border: 'none', paddingBlock: 0 }}
         >
           <Space direction="vertical" size="middle" style={{ width: '100%' }}>
             {taskDetails.priorityName && (
@@ -321,13 +324,9 @@ const TaskDrawer: React.FC<TaskDrawerProps> = ({
         </Panel>
 
         <Panel
-          header={
-            <Space>
-              <PaperClipOutlined />
-              {t('tasks.attachments')} ({taskDetails.attachments?.length || 0})
-            </Space>
-          }
+          header={<Typography.Text strong>{t('tasks.attachments')} ({taskDetails.attachments?.length || 0})</Typography.Text>}
           key="attachments"
+          style={{ border: 'none', paddingBlock: 0 }}
         >
           {taskDetails.attachments && taskDetails.attachments.length > 0 ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
@@ -450,8 +449,6 @@ const TaskDrawer: React.FC<TaskDrawerProps> = ({
   };
 
   const renderCommentInput = () => {
-    if (activeTab !== 'comments') return null;
-
     return (
       <Form form={form} onFinish={handleAddComment}>
         <Flex gap={12} align="flex-end">
