@@ -37,8 +37,14 @@ export default class ReportingAllTasksController extends ReportingControllerBase
     const teamId = req.user?.team_id;
     const userId = req.user?.id;
 
-    // Base team filter
-    clauses.push(`t.project_id IN (SELECT id FROM projects WHERE team_id = '${teamId}')`);
+    // Teams filter - if teams are provided, use only those; otherwise use current team
+    if (body.teams && body.teams.length > 0) {
+      const teamIds = body.teams.map(id => `'${id}'`).join(",");
+      clauses.push(`t.project_id IN (SELECT id FROM projects WHERE team_id IN (${teamIds}))`);
+    } else {
+      // Base team filter - only apply if no teams filter is provided
+      clauses.push(`t.project_id IN (SELECT id FROM projects WHERE team_id = '${teamId}')`);
+    }
 
     // Archived filter
     if (!body.includeArchived) {
@@ -48,12 +54,6 @@ export default class ReportingAllTasksController extends ReportingControllerBase
     // Subtasks filter
     if (!body.includeSubtasks) {
       clauses.push(`t.parent_task_id IS NULL`);
-    }
-
-    // Teams filter
-    if (body.teams && body.teams.length > 0) {
-      const teamIds = body.teams.map(id => `'${id}'`).join(",");
-      clauses.push(`t.project_id IN (SELECT id FROM projects WHERE team_id IN (${teamIds}))`);
     }
 
     // Projects filter
