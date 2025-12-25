@@ -42,6 +42,9 @@ export {
   Breadcrumb,
   Radio,
   Result,
+  Collapse,
+  Tabs,
+  Skeleton,
 } from "antd/es";
 
 // Types
@@ -100,4 +103,5 @@ export {
   SyncOutlined,
   LoadingOutlined,
   CommentOutlined,
+  FlagOutlined,
 } from "@ant-design/icons";

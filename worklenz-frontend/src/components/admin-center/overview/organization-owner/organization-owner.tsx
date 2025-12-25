@@ -51,11 +51,11 @@ const OrganizationOwner = ({ themeMode, organization, t, refetch }: Organization
   };
 
   return (
-    <Card>
-      <Typography.Title level={5} style={{ margin: 0, marginBottom: '0.5rem' }}>
+    <div style={{ width: '100%' }}>
+      <Typography.Title level={5} style={{ margin: 0, marginBottom: 16 }}>
         {t('owner')}
       </Typography.Title>
-      <div style={{ paddingTop: '8px' }}>
+      <div style={{ paddingTop: '4px' }}>
         <div style={{ marginBottom: '8px' }}>
           <Typography.Text
             style={{
@@ -66,13 +66,14 @@ const OrganizationOwner = ({ themeMode, organization, t, refetch }: Organization
           </Typography.Text>
         </div>
       </div>
-      <Typography.Paragraph style={{ display: 'flex', alignItems: 'center', margin: 0 }}>
+      <Typography.Paragraph style={{ display: 'flex', alignItems: 'center', margin: '12px 0' }}>
         <Typography.Text
           style={{
             color: `${themeMode === 'dark' ? '#ffffffd9' : '#000000d9'}`,
+            fontSize: 14,
           }}
         >
-          <span style={{ marginRight: '8px' }}>
+          <span style={{ marginRight: '8px', color: themeMode === 'dark' ? '#8c8c8c' : '#8c8c8c' }}>
             <Tooltip title="Email Address">
               <MailOutlined />
             </Tooltip>
@@ -80,7 +81,7 @@ const OrganizationOwner = ({ themeMode, organization, t, refetch }: Organization
           {organization?.email || ''}
         </Typography.Text>
       </Typography.Paragraph>
-      <Typography.Paragraph style={{ marginTop: '0.5rem', marginBottom: 0 }}>
+      <Typography.Paragraph style={{ marginTop: '8px', marginBottom: 0 }}>
         <Tooltip title="Contact Number">
           <span style={{ marginRight: '8px' }}>
             <PhoneOutlined />
@@ -113,7 +114,7 @@ const OrganizationOwner = ({ themeMode, organization, t, refetch }: Organization
           </Typography.Text>
         )}
       </Typography.Paragraph>
-    </Card>
+    </div>
   );
 };
 

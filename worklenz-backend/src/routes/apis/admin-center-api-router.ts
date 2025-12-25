@@ -4,6 +4,7 @@ import AdminCenterController from "../../controllers/admin-center-controller";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import organizationSettingsValidator from "../../middlewares/validators/organization-settings-validator";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
+import { requireBusinessPlan } from "../../middlewares/subscription-middleware";
 
 const adminCenterApiRouter = express.Router();
 
@@ -14,6 +15,8 @@ adminCenterApiRouter.get("/organization/admins", teamOwnerOrAdminValidator, safe
 adminCenterApiRouter.put("/organization", teamOwnerOrAdminValidator, organizationSettingsValidator, safeControllerFunction(AdminCenterController.updateOrganizationName));
 adminCenterApiRouter.put("/organization/calculation-method", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.updateOrganizationCalculationMethod));
 adminCenterApiRouter.put("/organization/owner/contact-number", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.updateOwnerContactNumber));
+adminCenterApiRouter.post("/organization/logo", teamOwnerOrAdminValidator, requireBusinessPlan, safeControllerFunction(AdminCenterController.uploadOrganizationLogo));
+adminCenterApiRouter.delete("/organization/logo", teamOwnerOrAdminValidator, requireBusinessPlan, safeControllerFunction(AdminCenterController.deleteOrganizationLogo));
 
 // holiday settings
 adminCenterApiRouter.get("/organization/holiday-settings", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getOrganizationHolidaySettings));

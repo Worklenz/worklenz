@@ -62,6 +62,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
     return text ? `status_id IN (${this.flatString(text)})` : "";
   }
 
+  /**
+   * Filters tasks by priority, including tasks that have descendants matching the priority filter.
+   * Uses recursive CTE to check all descendant levels, not just immediate children.
+   * This ensures parent tasks are shown when deeply nested subtasks match the filter.
+   */
   private static getFilterByPriorityWhereClosure(text: string) {
     if (!text) return "";
 
@@ -69,14 +74,33 @@ export default class TasksControllerV2 extends TasksControllerBase {
     return `(
       priority_id IN (${priorityIds})
       OR EXISTS (
-        SELECT 1 FROM tasks subtask
-        WHERE subtask.parent_task_id = t.id
-        AND subtask.priority_id IN (${priorityIds})
-        AND subtask.archived IS FALSE
+        WITH RECURSIVE task_descendants AS (
+          -- Base case: direct children (non-archived)
+          SELECT id, parent_task_id, priority_id
+          FROM tasks
+          WHERE parent_task_id = t.id
+          AND archived IS FALSE
+          
+          UNION ALL
+          
+          -- Recursive case: children of children (non-archived)
+          SELECT t2.id, t2.parent_task_id, t2.priority_id
+          FROM tasks t2
+          INNER JOIN task_descendants td ON t2.parent_task_id = td.id
+          WHERE t2.archived IS FALSE
+        )
+        SELECT 1
+        FROM task_descendants
+        WHERE priority_id IN (${priorityIds})
       )
     )`;
   }
 
+  /**
+   * Filters tasks by labels, including tasks that have descendants matching the label filter.
+   * Uses recursive CTE to check all descendant levels, not just immediate children.
+   * This ensures parent tasks are shown when deeply nested subtasks match the filter.
+   */
   private static getFilterByLabelsWhereClosure(text: string) {
     if (!text) return "";
 
@@ -84,15 +108,34 @@ export default class TasksControllerV2 extends TasksControllerBase {
     return `(
       id IN (SELECT task_id FROM task_labels WHERE label_id IN (${labelIds}))
       OR EXISTS (
-        SELECT 1 FROM tasks subtask
-        JOIN task_labels tl ON tl.task_id = subtask.id
-        WHERE subtask.parent_task_id = t.id
-        AND tl.label_id IN (${labelIds})
-        AND subtask.archived IS FALSE
+        WITH RECURSIVE task_descendants AS (
+          -- Base case: direct children (non-archived)
+          SELECT id, parent_task_id
+          FROM tasks
+          WHERE parent_task_id = t.id
+          AND archived IS FALSE
+          
+          UNION ALL
+          
+          -- Recursive case: children of children (non-archived)
+          SELECT t2.id, t2.parent_task_id
+          FROM tasks t2
+          INNER JOIN task_descendants td ON t2.parent_task_id = td.id
+          WHERE t2.archived IS FALSE
+        )
+        SELECT 1
+        FROM task_descendants td
+        JOIN task_labels tl ON tl.task_id = td.id
+        WHERE tl.label_id IN (${labelIds})
       )
     )`;
   }
 
+  /**
+   * Filters tasks by assigned members, including tasks that have descendants matching the member filter.
+   * Uses recursive CTE to check all descendant levels, not just immediate children.
+   * This ensures parent tasks are shown when deeply nested subtasks match the filter.
+   */
   private static getFilterByMembersWhereClosure(text: string) {
     if (!text) return "";
 
@@ -100,11 +143,25 @@ export default class TasksControllerV2 extends TasksControllerBase {
     return `(
       id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${memberIds}))
       OR EXISTS (
-        SELECT 1 FROM tasks subtask
-        JOIN tasks_assignees ta ON ta.task_id = subtask.id
-        WHERE subtask.parent_task_id = t.id
-        AND ta.team_member_id IN (${memberIds})
-        AND subtask.archived IS FALSE
+        WITH RECURSIVE task_descendants AS (
+          -- Base case: direct children (non-archived)
+          SELECT id, parent_task_id
+          FROM tasks
+          WHERE parent_task_id = t.id
+          AND archived IS FALSE
+          
+          UNION ALL
+          
+          -- Recursive case: children of children (non-archived)
+          SELECT t2.id, t2.parent_task_id
+          FROM tasks t2
+          INNER JOIN task_descendants td ON t2.parent_task_id = td.id
+          WHERE t2.archived IS FALSE
+        )
+        SELECT 1
+        FROM task_descendants td
+        JOIN tasks_assignees ta ON ta.task_id = td.id
+        WHERE ta.team_member_id IN (${memberIds})
       )
     )`;
   }
@@ -314,48 +371,93 @@ export default class TasksControllerV2 extends TasksControllerBase {
       .join(" AND ");
 
     // Build filtered subtask count query - apply same filters to subtasks
-    const subtaskFilters = [];
-
-    // Always filter by archived status for subtasks
-    subtaskFilters.push(archivedFilter);
-
-    // Apply status filter to subtasks if present
-    if (statusesFilter) {
-      subtaskFilters.push(statusesFilter.replace(/\bt\./g, 'subtask.'));
-    }
-
-    // Apply priority filter to subtasks if present
-    if (options.priorities) {
-      const priorityIds = this.flatString(options.priorities as string);
-      subtaskFilters.push(`subtask.priority_id IN (${priorityIds})`);
-    }
-
-    // Apply labels filter to subtasks if present
-    if (options.labels) {
-      const labelIds = this.flatString(options.labels as string);
-      subtaskFilters.push(`subtask.id IN (SELECT task_id FROM task_labels WHERE label_id IN (${labelIds}))`);
-    }
-
-    // Apply members filter to subtasks if present
-    if (options.members) {
-      const memberIds = this.flatString(options.members as string);
-      subtaskFilters.push(`subtask.id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${memberIds}))`);
-    }
-
-    // Apply search filter to subtasks if present
-    if (options.search && !isSubTasks) {
-      const searchTerm = options.search.toString().trim();
-      if (searchTerm) {
-        subtaskFilters.push(`(
-          subtask.name ILIKE '%${searchTerm}%'
-          OR CONCAT((SELECT key FROM projects WHERE id = subtask.project_id), '-', subtask.task_no) ILIKE '%${searchTerm}%'
-        )`);
+    // This needs to be recursive to count matching subtasks at ANY level
+    const hasFilters = !!(options.priorities || options.labels || options.members || (options.search && !isSubTasks) || statusesFilter);
+    
+    // Build the recursive subtask count query
+    // When filters are applied, we need to count subtasks that match OR have descendants that match
+    let recursiveSubtaskCountQuery: string;
+    
+    if (hasFilters) {
+      // Build filter conditions for the descendant tasks
+      const descendantFilters = ['descendant.archived IS FALSE'];
+      
+      if (statusesFilter) {
+        descendantFilters.push(statusesFilter.replace(/\bt\./g, 'descendant.'));
       }
+      if (options.priorities) {
+        const priorityIds = this.flatString(options.priorities as string);
+        descendantFilters.push(`descendant.priority_id IN (${priorityIds})`);
+      }
+      if (options.labels) {
+        const labelIds = this.flatString(options.labels as string);
+        descendantFilters.push(`descendant.id IN (SELECT task_id FROM task_labels WHERE label_id IN (${labelIds}))`);
+      }
+      if (options.members) {
+        const memberIds = this.flatString(options.members as string);
+        descendantFilters.push(`descendant.id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${memberIds}))`);
+      }
+      if (options.search && !isSubTasks) {
+        const searchTerm = options.search.toString().trim();
+        if (searchTerm) {
+          descendantFilters.push(`(
+            descendant.name ILIKE '%${searchTerm}%'
+            OR CONCAT((SELECT key FROM projects WHERE id = descendant.project_id), '-', descendant.task_no) ILIKE '%${searchTerm}%'
+          )`);
+        }
+      }
+      
+      const descendantFilterClause = descendantFilters.join(' AND ');
+      
+      recursiveSubtaskCountQuery = `
+        (SELECT COUNT(*)::INT FROM (
+          SELECT DISTINCT child_id FROM (
+            -- Part 1: Direct children that match the filter
+            SELECT direct_child.id AS child_id
+            FROM tasks direct_child
+            WHERE direct_child.parent_task_id = t.id
+            AND direct_child.archived IS FALSE
+            AND EXISTS (
+              SELECT 1 FROM tasks descendant 
+              WHERE descendant.id = direct_child.id 
+              AND ${descendantFilterClause}
+            )
+            
+            UNION
+            
+            -- Part 2: Direct children that have ANY descendant matching the filter
+            SELECT direct_child.id AS child_id
+            FROM tasks direct_child
+            WHERE direct_child.parent_task_id = t.id
+            AND direct_child.archived IS FALSE
+            AND EXISTS (
+              WITH RECURSIVE all_descendants AS (
+                SELECT id, parent_task_id
+                FROM tasks
+                WHERE parent_task_id = direct_child.id AND archived IS FALSE
+                
+                UNION ALL
+                
+                SELECT t2.id, t2.parent_task_id
+                FROM tasks t2
+                INNER JOIN all_descendants ad ON t2.parent_task_id = ad.id
+                WHERE t2.archived IS FALSE
+              )
+              SELECT 1
+              FROM all_descendants ad
+              INNER JOIN tasks descendant ON descendant.id = ad.id
+              WHERE ${descendantFilterClause}
+            )
+          ) AS combined_children
+        ) AS result)`;
+    } else {
+      // No filters - just count direct children
+      recursiveSubtaskCountQuery = `
+        (SELECT COUNT(*)::INT
+         FROM tasks subtask
+         WHERE subtask.parent_task_id = t.id
+         AND subtask.archived IS FALSE)`;
     }
-
-    const subtaskFilterClause = subtaskFilters.length > 0
-      ? `AND ${subtaskFilters.join(' AND ')}`
-      : '';
 
     return `
       SELECT id,
@@ -366,9 +468,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
              t.parent_task_id,
              t.parent_task_id IS NOT NULL AS is_sub_task,
              (SELECT name FROM tasks WHERE id = t.parent_task_id) AS parent_task_name,
-             (SELECT COUNT(*)
-              FROM tasks subtask
-              WHERE subtask.parent_task_id = t.id ${subtaskFilterClause})::INT AS sub_tasks_count,
+             ${recursiveSubtaskCountQuery} AS sub_tasks_count,
 
              t.status_id AS status,
              t.archived,

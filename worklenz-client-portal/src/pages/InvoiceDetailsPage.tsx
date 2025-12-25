@@ -73,9 +73,12 @@ const InvoiceDetailsPage: React.FC = () => {
           paymentProofFile[0].originFileObj,
           "payment_proof"
         );
-        if (uploadResponse.done) {
-          proofUrl = uploadResponse.body.url;
+        if (!uploadResponse.done) {
+          const errorMessage = uploadResponse.message || "Failed to upload payment proof file";
+          message.error(errorMessage);
+          throw new Error(errorMessage);
         }
+        proofUrl = uploadResponse.body.url;
       }
 
       const response = await clientPortalAPI.payInvoice(id!, {
@@ -83,16 +86,27 @@ const InvoiceDetailsPage: React.FC = () => {
         transactionId: proofUrl,
       });
 
-      if (response.done) {
-        message.success("Payment proof submitted successfully");
-        setIsPaymentModalVisible(false);
-        setPaymentNotes("");
-        setPaymentProofFile([]);
-        fetchInvoiceDetails();
+      if (!response.done) {
+        const errorMessage = response.message || "Failed to submit payment proof";
+        message.error(errorMessage);
+        throw new Error(errorMessage);
       }
-    } catch (err) {
-      message.error("Failed to submit payment proof");
+
+      message.success("Payment proof submitted successfully");
+      setIsPaymentModalVisible(false);
+      setPaymentNotes("");
+      setPaymentProofFile([]);
+      fetchInvoiceDetails();
+    } catch (err: any) {
+      // Show error message for unexpected errors (network errors, etc.)
+      // Note: Expected errors (upload/payment failures) already show messages above
+      if (err?.response && !err?.message?.includes("Failed to")) {
+        const errorMessage = err?.response?.data?.message || "An unexpected error occurred";
+        message.error(errorMessage);
+      }
       console.error("Payment submission error:", err);
+      // Re-throw to prevent modal from closing on error
+      throw err;
     } finally {
       setIsSubmittingPayment(false);
     }

@@ -149,6 +149,14 @@ export function getClientPortalLogoKey(teamId: string, type: string) {
   return keyPath;
 }
 
+export function getOrganizationLogoKey(organizationId: string, fileExtension: string) {
+  const keyPath = path
+    .join("organization-logos", getRootDir(), `${organizationId}.${fileExtension}`)
+    .replace(/\\/g, "/");
+  
+  return keyPath;
+}
+
 /**
  * Get the environment prefix for client portal storage
  * Uses explicit environment names: prod, uat, dev
