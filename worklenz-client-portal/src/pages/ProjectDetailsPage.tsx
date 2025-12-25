@@ -1,19 +1,19 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { 
-  Card, 
-  Typography, 
-  Row, 
-  Col, 
-  Spin, 
-  Alert, 
-  Tag, 
-  Progress, 
+import {
+  Card,
+  Typography,
+  Row,
+  Col,
+  Spin,
+  Alert,
+  Tag,
+  Progress,
   Table,
   Space,
   Descriptions,
   Button,
   Input,
-  ProjectOutlined, 
+  ProjectOutlined,
   CalendarOutlined,
   CheckCircleOutlined,
   ArrowLeftOutlined,
@@ -22,9 +22,9 @@ import {
   theme
 } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
-
 import { useParams, useNavigate } from 'react-router-dom';
 import clientPortalAPI from '@/services/api';
+import TaskDrawer from '@/components/TaskDrawer/TaskDrawer';
 
 const { Title, Text } = Typography;
 
@@ -55,6 +55,7 @@ interface ProjectTask {
   endDate: string | null;
   createdAt: string;
   updatedAt: string;
+  unseenCommentsCount: number;
 }
 
 const ProjectDetailsPage: React.FC = () => {
@@ -73,6 +74,8 @@ const ProjectDetailsPage: React.FC = () => {
     total: 0
   });
   const [searchText, setSearchText] = useState('');
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [isTaskDrawerOpen, setIsTaskDrawerOpen] = useState(false);
 
   const fetchProjectDetails = useCallback(async (projectId: string) => {
     try {
@@ -207,12 +210,18 @@ const ProjectDetailsPage: React.FC = () => {
       dataIndex: 'name',
       key: 'name',
       render: (text: string, record: ProjectTask) => (
-        <div>
-          <Text strong>{text}</Text>
+        <div
+          style={{ cursor: 'pointer' }}
+          onClick={() => {
+            setSelectedTaskId(record.id);
+            setIsTaskDrawerOpen(true);
+          }}
+        >
+          <Text strong style={{ color: token.colorPrimary }}>{text}</Text>
           {record.description && (
             <div style={{ color: '#666', fontSize: '12px', marginTop: 4 }}>
-              {record.description.length > 80 
-                ? `${record.description.substring(0, 80)}...` 
+              {record.description.length > 80
+                ? `${record.description.substring(0, 80)}...`
                 : record.description
               }
             </div>
@@ -262,43 +271,40 @@ const ProjectDetailsPage: React.FC = () => {
   return (
     <div>
       <Button 
-        icon={<ArrowLeftOutlined />} 
+        icon={<ArrowLeftOutlined />}
         onClick={() => navigate('/projects')}
         style={{ marginBottom: 16 }}
       >
         Back to Projects
       </Button>
 
-      <Card style={{ marginBottom: 24 }}>
-        <Row gutter={[24, 16]} align="middle">
-          <Col flex="auto">
-            <Space align="center" size="middle">
-              <ProjectOutlined style={{ fontSize: 32, color: '#1890ff' }} />
-              <div>
-                <Title level={3} style={{ margin: 0 }}>{projectDetails.name}</Title>
-                <Tag color={projectDetails.statusColor} style={{ marginTop: 8 }}>
-                  {projectDetails.status}
-                </Tag>
-              </div>
-            </Space>
-          </Col>
-          <Col>
-            <Card
-              size="small"
-              style={{
-                background: token.colorBgElevated,
-                border: `1px solid ${token.colorBorderSecondary}`,
-                boxShadow: token.boxShadowTertiary,
-              }}
-            >
-              <Space direction="vertical" align="center" size={0}>
-                <Text type="secondary" style={{ fontSize: 12, color: token.colorTextSecondary }}>
-                  Progress
-                </Text>
-                <Progress 
-                  type="circle" 
+      <Card style={{ marginBottom: 16 }} styles={{ body: { padding: '16px 24px' } }}>
+        <Space direction="vertical" size={12} style={{ width: '100%' }}>
+          <Row gutter={16} align="middle">
+            <Col flex="auto">
+              <Space size={12} align="center">
+                <ProjectOutlined style={{ fontSize: 24, color: token.colorPrimary }} />
+                <div>
+                  <Space size={8} align="center" wrap>
+                    <Title level={4} style={{ margin: 0 }}>{projectDetails.name}</Title>
+                    <Tag color={projectDetails.statusColor}>{projectDetails.status}</Tag>
+                  </Space>
+                  <div style={{ marginTop: 6 }}>
+                    <Text type="secondary" style={{ fontSize: 13 }}>
+                      <CalendarOutlined style={{ marginRight: 4 }} />
+                      {formatDate(projectDetails.startDate)} - {formatDate(projectDetails.endDate)}
+                    </Text>
+                  </div>
+                </div>
+              </Space>
+            </Col>
+            <Col>
+              <div style={{ textAlign: 'center', minWidth: 100 }}>
+                <Progress
+                  type="circle"
                   percent={projectDetails.statistics.progressPercentage}
-                  size={80}
+                  size={64}
+                  strokeWidth={8}
                   strokeColor={
                     projectDetails.statistics.progressPercentage === 100
                       ? token.colorSuccess
@@ -307,89 +313,90 @@ const ProjectDetailsPage: React.FC = () => {
                   trailColor={
                     currentTheme === 'dark' ? token.colorBorderSecondary : token.colorFillSecondary
                   }
-                  format={(percent) => `${percent ?? 0}%`}
+                  format={(percent) => (
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>{percent ?? 0}%</span>
+                  )}
                   status={projectDetails.statistics.progressPercentage === 100 ? 'success' : 'active'}
                 />
-                <Text type="secondary" style={{ fontSize: 12, color: token.colorTextSecondary }}>
-                  {projectDetails.statistics.completedTasks}/{projectDetails.statistics.totalTasks} tasks
+                <div style={{ marginTop: 4 }}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {projectDetails.statistics.completedTasks}/{projectDetails.statistics.totalTasks} tasks
+                  </Text>
+                </div>
+              </div>
+            </Col>
+          </Row>
+          {projectDetails.description && (
+            <Row>
+              <Col span={24}>
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  {projectDetails.description}
                 </Text>
-              </Space>
-            </Card>
-          </Col>
-        </Row>
+              </Col>
+            </Row>
+          )}
+        </Space>
       </Card>
 
-      <Row gutter={[24, 24]}>
-        <Col xs={24} lg={8}>
-          <Card title="Project Details" size="small">
-            <Descriptions column={1} size="small">
-              <Descriptions.Item label="Start Date">
-                <Space>
-                  <CalendarOutlined />
-                  {formatDate(projectDetails.startDate)}
-                </Space>
-              </Descriptions.Item>
-              <Descriptions.Item label="End Date">
-                <Space>
-                  <CalendarOutlined />
-                  {formatDate(projectDetails.endDate)}
-                </Space>
-              </Descriptions.Item>
-              <Descriptions.Item label="Created">
-                {formatDate(projectDetails.createdAt)}
-              </Descriptions.Item>
-            </Descriptions>
-            {projectDetails.description && (
-              <div style={{ marginTop: 16 }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>Description</Text>
-                <div style={{ marginTop: 4 }}>{projectDetails.description}</div>
-              </div>
-            )}
-          </Card>
-        </Col>
+      <Card 
+        title={
+          <Space>
+            <CheckCircleOutlined />
+            Tasks
+            <Tag>{tasksPagination.total}</Tag>
+          </Space>
+        }
+        extra={
+          <Input.Search
+            placeholder="Search tasks..."
+            allowClear
+            onSearch={handleSearch}
+            style={{ width: 200 }}
+            prefix={<SearchOutlined />}
+          />
+        }
+      >
+        <Table
+          columns={taskColumns}
+          dataSource={tasks}
+          rowKey="id"
+          loading={isTasksLoading}
+          pagination={{
+            current: tasksPagination.current,
+            pageSize: tasksPagination.pageSize,
+            total: tasksPagination.total,
+            showSizeChanger: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} tasks`,
+            pageSizeOptions: ['10', '20', '50']
+          }}
+          onChange={handleTableChange}
+          scroll={{ x: 700 }}
+          locale={{
+            emptyText: 'No tasks found'
+          }}
+          size="small"
+        />
+      </Card>
 
-        <Col xs={24} lg={16}>
-          <Card 
-            title={
-              <Space>
-                <CheckCircleOutlined />
-                Tasks
-                <Tag>{tasksPagination.total}</Tag>
-              </Space>
-            }
-            extra={
-              <Input.Search
-                placeholder="Search tasks..."
-                allowClear
-                onSearch={handleSearch}
-                style={{ width: 200 }}
-                prefix={<SearchOutlined />}
-              />
-            }
-          >
-            <Table
-              columns={taskColumns}
-              dataSource={tasks}
-              rowKey="id"
-              loading={isTasksLoading}
-              pagination={{
-                current: tasksPagination.current,
-                pageSize: tasksPagination.pageSize,
-                total: tasksPagination.total,
-                showSizeChanger: true,
-                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} tasks`,
-                pageSizeOptions: ['10', '20', '50']
-              }}
-              onChange={handleTableChange}
-              scroll={{ x: 700 }}
-              locale={{
-                emptyText: 'No tasks found'
-              }}
-              size="small"
-            />
-          </Card>
-        </Col>
-      </Row>
+      <TaskDrawer
+        open={isTaskDrawerOpen}
+        taskId={selectedTaskId}
+        unseenCommentsCount={
+          selectedTaskId
+            ? tasks.find(task => task.id === selectedTaskId)?.unseenCommentsCount || 0
+            : 0
+        }
+        onClose={() => {
+          setIsTaskDrawerOpen(false);
+          setSelectedTaskId(null);
+        }}
+        onTaskUpdated={() => {
+          // Refresh tasks list to update unseen counts
+          if (id) {
+            fetchProjectTasks(id, tasksPagination.current, tasksPagination.pageSize, searchText);
+          }
+        }}
+      />
     </div>
   );
 };

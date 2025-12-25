@@ -8,6 +8,7 @@ import {
   fetchGroupedProjects
 } from '@/features/reporting/projectReports/project-reports-slice';
 import ProjectTasksModal from './project-tasks-modal';
+import { colors } from '@/styles/colors';
 import './projects-grouped-view.css';
 
 // Pagination constants for expanding projects within groups (client-side)
@@ -32,6 +33,7 @@ const ProjectsGroupedView = () => {
   const dispatch = useAppDispatch();
   const [selectedProject, setSelectedProject] = useState<IRPTProject | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   // Track visible items per group for client-side pagination
   const [groupPagination, setGroupPagination] = useState<Record<string, number>>({});
@@ -116,17 +118,106 @@ const ProjectsGroupedView = () => {
       const total = project.tasks_stat?.total || (todoTasks + doingTasks + doneTasks);
       const percentDone = total > 0 ? Math.round((doneTasks / total) * 100) : 0;
 
+      // Enhanced tooltip with improved UI design
+      // Ant Design Tooltip has dark background in both themes, so white text works
+      const tooltipTextColor = colors.white;
+      const dividerColor = 'rgba(255, 255, 255, 0.2)';
+      
       const progressTooltipTitle = (
-        <Flex vertical>
-          <Typography.Text>
-            {t('todoText')}: {todoTasks}
-          </Typography.Text>
-          <Typography.Text>
-            {t('doingText')}: {doingTasks}
-          </Typography.Text>
-          <Typography.Text>
-            {t('doneText')}: {doneTasks}
-          </Typography.Text>
+        <Flex vertical gap={10} style={{ minWidth: 220, padding: '2px 0' }}>
+          {/* Top section: Total tasks with emphasis */}
+          <Flex vertical gap={2}>
+            <Typography.Text 
+              strong 
+              style={{ 
+                color: tooltipTextColor, 
+                fontSize: 14, 
+                fontWeight: 600,
+                lineHeight: 1.4
+              }}
+            >
+              {doneTasks}/{total} {t('tasksText')}
+            </Typography.Text>
+          </Flex>
+          
+          {/* Divider */}
+          <div style={{ 
+            height: 1, 
+            backgroundColor: dividerColor, 
+            width: '100%',
+            margin: '2px 0'
+          }} />
+          
+          {/* Middle section: Task status breakdown with better spacing */}
+          <Flex vertical gap={6}>
+            <Flex justify="space-between" align="center">
+              <Typography.Text style={{ color: tooltipTextColor, fontSize: 12, opacity: 0.9 }}>
+                {t('todoText')}:
+              </Typography.Text>
+              <Typography.Text 
+                strong 
+                style={{ color: tooltipTextColor, fontSize: 12, fontWeight: 500 }}
+              >
+                {todoTasks}
+              </Typography.Text>
+            </Flex>
+            <Flex justify="space-between" align="center">
+              <Typography.Text style={{ color: tooltipTextColor, fontSize: 12, opacity: 0.9 }}>
+                {t('doingText')}:
+              </Typography.Text>
+              <Typography.Text 
+                strong 
+                style={{ color: tooltipTextColor, fontSize: 12, fontWeight: 500 }}
+              >
+                {doingTasks}
+              </Typography.Text>
+            </Flex>
+            <Flex justify="space-between" align="center">
+              <Typography.Text style={{ color: tooltipTextColor, fontSize: 12, opacity: 0.9 }}>
+                {t('doneText')}:
+              </Typography.Text>
+              <Typography.Text 
+                strong 
+                style={{ color: tooltipTextColor, fontSize: 12, fontWeight: 500 }}
+              >
+                {doneTasks}
+              </Typography.Text>
+            </Flex>
+          </Flex>
+          
+          {/* Divider */}
+          <div style={{ 
+            height: 1, 
+            backgroundColor: dividerColor, 
+            width: '100%',
+            margin: '2px 0'
+          }} />
+          
+          {/* Bottom section: Progress bar with percentage - improved layout */}
+          <Flex vertical gap={6}>
+            <Flex align="center" gap={10} style={{ width: '100%' }}>
+              <Progress
+                percent={percentDone}
+                size="small"
+                style={{ flex: 1, minWidth: 120 }}
+                strokeColor={percentDone === 100 ? '#52c41a' : '#1890ff'}
+                showInfo={false}
+                strokeWidth={6}
+              />
+              <Typography.Text 
+                strong 
+                style={{ 
+                  color: tooltipTextColor, 
+                  fontSize: 13, 
+                  fontWeight: 600,
+                  minWidth: 40,
+                  textAlign: 'right'
+                }}
+              >
+                {percentDone}%
+              </Typography.Text>
+            </Flex>
+          </Flex>
         </Flex>
       );
 
@@ -167,7 +258,7 @@ const ProjectsGroupedView = () => {
         </div>
       );
     },
-    [handleProjectClick, t]
+    [handleProjectClick, t, themeMode]
   );
 
   const collapseItems = useMemo(
@@ -195,16 +286,100 @@ const ProjectsGroupedView = () => {
                 </Typography.Text>
                 <Tooltip
                   title={
-                    <Flex vertical>
-                      <Typography.Text>
-                        {t('todoText')}: {group.todoTasks}
-                      </Typography.Text>
-                      <Typography.Text>
-                        {t('doingText')}: {group.doingTasks}
-                      </Typography.Text>
-                      <Typography.Text>
-                        {t('doneText')}: {group.doneTasks}
-                      </Typography.Text>
+                    <Flex vertical gap={10} style={{ minWidth: 220, padding: '2px 0' }}>
+                      {/* Top section: Total tasks with emphasis */}
+                      <Flex vertical gap={2}>
+                        <Typography.Text 
+                          strong 
+                          style={{ 
+                            color: colors.white, 
+                            fontSize: 14, 
+                            fontWeight: 600,
+                            lineHeight: 1.4
+                          }}
+                        >
+                          {group.doneTasks}/{group.totalTasks} {t('tasksText')}
+                        </Typography.Text>
+                      </Flex>
+                      
+                      {/* Divider */}
+                      <div style={{ 
+                        height: 1, 
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)', 
+                        width: '100%',
+                        margin: '2px 0'
+                      }} />
+                      
+                      {/* Middle section: Task status breakdown with better spacing */}
+                      <Flex vertical gap={6}>
+                        <Flex justify="space-between" align="center">
+                          <Typography.Text style={{ color: colors.white, fontSize: 12, opacity: 0.9 }}>
+                            {t('todoText')}:
+                          </Typography.Text>
+                          <Typography.Text 
+                            strong 
+                            style={{ color: colors.white, fontSize: 12, fontWeight: 500 }}
+                          >
+                            {group.todoTasks}
+                          </Typography.Text>
+                        </Flex>
+                        <Flex justify="space-between" align="center">
+                          <Typography.Text style={{ color: colors.white, fontSize: 12, opacity: 0.9 }}>
+                            {t('doingText')}:
+                          </Typography.Text>
+                          <Typography.Text 
+                            strong 
+                            style={{ color: colors.white, fontSize: 12, fontWeight: 500 }}
+                          >
+                            {group.doingTasks}
+                          </Typography.Text>
+                        </Flex>
+                        <Flex justify="space-between" align="center">
+                          <Typography.Text style={{ color: colors.white, fontSize: 12, opacity: 0.9 }}>
+                            {t('doneText')}:
+                          </Typography.Text>
+                          <Typography.Text 
+                            strong 
+                            style={{ color: colors.white, fontSize: 12, fontWeight: 500 }}
+                          >
+                            {group.doneTasks}
+                          </Typography.Text>
+                        </Flex>
+                      </Flex>
+                      
+                      {/* Divider */}
+                      <div style={{ 
+                        height: 1, 
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)', 
+                        width: '100%',
+                        margin: '2px 0'
+                      }} />
+                      
+                      {/* Bottom section: Progress bar with percentage - improved layout */}
+                      <Flex vertical gap={6}>
+                        <Flex align="center" gap={10} style={{ width: '100%' }}>
+                          <Progress
+                            percent={group.progressPercent}
+                            size="small"
+                            style={{ flex: 1, minWidth: 120 }}
+                            strokeColor={group.progressPercent === 100 ? '#52c41a' : '#1890ff'}
+                            showInfo={false}
+                            strokeWidth={6}
+                          />
+                          <Typography.Text 
+                            strong 
+                            style={{ 
+                              color: colors.white, 
+                              fontSize: 13, 
+                              fontWeight: 600,
+                              minWidth: 40,
+                              textAlign: 'right'
+                            }}
+                          >
+                            {group.progressPercent}%
+                          </Typography.Text>
+                        </Flex>
+                      </Flex>
                     </Flex>
                   }
                 >
