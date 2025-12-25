@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Space, Typography } from '@/shared/antd-imports';
+import { Card, Space, Typography, Row, Col, Divider } from '@/shared/antd-imports';
 import { PageHeader } from '@ant-design/pro-components';
 import OrganizationAdminsTable from '@/components/admin-center/overview/organization-admins-table/organization-admins-table';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -8,6 +8,7 @@ import { RootState } from '@/app/store';
 import { useTranslation } from 'react-i18next';
 import OrganizationName from '@/components/admin-center/overview/organization-name/organization-name';
 import OrganizationOwner from '@/components/admin-center/overview/organization-owner/organization-owner';
+import OrganizationLogo from '@/components/admin-center/overview/organization-logo/organization-logo';
 import {
   fetchOrganizationDetails,
   fetchOrganizationAdmins,
@@ -56,23 +57,58 @@ const Overview: React.FC = () => {
     <div style={{ width: '100%' }}>
       <PageHeader title={<span>{t('overview')}</span>} style={{ padding: '16px 0' }} />
 
-      <Space direction="vertical" style={{ width: '100%' }} size={22}>
-        <OrganizationName
-          themeMode={themeMode}
-          name={organization?.name || ''}
-          t={t}
-          refetch={getOrganizationDetails}
-        />
+      <Space direction="vertical" style={{ width: '100%' }} size={24}>
+        {/* Organization Profile Section */}
+        <Card
+          style={{
+            borderRadius: '8px',
+            boxShadow: themeMode === 'dark' 
+              ? '0 2px 8px rgba(0, 0, 0, 0.3)' 
+              : '0 2px 8px rgba(0, 0, 0, 0.06)',
+          }}
+        >
+          <Typography.Title level={4} style={{ margin: 0, marginBottom: 20 }}>
+            {t('organizationProfile')}
+          </Typography.Title>
+          <Divider style={{ margin: '16px 0' }} />
+          <Row gutter={[24, 24]}>
+            <Col xs={24} sm={24} md={12} lg={8}>
+              <OrganizationLogo
+                themeMode={themeMode}
+                organization={organization}
+                t={t}
+                refetch={getOrganizationDetails}
+              />
+            </Col>
+            <Col xs={24} sm={24} md={12} lg={8}>
+              <OrganizationName
+                themeMode={themeMode}
+                name={organization?.name || ''}
+                t={t}
+                refetch={getOrganizationDetails}
+              />
+            </Col>
+            <Col xs={24} sm={24} md={24} lg={8}>
+              <OrganizationOwner
+                themeMode={themeMode}
+                organization={organization}
+                t={t}
+                refetch={getOrganizationDetails}
+              />
+            </Col>
+          </Row>
+        </Card>
 
-        <OrganizationOwner
-          themeMode={themeMode}
-          organization={organization}
-          t={t}
-          refetch={getOrganizationDetails}
-        />
-
-        <Card>
-          <Typography.Title level={5} style={{ margin: 0 }}>
+        {/* Organization Admins Section */}
+        <Card
+          style={{
+            borderRadius: '8px',
+            boxShadow: themeMode === 'dark' 
+              ? '0 2px 8px rgba(0, 0, 0, 0.3)' 
+              : '0 2px 8px rgba(0, 0, 0, 0.06)',
+          }}
+        >
+          <Typography.Title level={4} style={{ margin: 0, marginBottom: 16 }}>
             {t('admins')}
           </Typography.Title>
           <OrganizationAdminsTable

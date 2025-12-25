@@ -324,4 +324,19 @@ export const adminCenterApiService = {
     const response = await apiClient.get(`${rootUrl}/appsumo/countdown-widget`);
     return response.data;
   },
+
+  async uploadOrganizationLogo(logoData: string): Promise<IServerResponse<{ logo_url: string }>> {
+    const response = await apiClient.post<IServerResponse<{ logo_url: string }>>(
+      `${rootUrl}/organization/logo`,
+      { logoData }
+    );
+    return response.data;
+  },
+
+  async deleteOrganizationLogo(): Promise<IServerResponse<{ logo_url: null }>> {
+    const response = await apiClient.delete<IServerResponse<{ logo_url: null }>>(
+      `${rootUrl}/organization/logo`
+    );
+    return response.data;
+  },
 };
