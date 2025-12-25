@@ -243,7 +243,7 @@ export default class ClientPortalProjectsController extends ClientPortalControll
 
       // Build tasks query with pagination
       let tasksQuery = `
-        SELECT 
+        SELECT
           t.id,
           t.name,
           t.description,
@@ -252,15 +252,25 @@ export default class ClientPortalProjectsController extends ClientPortalControll
           t.start_date,
           t.end_date,
           t.created_at,
-          t.updated_at
+          t.updated_at,
+          (
+            SELECT COUNT(*)
+            FROM client_portal_task_comments c
+            WHERE c.task_id = t.id
+              AND c.created_at > COALESCE(
+                (SELECT last_viewed_at FROM client_task_views v
+                 WHERE v.task_id = t.id AND v.client_id = $2),
+                '1970-01-01'::timestamp
+              )
+          ) as unseen_comments_count
         FROM tasks t
         LEFT JOIN task_statuses ts ON t.status_id = ts.id
         LEFT JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
         WHERE t.project_id = $1
       `;
 
-      const queryParams: (string | number)[] = [id as string];
-      let paramIndex = 2;
+      const queryParams: (string | number)[] = [id as string, clientId as string];
+      let paramIndex = 3;
 
       // Add search filter if provided
       if (search) {
@@ -298,6 +308,7 @@ export default class ClientPortalProjectsController extends ClientPortalControll
         endDate: row.end_date,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
+        unseenCommentsCount: parseInt(row.unseen_comments_count || "0"),
       }));
 
       return res.json(
@@ -318,6 +329,313 @@ export default class ClientPortalProjectsController extends ClientPortalControll
         .status(500)
         .json(
           new ServerResponse(false, null, "Failed to retrieve project tasks")
+        );
+    }
+  }
+
+  // Task Details and Comments
+  static async getTaskDetails(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const { id } = req.params;
+      const { clientId } = req;
+
+      // Verify client has access to this task via project
+      const accessCheck = await db.query(
+        `SELECT t.id FROM tasks t
+         INNER JOIN projects p ON t.project_id = p.id
+         WHERE t.id = $1 AND p.client_id = $2`,
+        [id, clientId]
+      );
+
+      if (accessCheck.rows.length === 0) {
+        return res
+          .status(404)
+          .json(
+            new ServerResponse(false, null, "Task not found or not accessible")
+          );
+      }
+
+      // Fetch task details with all related data
+      const baseUrl = process.env.AWS_S3_BASE_URL || '';
+      const query = `
+        SELECT
+          t.id,
+          t.name,
+          t.description,
+          t.start_date,
+          t.end_date,
+          t.created_at,
+          t.updated_at,
+          ts.name as status_name,
+          stsc.color_code as status_color,
+          tp.name as priority_name,
+          tp.color_code as priority_color,
+          (
+            SELECT json_agg(json_build_object(
+              'id', tm.id,
+              'name', u.name,
+              'email', u.email,
+              'avatar_url', u.avatar_url
+            ))
+            FROM tasks_assignees ta
+            LEFT JOIN team_members tm ON ta.team_member_id = tm.id
+            LEFT JOIN users u ON tm.user_id = u.id
+            WHERE ta.task_id = t.id
+          ) as assignees,
+          (
+            SELECT json_agg(json_build_object(
+              'id', att.id,
+              'name', att.name,
+              'url', CONCAT($2::text, '/', att.team_id::text, '/', att.project_id::text, '/', att.id::text, '.', att.type),
+              'size', att.size,
+              'type', att.type,
+              'created_at', att.created_at
+            ))
+            FROM task_attachments att
+            WHERE att.task_id = t.id
+          ) as attachments
+        FROM tasks t
+        LEFT JOIN task_statuses ts ON t.status_id = ts.id
+        LEFT JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
+        LEFT JOIN task_priorities tp ON t.priority_id = tp.id
+        WHERE t.id = $1
+      `;
+
+      const result = await db.query(query, [id, baseUrl]);
+
+      if (result.rows.length === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Task not found"));
+      }
+
+      const taskDetails = {
+        id: result.rows[0].id,
+        name: result.rows[0].name,
+        description: result.rows[0].description,
+        startDate: result.rows[0].start_date,
+        endDate: result.rows[0].end_date,
+        createdAt: result.rows[0].created_at,
+        updatedAt: result.rows[0].updated_at,
+        statusName: result.rows[0].status_name,
+        statusColor: result.rows[0].status_color,
+        priorityName: result.rows[0].priority_name,
+        priorityColor: result.rows[0].priority_color,
+        assignees: result.rows[0].assignees || [],
+        attachments: result.rows[0].attachments || [],
+      };
+
+      return res.json(
+        new ServerResponse(
+          true,
+          taskDetails,
+          "Task details retrieved successfully"
+        )
+      );
+    } catch (error) {
+      console.error("Error fetching task details:", error);
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve task details")
+        );
+    }
+  }
+
+  static async getTaskComments(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const { id } = req.params;
+      const { clientId, organizationId } = req;
+
+      // Verify client has access to this task
+      const accessCheck = await db.query(
+        `SELECT t.id, t.project_id FROM tasks t
+         INNER JOIN projects p ON t.project_id = p.id
+         WHERE t.id = $1 AND p.client_id = $2`,
+        [id, clientId]
+      );
+
+      if (accessCheck.rows.length === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Task not found"));
+      }
+
+      const projectId = accessCheck.rows[0].project_id;
+
+      // Get comments for the task
+      const query = `
+        SELECT
+          c.id,
+          c.comment,
+          c.sender_type,
+          c.sender_id,
+          c.sender_name,
+          c.created_at,
+          c.updated_at
+        FROM client_portal_task_comments c
+        WHERE c.task_id = $1
+          AND c.organization_team_id = $2
+          AND c.project_id = $3
+        ORDER BY c.created_at ASC
+      `;
+
+      const result = await db.query(query, [id, organizationId, projectId]);
+
+      return res.json(
+        new ServerResponse(
+          true,
+          result.rows,
+          "Comments retrieved successfully"
+        )
+      );
+    } catch (error) {
+      console.error("Error fetching task comments:", error);
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve comments")
+        );
+    }
+  }
+
+  static async addTaskComment(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const { id } = req.params;
+      const { clientId, organizationId } = req;
+      const { comment } = req.body;
+
+      if (!comment || !comment.trim()) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Comment is required"));
+      }
+
+      const MAX_COMMENT_LENGTH = 5000;
+      if (comment.trim().length > MAX_COMMENT_LENGTH) {
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              `Comment must not exceed ${MAX_COMMENT_LENGTH} characters`
+            )
+          );
+      }
+
+      // Verify task exists and client has access
+      const taskCheck = await db.query(
+        `SELECT t.id, t.project_id FROM tasks t
+         INNER JOIN projects p ON t.project_id = p.id
+         WHERE t.id = $1 AND p.client_id = $2`,
+        [id, clientId]
+      );
+
+      if (taskCheck.rows.length === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Task not found"));
+      }
+
+      const projectId = taskCheck.rows[0].project_id;
+
+      // Get client name for sender_name
+      const clientQuery = await db.query(
+        "SELECT name FROM clients WHERE id = $1",
+        [clientId]
+      );
+      const senderName = clientQuery.rows[0]?.name || "Client";
+
+      // Insert comment
+      const insertQuery = `
+        INSERT INTO client_portal_task_comments (
+          task_id,
+          project_id,
+          organization_team_id,
+          client_id,
+          comment,
+          sender_type,
+          sender_id,
+          sender_name,
+          created_at,
+          updated_at
+        ) VALUES ($1, $2, $3, $4, $5, 'client', $6, $7, NOW(), NOW())
+        RETURNING id, comment, sender_type, sender_id, sender_name, created_at, updated_at
+      `;
+
+      const result = await db.query(insertQuery, [
+        id,
+        projectId,
+        organizationId,
+        clientId,
+        comment.trim(),
+        clientId,
+        senderName,
+      ]);
+
+      return res.json(
+        new ServerResponse(true, result.rows[0], "Comment added successfully")
+      );
+    } catch (error) {
+      console.error("Error adding task comment:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to add comment"));
+    }
+  }
+
+  static async markTaskCommentsAsViewed(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const { id } = req.params;
+      const { clientId } = req;
+
+      // Verify client has access to this task
+      const accessCheck = await db.query(
+        `SELECT t.id FROM tasks t
+         INNER JOIN projects p ON t.project_id = p.id
+         WHERE t.id = $1 AND p.client_id = $2`,
+        [id, clientId]
+      );
+
+      if (accessCheck.rows.length === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Task not found"));
+      }
+
+      // Upsert the view record
+      const query = `
+        INSERT INTO client_task_views (client_id, task_id, last_viewed_at, updated_at)
+        VALUES ($1, $2, NOW(), NOW())
+        ON CONFLICT (client_id, task_id)
+        DO UPDATE SET last_viewed_at = NOW(), updated_at = NOW()
+        RETURNING last_viewed_at
+      `;
+
+      await db.query(query, [clientId, id]);
+
+      return res.json(
+        new ServerResponse(true, null, "Task comments marked as viewed")
+      );
+    } catch (error) {
+      console.error("Error marking task comments as viewed:", error);
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to mark comments as viewed")
         );
     }
   }

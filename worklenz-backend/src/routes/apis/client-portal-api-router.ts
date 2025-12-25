@@ -58,10 +58,10 @@ router.get("/projects/:id", safeControllerFunction(ClientPortalProjectsControlle
 router.get("/projects/:id/tasks", safeControllerFunction(ClientPortalProjectsController.getProjectTasks));
 
 // Tasks
-router.get("/tasks/:id/comments", safeControllerFunction(ClientPortalController.getTaskComments));
-router.post("/tasks/:id/comments", safeControllerFunction(ClientPortalController.addTaskComment));
-router.post("/tasks/:id/mark-viewed", safeControllerFunction(ClientPortalController.markTaskCommentsAsViewed));
-router.get("/tasks/:id", safeControllerFunction(ClientPortalController.getTaskDetails));
+router.get("/tasks/:id/comments", safeControllerFunction(ClientPortalProjectsController.getTaskComments));
+router.post("/tasks/:id/comments", safeControllerFunction(ClientPortalProjectsController.addTaskComment));
+router.post("/tasks/:id/mark-viewed", safeControllerFunction(ClientPortalProjectsController.markTaskCommentsAsViewed));
+router.get("/tasks/:id", safeControllerFunction(ClientPortalProjectsController.getTaskDetails));
 
 // Invoices
 router.get("/invoices", safeControllerFunction(ClientPortalInvoicesController.getInvoices));
