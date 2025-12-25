@@ -432,6 +432,25 @@ Based on research of leading PM tools:
 - Click timeline to create new task
 - Milestones for project checkpoints
 
+**Hello Bonsai (Key Insights for Worklenz):**
+- **Resourcing Schedule View:** Comprehensive overview of team's project allocations with visual indicators for over-allocations
+- **Drag-and-drop Timeline:** Shuffle bookings, stretch them, or split them in seconds
+- **Workload View:** Unplanned tasks can be dragged into timeline based on team capacities (tasks must have assignee + due date)
+- **Live Capacity Tracking:** Real-time view of under/over-utilization, automatically factors in part-timers and holidays
+- **Instant Updates:** Any update to timeline/schedule/timesheet instantly reflected across platform
+- **Visual Indicators:** Color-coded timelines, at-a-glance indicators for overcapacity or schedule conflicts
+- **Reassignment:** Click allocation to reassign to different team member
+- **Flexible Scheduling:** Adjust task start/due dates by dragging along timeline
+- **Three Project Views:** Board, List, and Gantt (Premium tier includes Gantt + workload view)
+
+**Key Learnings for Implementation:**
+1. **Two-View System:** Separate "Resourcing Schedule" (project allocations) and "Workload View" (individual tasks)
+2. **Capacity-First Design:** Always show capacity indicators and over/under-allocation warnings
+3. **Drag Flexibility:** Support multiple drag operations - move, stretch, split, reassign
+4. **Task Prerequisites:** Tasks need assignee + due date to appear in timeline
+5. **Real-Time Sync:** All timeline updates instantly reflected everywhere
+6. **Visual Hierarchy:** Color-coding for conflicts, capacity status, project ownership
+
 **React Libraries:**
 - `gantt-task-react` chosen for MIT license, TypeScript support, virtual rendering
 - Alternatives: SVAR Gantt, React Modern Gantt, DHTMLX (commercial)
@@ -439,8 +458,186 @@ Based on research of leading PM tools:
 Sources:
 - [Jira Timeline Features 2025](https://community.atlassian.com/forums/App-Central-articles/Jira-Timeline-in-2025-Key-Secrets-to-Manage-Projects-Visually/ba-p/2994659)
 - [Asana Timeline View](https://asana.com/features/project-management/project-views)
+- [Hello Bonsai Workload View](https://help.hellobonsai.com/en/articles/10458662-the-workload-view)
+- [Hello Bonsai Resourcing Schedule](https://help.hellobonsai.com/en/articles/10548568-the-resourcing-schedule-view)
+- [Bonsai Resource Management](https://www.hellobonsai.com/resource-management)
 - [React Gantt Libraries](https://svar.dev/react/gantt/)
 - [Activity Timeline Drag-Drop](https://help.activitytimeline.com/at/issue-scheduling-through-drag-n-drop)
+
+---
+
+## 14. ENHANCEMENTS INSPIRED BY HELLO BONSAI
+
+Based on Hello Bonsai's implementation, here are recommended enhancements to incorporate:
+
+### 14.1 Capacity-First Design
+
+**Implementation:**
+```tsx
+// Show capacity bar above each team member's timeline
+<CapacityIndicator
+  totalHours={member.workingHours * daysInRange}
+  allocatedHours={member.allocatedHours}
+  loggedHours={member.loggedHours}
+  status={member.capacityStatus} // 'under' | 'optimal' | 'over'
+/>
+
+// Color-code timeline background based on capacity
+<TimelineRow style={{
+  backgroundColor: getCapacityColor(member.utilizationPercent)
+}}>
+```
+
+**Why:** Hello Bonsai shows capacity status instantly at a glance - critical for resource planning.
+
+### 14.2 Task Prerequisites Filter
+
+**Implementation:**
+```typescript
+// Only show tasks with both assignee AND due date
+const validTasks = tasks.filter(task =>
+  task.assignees?.length > 0 &&
+  task.start_date &&
+  task.end_date
+);
+
+// Display warning for invalid tasks
+<Alert type="warning">
+  {invalidTaskCount} tasks hidden (missing assignee or dates).
+  <Link to="/tasks">Fix now</Link>
+</Alert>
+```
+
+**Why:** Prevents timeline clutter with unschedulable tasks. Encourages proper task setup.
+
+### 14.3 Unplanned Tasks Panel
+
+**File:** `worklenz-frontend/src/components/schedule/task-timeline/UnplannedTasksPanel.tsx`
+
+```tsx
+// Left sidebar showing tasks without dates
+<UnplannedTasksPanel>
+  <TasksList
+    tasks={unplannedTasks}
+    onDragStart={handleDragUnplannedTask}
+  />
+</UnplannedTasksPanel>
+
+// Users can drag unplanned tasks onto timeline to schedule them
+const handleDropUnplannedTask = (task, date) => {
+  updateTaskDates({
+    taskId: task.id,
+    start_date: date,
+    end_date: calculateEndDate(date, task.estimated_hours),
+  });
+};
+```
+
+**Why:** Bonsai's workload view allows dragging unplanned tasks onto timeline - powerful scheduling workflow.
+
+### 14.4 Reassignment via Click
+
+**Implementation:**
+```tsx
+// Click task bar to open quick actions menu
+const handleTaskBarClick = (task) => {
+  showContextMenu([
+    { label: 'Reassign', action: () => openReassignModal(task) },
+    { label: 'Adjust dates', action: () => enableDragMode(task) },
+    { label: 'Split task', action: () => openSplitModal(task) },
+    { label: 'View details', action: () => openTaskDrawer(task) },
+  ]);
+};
+```
+
+**Why:** Bonsai allows quick reassignment with a click - faster than drag-drop for reassigning to non-adjacent members.
+
+### 14.5 Holiday/Part-Time Auto-Adjustment
+
+**Database Schema Addition:**
+```sql
+-- Add to team_members table (or create team_member_settings)
+ALTER TABLE team_members
+ADD COLUMN working_hours_per_day DECIMAL(4,2) DEFAULT 8.0,
+ADD COLUMN is_part_time BOOLEAN DEFAULT FALSE;
+
+-- Holiday calendar (shared across organization)
+CREATE TABLE organization_holidays (
+    id UUID PRIMARY KEY,
+    team_id UUID NOT NULL,
+    date DATE NOT NULL,
+    name VARCHAR(255),
+    UNIQUE(team_id, date)
+);
+```
+
+**Capacity Calculation:**
+```typescript
+function calculateAvailableHours(member, startDate, endDate) {
+  const days = getWorkingDays(startDate, endDate);
+  let totalHours = 0;
+
+  for (const day of days) {
+    // Skip holidays
+    if (isHoliday(day, member.team_id)) continue;
+
+    // Skip member time-off
+    if (isTimeOff(day, member.id)) continue;
+
+    // Add working hours (accounts for part-time)
+    totalHours += member.working_hours_per_day;
+  }
+
+  return totalHours;
+}
+```
+
+**Why:** Bonsai automatically factors in part-timers and holidays - critical for accurate capacity planning.
+
+### 14.6 Stretch/Split Operations
+
+**Implementation:**
+```tsx
+// Extend task duration by dragging edges (already supported by gantt-task-react)
+// Add split functionality:
+const handleSplitTask = async (task, splitDate) => {
+  // Create two allocations from one task
+  const part1 = {
+    ...task,
+    end_date: splitDate,
+  };
+
+  const part2 = {
+    ...task,
+    start_date: addDays(splitDate, 1),
+  };
+
+  // Update via API
+  await splitTaskAllocation({ taskId: task.id, splitDate });
+};
+```
+
+**Why:** Bonsai allows "splitting" bookings - useful for interrupted work or shared capacity across multiple periods.
+
+### 14.7 Real-Time Everywhere
+
+**Socket.IO Events to Add:**
+```typescript
+// Emit on every timeline change
+SocketEvents.TASK_DATES_CHANGED
+SocketEvents.TASK_REASSIGNED
+SocketEvents.CAPACITY_UPDATED
+SocketEvents.TIME_OFF_ADDED
+SocketEvents.TIME_OFF_REMOVED
+
+// Listen and update RTK Query cache
+socket.on(SocketEvents.TASK_DATES_CHANGED, (data) => {
+  invalidateQueries(['TaskTimeline', 'Workload', 'Capacity']);
+  showNotification(`${data.taskName} rescheduled by ${data.userName}`);
+});
+```
+
+**Why:** Bonsai's instant sync across platform prevents conflicts and keeps everyone in sync.
 
 ---
 
