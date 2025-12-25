@@ -30,6 +30,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import clientPortalAPI from '@/services/api';
 import { TaskDetails, TaskComment } from '@/types';
+import './TaskDrawer.css';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -516,6 +517,8 @@ const TaskDrawer: React.FC<TaskDrawerProps> = ({
       onClose={onClose}
       width={720}
       destroyOnClose
+      rootClassName="task-drawer-root"
+      getContainer={() => document.body}
       title={
         isLoading ? (
           <Skeleton.Input active size="small" style={{ width: 300 }} />
