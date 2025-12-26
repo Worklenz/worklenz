@@ -82,6 +82,20 @@ export function isValidateEmail(email: string) {
   return re.test(String(email).toLowerCase());
 }
 
+export function isValidPhoneNumber(phone: string) {
+  if (!phone || phone.trim() === '') return true; // Optional field
+
+  // Use libphonenumber-js for robust international phone validation
+  try {
+    const { parsePhoneNumber } = require('libphonenumber-js');
+    const phoneNumber = parsePhoneNumber(phone.trim());
+    return phoneNumber ? phoneNumber.isValid() : false;
+  } catch (error) {
+    // If parsing fails, the number is invalid
+    return false;
+  }
+}
+
 export function toTsQuery(value: string) {
   return `${value.replace(/\s/g, "+").replace(/\(|\)/g, "")}:*`;
 }

@@ -13,6 +13,7 @@ import ClientPortalNotificationsController from "../../controllers/client-portal
 import ClientPortalAttachmentController from "../../controllers/client-portal-attachment-controller";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import { authenticateClient, requireClientPermission } from "../../middlewares/client-auth-middleware";
+import phoneNumberValidator from "../../middlewares/validators/phone-number-validator";
 
 const router = express.Router();
 
@@ -78,7 +79,7 @@ router.get("/chats/:id/messages", safeControllerFunction(ClientPortalChatControl
 
 // Settings (for organization management - requires team_id)
 router.get("/settings", safeControllerFunction(ClientPortalSettingsController.getSettings));
-router.put("/settings", safeControllerFunction(ClientPortalSettingsController.updateSettings));
+router.put("/settings", phoneNumberValidator, safeControllerFunction(ClientPortalSettingsController.updateSettings));
 router.post("/settings/upload-logo", safeControllerFunction(ClientPortalSettingsController.uploadLogo));
 
 // Organization Settings (for client users - uses organizationId from token)

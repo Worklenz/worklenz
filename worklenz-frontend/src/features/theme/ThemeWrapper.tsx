@@ -1,9 +1,9 @@
-import { ConfigProvider, theme } from '@/shared/antd-imports';
+import { ConfigProvider } from '@/shared/antd-imports';
 import React, { useEffect, useRef, memo, useMemo, useCallback } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { initializeTheme } from './themeSlice';
-import { colors } from '../../styles/colors';
+import { getThemeConfig } from '@/config/theme.config';
 
 type ChildrenProp = {
   children: React.ReactNode;
@@ -16,30 +16,7 @@ const ThemeWrapper = memo(({ children }: ChildrenProp) => {
   const configRef = useRef<HTMLDivElement>(null);
 
   // Memoize theme configuration to prevent unnecessary re-renders
-  const themeConfig = useMemo(
-    () => ({
-      algorithm: themeMode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
-      components: {
-        Layout: {
-          colorBgLayout: themeMode === 'dark' ? colors.darkGray : colors.white,
-          headerBg: themeMode === 'dark' ? colors.darkGray : colors.white,
-        },
-        Menu: {
-          colorBgContainer: colors.transparent,
-        },
-        Table: {
-          rowHoverBg: themeMode === 'dark' ? '#000' : '#edebf0',
-        },
-        Select: {
-          controlHeight: 32,
-        },
-      },
-      token: {
-        borderRadius: 4,
-      },
-    }),
-    [themeMode]
-  );
+  const themeConfig = useMemo(() => getThemeConfig(themeMode), [themeMode]);
 
   // Memoize the theme class name
   const themeClassName = useMemo(() => `theme-${themeMode}`, [themeMode]);

@@ -64,8 +64,8 @@ export const reportingsItems: ReportingMenuItems[] = [
     children: [
       {
         key: 'time-sheet-overview',
-        name: 'overview',
-        defaultValue: 'Overview',
+        name: 'timesheet',
+        defaultValue: 'Timesheet',
         endpoint: 'time-sheet-overview',
         element: React.createElement(OverviewTimeReports),
       },

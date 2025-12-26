@@ -46,6 +46,7 @@
     "i18next-http-backend": "^2.7.3",
     "i18next-localstorage-backend": "^4.2.0",
     "jspdf": "^3.0.0",
+    "libphonenumber-js": "^1.12.33",
     "mixpanel-browser": "^2.56.0",
     "nanoid": "^5.1.5",
     "re-resizable": "^6.10.3",

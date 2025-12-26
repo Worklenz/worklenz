@@ -4,6 +4,7 @@ import AdminCenterController from "../../controllers/admin-center-controller";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import organizationSettingsValidator from "../../middlewares/validators/organization-settings-validator";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
+import phoneNumberValidator from "../../middlewares/validators/phone-number-validator";
 import { requireBusinessPlan } from "../../middlewares/subscription-middleware";
 
 const adminCenterApiRouter = express.Router();
@@ -14,7 +15,7 @@ adminCenterApiRouter.get("/organization", teamOwnerOrAdminValidator, safeControl
 adminCenterApiRouter.get("/organization/admins", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getOrganizationAdmins));
 adminCenterApiRouter.put("/organization", teamOwnerOrAdminValidator, organizationSettingsValidator, safeControllerFunction(AdminCenterController.updateOrganizationName));
 adminCenterApiRouter.put("/organization/calculation-method", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.updateOrganizationCalculationMethod));
-adminCenterApiRouter.put("/organization/owner/contact-number", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.updateOwnerContactNumber));
+adminCenterApiRouter.put("/organization/owner/contact-number", teamOwnerOrAdminValidator, phoneNumberValidator, safeControllerFunction(AdminCenterController.updateOwnerContactNumber));
 adminCenterApiRouter.post("/organization/logo", teamOwnerOrAdminValidator, requireBusinessPlan, safeControllerFunction(AdminCenterController.uploadOrganizationLogo));
 adminCenterApiRouter.delete("/organization/logo", teamOwnerOrAdminValidator, requireBusinessPlan, safeControllerFunction(AdminCenterController.deleteOrganizationLogo));
 
@@ -50,7 +51,7 @@ adminCenterApiRouter.get("/billing/countries", teamOwnerOrAdminValidator, safeCo
 adminCenterApiRouter.get("/billing/purchase-storage", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.purchaseStorage));
 
 adminCenterApiRouter.get("/billing/configuration", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getBillingConfiguration));
-adminCenterApiRouter.put("/billing/configuration", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.updateBillingConfiguration));
+adminCenterApiRouter.put("/billing/configuration", teamOwnerOrAdminValidator, phoneNumberValidator, safeControllerFunction(AdminCenterController.updateBillingConfiguration));
 
 adminCenterApiRouter.get("/billing/upgrade-plan", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.upgradePlan));
 adminCenterApiRouter.get("/billing/change-plan", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.changePlan));

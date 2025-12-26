@@ -1,6 +1,6 @@
-import { Col, ConfigProvider, Flex, Layout, Alert, Result, Button } from '@/shared/antd-imports';
+import { Layout } from '@/shared/antd-imports';
 import React, { useState, useEffect } from 'react';
-import { Outlet, useNavigate, Navigate } from 'react-router-dom';
+import { Outlet, Navigate } from 'react-router-dom';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useResponsive } from '../hooks/useResponsive';
 import { colors } from '../styles/colors';
@@ -16,7 +16,6 @@ import { evt_client_portal_viewed } from '@/shared/worklenz-analytics-events';
 const ClientPortalLayout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { isMobile, isTablet, isDesktop } = useResponsive();
-  const navigate = useNavigate();
 
   // theme details from theme slice
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -52,22 +51,12 @@ const ClientPortalLayout = () => {
   const contentPadding = isDesktop ? 32 : isTablet ? 24 : 16;
 
   return (
-    <ConfigProvider
-      theme={{
-        components: {
-          Layout: {
-            colorBgLayout: themeMode === 'dark' ? colors.darkGray : colors.white,
-            headerBg: themeMode === 'dark' ? colors.darkGray : colors.white,
-          },
-        },
+    <Layout
+      style={{
+        minHeight: '100vh',
+        background: themeWiseColor('#fafafa', '#141414', themeMode),
       }}
     >
-      <Layout
-        style={{
-          minHeight: '100vh',
-          background: themeWiseColor('#fafafa', '#141414', themeMode),
-        }}
-      >
         {/* Fixed Header */}
         <Layout.Header
           className={`shadow-md ${themeMode === 'dark' ? 'shadow-[#5f5f5f1f]' : 'shadow-[#18181811]'}`}
@@ -131,7 +120,6 @@ const ClientPortalLayout = () => {
           </Layout.Content>
         </Layout>
       </Layout>
-    </ConfigProvider>
   );
 };
 
