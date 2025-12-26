@@ -377,6 +377,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
     // Build the recursive subtask count query
     // When filters are applied, we need to count subtasks that match OR have descendants that match
     let recursiveSubtaskCountQuery: string;
+    let hasFilteredChildrenQuery: string;
     
     if (hasFilters) {
       // Build filter conditions for the descendant tasks
@@ -450,6 +451,27 @@ export default class TasksControllerV2 extends TasksControllerBase {
             )
           ) AS combined_children
         ) AS result)`;
+      
+      // Query to check if task has any filtered descendants (for auto-expansion)
+      hasFilteredChildrenQuery = `
+        (EXISTS (
+          WITH RECURSIVE all_descendants AS (
+            SELECT id, parent_task_id
+            FROM tasks
+            WHERE parent_task_id = t.id AND archived IS FALSE
+            
+            UNION ALL
+            
+            SELECT t2.id, t2.parent_task_id
+            FROM tasks t2
+            INNER JOIN all_descendants ad ON t2.parent_task_id = ad.id
+            WHERE t2.archived IS FALSE
+          )
+          SELECT 1
+          FROM all_descendants ad
+          INNER JOIN tasks descendant ON descendant.id = ad.id
+          WHERE ${descendantFilterClause}
+        ))`;
     } else {
       // No filters - just count direct children
       recursiveSubtaskCountQuery = `
@@ -457,6 +479,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
          FROM tasks subtask
          WHERE subtask.parent_task_id = t.id
          AND subtask.archived IS FALSE)`;
+      
+      // No filters - no need to auto-expand
+      hasFilteredChildrenQuery = `FALSE`;
     }
 
     return `
@@ -469,6 +494,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
              t.parent_task_id IS NOT NULL AS is_sub_task,
              (SELECT name FROM tasks WHERE id = t.parent_task_id) AS parent_task_name,
              ${recursiveSubtaskCountQuery} AS sub_tasks_count,
+             ${hasFilteredChildrenQuery} AS has_filtered_children,
 
              t.status_id AS status,
              t.archived,
@@ -1481,6 +1507,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
         priorityColor: task.priority_color,
         // Add subtask count
         sub_tasks_count: task.sub_tasks_count || 0,
+        // Add flag for auto-expansion when filters match descendants
+        has_filtered_children: !!task.has_filtered_children,
         // Add indicator fields for frontend icons
         comments_count: task.comments_count || 0,
         has_subscribers: !!task.has_subscribers,
