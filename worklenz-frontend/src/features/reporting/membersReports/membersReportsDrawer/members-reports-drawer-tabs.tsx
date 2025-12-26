@@ -53,7 +53,7 @@ const MembersReportsDrawerTabs = ({ memberId = null }: MembersReportsDrawerProps
       type="card"
       items={tabItems}
       activeKey={activeTab}
-      destroyInactiveTabPane
+      destroyOnHidden
       onTabClick={key => dispatch(setMemberReportingDrawerActiveTab(key as TabsType))}
     />
   );

@@ -181,7 +181,6 @@ const projectViewTaskListColumnsSlice = createSlice({
       }>
     ) {
       const index = state.columnList.findIndex(column => column.key === action.payload.key);
-      console.log('index', index, action.payload.key);
       if (index !== -1) {
         state.columnList[index] = action.payload.updatedColumn;
       }

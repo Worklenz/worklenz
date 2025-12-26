@@ -275,16 +275,6 @@ export const fetchTasksV3 = createAsyncThunk(
       const tasks: Task[] = response.body.allTasks.map((task: any) => {
         const now = new Date().toISOString();
 
-        // Debug log to check if completedAt is in the API response
-        if (task.completedAt || task.completed_at) {
-          console.log('[DEBUG fetchTasksV3] Task with completed date:', {
-            id: task.id,
-            title: task.title,
-            completedAt: task.completedAt,
-            completed_at: task.completed_at,
-          });
-        }
-
         const transformedTask = {
           id: task.id,
           task_key: task.task_key || task.key || '',
@@ -448,7 +438,6 @@ export const duplicateTask = createAsyncThunk(
   'taskManagement/duplicateTask',
   async ({projectId, taskId, duplicateOptions}: {projectId: string, taskId: string, duplicateOptions: any },{ rejectWithValue }) => {
     try {
-      // console.log('Duplicate Task Thunk', projectId, taskId, duplicateOptions);
       const response = await duplicateTaskApiService.duplicate({task_id: taskId, project_id: projectId, options: duplicateOptions});
       return response;
     } catch (error) {

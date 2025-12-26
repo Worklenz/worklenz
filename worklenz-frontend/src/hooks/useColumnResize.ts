@@ -56,9 +56,27 @@ export const useColumnResize = ({
     try {
       localStorage.setItem(storageKey, JSON.stringify(columnWidths));
     } catch (error) {
-      console.error('Failed to save column widths to localStorage:', error);
+      // Handle quota exceeded or other localStorage errors gracefully
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        console.warn('localStorage quota exceeded. Column widths not saved.');
+      } else {
+        console.error('Failed to save column widths to localStorage:', error);
+      }
     }
   }, [columnWidths, storageKey]);
+
+  // Cleanup event listeners on unmount
+  useEffect(() => {
+    return () => {
+      if (resizingColumnRef.current) {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        resizingColumnRef.current = null;
+      }
+    };
+  }, [handleMouseMove, handleMouseUp]);
 
   const handleMouseMove = useCallback(
     (moveEvent: MouseEvent) => {

@@ -116,7 +116,7 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
     <Dropdown
       open={open}
       onOpenChange={setOpen}
-      dropdownRender={() => (
+      popupRender={() => (
         <IntegrationsDropdown
           projectId={projectId}
           projectName={projectName}

@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { HolderOutlined } from '@/shared/antd-imports';
+import '../../pages/projects/project-view-1/taskList/taskListTable/column-resize.css';
 
 // Redux hooks and selectors
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -276,10 +277,13 @@ const TaskListV2Section: React.FC = () => {
   // State to store custom column widths (overrides BASE_COLUMNS widths)
   // Load from localStorage on mount
   const [columnWidths, setColumnWidths] = useState<Record<string, string>>(() => {
-    const stored = localStorage.getItem(`columnWidths_${urlProjectId}`);
-    if (!stored) return {};
+    if (!urlProjectId) return {};
+    
+    try {
+      const stored = localStorage.getItem(`worklenz.taskList.columnWidths.${urlProjectId}`);
+      if (!stored) return {};
 
-    const parsed = JSON.parse(stored);
+      const parsed = JSON.parse(stored);
     // Validate stored widths against minWidth and maxWidth constraints
     const validated: Record<string, string> = {};
     Object.entries(parsed).forEach(([columnId, width]) => {
@@ -290,27 +294,27 @@ const TaskListV2Section: React.FC = () => {
         const currentWidth = parseInt((width as string).replace('px', ''));
 
         // Check minWidth constraint
-        if ((baseColumn as any).minWidth) {
-          const minWidth = parseInt((baseColumn as any).minWidth.replace('px', ''));
+        if (baseColumn.minWidth) {
+          const minWidth = parseInt(baseColumn.minWidth.replace('px', ''));
           if (currentWidth < minWidth) {
-            validatedWidth = (baseColumn as any).minWidth;
+            validatedWidth = baseColumn.minWidth;
           }
         }
 
         // Check maxWidth constraint
-        if ((baseColumn as any).maxWidth) {
-          const maxWidth = parseInt((baseColumn as any).maxWidth.replace('px', ''));
+        if (baseColumn.maxWidth) {
+          const maxWidth = parseInt(baseColumn.maxWidth.replace('px', ''));
           if (currentWidth > maxWidth) {
-            validatedWidth = (baseColumn as any).maxWidth;
+            validatedWidth = baseColumn.maxWidth;
           }
         }
 
-        // Force title column to max 400px
+        // Force title column to max width constraint
         if (columnId === 'title' && currentWidth > 400) {
           validatedWidth = '400px';
         }
 
-        // Force description column to min 200px
+        // Force description column to min width constraint
         if (columnId === 'description' && currentWidth < 200) {
           validatedWidth = '200px';
         }
@@ -319,12 +323,30 @@ const TaskListV2Section: React.FC = () => {
       validated[columnId] = validatedWidth;
     });
     return validated;
+    } catch (error) {
+      // Handle localStorage errors gracefully
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        console.warn('localStorage quota exceeded. Column widths not loaded.');
+      } else {
+        console.error('Failed to load column widths from localStorage:', error);
+      }
+      return {};
+    }
   });
 
   // Save column widths to localStorage whenever they change
   useEffect(() => {
     if (urlProjectId && Object.keys(columnWidths).length > 0) {
-      localStorage.setItem(`columnWidths_${urlProjectId}`, JSON.stringify(columnWidths));
+      try {
+        localStorage.setItem(`worklenz.taskList.columnWidths.${urlProjectId}`, JSON.stringify(columnWidths));
+      } catch (error) {
+        // Handle quota exceeded or other localStorage errors gracefully
+        if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+          console.warn('localStorage quota exceeded. Column widths not saved.');
+        } else {
+          console.error('Failed to save column widths to localStorage:', error);
+        }
+      }
     }
   }, [columnWidths, urlProjectId]);
 
@@ -370,20 +392,20 @@ const TaskListV2Section: React.FC = () => {
       }
 
       // Validate width against minWidth constraint
-      if ((column as any).minWidth) {
-        const minWidth = parseInt((column as any).minWidth.replace('px', ''));
+      if (column.minWidth) {
+        const minWidth = parseInt(column.minWidth.replace('px', ''));
         const currentWidth = parseInt(width.replace('px', ''));
         if (currentWidth < minWidth) {
-          width = (column as any).minWidth;
+          width = column.minWidth;
         }
       }
 
       // Validate width against maxWidth constraint
-      if ((column as any).maxWidth) {
-        const maxWidth = parseInt((column as any).maxWidth.replace('px', ''));
+      if (column.maxWidth) {
+        const maxWidth = parseInt(column.maxWidth.replace('px', ''));
         const currentWidth = parseInt(width.replace('px', ''));
         if (currentWidth > maxWidth) {
-          width = (column as any).maxWidth;
+          width = column.maxWidth;
         }
       }
 
@@ -818,7 +840,7 @@ const TaskListV2Section: React.FC = () => {
               >
                 {column.id === 'dragHandle' || column.id === 'checkbox' ? (
                   <span></span>
-                ) : (column as any).isCustom ? (
+                ) : column.isCustom ? (
                   <CustomColumnHeader
                     column={column}
                     onSettingsClick={handleCustomColumnSettings}
@@ -840,23 +862,17 @@ const TaskListV2Section: React.FC = () => {
                 {/* Column Resize Handle */}
                 {column.id !== 'dragHandle' && column.id !== 'checkbox' && (
                   <div
+                    role="separator"
+                    aria-orientation="vertical"
+                    aria-label={`Resize ${t(column.label || '')} column`}
+                    tabIndex={0}
+                    className="column-resize-handle"
                     style={{
                       position: 'absolute',
                       top: 0,
-                      right: 0,
-                      width: 16,
+                      right: -4,
+                      width: 8,
                       height: '100%',
-                      cursor: 'col-resize',
-                      zIndex: 20,
-                      backgroundColor: 'transparent',
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.backgroundColor = 'rgba(24, 144, 255, 0.2)';
-                      e.currentTarget.style.borderLeft = '3px solid #1890ff';
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.borderLeft = 'none';
                     }}
                     onMouseDown={e => {
                       e.preventDefault();
@@ -864,14 +880,59 @@ const TaskListV2Section: React.FC = () => {
                       const startX = e.clientX;
                       const startWidth = parseInt(column.width.replace('px', ''));
                       const columnId = column.id;
+                      const handleElement = e.currentTarget;
 
                       // Get min/max widths from column config or use defaults
-                      const minWidth = (column as any).minWidth
-                        ? parseInt((column as any).minWidth.replace('px', ''))
+                      const minWidth = column.minWidth
+                        ? parseInt(column.minWidth.replace('px', ''))
                         : 100;
-                      const maxWidth = (column as any).maxWidth
-                        ? parseInt((column as any).maxWidth.replace('px', ''))
+                      const maxWidth = column.maxWidth
+                        ? parseInt(column.maxWidth.replace('px', ''))
                         : 1200;
+
+                      // Find the scrollable table container
+                      const scrollableContainer = contentScrollRef.current ||
+                        e.currentTarget.closest('[style*="overflow"]') as HTMLElement ||
+                        document.getElementById('task-list-container')?.querySelector('[style*="overflow"]') as HTMLElement ||
+                        document.getElementById('task-list-container') ||
+                        e.currentTarget.closest('.border') as HTMLElement ||
+                        document.body;
+                      const tableContainer = scrollableContainer;
+                      
+                      // Create resize indicator line
+                      const indicator = document.createElement('div');
+                      indicator.className = 'column-resize-indicator';
+                      tableContainer.style.position = 'relative';
+                      tableContainer.appendChild(indicator);
+
+                      // Create tooltip
+                      const tooltip = document.createElement('div');
+                      tooltip.className = 'column-resize-tooltip';
+                      document.body.appendChild(tooltip);
+
+                      // Add resizing class
+                      handleElement.classList.add('resizing');
+                      document.body.classList.add('column-resizing');
+
+                      const updateIndicator = (x: number, width: number) => {
+                        // Calculate position relative to table container
+                        const containerRect = tableContainer.getBoundingClientRect();
+                        const relativeX = x - containerRect.left;
+                        indicator.style.left = `${relativeX}px`;
+                        indicator.style.opacity = '1';
+                        tooltip.textContent = `${width}px`;
+                        tooltip.style.left = `${x}px`;
+                        tooltip.style.top = `${e.clientY - 40}px`;
+                        tooltip.style.opacity = '1';
+
+                        // Check if at limit
+                        const atLimit = width <= minWidth || width >= maxWidth;
+                        if (atLimit) {
+                          handleElement.classList.add('at-limit');
+                        } else {
+                          handleElement.classList.remove('at-limit');
+                        }
+                      };
 
                       const handleMouseMove = (moveEvent: MouseEvent) => {
                         const diff = moveEvent.clientX - startX;
@@ -882,6 +943,9 @@ const TaskListV2Section: React.FC = () => {
                           `--col-width-${columnId}`,
                           `${newWidth}px`
                         );
+
+                        // Update indicator and tooltip
+                        updateIndicator(moveEvent.clientX, newWidth);
                       };
 
                       const handleMouseUp = (upEvent: MouseEvent) => {
@@ -889,6 +953,18 @@ const TaskListV2Section: React.FC = () => {
                         document.removeEventListener('mouseup', handleMouseUp);
                         document.body.style.cursor = '';
                         document.body.style.userSelect = '';
+                        document.body.classList.remove('column-resizing');
+
+                        // Remove indicator and tooltip
+                        indicator.style.opacity = '0';
+                        tooltip.style.opacity = '0';
+                        setTimeout(() => {
+                          indicator.remove();
+                          tooltip.remove();
+                        }, 150);
+
+                        // Remove resizing class
+                        handleElement.classList.remove('resizing', 'at-limit');
 
                         // Calculate final width and update state to persist
                         const diff = upEvent.clientX - startX;
@@ -898,6 +974,9 @@ const TaskListV2Section: React.FC = () => {
                           [columnId]: `${newWidth}px`,
                         }));
                       };
+
+                      // Initial indicator position
+                      updateIndicator(e.clientX, startWidth);
 
                       document.body.style.cursor = 'col-resize';
                       document.body.style.userSelect = 'none';

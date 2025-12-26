@@ -1670,7 +1670,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
     setDragActiveId(event.active.id);
   };
 
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setDragActiveId(null);
     setPlaceholderIndex(null); // Reset placeholder index
@@ -1785,19 +1785,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                       <Checkbox checked={isSelectAll} onChange={toggleSelectAll} />
                     </Flex>
                   </th>
-                  {visibleColumns.map((column, index) => {
-                    // DEBUG: Log what we're rendering
-                    if (typeof window !== 'undefined') {
-                      console.log(`Column ${index}:`, {
-                        key: column.key,
-                        name: column.name,
-                        pinned: column.pinned,
-                        width: getColumnWidth(column.key),
-                        translationKey: `${column.key?.replace('_', '').toLowerCase()}Column`,
-                        translation: t(`${column.key?.replace('_', '').toLowerCase()}Column`)
-                      });
-                    }
-                    
+                  {visibleColumns.map(column => {
                     return (
                     <th
                       key={column.key}
@@ -1807,7 +1795,6 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                         fontWeight: 500,
                         overflow: 'visible',
                         position: 'relative',
-                        border: column.key === 'DESCRIPTION' ? '3px solid red' : undefined, // DEBUG
                       }}
                     >
                       <div
@@ -1820,15 +1807,6 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                         }}
                       >
                         <div style={{ flex: 1, paddingRight: '10px' }}>
-                          {column.key === 'DESCRIPTION' && (
-                            <div style={{ 
-                              backgroundColor: 'yellow', 
-                              padding: '4px',
-                              border: '2px solid red' 
-                            }}>
-                              DEBUG: DESCRIPTION HEADER
-                            </div>
-                          )}
                           {column.key === 'PHASE' ? (
                             <Flex
                               align="center"
@@ -1854,10 +1832,102 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                         {/* Column Resize Handle */}
                         <div
                           className="column-resize-handle"
+                          role="separator"
+                          aria-orientation="vertical"
+                          aria-label={`Resize ${column.name || column.key} column`}
+                          tabIndex={0}
                           onMouseDown={e => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleResizeStart(e, column.key || '');
+                            const handleElement = e.currentTarget;
+                            const startX = e.clientX;
+                            const currentWidth = getColumnWidth(column.key || '');
+                            const startWidth = typeof currentWidth === 'number' ? currentWidth : parseInt(String(currentWidth).replace('px', ''));
+
+                            // Get min/max widths
+                            const minWidth = 50;
+                            const maxWidth = 800;
+
+                            // Find the scrollable table container
+                            const scrollableContainer = e.currentTarget.closest('.tasklist-container') as HTMLElement ||
+                              e.currentTarget.closest('[class*="overflow"]') as HTMLElement ||
+                              e.currentTarget.closest('table')?.parentElement as HTMLElement ||
+                              document.body;
+                            const tableContainer = scrollableContainer;
+                            
+                            // Create resize indicator line
+                            const indicator = document.createElement('div');
+                            indicator.className = 'column-resize-indicator';
+                            if (tableContainer !== document.body) {
+                              tableContainer.style.position = 'relative';
+                            }
+                            tableContainer.appendChild(indicator);
+
+                            // Create tooltip
+                            const tooltip = document.createElement('div');
+                            tooltip.className = 'column-resize-tooltip';
+                            document.body.appendChild(tooltip);
+
+                            // Add resizing class
+                            handleElement.classList.add('resizing');
+                            document.body.classList.add('column-resizing');
+
+                            const updateIndicator = (x: number, width: number) => {
+                              // Calculate position relative to table container
+                              const containerRect = tableContainer.getBoundingClientRect();
+                              const relativeX = x - containerRect.left;
+                              indicator.style.left = `${relativeX}px`;
+                              indicator.style.opacity = '1';
+                              tooltip.textContent = `${width}px`;
+                              tooltip.style.left = `${x}px`;
+                              tooltip.style.top = `${e.clientY - 40}px`;
+                              tooltip.style.opacity = '1';
+
+                              // Check if at limit
+                              const atLimit = width <= minWidth || width >= maxWidth;
+                              if (atLimit) {
+                                handleElement.classList.add('at-limit');
+                              } else {
+                                handleElement.classList.remove('at-limit');
+                              }
+                            };
+
+                            const handleMouseMove = (moveEvent: MouseEvent) => {
+                              const diff = moveEvent.clientX - startX;
+                              const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + diff));
+                              updateIndicator(moveEvent.clientX, newWidth);
+                              handleResizeStart(
+                                { ...e, clientX: moveEvent.clientX } as React.MouseEvent,
+                                column.key || ''
+                              );
+                            };
+
+                            const handleMouseUp = () => {
+                              document.removeEventListener('mousemove', handleMouseMove);
+                              document.removeEventListener('mouseup', handleMouseUp);
+                              document.body.style.cursor = '';
+                              document.body.style.userSelect = '';
+                              document.body.classList.remove('column-resizing');
+
+                              // Remove indicator and tooltip
+                              indicator.style.opacity = '0';
+                              tooltip.style.opacity = '0';
+                              setTimeout(() => {
+                                indicator.remove();
+                                tooltip.remove();
+                              }, 150);
+
+                              // Remove resizing class
+                              handleElement.classList.remove('resizing', 'at-limit');
+                            };
+
+                            // Initial indicator position
+                            updateIndicator(e.clientX, startWidth);
+
+                            document.body.style.cursor = 'col-resize';
+                            document.body.style.userSelect = 'none';
+                            document.addEventListener('mousemove', handleMouseMove);
+                            document.addEventListener('mouseup', handleMouseUp);
                           }}
                           title={`Drag to resize ${column.name || column.key}`}
                         />
