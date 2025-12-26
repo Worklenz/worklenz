@@ -4,6 +4,7 @@ import db from "../config/db";
 import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
+import { copyObject, getKey } from "../shared/storage";
 
 interface DuplicateOptions {
   dates?: boolean;
@@ -15,6 +16,59 @@ interface DuplicateOptions {
 }
 
 export default class TaskDuplicateController extends WorklenzControllerBase {
+  /**
+   * Helper function to copy attachment files from original task to duplicated task
+   */
+  private static async copyAttachmentFiles(originalTaskId: string, newTaskId: string): Promise<void> {
+    // Fetch original attachments with their IDs
+    const originalAttachments = await db.query(
+      `SELECT id, name, size, type, team_id, project_id, uploaded_by
+      FROM task_attachments
+      WHERE task_id = $1`,
+      [originalTaskId]
+    );
+
+    // Get new attachments that were just created (they should match by name, size, type, and order)
+    const newAttachments = await db.query(
+      `SELECT id, name, size, type, team_id, project_id
+      FROM task_attachments
+      WHERE task_id = $1
+      ORDER BY created_at ASC`,
+      [newTaskId]
+    );
+
+    // Match and copy files
+    // We'll match by name, size, and type since those should be unique enough
+    for (const originalAttachment of originalAttachments.rows) {
+      // Find matching new attachment
+      const matchingNewAttachment = newAttachments.rows.find(
+        (newAtt) =>
+          newAtt.name === originalAttachment.name &&
+          newAtt.size === originalAttachment.size &&
+          newAtt.type === originalAttachment.type
+      );
+
+      if (matchingNewAttachment) {
+        // Copy the file from old location to new location
+        const sourceKey = getKey(
+          originalAttachment.team_id,
+          originalAttachment.project_id,
+          originalAttachment.id,
+          originalAttachment.type
+        );
+        const destinationKey = getKey(
+          matchingNewAttachment.team_id,
+          matchingNewAttachment.project_id,
+          matchingNewAttachment.id,
+          matchingNewAttachment.type
+        );
+
+        // Copy the file in storage (S3/Azure)
+        await copyObject(sourceKey, destinationKey);
+      }
+    }
+  }
+
   @HandleExceptions()
   public static async duplicate(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { task_id: taskId, project_id: projectId, options = {} } = req.body as {
@@ -163,13 +217,52 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
       }
 
       if (attachments) {
-        await db.query(
-          `INSERT INTO task_attachments (name, size, type, task_id, team_id, project_id, uploaded_by)
-          SELECT name, size, type, $1, team_id, project_id, uploaded_by
+        // Fetch original attachments with their IDs
+        const originalAttachments = await db.query(
+          `SELECT id, name, size, type, team_id, project_id, uploaded_by
           FROM task_attachments
-          WHERE task_id = $2`,
-          [newTaskId, taskId]
+          WHERE task_id = $1
+          ORDER BY created_at ASC`,
+          [taskId]
         );
+
+        // Copy each attachment with file duplication
+        for (const originalAttachment of originalAttachments.rows) {
+          // Insert new attachment record and get the new ID
+          const newAttachmentResult = await db.query(
+            `INSERT INTO task_attachments (name, size, type, task_id, team_id, project_id, uploaded_by)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING id`,
+            [
+              originalAttachment.name,
+              originalAttachment.size,
+              originalAttachment.type,
+              newTaskId,
+              originalAttachment.team_id,
+              originalAttachment.project_id,
+              originalAttachment.uploaded_by
+            ]
+          );
+
+          const newAttachmentId = newAttachmentResult.rows[0].id;
+
+          // Copy the file from old location to new location
+          const sourceKey = getKey(
+            originalAttachment.team_id,
+            originalAttachment.project_id,
+            originalAttachment.id,
+            originalAttachment.type
+          );
+          const destinationKey = getKey(
+            originalAttachment.team_id,
+            originalAttachment.project_id,
+            newAttachmentId,
+            originalAttachment.type
+          );
+
+          // Copy the file in storage (S3/Azure)
+          await copyObject(sourceKey, destinationKey);
+        }
       }
 
       // Subtasks: recursively duplicate all nested subtasks
@@ -181,10 +274,17 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
 
         for (const sub of subtasksRes.rows) {
           // duplicate_task_shallow will recursively handle nested subtasks when subtasks option is enabled
-          await db.query(
-            `SELECT duplicate_task_shallow($1, $2, $3)`,
+          const subtaskResult = await db.query(
+            `SELECT duplicate_task_shallow($1, $2, $3) AS new_task_id`,
             [sub.id, newTaskId, JSON.stringify(options)]
           );
+          
+          const newSubtaskId = subtaskResult.rows[0]?.new_task_id;
+          
+          // If attachments were included, copy the files for subtask attachments
+          if (attachments && newSubtaskId) {
+            await this.copyAttachmentFiles(sub.id, newSubtaskId);
+          }
         }
       }
 
