@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Flex, Typography, Spin, message, Tooltip, Button, Popconfirm } from '@/shared/antd-imports';
+import { Flex, Typography, Spin, message, Tooltip, Button, Popconfirm, Alert } from '@/shared/antd-imports';
 import {
   LoadingOutlined,
   PlusOutlined,
@@ -330,20 +330,9 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
               </Typography.Text>
             )}
 
-            {(previewUrl || !previewUrl) && (
-              <Alert
-                message="Logo Usage"
-                description={
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    This logo will be used in the main app navbar and automatically synced to client portal settings for use in emails and invoices.
-                  </Typography.Text>
-                }
-                type="info"
-                icon={<InfoCircleOutlined />}
-                showIcon
-                style={{ marginTop: 8 }}
-              />
-            )}
+            <Typography.Text type="secondary" style={{ fontSize: 11, lineHeight: 1.5, marginTop: 8, opacity: 0.7 }}>
+              {t('logoUsage')}
+            </Typography.Text>
           </Flex>
           </Flex>
         </Flex>

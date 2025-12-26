@@ -87,5 +87,6 @@
   "logoFileSizeWarning": "Madhësia e skedarit është e madhe. E rekomanduar: më pak se 500KB për performancë optimale",
   "logoFormatRecommendation": "Formati PNG me sfond transparent rekomandohet për rezultate më të mira",
   "logoDeleteConfirm": "A jeni i sigurt që dëshironi të hiqni logon e organizatës? Ky veprim nuk mund të zhbëhet.",
+  "logoUsage": "Përdoret në shiritin e navigimit dhe sinkronizohet me portalin e klientit",
   "organizationProfile": "Profili i Organizatës"
 }

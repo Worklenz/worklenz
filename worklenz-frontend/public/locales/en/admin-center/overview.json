@@ -90,5 +90,6 @@
   "logoFileSizeWarning": "File size is large. Recommended: under 500KB for optimal performance",
   "logoFormatRecommendation": "PNG format with transparent background is recommended for best results",
   "logoDeleteConfirm": "Are you sure you want to remove the organization logo? This action cannot be undone.",
+  "logoUsage": "Used in navbar and synced to client portal",
   "organizationProfile": "Organization Profile"
 }

@@ -20,6 +20,8 @@ import {
 } from '@/shared/antd-imports';
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { validatePhoneNumber } from '@/utils/validatePhoneNumber';
+import PhoneInput from '@/components/PhoneInput/PhoneInput';
 import {
   InboxOutlined,
   DeleteOutlined,
@@ -837,11 +839,23 @@ const ClientPortalSettings = () => {
                   </Row>
                   <Row gutter={16}>
                     <Col xs={24} sm={12}>
-                      <Form.Item label={t('contactPhoneLabel')}>
-                        <Input
+                      <Form.Item
+                        label={t('contactPhoneLabel')}
+                        name="contact_phone"
+                        rules={[
+                          {
+                            validator: (_, value) => {
+                              if (!value || value.trim() === '') return Promise.resolve();
+                              if (validatePhoneNumber(value)) return Promise.resolve();
+                              return Promise.reject(new Error(t('invalidPhoneNumberFormat')));
+                            }
+                          }
+                        ]}
+                      >
+                        <PhoneInput
                           placeholder={t('contactPhonePlaceholder')}
                           value={companyDetails.contact_phone}
-                          onChange={(e) => handleCompanyDetailsChange('contact_phone', e.target.value)}
+                          onChange={(value) => handleCompanyDetailsChange('contact_phone', value)}
                         />
                       </Form.Item>
                     </Col>
