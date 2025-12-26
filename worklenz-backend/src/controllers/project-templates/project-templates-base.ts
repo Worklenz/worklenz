@@ -127,7 +127,11 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
   }
 
   @HandleExceptions()
+  @HandleExceptions()
   protected static async getCustomTemplateData(template_id: string) {
+    // Use recursive CTE to ensure deterministic hierarchical ordering
+    // This guarantees parents are always returned before their children
+    // and the order is stable across multiple query executions
     const q = `SELECT id,
                         name,
                         notes AS description,
@@ -156,34 +160,56 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                                         color_code
                                 FROM task_priorities) rec) AS priorities,
                         (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
-                           FROM (SELECT id AS original_task_id,
-                                        name,
-                                        parent_task_id,
-                                        description,
-                                        total_minutes,
-                                        sort_order,
-                                        task_no,
-                                        status_sort_order,
-                                        priority_sort_order,
-                                        phase_sort_order,
-                                        (SELECT name FROM cpt_task_statuses cts WHERE status_id = cts.id) AS status_name,
-                                        (SELECT name FROM task_priorities tp WHERE priority_id = tp.id) AS priority_name,
-
-                                        (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
+                           FROM (
+                                WITH RECURSIVE task_tree AS (
+                                    -- Base case: root tasks (no parent)
+                                    SELECT id, name, parent_task_id, description, total_minutes, 
+                                           sort_order, task_no, status_sort_order, priority_sort_order, phase_sort_order,
+                                           status_id, priority_id, template_id,
+                                           0 AS depth,
+                                           ARRAY[LPAD(sort_order::TEXT, 10, '0'), LPAD(COALESCE(task_no, 0)::TEXT, 10, '0'), id::TEXT] AS path
+                                    FROM cpt_tasks
+                                    WHERE template_id = pt.id AND parent_task_id IS NULL
+                                    
+                                    UNION ALL
+                                    
+                                    -- Recursive case: child tasks
+                                    SELECT c.id, c.name, c.parent_task_id, c.description, c.total_minutes,
+                                           c.sort_order, c.task_no, c.status_sort_order, c.priority_sort_order, c.phase_sort_order,
+                                           c.status_id, c.priority_id, c.template_id,
+                                           tt.depth + 1,
+                                           tt.path || ARRAY[LPAD(c.sort_order::TEXT, 10, '0'), LPAD(COALESCE(c.task_no, 0)::TEXT, 10, '0'), c.id::TEXT]
+                                    FROM cpt_tasks c
+                                    INNER JOIN task_tree tt ON c.parent_task_id = tt.id
+                                    WHERE c.template_id = pt.id
+                                )
+                                SELECT tt.id AS original_task_id,
+                                       tt.name,
+                                       tt.parent_task_id,
+                                       tt.description,
+                                       tt.total_minutes,
+                                       tt.sort_order,
+                                       tt.task_no,
+                                       tt.status_sort_order,
+                                       tt.priority_sort_order,
+                                       tt.phase_sort_order,
+                                       (SELECT name FROM cpt_task_statuses cts WHERE tt.status_id = cts.id) AS status_name,
+                                       (SELECT name FROM task_priorities tp WHERE tt.priority_id = tp.id) AS priority_name,
+                                       (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                                         FROM (SELECT name
                                                 FROM cpt_phases pl
                                                 WHERE pl.id =
-                                                (SELECT phase_id FROM cpt_task_phases WHERE task_id = cpt_tasks.id)) rec) AS phases,
-                                        (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
+                                                (SELECT phase_id FROM cpt_task_phases WHERE task_id = tt.id)) rec) AS phases,
+                                       (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                                             FROM (SELECT name
                                                     FROM team_labels pl
                                                             LEFT JOIN cpt_task_labels cttl ON pl.id = cttl.label_id
-                                                    WHERE cttl.task_id = cpt_tasks.id) rec) AS labels
-                                FROM cpt_tasks
-                                WHERE template_id = pt.id
-                                ORDER BY parent_task_id NULLS FIRST, sort_order ASC, task_no ASC) rec) AS tasks
+                                                    WHERE cttl.task_id = tt.id) rec) AS labels
+                                FROM task_tree tt
+                                ORDER BY path
+                           ) rec) AS tasks
                     FROM custom_project_templates pt
-                    WHERE id =  $1;`;
+                    WHERE id = $1;`;
     const result = await db.query(q, [template_id]);
     const [data] = result.rows;
     return data;
@@ -529,11 +555,11 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                             (SELECT id FROM task_priorities tp WHERE tp.name = $4), $5, $6, NULL, $7, $8, $9, $10, $11, $12)
                     RETURNING id, status_id;`;
 
-        const statusSortOrder = task.status_sort_order ?? 0;
-        const prioritySortOrder = task.priority_sort_order ?? 0;
-        const phaseSortOrder = task.phase_sort_order ?? 0;
+        // Use sequential index (key) for ALL sort orders to ensure deterministic ordering
+        // This prevents non-deterministic ordering when importing the same template multiple times
+        const sortOrderValue = key;
 
-        const result = await db.query(q, [task.name, project_id, task.status_name, task.priority_name, user_id, key, task.description, task.total_minutes ? task.total_minutes : 0, task.task_no, statusSortOrder, prioritySortOrder, phaseSortOrder]);
+        const result = await db.query(q, [task.name, project_id, task.status_name, task.priority_name, user_id, sortOrderValue, task.description, task.total_minutes ? task.total_minutes : 0, task.task_no, sortOrderValue, sortOrderValue, sortOrderValue]);
         const [data] = result.rows;
         
         // Store the mapping from template task ID (original_task_id which is cpt_tasks.id) to newly created task ID
