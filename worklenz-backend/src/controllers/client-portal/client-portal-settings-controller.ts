@@ -46,6 +46,27 @@ export default class ClientPortalSettingsController extends ClientPortalControll
         invoice_footer_message: null,
       };
 
+      // Get organization logo if client portal logo is not set
+      // This helps frontend show sync status
+      let organizationLogoUrl = null;
+      if (!settings.logo_url) {
+        const orgQuery = `
+          SELECT o.logo_url
+          FROM organizations o
+          INNER JOIN teams t ON (t.user_id = o.user_id OR t.organization_id = o.id)
+          WHERE t.id = $1
+          LIMIT 1
+        `;
+        const orgResult = await db.query(orgQuery, [organizationTeamId]);
+        if (orgResult.rows.length > 0) {
+          organizationLogoUrl = orgResult.rows[0].logo_url;
+        }
+      }
+
+      // Add organization logo to response for frontend sync status
+      settings.organization_logo_url = organizationLogoUrl;
+      settings.is_logo_synced = !settings.logo_url && !!organizationLogoUrl;
+
       return res.json(new ServerResponse(true, settings, null));
     } catch (error) {
       log_error(error);

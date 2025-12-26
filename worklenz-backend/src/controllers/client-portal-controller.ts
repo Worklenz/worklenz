@@ -7997,6 +7997,7 @@ class ClientPortalController {
       }/login`;
 
       // Fetch organization branding from client_portal_settings
+      // If client portal logo is not set, fall back to organization logo
       let organizationBranding = {
         logoUrl: null,
         primaryColor: "#52c41a",
@@ -8005,18 +8006,37 @@ class ClientPortalController {
 
       if (invitation.team_id) {
         const brandingQuery = `
-          SELECT logo_url, primary_color, company_name
-          FROM client_portal_settings
-          WHERE organization_team_id = $1
+          SELECT cps.logo_url, cps.primary_color, cps.company_name,
+                 o.logo_url as organization_logo_url
+          FROM client_portal_settings cps
+          RIGHT JOIN teams t ON t.id = cps.organization_team_id
+          LEFT JOIN organizations o ON (t.user_id = o.user_id OR t.organization_id = o.id)
+          WHERE t.id = $1
+          LIMIT 1
         `;
         const brandingResult = await db.query(brandingQuery, [invitation.team_id]);
         if (brandingResult.rows.length > 0) {
           const settings = brandingResult.rows[0];
+          // Use client portal logo if set, otherwise fall back to organization logo
+          const logoUrl = settings.logo_url || settings.organization_logo_url;
           organizationBranding = {
-            logoUrl: settings.logo_url,
+            logoUrl: logoUrl,
             primaryColor: settings.primary_color || "#52c41a",
             companyName: settings.company_name || invitation.team_name || invitation.company_name,
           };
+        } else {
+          // If no client_portal_settings record exists, check organization logo directly
+          const orgQuery = `
+            SELECT o.logo_url
+            FROM organizations o
+            INNER JOIN teams t ON (t.user_id = o.user_id OR t.organization_id = o.id)
+            WHERE t.id = $1
+            LIMIT 1
+          `;
+          const orgResult = await db.query(orgQuery, [invitation.team_id]);
+          if (orgResult.rows.length > 0) {
+            organizationBranding.logoUrl = orgResult.rows[0].logo_url;
+          }
         }
       }
 

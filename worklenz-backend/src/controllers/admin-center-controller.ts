@@ -279,6 +279,18 @@ export default class AdminCenterController extends WorklenzControllerBase {
       `;
       const updateResult = await db.query(updateQ, [logoUrl, organizationId]);
 
+      // Sync logo to all related client_portal_settings
+      // Find all teams belonging to this organization and update their client portal settings
+      const syncQuery = `
+        UPDATE client_portal_settings
+        SET logo_url = $1, updated_at = CURRENT_TIMESTAMP
+        WHERE organization_team_id IN (
+          SELECT id FROM teams 
+          WHERE user_id = $2 OR organization_id = $3
+        )
+      `;
+      await db.query(syncQuery, [logoUrl, ownerId, organizationId]);
+
       return res.status(200).send(
         new ServerResponse(
           true,
@@ -338,6 +350,18 @@ export default class AdminCenterController extends WorklenzControllerBase {
         RETURNING logo_url
       `;
       await db.query(updateQ, [organizationId]);
+
+      // Clear logo from all related client_portal_settings
+      // Find all teams belonging to this organization and clear their client portal logo
+      const syncQuery = `
+        UPDATE client_portal_settings
+        SET logo_url = NULL, updated_at = CURRENT_TIMESTAMP
+        WHERE organization_team_id IN (
+          SELECT id FROM teams 
+          WHERE user_id = $1 OR organization_id = $2
+        )
+      `;
+      await db.query(syncQuery, [ownerId, organizationId]);
 
       return res.status(200).send(
         new ServerResponse(true, { logo_url: null }, "Logo deleted successfully")
