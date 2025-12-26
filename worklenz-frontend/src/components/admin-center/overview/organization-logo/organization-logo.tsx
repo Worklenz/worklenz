@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Card, Flex, Typography, Spin, message, Tooltip, Button, Popconfirm } from '@/shared/antd-imports';
+import { Flex, Typography, Spin, message, Tooltip, Button, Popconfirm } from '@/shared/antd-imports';
 import {
   LoadingOutlined,
   PlusOutlined,
   DeleteOutlined,
   InfoCircleOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 import { getBase64 } from '@/utils/file-utils';
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
@@ -118,16 +118,13 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
       const res = await adminCenterApiService.uploadOrganizationLogo(base64 as string);
 
       if (res.done) {
-        message.success(t('logoUploadSuccess'));
         setPreviewUrl(res.body?.logo_url || null);
         refetch();
       } else {
-        message.error(res.message || t('logoUploadError'));
         logger.error('Error uploading logo', res.message);
       }
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || error?.message || t('logoUploadError');
-      message.error(errorMessage);
       logger.error('Error uploading logo', error);
     } finally {
       setUploading(false);
@@ -147,11 +144,9 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
       const res = await adminCenterApiService.deleteOrganizationLogo();
       
       if (res.done) {
-        message.success(t('logoRemoveSuccess'));
         setPreviewUrl(null);
         refetch();
       } else {
-        message.error(res.message || t('logoRemoveError'));
         logger.error('Error deleting logo', res.message);
       }
     } catch (error: any) {
