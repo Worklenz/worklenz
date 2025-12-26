@@ -18,7 +18,6 @@ import {
   transformToGanttTasks,
   transformToGanttPhases,
 } from './services/roadmap-api.service';
-import { TimelineUtils } from './utils/timeline-calculator';
 import { UnifiedTimelineCalculator } from './utils/unified-timeline-calculator';
 import { getColumnWidth } from './constants/gantt-constants';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -29,8 +28,6 @@ import {
   fetchTask,
 } from '@features/task-drawer/task-drawer.slice';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
-import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import { SocketEvents } from '@/shared/socket-events';
 import './gantt-styles.css';
@@ -39,7 +36,6 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   const { projectId } = useParams<{ projectId: string }>();
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
-  const auth = useAuthService();
   const { t } = useTranslation('gantt');
   const [viewMode, setViewMode] = useState<GanttViewMode>('day');
   const [showPhaseModal, setShowPhaseModal] = useState(false);
@@ -83,15 +79,6 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   );
 
   const [reorderPhases, { isLoading: isReordering }] = useReorderPhasesMutation();
-
-  // Check if user has business feature access for editing capabilities
-  const hasBusinessAccess = useMemo(() => {
-    const session = auth.getCurrentSession();
-    return hasBusinessFeatureAccess(session);
-  }, [auth]);
-
-  // Read-only mode for non-business users
-  const isReadOnly = !hasBusinessAccess;
 
   // Transform API data to component format
   const tasks = useMemo(() => {
@@ -275,20 +262,11 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   }, [refetchTasks, refetchPhases]);
 
   const handleCreatePhase = useCallback(() => {
-    if (isReadOnly) {
-      message.warning(t('businessPlan.phaseCreationRestricted', { defaultValue: 'Phase creation is available for Business plan users only' }));
-      return;
-    }
     setShowPhaseModal(true);
-  }, [isReadOnly, t]);
+  }, []);
 
   const handleCreateTask = useCallback(
     (phaseId?: string) => {
-      if (isReadOnly) {
-        message.warning(t('businessPlan.taskCreationRestricted', { defaultValue: 'Task creation is available for Business plan users only' }));
-        return;
-      }
-
       // Create a new task using the task drawer
       const newTaskViewModel = {
         id: null,
@@ -302,16 +280,11 @@ const ProjectViewGantt: React.FC = React.memo(() => {
       dispatch(setTaskFormViewModel(newTaskViewModel));
       dispatch(setShowTaskDrawer(true));
     },
-    [dispatch, projectId, isReadOnly, t]
+    [dispatch, projectId]
   );
 
   const handleTaskClick = useCallback(
     (taskId: string) => {
-      if (isReadOnly) {
-        message.info(t('businessPlan.taskEditingRestricted', { defaultValue: 'Task editing is available for Business plan users only' }));
-        return;
-      }
-
       // Open existing task in the task drawer
       dispatch(setSelectedTaskId(taskId));
       dispatch(setTaskFormViewModel(null)); // Clear form view model for existing task
@@ -322,7 +295,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
         dispatch(fetchTask({ taskId, projectId }));
       }
     },
-    [dispatch, projectId, isReadOnly, t]
+    [dispatch, projectId]
   );
 
   const handleClosePhaseModal = useCallback(() => {
@@ -330,15 +303,10 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   }, []);
 
   const handlePhaseClick = useCallback((phase: any) => {
-    if (isReadOnly) {
-      message.info(t('businessPlan.phaseEditingRestricted', { defaultValue: 'Phase editing is available for Business plan users only' }));
-      return;
-    }
-
     // Open the PhaseDetailsModal (Configure Phase) when clicking on a phase bar
     setSelectedPhase(phase);
     setShowPhaseDetailsModal(true);
-  }, [isReadOnly, t]);
+  }, []);
 
   const handleClosePhaseDetailsModal = useCallback(() => {
     setShowPhaseDetailsModal(false);
@@ -356,11 +324,6 @@ const ProjectViewGantt: React.FC = React.memo(() => {
 
   const handlePhaseReorder = useCallback(
     async (oldIndex: number, newIndex: number) => {
-      if (isReadOnly) {
-        message.warning(t('businessPlan.phaseReorderingRestricted', { defaultValue: 'Phase reordering is available for Business plan users only' }));
-        return;
-      }
-
       if (!projectId || !phasesResponse?.body) {
         message.error('Unable to reorder phases: missing project data');
         return;
@@ -398,16 +361,11 @@ const ProjectViewGantt: React.FC = React.memo(() => {
         message.error(error?.data?.message || 'Failed to reorder phases');
       }
     },
-    [projectId, phasesResponse?.body, reorderPhases, refetchPhases, refetchTasks, isReadOnly, t]
+    [projectId, phasesResponse?.body, reorderPhases, refetchPhases, refetchTasks]
   );
 
   const handleCreateQuickTask = useCallback(
     (taskName: string, phaseId?: string, startDate?: Date) => {
-      if (isReadOnly) {
-        message.warning(t('businessPlan.taskCreationRestricted', { defaultValue: 'Task creation is available for Business plan users only' }));
-        return;
-      }
-
       if (!socket || !projectId || !taskName.trim()) {
         return;
       }
@@ -422,7 +380,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
       // Emit the task creation event through socket
       socket.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(taskData));
     },
-    [socket, projectId, isReadOnly, t]
+    [socket, projectId]
   );
 
   const handleTaskNameClick = useCallback(
@@ -484,8 +442,6 @@ const ProjectViewGantt: React.FC = React.memo(() => {
         dateRange,
         onRefresh: handleRefresh,
         timelineCalculator,
-        isReadOnly,
-        hasBusinessAccess,
       }}
     >
       <div
