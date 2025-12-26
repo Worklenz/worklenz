@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Empty } from '@/shared/antd-imports';
 import { useSelector, useDispatch } from 'react-redux';
+import { themeWiseColor } from '@/utils/themeWiseColor';
 import { RootState } from '@/app/store';
 import '../EnhancedKanbanBoard.css';
 import '../EnhancedKanbanGroup.css';
@@ -49,6 +50,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     (state: RootState) => state.enhancedKanbanReducer
   );
   const { phaseList, loadingPhases } = useAppSelector(state => state.phaseReducer);
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
   const [draggedGroupId, setDraggedGroupId] = useState<string | null>(null);
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [draggedTaskGroupId, setDraggedTaskGroupId] = useState<string | null>(null);
@@ -423,20 +425,20 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
         {loadingGroups ? (
           <div className="flex flex-row gap-2 h-[600px]">
             <div
-              className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4"
-              style={{ height: '60%' }}
+              className="rounded animate-pulse w-1/6"
+              style={{ height: '60%', backgroundColor: themeWiseColor('#e5e7eb', '#1e1e1e', themeMode) }}
             />
             <div
-              className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4"
-              style={{ height: '100%' }}
+              className="rounded animate-pulse w-1/6"
+              style={{ height: '100%', backgroundColor: themeWiseColor('#e5e7eb', '#1e1e1e', themeMode) }}
             />
             <div
-              className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4"
-              style={{ height: '80%' }}
+              className="rounded animate-pulse w-1/6"
+              style={{ height: '80%', backgroundColor: themeWiseColor('#e5e7eb', '#1e1e1e', themeMode) }}
             />
             <div
-              className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4"
-              style={{ height: '40%' }}
+              className="rounded animate-pulse w-1/6"
+              style={{ height: '40%', backgroundColor: themeWiseColor('#e5e7eb', '#1e1e1e', themeMode) }}
             />
           </div>
         ) : taskGroups.length === 0 ? (
