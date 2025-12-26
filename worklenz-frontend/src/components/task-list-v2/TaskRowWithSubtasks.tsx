@@ -5,6 +5,7 @@ import {
   selectTaskById,
   createSubtask,
   selectSubtaskLoading,
+  fetchSubTasks,
 } from '@/features/task-management/task-management.slice';
 import TaskRow from './TaskRow';
 import SubtaskLoadingSkeleton from './SubtaskLoadingSkeleton';
@@ -300,6 +301,13 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
       });
       return map;
     }, [allPriorities]);
+
+    // Auto-fetch subtasks when task has filtered children and is expanded
+    useEffect(() => {
+      if (task?.has_filtered_children && task?.show_sub_tasks && (!task.sub_tasks || task.sub_tasks.length === 0) && !isLoadingSubtasks) {
+        dispatch(fetchSubTasks({ taskId, projectId }));
+      }
+    }, [task?.has_filtered_children, task?.show_sub_tasks, task?.sub_tasks, isLoadingSubtasks, dispatch, taskId, projectId]);
 
     const handleSubtaskAdded = useCallback(() => {
       // After adding a subtask, the AddSubtaskRow will handle its own state reset
