@@ -33,7 +33,7 @@ const TimerButton = () => {
   const { t } = useTranslation('navbar');
   const { token } = useToken();
   const dispatch = useAppDispatch();
-  const { socket } = useSocket();
+  const { socket, connected } = useSocket();
 
   const logError = (message: string, error?: any) => {
     // Production-safe error logging
@@ -129,9 +129,9 @@ const TimerButton = () => {
 
   // Listen for timer start/stop events and project updates to refresh the count
   useEffect(() => {
-    if (!socket) {
-      // Don't log as error if socket is not available - this is expected during initial load
-      console.warn('[TimerButton] Socket not available - timer events will not be real-time');
+    if (!socket || !connected) {
+      // Socket not available or not connected yet - this is expected during initial load
+      // Timer will work via polling, real-time updates will be available once socket connects
       return;
     }
 
@@ -198,8 +198,8 @@ const TimerButton = () => {
   };
 
   const handleStopTimer = (taskId: string) => {
-    if (!socket) {
-      console.warn('[TimerButton] Socket not available for stopping timer - using fallback method');
+    if (!socket || !connected) {
+      // Socket not available or not connected - use fallback method
       // Fallback: just update the local state and dispatch the action
       dispatch(updateTaskTimeTracking({ taskId, timeTracking: null }));
       fetchTimerData(); // Refresh the list

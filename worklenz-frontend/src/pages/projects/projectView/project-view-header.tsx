@@ -17,7 +17,8 @@ import {
   SyncOutlined,
   UsergroupAddOutlined,
 } from '@/shared/antd-imports';
-import { PageHeader } from '@ant-design/pro-components';
+// Removed PageHeader from @ant-design/pro-components due to findDOMNode deprecation warning
+// Using custom header implementation instead
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useState, useCallback, useMemo, memo, useRef, useEffect } from 'react';
@@ -540,12 +541,24 @@ const ProjectViewHeader = memo(() => {
 
   return (
     <>
-      <PageHeader
+      <div
         className="site-page-header"
-        title={pageHeaderTitle}
-        style={pageHeaderStyle}
-        extra={headerActions}
-      />
+        style={{
+          ...pageHeaderStyle,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '16px 0',
+          marginBottom: '16px',
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {pageHeaderTitle}
+        </div>
+        <div style={{ marginLeft: '16px', flexShrink: 0 }}>
+          {headerActions}
+        </div>
+      </div>
       {createPortal(<ProjectDrawer onClose={() => {}} />, document.body, 'project-drawer')}
       {createPortal(<ImportTaskTemplate />, document.body, 'import-task-template')}
       {createPortal(<SaveProjectAsTemplate />, document.body, 'save-project-as-template')}

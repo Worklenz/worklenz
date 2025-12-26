@@ -111,7 +111,7 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess, c
       onCancel={handleCancel}
       footer={null}
       width={600}
-      destroyOnClose
+      destroyOnHidden
       maskClosable={false}
     >
       <Typography.Text
