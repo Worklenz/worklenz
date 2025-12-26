@@ -3,6 +3,7 @@
   "projects": "Proyectos",
   "members": "Miembros",
   "timeReports": "Informes de Tiempo",
+  "timesheet": "Timesheet",
   "estimateVsActual": "Estimado vs Real",
   "logs": "Registros",
   "currentOrganizationTooltip": "Organización actual"

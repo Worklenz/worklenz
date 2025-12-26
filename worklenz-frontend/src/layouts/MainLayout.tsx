@@ -1,4 +1,4 @@
-import { ConfigProvider, Layout, Modal, Button } from '@/shared/antd-imports';
+import { Layout, Modal } from '@/shared/antd-imports';
 import { Outlet, useLocation } from 'react-router-dom';
 import { memo, useMemo } from 'react';
 
@@ -7,7 +7,6 @@ import Navbar from '@/features/navbar/navbar';
 import { BusinessPlanTrialAlert } from '@/components/BusinessPlanTrialAlert/BusinessPlanTrialAlert';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useAppDispatch } from '../hooks/useAppDispatch';
-import { colors } from '../styles/colors';
 import { TrialExpirationAlert } from '@/components/TrialExpirationAlert/TrialExpirationAlert';
 import UpgradePlans from '@/components/admin-center/billing/drawers/upgrade-plans/UpgradePlans';
 // import UpgradePlansLKR from '@/components/admin-center/billing/drawers/upgrade-plans-lkr/upgrade-plans-lkr';
@@ -30,7 +29,7 @@ const MainLayout = memo(() => {
     const subscriptionType = currentSession?.subscription_type?.toLowerCase() || '';
     const subscriptionStatus = currentSession?.subscription_status?.toLowerCase() || '';
     const billingSubscriptionType = billingInfo?.subscription_type?.toLowerCase() || '';
-    
+
     // Check if user has AppSumo/Lifetime subscription in any of their subscription data
     // Note: Users on trial who were originally AppSumo users should still be considered AppSumo users
     // They get to see AppSumo pricing even during trial period
@@ -56,20 +55,8 @@ const MainLayout = memo(() => {
     (location.pathname.includes('/projects/') && !location.pathname.endsWith('/projects')) ||
     location.pathname.includes('/worklenz/schedule');
 
-  const themeConfig = useMemo(
-    () => ({
-      components: {
-        Layout: {
-          colorBgLayout: themeMode === 'dark' ? colors.darkGray : colors.white,
-          headerBg: themeMode === 'dark' ? colors.darkGray : colors.white,
-        },
-      },
-    }),
-    [themeMode]
-  );
-
   return (
-    <ConfigProvider theme={themeConfig}>
+    <>
       <Layout className="min-h-screen">
         {/* Trial expiration alert banner */}
         <TrialExpirationAlert />
@@ -109,7 +96,7 @@ const MainLayout = memo(() => {
           {/* {browserTimeZone === 'Asia/Colombo' ? <UpgradePlansLKR /> : <UpgradePlans />} */}
         </div>
       </Modal>
-    </ConfigProvider>
+    </>
   );
 });
 
