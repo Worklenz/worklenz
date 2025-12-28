@@ -5,6 +5,7 @@ import {IWorkLenzRequest} from "../interfaces/worklenz-request";
 import {IWorkLenzResponse} from "../interfaces/worklenz-response";
 import {ServerResponse} from "../models/server-response";
 import {LOG_DESCRIPTIONS, LOG_I18N_KEYS} from "../shared/constants";
+import {SqlHelper} from "../shared/sql-helpers";
 import {getColor} from "../shared/utils";
 import {generateProjectKey} from "../utils/generate-project-key";
 import WorklenzControllerBase from "./worklenz-controller-base";
@@ -205,31 +206,70 @@ export default class ProjectsController extends WorklenzControllerBase {
     return res.status(200).send(new ServerResponse(true, data?.projects || this.paginatedDatasetDefaultStruct));
   }
 
-  private static flatString(text: string) {
-    return (text || "").split(" ").map(s => `'${s}'`).join(",");
+  private static getFilterByCategoryWhereClosure(text: string, paramOffset: number): { clause: string; params: string[] } {
+    if (!text) return { clause: "", params: [] };
+    const categoryIds = text.split(" ").filter(id => id.trim());
+    const { clause } = SqlHelper.buildInClause(categoryIds, paramOffset);
+    return { clause: `AND category_id IN (${clause})`, params: categoryIds };
   }
 
-  private static getFilterByCategoryWhereClosure(text: string) {
-    return text ? `AND category_id IN (${this.flatString(text)})` : "";
-  }
-
-  private static getFilterByStatusWhereClosure(text: string) {
-    return text ? `AND status_id IN (${this.flatString(text)})` : "";
+  private static getFilterByStatusWhereClosure(text: string, paramOffset: number): { clause: string; params: string[] } {
+    if (!text) return { clause: "", params: [] };
+    const statusIds = text.split(" ").filter(id => id.trim());
+    const { clause } = SqlHelper.buildInClause(statusIds, paramOffset);
+    return { clause: `AND status_id IN (${clause})`, params: statusIds };
   }
 
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const {searchQuery, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name");
 
-    const filterByMember = !req.user?.owner && !req.user?.is_admin ?
-      ` AND is_member_of_project(projects.id, '${req.user?.id}', $1) ` : "";
+    // PHASE 2: Build parameterized query
+    const queryParams: any[] = [req.user?.team_id || null];
+    let paramOffset = 2;
 
-    const isFavorites = req.query.filter === "1" ? ` AND EXISTS(SELECT user_id FROM favorite_projects WHERE user_id = '${req.user?.id}' AND project_id = projects.id)` : "";
-    const isArchived = req.query.filter === "2"
-      ? ` AND EXISTS(SELECT user_id FROM archived_projects WHERE user_id = '${req.user?.id}' AND project_id = projects.id)`
-      : ` AND NOT EXISTS(SELECT user_id FROM archived_projects WHERE user_id = '${req.user?.id}' AND project_id = projects.id)`;
-    const categories = this.getFilterByCategoryWhereClosure(req.query.categories as string);
-    const statuses = this.getFilterByStatusWhereClosure(req.query.statuses as string);
+    // User ID parameters - only add if actually used
+    const userId = req.user?.id;
+    let filterByMember = "";
+    let isFavorites = "";
+    let isArchived = "";
+    
+    if (!req.user?.owner && !req.user?.is_admin) {
+      queryParams.push(userId);
+      filterByMember = ` AND is_member_of_project(projects.id, $${paramOffset}, $1) `;
+      paramOffset++;
+    }
+
+    if (req.query.filter === "1") {
+      queryParams.push(userId);
+      isFavorites = ` AND EXISTS(SELECT user_id FROM favorite_projects WHERE user_id = $${paramOffset} AND project_id = projects.id)`;
+      paramOffset++;
+    }
+    
+    if (req.query.filter === "2") {
+      queryParams.push(userId);
+      isArchived = ` AND EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $${paramOffset} AND project_id = projects.id)`;
+      paramOffset++;
+    } else {
+      queryParams.push(userId);
+      isArchived = ` AND NOT EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $${paramOffset} AND project_id = projects.id)`;
+      paramOffset++;
+    }
+
+    const categoriesResult = this.getFilterByCategoryWhereClosure(req.query.categories as string, paramOffset);
+    if (categoriesResult.params.length > 0) {
+      queryParams.push(...categoriesResult.params);
+      paramOffset += categoriesResult.params.length;
+    }
+
+    const statusesResult = this.getFilterByStatusWhereClosure(req.query.statuses as string, paramOffset);
+    if (statusesResult.params.length > 0) {
+      queryParams.push(...statusesResult.params);
+      paramOffset += statusesResult.params.length;
+    }
+
+    const categories = categoriesResult.clause;
+    const statuses = statusesResult.clause;
 
     const q = `
       SELECT ROW_TO_JSON(rec) AS projects
@@ -300,11 +340,16 @@ export default class ProjectsController extends WorklenzControllerBase {
                           FROM projects
                           WHERE team_id = $1 ${categories} ${statuses} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
                           ORDER BY ${sortField} ${sortOrder}
-                          LIMIT $2 OFFSET $3) t) AS data
+                          LIMIT $${paramOffset} OFFSET $${paramOffset + 1}) t) AS data
             FROM projects
             WHERE team_id = $1 ${categories} ${statuses} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}) rec;
     `;
-    const result = await db.query(q, [req.user?.team_id || null, size, offset]);
+    
+    // Add pagination parameters at the end
+    queryParams.push(size, offset);
+    
+    
+    const result = await db.query(q, queryParams);
     const [data] = result.rows;
 
     for (const project of data?.projects.data || []) {
@@ -368,9 +413,7 @@ export default class ProjectsController extends WorklenzControllerBase {
            FROM (
              SELECT * FROM filtered_members
              ORDER BY ${sortField} ${sortOrder}
-             LIMIT $3 OFFSET $4
-           ) t
-        ) AS data
+             LIMIT $3 OFFSET $4) t) AS data
     `;
 
     const result = await db.query(q, params);
@@ -883,8 +926,10 @@ export default class ProjectsController extends WorklenzControllerBase {
     const isArchived = req.query.filter === "2"
       ? ` AND EXISTS(SELECT user_id FROM archived_projects WHERE user_id = '${req.user?.id}' AND project_id = projects.id)`
       : ` AND NOT EXISTS(SELECT user_id FROM archived_projects WHERE user_id = '${req.user?.id}' AND project_id = projects.id)`;
-    const categories = this.getFilterByCategoryWhereClosure(req.query.categories as string);
-    const statuses = this.getFilterByStatusWhereClosure(req.query.statuses as string);
+    const categoriesResult = this.getFilterByCategoryWhereClosure(req.query.categories as string, 1);
+    const categories = categoriesResult.clause;
+    const statusesResult = this.getFilterByStatusWhereClosure(req.query.statuses as string, 1 + categoriesResult.params.length);
+    const statuses = statusesResult.clause;
 
     // Determine grouping field and join based on groupBy parameter
     let groupField = "";
@@ -1023,7 +1068,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                ) AS data
         FROM projects
         ${groupJoin}
-        WHERE projects.team_id = $1 ${categories} ${statuses} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
+        WHERE projects.team_id = $1
       ) rec;
     `;
 

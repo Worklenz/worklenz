@@ -5,6 +5,7 @@ import HandleExceptions from "../../decorators/handle-exceptions";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
+import { SqlHelper } from "../../shared/sql-helpers";
 import { TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA, UNMAPPED } from "../../shared/constants";
 import { getColor } from "../../shared/utils";
 import PtTasksControllerBase, { GroupBy, ITaskGroup } from "./pt-tasks-controller-base";
@@ -33,12 +34,11 @@ export default class PtTasksController extends PtTasksControllerBase {
         return PtTasksController.isCountsOnly(query) || query.parent_task;
     }
 
-    private static flatString(text: string) {
-        return (text || "").split(" ").map(s => `'${s}'`).join(",");
-    }
-
-    private static getFilterByTemplatsWhereClosure(text: string) {
-        return text ? `template_id IN (${this.flatString(text)})` : "";
+    private static getFilterByTemplatsWhereClosure(text: string, paramOffset: number): { clause: string; params: string[] } {
+        if (!text) return { clause: "", params: [] };
+        const templateIds = text.split(" ").filter(id => id.trim());
+        const { clause } = SqlHelper.buildInClause(templateIds, paramOffset);
+        return { clause: `template_id IN (${clause})`, params: templateIds };
     }
 
     private static getQuery(userId: string, options: ParsedQs) {
