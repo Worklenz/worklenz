@@ -18,15 +18,15 @@ const WorklenzLogoLoader = memo(() => {
         style={{
           display: 'flex',
           animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-          marginLeft: '-78px', // -space-x-19.5 equivalent (19.5 * 4 = 78px)
+          marginLeft: '-36px', // -space-x-19.5 equivalent (19.5 * 4 = 78px)
         }}
       >
         {/* First 45-degree angled line */}
         <div
           style={{
             zIndex: 0,
-            height: '30px', // h-7.5 = 7.5 * 4 = 30px
-            width: '128px', // w-32 = 32 * 4 = 128px
+            height: '16px', // h-7.5 = 7.5 * 4 = 16px
+            width: '64px', // w-32 = 32 * 4 = 64px
             transform: 'rotate(60deg)',
             borderRadius: '9999px',
             backgroundColor: '#9ca3af', // gray-400
@@ -36,24 +36,24 @@ const WorklenzLogoLoader = memo(() => {
         <div
           style={{
             zIndex: 2,
-            height: '30px',
-            width: '128px',
+            height: '16px',
+            width: '64px',
             transform: 'rotate(60deg)',
             borderRadius: '9999px',
             backgroundColor: '#9ca3af', // gray-400
-            marginLeft: '-78px',
+            marginLeft: '-40px',
           }}
         />
         {/* Third angled line */}
         <div
           style={{
             zIndex: 1,
-            height: '30px',
-            width: '128px',
+            height: '16px',
+            width: '64px',
             transform: 'rotate(-240deg)',
             borderRadius: '9999px',
             backgroundColor: '#93c5fd', // blue-300
-            marginLeft: '-78px',
+            marginLeft: '-40px',
           }}
         />
         <span className="sr-only" style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', borderWidth: 0 }}>
