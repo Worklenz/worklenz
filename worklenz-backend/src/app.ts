@@ -108,11 +108,11 @@ app.use(cors({
 // Handle preflight requests
 app.options("*", cors());
 
-// PHASE 1 EMERGENCY: SQL Injection Detection (temporary - remove after Phase 2-4 complete)
-// This middleware detects and blocks SQL injection attempts
-if (isProduction()) {
-  app.use(sqlInjectionDetectorWithBlocking);
-}
+// PHASE 2 COMPLETE: SQL Injection Detection disabled - all vulnerabilities fixed with parameterized queries
+// The middleware can be re-enabled for monitoring if needed, but blocking is no longer necessary
+// if (isProduction()) {
+//   app.use(sqlInjectionDetectorWithBlocking);
+// }
 
 // Session setup - must be before passport and CSRF
 app.use(sessionMiddleware);
@@ -225,19 +225,19 @@ if (isProduction()) {
   app.use(express.static(path.join(__dirname, "public")));
 }
 
-// API rate limiting - PHASE 1 EMERGENCY: Reduced from 1500 to 300 per 15 minutes
+// API rate limiting - PHASE 2 COMPLETE: Restored to normal limits
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: isProduction() ? 300 : 1500, // 20 req/min in production, 100 req/min in dev
+  max: isProduction() ? 1500 : 3000, // 100 req/min in production, 200 req/min in dev
   standardHeaders: false,
   legacyHeaders: false,
   message: "Too many requests from this IP, please try again later.",
 });
 
-// PHASE 1 EMERGENCY: Stricter rate limiting for export endpoints
+// Export endpoint rate limiting
 const exportLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5, // Only 5 exports per 15 minutes
+  max: 50, // 50 exports per 15 minutes
   standardHeaders: false,
   legacyHeaders: false,
   message: "Too many export requests, please try again later.",
