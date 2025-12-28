@@ -1,7 +1,72 @@
-import React, { memo } from 'react';
-import { Skeleton } from '@/shared/antd-imports';
+import { memo } from 'react';
 
-// Lightweight loading component with skeleton animation
+// Keyframes for shimmer animation (left to right like Ant Design Skeleton)
+const pulseKeyframes = `
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    20% { opacity: 0.2; }
+  }
+`;
+
+// Custom angled lines loader component
+const WorklenzLogoLoader = memo(() => {
+  return (
+    <>
+      <style>{pulseKeyframes}</style>
+      <div
+        role="status"
+        style={{
+          display: 'flex',
+          animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          marginLeft: '-78px', // -space-x-19.5 equivalent (19.5 * 4 = 78px)
+        }}
+      >
+        {/* First 45-degree angled line */}
+        <div
+          style={{
+            zIndex: 0,
+            height: '30px', // h-7.5 = 7.5 * 4 = 30px
+            width: '128px', // w-32 = 32 * 4 = 128px
+            transform: 'rotate(60deg)',
+            borderRadius: '9999px',
+            backgroundColor: '#9ca3af', // gray-400
+          }}
+        />
+        {/* Second parallel 45-degree angled line */}
+        <div
+          style={{
+            zIndex: 2,
+            height: '30px',
+            width: '128px',
+            transform: 'rotate(60deg)',
+            borderRadius: '9999px',
+            backgroundColor: '#9ca3af', // gray-400
+            marginLeft: '-78px',
+          }}
+        />
+        {/* Third angled line */}
+        <div
+          style={{
+            zIndex: 1,
+            height: '30px',
+            width: '128px',
+            transform: 'rotate(-240deg)',
+            borderRadius: '9999px',
+            backgroundColor: '#93c5fd', // blue-300
+            marginLeft: '-78px',
+          }}
+        />
+        <span className="sr-only" style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', borderWidth: 0 }}>
+          Loading...
+        </span>
+      </div>
+    </>
+  );
+});
+
+WorklenzLogoLoader.displayName = 'WorklenzLogoLoader';
+
+// Lightweight loading component with custom angled lines animation
 export const SuspenseFallback = memo(() => {
   return (
     <div
@@ -19,13 +84,7 @@ export const SuspenseFallback = memo(() => {
         padding: '20px',
       }}
     >
-      <div style={{ width: '100%', maxWidth: '400px' }}>
-        <Skeleton
-          active
-          paragraph={{ rows: 3, width: ['100%', '80%', '60%'] }}
-          title={{ width: '70%' }}
-        />
-      </div>
+      <WorklenzLogoLoader />
     </div>
   );
 });
@@ -42,9 +101,7 @@ export const InlineSuspenseFallback = memo(() => {
         minHeight: '200px',
       }}
     >
-      <div style={{ width: '100%', maxWidth: '300px' }}>
-        <Skeleton active paragraph={{ rows: 2, width: ['100%', '70%'] }} title={{ width: '60%' }} />
-      </div>
+      <WorklenzLogoLoader />
     </div>
   );
 });
