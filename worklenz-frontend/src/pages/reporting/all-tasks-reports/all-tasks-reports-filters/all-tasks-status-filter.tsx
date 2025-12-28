@@ -1,5 +1,5 @@
 import { memo, useState, useEffect } from 'react';
-import { Button, Checkbox, Dropdown, Flex, Typography, Spin, Tag } from '@/shared/antd-imports';
+import { Button, Card, Checkbox, Dropdown, Flex, Typography, Spin, Tag } from '@/shared/antd-imports';
 import { CaretDownFilled } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -34,30 +34,33 @@ const AllTasksStatusFilter = () => {
   };
 
   const dropdownContent = (
-    <Flex vertical gap={8} style={{ padding: 12, minWidth: 180 }}>
-      <Flex justify="flex-end">
-        <Button type="link" size="small" onClick={handleClearAll}>
-          {t('clearAll', { defaultValue: 'Clear All' })}
-        </Button>
+    <Card className="custom-card" styles={{ body: { padding: 8, width: 220 } }}>
+      <Flex vertical gap={8}>
+        <Flex justify="flex-end">
+          <Button type="link" size="small" onClick={handleClearAll}>
+            {t('clearAll', { defaultValue: 'Clear All' })}
+          </Button>
+        </Flex>
+        <Flex vertical gap={4}>
+          {statusCategories.map(status => (
+            <Checkbox
+              key={status.key}
+              checked={selectedStatuses.includes(status.key)}
+              onChange={() => handleToggle(status.key)}
+            >
+              <Tag color={status.color} style={{ margin: 0 }}>
+                {status.label}
+              </Tag>
+            </Checkbox>
+          ))}
+        </Flex>
       </Flex>
-      <Flex vertical gap={4}>
-        {statusCategories.map(status => (
-          <Checkbox
-            key={status.key}
-            checked={selectedStatuses.includes(status.key)}
-            onChange={() => handleToggle(status.key)}
-          >
-            <Tag color={status.color} style={{ margin: 0 }}>
-              {status.label}
-            </Tag>
-          </Checkbox>
-        ))}
-      </Flex>
-    </Flex>
+    </Card>
   );
 
   return (
     <Dropdown
+      overlayClassName="custom-dropdown"
       dropdownRender={() => dropdownContent}
       trigger={['click']}
       placement="bottomLeft"

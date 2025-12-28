@@ -163,6 +163,9 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                                         total_minutes,
                                         sort_order,
                                         task_no,
+                                        status_sort_order,
+                                        priority_sort_order,
+                                        phase_sort_order,
                                         (SELECT name FROM cpt_task_statuses cts WHERE status_id = cts.id) AS status_name,
                                         (SELECT name FROM task_priorities tp WHERE priority_id = tp.id) AS priority_name,
 
@@ -379,6 +382,9 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                 name,
                 sort_order,
                 task_no,
+                status_sort_order,
+                priority_sort_order,
+                phase_sort_order,
                 ${taskIncludesClause}
                 priority_id
             FROM tasks t
@@ -421,14 +427,14 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
   @HandleExceptions()
   protected static async insertCustomTemplateTasks(body: IProjectTemplateTask[], template_id: string, team_id: string, status = true) {
     for await (const task of body) {
-      const { name, description, total_minutes, sort_order, priority_id, status_name, task_no, parent_task_id, id, phase_name } = task;
+      const { name, description, total_minutes, sort_order, priority_id, status_name, task_no, parent_task_id, id, phase_name, status_sort_order, priority_sort_order, phase_sort_order } = task;
 
       const q = `INSERT INTO cpt_tasks(name, description, total_minutes, sort_order, priority_id, template_id, status_id, task_no,
-                      parent_task_id, original_task_id)
+                      parent_task_id, original_task_id, status_sort_order, priority_sort_order, phase_sort_order)
                         VALUES ($1, $2, $3, $4, $5, $6, (SELECT id FROM cpt_task_statuses cts WHERE cts.name = $7 AND cts.template_id = $6), $8,
-                                (SELECT id FROM cpt_tasks WHERE original_task_id = $9 AND template_id = $6), $10)
+                                (SELECT id FROM cpt_tasks WHERE original_task_id = $9 AND template_id = $6), $10, $11, $12, $13)
                         RETURNING id;`;
-      const result = await db.query(q, [name, description, total_minutes || 0, sort_order, priority_id, template_id, status_name, task_no, parent_task_id, id]);
+      const result = await db.query(q, [name, description, total_minutes || 0, sort_order, priority_id, template_id, status_name, task_no, parent_task_id, id, status_sort_order || 0, priority_sort_order || 0, phase_sort_order || 0]);
       const [data] = result.rows;
 
       if (data.id) {
@@ -484,14 +490,19 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
 
     try {
       for await (const [key, task] of tasks.entries()) {
-        const q = `INSERT INTO tasks(name, project_id, status_id, priority_id, reporter_id, sort_order, parent_task_id, description, total_minutes)
+        const q = `INSERT INTO tasks(name, project_id, status_id, priority_id, reporter_id, sort_order, parent_task_id, description, total_minutes, task_no, status_sort_order, priority_sort_order, phase_sort_order)
                     VALUES ($1, $2, (SELECT id FROM task_statuses ts WHERE ts.name = $3 AND ts.project_id = $2),
-                            (SELECT id FROM task_priorities tp WHERE tp.name = $4), $5, $6, $7, $8, $9)
+                            (SELECT id FROM task_priorities tp WHERE tp.name = $4), $5, $6, $7, $8, $9, $10, $11, $12, $13)
                     RETURNING id, status_id;`;
 
         const parent_task: IProjectTemplateTask = tasks.find(t => t.original_task_id === task.parent_task_id) || {};
 
-        const result = await db.query(q, [task.name, project_id, task.status_name, task.priority_name, user_id, key, parent_task.id, task.description, task.total_minutes ? task.total_minutes : 0]);
+        // Use defensive checks for sort order values - default to 0 if undefined or null
+        const statusSortOrder = task.status_sort_order ?? 0;
+        const prioritySortOrder = task.priority_sort_order ?? 0;
+        const phaseSortOrder = task.phase_sort_order ?? 0;
+
+        const result = await db.query(q, [task.name, project_id, task.status_name, task.priority_name, user_id, key, parent_task.id, task.description, task.total_minutes ? task.total_minutes : 0, task.task_no, statusSortOrder, prioritySortOrder, phaseSortOrder]);
         const [data] = result.rows;
         task.id = data.id;
 

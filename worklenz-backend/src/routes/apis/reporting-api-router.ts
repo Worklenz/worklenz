@@ -35,6 +35,7 @@ reportingApiRouter.get("/overview/member/tasks/:team_member_id", teamOwnerOrAdmi
 
 // Projects
 reportingApiRouter.get("/projects", teamLeadMemberScopeValidator, safeControllerFunction(ReportingProjectsController.get));
+reportingApiRouter.get("/projects/grouped", teamLeadMemberScopeValidator, safeControllerFunction(ReportingProjectsController.getGrouped));
 reportingApiRouter.post("/project-timelogs", teamLeadMemberScopeValidator, safeControllerFunction(ReportingProjectsController.getProjectTimeLogs));
 
 // members

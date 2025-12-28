@@ -1,6 +1,6 @@
 {
   "name": "worklenz-backend",
-  "version": "1.4.16",
+  "version": "2.2.3",
   "private": true,
   "engines": {
     "npm": ">=8.11.0",

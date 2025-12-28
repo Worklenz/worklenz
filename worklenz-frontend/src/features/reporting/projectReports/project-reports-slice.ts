@@ -26,6 +26,18 @@ const selectedTeams = (state: ProjectReportsState) => {
 export type ProjectReportsViewMode = 'table' | 'grouped';
 export type ProjectReportsGroupBy = 'category' | 'status' | 'health' | 'team' | 'client' | 'manager';
 
+export interface IProjectReportGroup {
+  group_id: string;
+  group_name: string;
+  group_color: string;
+  project_count: number;
+  total_tasks: number;
+  done_tasks: number;
+  doing_tasks: number;
+  todo_tasks: number;
+  projects: IRPTProject[];
+}
+
 type ProjectReportsState = {
   isProjectReportsDrawerOpen: boolean;
 
@@ -37,6 +49,10 @@ type ProjectReportsState = {
   total: number;
   isLoading: boolean;
   error: string | null;
+
+  // Grouped view data
+  groupedProjects: IProjectReportGroup[];
+  totalGroups: number;
 
   // View mode
   viewMode: ProjectReportsViewMode;
@@ -115,6 +131,28 @@ export const fetchMoreProjectsForGroupedView = createAsyncThunk(
   }
 );
 
+// Fetch grouped projects with accurate task counts
+export const fetchGroupedProjects = createAsyncThunk(
+  'projectReports/fetchGroupedProjects',
+  async (_, { getState }) => {
+    const state = (getState() as any).projectReportsReducer;
+    const params = {
+      group_by: state.groupBy,
+      search: state.searchQuery,
+      field: state.field,
+      order: state.order,
+      statuses: state.selectedProjectStatuses.map((s: IProjectStatus) => s.id || '').join(','),
+      healths: state.selectedProjectHealths.map((h: IProjectHealth) => h.id || '').join(','),
+      categories: state.selectedProjectCategories.map((c: IProjectCategory) => c.id || '').join(','),
+      project_managers: state.selectedProjectManagers.map((m: IProjectManager) => m.id || '').join(','),
+      teams: selectedTeams(state).join(','),
+      archived: state.archived,
+    };
+    const response = await reportingProjectsApiService.getProjectsGrouped(params);
+    return response.body;
+  }
+);
+
 export const updateProjectCategory = createAction<{
   projectId: string;
   category: IProjectCategory;
@@ -136,6 +174,10 @@ const initialState: ProjectReportsState = {
   total: 0,
   isLoading: false,
   error: null,
+
+  // Grouped view data
+  groupedProjects: [],
+  totalGroups: 0,
 
   // View mode
   viewMode: 'table',
@@ -276,6 +318,8 @@ const projectReportsSlice = createSlice({
     resetProjectReports: state => {
       state.projectList = [];
       state.total = 0;
+      state.groupedProjects = [];
+      state.totalGroups = 0;
       state.isLoading = false;
       state.error = null;
       state.index = 1;
@@ -363,6 +407,19 @@ const projectReportsSlice = createSlice({
           state.projectList[projectIndex].status_name = status.name ?? '';
           state.projectList[projectIndex].status_color = status.color_code ?? '';
         }
+      })
+      .addCase(fetchGroupedProjects.pending, state => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchGroupedProjects.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.groupedProjects = action.payload.groups || [];
+        state.totalGroups = action.payload.total_groups || 0;
+      })
+      .addCase(fetchGroupedProjects.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to fetch grouped projects';
       });
   },
 });

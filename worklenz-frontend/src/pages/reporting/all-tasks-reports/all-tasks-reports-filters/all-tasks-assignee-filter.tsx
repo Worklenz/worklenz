@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { Button, Checkbox, Dropdown, Flex, Input, Typography, Avatar, Spin } from '@/shared/antd-imports';
+import { Button, Card, Checkbox, Dropdown, Flex, Input, Typography, Avatar, Spin } from '@/shared/antd-imports';
 import { CaretDownFilled, SearchOutlined, UserOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -43,55 +43,58 @@ const AllTasksAssigneeFilter = () => {
   };
 
   const dropdownContent = (
-    <Flex vertical gap={8} style={{ padding: 12, minWidth: 250 }}>
-      <Input
-        placeholder={t('searchPlaceholder', { defaultValue: 'Search by task name, key, or description' })}
-        prefix={<SearchOutlined />}
-        value={searchQuery}
-        onChange={e => setSearchQuery(e.target.value)}
-        allowClear
-      />
-      <Flex justify="space-between" align="center">
-        <Checkbox
-          checked={selectedAssignees.includes('unassigned')}
-          onChange={() => handleToggle('unassigned')}
-        >
-          {t('unassigned', { defaultValue: 'Unassigned' })}
-        </Checkbox>
-        <Button type="link" size="small" onClick={handleClearAll}>
-          {t('clearAll', { defaultValue: 'Clear All' })}
-        </Button>
+    <Card className="custom-card" styles={{ body: { padding: 8, width: 280 } }}>
+      <Flex vertical gap={8}>
+        <Input
+          placeholder={t('searchPlaceholder', { defaultValue: 'Search by task name, key, or description' })}
+          prefix={<SearchOutlined />}
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          allowClear
+        />
+        <Flex justify="space-between" align="center">
+          <Checkbox
+            checked={selectedAssignees.includes('unassigned')}
+            onChange={() => handleToggle('unassigned')}
+          >
+            {t('unassigned', { defaultValue: 'Unassigned' })}
+          </Checkbox>
+          <Button type="link" size="small" onClick={handleClearAll}>
+            {t('clearAll', { defaultValue: 'Clear All' })}
+          </Button>
+        </Flex>
+        {loading ? (
+          <Flex justify="center" style={{ padding: 16 }}>
+            <Spin size="small" />
+          </Flex>
+        ) : (
+          <Flex vertical gap={4} style={{ maxHeight: 200, overflowY: 'auto' }}>
+            {filteredMembers.map((member: ITeamMemberViewModel) => (
+              <Checkbox
+                key={member.id}
+                checked={selectedAssignees.includes(member.id || '')}
+                onChange={() => handleToggle(member.id || '')}
+              >
+                <Flex align="center" gap={8}>
+                  <Avatar
+                    size="small"
+                    src={member.avatar_url}
+                    icon={!member.avatar_url && <UserOutlined />}
+                    style={{ backgroundColor: member.color_code }}
+                  />
+                  {member.name}
+                </Flex>
+              </Checkbox>
+            ))}
+          </Flex>
+        )}
       </Flex>
-      {loading ? (
-        <Flex justify="center" style={{ padding: 16 }}>
-          <Spin size="small" />
-        </Flex>
-      ) : (
-        <Flex vertical gap={4} style={{ maxHeight: 200, overflowY: 'auto' }}>
-          {filteredMembers.map((member: ITeamMemberViewModel) => (
-            <Checkbox
-              key={member.id}
-              checked={selectedAssignees.includes(member.id || '')}
-              onChange={() => handleToggle(member.id || '')}
-            >
-              <Flex align="center" gap={8}>
-                <Avatar
-                  size="small"
-                  src={member.avatar_url}
-                  icon={!member.avatar_url && <UserOutlined />}
-                  style={{ backgroundColor: member.color_code }}
-                />
-                {member.name}
-              </Flex>
-            </Checkbox>
-          ))}
-        </Flex>
-      )}
-    </Flex>
+    </Card>
   );
 
   return (
     <Dropdown
+      overlayClassName="custom-dropdown"
       dropdownRender={() => dropdownContent}
       trigger={['click']}
       placement="bottomLeft"

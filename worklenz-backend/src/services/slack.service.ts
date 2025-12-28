@@ -392,8 +392,8 @@ export class SlackService {
     try {
       const q = `
         SELECT
-          sc.slack_channel_id as channel_id,
-          sc.slack_channel_name as channel_name,
+          sc.channel_id,
+          sc.channel_name,
           sc.is_private,
           sc.is_archived,
           sc.slack_workspace_id as workspace_id
@@ -637,8 +637,8 @@ export class SlackService {
       const q = `
         SELECT
           scc.*,
-          sc.slack_channel_name as channel_name,
-          sc.slack_channel_id as slack_channel_identifier,
+          sc.channel_name,
+          sc.channel_id as slack_channel_identifier,
           sw.team_name as workspace_name
         FROM slack_channel_configs scc
         JOIN slack_channels sc ON scc.slack_channel_id = sc.id
@@ -665,8 +665,8 @@ export class SlackService {
       const q = `
         SELECT
           scc.*,
-          sc.slack_channel_name as channel_name,
-          sc.slack_channel_id as slack_channel_identifier,
+          sc.channel_name,
+          sc.channel_id as slack_channel_identifier,
           sw.team_name as workspace_name,
           p.name as project_name
         FROM slack_channel_configs scc
@@ -734,8 +734,8 @@ export class SlackService {
       const configQuery = `
         SELECT
           scc.*,
-          sc.slack_channel_id as channel_id,
-          sc.slack_channel_name as channel_name,
+          sc.channel_id,
+          sc.channel_name,
           sw.id as workspace_id,
           sw.team_name
         FROM slack_channel_configs scc
