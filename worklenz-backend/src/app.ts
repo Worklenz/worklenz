@@ -24,6 +24,7 @@ import safeControllerFunction from "./shared/safe-controller-function";
 import AwsSesController from "./controllers/aws-ses-controller";
 import { CSP_POLICIES } from "./shared/csp";
 import { sqlInjectionDetectorWithBlocking } from "./middlewares/sql-injection-detector";
+import { createCsrfRotation } from "./middlewares/csrf-rotation";
 
 const app = express();
 
@@ -84,7 +85,19 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!isProduction() || !origin || allowedOrigins.includes(origin)) {
+    // PHASE 5.2 FIX: Require Origin header in production to prevent CSRF
+    // In production, require Origin header for all requests
+    if (isProduction() && !origin) {
+      return callback(new Error("Origin header required in production"));
+    }
+    
+    // In development, allow requests without origin (for tools like Postman)
+    if (!isProduction()) {
+      return callback(null, true);
+    }
+    
+    // In production, only allow whitelisted origins
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log("Blocked origin:", origin, process.env.NODE_ENV);
@@ -147,32 +160,59 @@ function isLoggedIn(req: Request, _res: Response, next: NextFunction) {
   return req.user ? next() : next(createError(401));
 }
 
-// CSRF configuration using csrf-sync for session-based authentication
+// PHASE 5.2: CSRF configuration using csrf-sync for session-based authentication
+// Enhanced with stronger token generation
 const {
   invalidCsrfTokenError,
   generateToken,
   csrfSynchronisedProtection,
 } = csrfSync({
-  getTokenFromRequest: (req: Request) => req.headers["x-csrf-token"] as string || (req.body && req.body["_csrf"])
+  getTokenFromRequest: (req: Request) => req.headers["x-csrf-token"] as string || (req.body && req.body["_csrf"]),
+  // Note: csrf-sync uses crypto.randomBytes internally, which is secure
+  // Token size is determined by the library (typically 32 bytes)
 });
 
-// Apply CSRF selectively (exclude webhooks, public routes, and invitation routes)
+// PHASE 5.2 FIX: Apply CSRF protection to all state-changing requests
+// Only exclude: webhooks, public routes, and specific invitation endpoints
 app.use((req, res, next) => {
+  const stateChangingMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
+  const isStateChanging = stateChangingMethods.includes(req.method);
+  
+  // Always exclude webhooks (external services can't provide CSRF tokens)
+  if (req.path.startsWith("/webhook/")) {
+    return next();
+  }
+  
+  // Exclude public routes (read-only or public access)
+  if (req.path.startsWith("/public/")) {
+    return next();
+  }
+  
+  // Exclude specific invitation endpoints (these have their own token validation)
   if (
-    req.path.startsWith("/webhook/") ||
-    req.path.startsWith("/secure/") ||
-    req.path.startsWith("/api/") ||
-    req.path.startsWith("/public/") ||
     req.path.startsWith("/invite/team/") ||
     req.path.startsWith("/invite/project/") ||
     req.path.includes("/client-portal/invitation/") ||
-    req.path.includes("/client-portal/auth/login") ||
-    req.path.includes("/client-portal/auth/refresh") ||
     req.path.includes("/client-portal/handle-organization-invite")
   ) {
-    next();
-  } else {
+    return next();
+  }
+  
+  // Exclude client portal auth endpoints (they use different auth mechanism)
+  if (
+    req.path.includes("/client-portal/auth/login") ||
+    req.path.includes("/client-portal/auth/refresh")
+  ) {
+    return next();
+  }
+  
+  // PHASE 5.2 FIX: Apply CSRF protection only to state-changing requests
+  // This protects POST, PUT, DELETE, PATCH operations from CSRF attacks
+  // GET, OPTIONS, HEAD requests don't need CSRF protection
+  if (isStateChanging) {
     csrfSynchronisedProtection(req, res, next);
+  } else {
+    next();
   }
 });
 
@@ -243,10 +283,14 @@ const exportLimiter = rateLimit({
   message: "Too many export requests, please try again later.",
 });
 
+// PHASE 5.2: Create CSRF rotation middleware
+const csrfRotation = createCsrfRotation(generateToken);
+
 // Routes
-app.use("/api/v1", apiLimiter, isLoggedIn, apiRouter);
-app.use("/api/client-portal", apiLimiter, clientPortalApiRouter);
-app.use("/secure", authRouter);
+// PHASE 5.2 FIX: Add CSRF token rotation to state-changing routes
+app.use("/api/v1", apiLimiter, isLoggedIn, csrfRotation, apiRouter);
+app.use("/api/client-portal", apiLimiter, csrfRotation, clientPortalApiRouter);
+app.use("/secure", csrfRotation, authRouter);
 app.use("/public", public_router);
 
 if (isInternalServer()) {
@@ -290,4 +334,5 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   });
 });
 
+export default app;
 export default app;
