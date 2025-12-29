@@ -36,6 +36,50 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
+// Predefined holiday types that will always be available
+const PREDEFINED_HOLIDAY_TYPES: IHolidayType[] = [
+  {
+    id: 'federal-holiday',
+    name: 'Federal Holiday',
+    description: 'Official US Federal Holidays',
+    color_code: '#1890ff', // Blue
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'company-holiday',
+    name: 'Company Holiday',
+    description: 'Company-specific holidays',
+    color_code: '#52c41a', // Green
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'public-holiday',
+    name: 'Public Holiday',
+    description: 'National public holidays',
+    color_code: '#f5222d', // Red
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'religious-holiday',
+    name: 'Religious Holiday',
+    description: 'Religious observances',
+    color_code: '#faad14', // Orange
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'personal-holiday',
+    name: 'Personal Holiday',
+    description: 'Personal time off',
+    color_code: '#722ed1', // Purple
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+];
+
 interface HolidayCalendarProps {
   themeMode: string;
   workingDays?: string[];
@@ -63,16 +107,27 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
     try {
       const res = await holidayApiService.getHolidayTypes();
       if (res.done) {
-        setHolidayTypes(res.body);
+        // Merge predefined types with backend types
+        // Remove duplicates based on name (case-insensitive)
+        const backendTypes = res.body || [];
+        const backendTypeNames = new Set(backendTypes.map(t => t.name.toLowerCase()));
+        
+        const uniquePredefinedTypes = PREDEFINED_HOLIDAY_TYPES.filter(
+          type => !backendTypeNames.has(type.name.toLowerCase())
+        );
+        
+        // Put predefined types first, then backend types
+        const allTypes = [...uniquePredefinedTypes, ...backendTypes];
+        setHolidayTypes(allTypes);
       }
     } catch (error) {
       logger.error('Error fetching holiday types', error);
+      // Fallback to predefined types if API fails
+      setHolidayTypes(PREDEFINED_HOLIDAY_TYPES);
     }
   };
 
   const populateHolidaysIfNeeded = async () => {
-    // Check if we have holiday settings with a country code but no holidays
-    // Also check if we haven't already attempted population and we're not currently populating
     if (
       holidaySettings?.country_code &&
       holidays.length === 0 &&
@@ -85,7 +140,6 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
 
         const populateRes = await holidayApiService.populateCountryHolidays();
         if (populateRes.done) {
-          // Refresh holidays after population
           fetchHolidaysForDateRange(true);
         }
       } catch (error) {
@@ -100,7 +154,6 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
     const startOfYear = currentDate.startOf('year');
     const endOfYear = currentDate.endOf('year');
 
-    // If forceRefresh is true, clear the cached holidays first
     if (forceRefresh) {
       dispatch(clearHolidaysCache());
     }
@@ -119,12 +172,10 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
     fetchHolidaysForDateRange();
   }, [currentDate.year()]);
 
-  // Check if we need to populate holidays when holiday settings are loaded
   useEffect(() => {
     populateHolidaysIfNeeded();
   }, [holidaySettings]);
 
-  // Reset population attempt state when holiday settings change
   useEffect(() => {
     setHasAttemptedPopulation(false);
   }, [holidaySettings?.country_code]);
@@ -191,11 +242,9 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
       const res = await holidayApiService.deleteOrganizationHoliday(holidayId);
       if (res.done) {
         message.success(t('holidayDeleted'));
-        // Close the edit modal and reset form
         setEditModalVisible(false);
         editForm.resetFields();
         setSelectedHoliday(null);
-        // Refresh holidays data
         fetchHolidaysForDateRange(true);
       }
     } catch (error) {
@@ -205,7 +254,6 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
   };
 
   const handleEditHoliday = (holiday: IHolidayCalendarEvent) => {
-    // Only allow editing custom holidays
     if (holiday.source !== 'custom' || !holiday.is_editable) {
       message.warning(t('cannotEditOfficialHoliday') || 'Cannot edit official holidays');
       return;
@@ -225,7 +273,6 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
   const getHolidayDateCellRender = (date: Dayjs) => {
     const dateHolidays = holidays.filter(h => dayjs(h.date).isSame(date, 'day'));
     const dayName = date.format('dddd');
-    // Check if this day is in the working days array from API response
     const isWorkingDay =
       workingDays && workingDays.length > 0 ? workingDays.includes(dayName) : false;
     const isToday = date.isSame(dayjs(), 'day');
@@ -287,31 +334,25 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
   const onPanelChange = (value: Dayjs) => {
     setIsNavigating(true);
     setCurrentDate(value);
-    // Reset navigation flag after a short delay to allow the onSelect event to check it
     setTimeout(() => setIsNavigating(false), 100);
   };
 
   const onDateSelect = (date: Dayjs) => {
-    // Prevent modal from opening during navigation (month/year changes)
     if (isNavigating) {
       return;
     }
 
-    // Prevent modal from opening if the date is from a different month (navigation click)
     if (!date.isSame(currentDate, 'month')) {
       return;
     }
 
-    // Check if there's already a custom holiday on this date
     const existingCustomHoliday = holidays.find(
       h => dayjs(h.date).isSame(date, 'day') && h.source === 'custom' && h.is_editable
     );
 
     if (existingCustomHoliday) {
-      // If custom holiday exists, open edit modal
       handleEditHoliday(existingCustomHoliday);
     } else {
-      // If no custom holiday, open create modal with pre-filled date
       form.setFieldValue('date', date);
       setModalVisible(true);
     }
@@ -379,7 +420,6 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
           className={`holiday-calendar ${themeMode}`}
         />
 
-        {/* Calendar Legend */}
         <div className="calendar-legend">
           <div className="legend-item">
             <div className="legend-badge working-day-badge">W</div>
@@ -423,11 +463,11 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
             label={t('holidayName')}
             rules={[{ required: true, message: t('holidayNameRequired') }]}
           >
-            <Input />
+            <Input placeholder="e.g., New Year's Day" />
           </Form.Item>
 
           <Form.Item name="description" label={t('description')}>
-            <TextArea rows={3} />
+            <TextArea rows={3} placeholder="Optional description" />
           </Form.Item>
 
           <Form.Item
@@ -443,7 +483,7 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
             label={t('holidayType')}
             rules={[{ required: true, message: t('holidayTypeRequired') }]}
           >
-            <Select>
+            <Select placeholder="Select holiday type">
               {holidayTypes.map(type => (
                 <Option key={type.id} value={type.id}>
                   <div style={{ display: 'flex', alignItems: 'center' }}>
