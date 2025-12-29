@@ -45,11 +45,33 @@ app.use(helmet({
   crossOriginResourcePolicy: false,
 }));
 
-// Custom security headers
 app.use((_req: Request, res: Response, next: NextFunction) => {
-  res.setHeader("X-XSS-Protection", "1; mode=block");
+  // Remove server header to hide server information
   res.removeHeader("server");
+  
+  // Content Security Policy (already configured via CSP_POLICIES)
   res.setHeader("Content-Security-Policy", CSP_POLICIES);
+  
+  // Strict Transport Security (HSTS) - only in production with HTTPS
+  if (isProduction()) {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+  }
+  
+  // Prevent clickjacking attacks
+  res.setHeader("X-Frame-Options", "DENY");
+  
+  // Prevent MIME type sniffing
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  
+  // XSS Protection (legacy but still useful for older browsers)
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+  
+  // Control referrer information
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  
+  // Restrict browser features and APIs
+  res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+  
   next();
 });
 
