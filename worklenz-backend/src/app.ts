@@ -96,8 +96,9 @@ app.use(cors({
       return callback(null, true);
     }
     
+    // At this point, origin is guaranteed to be defined (checked above)
     // In production, only allow whitelisted origins
-    if (allowedOrigins.includes(origin)) {
+    if (origin && allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log("Blocked origin:", origin, process.env.NODE_ENV);
@@ -334,5 +335,4 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   });
 });
 
-export default app;
 export default app;
