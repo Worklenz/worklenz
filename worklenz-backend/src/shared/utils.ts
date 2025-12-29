@@ -154,6 +154,48 @@ export function sanitize(value: string) {
   return sanitizeHtml(escapedString);
 }
 
+/**
+ * Sanitizes task comment content to prevent XSS attacks
+ * Allows safe HTML tags for mentions and links while blocking dangerous content
+ * 
+ * @param content - The comment content to sanitize
+ * @returns Sanitized content safe for storage and display
+ */
+export function sanitizeCommentContent(content: string): string {
+  if (!content) return "";
+
+  // Use sanitize-html with configuration that allows safe formatting
+  // This allows mentions (<span class="mentions">) and links (<a>) while blocking XSS
+  return sanitizeHtml(content, {
+    allowedTags: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'span'],
+    allowedAttributes: {
+      'a': ['href', 'target', 'rel'],
+      'span': ['class']
+    },
+    allowedSchemes: ['http', 'https', 'mailto'],
+    allowedSchemesByTag: {
+      'a': ['http', 'https', 'mailto']
+    },
+    // Remove dangerous protocols and event handlers
+    allowedScriptHostnames: [],
+    allowedScriptDomains: [],
+    // Ensure all links have proper attributes
+    transformTags: {
+      'a': (tagName: string, attribs: any) => {
+        // Ensure target="_blank" and rel="noopener noreferrer" for external links
+        if (attribs.href && !attribs.href.startsWith('#')) {
+          attribs.target = '_blank';
+          attribs.rel = 'noopener noreferrer';
+        }
+        return { tagName, attribs };
+      }
+    },
+    // Remove any script tags, event handlers, and dangerous attributes
+    disallowedTagsMode: 'discard',
+    enforceHtmlBoundary: true
+  });
+}
+
 export function escape(value: string) {
   return lodash.escape(sanitizeHtml(value));
 }

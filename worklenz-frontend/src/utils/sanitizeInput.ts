@@ -21,6 +21,7 @@ export const sanitizeInput = (input: string, options?: DOMPurify.Config): string
 
 /**
  * Sanitizes a string for use in HTML contexts (allows some basic tags)
+ * Enhanced configuration to prevent XSS attacks while allowing safe formatting
  *
  * @param input - The input containing HTML to sanitize
  * @returns Sanitized HTML string
@@ -30,6 +31,22 @@ export const sanitizeHtml = (input: string): string => {
 
   return DOMPurify.sanitize(input, {
     ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'span'],
-    ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+    ALLOWED_ATTR: {
+      'a': ['href', 'target', 'rel'],
+      'span': ['class']
+    },
+    ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+    // Remove dangerous protocols
+    ALLOWED_PROTOCOLS: ['http', 'https', 'mailto'],
+    // Ensure all links have proper security attributes
+    ADD_ATTR: ['target', 'rel'],
+    // Remove any script tags, event handlers, and dangerous attributes
+    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur'],
+    // Enforce HTML boundary
+    KEEP_CONTENT: true,
+    RETURN_DOM: false,
+    RETURN_DOM_FRAGMENT: false,
+    RETURN_TRUSTED_TYPE: false
   });
 };
