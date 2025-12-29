@@ -9,7 +9,6 @@ import ReportingAllocationController from "../../controllers/reporting/reporting
 import ReportingProjectsController from "../../controllers/reporting/projects/reporting-projects-controller";
 import ReportingMembersController from "../../controllers/reporting/reporting-members-controller";
 import ReportingAllTasksController from "../../controllers/reporting/reporting-all-tasks-controller";
-import teamLeadMemberScopeValidator from "../../middlewares/validators/team-lead-member-scope-validator";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 import {
   validateUuidParam,
@@ -20,24 +19,24 @@ import {
 
 const reportingApiRouter = express.Router();
 
-reportingApiRouter.get("/info", teamLeadMemberScopeValidator, safeControllerFunction(ReportingInfoController.getInfo));
+reportingApiRouter.get("/info", teamOwnerOrAdminValidator, safeControllerFunction(ReportingInfoController.getInfo));
 
-// Overview - All overview routes require admin/team lead permissions
-reportingApiRouter.get("/overview/statistics", teamLeadMemberScopeValidator, safeControllerFunction(ReportingOverviewController.getStatistics));
-reportingApiRouter.get("/overview/teams", teamLeadMemberScopeValidator, safeControllerFunction(ReportingOverviewController.getTeams));
+// Overview - All overview routes require admin/owner permissions only
+reportingApiRouter.get("/overview/statistics", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getStatistics));
+reportingApiRouter.get("/overview/teams", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getTeams));
 
 reportingApiRouter.get("/overview/projects/:team_id",
-  teamLeadMemberScopeValidator,
+  teamOwnerOrAdminValidator,
   validateUuidParam("team_id", "params"),
   safeControllerFunction(ReportingOverviewController.getProjectsByTeamOrMember)
 );
 reportingApiRouter.get("/overview/members/:team_id",
-  teamLeadMemberScopeValidator,
+  teamOwnerOrAdminValidator,
   validateUuidParam("team_id", "params"),
   safeControllerFunction(ReportingOverviewController.getMembersByTeam)
 );
 reportingApiRouter.get("/overview/team/info/:team_id",
-  teamLeadMemberScopeValidator,
+  teamOwnerOrAdminValidator,
   validateUuidParam("team_id", "params"),
   safeControllerFunction(ReportingOverviewController.getTeamOverview)
 );
@@ -80,7 +79,7 @@ reportingApiRouter.get("/overview/member/tasks/:team_member_id",
 
 // Projects
 reportingApiRouter.get("/projects",
-  teamLeadMemberScopeValidator,
+  teamOwnerOrAdminValidator,
   validateUuidArrayParam("statuses", ","),      // ?statuses=uuid1,uuid2
   validateUuidArrayParam("healths", ","),        // ?healths=uuid1,uuid2
   validateUuidArrayParam("categories", ","),     // ?categories=uuid1,uuid2
@@ -91,7 +90,7 @@ reportingApiRouter.get("/projects",
   safeControllerFunction(ReportingProjectsController.get)
 );
 reportingApiRouter.get("/projects/grouped",
-  teamLeadMemberScopeValidator,
+  teamOwnerOrAdminValidator,
   validateUuidArrayParam("statuses", ","),
   validateUuidArrayParam("healths", ","),
   validateUuidArrayParam("categories", ","),
@@ -102,11 +101,11 @@ reportingApiRouter.get("/projects/grouped",
   validatePaginationParams(),
   safeControllerFunction(ReportingProjectsController.getGrouped)
 );
-reportingApiRouter.post("/project-timelogs", teamLeadMemberScopeValidator, safeControllerFunction(ReportingProjectsController.getProjectTimeLogs));
+reportingApiRouter.post("/project-timelogs", teamOwnerOrAdminValidator, safeControllerFunction(ReportingProjectsController.getProjectTimeLogs));
 
 // members
 reportingApiRouter.get("/members",
-  teamLeadMemberScopeValidator,
+  teamOwnerOrAdminValidator,
   validateUuidArrayParam("teams", ","),  // ?teams=uuid1,uuid2
   validatePaginationParams(),
   safeControllerFunction(ReportingMembersController.getReportingMembers)
@@ -147,6 +146,6 @@ reportingApiRouter.post("/time-reports/members", teamOwnerOrAdminValidator, safe
 reportingApiRouter.post("/time-reports/estimated-vs-actual", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.getEstimatedVsActual));
 
 // All Tasks Report
-reportingApiRouter.post("/all-tasks", teamLeadMemberScopeValidator, safeControllerFunction(ReportingAllTasksController.getReportingAllTasks));
+reportingApiRouter.post("/all-tasks", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllTasksController.getReportingAllTasks));
 
 export default reportingApiRouter;

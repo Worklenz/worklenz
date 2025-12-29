@@ -220,9 +220,87 @@ export default class ProjectsController extends WorklenzControllerBase {
     return { clause: `AND status_id IN (${clause})`, params: statusIds };
   }
 
+  /**
+   * Validates and maps sort field to prevent SQL injection
+   * Maps frontend field names to safe database column names
+   */
+  private static validateAndMapSortField(field: string | string[] | undefined, defaultField: string = "name"): string {
+    // If field is an array, use the first element or default
+    const sortField = Array.isArray(field) ? field[0] : (field || defaultField);
+    
+    // Whitelist of allowed sort fields for projects
+    // Maps frontend field names to safe database column names
+    const fieldMapping: Record<string, string> = {
+      'name': 'name',
+      'updated_at': 'updated_at',
+      'created_at': 'created_at',
+      'start_date': 'start_date',
+      'end_date': 'end_date',
+      'status': 'status_id',
+      'category': 'category_id',
+      'client_name': 'client_id',
+      'project_owner': 'owner_id',
+    };
+
+    // If the field is already a valid database column name (contains dot or matches exactly)
+    if (typeof sortField === 'string') {
+      // Check if it's already a qualified column name (e.g., "projects.name")
+      if (sortField.includes('.') || sortField === 'updated_at') {
+        // Validate it's a safe column name (alphanumeric, underscore, dot only)
+        // Remove any SQL injection attempts
+        const sanitized = sortField.replace(/[^a-zA-Z0-9_.]/g, '');
+        if (/^[a-zA-Z_][a-zA-Z0-9_.]*$/.test(sanitized)) {
+          return sanitized;
+        }
+      }
+      
+      // Map frontend field name to database column
+      if (fieldMapping[sortField]) {
+        return fieldMapping[sortField];
+      }
+    }
+
+    // Default to safe field if invalid
+    return fieldMapping[defaultField] || 'name';
+  }
+
+  /**
+   * Validates and maps sort field for project members to prevent SQL injection
+   */
+  private static validateAndMapMemberSortField(field: string | string[] | undefined, defaultField: string = "name"): string {
+    const sortField = Array.isArray(field) ? field[0] : (field || defaultField);
+    
+    // Whitelist of allowed sort fields for project members
+    const fieldMapping: Record<string, string> = {
+      'name': 'name',
+      'email': 'email',
+      'access': 'access',
+      'job_title': 'job_title',
+      'all_tasks_count': 'all_tasks_count',
+      'completed_tasks_count': 'completed_tasks_count',
+    };
+
+    if (typeof sortField === 'string') {
+      // Validate it's a safe column name
+      const sanitized = sortField.replace(/[^a-zA-Z0-9_]/g, '');
+      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(sanitized)) {
+        // Check if it's in the whitelist
+        if (fieldMapping[sanitized]) {
+          return fieldMapping[sanitized];
+        }
+      }
+    }
+
+    return fieldMapping[defaultField] || 'name';
+  }
+
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const {searchQuery, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name");
+
+    // Validate and sanitize sort field to prevent SQL injection
+    const safeSortField = this.validateAndMapSortField(sortField, "name");
+    const safeSortOrder = (sortOrder === "desc" || sortOrder === "DESC") ? "DESC" : "ASC";
 
     const queryParams: any[] = [req.user?.team_id || null];
     let paramOffset = 2;
@@ -338,7 +416,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                                            ELSE updated_at END) AS updated_at
                           FROM projects
                           WHERE team_id = $1 ${categories} ${statuses} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
-                          ORDER BY ${sortField} ${sortOrder}
+                          ORDER BY ${safeSortField} ${safeSortOrder}
                           LIMIT $${paramOffset} OFFSET $${paramOffset + 1}) t) AS data
             FROM projects
             WHERE team_id = $1 ${categories} ${statuses} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}) rec;
@@ -374,6 +452,11 @@ export default class ProjectsController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getMembersByProjectId(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const {sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name");
+    
+    // Validate and sanitize sort field to prevent SQL injection
+    const safeSortField = this.validateAndMapMemberSortField(sortField, "name");
+    const safeSortOrder = (sortOrder === "desc" || sortOrder === "DESC") ? "DESC" : "ASC";
+    
     const search = (req.query.search || "").toString().trim();
 
     let searchFilter = "";
@@ -411,7 +494,7 @@ export default class ProjectsController extends WorklenzControllerBase {
         (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
            FROM (
              SELECT * FROM filtered_members
-             ORDER BY ${sortField} ${sortOrder}
+             ORDER BY ${safeSortField} ${safeSortOrder}
              LIMIT $3 OFFSET $4) t) AS data
     `;
 
@@ -965,13 +1048,13 @@ export default class ProjectsController extends WorklenzControllerBase {
         groupOrderBy = "COALESCE(project_categories.name, 'Uncategorized')";
     }
 
+    // Validate and sanitize sort field to prevent SQL injection
+    const safeSortField = this.validateAndMapSortField(sortField, "projects.name");
+    const safeSortOrder = (sortOrder === "desc" || sortOrder === "DESC") ? "DESC" : "ASC";
+    
     // Ensure sortField is properly qualified for the inner project query
-    let qualifiedSortField = sortField;
-    if (Array.isArray(sortField)) {
-      qualifiedSortField = sortField[0]; // Take the first field if it's an array
-    }
     // Replace "projects." with "p2." for the inner query
-    const innerSortField = qualifiedSortField.replace("projects.", "p2.");
+    const innerSortField = safeSortField.replace("projects.", "p2.");
 
     const q = `
       SELECT ROW_TO_JSON(rec) AS groups
@@ -1054,7 +1137,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                               ${isFavorites.replace("projects.", "p2.")}
                               ${filterByMember.replace("projects.", "p2.")}
                               ${searchQuery.replace("projects.", "p2.")}
-                            ORDER BY ${innerSortField} ${sortOrder}
+                            ORDER BY ${innerSortField} ${safeSortOrder}
                           ) project_data
                          ) AS projects
                   FROM projects
