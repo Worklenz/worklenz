@@ -15,6 +15,7 @@ import {
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';
+import { sanitizeHtml } from '@/utils/sanitizeInput';
 import { useParams } from 'react-router-dom';
 
 import CustomAvatar from '@components/CustomAvatar';
@@ -244,7 +245,8 @@ const ProjectViewUpdates = () => {
   const renderComment = useCallback(
     (comment: IProjectUpdateCommentViewModel) => {
       const linkifiedContent = linkify(comment.content || '');
-      const sanitizedContent = DOMPurify.sanitize(linkifiedContent);
+      // Use enhanced sanitization function for better XSS protection
+      const sanitizedContent = sanitizeHtml(linkifiedContent);
       const timeDifference = calculateTimeDifference(comment.created_at || '');
       const themeClass = theme === 'dark' ? 'dark' : 'light';
 
