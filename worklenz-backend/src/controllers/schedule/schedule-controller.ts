@@ -727,7 +727,6 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
 
     const isSubTasks = !!options.parent_task;
 
-    // PHASE 2: Initialize parameter collection
     const queryParams: any[] = [];
     let paramOffset = 1;
 

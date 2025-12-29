@@ -537,7 +537,6 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
 
     const isSubTasks = !!options.parent_task;
 
-    // PHASE 2: Initialize parameter collection
     const queryParams: any[] = [];
     let paramOffset = 1;
 

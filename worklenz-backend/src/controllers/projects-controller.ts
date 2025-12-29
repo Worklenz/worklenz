@@ -224,7 +224,6 @@ export default class ProjectsController extends WorklenzControllerBase {
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const {searchQuery, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name");
 
-    // PHASE 2: Build parameterized query
     const queryParams: any[] = [req.user?.team_id || null];
     let paramOffset = 2;
 

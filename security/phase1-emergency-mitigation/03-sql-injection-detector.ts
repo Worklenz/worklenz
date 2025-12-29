@@ -1,6 +1,4 @@
 /**
- * PHASE 1: EMERGENCY SQL INJECTION DETECTION MIDDLEWARE
- * 
  * This is a TEMPORARY security measure to detect and block SQL injection attempts
  * while we implement proper parameterized queries in Phase 2-4.
  * 

@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 
 /**
- * PHASE 5.2: CSRF Token Rotation Middleware
- * 
  * Rotates CSRF token after successful state-changing operations to prevent
  * token reuse attacks and enhance security.
  * 

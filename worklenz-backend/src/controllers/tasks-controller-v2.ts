@@ -190,7 +190,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   private static getQuery(userId: string, options: ParsedQs, projectId?: string): { query: string; params: any[]; isSubTasks: boolean } {
-    // PHASE 2: Initialize parameter collection
     const queryParams: any[] = [userId]; // $1 is always userId
     let paramOffset = 2; // Start at $2 (after userId)
     
@@ -256,7 +255,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
       ? `${mappedSortField} ${sortOrder.toUpperCase()}`
       : defaultSortColumn;
 
-    // PHASE 2: Collect filter parameters
     const statusesResult = TasksControllerV2.getFilterByStatusWhereClosure(
       options.statuses as string,
       paramOffset
@@ -302,7 +300,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
       paramOffset += priorityResult.params.length;
     }
 
-    // PHASE 2: Fix search query SQL injection
     let enhancedSearchQuery = searchQuery;
     let searchParamNum = 0;
     if (options.search && !isSubTasks) {

@@ -22,9 +22,6 @@ export async function on_task_timer_stop(_io: Server, socket: Socket, data?: str
       return;
     }
     
-    // PHASE 2 FIX: Use parameterized queries to prevent SQL injection
-    // ✅ All queries use $1, $2 placeholders - NO string interpolation
-    // Using transaction to ensure atomicity (DO blocks don't support parameter placeholders)
     await db.query("BEGIN");
     
     try {

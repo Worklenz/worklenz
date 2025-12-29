@@ -19,7 +19,6 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
 
     const teamId = this.getCurrentTeamId(req);
 
-    // PHASE 2: Build filter clauses with parameterized queries
     // Note: teamId is $1, size is $2, offset is $3, then filter params start at $4
     const filterParams: any[] = [];
     let paramOffset = 4; // Start after teamId, size, offset
@@ -255,7 +254,6 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
 
     const teamId = this.getCurrentTeamId(req);
 
-    // PHASE 2: Build filter clauses with parameterized queries
     // Note: teamId is $1, filter params start at $2 (no LIMIT/OFFSET in grouped query)
     const filterParams: any[] = [];
     let paramOffset = 2; // Start after teamId

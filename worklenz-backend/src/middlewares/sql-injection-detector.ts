@@ -1,11 +1,5 @@
 /**
- * PHASE 1: EMERGENCY SQL INJECTION DETECTION MIDDLEWARE
- * 
- * This is a TEMPORARY security measure to detect and block SQL injection attempts
- * while we implement proper parameterized queries in Phase 2-4.
- * 
- * WARNING: This is NOT a replacement for proper input validation and parameterized queries.
- * This should be removed once all SQL injection vulnerabilities are fixed.
+ * This middleware detects and blocks SQL injection attempts.
  */
 
 import { Request, Response, NextFunction } from "express";

@@ -107,7 +107,6 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // PHASE 5.2 FIX: Require Origin header in production to prevent CSRF
     // In production, require Origin header for all requests
     if (isProduction() && !origin) {
       return callback(new Error("Origin header required in production"));
@@ -144,7 +143,6 @@ app.use(cors({
 // Handle preflight requests
 app.options("*", cors());
 
-// PHASE 2 COMPLETE: SQL Injection Detection disabled - all vulnerabilities fixed with parameterized queries
 // The middleware can be re-enabled for monitoring if needed, but blocking is no longer necessary
 // if (isProduction()) {
 //   app.use(sqlInjectionDetectorWithBlocking);
@@ -183,7 +181,6 @@ function isLoggedIn(req: Request, _res: Response, next: NextFunction) {
   return req.user ? next() : next(createError(401));
 }
 
-// PHASE 5.2: CSRF configuration using csrf-sync for session-based authentication
 // Enhanced with stronger token generation
 const {
   invalidCsrfTokenError,
@@ -195,7 +192,6 @@ const {
   // Token size is determined by the library (typically 32 bytes)
 });
 
-// PHASE 5.2 FIX: Apply CSRF protection to all state-changing requests
 // Only exclude: webhooks, public routes, and specific invitation endpoints
 app.use((req, res, next) => {
   const stateChangingMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
@@ -229,7 +225,6 @@ app.use((req, res, next) => {
     return next();
   }
   
-  // PHASE 5.2 FIX: Apply CSRF protection only to state-changing requests
   // This protects POST, PUT, DELETE, PATCH operations from CSRF attacks
   // GET, OPTIONS, HEAD requests don't need CSRF protection
   if (isStateChanging) {
@@ -288,7 +283,7 @@ if (isProduction()) {
   app.use(express.static(path.join(__dirname, "public")));
 }
 
-// API rate limiting - PHASE 2 COMPLETE: Restored to normal limits
+// API rate limiting
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: isProduction() ? 1500 : 3000, // 100 req/min in production, 200 req/min in dev
@@ -306,11 +301,11 @@ const exportLimiter = rateLimit({
   message: "Too many export requests, please try again later.",
 });
 
-// PHASE 5.2: Create CSRF rotation middleware
+// Create CSRF rotation middleware
 const csrfRotation = createCsrfRotation(generateToken);
 
 // Routes
-// PHASE 5.2 FIX: Add CSRF token rotation to state-changing routes
+// Add CSRF token rotation to state-changing routes
 app.use("/api/v1", apiLimiter, isLoggedIn, csrfRotation, apiRouter);
 app.use("/api/client-portal", apiLimiter, csrfRotation, clientPortalApiRouter);
 app.use("/secure", csrfRotation, authRouter);

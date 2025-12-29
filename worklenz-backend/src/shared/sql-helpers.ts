@@ -1,6 +1,4 @@
 /**
- * PHASE 2: SECURE SQL QUERY HELPERS
- * 
  * This module provides secure utilities for building SQL queries with proper
  * parameterization to prevent SQL injection vulnerabilities.
  * 

@@ -1,6 +1,5 @@
 /**
- * PHASE 2: Example Fix for tasks-controller-v2.ts
- * 
+
  * This file demonstrates how to replace unsafe flatString() usage
  * with secure parameterized queries using SqlHelper.
  * 
