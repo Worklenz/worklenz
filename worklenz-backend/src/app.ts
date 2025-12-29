@@ -187,7 +187,14 @@ const {
   generateToken,
   csrfSynchronisedProtection,
 } = csrfSync({
-  getTokenFromRequest: (req: Request) => req.headers["x-csrf-token"] as string || (req.body && req.body["_csrf"]),
+  getTokenFromRequest: (req: Request) => {
+    // Express normalizes headers to lowercase, so check both cases
+    const token = req.headers["x-csrf-token"] as string || 
+                  req.headers["X-CSRF-Token"] as string ||
+                  (req.body && req.body["_csrf"]);
+    
+    return token;
+  },
   // Note: csrf-sync uses crypto.randomBytes internally, which is secure
   // Token size is determined by the library (typically 32 bytes)
 });
@@ -225,6 +232,11 @@ app.use((req, res, next) => {
     return next();
   }
   
+  // Exclude the CSRF token endpoint itself (GET requests to fetch tokens)
+  if (req.path === "/csrf-token") {
+    return next();
+  }
+  
   // This protects POST, PUT, DELETE, PATCH operations from CSRF attacks
   // GET, OPTIONS, HEAD requests don't need CSRF protection
   if (isStateChanging) {
@@ -244,12 +256,26 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // CSRF token refresh endpoint
+// Note: This endpoint doesn't require authentication, but needs a session
 app.get("/csrf-token", (req: Request, res: Response) => {
   try {
+    // Check if session exists (csrf-sync requires session)
+    if (!req.session) {
+      return res.status(401).json({ done: false, message: "Session required for CSRF token" });
+    }
+    
     const token = generateToken(req);
+    if (!token) {
+      console.error('[CSRF] Failed to generate token');
+      return res.status(500).json({ done: false, message: "Failed to generate CSRF token" });
+    }
+    
+    // Also send token in header for convenience
+    res.setHeader('X-CSRF-Token', token);
     res.status(200).json({ done: true, message: "CSRF token refreshed", token });
-  } catch (error) {
-    res.status(500).json({ done: false, message: "Failed to generate CSRF token" });
+  } catch (error: any) {
+    console.error('[CSRF] Error generating token:', error);
+    res.status(500).json({ done: false, message: "Failed to generate CSRF token", error: error?.message });
   }
 });
 
@@ -306,9 +332,11 @@ const csrfRotation = createCsrfRotation(generateToken);
 
 // Routes
 // Add CSRF token rotation to state-changing routes
-app.use("/api/v1", apiLimiter, isLoggedIn, csrfRotation, apiRouter);
-app.use("/api/client-portal", apiLimiter, csrfRotation, clientPortalApiRouter);
-app.use("/secure", csrfRotation, authRouter);
+// TEMPORARY: Disable CSRF rotation to prevent token conflicts with concurrent requests
+// Token rotation causes issues when multiple requests are in flight
+app.use("/api/v1", apiLimiter, isLoggedIn, apiRouter);
+app.use("/api/client-portal", apiLimiter, clientPortalApiRouter);
+app.use("/secure", authRouter);
 app.use("/public", public_router);
 
 if (isInternalServer()) {
