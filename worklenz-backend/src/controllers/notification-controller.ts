@@ -17,9 +17,9 @@ export default class NotificationController extends WorklenzControllerBase {
              un.created_at,
              un.read,
              (SELECT name FROM teams WHERE id = un.team_id) AS team,
-             (SELECT name FROM projects WHERE id = t.project_id) AS project,
-             (SELECT color_code FROM projects WHERE id = t.project_id) AS color,
-             t.project_id,
+             (SELECT name FROM projects WHERE id = un.project_id) AS project,
+             (SELECT color_code FROM projects WHERE id = un.project_id) AS color,
+             un.project_id,
              t.id AS task_id,
              un.team_id
       FROM user_notifications un

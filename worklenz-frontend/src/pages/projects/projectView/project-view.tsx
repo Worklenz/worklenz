@@ -182,6 +182,11 @@ const ProjectView = React.memo(() => {
     }
   }, [location.pathname, resetAllProjectData]);
 
+  // Reset initialization when project changes - must run first
+  useEffect(() => {
+    setIsInitialized(false);
+  }, [projectId]);
+
   // Optimized project data loading with better error handling and performance tracking
   useEffect(() => {
     if (projectId && !isInitialized) {
@@ -218,12 +223,7 @@ const ProjectView = React.memo(() => {
 
       loadProjectData();
     }
-  }, [dispatch, navigate, projectId]);
-
-  // Reset initialization when project changes
-  useEffect(() => {
-    setIsInitialized(false);
-  }, [projectId]);
+  }, [dispatch, navigate, projectId, isInitialized]);
 
   // Effect for handling task drawer opening from URL params
   useEffect(() => {
