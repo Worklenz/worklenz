@@ -9,6 +9,7 @@
   "in": "em",
   "accessLevel": "Nível de acesso",
   "loggedInAs": "Você está conectado como {{name}}. Seus dados estão pré-preenchidos.",
+  "joiningAs": "Você entrará como {{name}} ({{email}})",
   "fullName": "Nome completo",
   "fullNameRequired": "Por favor insira seu nome completo",
   "fullNameMinLength": "O nome deve ter pelo menos 2 caracteres",
