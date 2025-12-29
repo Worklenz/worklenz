@@ -107,19 +107,19 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // In production, require Origin header for all requests
-    if (isProduction() && !origin) {
-      return callback(new Error("Origin header required in production"));
-    }
-    
-    // In development, allow requests without origin (for tools like Postman)
+    // In development, allow all requests
     if (!isProduction()) {
       return callback(null, true);
     }
     
-    // At this point, origin is guaranteed to be defined (checked above)
-    // In production, only allow whitelisted origins
-    if (origin && allowedOrigins.includes(origin)) {
+    // In production, allow requests without Origin header (for mobile apps, native clients)
+    // Mobile apps and native clients typically don't send Origin headers
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // If Origin header is present in production, validate it against whitelist
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log("Blocked origin:", origin, process.env.NODE_ENV);
@@ -234,6 +234,28 @@ app.use((req, res, next) => {
   
   // Exclude the CSRF token endpoint itself (GET requests to fetch tokens)
   if (req.path === "/csrf-token") {
+    return next();
+  }
+  
+  // Exclude mobile app authentication endpoints (mobile apps can't send CSRF tokens)
+  // Check both with and without /secure prefix since req.path might vary depending on mounting
+  const authPaths = [
+    "/login", "/secure/login",
+    "/signup", "/secure/signup",
+    "/signup/check", "/secure/signup/check",
+    "/verify", "/secure/verify",
+    "/reset-password", "/secure/reset-password",
+    "/update-password", "/secure/update-password",
+    "/verify-captcha", "/secure/verify-captcha",
+    "/google/mobile", "/secure/google/mobile",
+    "/apple/mobile", "/secure/apple/mobile",
+    "/google", "/secure/google",
+    "/google/verify", "/secure/google/verify",
+    "/apple", "/secure/apple",
+    "/apple/verify", "/secure/apple/verify"
+  ];
+  
+  if (authPaths.includes(req.path)) {
     return next();
   }
   
