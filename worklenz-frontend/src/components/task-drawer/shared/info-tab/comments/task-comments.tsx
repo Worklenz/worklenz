@@ -20,7 +20,7 @@ import { colors } from '@/styles/colors';
 import AttachmentsGrid from '../attachments/attachments-grid';
 import { TFunction } from 'i18next';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
-import { sanitizeHtml } from '@/utils/sanitizeInput';
+import { sanitizeCommentContent } from '@/utils/sanitizeInput';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 
@@ -61,30 +61,20 @@ const processMentions = (content: string) => {
   return content.replace(/@(\w+)/g, '<span class="mentions">@$1</span>');
 };
 
-// Utility to linkify URLs in text
-const linkify = (text: string) => {
-  if (!text) return '';
-  // Regex to match URLs (http, https, www)
-  return text.replace(/(https?:\/\/[^\s]+|www\.[^\s]+)/g, url => {
-    let href = url;
-    if (!href.startsWith('http')) {
-      href = 'http://' + href;
-    }
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>`;
-  });
-};
-
-// Helper function to process mentions and links in content
+// Helper function to process mentions in content
+// Security: Do NOT linkify URLs to prevent open redirect attacks
 const processContent = (content: string) => {
   if (!content) return '';
-  // First, linkify URLs
-  let processed = linkify(content);
-  // Then, process mentions (if not already processed)
+  
+  // Process mentions (if not already processed)
+  let processed = content;
   if (!hasProcessedMentions(processed)) {
     processed = processMentions(processed);
   }
-  // Sanitize the final HTML (allowing <a> and <span class="mentions">)
-  return sanitizeHtml(processed);
+  
+  // Sanitize the final HTML to prevent XSS and open redirects
+  // This will strip any <a> tags that might have been injected
+  return sanitizeCommentContent(processed);
 };
 
 const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {

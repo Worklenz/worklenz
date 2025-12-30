@@ -1330,6 +1330,20 @@ export const selectTasksByPhase = createSelector(
 // Add archived selector
 export const selectArchived = (state: RootState) => state.taskManagement.archived;
 
+// Memoized selector for active filters to prevent unnecessary re-renders
+export const selectActiveFilters = createSelector(
+  [
+    (state: RootState) => state.taskReducer?.taskAssignees || [],
+    (state: RootState) => state.taskReducer?.labels || [],
+    (state: RootState) => state.taskReducer?.priorities || [],
+  ],
+  (taskAssignees, labels, priorities) => ({
+    members: taskAssignees.filter((m: any) => m.selected).map((m: any) => m.id),
+    labels: labels.filter((l: any) => l.selected).map((l: any) => l.id),
+    priorities: priorities,
+  })
+);
+
 // Export the reducer as default
 export default taskManagementSlice.reducer;
 

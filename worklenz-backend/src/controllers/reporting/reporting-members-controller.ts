@@ -4,6 +4,7 @@ import HandleExceptions from "../../decorators/handle-exceptions";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
+import { SqlHelper } from "../../shared/sql-helpers";
 import { DATE_RANGES, TASK_PRIORITY_COLOR_ALPHA } from "../../shared/constants";
 import { formatDuration, getColor, int } from "../../shared/utils";
 import ReportingControllerBaseWithTimezone from "./reporting-controller-base-with-timezone";
@@ -226,9 +227,6 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     return data;
   }
 
-  private static flatString(text: string) {
-    return (text || "").split(" ").map(s => `'${s}'`).join(",");
-  }
 
   protected static memberTasksDurationFilter(key: string, dateRange: string[]) {
     if (dateRange.length === 2) {
@@ -463,10 +461,12 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       dateRange = date_range.split(",");
     }
 
-    const teamsClause =
-      req.query.teams as string
-        ? `AND tmiv.team_id IN (${this.flatString(req.query.teams as string)})`
-        : "";
+    let teamsClause = "";
+    if (req.query.teams) {
+      const teamIds = (req.query.teams as string).split(" ").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(teamIds, 1);
+      teamsClause = `AND tmiv.team_id IN (${clause})`;
+    }
 
     const teamId = this.getCurrentTeamId(req);
     const result = await this.getMembers(teamId as string, searchQuery, size, offset, teamsClause, duration as string, dateRange, archived, req.user?.id as string, req);

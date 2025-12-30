@@ -6,7 +6,7 @@ import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { NotificationsService } from "../services/notifications/notifications.service";
-import { humanFileSize, log_error, megabytesToBytes } from "../shared/utils";
+import { humanFileSize, log_error, megabytesToBytes, sanitizeCommentContent } from "../shared/utils";
 import { HTML_TAG_REGEXP, S3_URL } from "../shared/constants";
 import { getBaseUrl } from "../cron_jobs/helpers";
 import { ICommentEmailNotification } from "../interfaces/comment-email-notification";
@@ -105,9 +105,13 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     const { mentions, attachments, task_id } = req.body;
     const url = `${S3_URL}/${getRootDir()}`;
 
-    let commentContent = req.body.content;
+    // Content is already sanitized by the validator middleware
+    // Process mentions after sanitization to ensure safe HTML
+    let commentContent = req.body.content || '';
     if (mentions.length > 0) {
       commentContent = this.replaceContent(commentContent, mentions);
+      // Re-sanitize after mention processing to ensure no XSS was introduced
+      commentContent = sanitizeCommentContent(commentContent);
     }
 
     req.body.content = commentContent;
@@ -282,9 +286,13 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     req.body.team_id = req.user?.team_id;
     const { mentions, comment_id } = req.body;
 
-    let commentContent = req.body.content;
+    // Content is already sanitized by the validator middleware
+    // Process mentions after sanitization to ensure safe HTML
+    let commentContent = req.body.content || '';
     if (mentions.length > 0) {
       commentContent = await this.replaceContent(commentContent, mentions);
+      // Re-sanitize after mention processing to ensure no XSS was introduced
+      commentContent = sanitizeCommentContent(commentContent);
     }
 
     req.body.content = commentContent;

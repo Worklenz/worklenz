@@ -95,6 +95,11 @@ export default defineConfig(({ command, mode }) => {
       // **Sourcemaps**
       sourcemap: !isProduction ? 'inline' : false, // Disable sourcemaps in production for smaller bundles
 
+      // **Module Preload Polyfill** - Helps with chunk loading reliability
+      modulePreload: {
+        polyfill: true,
+      },
+
       // **Minification**
       minify: isProduction ? 'terser' : false,
       terserOptions: isProduction
@@ -185,10 +190,5 @@ export default defineConfig(({ command, mode }) => {
 
     // **Public Directory** - sw.js will be automatically copied from public/ to build/
     publicDir: 'public',
-
-    // **Experimental - Add versioning to assets**
-    experimental: {
-      buildAdvancedBaseOptions: true,
-    },
   };
 });
