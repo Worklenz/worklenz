@@ -1,0 +1,108 @@
+/* Limit modal content height and enable internal scroll */
+.import-export-modal-content-wrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+/* Add margin to the search icon prefix */
+.import-search-icon {
+  margin-right: 4px;
+}
+.import-source-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  height: 110px;
+  min-height: 110px;
+  background: #232324;
+  border-radius: 10px;
+  border: 1px solid #333;
+  box-shadow: none;
+  transition:
+    border 0.2s,
+    box-shadow 0.2s;
+  cursor: pointer;
+  margin: 0;
+}
+
+.import-source-card:hover {
+  border: 1.5px solid #4096ff;
+  box-shadow: 0 2px 8px rgba(64, 150, 255, 0.08);
+}
+
+.import-source-label {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-top: 0.5rem;
+  color: #fff;
+}
+
+.import-source-grid-scroll {
+  max-height: 340px;
+  overflow-y: auto;
+  margin-bottom: 2rem;
+}
+
+.import-source-grid-scroll {
+  margin-bottom: 2rem;
+}
+
+.import-source-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.import-source-icon {
+  margin-bottom: 0.5rem;
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cant-find-app-section {
+  margin-top: 2.5rem;
+}
+
+.cant-find-app-card {
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  background: #18191a;
+  color: #fff;
+}
+
+/* Ant Design v5 dark mode uses .ant-layout, .ant-modal-root, .dark, etc. for dark mode. */
+.ant-modal-root .cant-find-app-card,
+.ant-modal .cant-find-app-card {
+  background: #fff;
+  color: #111;
+}
+
+body.dark .cant-find-app-card,
+.ant-modal-root .dark .cant-find-app-card {
+  background: #18191a;
+  color: #fff;
+}
+
+.cant-find-app-card .ant-typography,
+.cant-find-app-card .ant-typography-secondary {
+  color: inherit !important;
+  opacity: 0.85;
+}
+
+.csv-card-row {
+  margin-top: 1.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.csv-only-card {
+  min-width: 180px;
+  max-width: 220px;
+  margin: 0;
+}

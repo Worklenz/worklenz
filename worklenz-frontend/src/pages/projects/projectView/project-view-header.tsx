@@ -17,6 +17,7 @@ import {
   SyncOutlined,
   UsergroupAddOutlined,
 } from '@/shared/antd-imports';
+import ProjectImportExportModal from './ProjectImportExportModal';
 import { PageHeader } from '@ant-design/pro-components';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -71,6 +72,7 @@ import { isFreeUser } from '@/utils/subscription-utils';
 import { ProjectIntegrationsButton } from '@/components/projects/integrations/ProjectIntegrationsButton';
 
 const ProjectViewHeader = memo(() => {
+  const [importExportOpen, setImportExportOpen] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation('project-view/project-view-header');
   const dispatch = useAppDispatch();
@@ -330,7 +332,10 @@ const ProjectViewHeader = memo(() => {
 
     if (selectedProject.status) {
       elements.push(
-        <Tooltip key="status" title={`${t('projectStatusTooltip', { defaultValue: 'Project status' })}: ${selectedProject.status}`}>
+        <Tooltip
+          key="status"
+          title={`${t('projectStatusTooltip', { defaultValue: 'Project status' })}: ${selectedProject.status}`}
+        >
           <ProjectStatusIcon
             iconName={selectedProject.status_icon || ''}
             color={selectedProject.status_color || ''}
@@ -395,7 +400,10 @@ const ProjectViewHeader = memo(() => {
     // Save as template (owner/admin/team lead only)
     if (isOwnerOrAdmin) {
       actions.push(
-        <Tooltip key="template" title={t('saveAsTemplateTooltip', { defaultValue: 'Save this project as a template' })}>
+        <Tooltip
+          key="template"
+          title={t('saveAsTemplateTooltip', { defaultValue: 'Save this project as a template' })}
+        >
           <Button shape="circle" icon={<SaveOutlined />} onClick={handleSaveAsTemplate} />
         </Tooltip>
       );
@@ -403,8 +411,25 @@ const ProjectViewHeader = memo(() => {
 
     // Settings button
     actions.push(
-      <Tooltip key="settings" title={t('settingsTooltip', { defaultValue: 'Open project settings' })}>
+      <Tooltip
+        key="settings"
+        title={t('settingsTooltip', { defaultValue: 'Open project settings' })}
+      >
         <Button shape="circle" icon={<SettingOutlined />} onClick={handleSettingsClick} />
+      </Tooltip>
+    );
+
+    // Import/Export button (right of Settings)
+    actions.push(
+      <Tooltip
+        key="import-export"
+        title={t('importExportTooltip', { defaultValue: 'Import and Export' })}
+      >
+        <Button
+          shape="circle"
+          icon={<ImportOutlined />}
+          onClick={() => setImportExportOpen(true)}
+        />
       </Tooltip>
     );
 
@@ -423,7 +448,11 @@ const ProjectViewHeader = memo(() => {
     actions.push(
       <Tooltip
         key="subscribe"
-        title={selectedProject?.subscribed ? t('unsubscribeTooltip', { defaultValue: 'Unsubscribe from project notifications' }) : t('subscribeTooltip', { defaultValue: 'Subscribe to project notifications' })}
+        title={
+          selectedProject?.subscribed
+            ? t('unsubscribeTooltip', { defaultValue: 'Unsubscribe from project notifications' })
+            : t('subscribeTooltip', { defaultValue: 'Subscribe to project notifications' })
+        }
       >
         <Button
           shape="round"
@@ -431,7 +460,9 @@ const ProjectViewHeader = memo(() => {
           icon={selectedProject?.subscribed ? <BellFilled /> : <BellOutlined />}
           onClick={handleSubscribe}
         >
-          {selectedProject?.subscribed ? t('unsubscribe', { defaultValue: 'Unsubscribe' }) : t('subscribe', { defaultValue: 'Subscribe' })}
+          {selectedProject?.subscribed
+            ? t('unsubscribe', { defaultValue: 'Unsubscribe' })
+            : t('subscribe', { defaultValue: 'Subscribe' })}
         </Button>
       </Tooltip>
     );
@@ -439,10 +470,18 @@ const ProjectViewHeader = memo(() => {
     // Invite button (owner/admin/team lead/project manager only)
     if (isOwnerOrAdmin || isProjectManager) {
       actions.push(
-        <Tooltip key="invite-tooltip" title={t('inviteTooltip', { defaultValue: 'Invite team members to this project' })}>
-            <Button key="invite" type="primary" icon={<UsergroupAddOutlined />} onClick={handleInvite}>
-              {t('invite', { defaultValue: 'Invite' })}
-            </Button>
+        <Tooltip
+          key="invite-tooltip"
+          title={t('inviteTooltip', { defaultValue: 'Invite team members to this project' })}
+        >
+          <Button
+            key="invite"
+            type="primary"
+            icon={<UsergroupAddOutlined />}
+            onClick={handleInvite}
+          >
+            {t('invite', { defaultValue: 'Invite' })}
+          </Button>
         </Tooltip>
       );
     }
@@ -450,7 +489,10 @@ const ProjectViewHeader = memo(() => {
     // Create task button
     if (isOwnerOrAdmin) {
       actions.push(
-        <Tooltip key="create-task-tooltip" title={t('createTaskTooltip', { defaultValue: 'Create a new task' })}>
+        <Tooltip
+          key="create-task-tooltip"
+          title={t('createTaskTooltip', { defaultValue: 'Create a new task' })}
+        >
           <Dropdown.Button
             key="create-task-dropdown"
             loading={creatingTask}
@@ -466,7 +508,10 @@ const ProjectViewHeader = memo(() => {
       );
     } else {
       actions.push(
-        <Tooltip key="create-task-tooltip" title={t('createTaskTooltip', { defaultValue: 'Create a new task' })}>
+        <Tooltip
+          key="create-task-tooltip"
+          title={t('createTaskTooltip', { defaultValue: 'Create a new task' })}
+        >
           <Button
             key="create-task"
             loading={creatingTask}
@@ -545,6 +590,10 @@ const ProjectViewHeader = memo(() => {
         title={pageHeaderTitle}
         style={pageHeaderStyle}
         extra={headerActions}
+      />
+      <ProjectImportExportModal
+        open={importExportOpen}
+        onClose={() => setImportExportOpen(false)}
       />
       {createPortal(<ProjectDrawer onClose={() => {}} />, document.body, 'project-drawer')}
       {createPortal(<ImportTaskTemplate />, document.body, 'import-task-template')}
