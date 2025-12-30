@@ -117,33 +117,44 @@ export default class AuthController extends WorklenzControllerBase {
     // Normalize email to lowercase for case-insensitive comparison
     const normalizedEmail = email ? email.toLowerCase().trim() : null;
 
+    // Security: Always return the same generic message to prevent email enumeration
+    const GENERIC_SUCCESS_MESSAGE = "If an account with that email exists, a password reset link has been sent to your email.";
+
     const q = `SELECT id, email, google_id, apple_id, password FROM users WHERE LOWER(email) = $1;`;
     const result = await db.query(q, [normalizedEmail]);
 
-    if (!result.rowCount)
-      return res.status(200).send(new ServerResponse(false, null, "Account does not exists!"));
+    // If email doesn't exist, return generic message without revealing account status
+    if (!result.rowCount) {
+      return res.status(200).send(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
+    }
 
     const [data] = result.rows;
 
-    if (data?.google_id) {
-      return res.status(200).send(new ServerResponse(false, "oauth_user", "This account uses Google Sign-In. Please sign in with Google instead."));
+    // For OAuth-only accounts (Google/Apple), don't send reset email but still return generic message
+    // Log internally for monitoring purposes
+    if (data?.google_id || data?.apple_id) {
+      log_error(`Password reset attempted for OAuth account: ${normalizedEmail}`, null);
+      return res.status(200).send(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
     }
 
-    if (data?.apple_id) {
-      return res.status(200).send(new ServerResponse(false, "oauth_user", "This account uses Apple Sign-In. Please sign in with Apple instead."));
-    }
-
+    // Only send reset email if account exists and has a password
     if (data?.password) {
-      const userIdBase64 = Buffer.from(data.id, "utf8").toString("base64");
+      try {
+        const userIdBase64 = Buffer.from(data.id, "utf8").toString("base64");
 
-      const salt = bcrypt.genSaltSync(10);
-      const hashedUserData = bcrypt.hashSync(data.id + data.email + data.password, salt);
-      const hashedString = hashedUserData.toString().replace(/\//g, "-");
+        const salt = bcrypt.genSaltSync(10);
+        const hashedUserData = bcrypt.hashSync(data.id + data.email + data.password, salt);
+        const hashedString = hashedUserData.toString().replace(/\//g, "-");
 
-      sendResetEmail(email, userIdBase64, hashedString);
-      return res.status(200).send(new ServerResponse(true, null, "Password reset email has been sent to your email. Please check your email."));
+        sendResetEmail(email, userIdBase64, hashedString);
+      } catch (error) {
+        // Log error internally but don't expose to client
+        log_error(`Failed to send password reset email for: ${normalizedEmail}`, error);
+      }
     }
-    return res.status(200).send(new ServerResponse(false, null, "Email not found!"));
+
+    // Always return the same generic success message to prevent email enumeration
+    return res.status(200).send(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
   }
 
   @HandleExceptions({logWithError: "body"})
