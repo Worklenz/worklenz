@@ -5,6 +5,7 @@ import {IWorkLenzRequest} from "../interfaces/worklenz-request";
 import {IWorkLenzResponse} from "../interfaces/worklenz-response";
 import {ServerResponse} from "../models/server-response";
 import {LOG_DESCRIPTIONS, LOG_I18N_KEYS} from "../shared/constants";
+import {SqlHelper} from "../shared/sql-helpers";
 import {getColor} from "../shared/utils";
 import {generateProjectKey} from "../utils/generate-project-key";
 import WorklenzControllerBase from "./worklenz-controller-base";
@@ -205,31 +206,147 @@ export default class ProjectsController extends WorklenzControllerBase {
     return res.status(200).send(new ServerResponse(true, data?.projects || this.paginatedDatasetDefaultStruct));
   }
 
-  private static flatString(text: string) {
-    return (text || "").split(" ").map(s => `'${s}'`).join(",");
+  private static getFilterByCategoryWhereClosure(text: string, paramOffset: number): { clause: string; params: string[] } {
+    if (!text) return { clause: "", params: [] };
+    const categoryIds = text.split(" ").filter(id => id.trim());
+    const { clause } = SqlHelper.buildInClause(categoryIds, paramOffset);
+    return { clause: `AND category_id IN (${clause})`, params: categoryIds };
   }
 
-  private static getFilterByCategoryWhereClosure(text: string) {
-    return text ? `AND category_id IN (${this.flatString(text)})` : "";
+  private static getFilterByStatusWhereClosure(text: string, paramOffset: number): { clause: string; params: string[] } {
+    if (!text) return { clause: "", params: [] };
+    const statusIds = text.split(" ").filter(id => id.trim());
+    const { clause } = SqlHelper.buildInClause(statusIds, paramOffset);
+    return { clause: `AND status_id IN (${clause})`, params: statusIds };
   }
 
-  private static getFilterByStatusWhereClosure(text: string) {
-    return text ? `AND status_id IN (${this.flatString(text)})` : "";
+  /**
+   * Validates and maps sort field to prevent SQL injection
+   * Maps frontend field names to safe database column names
+   */
+  private static validateAndMapSortField(field: string | string[] | undefined, defaultField: string = "name"): string {
+    // If field is an array, use the first element or default
+    const sortField = Array.isArray(field) ? field[0] : (field || defaultField);
+    
+    // Whitelist of allowed sort fields for projects
+    // Maps frontend field names to safe database column names
+    const fieldMapping: Record<string, string> = {
+      'name': 'name',
+      'updated_at': 'updated_at',
+      'created_at': 'created_at',
+      'start_date': 'start_date',
+      'end_date': 'end_date',
+      'status': 'status_id',
+      'category': 'category_id',
+      'client_name': 'client_id',
+      'project_owner': 'owner_id',
+    };
+
+    // If the field is already a valid database column name (contains dot or matches exactly)
+    if (typeof sortField === 'string') {
+      // Check if it's already a qualified column name (e.g., "projects.name")
+      if (sortField.includes('.') || sortField === 'updated_at') {
+        // Validate it's a safe column name (alphanumeric, underscore, dot only)
+        // Remove any SQL injection attempts
+        const sanitized = sortField.replace(/[^a-zA-Z0-9_.]/g, '');
+        if (/^[a-zA-Z_][a-zA-Z0-9_.]*$/.test(sanitized)) {
+          return sanitized;
+        }
+      }
+      
+      // Map frontend field name to database column
+      if (fieldMapping[sortField]) {
+        return fieldMapping[sortField];
+      }
+    }
+
+    // Default to safe field if invalid
+    return fieldMapping[defaultField] || 'name';
+  }
+
+  /**
+   * Validates and maps sort field for project members to prevent SQL injection
+   */
+  private static validateAndMapMemberSortField(field: string | string[] | undefined, defaultField: string = "name"): string {
+    const sortField = Array.isArray(field) ? field[0] : (field || defaultField);
+    
+    // Whitelist of allowed sort fields for project members
+    const fieldMapping: Record<string, string> = {
+      'name': 'name',
+      'email': 'email',
+      'access': 'access',
+      'job_title': 'job_title',
+      'all_tasks_count': 'all_tasks_count',
+      'completed_tasks_count': 'completed_tasks_count',
+    };
+
+    if (typeof sortField === 'string') {
+      // Validate it's a safe column name
+      const sanitized = sortField.replace(/[^a-zA-Z0-9_]/g, '');
+      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(sanitized)) {
+        // Check if it's in the whitelist
+        if (fieldMapping[sanitized]) {
+          return fieldMapping[sanitized];
+        }
+      }
+    }
+
+    return fieldMapping[defaultField] || 'name';
   }
 
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const {searchQuery, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name");
 
-    const filterByMember = !req.user?.owner && !req.user?.is_admin ?
-      ` AND is_member_of_project(projects.id, '${req.user?.id}', $1) ` : "";
+    // Validate and sanitize sort field to prevent SQL injection
+    const safeSortField = this.validateAndMapSortField(sortField, "name");
+    const safeSortOrder = (sortOrder === "desc" || sortOrder === "DESC") ? "DESC" : "ASC";
 
-    const isFavorites = req.query.filter === "1" ? ` AND EXISTS(SELECT user_id FROM favorite_projects WHERE user_id = '${req.user?.id}' AND project_id = projects.id)` : "";
-    const isArchived = req.query.filter === "2"
-      ? ` AND EXISTS(SELECT user_id FROM archived_projects WHERE user_id = '${req.user?.id}' AND project_id = projects.id)`
-      : ` AND NOT EXISTS(SELECT user_id FROM archived_projects WHERE user_id = '${req.user?.id}' AND project_id = projects.id)`;
-    const categories = this.getFilterByCategoryWhereClosure(req.query.categories as string);
-    const statuses = this.getFilterByStatusWhereClosure(req.query.statuses as string);
+    const queryParams: any[] = [req.user?.team_id || null];
+    let paramOffset = 2;
+
+    // User ID parameters - only add if actually used
+    const userId = req.user?.id;
+    let filterByMember = "";
+    let isFavorites = "";
+    let isArchived = "";
+    
+    if (!req.user?.owner && !req.user?.is_admin) {
+      queryParams.push(userId);
+      filterByMember = ` AND is_member_of_project(projects.id, $${paramOffset}, $1) `;
+      paramOffset++;
+    }
+
+    if (req.query.filter === "1") {
+      queryParams.push(userId);
+      isFavorites = ` AND EXISTS(SELECT user_id FROM favorite_projects WHERE user_id = $${paramOffset} AND project_id = projects.id)`;
+      paramOffset++;
+    }
+    
+    if (req.query.filter === "2") {
+      queryParams.push(userId);
+      isArchived = ` AND EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $${paramOffset} AND project_id = projects.id)`;
+      paramOffset++;
+    } else {
+      queryParams.push(userId);
+      isArchived = ` AND NOT EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $${paramOffset} AND project_id = projects.id)`;
+      paramOffset++;
+    }
+
+    const categoriesResult = this.getFilterByCategoryWhereClosure(req.query.categories as string, paramOffset);
+    if (categoriesResult.params.length > 0) {
+      queryParams.push(...categoriesResult.params);
+      paramOffset += categoriesResult.params.length;
+    }
+
+    const statusesResult = this.getFilterByStatusWhereClosure(req.query.statuses as string, paramOffset);
+    if (statusesResult.params.length > 0) {
+      queryParams.push(...statusesResult.params);
+      paramOffset += statusesResult.params.length;
+    }
+
+    const categories = categoriesResult.clause;
+    const statuses = statusesResult.clause;
 
     const q = `
       SELECT ROW_TO_JSON(rec) AS projects
@@ -299,12 +416,17 @@ export default class ProjectsController extends WorklenzControllerBase {
                                            ELSE updated_at END) AS updated_at
                           FROM projects
                           WHERE team_id = $1 ${categories} ${statuses} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
-                          ORDER BY ${sortField} ${sortOrder}
-                          LIMIT $2 OFFSET $3) t) AS data
+                          ORDER BY ${safeSortField} ${safeSortOrder}
+                          LIMIT $${paramOffset} OFFSET $${paramOffset + 1}) t) AS data
             FROM projects
             WHERE team_id = $1 ${categories} ${statuses} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}) rec;
     `;
-    const result = await db.query(q, [req.user?.team_id || null, size, offset]);
+    
+    // Add pagination parameters at the end
+    queryParams.push(size, offset);
+    
+    
+    const result = await db.query(q, queryParams);
     const [data] = result.rows;
 
     for (const project of data?.projects.data || []) {
@@ -330,6 +452,11 @@ export default class ProjectsController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getMembersByProjectId(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const {sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name");
+    
+    // Validate and sanitize sort field to prevent SQL injection
+    const safeSortField = this.validateAndMapMemberSortField(sortField, "name");
+    const safeSortOrder = (sortOrder === "desc" || sortOrder === "DESC") ? "DESC" : "ASC";
+    
     const search = (req.query.search || "").toString().trim();
 
     let searchFilter = "";
@@ -367,10 +494,8 @@ export default class ProjectsController extends WorklenzControllerBase {
         (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
            FROM (
              SELECT * FROM filtered_members
-             ORDER BY ${sortField} ${sortOrder}
-             LIMIT $3 OFFSET $4
-           ) t
-        ) AS data
+             ORDER BY ${safeSortField} ${safeSortOrder}
+             LIMIT $3 OFFSET $4) t) AS data
     `;
 
     const result = await db.query(q, params);
@@ -883,8 +1008,10 @@ export default class ProjectsController extends WorklenzControllerBase {
     const isArchived = req.query.filter === "2"
       ? ` AND EXISTS(SELECT user_id FROM archived_projects WHERE user_id = '${req.user?.id}' AND project_id = projects.id)`
       : ` AND NOT EXISTS(SELECT user_id FROM archived_projects WHERE user_id = '${req.user?.id}' AND project_id = projects.id)`;
-    const categories = this.getFilterByCategoryWhereClosure(req.query.categories as string);
-    const statuses = this.getFilterByStatusWhereClosure(req.query.statuses as string);
+    const categoriesResult = this.getFilterByCategoryWhereClosure(req.query.categories as string, 1);
+    const categories = categoriesResult.clause;
+    const statusesResult = this.getFilterByStatusWhereClosure(req.query.statuses as string, 1 + categoriesResult.params.length);
+    const statuses = statusesResult.clause;
 
     // Determine grouping field and join based on groupBy parameter
     let groupField = "";
@@ -921,13 +1048,13 @@ export default class ProjectsController extends WorklenzControllerBase {
         groupOrderBy = "COALESCE(project_categories.name, 'Uncategorized')";
     }
 
+    // Validate and sanitize sort field to prevent SQL injection
+    const safeSortField = this.validateAndMapSortField(sortField, "projects.name");
+    const safeSortOrder = (sortOrder === "desc" || sortOrder === "DESC") ? "DESC" : "ASC";
+    
     // Ensure sortField is properly qualified for the inner project query
-    let qualifiedSortField = sortField;
-    if (Array.isArray(sortField)) {
-      qualifiedSortField = sortField[0]; // Take the first field if it's an array
-    }
     // Replace "projects." with "p2." for the inner query
-    const innerSortField = qualifiedSortField.replace("projects.", "p2.");
+    const innerSortField = safeSortField.replace("projects.", "p2.");
 
     const q = `
       SELECT ROW_TO_JSON(rec) AS groups
@@ -1010,7 +1137,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                               ${isFavorites.replace("projects.", "p2.")}
                               ${filterByMember.replace("projects.", "p2.")}
                               ${searchQuery.replace("projects.", "p2.")}
-                            ORDER BY ${innerSortField} ${sortOrder}
+                            ORDER BY ${innerSortField} ${safeSortOrder}
                           ) project_data
                          ) AS projects
                   FROM projects
@@ -1023,7 +1150,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                ) AS data
         FROM projects
         ${groupJoin}
-        WHERE projects.team_id = $1 ${categories} ${statuses} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
+        WHERE projects.team_id = $1
       ) rec;
     `;
 

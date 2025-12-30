@@ -4,6 +4,7 @@ import HandleExceptions from "../../decorators/handle-exceptions";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
+import { SqlHelper } from "../../shared/sql-helpers";
 import { TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA, UNMAPPED } from "../../shared/constants";
 import { getColor } from "../../shared/utils";
 import moment, { Moment } from "moment";
@@ -684,14 +685,14 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
     return ScheduleControllerV2.isCountsOnly(query) || query.parent_task;
   }
 
-  private static flatString(text: string) {
-    return (text || "").split(" ").map(s => `'${s}'`).join(",");
-  }
-
-  private static getFilterByMembersWhereClosure(text: string) {
-    return text
-      ? `id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${this.flatString(text)}))`
-      : "";
+  private static getFilterByMembersWhereClosure(text: string, paramOffset: number): { clause: string; params: string[] } {
+    if (!text) return { clause: "", params: [] };
+    const memberIds = text.split(" ").filter(id => id.trim());
+    const { clause } = SqlHelper.buildInClause(memberIds, paramOffset);
+    return {
+      clause: `id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${clause}))`,
+      params: memberIds
+    };
   }
 
   private static getStatusesQuery(filterBy: string) {
@@ -720,14 +721,22 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
     }
   }
 
-  private static getQuery(userId: string, options: ParsedQs) {
+  private static getQuery(userId: string, projectId: string, options: ParsedQs): { query: string; params: any[] } {
     const searchField = options.search ? "t.name" : "sort_order";
     const { searchQuery, sortField } = ScheduleControllerV2.toPaginationOptions(options, searchField);
 
     const isSubTasks = !!options.parent_task;
 
+    const queryParams: any[] = [];
+    let paramOffset = 1;
+
     const sortFields = sortField.replace(/ascend/g, "ASC").replace(/descend/g, "DESC") || "sort_order";
-    const membersFilter = ScheduleControllerV2.getFilterByMembersWhereClosure(options.members as string);
+    const membersResult = ScheduleControllerV2.getFilterByMembersWhereClosure(options.members as string, paramOffset);
+    if (membersResult.params.length > 0) {
+      queryParams.push(...membersResult.params);
+      paramOffset += membersResult.params.length;
+    }
+    const membersFilter = membersResult.clause;
     const statusesQuery = ScheduleControllerV2.getStatusesQuery(options.filterBy as string);
 
     const archivedFilter = options.archived === "true" ? "archived IS TRUE" : "archived IS FALSE";
@@ -747,7 +756,7 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
       membersFilter
     ].filter(i => !!i).join(" AND ");
 
-    return `
+    const query = `
       SELECT id,
              name,
              t.project_id AS project_id,
@@ -799,6 +808,15 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
       WHERE ${filters} ${searchQuery} AND project_id = $1
       ORDER BY end_date DESC NULLS LAST
     `;
+
+    // Build final params array: projectId first, then any additional params
+    const finalParams = [projectId];
+    if (isSubTasks && options.parent_task) {
+      finalParams.push(options.parent_task as string);
+    }
+    finalParams.push(...queryParams);
+
+    return { query, params: finalParams };
   }
 
   public static async getGroups(groupBy: string, projectId: string): Promise<IScheduleTaskGroup[]> {
@@ -813,8 +831,8 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
                  category_id
           FROM task_statuses
           WHERE project_id = $1
-          ORDER BY sort_order;
-        `;
+          ORDER BY sort_order
+    `;
         params = [projectId];
         break;
       case GroupBy.PRIORITY:
@@ -860,9 +878,7 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
     const isSubTasks = !!req.query.parent_task;
     const groupBy = (req.query.group || GroupBy.STATUS) as string;
 
-    const q = ScheduleControllerV2.getQuery(req.user?.id as string, req.query);
-    const params = isSubTasks ? [req.params.id || null, req.query.parent_task] : [req.params.id || null];
-
+    const { query: q, params } = ScheduleControllerV2.getQuery(req.user?.id as string, req.params.id, req.query);
     const result = await db.query(q, params);
     const tasks = [...result.rows];
 
@@ -921,9 +937,7 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
 
   @HandleExceptions()
   public static async getTasksOnly(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const isSubTasks = !!req.query.parent_task;
-    const q = ScheduleControllerV2.getQuery(req.user?.id as string, req.query);
-    const params = isSubTasks ? [req.params.id || null, req.query.parent_task] : [req.params.id || null];
+    const { query: q, params } = ScheduleControllerV2.getQuery(req.user?.id as string, req.params.id, req.query);
     const result = await db.query(q, params);
 
     let data: any[] = [];

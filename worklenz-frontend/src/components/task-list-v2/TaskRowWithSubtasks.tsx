@@ -6,6 +6,7 @@ import {
   createSubtask,
   selectSubtaskLoading,
   fetchSubTasks,
+  selectActiveFilters,
 } from '@/features/task-management/task-management.slice';
 import TaskRow from './TaskRow';
 import SubtaskLoadingSkeleton from './SubtaskLoadingSkeleton';
@@ -281,11 +282,8 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
     const dispatch = useAppDispatch();
 
     // Get active filters from Redux (tasks.slice - used by improved-task-filters)
-    const activeFilters = useAppSelector(state => ({
-      members: state.taskReducer?.taskAssignees?.filter((m: any) => m.selected).map((m: any) => m.id) || [],
-      labels: state.taskReducer?.labels?.filter((l: any) => l.selected).map((l: any) => l.id) || [],
-      priorities: state.taskReducer?.priorities || []
-    }));
+    // Using memoized selector to prevent unnecessary re-renders
+    const activeFilters = useAppSelector(selectActiveFilters);
 
     // Get all priorities to create ID-to-name mapping
     const allPriorities = useAppSelector(state => state.priorityReducer?.priorities || []);

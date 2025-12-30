@@ -220,6 +220,10 @@ export const statusExclude = ["past_due", "paused", "deleted"];
 // Trial user team member limit
 export const TRIAL_MEMBER_LIMIT = 10;
 
+// Maximum number of email invitations that can be sent in a single request
+// This prevents abuse by limiting bulk invitation requests
+export const MAX_INVITATIONS_PER_REQUEST = 10;
+
 export const HTML_TAG_REGEXP = /<\/?[^>]+>/gi;
 
 export const UNMAPPED = "Unmapped";

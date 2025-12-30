@@ -424,7 +424,8 @@ export default abstract class ReportingControllerBase extends WorklenzController
     categoryClause: string,
     archivedClause = "",
     teamFilterClause: string,
-    projectManagersClause: string) {
+    projectManagersClause: string,
+    queryParams: any[] = []) {
 
     const q = `SELECT COUNT(*) AS total,
              (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
@@ -561,7 +562,10 @@ export default abstract class ReportingControllerBase extends WorklenzController
                LEFT JOIN project_categories pc ON pc.id = p.category_id
                LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
       WHERE ${teamFilterClause} ${searchQuery} ${healthClause} ${statusClause} ${categoryClause} ${projectManagersClause} ${archivedClause};`;
-    const result = await db.query(q, [teamId, size, offset]);
+    
+    // Build final params: teamId ($1), size ($2), offset ($3), then filter params ($4+)
+    const finalParams = [teamId, size, offset, ...queryParams];
+    const result = await db.query(q, finalParams);
     const [data] = result.rows;
 
     for (const project of data.projects) {

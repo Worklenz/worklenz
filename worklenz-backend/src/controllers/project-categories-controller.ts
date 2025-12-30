@@ -7,14 +7,9 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { getColor } from "../shared/utils";
 import { WorklenzColorShades } from "../shared/constants";
+import { SqlHelper } from "../shared/sql-helpers";
 
 export default class ProjectCategoriesController extends WorklenzControllerBase {
-  private static flatString(text: string) {
-    return (text || "")
-      .split(",")
-      .map((s) => `'${s}'`)
-      .join(",");
-  }
 
   @HandleExceptions()
   public static async create(
@@ -103,13 +98,12 @@ export default class ProjectCategoriesController extends WorklenzControllerBase 
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
     const teams = await this.getTeamsByOrg(req.user?.team_id as string);
-    const teamIds = teams.map((team) => team.id).join(",");
+    const teamIds = teams.map((team) => team.id);
+    const { clause, params } = SqlHelper.buildInClause(teamIds, 1);
 
-    const q = `SELECT id, name, color_code FROM project_categories WHERE team_id IN (${this.flatString(
-      teamIds
-    )});`;
+    const q = `SELECT id, name, color_code FROM project_categories WHERE team_id IN (${clause})`;
 
-    const result = await db.query(q);
+    const result = await db.query(q, params);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 

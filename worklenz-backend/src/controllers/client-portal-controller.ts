@@ -11,7 +11,7 @@ import {
   getClientPortalLogoKey,
   deleteObject,
 } from "../shared/storage";
-import { log_error } from "../shared/utils";
+import { log_error, sanitizeCommentContent, sanitizePlainText } from "../shared/utils";
 import { IO } from "../shared/io";
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
@@ -881,6 +881,9 @@ class ClientPortalController {
         return res.status(400).json(new ServerResponse(false, null, `Comment must not exceed ${MAX_COMMENT_LENGTH} characters`));
       }
 
+      // Sanitize comment to prevent XSS attacks
+      const sanitizedComment = sanitizeCommentContent(comment.trim());
+
       // Verify request exists and belongs to client
       const requestCheck = await db.query(
         "SELECT id, status FROM client_portal_requests WHERE id = $1 AND client_id = $2 AND organization_team_id = $3",
@@ -921,7 +924,7 @@ class ClientPortalController {
         id,
         organizationId,
         clientId,
-        comment.trim(),
+        sanitizedComment,
         'client',
         relationshipId,
         senderName
@@ -5522,18 +5525,19 @@ class ClientPortalController {
       const portalLink = `${getClientPortalBaseUrl()}/invite?token=${inviteToken}`;
 
       // Replace template variables
+      // Sanitize all user-provided text to prevent HTML injection
       const emailContent = template
-        .replace(/\[VAR_CLIENT_NAME\]/g, client.name || "Client")
+        .replace(/\[VAR_CLIENT_NAME\]/g, sanitizePlainText(client.name || "Client"))
         .replace(/\[VAR_CLIENT_EMAIL\]/g, client.email || "")
-        .replace(/\[VAR_COMPANY_NAME\]/g, client.company_name || "N/A")
-        .replace(/\[VAR_CLIENT_PHONE\]/g, client.phone || "N/A")
-        .replace(/\[VAR_TEAM_NAME\]/g, teamName)
+        .replace(/\[VAR_COMPANY_NAME\]/g, sanitizePlainText(client.company_name || "N/A"))
+        .replace(/\[VAR_CLIENT_PHONE\]/g, sanitizePlainText(client.phone || "N/A"))
+        .replace(/\[VAR_TEAM_NAME\]/g, sanitizePlainText(teamName))
         .replace(/\[VAR_PORTAL_LINK\]/g, portalLink);
 
       // Send the email
       await sendEmail({
         to: [client.email],
-        subject: `Welcome to your Client Portal - ${teamName}`,
+        subject: `Welcome to your Client Portal - ${sanitizePlainText(teamName)}`,
         html: emailContent,
       });
 
