@@ -10,7 +10,7 @@ import { useAppDispatch } from '../hooks/useAppDispatch';
 import { colors } from '../styles/colors';
 import { TrialExpirationAlert } from '@/components/TrialExpirationAlert/TrialExpirationAlert';
 import UpgradePlans from '@/components/admin-center/billing/drawers/upgrade-plans/UpgradePlans';
-// import UpgradePlansLKR from '@/components/admin-center/billing/drawers/upgrade-plans-lkr/upgrade-plans-lkr';
+import UpgradePlansLKR from '@/components/admin-center/billing/drawers/upgrade-plans-lkr/upgrade-plans-lkr';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '../hooks/useAuth';
 
@@ -105,8 +105,8 @@ const MainLayout = memo(() => {
       >
         <div style={{ padding: '20px' }}>
           {/* LKR pricing disabled for now - always show main upgrade plans */}
-          <UpgradePlans />
-          {/* {browserTimeZone === 'Asia/Colombo' ? <UpgradePlansLKR /> : <UpgradePlans />} */}
+          {/* <UpgradePlans /> */}
+          {browserTimeZone === 'Asia/Colombo' ? <UpgradePlansLKR /> : <UpgradePlans />}
         </div>
       </Modal>
     </ConfigProvider>

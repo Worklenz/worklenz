@@ -6,6 +6,7 @@ import {
   Input,
   notification,
   Row,
+  Space,
   Tag,
   Typography,
 } from '@/shared/antd-imports';
@@ -24,16 +25,24 @@ import logger from '@/utils/errorLogger';
 import { setSession } from '@/utils/session-helper';
 import { authApiService } from '@/api/auth/auth.api.service';
 import { setUser } from '@/features/user/userSlice';
+import { BillingFrequency } from '../upgrade-plans/types';
+import { ILocalPlans } from '@/shared/constants';
 
 const UpgradePlansLKR: React.FC = () => {
   const dispatch = useAppDispatch();
   const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);
-  const [selectedPlan, setSelectedPlan] = useState(2);
+  // const [selectedPlan, setSelectedPlan] = useState(2);
   const { t } = useTranslation('admin-center/current-bill');
   const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const userCurrency = timeZoneCurrencyMap[userTimeZone] || 'USD';
   const [switchingToFreePlan, setSwitchingToFreePlan] = useState(false);
   const currentSession = useAuthService().getCurrentSession();
+  const [billingFrequency, setBillingFrequency] = useState<BillingFrequency>('annual');
+  const [annualSavingsPercent] = useState<number>(20);
+  const localPlans = ILocalPlans;
+  const [selectedPlan, setSelectedCard] = useState(localPlans.ANNUAL);
+  const ANNUAL_TOTAL = 2000;
+  const MONTHLY_TOTAL = 250;
 
   const cardStyles = {
     title: {
@@ -62,22 +71,22 @@ const UpgradePlansLKR: React.FC = () => {
     checkIcon: { color: '#52c41a' },
   };
 
-  const handlePlanSelect = (planIndex: number) => {
-    setSelectedPlan(planIndex);
-  };
+  // const handlePlanSelect = (planIndex: number) => {
+  //   setSelectedPlan(planIndex);
+  // };
 
-  const handleSeatsChange = (values: { seats: number }) => {
-    if (values.seats <= 15) {
-      setSelectedPlan(2);
-    } else if (values.seats > 15 && values.seats <= 200) {
-      setSelectedPlan(3);
-    } else if (values.seats > 200) {
-      setSelectedPlan(4);
-    }
-  };
+  // const handleSeatsChange = (values: { seats: number }) => {
+  //   if (values.seats <= 15) {
+  //     setSelectedPlan(2);
+  //   } else if (values.seats > 15 && values.seats <= 200) {
+  //     setSelectedPlan(3);
+  //   } else if (values.seats > 200) {
+  //     setSelectedPlan(4);
+  //   }
+  // };
 
   const isSelected = (planIndex: number) =>
-    selectedPlan === planIndex ? { border: '2px solid #1890ff' } : {};
+    { border: '2px solid #1890ff' };
 
   const handleSubmit = () => {
     notification.success({
@@ -107,7 +116,7 @@ const UpgradePlansLKR: React.FC = () => {
   ) => (
     <Col span={6} style={{ padding: '0 4px' }}>
       <Card
-        style={{ ...isSelected(planIndex), height: '100%' }}
+        style={{ border: '2px solid #1890ff', height: '100%' }}
         hoverable
         title={
           <span style={cardStyles.title}>
@@ -115,7 +124,7 @@ const UpgradePlansLKR: React.FC = () => {
             {tag && <Tag color="volcano">{tag}</Tag>}
           </span>
         }
-        onClick={() => handlePlanSelect(planIndex)}
+        onClick={() => {}}
       >
         <div style={cardStyles.priceContainer}>
           <Typography.Title level={1}>
@@ -156,19 +165,45 @@ const UpgradePlansLKR: React.FC = () => {
     }
   };
 
+  const onBillingFrequencyChange = (frequency: BillingFrequency) => {
+      const oldFrequency = billingFrequency;
+      setBillingFrequency(frequency);
+      setSelectedCard(frequency === 'annual' ? localPlans.ANNUAL : localPlans.MONTHLY);
+  
+      // Track billing frequency change
+      const annualTotal = ANNUAL_TOTAL.toString();
+      const monthlyTotal = MONTHLY_TOTAL.toString();
+      const annualSavings = parseFloat(monthlyTotal) * 12 - parseFloat(annualTotal);
+    };
+
   return (
     <div className="upgrade-plans" style={{ marginTop: '1.5rem', textAlign: 'center' }}>
       <Typography.Title level={2}>{t('modalTitle')}</Typography.Title>
-
-      {selectedPlan !== 1 && (
-        <Row justify="center">
-          <Form initialValues={{ seats: 15 }} onValuesChange={handleSeatsChange}>
-            <Form.Item name="seats" label={t('seatLabel')}>
-              <Input type="number" min={15} step={5} />
-            </Form.Item>
-          </Form>
-        </Row>
-      )}
+      {/* Team Size Input and Billing Frequency Toggle */}
+      <Space align="center" size="small">
+        <Typography.Text strong style={{ fontSize: '13px' }}>{t('pricing-modal:billingCycle.label')}:</Typography.Text>
+        <Button.Group size="middle">
+          <Button
+            type={billingFrequency === 'monthly' ? 'primary' : 'default'}
+            onClick={() => onBillingFrequencyChange('monthly')}
+            // disabled={isLoadingPlans}
+          >
+            {t('pricing-modal:billingCycle.monthly')}
+          </Button>
+          <Button
+            type={billingFrequency === 'annual' ? 'primary' : 'default'}
+            onClick={() => onBillingFrequencyChange('annual')}
+            // disabled={isLoadingPlans}
+          >
+            {t('pricing-modal:billingCycle.yearly')}
+          </Button>
+        </Button.Group>
+        {annualSavingsPercent !== undefined && annualSavingsPercent > 0 && (
+          <Typography.Text style={{ color: '#52c41a', fontWeight: 600, marginLeft: 8, fontSize: '12px' }}>
+            {t('pricing-modal:billing.annualSavingsShortOff', 'Up to {{percent}}% off', { percent: annualSavingsPercent })}
+          </Typography.Text>
+        )}
+      </Space>
 
       <Row>
         {renderPlanCard(1, t('freePlan'), 0.0, t('freeSubtitle'), t('freeUsers'), [
@@ -204,7 +239,7 @@ const UpgradePlansLKR: React.FC = () => {
         ])}
       </Row>
 
-      {selectedPlan === 1 ? (
+      {selectedPlan === localPlans.FREE ? (
         <Row justify="center" style={{ marginTop: '1.5rem' }}>
           <Button type="primary" loading={switchingToFreePlan} onClick={switchToFreePlan}>
             {t('switchToFreePlan')}

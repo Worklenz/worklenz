@@ -239,6 +239,12 @@ export enum IPaddlePlans {
   ENTERPRISE_MONTHLY = 'ENTERPRISE_MONTHLY',
 }
 
+export enum ILocalPlans {
+  FREE = 'FREE',
+  ANNUAL = 'ANNUAL',
+  MONTHLY = 'MONTHLY',
+}
+
 export enum ISUBSCRIPTION_TYPE {
   LIFE_TIME_DEAL = 'LIFE_TIME_DEAL',
   PADDLE = 'PADDLE',
