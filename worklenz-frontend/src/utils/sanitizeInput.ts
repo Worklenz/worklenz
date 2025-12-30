@@ -50,3 +50,35 @@ export const sanitizeHtml = (input: string): string => {
     RETURN_TRUSTED_TYPE: false
   });
 };
+
+/**
+ * Sanitizes comment content to prevent XSS attacks and open redirects
+ * Matches backend sanitization: allows safe formatting but NO external links
+ * Use this for comments to prevent HTML injection and open redirect attacks
+ *
+ * @param input - The comment content to sanitize
+ * @returns Sanitized comment content
+ */
+export const sanitizeCommentContent = (input: string): string => {
+  if (!input) return '';
+
+  return DOMPurify.sanitize(input, {
+    // Only allow safe formatting tags - NO links to prevent open redirect attacks
+    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'p', 'br', 'span'],
+    ALLOWED_ATTR: {
+      // Only allow class attribute on span for mentions
+      'span': ['class']
+    },
+    // No URL schemes allowed since we're not allowing links
+    ALLOWED_URI_REGEXP: /^$/,
+    ALLOWED_PROTOCOLS: [],
+    // Remove any script tags, event handlers, and dangerous attributes
+    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'a', 'link'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'href', 'src'],
+    // Enforce HTML boundary
+    KEEP_CONTENT: true,
+    RETURN_DOM: false,
+    RETURN_DOM_FRAGMENT: false,
+    RETURN_TRUSTED_TYPE: false
+  });
+};

@@ -6,13 +6,13 @@ import {SocketEvents} from "../events";
 import {getLoggedInUserIdFromSocket, notifyProjectUpdates} from "../util";
 import {getTaskDetails, logNameChange} from "../../services/activity-logs/activity-logs.service";
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
-import { log_error } from "../../shared/utils";
+import { log_error, sanitizePlainText } from "../../shared/utils";
 
 export async function on_task_name_change(_io: Server, socket: Socket, data?: string) {
   try {
     const body = JSON.parse(data as string);
     const userId = getLoggedInUserIdFromSocket(socket);
-    const name = (body.name || "").trim();
+    const name = sanitizePlainText(body.name || "");
     const task_data = await getTaskDetails(body.task_id, "name");
     const q = `SELECT handle_task_name_change($1, $2, $3) AS response;`;
     const result = await db.query(q, [body.task_id, name, userId]);

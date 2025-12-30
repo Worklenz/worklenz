@@ -155,8 +155,29 @@ export function sanitize(value: string) {
 }
 
 /**
- * Sanitizes task comment content to prevent XSS attacks
- * Allows safe HTML tags for mentions and links while blocking dangerous content
+ * Sanitizes plain text fields (like task names) to prevent XSS attacks
+ * Strips all HTML tags while preserving the text content
+ * Use this for fields that should never contain HTML markup
+ * 
+ * @param value - The plain text to sanitize
+ * @returns Sanitized plain text with HTML removed
+ */
+export function sanitizePlainText(value: string): string {
+  if (!value) return "";
+  
+  // Use sanitize-html with strict settings: strip ALL HTML tags and attributes
+  // This converts "<script>alert(1)</script>Hello" to "alert(1)Hello"
+  return sanitizeHtml(value, {
+    allowedTags: [],        // No HTML tags allowed
+    allowedAttributes: {},  // No attributes allowed
+    textFilter: (text) => text.trim() // Trim whitespace
+  });
+}
+
+/**
+ * Sanitizes task comment content to prevent XSS attacks and open redirects
+ * Allows safe HTML tags for mentions and basic formatting while blocking dangerous content
+ * External links are completely removed to prevent open redirect attacks
  * 
  * @param content - The comment content to sanitize
  * @returns Sanitized content safe for storage and display
@@ -164,35 +185,27 @@ export function sanitize(value: string) {
 export function sanitizeCommentContent(content: string): string {
   if (!content) return "";
 
-  // Use sanitize-html with configuration that allows safe formatting
-  // This allows mentions (<span class="mentions">) and links (<a>) while blocking XSS
+  // Use sanitize-html with strict configuration
+  // This allows mentions (<span class="mentions">) and basic formatting but NO external links
   return sanitizeHtml(content, {
-    allowedTags: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'span'],
+    // Only allow safe formatting tags - NO links to prevent open redirect attacks
+    allowedTags: ['b', 'i', 'em', 'strong', 'p', 'br', 'span'],
     allowedAttributes: {
-      'a': ['href', 'target', 'rel'],
+      // Only allow class attribute on span for mentions
       'span': ['class']
     },
-    allowedSchemes: ['http', 'https', 'mailto'],
-    allowedSchemesByTag: {
-      'a': ['http', 'https', 'mailto']
-    },
+    // No URL schemes allowed since we're not allowing links
+    allowedSchemes: [],
     // Remove dangerous protocols and event handlers
     allowedScriptHostnames: [],
     allowedScriptDomains: [],
-    // Ensure all links have proper attributes
-    transformTags: {
-      'a': (tagName: string, attribs: any) => {
-        // Ensure target="_blank" and rel="noopener noreferrer" for external links
-        if (attribs.href && !attribs.href.startsWith('#')) {
-          attribs.target = '_blank';
-          attribs.rel = 'noopener noreferrer';
-        }
-        return { tagName, attribs };
-      }
-    },
     // Remove any script tags, event handlers, and dangerous attributes
     disallowedTagsMode: 'discard',
-    enforceHtmlBoundary: true
+    enforceHtmlBoundary: true,
+    // Additional security: remove all attributes except explicitly allowed ones
+    allowedClasses: {
+      'span': ['mentions']
+    }
   });
 }
 
