@@ -1377,12 +1377,18 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
         // If already expanded, just collapse it
         dispatch(toggleTaskRowExpansion(taskId));
       } else {
-        // Only fetch subtasks if the task has subtasks
-        if (task.sub_tasks && task.sub_tasks.length > 0) {
+        // Fetch subtasks if the task has a subtask count but subtasks haven't been loaded yet
+        if (
+          task.sub_tasks_count &&
+          task.sub_tasks_count > 0 &&
+          (!task.sub_tasks || task.sub_tasks.length === 0)
+        ) {
+          // Fetch subtasks - the thunk will handle expansion when subtasks are loaded
           dispatch(fetchSubTasks({ taskId, projectId: project?.id || '' }));
+        } else {
+          // Subtasks are already loaded, just toggle expansion
+          dispatch(toggleTaskRowExpansion(taskId));
         }
-        // Toggle expansion regardless of whether we fetch subtasks
-        dispatch(toggleTaskRowExpansion(taskId));
       }
     }
   };

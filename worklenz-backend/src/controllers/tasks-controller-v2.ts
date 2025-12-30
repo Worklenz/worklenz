@@ -200,6 +200,14 @@ export default class TasksControllerV2 extends TasksControllerBase {
       projectIdParam = paramOffset++;
     }
 
+    // Add parent_task parameter early if fetching subtasks (before other filters to maintain parameter positions)
+    const isSubTasks = !!options.parent_task;
+    let parentTaskParam = 0;
+    if (isSubTasks && options.parent_task) {
+      queryParams.push(options.parent_task as string);
+      parentTaskParam = paramOffset++;
+    }
+
     // Determine which sort column to use based on grouping
     const groupBy = options.group || "status";
     let defaultSortColumn = "sort_order";
@@ -227,8 +235,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
       options,
       searchField
     );
-
-    const isSubTasks = !!options.parent_task;
 
     // Map frontend field names to backend column names
     const fieldMapping: Record<string, string> = {
@@ -367,18 +373,17 @@ export default class TasksControllerV2 extends TasksControllerBase {
     // Add project_id filter if projectId is provided
     const projectIdFilter = projectIdParam > 0 ? `t.project_id = $${projectIdParam}::UUID` : "";
     
-    // Handle subtask filter - if projectId is provided, parent_task_id uses next param after projectId
+    // Handle subtask filter - parent_task parameter was already added earlier if needed
     let subTasksFilter;
     if (options.isSubtasksInclude === "true") {
       subTasksFilter = "";
     } else {
-      if (isSubTasks) {
-        // When fetching subtasks, we need the parent_task_id parameter
-        // If projectId is provided, parent_task_id comes after it
-        const parentTaskParam = projectIdParam > 0 ? paramOffset : 2;
-        // Note: parent_task_id should be passed in options.parent_task, but we're not adding it to params here
-        // This is a legacy issue - for now, we'll keep the $2 reference but it should be fixed separately
-        subTasksFilter = "parent_task_id = $2";
+      if (isSubTasks && parentTaskParam > 0) {
+        // Use the parent_task parameter that was already added to queryParams
+        subTasksFilter = `parent_task_id = $${parentTaskParam}::UUID`;
+      } else if (isSubTasks) {
+        // Fallback: if parent_task is not provided, this shouldn't happen but handle gracefully
+        subTasksFilter = "1 = 0"; // Return no results
       } else {
         subTasksFilter = "parent_task_id IS NULL";
       }
