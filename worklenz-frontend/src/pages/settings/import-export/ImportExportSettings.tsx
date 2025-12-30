@@ -81,19 +81,6 @@ export const ImportExportSettings: React.FC = () => {
       <Typography.Title level={2} className="mb-4">
         {t('importHeader', 'Import data into Worklenz')}
       </Typography.Title>
-      <Alert
-        type="info"
-        showIcon
-        className="mb-6"
-        message={t('importInfoTitle', 'You’re in the new import experience')}
-        description={
-          <ul className="list-disc pl-5">
-            <li>{t('importInfo1', 'Move data into an existing space in Worklenz')}</li>
-            <li>{t('importInfo2', 'Import data into Worklenz Product Discovery')}</li>
-            <li>{t('importInfo3', 'Use JSON or CSV files to move data')}</li>
-          </ul>
-        }
-      />
       {/* Search apps input */}
       <Input
         allowClear

@@ -42,7 +42,7 @@
 }
 
 .import-source-grid-scroll {
-  max-height: 340px;
+  max-height: 390px; /* 3 rows of 110px cards + 2 gaps of 20px + some padding */
   overflow-y: auto;
   margin-bottom: 2rem;
 }
