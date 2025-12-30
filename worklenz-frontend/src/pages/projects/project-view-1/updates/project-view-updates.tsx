@@ -15,7 +15,7 @@ import {
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';
-import { sanitizeHtml } from '@/utils/sanitizeInput';
+import { sanitizeCommentContent } from '@/utils/sanitizeInput';
 import { useParams } from 'react-router-dom';
 
 import CustomAvatar from '@components/CustomAvatar';
@@ -118,13 +118,16 @@ const ProjectViewUpdates = () => {
 
       const res = await projectCommentsApiService.createProjectComment(body);
       if (res.done) {
+        // Security: Sanitize content for optimistic update to prevent XSS
+        const sanitizedContent = sanitizeCommentContent(commentValue.trim());
+        
         setComments(prev => [
           ...prev,
           {
             ...(res.body as IProjectUpdateCommentViewModel),
             created_by: getUserSession()?.name || '',
             created_at: new Date().toISOString(),
-            content: commentValue.trim(),
+            content: sanitizedContent,
             mentions: (res.body as IProjectUpdateCommentViewModel).mentions ?? [
               undefined,
               undefined,
@@ -244,9 +247,9 @@ const ProjectViewUpdates = () => {
 
   const renderComment = useCallback(
     (comment: IProjectUpdateCommentViewModel) => {
-      const linkifiedContent = linkify(comment.content || '');
-      // Use enhanced sanitization function for better XSS protection
-      const sanitizedContent = sanitizeHtml(linkifiedContent);
+      // Security: Sanitize comment content to prevent XSS and open redirects
+      // Do NOT linkify - the backend already sanitized content to remove links
+      const sanitizedContent = sanitizeCommentContent(comment.content || '');
       const timeDifference = calculateTimeDifference(comment.created_at || '');
       const themeClass = theme === 'dark' ? 'dark' : 'light';
 
