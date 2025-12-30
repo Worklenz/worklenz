@@ -153,7 +153,11 @@ reportingApiRouter.post("/time-reports/projects", teamOwnerOrAdminValidator, saf
 reportingApiRouter.post("/time-reports/members", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.getMemberTimeSheets));
 reportingApiRouter.post("/time-reports/estimated-vs-actual", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllocationController.getEstimatedVsActual));
 
-// All Tasks Report
+
+// All Tasks Report - Export routes must come BEFORE base route for proper matching
+reportingApiRouter.post("/all-tasks/export/csv", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllTasksController.exportCSV));
+reportingApiRouter.post("/all-tasks/export/excel", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllTasksController.exportExcel));
 reportingApiRouter.post("/all-tasks", teamOwnerOrAdminValidator, safeControllerFunction(ReportingAllTasksController.getReportingAllTasks));
+
 
 export default reportingApiRouter;

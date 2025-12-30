@@ -6,6 +6,8 @@ import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import { formatDuration, getColor, int } from "../../shared/utils";
 import ReportingControllerBase from "./reporting-controller-base";
+import SqlHelper from "../../shared/sql-helpers";
+import Excel from "exceljs";
 
 interface IAllTasksRequest {
   index: number;
@@ -32,17 +34,19 @@ interface IAllTasksRequest {
 
 export default class ReportingAllTasksController extends ReportingControllerBase {
 
-  private static buildWhereClause(req: IWorkLenzRequest, body: IAllTasksRequest): string {
+  private static buildWhereClause(req: IWorkLenzRequest, body: IAllTasksRequest, values: any[]): string {
     const clauses: string[] = [];
     const teamId = req.user?.team_id;
     const userId = req.user?.id;
 
     // Base team filter
-    clauses.push(`t.project_id IN (SELECT id FROM projects WHERE team_id = '${teamId}')`);
+    values.push(teamId);
+    clauses.push(`t.project_id IN (SELECT id FROM projects WHERE team_id = $${values.length})`);
 
     // Archived filter
     if (!body.includeArchived) {
-      clauses.push(`t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND user_id = '${userId}')`);
+      values.push(userId);
+      clauses.push(`t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND user_id = $${values.length})`);
     }
 
     // Subtasks filter
@@ -52,14 +56,16 @@ export default class ReportingAllTasksController extends ReportingControllerBase
 
     // Teams filter
     if (body.teams && body.teams.length > 0) {
-      const teamIds = body.teams.map(id => `'${id}'`).join(",");
-      clauses.push(`t.project_id IN (SELECT id FROM projects WHERE team_id IN (${teamIds}))`);
+      const { clause, params } = SqlHelper.buildInClause(body.teams, values.length + 1);
+      clauses.push(`t.project_id IN (SELECT id FROM projects WHERE team_id IN (${clause}))`);
+      values.push(...params);
     }
 
     // Projects filter
     if (body.projects && body.projects.length > 0) {
-      const projectIds = body.projects.map(id => `'${id}'`).join(",");
-      clauses.push(`t.project_id IN (${projectIds})`);
+      const { clause, params } = SqlHelper.buildInClause(body.projects, values.length + 1);
+      clauses.push(`t.project_id IN (${clause})`);
+      values.push(...params);
     }
 
     // Status filter (by category: todo, doing, done)
@@ -81,22 +87,24 @@ export default class ReportingAllTasksController extends ReportingControllerBase
 
     // Priority filter
     if (body.priorities && body.priorities.length > 0) {
-      const priorityIds = body.priorities.map(id => `'${id}'`).join(",");
-      clauses.push(`t.priority_id IN (${priorityIds})`);
+      const { clause, params } = SqlHelper.buildInClause(body.priorities, values.length + 1);
+      clauses.push(`t.priority_id IN (${clause})`);
+      values.push(...params);
     }
 
     // Assignee filter
     if (body.assignees && body.assignees.length > 0) {
       const hasUnassigned = body.assignees.includes("unassigned");
       const memberIds = body.assignees.filter(id => id !== "unassigned");
-      
+
       const assigneeConditions: string[] = [];
       if (hasUnassigned) {
         assigneeConditions.push(`NOT EXISTS (SELECT 1 FROM tasks_assignees ta WHERE ta.task_id = t.id)`);
       }
       if (memberIds.length > 0) {
-        const ids = memberIds.map(id => `'${id}'`).join(",");
-        assigneeConditions.push(`EXISTS (SELECT 1 FROM tasks_assignees ta WHERE ta.task_id = t.id AND ta.team_member_id IN (${ids}))`);
+        const { clause, params } = SqlHelper.buildInClause(memberIds, values.length + 1);
+        assigneeConditions.push(`EXISTS (SELECT 1 FROM tasks_assignees ta WHERE ta.task_id = t.id AND ta.team_member_id IN (${clause}))`);
+        values.push(...params);
       }
       if (assigneeConditions.length > 0) {
         clauses.push(`(${assigneeConditions.join(" OR ")})`);
@@ -105,26 +113,33 @@ export default class ReportingAllTasksController extends ReportingControllerBase
 
     // Labels filter
     if (body.labels && body.labels.length > 0) {
-      const labelIds = body.labels.map(id => `'${id}'`).join(",");
-      clauses.push(`EXISTS (SELECT 1 FROM task_labels tl WHERE tl.task_id = t.id AND tl.label_id IN (${labelIds}))`);
+      const { clause, params } = SqlHelper.buildInClause(body.labels, values.length + 1);
+      clauses.push(`EXISTS (SELECT 1 FROM task_labels tl WHERE tl.task_id = t.id AND tl.label_id IN (${clause}))`);
+      values.push(...params);
     }
 
     // Phases filter
     if (body.phases && body.phases.length > 0) {
-      const phaseIds = body.phases.map(id => `'${id}'`).join(",");
-      clauses.push(`EXISTS (SELECT 1 FROM task_phase tp WHERE tp.task_id = t.id AND tp.phase_id IN (${phaseIds}))`);
+      const { clause, params } = SqlHelper.buildInClause(body.phases, values.length + 1);
+      clauses.push(`EXISTS (SELECT 1 FROM task_phase tp WHERE tp.task_id = t.id AND tp.phase_id IN (${clause}))`);
+      values.push(...params);
     }
 
     // Date filter
     if (body.dateFrom || body.dateTo) {
       const dateField = body.dateField || "end_date";
-      const dbField = dateField === "due_date" ? "end_date" : dateField;
-      
+      // Validate field name to prevent injection
+      const allowedFields = ["due_date", "start_date", "created_at", "completed_at", "end_date"];
+      let dbField = allowedFields.includes(dateField) ? dateField : "end_date";
+      if (dbField === "due_date") dbField = "end_date";
+
       if (body.dateFrom) {
-        clauses.push(`t.${dbField}::DATE >= '${body.dateFrom}'::DATE`);
+        values.push(body.dateFrom);
+        clauses.push(`t.${dbField}::DATE >= $${values.length}::DATE`);
       }
       if (body.dateTo) {
-        clauses.push(`t.${dbField}::DATE <= '${body.dateTo}'::DATE`);
+        values.push(body.dateTo);
+        clauses.push(`t.${dbField}::DATE <= $${values.length}::DATE`);
       }
     }
 
@@ -150,8 +165,9 @@ export default class ReportingAllTasksController extends ReportingControllerBase
 
     // Search filter
     if (body.search && body.search.trim()) {
-      const searchTerm = body.search.trim().replace(/'/g, "''");
-      clauses.push(`(t.name ILIKE '%${searchTerm}%' OR (SELECT key FROM projects WHERE id = t.project_id) || '-' || t.task_no ILIKE '%${searchTerm}%')`);
+      const { clause, params } = SqlHelper.buildLikeClause('t.name', body.search.trim(), values.length + 1);
+      clauses.push(`(${clause} OR (SELECT key FROM projects WHERE id = t.project_id) || '-' || t.task_no ILIKE $${values.length + 1})`);
+      values.push(...params);
     }
 
     return clauses.length > 0 ? `WHERE ${clauses.join(" AND ")}` : "";
@@ -160,7 +176,7 @@ export default class ReportingAllTasksController extends ReportingControllerBase
   private static buildOrderClause(body: IAllTasksRequest): string {
     const sortField = body.sortField || "end_date";
     const sortOrder = body.sortOrder === "desc" ? "DESC" : "ASC";
-    
+
     const fieldMap: Record<string, string> = {
       "name": "t.name",
       "project_name": "project_name",
@@ -184,18 +200,159 @@ export default class ReportingAllTasksController extends ReportingControllerBase
   public static async getReportingAllTasks(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const body: IAllTasksRequest = req.body;
     const teamId = req.user?.team_id;
-    const userId = req.user?.id;
 
     if (!teamId) {
       return res.status(400).send(new ServerResponse(false, null, "Team ID is required"));
     }
 
+    const result = await this.getTasksData(req, body);
+
+    return res.status(200).send(new ServerResponse(true, result));
+  }
+
+  @HandleExceptions()
+  public static async exportExcel(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    const body: IAllTasksRequest = req.body;
+    // For export, we usually want all data, but respect filters. 
+    // Usually size is ignored or set to large number, but let's see. 
+    // If user wants all, we should probably set pagination to very large or disable limit.
+    // For now, let's assume we export what matches the filter, but maybe all pages?
+    // Typically exports export ALL matching data, not just the current page.
+    const exportBody = { ...body, index: 1, size: 100000 }; // Fetch all matching records
+
+    const result = await this.getTasksData(req, exportBody);
+    const tasks = result.data;
+
+    // Excel file
+    const exportDate = moment().format("MMM-DD-YYYY");
+    const fileName = `All Tasks - ${exportDate}`;
+    const workbook = new Excel.Workbook();
+    const sheet = workbook.addWorksheet("Tasks");
+
+    // Define columns
+    sheet.columns = [
+      { header: "Task", key: "task", width: 40 },
+      { header: "Project", key: "project", width: 30 },
+      { header: "Status", key: "status", width: 20 },
+      { header: "Priority", key: "priority", width: 20 },
+      { header: "Assignees", key: "assignees", width: 30 },
+      { header: "Start Date", key: "start_date", width: 20 },
+      { header: "Due Date", key: "due_date", width: 20 },
+      { header: "Completed Date", key: "completed_on", width: 20 },
+      { header: "Created At", key: "created_at", width: 20 },
+      { header: "Estimated Time", key: "estimated_time", width: 20 },
+      { header: "Logged Time", key: "logged_time", width: 20 },
+      { header: "Overlogged Time", key: "overlogged_time", width: 20 },
+    ];
+
+    // Style header
+    sheet.getRow(1).font = { bold: true };
+    sheet.getRow(1).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFE0E0E0" }
+    };
+
+    // Add data
+    for (const task of tasks) {
+      const assigneeNames = (task.names as any[] || []).map(a => a.name).join(", ");
+
+      sheet.addRow({
+        task: task.name,
+        project: task.project_name,
+        status: task.status_name,
+        priority: task.priority_name,
+        assignees: assigneeNames,
+        start_date: task.start_date ? moment(task.start_date).format("YYYY-MM-DD") : "-",
+        due_date: task.end_date ? moment(task.end_date).format("YYYY-MM-DD") : "-",
+        completed_on: task.completed_at ? moment(task.completed_at).format("YYYY-MM-DD") : "-",
+        created_at: task.created_at ? moment(task.created_at).format("YYYY-MM-DD") : "-",
+        estimated_time: task.total_time_string,
+        logged_time: task.time_spent_string,
+        overlogged_time: task.overlogged_time_string || "-"
+      });
+    }
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats");
+    res.setHeader("Content-Disposition", `attachment; filename=${fileName}.xlsx`);
+
+    await workbook.xlsx.write(res);
+    res.end();
+  }
+
+  @HandleExceptions()
+  public static async exportCSV(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    const body: IAllTasksRequest = req.body;
+    const exportBody = { ...body, index: 1, size: 100000 };
+
+    const result = await this.getTasksData(req, exportBody);
+    const tasks = result.data;
+
+    const exportDate = moment().format("MMM-DD-YYYY");
+    const fileName = `All Tasks - ${exportDate}`;
+    const workbook = new Excel.Workbook();
+    const sheet = workbook.addWorksheet("Tasks");
+
+    // Define columns
+    sheet.columns = [
+      { header: "Task", key: "task", width: 40 },
+      { header: "Project", key: "project", width: 30 },
+      { header: "Status", key: "status", width: 20 },
+      { header: "Priority", key: "priority", width: 20 },
+      { header: "Assignees", key: "assignees", width: 30 },
+      { header: "Start Date", key: "start_date", width: 20 },
+      { header: "Due Date", key: "due_date", width: 20 },
+      { header: "Completed Date", key: "completed_on", width: 20 },
+      { header: "Created At", key: "created_at", width: 20 },
+      { header: "Estimated Time", key: "estimated_time", width: 20 },
+      { header: "Logged Time", key: "logged_time", width: 20 },
+      { header: "Overlogged Time", key: "overlogged_time", width: 20 },
+    ];
+
+    // Add data
+    for (const task of tasks) {
+      const assigneeNames = (task.names as any[] || []).map(a => a.name).join(", ");
+
+      sheet.addRow({
+        task: task.name,
+        project: task.project_name,
+        status: task.status_name,
+        priority: task.priority_name,
+        assignees: assigneeNames,
+        start_date: task.start_date ? moment(task.start_date).format("YYYY-MM-DD") : "-",
+        due_date: task.end_date ? moment(task.end_date).format("YYYY-MM-DD") : "-",
+        completed_on: task.completed_at ? moment(task.completed_at).format("YYYY-MM-DD") : "-",
+        created_at: task.created_at ? moment(task.created_at).format("YYYY-MM-DD") : "-",
+        estimated_time: task.total_time_string,
+        logged_time: task.time_spent_string,
+        overlogged_time: task.overlogged_time_string || "-"
+      });
+    }
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", `attachment; filename=${fileName}.csv`);
+
+    await workbook.csv.write(res);
+    res.end();
+  }
+
+  private static async getTasksData(req: IWorkLenzRequest, body: IAllTasksRequest) {
     const page = body.index || 1;
     const pageSize = body.size || 50;
     const offset = (page - 1) * pageSize;
 
-    const whereClause = this.buildWhereClause(req, body);
+    const values: any[] = [];
+    const whereClause = this.buildWhereClause(req, body, values);
     const orderClause = this.buildOrderClause(body);
+
+    const countValues = [...values];
+    const statsValues = [...values];
+
+    // Params for Limit/Offset
+    values.push(pageSize);
+    const limitParam = `$${values.length}`;
+    values.push(offset);
+    const offsetParam = `$${values.length}`;
 
     // Main query for tasks
     const tasksQuery = `
@@ -280,7 +437,7 @@ export default class ReportingAllTasksController extends ReportingControllerBase
       FROM tasks t
       ${whereClause}
       ${orderClause}
-      LIMIT ${pageSize} OFFSET ${offset}
+      LIMIT ${limitParam} OFFSET ${offsetParam}
     `;
 
     // Count query
@@ -303,63 +460,58 @@ export default class ReportingAllTasksController extends ReportingControllerBase
       ${whereClause}
     `;
 
-    try {
-      const [tasksResult, countResult, statsResult] = await Promise.all([
-        db.query(tasksQuery),
-        db.query(countQuery),
-        db.query(statsQuery),
-      ]);
+    const [tasksResult, countResult, statsResult] = await Promise.all([
+      db.query(tasksQuery, values),
+      db.query(countQuery, countValues),
+      db.query(statsQuery, statsValues),
+    ]);
 
-      const tasks = tasksResult.rows;
-      const total = parseInt(countResult.rows[0]?.total || "0", 10);
-      const stats = statsResult.rows[0] || {};
+    const tasks = tasksResult.rows;
+    const total = parseInt(countResult.rows[0]?.total || "0", 10);
+    const stats = statsResult.rows[0] || {};
 
-      // Format time strings in application layer
-      for (const task of tasks) {
-        const totalMinutes = parseInt(task.total_minutes || "0", 10);
-        const timeSpentSeconds = parseInt(task.time_spent_seconds || "0", 10);
-        const timeSpentMinutes = Math.ceil(timeSpentSeconds / 60);
-        
-        // Format estimated time
-        const estHours = Math.floor(totalMinutes / 60);
-        const estMins = totalMinutes % 60;
-        task.total_time_string = `${estHours}h ${estMins}m`;
-        
-        // Format logged time
-        const logHours = Math.floor(timeSpentMinutes / 60);
-        const logMins = timeSpentMinutes % 60;
-        task.time_spent_string = `${logHours}h ${logMins}m`;
-        
-        // Format overlogged time
-        const estimatedSeconds = totalMinutes * 60;
-        if (timeSpentSeconds > estimatedSeconds) {
-          const overloggedSeconds = timeSpentSeconds - estimatedSeconds;
-          const overloggedMinutes = Math.ceil(overloggedSeconds / 60);
-          const overHours = Math.floor(overloggedMinutes / 60);
-          const overMins = overloggedMinutes % 60;
-          task.overlogged_time_string = `${overHours}h ${overMins}m`;
-        } else {
-          task.overlogged_time_string = null;
-        }
+    // Format time strings in application layer
+    for (const task of tasks) {
+      const totalMinutes = parseInt(task.total_minutes || "0", 10);
+      const timeSpentSeconds = parseInt(task.time_spent_seconds || "0", 10);
+      const timeSpentMinutes = Math.ceil(timeSpentSeconds / 60);
+
+      // Format estimated time
+      const estHours = Math.floor(totalMinutes / 60);
+      const estMins = totalMinutes % 60;
+      task.total_time_string = `${estHours}h ${estMins}m`;
+
+      // Format logged time
+      const logHours = Math.floor(timeSpentMinutes / 60);
+      const logMins = timeSpentMinutes % 60;
+      task.time_spent_string = `${logHours}h ${logMins}m`;
+
+      // Format overlogged time
+      const estimatedSeconds = totalMinutes * 60;
+      if (timeSpentSeconds > estimatedSeconds) {
+        const overloggedSeconds = timeSpentSeconds - estimatedSeconds;
+        const overloggedMinutes = Math.ceil(overloggedSeconds / 60);
+        const overHours = Math.floor(overloggedMinutes / 60);
+        const overMins = overloggedMinutes % 60;
+        task.overlogged_time_string = `${overHours}h ${overMins}m`;
+      } else {
+        task.overlogged_time_string = null;
       }
-
-      return res.status(200).send(new ServerResponse(true, {
-        data: tasks,
-        total,
-        page,
-        pageSize,
-        stats: {
-          totalTasks: parseInt(stats.total_tasks || "0", 10),
-          completedTasks: parseInt(stats.completed_tasks || "0", 10),
-          inProgressTasks: parseInt(stats.in_progress_tasks || "0", 10),
-          overdueTasks: parseInt(stats.overdue_tasks || "0", 10),
-          unassignedTasks: parseInt(stats.unassigned_tasks || "0", 10),
-          dueThisWeek: parseInt(stats.due_this_week || "0", 10),
-        },
-      }));
-    } catch (error) {
-      console.error("Error fetching all tasks:", error);
-      return res.status(500).send(new ServerResponse(false, null, "Failed to fetch tasks"));
     }
+
+    return {
+      data: tasks,
+      total,
+      page,
+      pageSize,
+      stats: {
+        totalTasks: parseInt(stats.total_tasks || "0", 10),
+        completedTasks: parseInt(stats.completed_tasks || "0", 10),
+        inProgressTasks: parseInt(stats.in_progress_tasks || "0", 10),
+        overdueTasks: parseInt(stats.overdue_tasks || "0", 10),
+        unassignedTasks: parseInt(stats.unassigned_tasks || "0", 10),
+        dueThisWeek: parseInt(stats.due_this_week || "0", 10),
+      },
+    };
   }
 }

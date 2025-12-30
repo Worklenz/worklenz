@@ -15,6 +15,7 @@ import {
   setIncludeArchived,
   resetAllFilters,
 } from '@/features/reporting/allTasksReports/all-tasks-reports-slice';
+import { allTasksReportsApiService } from '@/api/reporting/all-tasks-reports.api.service';
 
 const AllTasksReports = () => {
   const { t } = useTranslation('reporting-all-tasks');
@@ -22,18 +23,63 @@ const AllTasksReports = () => {
   useDocumentTitle('Reporting - All Tasks');
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { total, isLoading, includeArchived } = useAppSelector(
-    state => state.allTasksReportsReducer
-  );
+  const state = useAppSelector(state => state.allTasksReportsReducer);
+  const { total, isLoading, includeArchived, sortField, sortOrder, searchQuery } = state;
 
   const handleRefresh = useCallback(() => {
     dispatch(fetchAllTasks());
   }, [dispatch]);
 
-  const handleExport = useCallback((key: string) => {
-    // TODO: Implement export functionality
-    console.log('Export:', key);
-  }, []);
+  const handleExport = useCallback(async (key: string) => {
+    try {
+      const body = {
+        index: 1, // Reset to first page for export (though backend handles size)
+        size: total, // Attempt to get all, but backend might override or we might want to just pass filters
+        sortField,
+        sortOrder,
+        search: searchQuery,
+        teams: state.teams.filter(t => t.selected).map(t => t.id),
+        projects: state.selectedProjects,
+        statuses: state.selectedStatuses,
+        priorities: state.selectedPriorities,
+        assignees: state.selectedAssignees,
+        labels: state.selectedLabels,
+        phases: state.selectedPhases,
+        dateField: state.dateFilterField,
+        dateFrom: state.dateFrom,
+        dateTo: state.dateTo,
+        includeArchived: state.includeArchived,
+        includeSubtasks: state.includeSubtasks,
+        completionStatus: state.completionStatus,
+        billable: state.billableFilter,
+        groupBy: state.groupBy,
+      };
+
+      let blob: Blob;
+      const fileName = `All_Tasks_Report_${new Date().toISOString().split('T')[0]}`;
+
+      if (key === 'csv') {
+        blob = await allTasksReportsApiService.exportAllTasksToCsv(body);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${fileName}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      } else if (key === 'excel') {
+        blob = await allTasksReportsApiService.exportAllTasksToExcel(body);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${fileName}.xlsx`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      // Ideally show a notification here
+    }
+  }, [state, total, sortField, sortOrder, searchQuery]);
 
   const exportMenuItems = [
     { key: 'csv', label: t('exportToCsv', { defaultValue: 'Export to CSV' }) },
