@@ -1,3 +1,7 @@
+/* Add extra space above the search bar */
+.import-search-input-spaced {
+  margin-top: 2rem;
+}
 /* Limit modal content height and enable internal scroll */
 .import-export-modal-content-wrapper {
   flex: 1 1 auto;

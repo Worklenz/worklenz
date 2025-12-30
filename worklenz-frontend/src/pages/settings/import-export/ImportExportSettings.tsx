@@ -18,6 +18,7 @@ import {
   BranchesOutlined,
 } from '@ant-design/icons';
 import './import-export-settings.css';
+import ImportSourceModal from './ImportSourceModal';
 
 // Custom Asana icon (3 dots in a triangle)
 const AsanaIcon = () => (
@@ -69,6 +70,8 @@ const importSources = [
 export const ImportExportSettings: React.FC = () => {
   const { t } = useTranslation('settings/import-export');
   const [search, setSearch] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedSource, setSelectedSource] = useState<null | (typeof importSources)[0]>(null);
 
   const filteredSources = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -76,9 +79,19 @@ export const ImportExportSettings: React.FC = () => {
     return importSources.filter(source => source.label.toLowerCase().includes(s));
   }, [search]);
 
+  const handleSourceClick = (source: (typeof importSources)[0]) => {
+    setSelectedSource(source);
+    setModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setSelectedSource(null);
+  };
+
   return (
     <div className="import-export-settings import-export-modal-content-wrapper">
-      <Typography.Title level={2} className="mb-4">
+      <Typography.Title level={2} className="mb-8">
         {t('importHeader', 'Import data into Worklenz')}
       </Typography.Title>
       {/* Search apps input */}
@@ -92,7 +105,7 @@ export const ImportExportSettings: React.FC = () => {
           </span>
         }
         placeholder={t('searchApps', 'Search apps')}
-        className="mb-6 import-search-input"
+        className="mb-6 import-search-input import-search-input-spaced"
         value={search}
         onChange={e => setSearch(e.target.value)}
         style={{ maxWidth: 320 }}
@@ -104,7 +117,12 @@ export const ImportExportSettings: React.FC = () => {
       <div className="import-source-grid-scroll">
         <div className="import-source-grid">
           {filteredSources.map(source => (
-            <div className="import-source-card" key={source.key}>
+            <div
+              className="import-source-card"
+              key={source.key}
+              onClick={() => handleSourceClick(source)}
+              style={{ cursor: 'pointer' }}
+            >
               <div className="import-source-icon">{source.icon}</div>
               <span className="import-source-label">{source.label}</span>
             </div>
@@ -134,6 +152,7 @@ export const ImportExportSettings: React.FC = () => {
           </div>
         </Card>
       </div>
+      <ImportSourceModal open={modalOpen} onClose={handleModalClose} source={selectedSource} />
     </div>
   );
 };
