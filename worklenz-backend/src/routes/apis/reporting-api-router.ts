@@ -25,6 +25,14 @@ reportingApiRouter.get("/info", teamOwnerOrAdminValidator, safeControllerFunctio
 reportingApiRouter.get("/overview/statistics", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getStatistics));
 reportingApiRouter.get("/overview/teams", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewController.getTeams));
 
+// Overview projects - accepts team as query parameter (for pagination and filtering)
+reportingApiRouter.get("/overview/projects",
+  teamOwnerOrAdminValidator,
+  validateUuidParam("team", "query"),
+  safeControllerFunction(ReportingOverviewController.getProjects)
+);
+
+// Overview projects by team_id - path parameter version
 reportingApiRouter.get("/overview/projects/:team_id",
   teamOwnerOrAdminValidator,
   validateUuidParam("team_id", "params"),
