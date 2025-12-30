@@ -575,6 +575,25 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION escape_html(_text text) RETURNS text
+    LANGUAGE plpgsql IMMUTABLE
+AS $$
+BEGIN
+    IF _text IS NULL THEN
+        RETURN '';
+    END IF;
+    
+    -- Escape HTML special characters to prevent XSS attacks
+    RETURN REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+        _text,
+        '&', '&amp;'),
+        '<', '&lt;'),
+        '>', '&gt;'),
+        '"', '&quot;'),
+        '''', '&#x27;');
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION create_notification(_user_id uuid, _team_id uuid, _task_id uuid, _project_id uuid, _message text) RETURNS json
     LANGUAGE plpgsql
 AS
@@ -706,7 +725,6 @@ BEGIN
 
     FOR _mention IN SELECT * FROM JSON_ARRAY_ELEMENTS((_body ->> 'mentions')::JSON)
         LOOP
-
             INSERT INTO project_comment_mentions (comment_id, mentioned_index, mentioned_by, informed_by)
             VALUES (_comment_id, _mention_index, _created_by, (_mention ->> 'id')::UUID);
 
@@ -715,7 +733,7 @@ BEGIN
                     (_team_id)::UUID,
                     null,
                     (_project_id)::UUID,
-                    CONCAT('<b>', _user_name, '</b> has mentioned you in a comment on <b>', _project_name, '</b>')
+                    CONCAT('<b>', escape_html(_user_name), '</b> has mentioned you in a comment on <b>', escape_html(_task_name), '</b>')
                 );
             _mention_index := _mention_index + 1;
 
@@ -769,9 +787,9 @@ BEGIN
     IF (_member_user_id != _user_id)
     THEN
         _notification = CONCAT('You have been added to the <b>',
-                               (SELECT name FROM projects WHERE id = _project_id),
+                               escape_html((SELECT name FROM projects WHERE id = _project_id)),
                                '</b> by <b>',
-                               (SELECT name FROM users WHERE id = _user_id), '</b>');
+                               escape_html((SELECT name FROM users WHERE id = _user_id)), '</b>');
         PERFORM create_notification(
                 (SELECT user_id FROM team_members WHERE id = _team_member_id),
                 _team_id,
@@ -1081,7 +1099,7 @@ BEGIN
                 (_body ->> 'team_id')::UUID,
                 _task_id,
                 (SELECT project_id FROM tasks WHERE id = _task_id),
-                CONCAT('<b>', _user_name, '</b> has mentioned you in a comment on <b>', _task_name, '</b>')
+                CONCAT('<b>', escape_html(_user_name), '</b> has mentioned you in a comment on <b>', escape_html(_task_name), '</b>')
                 );
             _mention_index := _mention_index + 1;
         END LOOP;

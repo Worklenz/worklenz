@@ -3,6 +3,7 @@ import { IWorklenzNotification } from '@/types/notifications/notifications.types
 import { teamsApiService } from '@/api/teams/teams.api.service';
 import { toQueryString } from '@/utils/toQueryString';
 import { BankOutlined } from '@/shared/antd-imports';
+import DOMPurify from 'dompurify';
 import './push-notification-template.css';
 
 const PushNotificationTemplate = ({
@@ -25,6 +26,14 @@ const PushNotificationTemplate = ({
       window.location.href = url;
     }
   };
+
+  // Sanitize notification message to prevent XSS attacks
+  // Allow only safe formatting tags (b, strong, i, em) and no attributes
+  const sanitizedMessage = DOMPurify.sanitize(notificationData.message, {
+    ALLOWED_TAGS: ['b', 'strong', 'i', 'em'],
+    ALLOWED_ATTR: [],
+    KEEP_CONTENT: true,
+  });
 
   return (
     <div
@@ -61,7 +70,7 @@ const PushNotificationTemplate = ({
           lineHeight: '1.5',
           marginTop: '4px',
         }}
-        dangerouslySetInnerHTML={{ __html: notificationData.message }}
+        dangerouslySetInnerHTML={{ __html: sanitizedMessage }}
       />
     </div>
   );
