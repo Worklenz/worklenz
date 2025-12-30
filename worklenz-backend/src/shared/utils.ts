@@ -175,6 +175,68 @@ export function sanitizePlainText(value: string): string {
 }
 
 /**
+ * Sanitizes SVG/XML content to prevent XSS attacks via embedded scripts
+ * Removes all script tags, event handlers, and dangerous elements from SVG files
+ * Use this before storing SVG file content to prevent XSS via SVG upload
+ * 
+ * @param svgContent - The SVG/XML content to sanitize
+ * @returns Sanitized SVG content safe for storage and display
+ */
+export function sanitizeSVG(svgContent: string): string {
+  if (!svgContent) return "";
+
+  // Use sanitize-html with strict SVG-safe configuration
+  return sanitizeHtml(svgContent, {
+    // Allow only safe SVG elements
+    allowedTags: [
+      'svg', 'g', 'path', 'circle', 'rect', 'line', 'polyline', 'polygon',
+      'ellipse', 'text', 'tspan', 'defs', 'linearGradient', 'radialGradient',
+      'stop', 'use', 'symbol', 'clipPath', 'mask', 'pattern', 'image',
+      'foreignObject', 'marker', 'animate', 'animateTransform'
+    ],
+    // Allow only safe SVG attributes (no event handlers)
+    allowedAttributes: {
+      'svg': ['xmlns', 'viewBox', 'width', 'height', 'preserveAspectRatio', 'version'],
+      'g': ['id', 'transform', 'fill', 'stroke', 'stroke-width', 'opacity'],
+      'path': ['id', 'd', 'fill', 'stroke', 'stroke-width', 'transform', 'opacity'],
+      'circle': ['cx', 'cy', 'r', 'fill', 'stroke', 'stroke-width', 'transform', 'opacity'],
+      'rect': ['x', 'y', 'width', 'height', 'rx', 'ry', 'fill', 'stroke', 'stroke-width', 'transform', 'opacity'],
+      'line': ['x1', 'y1', 'x2', 'y2', 'stroke', 'stroke-width', 'transform'],
+      'polyline': ['points', 'fill', 'stroke', 'stroke-width', 'transform'],
+      'polygon': ['points', 'fill', 'stroke', 'stroke-width', 'transform'],
+      'ellipse': ['cx', 'cy', 'rx', 'ry', 'fill', 'stroke', 'stroke-width', 'transform', 'opacity'],
+      'text': ['x', 'y', 'font-size', 'font-family', 'fill', 'text-anchor', 'transform'],
+      'tspan': ['x', 'y', 'dx', 'dy', 'font-size', 'font-family', 'fill'],
+      'linearGradient': ['id', 'x1', 'y1', 'x2', 'y2', 'gradientUnits'],
+      'radialGradient': ['id', 'cx', 'cy', 'r', 'fx', 'fy', 'gradientUnits'],
+      'stop': ['offset', 'stop-color', 'stop-opacity'],
+      'use': ['href', 'xlink:href', 'x', 'y', 'width', 'height'],
+      'image': ['href', 'xlink:href', 'x', 'y', 'width', 'height'],
+      'clipPath': ['id'],
+      'mask': ['id'],
+      'pattern': ['id', 'x', 'y', 'width', 'height', 'patternUnits'],
+      'marker': ['id', 'markerWidth', 'markerHeight', 'refX', 'refY', 'orient'],
+      'animate': ['attributeName', 'from', 'to', 'dur', 'repeatCount'],
+      'animateTransform': ['attributeName', 'type', 'from', 'to', 'dur', 'repeatCount']
+    },
+    // No javascript: or data: URLs
+    allowedSchemes: ['http', 'https'],
+    // Disallow script tags and event handlers
+    allowedScriptHostnames: [],
+    allowedScriptDomains: [],
+    // Explicitly disallow script and other dangerous tags
+    disallowedTagsMode: 'discard',
+    // Remove all event handler attributes
+    allowedIframeHostnames: [],
+    // Parse as XML to preserve SVG structure
+    parser: {
+      lowerCaseTags: false,
+      lowerCaseAttributeNames: false
+    }
+  });
+}
+
+/**
  * Sanitizes task comment content to prevent XSS attacks and open redirects
  * Allows safe HTML tags for mentions and basic formatting while blocking dangerous content
  * External links are completely removed to prevent open redirect attacks

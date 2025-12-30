@@ -108,6 +108,24 @@ const policies = {
     "https://*.clarity.ms",
     "https://www.facebook.com"
   ],
+  "script-src-elem": [
+    "'self'",
+    "https://*.googletagmanager.com",
+    "https://*.clarity.ms",
+    "https://js-na1.hs-scripts.com",
+    "https://js.hs-analytics.net",
+    "https://js.usemessages.com",
+    "https://*.tiny.cloud",
+    "https://js.hs-banner.com",
+    "https://js.hscollectedforms.net",
+    "https://cdn.paddle.com",
+    "https://sandbox-cdn.paddle.com",
+    "https://*.hubspot.com",
+    "https://connect.facebook.net",
+    "https://js.hs-scripts.com",
+    "https://www.google.com",
+    "https://www.gstatic.com"
+  ],
   "frame-src": [
     "'self'",
     "https://app.hubspot.com",
