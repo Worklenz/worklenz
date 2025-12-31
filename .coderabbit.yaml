@@ -14,15 +14,12 @@ reviews:
       - main
       - master
 
-# Paths to include/exclude from reviews
-paths:
-  include:
-    - "**/*"
-  exclude:
-    - "node_modules/**"
-    - "dist/**"
-    - "build/**"
-    - ".git/**"
-    - "*.lock"
-    - "*.log"
+  # Paths to exclude from reviews
+  path_filters:
+    - "!node_modules/**"
+    - "!dist/**"
+    - "!build/**"
+    - "!.git/**"
+    - "!*.lock"
+    - "!*.log"
 
