@@ -804,6 +804,9 @@ const SortDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
   const currentSortField = useAppSelector(selectSortField);
   const currentSortOrder = useAppSelector(selectSortOrder);
 
+  // Get current grouping to filter sort options
+  const currentGrouping = useAppSelector(selectCurrentGrouping);
+
   const [open, setOpen] = React.useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -819,16 +822,28 @@ const SortDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
 
-  const sortFieldsList = [
-    { label: t('taskText', { defaultValue: 'Task' }), key: 'name' },
-    { label: t('statusText', { defaultValue: 'Status' }), key: 'status' },
-    { label: t('priorityText', { defaultValue: 'Priority' }), key: 'priority' },
-    { label: t('startDateText', { defaultValue: 'Start Date' }), key: 'start_date' },
-    { label: t('dueDateText', { defaultValue: 'Due Date' }), key: 'end_date' },
-    { label: t('completedDateText', { defaultValue: 'Completed Date' }), key: 'completed_at' },
-    { label: t('createdDateText', { defaultValue: 'Created Date' }), key: 'created_at' },
-    { label: t('lastUpdatedText', { defaultValue: 'Last Updated' }), key: 'updated_at' },
-  ];
+  // Filter sort fields based on current grouping
+  // Hide status sort when grouped by status, hide priority sort when grouped by priority
+  const sortFieldsList = useMemo(() => {
+    const allFields = [
+      { label: t('taskText', { defaultValue: 'Task' }), key: 'name' },
+      { label: t('statusText', { defaultValue: 'Status' }), key: 'status' },
+      { label: t('priorityText', { defaultValue: 'Priority' }), key: 'priority' },
+      { label: t('startDateText', { defaultValue: 'Start Date' }), key: 'start_date' },
+      { label: t('dueDateText', { defaultValue: 'Due Date' }), key: 'end_date' },
+      { label: t('completedDateText', { defaultValue: 'Completed Date' }), key: 'completed_at' },
+      { label: t('createdDateText', { defaultValue: 'Created Date' }), key: 'created_at' },
+      { label: t('lastUpdatedText', { defaultValue: 'Last Updated' }), key: 'updated_at' },
+    ];
+
+    return allFields.filter(field => {
+      // Hide status sort option when grouped by status
+      if (currentGrouping === 'status' && field.key === 'status') return false;
+      // Hide priority sort option when grouped by priority
+      if (currentGrouping === 'priority' && field.key === 'priority') return false;
+      return true;
+    });
+  }, [t, currentGrouping]);
 
   const handleSortFieldChange = (fieldKey: string) => {
     // If clicking the same field, toggle order, otherwise set new field with ASC
@@ -853,6 +868,16 @@ const SortDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
       dispatch(fetchTasksV3(projectId));
     }
   };
+
+  // Clear sort field if it matches the current grouping (since it's hidden from the list)
+  React.useEffect(() => {
+    if (
+      (currentGrouping === 'status' && currentSortField === 'status') ||
+      (currentGrouping === 'priority' && currentSortField === 'priority')
+    ) {
+      clearSort();
+    }
+  }, [currentGrouping]);
 
   const isActive = currentSortField !== '';
   const currentFieldLabel = sortFieldsList.find(f => f.key === currentSortField)?.label;
