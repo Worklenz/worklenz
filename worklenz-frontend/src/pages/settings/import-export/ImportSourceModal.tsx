@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, Button, Typography, Upload, Steps, Collapse, Select, Input, Tooltip } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
+import { Switch } from 'antd';
 import Papa from 'papaparse';
 
 interface ImportSourceModalProps {
@@ -31,6 +32,31 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       : ['Upload CSV', 'Set up space', 'Map fields', 'Map values', 'Move users', 'Review details'];
 
   const [step, setStep] = React.useState(0);
+  // Review Details sub-screens
+  const [reviewSubScreen, setReviewSubScreen] = React.useState<
+    'main' | 'hierarchy' | 'fieldMapping'
+  >('main');
+  // Toggles for review details
+  const [importMembers, setImportMembers] = React.useState(true);
+  const [importAttachments, setImportAttachments] = React.useState(true);
+
+  // Example field mapping data (should be dynamic in real app)
+  const fieldMappingRows = [
+    { asana: 'Task name', jira: 'Summary', required: true, include: true },
+    { asana: 'Assignee', jira: 'Assignee', required: false, include: true },
+    { asana: 'Created by', jira: 'Reporter', required: false, include: true },
+    { asana: 'Description', jira: 'Description', required: false, include: true },
+    { asana: 'Due on', jira: 'Due date', required: false, include: true },
+    { asana: 'Start date', jira: 'Start date', required: false, include: true },
+    { asana: 'Collaborators', jira: 'Watchers', required: false, include: true },
+  ];
+  // Example hierarchy mapping
+  const hierarchyRows = [
+    { asana: 'Section', jira: 'Status' },
+    { asana: 'Task', jira: 'Task' },
+    { asana: 'Subtask', jira: 'Subtask' },
+    { asana: 'Nested subtask', jira: 'Subtask' },
+  ];
   const [csvSettingsOpen, setCsvSettingsOpen] = React.useState(false);
   const [configOpen, setConfigOpen] = React.useState(false);
   const [encoding, setEncoding] = React.useState('UTF-8');
@@ -58,72 +84,224 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   // Example content for each step
   function renderStepContent() {
     if (integrationType === 'direct') {
-      switch (step) {
-        case 0:
-          return (
-            <>
-              <Typography.Title level={3} style={{ marginBottom: 16, color: '#fff' }}>
-                Select a list or board
-              </Typography.Title>
-              <Typography.Paragraph style={{ marginBottom: 24, color: '#b0b0b0' }}>
-                Connect your {source?.label} account and select the list or board you want to
-                import.
-              </Typography.Paragraph>
-              {/* TODO: Add OAuth/token logic and list/board selection UI here */}
-              <Button type="primary" disabled>
-                Connect & Select List (Coming Soon)
-              </Button>
-            </>
-          );
-        case 1:
-          return (
-            <>
-              <Typography.Title level={3} style={{ marginBottom: 16, color: '#fff' }}>
-                Create a Worklenz space
-              </Typography.Title>
-              <Typography.Paragraph style={{ marginBottom: 24, color: '#b0b0b0' }}>
-                Configure your new space. These details will be used for your imported data.
-              </Typography.Paragraph>
-              {/* TODO: Add space creation form here */}
-              <Button type="primary" disabled>
-                Create Space (Coming Soon)
-              </Button>
-            </>
-          );
-        case 2:
-          return (
-            <>
-              <Typography.Title level={3} style={{ marginBottom: 16, color: '#fff' }}>
-                Review import details
-              </Typography.Title>
-              <Typography.Paragraph style={{ marginBottom: 24, color: '#b0b0b0' }}>
-                Here’s a summary of what will be imported. All fields, statuses, and users are
-                auto-mapped.
-              </Typography.Paragraph>
-              {/* TODO: Show summary of auto-mapped fields, users, etc. */}
-              <Button type="primary" disabled>
-                Import Data (Coming Soon)
-              </Button>
-            </>
-          );
-        case 3:
-          return (
-            <>
-              <Typography.Title level={3} style={{ marginBottom: 16, color: '#fff' }}>
-                Importing data...
-              </Typography.Title>
-              <Typography.Paragraph style={{ marginBottom: 24, color: '#b0b0b0' }}>
-                Your data is being imported from {source?.label}. This may take a few moments.
-              </Typography.Paragraph>
-              {/* TODO: Show import progress and completion UI */}
-              <Button type="primary" disabled>
-                Finish (Coming Soon)
-              </Button>
-            </>
-          );
-        default:
-          return null;
+      // 4-step direct integration flow
+      if (step === 0) {
+        // Step 1: Select project/list/board
+        return (
+          <div>
+            <Typography.Title level={3}>{'Select an Asana project'}</Typography.Title>
+            <Typography.Paragraph>
+              {
+                'Select the workspace and project you’d like to import data from. Required fields are marked with an asterisk.'
+              }
+            </Typography.Paragraph>
+            <div style={{ display: 'flex', gap: 48 }}>
+              <div style={{ flex: 1, maxWidth: 400 }}>
+                <label>{'Asana workspace *'}</label>
+                <Select
+                  style={{ width: '100%', marginBottom: 24 }}
+                  value="My workspace"
+                  options={[{ value: 'My workspace', label: 'My workspace' }]}
+                />
+                <label>{'Asana project *'}</label>
+                <Select style={{ width: '100%' }} placeholder={'Select an Asana project'} />
+              </div>
+              <div
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                {/* Illustration placeholder */}
+                <div style={{ width: 240, height: 140, background: '#23272f', borderRadius: 12 }} />
+              </div>
+            </div>
+          </div>
+        );
       }
+      if (step === 1) {
+        // Step 2: Create space
+        return (
+          <div style={{ display: 'flex', gap: 48 }}>
+            <div style={{ flex: 1, maxWidth: 400 }}>
+              <Typography.Title level={3}>{'Set up a space in Jira'}</Typography.Title>
+              <Typography.Paragraph>
+                {
+                  'Your team’s data from Asana will be imported into this space. Check if you’re selecting the right Jira space, template, and space type as these options can’t be modified later. All fields are required.'
+                }
+              </Typography.Paragraph>
+              <label>{'Jira space'}</label>
+              <Select
+                style={{ width: '100%', marginBottom: 16 }}
+                value="business"
+                options={[
+                  { value: 'business', label: 'Business space' },
+                  { value: 'software', label: 'Software space' },
+                ]}
+              />
+              <label>{'Space name'}</label>
+              <Input style={{ width: '100%', marginBottom: 8 }} value="worklenzse" />
+              <a href="#" style={{ color: '#4096ff', fontSize: 14 }}>
+                {'Show more'}
+              </a>
+            </div>
+            <div
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              {/* Board illustration placeholder */}
+              <div style={{ width: 320, height: 180, background: '#18181a', borderRadius: 16 }} />
+            </div>
+          </div>
+        );
+      }
+      if (step === 2) {
+        // Step 3: Review details (main or sub-screens)
+        if (reviewSubScreen === 'main') {
+          return (
+            <div>
+              <Typography.Title level={3}>{'Review details'}</Typography.Title>
+              <Typography.Paragraph>
+                {
+                  'We’ve mapped your project and you’re ready to import. Here’s how the Asana data will be imported into the Jira project. Learn more about the project setup'
+                }
+              </Typography.Paragraph>
+              <div style={{ maxWidth: 600 }}>
+                <div
+                  style={{ marginBottom: 16, cursor: 'pointer' }}
+                  onClick={() => setReviewSubScreen('hierarchy')}
+                >
+                  <b>{'Space hierarchy'}</b>
+                  <div>{'Sections from Asana are mapped to Status'}</div>
+                </div>
+                <div
+                  style={{ marginBottom: 16, cursor: 'pointer' }}
+                  onClick={() => setReviewSubScreen('fieldMapping')}
+                >
+                  <b>{'Field mapping'}</b>
+                  <div>{'9/9 imported fields are automatically mapped'}</div>
+                </div>
+                <div style={{ marginBottom: 16 }}>
+                  <b>{'Import all members from Asana project'}</b>
+                  <Switch checked={importMembers} onChange={setImportMembers} />
+                </div>
+                <div style={{ marginBottom: 16 }}>
+                  <b>{'Import all attachments'}</b>
+                  <Switch checked={importAttachments} onChange={setImportAttachments} />
+                </div>
+              </div>
+            </div>
+          );
+        }
+        if (reviewSubScreen === 'hierarchy') {
+          // Space hierarchy sub-screen
+          return (
+            <div>
+              <a
+                href="#"
+                onClick={e => {
+                  e.preventDefault();
+                  setReviewSubScreen('main');
+                }}
+              >
+                {'Back to review details'}
+              </a>
+              <Typography.Title level={3}>{'Space hierarchy'}</Typography.Title>
+              <Typography.Paragraph>
+                {
+                  "Here’s how we've mapped your Asana data to Jira. More about project hierarchy in Jira"
+                }
+              </Typography.Paragraph>
+              <table style={{ width: '100%', marginTop: 16 }}>
+                <thead>
+                  <tr>
+                    <th>{'Asana'}</th>
+                    <th>{'Jira'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {hierarchyRows.map(row => (
+                    <tr key={row.asana}>
+                      <td>{row.asana}</td>
+                      <td>{row.jira}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+        if (reviewSubScreen === 'fieldMapping') {
+          // Field mapping sub-screen
+          return (
+            <div>
+              <a
+                href="#"
+                onClick={e => {
+                  e.preventDefault();
+                  setReviewSubScreen('main');
+                }}
+              >
+                {'Back to review details'}
+              </a>
+              <Typography.Title level={3}>{'Field mapping'}</Typography.Title>
+              <Typography.Paragraph>
+                {
+                  "We've automatically mapped your Asana data into system and custom fields in Jira. You can customize some fields that have other compatible field types. More about field mapping"
+                }
+              </Typography.Paragraph>
+              <Input placeholder={'Search fields'} style={{ width: 300, marginBottom: 16 }} />
+              <table style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th>{'Asana field'}</th>
+                    <th>{'Jira field'}</th>
+                    <th>{'Include in import'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fieldMappingRows.map(row => (
+                    <tr key={row.asana}>
+                      <td>{row.asana}</td>
+                      <td>
+                        <Select
+                          value={row.jira}
+                          style={{ width: 160 }}
+                          options={[{ value: row.jira, label: row.jira }]}
+                        />
+                        {row.required && (
+                          <span style={{ marginLeft: 8, color: '#888' }}>{'Required'}</span>
+                        )}
+                      </td>
+                      <td>
+                        <Switch checked={row.include} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+      }
+      if (step === 3) {
+        // Step 4: Import data
+        return (
+          <div>
+            <Typography.Title level={3}>{'Importing data…'}</Typography.Title>
+            <Typography.Paragraph>{`Your data is being imported from ${source?.label}. This may take a few moments.`}</Typography.Paragraph>
+            <div
+              style={{
+                width: 320,
+                height: 180,
+                background: '#18181a',
+                borderRadius: 16,
+                margin: '32px auto',
+              }}
+            />
+            <Button type="primary" disabled>
+              {'Finish (Coming Soon)'}
+            </Button>
+          </div>
+        );
+      }
+      return null;
     }
     // ...existing code for CSV import steps...
     switch (step) {
