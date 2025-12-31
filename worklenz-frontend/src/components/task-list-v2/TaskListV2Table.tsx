@@ -58,6 +58,7 @@ import {
   toggleCustomColumnModalOpen,
 } from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
+import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
 
 // Components
 import TaskRowWithSubtasks from './TaskRowWithSubtasks';
@@ -350,6 +351,7 @@ const TaskListV2Section: React.FC = () => {
       dispatch(fetchTasksV3(urlProjectId));
       dispatch(fetchTaskListColumns(urlProjectId));
       dispatch(fetchPhasesByProjectId(urlProjectId));
+      dispatch(fetchStatusesCategories());
 
       trackMixpanelEvent(evt_project_task_list_visit, { project_id: urlProjectId });
     }
