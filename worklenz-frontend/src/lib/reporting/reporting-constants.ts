@@ -1,4 +1,16 @@
 import React, { ReactNode, lazy } from 'react';
+import {
+  DashboardOutlined,
+  AppstoreOutlined,
+  TeamOutlined,
+  UnorderedListOutlined,
+  ClockCircleOutlined,
+  CalendarOutlined,
+  ProjectOutlined,
+  BarChartOutlined,
+  FileOutlined,
+} from '@/shared/antd-imports';
+
 const OverviewReports = lazy(() => import('@/pages/reporting/overview-reports/overview-reports'));
 const ProjectsReports = lazy(() => import('@/pages/reporting/projects-reports/projects-reports'));
 const MembersReports = lazy(() => import('@/pages/reporting/members-reports/members-reports'));
@@ -22,6 +34,7 @@ export type ReportingMenuItems = {
   defaultValue: string;
   endpoint: string;
   element: ReactNode;
+  icon?: ReactNode;
   children?: ReportingMenuItems[];
 };
 
@@ -33,6 +46,7 @@ export const reportingsItems: ReportingMenuItems[] = [
     defaultValue: 'Overview',
     endpoint: 'overview',
     element: React.createElement(OverviewReports),
+    icon: React.createElement(DashboardOutlined),
   },
   {
     key: 'projects',
@@ -40,6 +54,7 @@ export const reportingsItems: ReportingMenuItems[] = [
     defaultValue: 'Projects',
     endpoint: 'projects',
     element: React.createElement(ProjectsReports),
+    icon: React.createElement(AppstoreOutlined),
   },
   {
     key: 'members',
@@ -47,6 +62,7 @@ export const reportingsItems: ReportingMenuItems[] = [
     defaultValue: 'Members',
     endpoint: 'members',
     element: React.createElement(MembersReports),
+    icon: React.createElement(TeamOutlined),
   },
   {
     key: 'all-tasks',
@@ -54,6 +70,7 @@ export const reportingsItems: ReportingMenuItems[] = [
     defaultValue: 'Tasks',
     endpoint: 'all-tasks',
     element: React.createElement(AllTasksReports),
+    icon: React.createElement(UnorderedListOutlined),
   },
   {
     key: 'time-sheet',
@@ -61,6 +78,7 @@ export const reportingsItems: ReportingMenuItems[] = [
     defaultValue: 'Time Reports',
     endpoint: 'time-sheets',
     element: null,
+    icon: React.createElement(ClockCircleOutlined),
     children: [
       {
         key: 'time-sheet-overview',
@@ -68,6 +86,7 @@ export const reportingsItems: ReportingMenuItems[] = [
         defaultValue: 'Timesheet',
         endpoint: 'time-sheet-overview',
         element: React.createElement(OverviewTimeReports),
+        icon: React.createElement(CalendarOutlined),
       },
       {
         key: 'time-sheet-projects',
@@ -75,6 +94,7 @@ export const reportingsItems: ReportingMenuItems[] = [
         defaultValue: 'Projects',
         endpoint: 'time-sheet-projects',
         element: React.createElement(ProjectsTimeReports),
+        icon: React.createElement(ProjectOutlined),
       },
       {
         key: 'time-sheet-members',
@@ -82,6 +102,7 @@ export const reportingsItems: ReportingMenuItems[] = [
         defaultValue: 'Members',
         endpoint: 'time-sheet-members',
         element: React.createElement(MembersTimeReports),
+        icon: React.createElement(TeamOutlined),
       },
       {
         key: 'time-sheet-estimate-vs-actual',
@@ -89,6 +110,7 @@ export const reportingsItems: ReportingMenuItems[] = [
         defaultValue: 'Estimate vs Actual',
         endpoint: 'time-sheet-estimate-vs-actual',
         element: React.createElement(EstimatedVsActualTimeReports),
+        icon: React.createElement(BarChartOutlined),
       },
       {
         key: 'time-sheet-logs',
@@ -96,6 +118,7 @@ export const reportingsItems: ReportingMenuItems[] = [
         defaultValue: 'Logs',
         endpoint: 'time-sheet-logs',
         element: React.createElement(TimeLogsReports),
+        icon: React.createElement(FileOutlined),
       },
     ],
   },
