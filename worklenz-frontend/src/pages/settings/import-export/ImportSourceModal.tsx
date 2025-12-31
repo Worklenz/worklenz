@@ -28,6 +28,17 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const [addUsers, setAddUsers] = React.useState(true);
   const [userEmails, setUserEmails] = React.useState<Record<string, string>>({});
 
+  // New state for showing the mapping out screen
+  const [isImporting, setIsImporting] = React.useState(false);
+
+  // Reset isImporting when modal is opened with a new source
+  React.useEffect(() => {
+    if (open) {
+      setIsImporting(false);
+      setStep(0);
+    }
+  }, [open, source]);
+
   if (!source) return null;
 
   const steps = [
@@ -750,85 +761,159 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         borderRadius: 16,
         minHeight: 900,
         height: '80vh',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
       }}
       destroyOnClose
       centered
     >
-      {/* Stepper */}
-      <div
-        style={{
-          padding: '32px 48px 0 48px',
-          background: '#23272f',
-          borderTopLeftRadius: 12,
-          borderTopRightRadius: 12,
-        }}
-      >
-        <Steps current={step} labelPlacement="vertical" items={steps.map(title => ({ title }))} />
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'row', minHeight: 420, background: '#23272f' }}>
+      {isImporting ? (
         <div
           style={{
-            flex: 1,
-            padding: '48px 48px 24px 48px',
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'center',
-          }}
-        >
-          {renderStepContent()}
-        </div>
-        <div
-          style={{
-            width: 400,
-            display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: '#e9eef6',
-            borderTopRightRadius: 12,
-            borderBottomRightRadius: 12,
+            height: '100%',
+            minHeight: 700,
           }}
         >
-          {/* Placeholder for illustration, you can replace with an SVG or image */}
+          <div style={{ marginTop: 48, marginBottom: 32 }}>
+            {/* SVG or illustration matching the screenshot */}
+            <img
+              src="https://assets.atlassian.com/dam/jcr:6b7e2b7c-2e2e-4e2e-8e2e-2e2e2e2e2e2e/Import%20mapping%20illustration.svg"
+              alt="Mapping Illustration"
+              style={{ width: 340, maxWidth: '100%' }}
+            />
+          </div>
+          <Typography.Title
+            level={2}
+            style={{ color: '#fff', marginBottom: 16, textAlign: 'center' }}
+          >
+            We’re mapping out the new space
+          </Typography.Title>
+          <Typography.Paragraph
+            style={{ color: '#b0b0b0', fontSize: 18, textAlign: 'center', marginBottom: 24 }}
+          >
+            Take a quick break and we’ll do the rest.
+            <br />
+            We’ll take you to the space once it’s ready.
+          </Typography.Paragraph>
+          <div style={{ color: '#b0b0b0', fontSize: 17, marginBottom: 32, textAlign: 'center' }}>
+            <div style={{ marginBottom: 8 }}>✔ Verifying your CSV data</div>
+            <div style={{ marginBottom: 8 }}>✔ Setting up user profiles</div>
+            <div>✔ Creating a new space</div>
+          </div>
+          <Button type="primary" style={{ marginBottom: 16, minWidth: 180 }} onClick={onClose}>
+            Start a new import
+          </Button>
+          <Button type="link" style={{ color: '#4096ff', fontSize: 16 }}>
+            Give feedback
+          </Button>
+        </div>
+      ) : (
+        <>
+          {/* Stepper */}
           <div
             style={{
-              width: 320,
-              height: 180,
-              background: '#fff',
-              borderRadius: 16,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 2px 16px 0 #b3c6e6',
+              padding: '32px 48px 0 48px',
+              background: '#23272f',
+              borderTopLeftRadius: 12,
+              borderTopRightRadius: 12,
             }}
           >
-            {/* You can replace this with a real SVG illustration */}
-            <span style={{ fontSize: 64 }}>{source.icon}</span>
+            <Steps
+              current={step}
+              labelPlacement="vertical"
+              items={steps.map(title => ({ title }))}
+            />
           </div>
-        </div>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          alignItems: 'center',
-          background: '#23272f',
-          borderBottomLeftRadius: 12,
-          borderBottomRightRadius: 12,
-          padding: '16px 32px 16px 0',
-          borderTop: '1px solid #232324',
-        }}
-      >
-        <Button onClick={step === 0 ? onClose : () => setStep(step - 1)} style={{ marginRight: 8 }}>
-          {step === 0 ? 'Back' : 'Previous'}
-        </Button>
-        <Button
-          type="primary"
-          onClick={() => setStep(s => Math.min(s + 1, steps.length - 1))}
-          disabled={step === steps.length - 1}
-        >
-          {step === steps.length - 1 ? 'Finish' : 'Next'}
-        </Button>
-      </div>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              minHeight: 420,
+              background: '#23272f',
+              maxHeight: 'calc(90vh - 120px)',
+              overflow: 'auto',
+              width: '100%',
+            }}
+          >
+            <div
+              style={{
+                flex: 1,
+                padding: '48px 48px 24px 48px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+              }}
+            >
+              {renderStepContent()}
+            </div>
+            <div
+              style={{
+                width: 400,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#e9eef6',
+                borderTopRightRadius: 12,
+                borderBottomRightRadius: 12,
+              }}
+            >
+              {/* Placeholder for illustration, you can replace with an SVG or image */}
+              <div
+                style={{
+                  width: 320,
+                  height: 180,
+                  background: '#fff',
+                  borderRadius: 16,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 16px 0 #b3c6e6',
+                }}
+              >
+                {/* You can replace this with a real SVG illustration */}
+                <span style={{ fontSize: 64 }}>{source.icon}</span>
+              </div>
+            </div>
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              background: '#23272f',
+              borderBottomLeftRadius: 12,
+              borderBottomRightRadius: 12,
+              padding: '16px 32px 16px 0',
+              borderTop: '1px solid #232324',
+            }}
+          >
+            <Button
+              onClick={step === 0 ? onClose : () => setStep(step - 1)}
+              style={{ marginRight: 8 }}
+            >
+              {step === 0 ? 'Back' : 'Previous'}
+            </Button>
+            <Button
+              type="primary"
+              onClick={() => {
+                if (step === steps.length - 1) {
+                  setIsImporting(true);
+                } else {
+                  setStep(s => Math.min(s + 1, steps.length - 1));
+                }
+              }}
+              disabled={isImporting}
+            >
+              {step === steps.length - 1 ? 'Finish' : 'Next'}
+            </Button>
+          </div>
+        </>
+      )}
     </Modal>
   );
 };
