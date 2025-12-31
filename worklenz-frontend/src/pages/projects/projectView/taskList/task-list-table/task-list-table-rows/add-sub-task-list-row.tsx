@@ -1,7 +1,7 @@
 import { Input, Button } from '@/shared/antd-imports';
 import React, { useRef, useEffect, useState } from 'react';
 import { useAppSelector } from '../../../../../../hooks/useAppSelector';
-import { colors } from '../../../../../../styles/colors';
+import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 
 interface AddSubTaskListRowProps {

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import {
   Button,
   ConfigProvider,
@@ -27,6 +27,7 @@ import ProjectCategoryCell from '@/pages/reporting/projects-reports/components/p
 import ProjectDaysLeftAndOverdueCell from '@/pages/reporting/projects-reports/components/projects-reports-table/table-cells/project-days-left-and-overdue-cell/project-days-left-and-overdue-cell';
 import ProjectUpdateCell from '@/pages/reporting/projects-reports/components/projects-reports-table/table-cells/project-update-cell/project-update-cell';
 import {
+  fetchProjectData,
   resetProjectReports,
   setField,
   setIndex,
@@ -38,45 +39,45 @@ import { colors } from '@/styles/colors';
 import CustomTableTitle from '@/components/CustomTableTitle';
 import { IRPTProject } from '@/types/reporting/reporting.types';
 import ProjectReportsDrawer from '@/features/reporting/projectReports/projectReportsDrawer/ProjectReportsDrawer';
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/shared/constants';
+import { PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import './projects-reports-table.css';
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
-import logger from '@/utils/errorLogger';
-import { reportingApiService } from '@/api/reporting/reporting.api.service';
 
-interface ReportingOverviewProjectsTableProps {
-  searchQuery: string;
-  teamsId: string | null;
-}
-
-const ReportingOverviewProjectsTable = ({
-  searchQuery,
-  teamsId,
-}: ReportingOverviewProjectsTableProps) => {
+const ProjectsReportsTable = () => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('reporting-projects');
-
-  const { includeArchivedProjects } = useAppSelector(state => state.reportingReducer);
-  const [projectList, setProjectList] = useState<IRPTProject[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [pagination, setPagination] = useState<PaginationProps>({
-    current: 1,
-    pageSize: DEFAULT_PAGE_SIZE,
-    total: 0,
-  });
-
-  const [order, setOrder] = useState<'asc' | 'desc'>('asc');
-  const [field, setField] = useState<string>('name');
 
   const [selectedProject, setSelectedProject] = useState<IRPTProject | null>(null);
   const { projectStatuses, loading: projectStatusesLoading } = useAppSelector(
     state => state.projectStatusesReducer
   );
 
-  const handleDrawerOpen = (record: IRPTProject) => {
-    setSelectedProject(record);
-    dispatch(toggleProjectReportsDrawer());
-  };
+  const {
+    projectList,
+    isLoading,
+    total,
+    index,
+    pageSize,
+    order,
+    field,
+    searchQuery,
+    selectedProjectStatuses,
+    selectedProjectHealths,
+    selectedProjectCategories,
+    selectedProjectManagers,
+    archived,
+  } = useAppSelector(state => state.projectReportsReducer);
+
+  const columnsVisibility = useAppSelector(state => state.projectReportsTableColumnsReducer);
+
+  // Memoize the drawer open handler to prevent recreation on every render
+  const handleDrawerOpen = useCallback(
+    (record: IRPTProject) => {
+      setSelectedProject(record);
+      dispatch(toggleProjectReportsDrawer());
+    },
+    [dispatch]
+  );
 
   const columns: TableColumnsType<IRPTProject> = useMemo(
     () => [
@@ -241,25 +242,48 @@ const ReportingOverviewProjectsTable = ({
         width: 200,
       },
     ],
-    [t, order]
+    [t, order, handleDrawerOpen]
   );
 
-  const handleTableChange = (pagination: PaginationProps, filters: any, sorter: any) => {
-    if (sorter.order) setOrder(sorter.order);
-    if (sorter.field) setField(sorter.field);
-    setPagination({ ...pagination, current: pagination.current });
-    setPagination({ ...pagination, pageSize: pagination.pageSize });
-  };
+  // filter columns based on the `hidden` state from Redux
+  const visibleColumns = useMemo(
+    () => columns.filter(col => columnsVisibility[col.key as string]),
+    [columns, columnsVisibility]
+  );
+
+  // Memoize the table change handler to prevent recreation on every render
+  const handleTableChange = useCallback(
+    (pagination: PaginationProps, filters: any, sorter: any) => {
+      if (sorter.order) dispatch(setOrder(sorter.order));
+      if (sorter.field) dispatch(setField(sorter.field));
+      dispatch(setIndex(pagination.current));
+      dispatch(setPageSize(pagination.pageSize));
+    },
+    [dispatch]
+  );
 
   useEffect(() => {
+    if (!isLoading) dispatch(fetchProjectData());
     if (projectStatuses.length === 0 && !projectStatusesLoading) dispatch(fetchProjectStatuses());
-  }, []);
+  }, [
+    dispatch,
+    searchQuery,
+    selectedProjectStatuses,
+    selectedProjectHealths,
+    selectedProjectCategories,
+    selectedProjectManagers,
+    archived,
+    index,
+    pageSize,
+    order,
+    field,
+  ]);
 
   useEffect(() => {
     return () => {
       dispatch(resetProjectReports());
     };
-  }, []);
+  }, [dispatch]);
 
   const tableRowProps = useMemo(
     () => ({
@@ -283,56 +307,42 @@ const ReportingOverviewProjectsTable = ({
     []
   );
 
-  const fetchOverviewProjects = async () => {
-    setIsLoading(true);
-    try {
-      const params = {
-        team: teamsId,
-        index: pagination.current,
-        size: pagination.pageSize,
-        search: searchQuery,
-        filter: 0,
-        order: order,
-        field: field,
-        archived: includeArchivedProjects,
-      };
-      const response = await reportingApiService.getOverviewProjects(params);
-      if (response.done) {
-        setProjectList(response.body.projects || []);
-        setPagination({ ...pagination, total: response.body.total });
-      }
-    } catch (error) {
-      logger.error('fetchOverviewProjects', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Memoize pagination configuration to prevent recreation on every render
+  const paginationConfig = useMemo(
+    () => ({
+      showSizeChanger: true,
+      defaultPageSize: 10,
+      total: total,
+      current: index,
+      pageSizeOptions: PAGE_SIZE_OPTIONS,
+    }),
+    [total, index]
+  );
 
-  useEffect(() => {
-    fetchOverviewProjects();
-  }, [searchQuery, order, field]);
+  // Memoize scroll configuration to prevent recreation on every render
+  const scrollConfig = useMemo(() => ({ x: 'max-content' }), []);
+
+  // Memoize row key function to prevent recreation on every render
+  const getRowKey = useCallback((record: IRPTProject) => record.id, []);
+
+  // Memoize onRow function to prevent recreation on every render
+  const getRowProps = useCallback(() => tableRowProps, [tableRowProps]);
 
   return (
     <ConfigProvider {...tableConfig}>
       <Table
-        columns={columns}
+        columns={visibleColumns}
         dataSource={projectList}
-        pagination={{
-          showSizeChanger: true,
-          defaultPageSize: 10,
-          total: pagination.total,
-          current: pagination.current,
-          pageSizeOptions: PAGE_SIZE_OPTIONS,
-        }}
-        scroll={{ x: 'max-content' }}
+        pagination={paginationConfig}
+        scroll={scrollConfig}
         loading={isLoading}
         onChange={handleTableChange}
-        rowKey={record => record.id}
-        onRow={() => tableRowProps}
+        rowKey={getRowKey}
+        onRow={getRowProps}
       />
       {createPortal(<ProjectReportsDrawer selectedProject={selectedProject} />, document.body)}
     </ConfigProvider>
   );
 };
 
-export default ReportingOverviewProjectsTable;
+export default memo(ProjectsReportsTable);
