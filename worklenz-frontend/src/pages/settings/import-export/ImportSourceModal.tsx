@@ -31,6 +31,11 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   // New state for showing the mapping out screen
   const [isImporting, setIsImporting] = React.useState(false);
 
+  // --- Map values to work types step state ---
+  const [workTypeMapping, setWorkTypeMapping] = React.useState<Record<string, string>>({});
+  const [searchValue, setSearchValue] = React.useState('');
+  const [filter, setFilter] = React.useState('all');
+
   // Reset isImporting when modal is opened with a new source
   React.useEffect(() => {
     if (open) {
@@ -465,10 +470,205 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
           </div>
         );
       case 3:
+        // Map values to work types step
+        // Example values and work types (replace with real data as needed)
+        const csvValues = ['Bug', 'Story', 'Task'];
+        const workTypesList = [
+          {
+            key: 'bug',
+            label: 'Bug',
+            icon: <span style={{ color: '#ff4d4f' }}>🪲</span>,
+            level: 0,
+          },
+          {
+            key: 'task',
+            label: 'Task',
+            icon: <span style={{ color: '#4096ff' }}>☑️</span>,
+            level: 0,
+          },
+          {
+            key: 'story',
+            label: 'Story',
+            icon: <span style={{ color: '#22c55e' }}>📗</span>,
+            level: 0,
+          },
+          {
+            key: 'epic',
+            label: 'Epic',
+            icon: <span style={{ color: '#a855f7' }}>💎</span>,
+            level: 1,
+          },
+          {
+            key: 'subtask',
+            label: 'Sub-task',
+            icon: <span style={{ color: '#38bdf8' }}>📝</span>,
+            level: -1,
+          },
+          {
+            key: 'todo',
+            label: 'To Do',
+            icon: <span style={{ color: '#fbbf24' }}>📝</span>,
+            level: 0,
+          },
+          {
+            key: 'doing',
+            label: 'Doing',
+            icon: <span style={{ color: '#3b82f6' }}>🔄</span>,
+            level: 0,
+          },
+          {
+            key: 'done',
+            label: 'Done',
+            icon: <span style={{ color: '#22c55e' }}>✅</span>,
+            level: 0,
+          },
+        ];
+
+        // Filtered values
+        const filteredValues = csvValues.filter(
+          v =>
+            v.toLowerCase().includes(searchValue.toLowerCase()) &&
+            (filter === 'all' || (filter === 'mapped' ? workTypeMapping[v] : !workTypeMapping[v]))
+        );
+
         return (
-          <Typography.Title level={3} style={{ color: '#fff' }}>
-            Map values (step 4)
-          </Typography.Title>
+          <div style={{ width: '100%' }}>
+            <Typography.Title level={3} style={{ color: '#fff', marginBottom: 8 }}>
+              Map values to work types
+            </Typography.Title>
+            <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 16 }}>
+              Build more structure into your space by mapping values within the Issue Type column to
+              Worklenz work types. You can also create new work types based on your space
+              permissions.{' '}
+              <a href="#" style={{ color: '#4096ff' }}>
+                Read about mapping work types
+              </a>
+            </Typography.Paragraph>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+              <Input
+                placeholder="Search values"
+                value={searchValue}
+                onChange={e => setSearchValue(e.target.value)}
+                style={{
+                  width: 220,
+                  background: '#18181a',
+                  color: '#fff',
+                  border: '1px solid #333',
+                }}
+              />
+              <Select
+                value={filter}
+                onChange={setFilter}
+                style={{ width: 120 }}
+                dropdownStyle={{ background: '#23272f', color: '#fff' }}
+              >
+                <Select.Option value="all">Values: All</Select.Option>
+                <Select.Option value="mapped">Mapped</Select.Option>
+                <Select.Option value="unmapped">Unmapped</Select.Option>
+              </Select>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                color: '#b0b0b0',
+                fontWeight: 500,
+                fontSize: 15,
+                marginBottom: 8,
+              }}
+            >
+              <span style={{ flex: 2, paddingLeft: 8 }}>
+                <span role="img" aria-label="values" style={{ marginRight: 8 }}>
+                  📦
+                </span>
+                Values in the selected column
+              </span>
+              <span style={{ flex: 1 }}></span>
+              <span style={{ flex: 2, display: 'flex', alignItems: 'center' }}>
+                <span
+                  role="img"
+                  aria-label="work types"
+                  style={{ marginRight: 8, color: '#4096ff' }}
+                >
+                  🏷️
+                </span>
+                Worklenz work types
+              </span>
+            </div>
+            {filteredValues.length === 0 ? (
+              <div style={{ color: '#888', margin: '24px 0' }}>No values found.</div>
+            ) : (
+              filteredValues.map(value => (
+                <div
+                  key={value}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    background: '#18181a',
+                    borderRadius: 8,
+                    marginBottom: 8,
+                    minHeight: 44,
+                  }}
+                >
+                  <span style={{ flex: 2, paddingLeft: 8, color: '#fff', fontSize: 16 }}>
+                    {value}
+                  </span>
+                  <span style={{ flex: 1, textAlign: 'center', color: '#b0b0b0', fontSize: 20 }}>
+                    &rarr;
+                  </span>
+                  <span style={{ flex: 2 }}>
+                    <Select
+                      value={workTypeMapping[value] || undefined}
+                      onChange={val => setWorkTypeMapping(m => ({ ...m, [value]: val }))}
+                      placeholder="Select work type"
+                      style={{
+                        width: '100%',
+                        background: '#23272f',
+                        color: '#fff',
+                        border: '1px solid #333',
+                      }}
+                      dropdownStyle={{ background: '#23272f', color: '#fff' }}
+                      dropdownRender={menu => (
+                        <>
+                          <div
+                            style={{
+                              padding: '8px 12px',
+                              color: '#b0b0b0',
+                              fontWeight: 500,
+                              fontSize: 13,
+                            }}
+                          >
+                            MAP TO A SUGGESTED WORK TYPE
+                          </div>
+                          {menu}
+                          <div style={{ borderTop: '1px solid #333', margin: '8px 0' }} />
+                          <div
+                            style={{ padding: '8px 12px', color: '#4096ff', cursor: 'pointer' }}
+                            onClick={() => setWorkTypeMapping(m => ({ ...m, [value]: undefined }))}
+                          >
+                            Clear selection
+                          </div>
+                        </>
+                      )}
+                      optionLabelProp="label"
+                    >
+                      {workTypesList.map(wt => (
+                        <Select.Option key={wt.key} value={wt.key} label={wt.label}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {wt.icon}
+                            <span style={{ color: '#fff' }}>{wt.label}</span>
+                            <span style={{ color: '#b0b0b0', fontSize: 13, marginLeft: 8 }}>
+                              Level {wt.level}
+                            </span>
+                          </span>
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
         );
       case 4:
         // Move users step
