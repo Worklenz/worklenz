@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, Button, Typography, Upload, Steps, Collapse, Select, Input, Tooltip } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
+import Papa from 'papaparse';
 
 interface ImportSourceModalProps {
   open: boolean;
@@ -18,6 +19,12 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const [configOpen, setConfigOpen] = React.useState(false);
   const [encoding, setEncoding] = React.useState('UTF-8');
   const [delimiter, setDelimiter] = React.useState('');
+
+  // State for CSV columns and mapping
+  const [csvColumns, setCsvColumns] = React.useState<string[]>([]);
+  const [fieldMappings, setFieldMappings] = React.useState<Record<string, string>>({});
+  const [includeInImport, setIncludeInImport] = React.useState<Record<string, boolean>>({});
+
   if (!source) return null;
 
   const steps = [
@@ -53,6 +60,23 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 background: '#232324',
                 border: '1px dashed #333',
                 borderRadius: 8,
+              }}
+              accept=".csv"
+              showUploadList={false}
+              beforeUpload={file => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                  const text = e.target?.result as string;
+                  const parsed = Papa.parse<string[]>(text, { header: true });
+                  if (parsed.meta.fields) {
+                    setCsvColumns(parsed.meta.fields);
+                    // Reset mappings and checkboxes
+                    setFieldMappings({});
+                    setIncludeInImport(Object.fromEntries(parsed.meta.fields.map(f => [f, true])));
+                  }
+                };
+                reader.readAsText(file);
+                return false; // Prevent upload
               }}
             >
               <Button type="primary">Upload CSV file</Button>
@@ -367,49 +391,62 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 marginTop: 16,
               }}
             >
-              <span style={{ flex: 2, paddingLeft: 8 }}>Columns in Azure DevOps CSV</span>
+              <span style={{ flex: 2, paddingLeft: 8 }}>Columns in CSV</span>
               <span style={{ flex: 2 }}>Jira fields</span>
               <span style={{ width: 140, textAlign: 'center' }}>Include in import</span>
             </div>
-            {/* Mapping row (example) */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                background: '#23272f',
-                borderRadius: 6,
-                marginBottom: 4,
-                minHeight: 44,
-              }}
-            >
-              <span style={{ flex: 2, paddingLeft: 8, color: '#fff' }}>
-                Access key ID,Secret access key
-              </span>
-              <span style={{ flex: 2 }}>
-                <Select placeholder="Select a field to map" style={{ width: '100%' }} showSearch>
-                  <Select.Option value="assignee">Assignee</Select.Option>
-                  <Select.Option value="attachment">Attachment</Select.Option>
-                  <Select.Option value="comment">Comment</Select.Option>
-                  <Select.Option value="created">Created</Select.Option>
-                  <Select.Option value="creator">Creator</Select.Option>
-                  <Select.Option value="description">Description</Select.Option>
-                  <Select.Option value="duedate">Due date</Select.Option>
-                  <Select.Option value="environment">Environment</Select.Option>
-                  <Select.Option value="issuetype">Issue Type</Select.Option>
-                  <Select.Option value="labels">Labels</Select.Option>
-                  {/* ...more fields... */}
-                  <Select.Option value="custom">Create a new custom field</Select.Option>
-                </Select>
-              </span>
-              <span style={{ width: 140, textAlign: 'center' }}>
-                <input
-                  type="checkbox"
-                  checked
-                  style={{ accentColor: '#4096ff', width: 18, height: 18 }}
-                  readOnly
-                />
-              </span>
-            </div>
+            {/* Mapping rows for each CSV column */}
+            {csvColumns.length === 0 ? (
+              <div style={{ color: '#888', margin: '24px 0' }}>
+                Upload a CSV file to map fields.
+              </div>
+            ) : (
+              csvColumns.map(col => (
+                <div
+                  key={col}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    background: '#23272f',
+                    borderRadius: 6,
+                    marginBottom: 4,
+                    minHeight: 44,
+                  }}
+                >
+                  <span style={{ flex: 2, paddingLeft: 8, color: '#fff' }}>{col}</span>
+                  <span style={{ flex: 2 }}>
+                    <Select
+                      placeholder="Select a field to map"
+                      style={{ width: '100%' }}
+                      showSearch
+                      value={fieldMappings[col] || undefined}
+                      onChange={val => setFieldMappings(m => ({ ...m, [col]: val }))}
+                    >
+                      <Select.Option value="assignee">Assignee</Select.Option>
+                      <Select.Option value="attachment">Attachment</Select.Option>
+                      <Select.Option value="comment">Comment</Select.Option>
+                      <Select.Option value="created">Created</Select.Option>
+                      <Select.Option value="creator">Creator</Select.Option>
+                      <Select.Option value="description">Description</Select.Option>
+                      <Select.Option value="duedate">Due date</Select.Option>
+                      <Select.Option value="environment">Environment</Select.Option>
+                      <Select.Option value="issuetype">Issue Type</Select.Option>
+                      <Select.Option value="labels">Labels</Select.Option>
+                      {/* ...more fields... */}
+                      <Select.Option value="custom">Create a new custom field</Select.Option>
+                    </Select>
+                  </span>
+                  <span style={{ width: 140, textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={includeInImport[col] !== false}
+                      onChange={e => setIncludeInImport(i => ({ ...i, [col]: e.target.checked }))}
+                      style={{ accentColor: '#4096ff', width: 18, height: 18 }}
+                    />
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         );
       case 3:

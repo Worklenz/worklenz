@@ -49,6 +49,7 @@
     "libphonenumber-js": "^1.12.33",
     "mixpanel-browser": "^2.56.0",
     "nanoid": "^5.1.5",
+    "papaparse": "^5.5.3",
     "re-resizable": "^6.10.3",
     "react": "^18.3.1",
     "react-chartjs-2": "^5.2.0",
