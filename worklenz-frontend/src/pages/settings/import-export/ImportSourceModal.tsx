@@ -301,7 +301,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               Map space fields
             </Typography.Title>
             <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 16 }}>
-              We’ve automatically mapped a few columns from the CSV file to Jira fields. Verify and{' '}
+              We’ve automatically mapped a few columns from the CSV file to <b>Worklenz fields</b>.
+              Verify and{' '}
               <a href="#" style={{ color: '#4096ff' }}>
                 map any remaining columns
               </a>
@@ -465,7 +466,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         return (
           <div style={{ width: '100%' }}>
             <Typography.Title level={3} style={{ color: '#fff', marginBottom: 8 }}>
-              Move users to Jira
+              Move users to Worklenz
             </Typography.Title>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
               <div
@@ -519,7 +520,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               </span>
               <span style={{ width: 40 }}></span>
               <span style={{ flex: 3 }}>
-                <span style={{ marginRight: 8 }}>🛫</span>Users moving to Jira (0)
+                <span style={{ marginRight: 8 }}>🛫</span>Users moving to Worklenz (0)
               </span>
             </div>
             {/* User mapping rows */}
@@ -563,10 +564,166 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
           </div>
         );
       case 5:
+        // Review details step
+        // Example summary values (replace with real state as needed)
+        const spaceName = 'worklenz 2'; // TODO: get from state
+        const spaceType = 'Kanban'; // TODO: get from state
+        const mappedFields = Object.values(fieldMappings).filter(Boolean).length;
+        const totalFields = csvColumns.length;
+        const workTypes = 1; // TODO: get from mapping logic
+        const usersCount = Object.values(userEmails).filter(Boolean).length;
+        const workItems = 9993; // TODO: get from CSV row count
         return (
-          <Typography.Title level={3} style={{ color: '#fff' }}>
-            Review details (step 6)
-          </Typography.Title>
+          <div style={{ width: '100%' }}>
+            <Typography.Title level={3} style={{ color: '#fff', marginBottom: 8 }}>
+              Review space details
+            </Typography.Title>
+            <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 24 }}>
+              We’re ready to import your team’s data. Here’s a summary of what’s being imported into
+              Worklenz.
+              <br />
+              Confirm the details before starting the import.
+            </Typography.Paragraph>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 600 }}>
+              {/* Space card */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: '#18181a',
+                  borderRadius: 12,
+                  padding: 20,
+                  gap: 20,
+                }}
+              >
+                <img
+                  src="https://img.icons8.com/fluency/48/000000/trello.png"
+                  alt="space"
+                  style={{ width: 48, height: 48 }}
+                />
+                <div>
+                  <div style={{ color: '#fff', fontWeight: 600, fontSize: 18 }}>
+                    1 Worklenz space: {spaceName}
+                  </div>
+                  <div style={{ color: '#b0b0b0', fontSize: 15 }}>
+                    A team-managed software space ({spaceType}) will be created.
+                  </div>
+                </div>
+              </div>
+              {/* Fields card */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: '#18181a',
+                  borderRadius: 12,
+                  padding: 20,
+                  gap: 20,
+                }}
+              >
+                <img
+                  src="https://img.icons8.com/fluency/48/000000/columns.png"
+                  alt="fields"
+                  style={{ width: 48, height: 48 }}
+                />
+                <div>
+                  <div style={{ color: '#fff', fontWeight: 600, fontSize: 18 }}>
+                    {mappedFields}/{totalFields} fields
+                  </div>
+                  <div style={{ color: '#b0b0b0', fontSize: 15 }}>
+                    {mappedFields} columns will be mapped to existing Worklenz fields.
+                  </div>
+                </div>
+              </div>
+              {/* Work type card */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: '#18181a',
+                  borderRadius: 12,
+                  padding: 20,
+                  gap: 20,
+                }}
+              >
+                <img
+                  src="https://img.icons8.com/fluency/48/000000/task.png"
+                  alt="work type"
+                  style={{ width: 48, height: 48 }}
+                />
+                <div>
+                  <div style={{ color: '#fff', fontWeight: 600, fontSize: 18 }}>
+                    {workTypes} work type
+                  </div>
+                  <div style={{ color: '#b0b0b0', fontSize: 15 }}>
+                    Since no values were mapped to Worklenz work types, all work items will be
+                    mapped to Task (level 0) by default.
+                  </div>
+                </div>
+              </div>
+              {/* Users card */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: '#18181a',
+                  borderRadius: 12,
+                  padding: 20,
+                  gap: 20,
+                }}
+              >
+                <img
+                  src="https://img.icons8.com/fluency/48/000000/add-user-group-man-man.png"
+                  alt="users"
+                  style={{ width: 48, height: 48 }}
+                />
+                <div>
+                  <div style={{ color: '#fff', fontWeight: 600, fontSize: 18 }}>
+                    {usersCount === 0 ? 'No users' : `${usersCount} users`}
+                  </div>
+                  <div style={{ color: '#b0b0b0', fontSize: 15 }}>
+                    {usersCount === 0
+                      ? "You haven't added users to the space. Assignee and reporter fields will be unassigned and user @mentions in comments will be converted to plain text."
+                      : 'Users will be added to the space.'}
+                  </div>
+                </div>
+              </div>
+              {/* Work items card */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: '#18181a',
+                  borderRadius: 12,
+                  padding: 20,
+                  gap: 20,
+                }}
+              >
+                <img
+                  src="https://img.icons8.com/fluency/48/000000/list.png"
+                  alt="work items"
+                  style={{ width: 48, height: 48 }}
+                />
+                <div>
+                  <div style={{ color: '#fff', fontWeight: 600, fontSize: 18 }}>
+                    {workItems} work items
+                  </div>
+                  <div style={{ color: '#b0b0b0', fontSize: 15 }}>
+                    Each row of the CSV data will be imported as a work item.{' '}
+                    <a href="#" style={{ color: '#4096ff' }}>
+                      What is a work item?
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style={{ marginTop: 32, color: '#8fa7d3', fontSize: 15 }}>
+              <a href="#" style={{ color: '#8fa7d3', textDecoration: 'underline' }}>
+                Download a configuration file
+              </a>{' '}
+              to use the same space preferences in your next import.
+            </div>
+          </div>
         );
       default:
         return null;
