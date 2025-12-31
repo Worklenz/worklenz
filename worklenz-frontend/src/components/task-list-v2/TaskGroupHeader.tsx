@@ -325,11 +325,11 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
 
   // Handle category change
   const handleCategoryChange = useCallback(
-    async (categoryId: string, e?: React.MouseEvent) => {
-      e?.stopPropagation();
+    async (categoryId: string) => {
       if (isChangingCategory) return;
 
       setIsChangingCategory(true);
+      setDropdownVisible(false);
       try {
         // Extract status ID from group ID (format: "status-{statusId}")
         const statusId = group.id.replace('status-', '');
@@ -388,9 +388,9 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
             <span>{category.name}</span>
           </div>
         ),
-        onClick: (e: any) => {
-          e?.domEvent?.stopPropagation();
-          handleCategoryChange(category.id || '', e?.domEvent);
+        onClick: (info: any) => {
+          info?.domEvent?.stopPropagation();
+          handleCategoryChange(category.id || '');
         },
       }));
 
@@ -399,6 +399,9 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
         icon: <ArrowPathIcon className="h-4 w-4" />,
         label: t('changeCategory'),
         children: categorySubMenuItems,
+        onTitleClick: (info: any) => {
+          info?.domEvent?.stopPropagation();
+        },
       } as any);
     }
 
