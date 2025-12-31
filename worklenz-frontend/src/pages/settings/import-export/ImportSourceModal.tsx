@@ -14,49 +14,118 @@ interface ImportSourceModalProps {
 }
 
 export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onClose, source }) => {
+  // Prevent ReferenceError by checking for source before any usage
+  if (!source) return null;
+
+  // --- Dynamic import flow state ---
+  // List of direct integration apps (use 4-step flow)
+  const directIntegrationApps = ['asana', 'monday', 'clickup', 'trello'];
+  // Determine integration type
+  const integrationType =
+    source && directIntegrationApps.includes(source.key.toLowerCase()) ? 'direct' : 'csv';
+
+  // Steps for each flow
+  const steps =
+    integrationType === 'direct'
+      ? ['Select list', 'Create space', 'Review details', 'Import data']
+      : ['Upload CSV', 'Set up space', 'Map fields', 'Map values', 'Move users', 'Review details'];
+
   const [step, setStep] = React.useState(0);
   const [csvSettingsOpen, setCsvSettingsOpen] = React.useState(false);
   const [configOpen, setConfigOpen] = React.useState(false);
   const [encoding, setEncoding] = React.useState('UTF-8');
-  const [delimiter, setDelimiter] = React.useState('');
 
   // State for CSV columns and mapping
   const [csvColumns, setCsvColumns] = React.useState<string[]>([]);
   const [fieldMappings, setFieldMappings] = React.useState<Record<string, string>>({});
   const [includeInImport, setIncludeInImport] = React.useState<Record<string, boolean>>({});
-  // Move users step state (must be top-level)
-  const [addUsers, setAddUsers] = React.useState(true);
+  // Delimiter for CSV parsing
+  const [delimiter, setDelimiter] = React.useState<string>('');
+
+  // Search/filter for mapping step
+  const [searchValue, setSearchValue] = React.useState<string>('');
+  const [filter, setFilter] = React.useState<string>('all');
+
+  // Work type mapping step
+  const [workTypeMapping, setWorkTypeMapping] = React.useState<Record<string, string>>({});
+
+  // Move users step state
+  const [addUsers, setAddUsers] = React.useState<boolean>(true);
   const [userEmails, setUserEmails] = React.useState<Record<string, string>>({});
 
-  // New state for showing the mapping out screen
-  const [isImporting, setIsImporting] = React.useState(false);
-
-  // --- Map values to work types step state ---
-  const [workTypeMapping, setWorkTypeMapping] = React.useState<Record<string, string>>({});
-  const [searchValue, setSearchValue] = React.useState('');
-  const [filter, setFilter] = React.useState('all');
-
-  // Reset isImporting when modal is opened with a new source
-  React.useEffect(() => {
-    if (open) {
-      setIsImporting(false);
-      setStep(0);
-    }
-  }, [open, source]);
-
-  if (!source) return null;
-
-  const steps = [
-    'Upload CSV',
-    'Set up space',
-    'Map fields',
-    'Map values',
-    'Move users',
-    'Review details',
-  ];
-
+  // Importing state
+  const [isImporting, setIsImporting] = React.useState<boolean>(false);
   // Example content for each step
   function renderStepContent() {
+    if (integrationType === 'direct') {
+      switch (step) {
+        case 0:
+          return (
+            <>
+              <Typography.Title level={3} style={{ marginBottom: 16, color: '#fff' }}>
+                Select a list or board
+              </Typography.Title>
+              <Typography.Paragraph style={{ marginBottom: 24, color: '#b0b0b0' }}>
+                Connect your {source?.label} account and select the list or board you want to
+                import.
+              </Typography.Paragraph>
+              {/* TODO: Add OAuth/token logic and list/board selection UI here */}
+              <Button type="primary" disabled>
+                Connect & Select List (Coming Soon)
+              </Button>
+            </>
+          );
+        case 1:
+          return (
+            <>
+              <Typography.Title level={3} style={{ marginBottom: 16, color: '#fff' }}>
+                Create a Worklenz space
+              </Typography.Title>
+              <Typography.Paragraph style={{ marginBottom: 24, color: '#b0b0b0' }}>
+                Configure your new space. These details will be used for your imported data.
+              </Typography.Paragraph>
+              {/* TODO: Add space creation form here */}
+              <Button type="primary" disabled>
+                Create Space (Coming Soon)
+              </Button>
+            </>
+          );
+        case 2:
+          return (
+            <>
+              <Typography.Title level={3} style={{ marginBottom: 16, color: '#fff' }}>
+                Review import details
+              </Typography.Title>
+              <Typography.Paragraph style={{ marginBottom: 24, color: '#b0b0b0' }}>
+                Here’s a summary of what will be imported. All fields, statuses, and users are
+                auto-mapped.
+              </Typography.Paragraph>
+              {/* TODO: Show summary of auto-mapped fields, users, etc. */}
+              <Button type="primary" disabled>
+                Import Data (Coming Soon)
+              </Button>
+            </>
+          );
+        case 3:
+          return (
+            <>
+              <Typography.Title level={3} style={{ marginBottom: 16, color: '#fff' }}>
+                Importing data...
+              </Typography.Title>
+              <Typography.Paragraph style={{ marginBottom: 24, color: '#b0b0b0' }}>
+                Your data is being imported from {source?.label}. This may take a few moments.
+              </Typography.Paragraph>
+              {/* TODO: Show import progress and completion UI */}
+              <Button type="primary" disabled>
+                Finish (Coming Soon)
+              </Button>
+            </>
+          );
+        default:
+          return null;
+      }
+    }
+    // ...existing code for CSV import steps...
     switch (step) {
       case 0:
         return (
@@ -91,7 +160,11 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                     setCsvColumns(parsed.meta.fields);
                     // Reset mappings and checkboxes
                     setFieldMappings({});
-                    setIncludeInImport(Object.fromEntries(parsed.meta.fields.map(f => [f, true])));
+                    setIncludeInImport(
+                      Object.fromEntries(
+                        (parsed.meta.fields as string[]).map((f: string) => [f, true])
+                      )
+                    );
                   }
                 };
                 reader.readAsText(file);
