@@ -10,13 +10,17 @@ import { TFunction } from 'i18next';
 import { getBase64 } from '@/utils/file-utils';
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import logger from '@/utils/errorLogger';
-import { IOrganization } from '@/types/admin-center/admin-center.types';
+import { IBillingAccountInfo, IOrganization } from '@/types/admin-center/admin-center.types';
+import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 
 interface OrganizationLogoProps {
   themeMode: string;
   organization: IOrganization | null;
   t: TFunction;
   refetch: () => void;
+  billingInfo: IBillingAccountInfo | null;
 }
 
 const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
@@ -24,7 +28,9 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
   organization,
   t,
   refetch,
+  billingInfo,
 }) => {
+  const dispatch = useAppDispatch();
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -33,6 +39,8 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
   );
   const [fileSize, setFileSize] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isFreePlan = billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
 
   useEffect(() => {
     if (organization?.logo_url) {
@@ -66,6 +74,16 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (uploading || !event.target.files || event.target.files.length === 0) return;
+
+    // Check if user is on free plan
+    if (isFreePlan) {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      message.warning('Upgrade to a paid plan to upload a custom logo.');
+      dispatch(toggleUpgradeModal());
+      return;
+    }
 
     const file = event.target.files[0];
     const validation = validateImage(file);
@@ -139,10 +157,17 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
   const handleRemoveLogo = async () => {
     if (deleting || !previewUrl) return;
 
+    // Check if user is on free plan
+    if (isFreePlan) {
+      message.warning('Upgrade to a paid plan to change or remove organization logo.');
+      dispatch(toggleUpgradeModal());
+      return;
+    }
+
     setDeleting(true);
     try {
       const res = await adminCenterApiService.deleteOrganizationLogo();
-      
+
       if (res.done) {
         setPreviewUrl(null);
         refetch();
@@ -159,9 +184,16 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
   };
 
   const triggerFileInput = () => {
-    if (!uploading) {
-      fileInputRef.current?.click();
+    if (uploading) return;
+
+    // Check if user is on free plan
+    if (isFreePlan) {
+      message.warning('Upgrade to a paid plan to upload a custom logo.');
+      dispatch(toggleUpgradeModal());
+      return;
     }
+
+    fileInputRef.current?.click();
   };
 
   const logoPreview = (
@@ -172,7 +204,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
         width: '100%',
         maxWidth: '240px',
         height: '140px',
-        cursor: uploading ? 'wait' : 'pointer',
+        cursor: uploading ? 'wait' : isFreePlan ? 'not-allowed' : 'pointer',
         position: 'relative',
         border: `2px dashed ${themeMode === 'dark' ? '#434343' : '#d9d9d9'}`,
         borderRadius: '12px',
@@ -182,15 +214,16 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
         backgroundColor: themeMode === 'dark' ? '#1f1f1f' : '#fafafa',
         transition: 'all 0.3s ease',
         overflow: 'hidden',
+        opacity: isFreePlan ? 0.7 : 1,
       }}
       onMouseEnter={e => {
-        if (!uploading && !previewUrl) {
+        if (!uploading && !previewUrl && !isFreePlan) {
           e.currentTarget.style.borderColor = themeMode === 'dark' ? '#595959' : '#40a9ff';
           e.currentTarget.style.backgroundColor = themeMode === 'dark' ? '#262626' : '#f0f0f0';
         }
       }}
       onMouseLeave={e => {
-        if (!previewUrl) {
+        if (!previewUrl && !isFreePlan) {
           e.currentTarget.style.borderColor = themeMode === 'dark' ? '#434343' : '#d9d9d9';
           e.currentTarget.style.backgroundColor = themeMode === 'dark' ? '#1f1f1f' : '#fafafa';
         }
@@ -215,6 +248,26 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
           <Spin indicator={<LoadingOutlined style={{ fontSize: 24, color: 'white' }} spin />} />
         </div>
       )}
+
+      {isFreePlan && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            zIndex: 2,
+            backgroundColor: 'rgba(0,0,0,0.1)',
+            borderRadius: '50%',
+            padding: '4px',
+            display: 'flex',
+          }}
+        >
+          <Tooltip title="Available on paid plans">
+            <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
+          </Tooltip>
+        </div>
+      )}
+
       {previewUrl ? (
         <img
           src={previewUrl}
@@ -260,29 +313,29 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
   return (
     <div style={{ width: '100%' }}>
       <Flex justify="space-between" align="flex-start" style={{ width: '100%' }}>
-          <Flex vertical gap={16} style={{ flex: 1 }}>
-            <Flex align="center" gap={8}>
-              <Typography.Title level={5} style={{ margin: 0 }}>
-                {t('logo')}
-              </Typography.Title>
-              <Tooltip title={t('logoFormatRecommendation')}>
-                <InfoCircleOutlined 
-                  style={{ 
-                    color: themeMode === 'dark' ? '#8c8c8c' : '#bfbfbf',
-                    cursor: 'help',
-                  }} 
-                />
-              </Tooltip>
-            </Flex>
+        <Flex vertical gap={16} style={{ flex: 1 }}>
+          <Flex align="center" gap={8}>
+            <Typography.Title level={5} style={{ margin: 0 }}>
+              {t('logo')}
+            </Typography.Title>
+            <Tooltip title={t('logoFormatRecommendation')}>
+              <InfoCircleOutlined
+                style={{
+                  color: themeMode === 'dark' ? '#8c8c8c' : '#bfbfbf',
+                  cursor: 'help',
+                }}
+              />
+            </Tooltip>
+          </Flex>
 
-            <Flex vertical gap={12}>
-              {logoPreview}
+          <Flex vertical gap={12}>
+            {logoPreview}
 
             {previewUrl && (
               <Flex gap={8} wrap="wrap">
-                <Button 
-                  size="small" 
-                  onClick={triggerFileInput} 
+                <Button
+                  size="small"
+                  onClick={triggerFileInput}
                   disabled={uploading || deleting}
                   type="default"
                 >
@@ -334,16 +387,16 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
               {t('logoUsage')}
             </Typography.Text>
           </Flex>
-          </Flex>
         </Flex>
+      </Flex>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/png,image/jpeg,image/jpg,image/webp"
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/jpg,image/webp"
+        style={{ display: 'none' }}
+        onChange={handleFileChange}
+      />
     </div>
   );
 };
