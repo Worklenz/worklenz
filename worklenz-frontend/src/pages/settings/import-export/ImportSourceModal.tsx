@@ -644,7 +644,13 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                           <div style={{ borderTop: '1px solid #333', margin: '8px 0' }} />
                           <div
                             style={{ padding: '8px 12px', color: '#4096ff', cursor: 'pointer' }}
-                            onClick={() => setWorkTypeMapping(m => ({ ...m, [value]: undefined }))}
+                            onClick={() => {
+                              setWorkTypeMapping(m => {
+                                const copy = { ...m };
+                                delete copy[value];
+                                return copy;
+                              });
+                            }}
                           >
                             Clear selection
                           </div>
@@ -672,105 +678,158 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         );
       case 4:
         // Move users step
-        // For demo, use first 5 CSV columns as 'users' (replace with real user extraction logic as needed)
-        const userRows = csvColumns.slice(0, 5);
+        // Real user detection: check for user-related columns in the CSV
+        const userColumnKeywords = ['assignee', 'reporter', 'email', 'user', 'username'];
+        const userColumns = csvColumns.filter(col =>
+          userColumnKeywords.some(keyword => col.toLowerCase().includes(keyword))
+        );
+        const noUsers = userColumns.length === 0;
+
+        // Extract unique user values from the CSV for userColumns
+        // For now, we don't have the parsed CSV rows in state, so we'll mock with empty array if not available
+        // TODO: Replace with actual parsed CSV data if available
+        let userRows: string[] = [];
+        if (!noUsers && window && (window as any).parsedCsvRows) {
+          // If parsedCsvRows is globally available (for dev/testing)
+          const parsedRows = (window as any).parsedCsvRows as Record<string, any>[];
+          const usersSet = new Set<string>();
+          parsedRows.forEach(row => {
+            userColumns.forEach(col => {
+              if (row[col] && typeof row[col] === 'string') {
+                usersSet.add(row[col]);
+              }
+            });
+          });
+          userRows = Array.from(usersSet);
+        }
+
         return (
           <div style={{ width: '100%' }}>
-            <Typography.Title level={3} style={{ color: '#fff', marginBottom: 8 }}>
+            <Typography.Title level={3} style={{ color: '#fff', marginBottom: 16 }}>
               Move users to Worklenz
             </Typography.Title>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+            {noUsers ? (
               <div
                 style={{
-                  background: addUsers ? '#22c55e' : '#23272f',
-                  borderRadius: 16,
-                  width: 48,
-                  height: 28,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: addUsers ? 'flex-end' : 'flex-start',
-                  padding: 4,
-                  cursor: 'pointer',
-                  marginRight: 12,
-                  transition: 'background 0.2s',
+                  background: '#19345c',
+                  borderRadius: 8,
+                  padding: 24,
+                  color: '#fff',
+                  marginBottom: 24,
+                  maxWidth: 600,
                 }}
-                onClick={() => setAddUsers(v => !v)}
               >
-                <div
-                  style={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: '50%',
-                    background: '#fff',
-                    boxShadow: '0 1px 4px #0002',
-                    transition: 'all 0.2s',
-                  }}
-                />
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+                  <span style={{ fontSize: 20, marginRight: 10, color: '#60a5fa' }}>ℹ️</span>
+                  <span style={{ fontWeight: 600, fontSize: 18 }}>
+                    There are no users in the CSV file
+                  </span>
+                </div>
+                <div style={{ color: '#cbd5e1', fontSize: 15, marginBottom: 8 }}>
+                  You can proceed with the import by selecting Next or restart the import by
+                  uploading a CSV file with user information. If you choose to proceed without
+                  adding user information:
+                </div>
+                <ul style={{ color: '#fff', fontSize: 15, marginLeft: 24, marginBottom: 0 }}>
+                  <li>Assignee and reporter fields will be unassigned.</li>
+                  <li>User @mentions in comments will be converted to plain text.</li>
+                  <li>Commenter names will change to Anonymous.</li>
+                </ul>
               </div>
-              <span style={{ color: '#22c55e', fontWeight: 600, fontSize: 18 }}>
-                Add users into your space
-              </span>
-            </div>
-            <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 20 }}>
-              Enter a valid email address next to the user information to add a user to the space.
-              Users without a corresponding email address won’t be imported.
-            </Typography.Paragraph>
-            {/* Table header */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                color: '#b0b0b0',
-                fontWeight: 500,
-                fontSize: 15,
-                marginBottom: 4,
-              }}
-            >
-              <span style={{ flex: 2, paddingLeft: 8 }}>
-                <span style={{ marginRight: 8 }}>📄</span>Users in CSV ({userRows.length})
-              </span>
-              <span style={{ width: 40 }}></span>
-              <span style={{ flex: 3 }}>
-                <span style={{ marginRight: 8 }}>🛫</span>Users moving to Worklenz (0)
-              </span>
-            </div>
-            {/* User mapping rows */}
-            {userRows.length === 0 ? (
-              <div style={{ color: '#888', margin: '24px 0' }}>No users found in CSV.</div>
             ) : (
-              userRows.map((user, idx) => (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+                  <div
+                    style={{
+                      background: addUsers ? '#22c55e' : '#23272f',
+                      borderRadius: 16,
+                      width: 48,
+                      height: 28,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: addUsers ? 'flex-end' : 'flex-start',
+                      padding: 4,
+                      cursor: 'pointer',
+                      marginRight: 12,
+                      transition: 'background 0.2s',
+                    }}
+                    onClick={() => setAddUsers(v => !v)}
+                  >
+                    <div
+                      style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        background: '#fff',
+                        boxShadow: '0 1px 4px #0002',
+                        transition: 'all 0.2s',
+                      }}
+                    />
+                  </div>
+                  <span style={{ color: '#22c55e', fontWeight: 600, fontSize: 18 }}>
+                    Add users into your space
+                  </span>
+                </div>
+                <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 20 }}>
+                  Enter a valid email address next to the user information to add a user to the
+                  space. Users without a corresponding email address won’t be imported.
+                </Typography.Paragraph>
+                {/* Table header */}
                 <div
-                  key={user + idx}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    background: '#23272f',
-                    borderRadius: 6,
+                    color: '#b0b0b0',
+                    fontWeight: 500,
+                    fontSize: 15,
                     marginBottom: 4,
-                    minHeight: 44,
                   }}
                 >
-                  <span style={{ flex: 2, paddingLeft: 8, color: '#fff' }}>{user}</span>
-                  <span style={{ width: 40, textAlign: 'center', color: '#4096ff', fontSize: 20 }}>
-                    &rarr;
+                  <span style={{ flex: 2, paddingLeft: 8 }}>
+                    <span style={{ marginRight: 8 }}>📄</span>Users in CSV ({userRows.length})
                   </span>
+                  <span style={{ width: 40 }}></span>
                   <span style={{ flex: 3 }}>
-                    <Input
-                      placeholder="Enter email"
-                      value={userEmails[user] || ''}
-                      onChange={e =>
-                        setUserEmails(emails => ({ ...emails, [user]: e.target.value }))
-                      }
-                      style={{
-                        width: '100%',
-                        background: '#18181a',
-                        color: '#fff',
-                        border: '1px solid #333',
-                      }}
-                    />
+                    <span style={{ marginRight: 8 }}>🛫</span>Users moving to Worklenz (0)
                   </span>
                 </div>
-              ))
+                {/* User mapping rows */}
+                {userRows.map((user, idx) => (
+                  <div
+                    key={user + idx}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      background: '#23272f',
+                      borderRadius: 6,
+                      marginBottom: 4,
+                      minHeight: 44,
+                    }}
+                  >
+                    <span style={{ flex: 2, paddingLeft: 8, color: '#fff' }}>{user}</span>
+                    <span
+                      style={{ width: 40, textAlign: 'center', color: '#4096ff', fontSize: 20 }}
+                    >
+                      &rarr;
+                    </span>
+                    <span style={{ flex: 3 }}>
+                      <Input
+                        placeholder="Enter email"
+                        value={userEmails[user] || ''}
+                        onChange={e =>
+                          setUserEmails(emails => ({ ...emails, [user]: e.target.value }))
+                        }
+                        style={{
+                          width: '100%',
+                          background: '#18181a',
+                          color: '#fff',
+                          border: '1px solid #333',
+                        }}
+                      />
+                    </span>
+                  </div>
+                ))}
+              </>
             )}
           </div>
         );
