@@ -284,14 +284,19 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     statusList,
   ]);
 
+  // Check if this is the Unmapped phase for name click handler
+  const isUnmappedPhaseForClick = currentGrouping === 'phase' && (group.id === 'Unmapped' || group.name === 'Unmapped');
+
   const handleNameClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
       if (!isOwnerOrAdmin) return;
+      // Don't allow editing Unmapped phase name
+      if (isUnmappedPhaseForClick) return;
       setIsEditingName(true);
       setEditingName(group.name);
     },
-    [group.name, isOwnerOrAdmin]
+    [group.name, isOwnerOrAdmin, isUnmappedPhaseForClick]
   );
 
   const handleNameKeyDown = useCallback(
@@ -344,9 +349,17 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     [group.id, projectId, dispatch, trackMixpanelEvent, isChangingCategory]
   );
 
+  // Check if this is the Unmapped phase (should not be editable)
+  const isUnmappedPhase = useMemo(() => {
+    return currentGrouping === 'phase' && (group.id === 'Unmapped' || group.name === 'Unmapped');
+  }, [currentGrouping, group.id, group.name]);
+
   // Create dropdown menu items
   const menuItems = useMemo(() => {
     if (!isOwnerOrAdmin) return [];
+    
+    // Don't show menu for Unmapped phase
+    if (isUnmappedPhase) return [];
 
     const items = [
       {
@@ -395,6 +408,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     handleRenameGroup,
     handleCategoryChange,
     isOwnerOrAdmin,
+    isUnmappedPhase,
     statusCategories,
     t,
   ]);
@@ -476,7 +490,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
               />
             ) : (
               <span
-                className="text-sm font-semibold pr-2 cursor-pointer hover:underline"
+                className={`text-sm font-semibold pr-2 ${isUnmappedPhase ? '' : 'cursor-pointer hover:underline'}`}
                 style={{ color: headerTextColor }}
                 onClick={handleNameClick}
               >
