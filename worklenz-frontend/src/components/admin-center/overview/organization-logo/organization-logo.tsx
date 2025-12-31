@@ -80,7 +80,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      message.warning('Upgrade to a paid plan to upload a custom logo.');
+      message.warning(t('logoUpgradeToUpload'));
       dispatch(toggleUpgradeModal());
       return;
     }
@@ -159,7 +159,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
 
     // Check if user is on free plan
     if (isFreePlan) {
-      message.warning('Upgrade to a paid plan to change or remove organization logo.');
+      message.warning(t('logoUpgradeToChangeOrRemove'));
       dispatch(toggleUpgradeModal());
       return;
     }
@@ -188,7 +188,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
 
     // Check if user is on free plan
     if (isFreePlan) {
-      message.warning('Upgrade to a paid plan to upload a custom logo.');
+      message.warning(t('logoUpgradeToUpload'));
       dispatch(toggleUpgradeModal());
       return;
     }
@@ -262,7 +262,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
             display: 'flex',
           }}
         >
-          <Tooltip title="Available on paid plans">
+          <Tooltip title={t('availableOnPaidPlans')}>
             <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
           </Tooltip>
         </div>
@@ -271,7 +271,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
       {previewUrl ? (
         <img
           src={previewUrl}
-          alt="Organization logo"
+          alt={t('logoAltText')}
           style={{
             maxWidth: '100%',
             maxHeight: '100%',
@@ -303,7 +303,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
             {t('uploadLogo')}
           </Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 11, textAlign: 'center', opacity: 0.7 }}>
-            PNG, JPG, WEBP
+            {t('logoSupportedFormats')}
           </Typography.Text>
         </Flex>
       )}
