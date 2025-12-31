@@ -36,8 +36,9 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [teamMembers, setTeamMembers] = useState<ITeamMembersViewModel>({ data: [], total: 0 });
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
-  const [optimisticAssignees, setOptimisticAssignees] = useState<string[]>([]); // For optimistic updates
-  const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set()); // Track pending member changes
+  const [openUpward, setOpenUpward] = useState(false); // NEW: Track if dropdown should open upward
+  const [optimisticAssignees, setOptimisticAssignees] = useState<string[]>([]);
+  const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set());
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -56,14 +57,31 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
     );
   }, [teamMembers, searchQuery]);
 
-  // Update dropdown position
+  // UPDATED: Calculate position and determine if should open upward
   const updateDropdownPosition = useCallback(() => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + window.scrollY + 2,
-        left: rect.left + window.scrollX,
-      });
+      const dropdownHeight = 350; // Approximate height of dropdown with all sections
+      const spaceBelow = window.innerHeight - rect.bottom;
+      
+      // Check if we're in the bottom portion of the viewport
+      // If button is in bottom 350px of screen, open upward
+      const shouldOpenUpward = spaceBelow < dropdownHeight;
+      setOpenUpward(shouldOpenUpward);
+
+      if (shouldOpenUpward) {
+        // Open upward: position bottom of dropdown at top of button
+        setDropdownPosition({
+          top: rect.top + window.scrollY - dropdownHeight,
+          left: rect.left + window.scrollX,
+        });
+      } else {
+        // Open downward: position top of dropdown at bottom of button
+        setDropdownPosition({
+          top: rect.bottom + window.scrollY + 2,
+          left: rect.left + window.scrollX,
+        });
+      }
     }
   }, []);
 
@@ -200,7 +218,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
         newSet.delete(memberId);
         return newSet;
       });
-    }, 500); // Remove pending state after 500ms
+    }, 500);
   };
 
   const checkMemberSelected = (memberId: string) => {
@@ -214,9 +232,9 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   };
 
   const handleInviteProjectMemberDrawer = () => {
-    setIsOpen(false); // Close the assignee dropdown first
+    setIsOpen(false);
     dispatch(setIsFromAssigner(true));
-    dispatch(toggleProjectMemberDrawer()); // Then open the invite drawer
+    dispatch(toggleProjectMemberDrawer());
   };
 
   return (
@@ -298,7 +316,6 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
                       }
                     }}
                     style={{
-                      // Add visual feedback for immediate response
                       transition: 'all 0.15s ease-in-out',
                     }}
                   >
@@ -362,7 +379,6 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
             </div>
 
             {/* Footer */}
-
             {(isAdmin || isProjectManager) && (
               <div className={`p-2 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
                 <button
