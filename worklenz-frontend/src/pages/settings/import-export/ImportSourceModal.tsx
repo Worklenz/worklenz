@@ -24,6 +24,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const [csvColumns, setCsvColumns] = React.useState<string[]>([]);
   const [fieldMappings, setFieldMappings] = React.useState<Record<string, string>>({});
   const [includeInImport, setIncludeInImport] = React.useState<Record<string, boolean>>({});
+  // Move users step state (must be top-level)
+  const [addUsers, setAddUsers] = React.useState(true);
+  const [userEmails, setUserEmails] = React.useState<Record<string, string>>({});
 
   if (!source) return null;
 
@@ -158,9 +161,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 Set up a space in Worklenz
               </Typography.Title>
               <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 16 }}>
-                Your team’s data from Azure DevOps will be imported into this space. Check if you’re
-                selecting the right Worklenz space, template, and space type as these options can’t
-                be modified later.
+                Your team’s data from <b>{source?.label || 'your app'}</b> will be imported into
+                this space. Check if you’re selecting the right Worklenz space, template, and space
+                type as these options can’t be modified later.
               </Typography.Paragraph>
               <div style={{ color: '#f87171', fontSize: 13, marginBottom: 20 }}>
                 All fields are required
@@ -456,10 +459,108 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
           </Typography.Title>
         );
       case 4:
+        // Move users step
+        // For demo, use first 5 CSV columns as 'users' (replace with real user extraction logic as needed)
+        const userRows = csvColumns.slice(0, 5);
         return (
-          <Typography.Title level={3} style={{ color: '#fff' }}>
-            Move users (step 5)
-          </Typography.Title>
+          <div style={{ width: '100%' }}>
+            <Typography.Title level={3} style={{ color: '#fff', marginBottom: 8 }}>
+              Move users to Jira
+            </Typography.Title>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+              <div
+                style={{
+                  background: addUsers ? '#22c55e' : '#23272f',
+                  borderRadius: 16,
+                  width: 48,
+                  height: 28,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: addUsers ? 'flex-end' : 'flex-start',
+                  padding: 4,
+                  cursor: 'pointer',
+                  marginRight: 12,
+                  transition: 'background 0.2s',
+                }}
+                onClick={() => setAddUsers(v => !v)}
+              >
+                <div
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: '50%',
+                    background: '#fff',
+                    boxShadow: '0 1px 4px #0002',
+                    transition: 'all 0.2s',
+                  }}
+                />
+              </div>
+              <span style={{ color: '#22c55e', fontWeight: 600, fontSize: 18 }}>
+                Add users into your space
+              </span>
+            </div>
+            <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 20 }}>
+              Enter a valid email address next to the user information to add a user to the space.
+              Users without a corresponding email address won’t be imported.
+            </Typography.Paragraph>
+            {/* Table header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                color: '#b0b0b0',
+                fontWeight: 500,
+                fontSize: 15,
+                marginBottom: 4,
+              }}
+            >
+              <span style={{ flex: 2, paddingLeft: 8 }}>
+                <span style={{ marginRight: 8 }}>📄</span>Users in CSV ({userRows.length})
+              </span>
+              <span style={{ width: 40 }}></span>
+              <span style={{ flex: 3 }}>
+                <span style={{ marginRight: 8 }}>🛫</span>Users moving to Jira (0)
+              </span>
+            </div>
+            {/* User mapping rows */}
+            {userRows.length === 0 ? (
+              <div style={{ color: '#888', margin: '24px 0' }}>No users found in CSV.</div>
+            ) : (
+              userRows.map((user, idx) => (
+                <div
+                  key={user + idx}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    background: '#23272f',
+                    borderRadius: 6,
+                    marginBottom: 4,
+                    minHeight: 44,
+                  }}
+                >
+                  <span style={{ flex: 2, paddingLeft: 8, color: '#fff' }}>{user}</span>
+                  <span style={{ width: 40, textAlign: 'center', color: '#4096ff', fontSize: 20 }}>
+                    &rarr;
+                  </span>
+                  <span style={{ flex: 3 }}>
+                    <Input
+                      placeholder="Enter email"
+                      value={userEmails[user] || ''}
+                      onChange={e =>
+                        setUserEmails(emails => ({ ...emails, [user]: e.target.value }))
+                      }
+                      style={{
+                        width: '100%',
+                        background: '#18181a',
+                        color: '#fff',
+                        border: '1px solid #333',
+                      }}
+                    />
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
         );
       case 5:
         return (
