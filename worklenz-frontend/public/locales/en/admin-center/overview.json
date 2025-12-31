@@ -91,5 +91,10 @@
   "logoFormatRecommendation": "PNG format with transparent background is recommended for best results",
   "logoDeleteConfirm": "Are you sure you want to remove the organization logo? This action cannot be undone.",
   "logoUsage": "Used in navbar and synced to client portal",
+  "logoUpgradeToUpload": "Upgrade to a paid plan to upload a custom logo.",
+  "logoUpgradeToChangeOrRemove": "Upgrade to a paid plan to change or remove organization logo.",
+  "availableOnPaidPlans": "Available on paid plans",
+  "logoAltText": "Organization logo",
+  "logoSupportedFormats": "PNG, JPG, WEBP",
   "organizationProfile": "Organization Profile"
 }

@@ -2,7 +2,7 @@ import React, { memo, useEffect, useMemo, useState } from 'react';
 import { ConfigProvider, Table, TableColumnsType } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import CustomTableTitle from '../../../../CustomTableTitle';
+import CustomTableTitle from '@/components/CustomTableTitle';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { IRPTMember } from '@/types/reporting/reporting.types';
 

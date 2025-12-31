@@ -16,16 +16,16 @@ const ProjectsReports = lazy(() => import('@/pages/reporting/projects-reports/pr
 const MembersReports = lazy(() => import('@/pages/reporting/members-reports/members-reports'));
 const AllTasksReports = lazy(() => import('@/pages/reporting/all-tasks-reports/all-tasks-reports'));
 const OverviewTimeReports = lazy(
-  () => import('@/pages/reporting/timeReports/overview-time-reports')
+  () => import('@/pages/reporting/time-sheets/overview-time-reports')
 );
 const ProjectsTimeReports = lazy(
-  () => import('@/pages/reporting/timeReports/projects-time-reports')
+  () => import('@/pages/reporting/time-sheets/projects-time-reports')
 );
-const MembersTimeReports = lazy(() => import('@/pages/reporting/timeReports/members-time-reports'));
+const MembersTimeReports = lazy(() => import('@/pages/reporting/time-sheets/members-time-reports'));
 const EstimatedVsActualTimeReports = lazy(
-  () => import('@/pages/reporting/timeReports/estimated-vs-actual-time-reports')
+  () => import('@/pages/reporting/time-sheets/estimated-vs-actual-time-reports')
 );
-const TimeLogsReports = lazy(() => import('@/pages/reporting/timeReports/time-logs'));
+const TimeLogsReports = lazy(() => import('@/pages/reporting/time-sheets/time-logs'));
 
 // Type definition for a menu item
 export type ReportingMenuItems = {
