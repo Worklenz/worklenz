@@ -1,5 +1,5 @@
 import { Button, Checkbox, Dropdown, Space, Typography } from '@/shared/antd-imports';
-import { DownOutlined } from '@ant-design/icons';
+import { DownOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import CustomPageHeader from '@/components/reporting/common/CustomPageHeader';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

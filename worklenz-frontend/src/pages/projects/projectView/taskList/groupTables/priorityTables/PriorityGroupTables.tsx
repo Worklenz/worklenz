@@ -2,7 +2,7 @@ import React from 'react';
 import { TaskPriorityType, TaskType } from '../../../../../../types/task.types';
 import { Flex } from '@/shared/antd-imports';
 import TaskListTableWrapper from '../../task-list-table/task-list-table-wrapper/task-list-table-wrapper';
-import { useAppSelector } from '../../../../../../hooks/useAppSelector';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { getPriorityColor } from '../../../../../../utils/getPriorityColors';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 
