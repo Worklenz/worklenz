@@ -31,10 +31,12 @@ const ReportingSider: React.FC<ReportingSiderProps> = ({ collapsed = false, onTo
         if (item.children) {
           items.push({
             key: item.key,
+            icon: item.icon,
             label: t(`${item.name}`, { defaultValue: item.defaultValue }),
             type: 'group' as const,
             children: item.children.map(child => ({
               key: child.key,
+              icon: child.icon,
               label: (
                 <Link to={`/worklenz/reporting/${child.endpoint}`}>
                   {t(`${child.name}`, { defaultValue: child.defaultValue })}
@@ -45,6 +47,7 @@ const ReportingSider: React.FC<ReportingSiderProps> = ({ collapsed = false, onTo
         } else {
           items.push({
             key: item.key,
+            icon: item.icon,
             label: (
               <Link to={`/worklenz/reporting/${item.endpoint}`}>
                 {t(`${item.name}`, { defaultValue: item.defaultValue })}
@@ -91,7 +94,7 @@ const ReportingSider: React.FC<ReportingSiderProps> = ({ collapsed = false, onTo
       )}
 
       {/* Menu */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: collapsed ? '8px 0' : '8px' }}>
         <Menu
           className="custom-reporting-sider"
           items={menuItems}
