@@ -56,6 +56,7 @@ import {
   useBulkUpdateClientsMutation,
   useGenerateClientInvitationLinkMutation,
   useResendClientInvitationMutation,
+  clientPortalApi,
 } from '@/api/client-portal/client-portal-api';
 import { TempClientPortalClientType } from '@/types/client-portal/temp-client-portal.types';
 import { useState, useMemo } from 'react';
@@ -215,6 +216,10 @@ const ClientsTable = () => {
 
   // Handle refresh
   const handleRefresh = () => {
+    // Invalidate the Clients cache to force refetch of all client queries
+    // This will refresh both the table data and the parent component's statistics
+    dispatch(clientPortalApi.util.invalidateTags(['Clients']));
+    // Also explicitly refetch the current query for immediate feedback
     refetch();
     setSelectedRowKeys([]);
   };
