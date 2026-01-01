@@ -14,8 +14,10 @@ interface UseColumnResizeProps {
 interface UseColumnResizeReturn {
   columnWidths: ColumnWidths;
   handleResizeStart: (e: React.MouseEvent, columnKey: string) => void;
+  updateColumnWidth: (columnKey: string, width: number) => void;
   resetColumnWidth: (columnKey: string) => void;
   resetAllWidths: () => void;
+  reloadWidths: () => void;
 }
 
 /**
@@ -50,9 +52,58 @@ export const useColumnResize = ({
   const resizingColumnRef = useRef<string | null>(null);
   const startXRef = useRef<number>(0);
   const startWidthRef = useRef<number>(0);
+  const storageKeyRef = useRef<string>(storageKey);
+  const initialWidthsRef = useRef<ColumnWidths>(initialWidths);
+  const isReloadingRef = useRef<boolean>(false);
+  const previousStorageKeyRef = useRef<string>(storageKey);
 
-  // Save to localStorage whenever widths change
+  // Update refs when props change
   useEffect(() => {
+    storageKeyRef.current = storageKey;
+    initialWidthsRef.current = initialWidths;
+  }, [storageKey, initialWidths]);
+
+  // Function to reload widths from localStorage for the current storageKey
+  const reloadWidths = useCallback(() => {
+    isReloadingRef.current = true;
+    try {
+      const stored = localStorage.getItem(storageKeyRef.current);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Merge with initial widths to handle new columns
+        setColumnWidths({ ...initialWidthsRef.current, ...parsed });
+      } else {
+        // No stored widths, use initial widths
+        setColumnWidths(initialWidthsRef.current);
+      }
+    } catch (error) {
+      console.error('Failed to load column widths from localStorage:', error);
+      setColumnWidths(initialWidthsRef.current);
+    } finally {
+      // Reset flag after state update completes
+      // Use requestAnimationFrame to ensure state update has been processed
+      requestAnimationFrame(() => {
+        isReloadingRef.current = false;
+      });
+    }
+  }, []);
+
+  // Reload widths when storageKey changes (but not on initial mount)
+  useEffect(() => {
+    // Only reload if storageKey actually changed (not on initial mount)
+    if (previousStorageKeyRef.current !== storageKey) {
+      previousStorageKeyRef.current = storageKey;
+      reloadWidths();
+    }
+  }, [storageKey, reloadWidths]);
+
+  // Save to localStorage whenever widths change (but skip during reload)
+  useEffect(() => {
+    // Don't save if we're currently reloading to prevent overwriting with stale data
+    if (isReloadingRef.current) {
+      return;
+    }
+    
     try {
       localStorage.setItem(storageKey, JSON.stringify(columnWidths));
     } catch (error) {
@@ -120,6 +171,16 @@ export const useColumnResize = ({
     [columnWidths, initialWidths, handleMouseMove, handleMouseUp]
   );
 
+  const updateColumnWidth = useCallback(
+    (columnKey: string, width: number) => {
+      setColumnWidths(prev => ({
+        ...prev,
+        [columnKey]: width,
+      }));
+    },
+    []
+  );
+
   const resetColumnWidth = useCallback(
     (columnKey: string) => {
       setColumnWidths(prev => ({
@@ -138,7 +199,9 @@ export const useColumnResize = ({
   return {
     columnWidths,
     handleResizeStart,
+    updateColumnWidth,
     resetColumnWidth,
     resetAllWidths,
+    reloadWidths,
   };
 };
