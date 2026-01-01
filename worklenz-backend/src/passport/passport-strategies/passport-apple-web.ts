@@ -1,4 +1,5 @@
 import { Strategy as AppleStrategy } from "passport-apple";
+import { Strategy as CustomStrategy } from "passport-custom";
 import { Request } from "express";
 import jwt from "jsonwebtoken";
 import db from "../../config/db";
@@ -10,26 +11,26 @@ import { sendWelcomeEmail } from "../../shared/email-templates";
  * Apple ID Token Payload Interface
  */
 interface AppleTokenPayload {
-  sub: string;              // Apple user ID (unique identifier)
-  email?: string;           // Email
+  sub: string; // Apple user ID (unique identifier)
+  email?: string; // Email
   email_verified?: boolean; // Email verification status
-  aud: string;              // Audience (client ID)
-  iss: string;              // Issuer (https://appleid.apple.com)
-  exp: number;              // Expiration timestamp
-  iat: number;              // Issued at timestamp
+  aud: string; // Audience (client ID)
+  iss: string; // Issuer (https://appleid.apple.com)
+  exp: number; // Expiration timestamp
+  iat: number; // Issued at timestamp
 }
 
 /**
  * Apple Web OAuth Handler
  * Handles Apple Sign-In for web applications using OAuth 2.0 flow
- * 
+ *
  * Flow:
  * 1. User clicks "Sign in with Apple" button
  * 2. Redirected to Apple's authorization page
  * 3. User authorizes and Apple redirects back with authorization code
  * 4. Strategy exchanges code for ID token
  * 5. Verify user and create/login session
- * 
+ *
  * @param req - Express request object
  * @param accessToken - OAuth access token (not used by Apple)
  * @param refreshToken - OAuth refresh token (not used by Apple)
@@ -56,25 +57,29 @@ async function handleAppleWebAuth(
       appleId = profile.id;
       email = profile.email?.toLowerCase().trim();
       if (profile.name) {
-        name = `${profile.name.firstName || ""} ${profile.name.lastName || ""}`.trim() || "Apple User";
+        name =
+          `${profile.name.firstName || ""} ${
+            profile.name.lastName || ""
+          }`.trim() || "Apple User";
       }
     }
 
     // Apple sends user data in req.body.user on first authorization
     // This is a JSON string containing { name: { firstName, lastName }, email }
-    
+
     if (req.body && req.body.user) {
       try {
-        const userData = typeof req.body.user === 'string' 
-          ? JSON.parse(req.body.user) 
-          : req.body.user;
-        
+        const userData =
+          typeof req.body.user === "string"
+            ? JSON.parse(req.body.user)
+            : req.body.user;
+
         if (userData.name) {
           const firstName = userData.name.firstName || "";
           const lastName = userData.name.lastName || "";
           name = `${firstName} ${lastName}`.trim() || "Apple User";
         }
-        
+
         // Also get email from body if available
         if (userData.email && !email) {
           email = userData.email.toLowerCase().trim();
@@ -115,7 +120,9 @@ async function handleAppleWebAuth(
       if (localAccountResult.rowCount) {
         const message = `An account with email ${email} already exists. Please sign in with your password.`;
         (req.session as any).error = message;
-        return done(null, undefined, { message: req.flash(ERROR_KEY, message) });
+        return done(null, undefined, {
+          message: req.flash(ERROR_KEY, message),
+        });
       }
     }
 
@@ -149,21 +156,30 @@ async function handleAppleWebAuth(
 
       // Check for Google account conflict
       if (user.google_id !== null && user.apple_id === null) {
-        const message = "This account is linked to Google. Please sign in with Google.";
+        const message =
+          "This account is linked to Google. Please sign in with Google.";
         (req.session as any).error = message;
-        return done(null, undefined, { message: req.flash(ERROR_KEY, message) });
+        return done(null, undefined, {
+          message: req.flash(ERROR_KEY, message),
+        });
       }
 
       // Update apple_id if not set (email-first signup scenario)
       if (!user.apple_id) {
-        await db.query("UPDATE users SET apple_id = $1 WHERE id = $2;", [appleId, user.id]);
+        await db.query("UPDATE users SET apple_id = $1 WHERE id = $2;", [
+          appleId,
+          user.id,
+        ]);
         user.apple_id = appleId;
       }
 
       // Update active team if coming from invitation
       if (state.team) {
         try {
-          await db.query("SELECT set_active_team($1, $2);", [user.id, state.team]);
+          await db.query("SELECT set_active_team($1, $2);", [
+            user.id,
+            state.team,
+          ]);
         } catch (error) {
           log_error(error, user);
         }
@@ -175,7 +191,8 @@ async function handleAppleWebAuth(
     // New user - registration flow
     // Email is required for new user registration
     if (!email) {
-      const message = "Email is required for registration. Please sign in with Apple again and provide your email.";
+      const message =
+        "Email is required for registration. Please sign in with Apple again and provide your email.";
       (req.session as any).error = message;
       return done(null, undefined, { message: req.flash(ERROR_KEY, message) });
     }
@@ -191,7 +208,9 @@ async function handleAppleWebAuth(
     // Send welcome email
     sendWelcomeEmail(email, name);
 
-    return done(null, user, { message: "User successfully registered and logged in" });
+    return done(null, user, {
+      message: "User successfully registered and logged in",
+    });
   } catch (error: any) {
     log_error("Apple web authentication error:", error);
     return done(error);
@@ -203,16 +222,51 @@ async function handleAppleWebAuth(
  * Uses passport-apple package for OAuth 2.0 flow
  * @see https://developer.apple.com/documentation/sign_in_with_apple
  */
-export default new AppleStrategy(
-  {
-    clientID: process.env.APPLE_CLIENT_ID as string,
-    teamID: process.env.APPLE_TEAM_ID as string,
-    keyID: process.env.APPLE_KEY_ID as string,
-    privateKeyLocation: process.env.APPLE_PRIVATE_KEY_PATH as string,
-    callbackURL: process.env.APPLE_CALLBACK_URL as string,
-    passReqToCallback: true,
-    scope: ["name", "email"],
-  },
-  (req: any, accessToken: any, refreshToken: any, idToken: any, profile: any, done: any) =>
-    void handleAppleWebAuth(req, accessToken, refreshToken, idToken, profile, done)
-);
+const requiredEnvVars = [
+  "APPLE_CLIENT_ID",
+  "APPLE_TEAM_ID",
+  "APPLE_KEY_ID",
+  "APPLE_PRIVATE_KEY_PATH",
+  "APPLE_CALLBACK_URL",
+];
+
+const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
+
+const appleStrategy =
+  missingEnvVars.length === 0
+    ? new AppleStrategy(
+        {
+          clientID: process.env.APPLE_CLIENT_ID as string,
+          teamID: process.env.APPLE_TEAM_ID as string,
+          keyID: process.env.APPLE_KEY_ID as string,
+          privateKeyLocation: process.env.APPLE_PRIVATE_KEY_PATH as string,
+          callbackURL: process.env.APPLE_CALLBACK_URL as string,
+          passReqToCallback: true,
+          scope: ["name", "email"],
+        },
+        (
+          req: any,
+          accessToken: any,
+          refreshToken: any,
+          idToken: any,
+          profile: any,
+          done: any
+        ) =>
+          void handleAppleWebAuth(
+            req,
+            accessToken,
+            refreshToken,
+            idToken,
+            profile,
+            done
+          )
+      )
+    : new CustomStrategy((req: Request, done: any) => {
+        const message = `Apple web auth disabled: missing ${missingEnvVars.join(
+          ", "
+        )}`;
+        log_error(message);
+        return done(null, false, { message });
+      });
+
+export default appleStrategy;

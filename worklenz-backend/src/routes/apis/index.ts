@@ -78,6 +78,7 @@ import plansApiRouter from "./plans-api-router";
 import usersApiRouter from "./users-api-router";
 import clientPortalApiRouter from "./client-portal-api-router";
 import slackApiRouter from "./slack-api-router";
+import importsApiRouter from "./imports-api-router";
 
 const api = express.Router();
 
@@ -131,10 +132,23 @@ api.use("/project-managers", projectManagerApiRouter);
 api.use("/surveys", surveyApiRouter);
 
 api.get("/overview/:id", safeControllerFunction(OverviewController.getById));
-api.get("/task-priorities", safeControllerFunction(TaskPrioritiesController.get));
-api.post("/change-password", passwordValidator, safeControllerFunction(AuthController.changePassword));
-api.get("/access-controls/roles", safeControllerFunction(AccessControlsController.getRoles));
-api.get("/logs/my-dashboard", safeControllerFunction(LogsController.getActivityLog));
+api.get(
+  "/task-priorities",
+  safeControllerFunction(TaskPrioritiesController.get)
+);
+api.post(
+  "/change-password",
+  passwordValidator,
+  safeControllerFunction(AuthController.changePassword)
+);
+api.get(
+  "/access-controls/roles",
+  safeControllerFunction(AccessControlsController.getRoles)
+);
+api.get(
+  "/logs/my-dashboard",
+  safeControllerFunction(LogsController.getActivityLog)
+);
 
 api.use("/billing", billingApiRouter);
 api.use("/plan-trials", planTrialApiRouter);
@@ -163,6 +177,7 @@ api.use("/migration", migrationApiRouter);
 api.use("/subscriptions", subscriptionsApiRouter);
 api.use("/plans", plansApiRouter);
 api.use("/users", usersApiRouter);
+api.use("/imports", importsApiRouter);
 
 // Client portal APIs
 api.use("/client-portal", clientPortalApiRouter);

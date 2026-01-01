@@ -10,10 +10,28 @@ import {
   Input,
   Tooltip,
   Card,
+  message,
+  theme,
+  Space,
+  Switch,
 } from 'antd';
-import { InfoCircleOutlined, RightOutlined, SearchOutlined } from '@ant-design/icons';
-import { Switch } from 'antd';
+import {
+  InfoCircleOutlined,
+  RightOutlined,
+  SearchOutlined,
+  ArrowLeftOutlined,
+  ArrowRightOutlined,
+} from '@ant-design/icons';
 import Papa from 'papaparse';
+import { useTranslation } from 'react-i18next';
+import {
+  clickupWorkspaces,
+  createImportJob,
+  getImportJob,
+  mondayValidate,
+  startAsanaAuth,
+} from '@/api/imports';
+import type { ImportJob } from '@/api/imports';
 
 interface ImportSourceModalProps {
   open: boolean;
@@ -29,12 +47,79 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   // Prevent ReferenceError by checking for source before any usage
   if (!source) return null;
 
+  const { t } = useTranslation('settings/import-export');
+  const { token: themeToken } = theme.useToken();
+
   // --- Dynamic import flow state ---
   // List of direct integration apps (use 4-step flow)
   const directIntegrationApps = ['asana', 'monday', 'clickup', 'trello'];
-  // Determine integration type
-  const integrationType =
-    source && directIntegrationApps.includes(source.key.toLowerCase()) ? 'direct' : 'csv';
+  const authGateApps = ['asana', 'monday', 'clickup'];
+  const lowerKey = source.key.toLowerCase();
+  const integrationType = directIntegrationApps.includes(lowerKey) ? 'direct' : 'csv';
+  const authNeeded = authGateApps.includes(lowerKey);
+
+  const [job, setJob] = React.useState<ImportJob | null>(null);
+  const [authLoading, setAuthLoading] = React.useState(false);
+  const [authError, setAuthError] = React.useState<string | null>(null);
+  const [asanaWorkspaces, setAsanaWorkspaces] = React.useState<Array<{ id: string; name: string }>>(
+    []
+  );
+  const [asanaProjects, setAsanaProjects] = React.useState<
+    Array<{ id: string; name: string; workspaceId?: string }>
+  >([]);
+  const [mondayBoards, setMondayBoards] = React.useState<Array<{ id: string; name: string }>>([]);
+  const [clickupTeams, setClickupTeams] = React.useState<
+    Array<{
+      id: string;
+      name: string;
+      spaces: Array<{ id: string; name: string; lists: Array<{ id: string; name: string }> }>;
+    }>
+  >([]);
+  const [clickupToken, setClickupToken] = React.useState('');
+  const [authCompleted, setAuthCompleted] = React.useState(!authNeeded);
+  const [mondayToken, setMondayToken] = React.useState('');
+  const [selectedWorkspace, setSelectedWorkspace] = React.useState('');
+  const [selectedProject, setSelectedProject] = React.useState('');
+  const [selectedBoard, setSelectedBoard] = React.useState('');
+  const [selectedClickupSpace, setSelectedClickupSpace] = React.useState('');
+  const [selectedClickupList, setSelectedClickupList] = React.useState('');
+
+  React.useEffect(() => {
+    setStep(0);
+    setReviewSubScreen('main');
+    setAuthCompleted(!authNeeded);
+    setMondayToken('');
+    setSelectedWorkspace('');
+    setSelectedProject('');
+    setSelectedBoard('');
+    setSelectedClickupSpace('');
+    setSelectedClickupList('');
+    setAsanaProjects([]);
+    setAsanaWorkspaces([]);
+    setMondayBoards([]);
+    setClickupTeams([]);
+    setClickupToken('');
+    setAuthError(null);
+    setShowCompletion(false);
+
+    let cancelled = false;
+    const initJob = async () => {
+      try {
+        const created = await createImportJob({
+          provider: lowerKey,
+          flowType: integrationType as 'direct' | 'csv',
+        });
+        if (!cancelled) setJob(created);
+      } catch (err) {
+        if (!cancelled) setJob(null);
+      }
+    };
+    initJob();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [source, authNeeded]);
 
   // Steps for each flow
   const steps =
@@ -43,6 +128,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       : ['Upload CSV', 'Set up space', 'Map fields', 'Map values', 'Move users', 'Review details'];
 
   const [step, setStep] = React.useState(0);
+  const totalSteps = steps.length;
+  const [showCompletion, setShowCompletion] = React.useState(false);
   // Review Details sub-screens
   const [reviewSubScreen, setReviewSubScreen] = React.useState<
     'main' | 'hierarchy' | 'fieldMapping'
@@ -92,30 +179,195 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
 
   // Importing state
   const [isImporting, setIsImporting] = React.useState<boolean>(false);
+
+  const navigationDisabled = authNeeded && !authCompleted;
+
+  const handleBack = () => setStep(s => Math.max(0, s - 1));
+  const handleNext = () => setStep(s => Math.min(totalSteps - 1, s + 1));
+  const handleModalClose = () => {
+    setStep(0);
+    onClose();
+  };
+  const handleFinish = () => setShowCompletion(true);
+  const handleStartNewImport = () => {
+    setShowCompletion(false);
+    handleModalClose();
+  };
+
+  const handleAsanaAuth = async () => {
+    if (!job) return;
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      const { authUrl } = await startAsanaAuth(job.id);
+      const popup = window.open(authUrl, 'asana-auth');
+      const started = Date.now();
+      const poll = setInterval(async () => {
+        if (Date.now() - started > 120000) {
+          clearInterval(poll);
+          setAuthLoading(false);
+          setAuthError(t('auth.error', 'Connection failed. Please try again.'));
+          return;
+        }
+        try {
+          const refreshed = await getImportJob(job.id);
+          const auth = (refreshed as any)?.source_reference?.auth?.asana;
+          if (auth?.access_token) {
+            clearInterval(poll);
+            popup?.close();
+            setJob(refreshed as ImportJob);
+            setAsanaWorkspaces(auth.workspaces || []);
+            setAsanaProjects(auth.projects || []);
+            if (auth.workspaces?.[0]?.id) setSelectedWorkspace(auth.workspaces[0].id);
+            if (auth.projects?.[0]?.id) setSelectedProject(auth.projects[0].id);
+            setAuthCompleted(true);
+            setAuthLoading(false);
+            setAuthError(null);
+            message.success(t('auth.success', 'Connected'));
+          }
+        } catch (err) {
+          // swallow and continue polling
+        }
+      }, 2000);
+    } catch (err: any) {
+      setAuthError(err?.message || t('auth.error', 'Connection failed. Please try again.'));
+      setAuthLoading(false);
+    }
+  };
+
+  const handleMondayValidate = async () => {
+    if (!job || !mondayToken.trim()) return;
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      const resp = await mondayValidate(job.id, mondayToken.trim());
+      setMondayBoards(resp.boards || []);
+      setSelectedBoard(resp.boards?.[0]?.id || '');
+      setAuthCompleted(true);
+      setAuthError(null);
+      message.success(t('auth.success', 'Connected'));
+    } catch (err: any) {
+      setAuthError(err?.message || t('auth.error', 'Connection failed. Please try again.'));
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleClickupValidate = async () => {
+    if (!job || !clickupToken.trim()) return;
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      const resp = await clickupWorkspaces(job.id, clickupToken.trim());
+      setClickupTeams(resp.teams || []);
+      const firstSpace = resp.teams?.[0]?.spaces?.[0];
+      const firstList = firstSpace?.lists?.[0];
+      setSelectedWorkspace(resp.teams?.[0]?.name || '');
+      setSelectedClickupSpace(firstSpace?.id || '');
+      setSelectedClickupList(firstList?.id || '');
+      setAuthCompleted(true);
+      setAuthError(null);
+      message.success(t('auth.success', 'Connected'));
+    } catch (err: any) {
+      setAuthError(err?.message || t('auth.error', 'Connection failed. Please try again.'));
+    } finally {
+      setAuthLoading(false);
+    }
+  };
   // Example content for each step
   function renderStepContent() {
     if (integrationType === 'direct') {
       // 4-step direct integration flow
       if (step === 0) {
         // Step 1: Select project/list/board
+        const workspaceOptions =
+          lowerKey === 'asana'
+            ? asanaWorkspaces.map(ws => ({ value: ws.id, label: ws.name }))
+            : lowerKey === 'clickup'
+              ? clickupTeams.flatMap(team =>
+                  team.spaces.map(space => ({
+                    value: space.id,
+                    label: `${team.name} • ${space.name}`,
+                  }))
+                )
+              : [];
+        const projectOptions =
+          lowerKey === 'asana'
+            ? asanaProjects
+                .filter(p => !selectedWorkspace || p.workspaceId === selectedWorkspace)
+                .map(p => ({ value: p.id, label: p.name }))
+            : [];
+        const boardOptions =
+          lowerKey === 'monday' ? mondayBoards.map(b => ({ value: b.id, label: b.name })) : [];
+
         return (
           <div>
-            <Typography.Title level={3}>{'Select an Asana project'}</Typography.Title>
+            <Typography.Title level={3}>
+              {t('importStep.selectList', 'Select a source')}
+            </Typography.Title>
             <Typography.Paragraph>
-              {
-                'Select the workspace and project you’d like to import data from. Required fields are marked with an asterisk.'
-              }
+              {t(
+                'importStep.selectListHelp',
+                'Select the workspace and list/board you’d like to import data from. Required fields are marked with an asterisk.'
+              )}
             </Typography.Paragraph>
             <div style={{ display: 'flex', gap: 48 }}>
               <div style={{ flex: 1, maxWidth: 400 }}>
-                <label>{'Asana workspace *'}</label>
-                <Select
-                  style={{ width: '100%', marginBottom: 24 }}
-                  value="My workspace"
-                  options={[{ value: 'My workspace', label: 'My workspace' }]}
-                />
-                <label>{'Asana project *'}</label>
-                <Select style={{ width: '100%' }} placeholder={'Select an Asana project'} />
+                {lowerKey !== 'monday' && (
+                  <>
+                    <label>{t('importStep.workspaceLabel', 'Workspace *')}</label>
+                    <Select
+                      style={{ width: '100%', marginBottom: 24 }}
+                      placeholder={t('auth.clickupSelect', 'Select workspace')}
+                      value={selectedWorkspace || undefined}
+                      onChange={value => {
+                        setSelectedWorkspace(value);
+                        setSelectedProject('');
+                      }}
+                      options={workspaceOptions}
+                      disabled={!authCompleted}
+                    />
+                  </>
+                )}
+
+                <label>
+                  {lowerKey === 'monday'
+                    ? t('importStep.boardLabel', 'Board *')
+                    : t('importStep.projectLabel', 'List/Project *')}
+                </label>
+                {lowerKey === 'monday' ? (
+                  <Select
+                    style={{ width: '100%' }}
+                    placeholder={t('importStep.boardPlaceholder', 'Select a board')}
+                    value={selectedBoard || undefined}
+                    onChange={v => setSelectedBoard(v)}
+                    options={boardOptions}
+                    disabled={!authCompleted}
+                  />
+                ) : lowerKey === 'clickup' ? (
+                  <Select
+                    style={{ width: '100%' }}
+                    placeholder={t('importStep.listPlaceholder', 'Select a list')}
+                    value={selectedClickupList || undefined}
+                    onChange={v => setSelectedClickupList(v)}
+                    options={clickupTeams
+                      .flatMap(team => team.spaces)
+                      .filter(space => !selectedClickupSpace || space.id === selectedClickupSpace)
+                      .flatMap(space =>
+                        space.lists.map(list => ({ value: list.id, label: list.name }))
+                      )}
+                    disabled={!authCompleted}
+                  />
+                ) : (
+                  <Select
+                    style={{ width: '100%' }}
+                    placeholder={t('importStep.projectPlaceholder', 'Select a project')}
+                    value={selectedProject || undefined}
+                    onChange={v => setSelectedProject(v)}
+                    options={projectOptions}
+                    disabled={!authCompleted}
+                  />
+                )}
               </div>
               <div
                 style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -435,23 +687,18 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         }
       }
       if (step === 3) {
-        // Step 4: Import data
+        // Step 4: Import data (last step before completion)
         return (
-          <div>
-            <Typography.Title level={3}>{'Importing data…'}</Typography.Title>
-            <Typography.Paragraph>{`Your data is being imported from ${source?.label}. This may take a few moments.`}</Typography.Paragraph>
-            <div
-              style={{
-                width: 320,
-                height: 180,
-                background: '#18181a',
-                borderRadius: 16,
-                margin: '32px auto',
-              }}
-            />
-            <Button type="primary" disabled>
-              {'Finish (Coming Soon)'}
-            </Button>
+          <div style={{ width: '100%', textAlign: 'center' }}>
+            <Typography.Title level={3} style={{ marginBottom: 12 }}>
+              {t('importStep.importData', 'Import data')}
+            </Typography.Title>
+            <Typography.Paragraph>
+              {t(
+                'importStep.importReady',
+                'Review is complete. Click Finish to start the import and we will set up your space.'
+              )}
+            </Typography.Paragraph>
           </div>
         );
       }
@@ -1407,6 +1654,183 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
 
   const showIllustration = !(integrationType === 'direct' && step === 2);
 
+  const renderAuthGate = () => {
+    if (lowerKey === 'asana') {
+      return (
+        <div style={{ padding: 48, background: themeToken.colorBgLayout, height: '100%' }}>
+          <Typography.Title level={2} style={{ color: themeToken.colorText }}>
+            {t('auth.asanaTitle', 'Connect Asana to import')}
+          </Typography.Title>
+          <Typography.Paragraph style={{ color: themeToken.colorTextSecondary, fontSize: 16 }}>
+            {t(
+              'auth.asanaBody',
+              'We’ll open Asana’s consent screen to grant access to your projects and tasks.'
+            )}
+          </Typography.Paragraph>
+          {authError && (
+            <Typography.Text type="danger" style={{ display: 'block', marginBottom: 12 }}>
+              {authError}
+            </Typography.Text>
+          )}
+          <Button type="primary" size="large" loading={authLoading} onClick={handleAsanaAuth}>
+            {t('auth.asanaCta', 'Grant permission')}
+          </Button>
+          <div style={{ marginTop: 12, color: themeToken.colorTextSecondary }}>
+            {t('auth.asanaHint', 'Opens a new tab to Asana')}
+          </div>
+        </div>
+      );
+    }
+
+    if (lowerKey === 'monday') {
+      return (
+        <div style={{ padding: 48, background: themeToken.colorBgLayout, height: '100%' }}>
+          <Typography.Title level={4} style={{ color: themeToken.colorText, marginBottom: 8 }}>
+            {t('auth.mondayTitle', 'Enter your Monday token')}
+          </Typography.Title>
+          <Typography.Paragraph style={{ color: themeToken.colorTextSecondary, marginBottom: 16 }}>
+            {t(
+              'auth.mondayBody',
+              'Paste a personal access token to let Worklenz fetch boards and items for import.'
+            )}
+          </Typography.Paragraph>
+          <Input.Password
+            placeholder={t('auth.mondayPlaceholder', 'Paste your Monday token')}
+            value={mondayToken}
+            onChange={e => setMondayToken(e.target.value)}
+            style={{ marginBottom: 16 }}
+          />
+          {authError && (
+            <Typography.Text type="danger" style={{ display: 'block', marginBottom: 12 }}>
+              {authError}
+            </Typography.Text>
+          )}
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+            <Button onClick={onClose}>{t('common.cancel', 'Cancel')}</Button>
+            <Button
+              type="primary"
+              disabled={!mondayToken.trim()}
+              loading={authLoading}
+              onClick={handleMondayValidate}
+            >
+              {t('auth.mondaySubmit', 'Continue')}
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    if (lowerKey === 'clickup') {
+      return (
+        <div style={{ padding: 48, background: themeToken.colorBgLayout, height: '100%' }}>
+          <Typography.Title level={2} style={{ color: themeToken.colorText, marginBottom: 12 }}>
+            {t('auth.clickupTitle', 'Connect ClickUp workspace')}
+          </Typography.Title>
+          <Typography.Paragraph style={{ color: themeToken.colorTextSecondary, fontSize: 16 }}>
+            {t(
+              'auth.clickupBody',
+              'Choose the ClickUp workspace to connect. We’ll request access to read your spaces, folders, lists, and tasks for import.'
+            )}
+          </Typography.Paragraph>
+          <Input.Password
+            placeholder={t('auth.tokenPlaceholder', 'Paste your access token')}
+            value={clickupToken}
+            onChange={e => setClickupToken(e.target.value)}
+            style={{ marginBottom: 12 }}
+          />
+          <label
+            style={{ color: themeToken.colorTextSecondary, display: 'block', marginBottom: 8 }}
+          >
+            {t('auth.clickupWorkspace', 'Workspace')}
+          </label>
+          <Select
+            placeholder={t('auth.clickupSelect', 'Select workspace')}
+            value={selectedClickupSpace || undefined}
+            onChange={v => setSelectedClickupSpace(v)}
+            style={{ width: 320, marginBottom: 16 }}
+            options={clickupTeams.flatMap(team =>
+              team.spaces.map(space => ({ value: space.id, label: `${team.name} • ${space.name}` }))
+            )}
+          />
+          <Select
+            placeholder={t('auth.clickupSelect', 'Select workspace')}
+            value={selectedClickupList || undefined}
+            onChange={v => setSelectedClickupList(v)}
+            style={{ width: 320, marginBottom: 16 }}
+            options={clickupTeams
+              .flatMap(team => team.spaces)
+              .filter(space => !selectedClickupSpace || space.id === selectedClickupSpace)
+              .flatMap(space =>
+                space.lists.map(list => ({ value: list.id, label: `${space.name} • ${list.name}` }))
+              )}
+          />
+          {authError && (
+            <Typography.Text type="danger" style={{ display: 'block', marginBottom: 12 }}>
+              {authError}
+            </Typography.Text>
+          )}
+          <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+            <Button onClick={onClose}>{t('common.cancel', 'Cancel')}</Button>
+            <Button
+              type="primary"
+              disabled={!clickupToken.trim()}
+              loading={authLoading}
+              onClick={handleClickupValidate}
+            >
+              {t('auth.clickupSubmit', 'Select workspace')}
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  const renderCompletionContent = () => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 20,
+        width: '100%',
+        maxWidth: 780,
+        margin: '0 auto',
+      }}
+    >
+      <img
+        src="https://images.ctfassets.net/rz1oowkt5gyp/2kQEtpSt0aRvFV8aXrudQK/a8a1ea83b9e8b9d68ebf4598d2d9961c/IMPORT_COMPLETED_MAP.png"
+        alt="Importing"
+        style={{ maxWidth: 640, width: '100%', height: 'auto' }}
+      />
+      <div style={{ textAlign: 'center', maxWidth: 620 }}>
+        <Typography.Title level={3} style={{ marginBottom: 10 }}>
+          {t('importStep.importingHeadline', "We're mapping out the new space")}
+        </Typography.Title>
+        <Typography.Paragraph style={{ marginBottom: 14, fontSize: 16 }}>
+          {t(
+            'importStep.importingSubhead',
+            "Take a quick break and we'll do the rest. We'll take you to the space once it's ready."
+          )}
+        </Typography.Paragraph>
+        <ul style={{ textAlign: 'left', margin: '0 auto 18px', maxWidth: 360, fontSize: 15 }}>
+          <li>{t('importStep.importingTask1', 'Importing project data')}</li>
+          <li>{t('importStep.importingTask2', 'Setting up user profiles')}</li>
+          <li>{t('importStep.importingTask3', 'Creating a new space')}</li>
+        </ul>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+          <Button size="large" onClick={handleStartNewImport}>
+            {t('importStep.startNew', 'Start a new import')}
+          </Button>
+          <Button type="link" size="large">
+            {t('importStep.feedback', 'Give feedback')}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <Modal
       open={open}
@@ -1417,171 +1841,95 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         top: 8,
         maxWidth: '2000px',
         minWidth: 1500,
-        minHeight: 1000,
-        height: '90vh',
-        padding: 0,
       }}
-      bodyStyle={{
-        padding: 0,
-        background: '#23272f',
-        borderRadius: 16,
-        minHeight: 900,
-        height: '80vh',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
+      styles={{
+        body: {
+          minHeight: '78vh',
+          display: 'flex',
+          flexDirection: 'column',
+        },
       }}
-      destroyOnClose
-      centered
     >
-      {isImporting ? (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%',
-            minHeight: 700,
-          }}
-        >
-          <div style={{ marginTop: 48, marginBottom: 32 }}>
-            {/* SVG or illustration matching the screenshot */}
-            <img
-              src="https://assets.atlassian.com/dam/jcr:6b7e2b7c-2e2e-4e2e-8e2e-2e2e2e2e2e2e/Import%20mapping%20illustration.svg"
-              alt="Mapping Illustration"
-              style={{ width: 340, maxWidth: '100%' }}
-            />
-          </div>
-          <Typography.Title
-            level={2}
-            style={{ color: '#fff', marginBottom: 16, textAlign: 'center' }}
-          >
-            We’re mapping out the new space
+      <div
+        className="import-modal-body"
+        style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}
+      >
+        <div className="heading" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {showIllustration && source?.icon && (
+            <div style={{ display: 'grid', placeItems: 'center', fontSize: 36 }}>{source.icon}</div>
+          )}
+          <Typography.Title level={3} style={{ margin: 0, fontSize: 26 }}>
+            {source.label}
           </Typography.Title>
-          <Typography.Paragraph
-            style={{ color: '#b0b0b0', fontSize: 18, textAlign: 'center', marginBottom: 24 }}
-          >
-            Take a quick break and we’ll do the rest.
-            <br />
-            We’ll take you to the space once it’s ready.
-          </Typography.Paragraph>
-          <div style={{ color: '#b0b0b0', fontSize: 17, marginBottom: 32, textAlign: 'center' }}>
-            <div style={{ marginBottom: 8 }}>✔ Verifying your CSV data</div>
-            <div style={{ marginBottom: 8 }}>✔ Setting up user profiles</div>
-            <div>✔ Creating a new space</div>
-          </div>
-          <Button type="primary" style={{ marginBottom: 16, minWidth: 180 }} onClick={onClose}>
-            Start a new import
-          </Button>
-          <Button type="link" style={{ color: '#4096ff', fontSize: 16 }}>
-            Give feedback
-          </Button>
         </div>
-      ) : (
-        <>
-          {/* Stepper */}
-          <div
-            style={{
-              padding: '32px 48px 0 48px',
-              background: '#23272f',
-              borderTopLeftRadius: 12,
-              borderTopRightRadius: 12,
-            }}
-          >
+
+        {!showCompletion && (
+          <div className="stepper" style={{ padding: '0 8px', marginBottom: 32 }}>
             <Steps
+              direction="horizontal"
               current={step}
-              labelPlacement="vertical"
               items={steps.map(title => ({ title }))}
+              onChange={current => {
+                if (navigationDisabled) return;
+                setStep(current);
+              }}
             />
           </div>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              minHeight: 420,
-              background: '#23272f',
-              maxHeight: 'calc(90vh - 120px)',
-              overflow: 'auto',
-              width: '100%',
-            }}
-          >
+        )}
+
+        <div
+          className="content"
+          style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}
+        >
+          {showCompletion ? (
             <div
+              className="content-body"
               style={{
                 flex: 1,
-                padding: '48px 48px 24px 48px',
                 display: 'flex',
-                flexDirection: 'column',
+                alignItems: 'center',
                 justifyContent: 'center',
+                padding: '32px 16px',
               }}
             >
-              {renderStepContent()}
+              {renderCompletionContent()}
             </div>
-            {showIllustration && (
-              <div
-                style={{
-                  width: 400,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: '#e9eef6',
-                  borderTopRightRadius: 12,
-                  borderBottomRightRadius: 12,
-                }}
-              >
-                {/* Placeholder for illustration, you can replace with an SVG or image */}
-                <div
-                  style={{
-                    width: 320,
-                    height: 180,
-                    background: '#fff',
-                    borderRadius: 16,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 2px 16px 0 #b3c6e6',
-                  }}
-                >
-                  {/* You can replace this with a real SVG illustration */}
-                  <span style={{ fontSize: 64 }}>{source.icon}</span>
-                </div>
+          ) : authNeeded && !authCompleted ? (
+            <div className="content-body" style={{ height: '100%', padding: 0 }}>
+              {renderAuthGate()}
+            </div>
+          ) : (
+            <>
+              <div className="content-body" style={{ flex: 1 }}>
+                {renderStepContent()}
               </div>
-            )}
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              alignItems: 'center',
-              background: '#23272f',
-              borderBottomLeftRadius: 12,
-              borderBottomRightRadius: 12,
-              padding: '16px 32px 16px 0',
-              borderTop: '1px solid #232324',
-            }}
-          >
-            <Button
-              onClick={step === 0 ? onClose : () => setStep(step - 1)}
-              style={{ marginRight: 8 }}
-            >
-              {step === 0 ? 'Back' : 'Previous'}
-            </Button>
-            <Button
-              type="primary"
-              onClick={() => {
-                if (step === steps.length - 1) {
-                  setIsImporting(true);
-                } else {
-                  setStep(s => Math.min(s + 1, steps.length - 1));
-                }
-              }}
-              disabled={isImporting}
-            >
-              {step === steps.length - 1 ? 'Finish' : 'Next'}
-            </Button>
-          </div>
-        </>
-      )}
+              <div
+                className="content-footer"
+                style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 'auto' }}
+              >
+                <Button
+                  type="text"
+                  icon={<ArrowLeftOutlined />}
+                  onClick={handleBack}
+                  disabled={step === 0}
+                >
+                  {t('common.previous', 'Previous')}
+                </Button>
+                <Button
+                  type="primary"
+                  icon={step === totalSteps - 1 ? undefined : <ArrowRightOutlined />}
+                  onClick={step === totalSteps - 1 ? handleFinish : handleNext}
+                  disabled={navigationDisabled}
+                >
+                  {step === totalSteps - 1
+                    ? t('common.finish', 'Finish')
+                    : t('common.next', 'Next')}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </Modal>
   );
 };

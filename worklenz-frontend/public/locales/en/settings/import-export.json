@@ -1,0 +1,32 @@
+{
+  "modalTitle": "Import data",
+  "auth": {
+    "asanaTitle": "Connect Asana to import",
+    "asanaBody": "We’ll open Asana’s consent screen to grant access to your projects and tasks.",
+    "asanaCta": "Grant permission",
+    "asanaHint": "Opens a new tab to Asana",
+    "mondayTitle": "Enter your Monday token",
+    "mondayBody": "Paste a personal access token to let Worklenz fetch boards and items for import.",
+    "mondayPlaceholder": "Paste your Monday token",
+    "mondaySubmit": "Continue",
+    "clickupTitle": "Connect ClickUp workspace",
+    "clickupBody": "Choose the ClickUp workspace to connect. We’ll request access to read your spaces, folders, lists, and tasks for import.",
+    "clickupWorkspace": "Workspace",
+    "clickupSelect": "Select workspace",
+    "clickupSubmit": "Select workspace",
+    "tokenPlaceholder": "Paste your access token",
+    "loading": "Connecting...",
+    "error": "Connection failed. Please try again.",
+    "success": "Connected"
+  },
+  "importStep": {
+    "selectList": "Select a source",
+    "selectListHelp": "Select the workspace and list/board you’d like to import data from. Required fields are marked with an asterisk.",
+    "workspaceLabel": "Workspace *",
+    "projectLabel": "List/Project *",
+    "boardLabel": "Board *",
+    "projectPlaceholder": "Select a project",
+    "boardPlaceholder": "Select a board",
+    "listPlaceholder": "Select a list"
+  }
+}

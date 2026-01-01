@@ -144,6 +144,7 @@
     "@types/swagger-jsdoc": "^6.0.1",
     "@types/toobusy-js": "^0.5.2",
     "@types/uglify-js": "^3.17.1",
+    "@types/uuid": "^9.0.8",
     "@types/xss-filters": "^0.0.27",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",

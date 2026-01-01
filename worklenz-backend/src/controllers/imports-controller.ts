@@ -1,0 +1,558 @@
+import { IWorkLenzRequest } from "../interfaces/worklenz-request";
+import { IWorkLenzResponse } from "../interfaces/worklenz-response";
+import ImportsService, {
+  AttachmentPlanRow,
+  StageTaskRow,
+  UserMappingRow,
+  ValueMappingRow,
+} from "../services/imports-service";
+import safeControllerFunction from "../shared/safe-controller-function";
+import createHttpError from "http-errors";
+import { ServerResponse } from "../models/server-response";
+import ImportIngestionService from "../services/import-ingestion-service";
+import axios from "axios";
+import crypto from "crypto";
+import { nanoid } from "nanoid";
+
+const autoHierarchyTemplate = [
+  { source_level: "Section", target_level: "Status", position: 1 },
+  { source_level: "Task", target_level: "Task", position: 2 },
+  { source_level: "Subtask", target_level: "Subtask", position: 3 },
+  { source_level: "Nested subtask", target_level: "Subtask", position: 4 },
+];
+
+const autoFieldTemplate = [
+  {
+    source_field: "Task name",
+    target_field: "Summary",
+    required: true,
+    include: true,
+  },
+  {
+    source_field: "Assignee",
+    target_field: "Assignee",
+    required: false,
+    include: true,
+  },
+  {
+    source_field: "Created by",
+    target_field: "Reporter",
+    required: false,
+    include: true,
+  },
+  {
+    source_field: "Description",
+    target_field: "Description",
+    required: false,
+    include: true,
+  },
+  {
+    source_field: "Due on",
+    target_field: "Due date",
+    required: false,
+    include: true,
+  },
+  {
+    source_field: "Start date",
+    target_field: "Start date",
+    required: false,
+    include: true,
+  },
+  {
+    source_field: "Collaborators",
+    target_field: "Watchers",
+    required: false,
+    include: true,
+  },
+];
+
+const base64UrlEncode = (buffer: Buffer) =>
+  buffer
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+
+export default class ImportsController {
+  private static getUserId(req: IWorkLenzRequest): string {
+    const id =
+      req.user?.id || (req.user as any)?.user_id || (req.user as any)?.uid;
+    if (!id) throw createHttpError(401, "Authentication required");
+    return id;
+  }
+
+  private static async assertJob(jobId: string, userId: string) {
+    const job = await ImportsService.getJobForUser(jobId, userId);
+    if (!job) throw createHttpError(404, "Import job not found");
+    return job;
+  }
+
+  static create = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const {
+        provider,
+        flowType,
+        targetProjectId,
+        targetSpaceType,
+        targetTemplate,
+        sourceReference,
+      } = req.body;
+      const createdBy = this.getUserId(req);
+      if (!provider || !flowType)
+        throw createHttpError(400, "provider and flowType are required");
+      const job = await ImportsService.createJob({
+        provider,
+        flowType,
+        createdBy,
+        targetProjectId,
+        targetSpaceType,
+        targetTemplate,
+        sourceReference,
+      });
+      return res.status(200).send(new ServerResponse(true, job));
+    }
+  );
+
+  static get = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const job = await ImportsService.getJob(req.params.jobId);
+      if (!job) throw createHttpError(404, "Import job not found");
+      return res.status(200).send(new ServerResponse(true, job));
+    }
+  );
+
+  static autoHierarchy = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const jobId = req.params.jobId;
+      const job = await ImportsService.getJob(jobId);
+      if (!job) throw createHttpError(404, "Import job not found");
+      const rows = autoHierarchyTemplate;
+      await ImportsService.upsertHierarchy(jobId, rows);
+      return res.status(200).send(new ServerResponse(true, rows));
+    }
+  );
+
+  static autoFields = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const jobId = req.params.jobId;
+      const job = await ImportsService.getJob(jobId);
+      if (!job) throw createHttpError(404, "Import job not found");
+      const rows = autoFieldTemplate;
+      await ImportsService.upsertFields(jobId, rows);
+      return res.status(200).send(new ServerResponse(true, rows));
+    }
+  );
+
+  static saveFields = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const jobId = req.params.jobId;
+      const rows = req.body?.fields || [];
+      if (!Array.isArray(rows))
+        throw createHttpError(400, "fields must be array");
+      const job = await ImportsService.getJob(jobId);
+      if (!job) throw createHttpError(404, "Import job not found");
+      await ImportsService.upsertFields(jobId, rows);
+      return res.status(200).send(new ServerResponse(true, rows));
+    }
+  );
+
+  static saveHierarchy = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const userId = this.getUserId(req);
+      const job = await this.assertJob(req.params.jobId, userId);
+      const rows = req.body?.hierarchy || [];
+      if (!Array.isArray(rows))
+        throw createHttpError(400, "hierarchy must be array");
+      await ImportsService.upsertHierarchy(job.id, rows);
+      return res.status(200).send(new ServerResponse(true, rows));
+    }
+  );
+
+  static saveValueMappings = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const userId = this.getUserId(req);
+      const job = await this.assertJob(req.params.jobId, userId);
+      const rows = (req.body?.values as ValueMappingRow[]) || [];
+      if (!Array.isArray(rows))
+        throw createHttpError(400, "values must be array");
+      await ImportsService.upsertValueMappings(job.id, rows);
+      return res.status(200).send(new ServerResponse(true, rows));
+    }
+  );
+
+  static saveUserMappings = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const userId = this.getUserId(req);
+      const job = await this.assertJob(req.params.jobId, userId);
+      const rows = (req.body?.users as UserMappingRow[]) || [];
+      if (!Array.isArray(rows))
+        throw createHttpError(400, "users must be array");
+      await ImportsService.upsertUserMappings(job.id, rows);
+      return res.status(200).send(new ServerResponse(true, rows));
+    }
+  );
+
+  static saveAttachments = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const userId = this.getUserId(req);
+      const job = await this.assertJob(req.params.jobId, userId);
+      const rows = (req.body?.attachments as AttachmentPlanRow[]) || [];
+      if (!Array.isArray(rows))
+        throw createHttpError(400, "attachments must be array");
+      await ImportsService.upsertAttachmentPlans(job.id, rows);
+      return res.status(200).send(new ServerResponse(true, rows));
+    }
+  );
+
+  static saveStageTasks = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const userId = this.getUserId(req);
+      const job = await this.assertJob(req.params.jobId, userId);
+      const rows = (req.body?.tasks as StageTaskRow[]) || [];
+      if (!Array.isArray(rows))
+        throw createHttpError(400, "tasks must be array");
+      await ImportsService.upsertStageTasks(job.id, rows);
+      return res.status(200).send(new ServerResponse(true, rows));
+    }
+  );
+
+  static listStageTasks = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const userId = this.getUserId(req);
+      const job = await this.assertJob(req.params.jobId, userId);
+      const tasks = await ImportsService.listStageTasks(job.id);
+      return res.status(200).send(new ServerResponse(true, tasks));
+    }
+  );
+
+  static progress = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const userId = this.getUserId(req);
+      const job = await this.assertJob(req.params.jobId, userId);
+      const data = await ImportsService.progress(job.id);
+      return res.status(200).send(new ServerResponse(true, data));
+    }
+  );
+
+  static ingest = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const userId = this.getUserId(req);
+      const job = await this.assertJob(req.params.jobId, userId);
+      const result = await ImportIngestionService.ingest(job, req.body || {});
+      await ImportsService.updateJobStatus(job.id, "ready");
+      const data = await ImportsService.progress(job.id);
+      return res
+        .status(200)
+        .send(new ServerResponse(true, { ...data, ingest: result }));
+    }
+  );
+
+  static logs = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const userId = this.getUserId(req);
+      const job = await this.assertJob(req.params.jobId, userId);
+      const logs = await ImportsService.listLogs(job.id);
+      return res.status(200).send(new ServerResponse(true, logs));
+    }
+  );
+
+  static commit = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const userId = this.getUserId(req);
+      const job = await this.assertJob(req.params.jobId, userId);
+      await ImportsService.commit(job.id);
+      const data = await ImportsService.progress(job.id);
+      return res.status(200).send(new ServerResponse(true, data));
+    }
+  );
+
+  static cancel = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const userId = this.getUserId(req);
+      const job = await this.assertJob(req.params.jobId, userId);
+      await ImportsService.cancel(job.id, req.body?.message);
+      const data = await ImportsService.progress(job.id);
+      return res.status(200).send(new ServerResponse(true, data));
+    }
+  );
+
+  // --- Auth flows ---
+  static startAsanaAuth = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const userId = this.getUserId(req);
+      const job = await this.assertJob(req.params.jobId, userId);
+
+      const clientId = process.env.ASANA_CLIENT_ID;
+      const redirectUri =
+        process.env.ASANA_REDIRECT_URI ||
+        `${process.env.API_BASE_URL || ""}/api/imports/auth/asana/callback`;
+      if (!clientId)
+        throw createHttpError(500, "ASANA_CLIENT_ID not configured");
+
+      const state = nanoid(24);
+      const codeVerifier = base64UrlEncode(crypto.randomBytes(32));
+      const pkceEnabled =
+        !process.env.ASANA_PKCE_ENABLED ||
+        process.env.ASANA_PKCE_ENABLED !== "false";
+      const codeChallenge = pkceEnabled
+        ? base64UrlEncode(
+            crypto.createHash("sha256").update(codeVerifier).digest()
+          )
+        : undefined;
+
+      await ImportsService.mergeSourceReference(job.id, {
+        auth: {
+          ...(job.source_reference as any)?.auth,
+          asana: { state, code_verifier: codeVerifier },
+        },
+      });
+
+      const params = new URLSearchParams({
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: "code",
+        state: `${job.id}:${state}`,
+      });
+      if (pkceEnabled && codeChallenge) {
+        params.append("code_challenge", codeChallenge);
+        params.append("code_challenge_method", "S256");
+      }
+
+      const authUrl = `https://app.asana.com/-/oauth_authorize?${params.toString()}`;
+      return res.status(200).send(new ServerResponse(true, { authUrl, state }));
+    }
+  );
+
+  static asanaCallback = safeControllerFunction(async (req, res) => {
+    const code = req.query?.code as string | undefined;
+    const stateParam = req.query?.state as string | undefined;
+    if (!code || !stateParam)
+      throw createHttpError(400, "Missing code or state");
+
+    const [jobId, incomingState] = stateParam.split(":");
+    const job = await ImportsService.getJob(jobId);
+    if (!job) throw createHttpError(404, "Import job not found");
+    const ref = (job.source_reference as any) || {};
+    const savedState = ref?.auth?.asana?.state;
+    const codeVerifier = ref?.auth?.asana?.code_verifier;
+    if (!savedState || savedState !== incomingState)
+      throw createHttpError(400, "State mismatch");
+
+    const redirectUri =
+      process.env.ASANA_REDIRECT_URI ||
+      `${process.env.API_BASE_URL || ""}/api/imports/auth/asana/callback`;
+    const clientId = process.env.ASANA_CLIENT_ID;
+    const clientSecret = process.env.ASANA_CLIENT_SECRET;
+    if (!clientId || !clientSecret)
+      throw createHttpError(500, "Asana client credentials not configured");
+
+    const body = new URLSearchParams({
+      grant_type: "authorization_code",
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      code,
+    });
+    if (codeVerifier) body.append("code_verifier", codeVerifier);
+
+    const tokenResp = await axios.post(
+      "https://app.asana.com/-/oauth_token",
+      body.toString(),
+      {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      }
+    );
+
+    const { access_token, refresh_token, expires_in } = tokenResp.data || {};
+    if (!access_token)
+      throw createHttpError(400, "Failed to exchange Asana token");
+
+    const authHeader = { Authorization: `Bearer ${access_token}` };
+    const workspacesResp = await axios.get(
+      "https://app.asana.com/api/1.0/workspaces",
+      {
+        headers: authHeader,
+        params: { limit: 100 },
+      }
+    );
+    const workspaces = (workspacesResp.data?.data || []).map((w: any) => ({
+      id: w.gid,
+      name: w.name,
+    }));
+
+    const projects: Array<{ id: string; name: string; workspaceId: string }> =
+      [];
+    for (const ws of workspaces.slice(0, 3)) {
+      try {
+        const pResp = await axios.get(
+          `https://app.asana.com/api/1.0/workspaces/${ws.id}/projects`,
+          { headers: authHeader, params: { limit: 50 } }
+        );
+        (pResp.data?.data || []).forEach((p: any) => {
+          projects.push({ id: p.gid, name: p.name, workspaceId: ws.id });
+        });
+      } catch (err) {
+        await ImportsService.appendLog(
+          job.id,
+          "warn",
+          "Asana projects fetch failed",
+          {
+            workspaceId: ws.id,
+            error: (err as any)?.message,
+          }
+        );
+      }
+    }
+
+    await ImportsService.mergeSourceReference(job.id, {
+      auth: {
+        ...(ref?.auth || {}),
+        asana: {
+          access_token,
+          refresh_token: refresh_token || null,
+          expires_at: expires_in
+            ? new Date(Date.now() + expires_in * 1000).toISOString()
+            : null,
+          workspaces,
+          projects,
+        },
+      },
+    });
+
+    const payload = { authorized: true, workspaces, projects };
+    if (req.accepts("json") || (req.query as any)?.format === "json") {
+      return res.status(200).send(new ServerResponse(true, payload));
+    }
+
+    return res.status(200).send(
+      `<html><body style="font-family: Arial, sans-serif; padding: 24px;">
+           <h2>Asana connected</h2>
+           <p>You can close this window and return to Worklenz.</p>
+         </body></html>`
+    );
+  });
+
+  static mondayValidate = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const userId = this.getUserId(req);
+      const job = await this.assertJob(req.params.jobId, userId);
+      const token = (req.body?.token as string | undefined)?.trim();
+      if (!token) throw createHttpError(400, "token is required");
+
+      const query = "query { boards(limit: 25) { id name } }";
+      const { data } = await axios.post(
+        "https://api.monday.com/v2",
+        { query },
+        {
+          headers: { "Content-Type": "application/json", Authorization: token },
+        }
+      );
+
+      const boards = (data?.data?.boards || []).map((b: any) => ({
+        id: b.id,
+        name: b.name,
+      }));
+
+      await ImportsService.mergeSourceReference(job.id, {
+        auth: {
+          ...(job.source_reference as any)?.auth,
+          monday: { token, boards },
+        },
+      });
+
+      return res
+        .status(200)
+        .send(new ServerResponse(true, { authorized: true, boards }));
+    }
+  );
+
+  static clickupWorkspaces = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const userId = this.getUserId(req);
+      const job = await this.assertJob(req.params.jobId, userId);
+      const token = (req.body?.token as string | undefined)?.trim();
+      if (!token) throw createHttpError(400, "token is required");
+
+      const authHeader = { Authorization: token };
+      const teamsResp = await axios.get("https://api.clickup.com/api/v2/team", {
+        headers: authHeader,
+      });
+
+      const teamsRaw = teamsResp.data?.teams || [];
+      const teams: Array<{
+        id: string;
+        name: string;
+        spaces: Array<{
+          id: string;
+          name: string;
+          lists: Array<{ id: string; name: string }>;
+        }>;
+      }> = [];
+
+      for (const t of teamsRaw) {
+        const teamItem = {
+          id: t.id?.toString?.() || "",
+          name: t.name,
+          spaces: [] as any[],
+        };
+        try {
+          const spacesResp = await axios.get(
+            `https://api.clickup.com/api/v2/team/${teamItem.id}/space`,
+            { headers: authHeader, params: { archived: false } }
+          );
+          const spacesRaw = spacesResp.data?.spaces || [];
+          for (const s of spacesRaw.slice(0, 5)) {
+            const space = {
+              id: s.id?.toString?.() || "",
+              name: s.name,
+              lists: [] as any[],
+            };
+            try {
+              const listsResp = await axios.get(
+                `https://api.clickup.com/api/v2/space/${space.id}/list`,
+                { headers: authHeader, params: { archived: false } }
+              );
+              const listsRaw = listsResp.data?.lists || [];
+              space.lists = listsRaw
+                .slice(0, 50)
+                .map((l: any) => ({ id: l.id, name: l.name }));
+            } catch (err) {
+              await ImportsService.appendLog(
+                job.id,
+                "warn",
+                "ClickUp lists fetch failed",
+                {
+                  spaceId: space.id,
+                  error: (err as any)?.message,
+                }
+              );
+            }
+            teamItem.spaces.push(space);
+          }
+        } catch (err) {
+          await ImportsService.appendLog(
+            job.id,
+            "warn",
+            "ClickUp spaces fetch failed",
+            {
+              teamId: teamItem.id,
+              error: (err as any)?.message,
+            }
+          );
+        }
+        teams.push(teamItem);
+      }
+
+      await ImportsService.mergeSourceReference(job.id, {
+        auth: {
+          ...(job.source_reference as any)?.auth,
+          clickup: { token, teams },
+        },
+      });
+
+      return res
+        .status(200)
+        .send(new ServerResponse(true, { authorized: true, teams }));
+    }
+  );
+}

@@ -23,8 +23,13 @@ import sessionMiddleware from "./middlewares/session-middleware";
 import safeControllerFunction from "./shared/safe-controller-function";
 import AwsSesController from "./controllers/aws-ses-controller";
 import { CSP_POLICIES } from "./shared/csp";
+import importWorker from "./services/import-worker";
 
 const app = express();
+
+if (process.env.IMPORT_WORKER_ENABLED !== "false") {
+  importWorker.start();
+}
 
 // Trust first proxy if behind reverse proxy
 app.set("trust proxy", 1);
@@ -38,10 +43,12 @@ app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(hpp());
 
 // Helmet security headers
-app.use(helmet({
-  crossOriginEmbedderPolicy: false,
-  crossOriginResourcePolicy: false,
-}));
+app.use(
+  helmet({
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: false,
+  })
+);
 
 // Custom security headers
 app.use((_req: Request, res: Response, next: NextFunction) => {
@@ -63,46 +70,48 @@ const allowedOrigins = [
         `https://react.worklenz.com`,
         `https://www.react.worklenz.com`,
         `https://wl-client.ceydigital.dev`,
-        `https://appleid.apple.com`,  // Allow Apple Sign-In OAuth requests
-        process.env.SERVER_CORS || "",  // Add hostname from env
-        process.env.FRONTEND_URL || ""  // Support FRONTEND_URL as well
-      ].filter(Boolean)  // Remove empty strings
+        `https://appleid.apple.com`, // Allow Apple Sign-In OAuth requests
+        process.env.SERVER_CORS || "", // Add hostname from env
+        process.env.FRONTEND_URL || "", // Support FRONTEND_URL as well
+      ].filter(Boolean) // Remove empty strings
     : [
-      "http://localhost:3000",
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "http://127.0.0.1:5173",
-      "http://127.0.0.1:3000",
-      "http://127.0.0.1:5000",
-      `http://localhost:5000`,
-      `https://appleid.apple.com`,  // Allow Apple Sign-In OAuth requests
-      process.env.SERVER_CORS || "",  // Add hostname from env
-      process.env.FRONTEND_URL || ""  // Support FRONTEND_URL as well
-    ].filter(Boolean)  // Remove empty strings
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5000",
+        `http://localhost:5000`,
+        `https://appleid.apple.com`, // Allow Apple Sign-In OAuth requests
+        process.env.SERVER_CORS || "", // Add hostname from env
+        process.env.FRONTEND_URL || "", // Support FRONTEND_URL as well
+      ].filter(Boolean), // Remove empty strings
 ].flat();
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!isProduction() || !origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log("Blocked origin:", origin, process.env.NODE_ENV);
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  allowedHeaders: [
-    "Origin",
-    "X-Requested-With",
-    "Content-Type",
-    "Accept",
-    "Authorization",
-    "X-CSRF-Token",
-    "x-client-token"
-  ],
-  exposedHeaders: ["Set-Cookie", "X-CSRF-Token"]
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!isProduction() || !origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log("Blocked origin:", origin, process.env.NODE_ENV);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: [
+      "Origin",
+      "X-Requested-With",
+      "Content-Type",
+      "Accept",
+      "Authorization",
+      "X-CSRF-Token",
+      "x-client-token",
+    ],
+    exposedHeaders: ["Set-Cookie", "X-CSRF-Token"],
+  })
+);
 
 // Handle preflight requests
 app.options("*", cors());
@@ -123,7 +132,8 @@ function isLoggedIn(req: Request, _res: Response, next: NextFunction) {
   // Allow client portal invitation routes to bypass authentication
   const fullPath = req.originalUrl || req.url;
 
-  if (req.path.includes("/client-portal/invitation/") ||
+  if (
+    req.path.includes("/client-portal/invitation/") ||
     req.path.includes("/client-portal/auth/login") ||
     req.path.includes("/client-portal/auth/refresh") ||
     req.path.includes("/client-portal/handle-organization-invite") ||
@@ -134,20 +144,20 @@ function isLoggedIn(req: Request, _res: Response, next: NextFunction) {
     fullPath.includes("/client-portal/auth/refresh") ||
     fullPath.includes("/client-portal/handle-organization-invite") ||
     fullPath.startsWith("/invite/team/") ||
-    fullPath.startsWith("/invite/project/")) {
+    fullPath.startsWith("/invite/project/")
+  ) {
     return next();
   }
   return req.user ? next() : next(createError(401));
 }
 
 // CSRF configuration using csrf-sync for session-based authentication
-const {
-  invalidCsrfTokenError,
-  generateToken,
-  csrfSynchronisedProtection,
-} = csrfSync({
-  getTokenFromRequest: (req: Request) => req.headers["x-csrf-token"] as string || (req.body && req.body["_csrf"])
-});
+const { invalidCsrfTokenError, generateToken, csrfSynchronisedProtection } =
+  csrfSync({
+    getTokenFromRequest: (req: Request) =>
+      (req.headers["x-csrf-token"] as string) ||
+      (req.body && req.body["_csrf"]),
+  });
 
 // Apply CSRF selectively (exclude webhooks, public routes, and invitation routes)
 app.use((req, res, next) => {
@@ -182,24 +192,42 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.get("/csrf-token", (req: Request, res: Response) => {
   try {
     const token = generateToken(req);
-    res.status(200).json({ done: true, message: "CSRF token refreshed", token });
+    res
+      .status(200)
+      .json({ done: true, message: "CSRF token refreshed", token });
   } catch (error) {
-    res.status(500).json({ done: false, message: "Failed to generate CSRF token" });
+    res
+      .status(500)
+      .json({ done: false, message: "Failed to generate CSRF token" });
   }
 });
 
 // Webhook endpoints (no CSRF required)
-app.post("/webhook/emails/bounce", safeControllerFunction(AwsSesController.handleBounceResponse));
-app.post("/webhook/emails/complaints", safeControllerFunction(AwsSesController.handleComplaintResponse));
-app.post("/webhook/emails/delivery", safeControllerFunction(AwsSesController.handleDeliveryEvents));
-app.post("/webhook/emails/reply", safeControllerFunction(AwsSesController.handleReplies));
+app.post(
+  "/webhook/emails/bounce",
+  safeControllerFunction(AwsSesController.handleBounceResponse)
+);
+app.post(
+  "/webhook/emails/complaints",
+  safeControllerFunction(AwsSesController.handleComplaintResponse)
+);
+app.post(
+  "/webhook/emails/delivery",
+  safeControllerFunction(AwsSesController.handleDeliveryEvents)
+);
+app.post(
+  "/webhook/emails/reply",
+  safeControllerFunction(AwsSesController.handleReplies)
+);
 
 // Static file serving
 if (isProduction()) {
-  app.use(express.static(path.join(__dirname, "build"), {
-    maxAge: "1y",
-    etag: false,
-  }));
+  app.use(
+    express.static(path.join(__dirname, "build"), {
+      maxAge: "1y",
+      etag: false,
+    })
+  );
 
   // Handle compressed files
   app.get("*.js", (req, res, next) => {
@@ -242,7 +270,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     return res.status(403).json({
       done: false,
       message: "Invalid CSRF token",
-      body: null
+      body: null,
     });
   }
   next(err);
@@ -251,7 +279,9 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 // React app handling - serve index.html for all non-API routes
 app.get("*", (req: Request, res: Response, next: NextFunction) => {
   if (req.path.startsWith("/api/")) return next();
-  res.sendFile(path.join(__dirname, isProduction() ? "build" : "public", "index.html"));
+  res.sendFile(
+    path.join(__dirname, isProduction() ? "build" : "public", "index.html")
+  );
 });
 
 // Global error handler
@@ -269,7 +299,7 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     done: false,
     message: isProduction() ? "Internal Server Error" : err.message,
     body: null,
-    ...(process.env.NODE_ENV === "development" ? { stack: err.stack } : {})
+    ...(process.env.NODE_ENV === "development" ? { stack: err.stack } : {}),
   });
 });
 
