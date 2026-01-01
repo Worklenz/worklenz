@@ -208,6 +208,7 @@ import { useBulkActions } from './hooks/useBulkActions';
 
 // Constants and types
 import { BASE_COLUMNS, ColumnStyle } from './constants/columns';
+import { validateColumnWidths, validateColumnWidth } from '@/utils/column-width-validation';
 import { Task } from '@/types/task-management.types';
 import { SocketEvents } from '@/shared/socket-events';
 import { evt_project_task_list_visit } from '@/shared/worklenz-analytics-events';
@@ -244,6 +245,9 @@ const TaskListV2Section: React.FC = () => {
   // Refs for scroll synchronization
   const headerScrollRef = useRef<HTMLDivElement>(null);
   const contentScrollRef = useRef<HTMLDivElement>(null);
+  
+  // Ref to store cleanup function for column resize drag operation
+  const resizeCleanupRef = useRef<(() => void) | null>(null);
 
   // State hooks
   const [initializedFromDatabase, setInitializedFromDatabase] = useState(false);
@@ -285,45 +289,8 @@ const TaskListV2Section: React.FC = () => {
       if (!stored) return {};
 
       const parsed = JSON.parse(stored);
-    // Validate stored widths against minWidth and maxWidth constraints
-    const validated: Record<string, string> = {};
-    Object.entries(parsed).forEach(([columnId, width]) => {
-      const baseColumn = BASE_COLUMNS.find(col => col.id === columnId);
-      let validatedWidth = width as string;
-
-      if (baseColumn) {
-        const currentWidth = parseInt((width as string).replace('px', ''));
-
-        // Check minWidth constraint
-        if (baseColumn.minWidth) {
-          const minWidth = parseInt(baseColumn.minWidth.replace('px', ''));
-          if (currentWidth < minWidth) {
-            validatedWidth = baseColumn.minWidth;
-          }
-        }
-
-        // Check maxWidth constraint
-        if (baseColumn.maxWidth) {
-          const maxWidth = parseInt(baseColumn.maxWidth.replace('px', ''));
-          if (currentWidth > maxWidth) {
-            validatedWidth = baseColumn.maxWidth;
-          }
-        }
-
-        // Force title column to max width constraint
-        if (columnId === 'title' && currentWidth > 400) {
-          validatedWidth = '400px';
-        }
-
-        // Force description column to min width constraint
-        if (columnId === 'description' && currentWidth < 200) {
-          validatedWidth = '200px';
-        }
-      }
-
-      validated[columnId] = validatedWidth;
-    });
-    return validated;
+      // Validate stored widths against minWidth and maxWidth constraints
+      return validateColumnWidths(parsed, BASE_COLUMNS);
     } catch (error) {
       // Handle localStorage errors gracefully
       if (error instanceof DOMException && error.name === 'QuotaExceededError') {
@@ -374,41 +341,10 @@ const TaskListV2Section: React.FC = () => {
       return false;
     }).map(column => {
       // Apply custom width if it exists, otherwise use default width
-      let width = columnWidths[column.id] || column.width;
-
-      // Force title column to maximum 400px to prevent covering other columns
-      if (column.id === 'title') {
-        const currentWidth = parseInt(width.replace('px', ''));
-        if (currentWidth > 400) {
-          width = '400px';
-        }
-      }
-
-      // Force description column to minimum 200px for readability
-      if (column.id === 'description') {
-        const currentWidth = parseInt(width.replace('px', ''));
-        if (currentWidth < 200) {
-          width = '200px';
-        }
-      }
-
-      // Validate width against minWidth constraint
-      if (column.minWidth) {
-        const minWidth = parseInt(column.minWidth.replace('px', ''));
-        const currentWidth = parseInt(width.replace('px', ''));
-        if (currentWidth < minWidth) {
-          width = column.minWidth;
-        }
-      }
-
-      // Validate width against maxWidth constraint
-      if (column.maxWidth) {
-        const maxWidth = parseInt(column.maxWidth.replace('px', ''));
-        const currentWidth = parseInt(width.replace('px', ''));
-        if (currentWidth > maxWidth) {
-          width = column.maxWidth;
-        }
-      }
+      const rawWidth = columnWidths[column.id] || column.width;
+      
+      // Validate width using shared utility function
+      const width = validateColumnWidth(column.id, rawWidth, column);
 
       return {
         ...column,
@@ -518,6 +454,16 @@ const TaskListV2Section: React.FC = () => {
       });
     }
   }, [columns, fields, dispatch, initializedFromDatabase]);
+
+  // Cleanup column resize listeners on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      // If component unmounts during a drag operation, clean up listeners and DOM elements
+      if (resizeCleanupRef.current) {
+        resizeCleanupRef.current();
+      }
+    };
+  }, []);
 
   // Event handlers
   const handleTaskSelect = useCallback(
@@ -876,20 +822,80 @@ const TaskListV2Section: React.FC = () => {
                       width: 8,
                       height: '100%',
                     }}
+                    onKeyDown={e => {
+                      // Only handle ArrowLeft and ArrowRight keys
+                      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') {
+                        return;
+                      }
+
+                      e.preventDefault();
+                      e.stopPropagation();
+
+                      const columnId = column.id;
+                      
+                      // Get current width from state or column default
+                      const currentWidthString = columnWidths[columnId] || column.width;
+                      const currentWidth = parseInt(currentWidthString.replace('px', ''), 10);
+                      
+                      // Get min/max widths from column config or use defaults
+                      const minWidth = (column as any).minWidth
+                        ? parseInt((column as any).minWidth.replace('px', ''), 10)
+                        : 100;
+                      const maxWidth = (column as any).maxWidth
+                        ? parseInt((column as any).maxWidth.replace('px', ''), 10)
+                        : 1200;
+
+                      // Determine increment: Shift for larger increments (10px), normal for smaller (1px)
+                      const increment = e.shiftKey ? 10 : 1;
+                      
+                      // Determine direction: ArrowRight increases width, ArrowLeft decreases
+                      const direction = e.key === 'ArrowRight' ? 1 : -1;
+                      
+                      // Calculate new width
+                      const newWidth = Math.max(minWidth, Math.min(maxWidth, currentWidth + (direction * increment)));
+
+                      // Update CSS variable for immediate visual feedback
+                      document.documentElement.style.setProperty(
+                        `--col-width-${columnId}`,
+                        `${newWidth}px`
+                      );
+
+                      // Update state to persist the change
+                      setColumnWidths(prev => ({
+                        ...prev,
+                        [columnId]: `${newWidth}px`,
+                      }));
+
+                      // Update aria attributes and visual state for accessibility
+                      const handleElement = e.currentTarget;
+                      const atLimit = newWidth <= minWidth || newWidth >= maxWidth;
+                      
+                      // Update aria attributes for screen readers
+                      handleElement.setAttribute('aria-valuenow', `${newWidth}`);
+                      handleElement.setAttribute('aria-valuemin', `${minWidth}`);
+                      handleElement.setAttribute('aria-valuemax', `${maxWidth}`);
+                      
+                      // Update visual state
+                      if (atLimit) {
+                        handleElement.classList.add('at-limit');
+                      } else {
+                        handleElement.classList.remove('at-limit');
+                      }
+                    }}
                     onMouseDown={e => {
                       e.preventDefault();
                       e.stopPropagation();
                       const startX = e.clientX;
-                      const startWidth = parseInt(column.width.replace('px', ''));
+                      const startWidth = parseInt(column.width.replace('px', ''), 10);
                       const columnId = column.id;
                       const handleElement = e.currentTarget;
 
                       // Get min/max widths from column config or use defaults
                       const minWidth = column.minWidth
-                        ? parseInt(column.minWidth.replace('px', ''))
+                        ? parseInt(column.minWidth.replace('px', ''), 10)
                         : 100;
                       const maxWidth = column.maxWidth
-                        ? parseInt(column.maxWidth.replace('px', ''))
+                        ? parseInt(column.maxWidth.replace('px', ''), 10)
                         : 1200;
 
                       // Find the scrollable table container
@@ -951,23 +957,6 @@ const TaskListV2Section: React.FC = () => {
                       };
 
                       const handleMouseUp = (upEvent: MouseEvent) => {
-                        document.removeEventListener('mousemove', handleMouseMove);
-                        document.removeEventListener('mouseup', handleMouseUp);
-                        document.body.style.cursor = '';
-                        document.body.style.userSelect = '';
-                        document.body.classList.remove('column-resizing');
-
-                        // Remove indicator and tooltip
-                        indicator.style.opacity = '0';
-                        tooltip.style.opacity = '0';
-                        setTimeout(() => {
-                          indicator.remove();
-                          tooltip.remove();
-                        }, 150);
-
-                        // Remove resizing class
-                        handleElement.classList.remove('resizing', 'at-limit');
-
                         // Calculate final width and update state to persist
                         const diff = upEvent.clientX - startX;
                         const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + diff));
@@ -975,7 +964,52 @@ const TaskListV2Section: React.FC = () => {
                           ...prev,
                           [columnId]: `${newWidth}px`,
                         }));
+                        
+                        // Call cleanup function to remove listeners and DOM elements
+                        if (resizeCleanupRef.current) {
+                          resizeCleanupRef.current();
+                        }
                       };
+
+                      // Create cleanup function to remove listeners and DOM elements
+                      // Must be defined after handleMouseMove and handleMouseUp
+                      const cleanup = () => {
+                        // Remove event listeners
+                        document.removeEventListener('mousemove', handleMouseMove);
+                        document.removeEventListener('mouseup', handleMouseUp);
+                        
+                        // Reset body styles
+                        document.body.style.cursor = '';
+                        document.body.style.userSelect = '';
+                        document.body.classList.remove('column-resizing');
+                        
+                        // Remove indicator and tooltip
+                        if (indicator.parentNode) {
+                          indicator.style.opacity = '0';
+                          setTimeout(() => {
+                            if (indicator.parentNode) {
+                              indicator.remove();
+                            }
+                          }, 150);
+                        }
+                        if (tooltip.parentNode) {
+                          tooltip.style.opacity = '0';
+                          setTimeout(() => {
+                            if (tooltip.parentNode) {
+                              tooltip.remove();
+                            }
+                          }, 150);
+                        }
+                        
+                        // Remove resizing classes
+                        handleElement.classList.remove('resizing', 'at-limit');
+                        
+                        // Clear the cleanup ref
+                        resizeCleanupRef.current = null;
+                      };
+                      
+                      // Store cleanup function in ref
+                      resizeCleanupRef.current = cleanup;
 
                       // Initial indicator position
                       updateIndicator(e.clientX, startWidth);
