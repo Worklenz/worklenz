@@ -183,6 +183,7 @@ export interface ClientPortalClient {
   company_name?: string;
   phone?: string;
   address?: string;
+  contact_person?: string;
   assigned_projects_count: number;
   projects: ClientPortalProject[];
   team_members: ClientPortalTeamMember[];
@@ -224,6 +225,7 @@ export interface UpdateClientRequest {
   company_name?: string;
   phone?: string;
   address?: string;
+  contact_person?: string;
   status?: 'active' | 'inactive' | 'pending';
 }
 

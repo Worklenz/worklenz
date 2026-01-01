@@ -66,6 +66,9 @@
   "addressLabel": "地址",
   "addressPlaceholder": "输入地址（可选）",
   
+  "contactPersonLabel": "联系人",
+  "contactPersonPlaceholder": "输入联系人姓名",
+  
   "statusLabel": "状态",
   
   "createClientSuccessMessage": "客户创建成功！分享组织邀请链接为他们提供门户访问权限。",

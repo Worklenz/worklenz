@@ -622,9 +622,15 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         paramIndex++;
       }
 
-      if (updateData.address) {
+      if (updateData.address !== undefined) {
         updateFields.push(`address = $${paramIndex}`);
-        updateValues.push(updateData.address);
+        updateValues.push(updateData.address || null);
+        paramIndex++;
+      }
+
+      if (updateData.contact_person !== undefined) {
+        updateFields.push(`contact_person = $${paramIndex}`);
+        updateValues.push(updateData.contact_person || null);
         paramIndex++;
       }
 
@@ -647,7 +653,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         UPDATE clients
         SET ${updateFields.join(", ")}
         WHERE id = $${paramIndex} AND team_id = $${paramIndex + 1}
-        RETURNING id, name, email, company_name, phone, address, status, created_at, updated_at
+        RETURNING id, name, email, company_name, phone, address, contact_person, status, created_at, updated_at
       `;
 
       const result = await db.query(query, updateValues);

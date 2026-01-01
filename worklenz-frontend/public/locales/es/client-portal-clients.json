@@ -68,6 +68,9 @@
   "addressLabel": "Dirección",
   "addressPlaceholder": "Ingresa la dirección (opcional)",
 
+  "contactPersonLabel": "Persona de Contacto",
+  "contactPersonPlaceholder": "Ingresa el nombre de la persona de contacto",
+
   "statusLabel": "Estado",
 
   "createClientSuccessMessage": "¡Cliente creado exitosamente! Comparte el enlace de invitación de la organización para darle acceso al portal.",

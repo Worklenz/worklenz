@@ -66,6 +66,9 @@
   "addressLabel": "Adresa",
   "addressPlaceholder": "Shkruani adresën (opsionale)",
 
+  "contactPersonLabel": "Personi i Kontaktit",
+  "contactPersonPlaceholder": "Shkruani emrin e personit të kontaktit",
+
   "statusLabel": "Statusi",
 
   "createClientSuccessMessage": "Klienti u krijua me sukses! Ndani lidhjen e ftesës së organizatës për t'i dhënë atij qasje në portal.",

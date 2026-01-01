@@ -75,6 +75,9 @@
   "addressLabel": "Address",
   "addressPlaceholder": "Enter address (optional)",
 
+  "contactPersonLabel": "Contact Person",
+  "contactPersonPlaceholder": "Enter contact person name",
+
   "statusLabel": "Status",
 
   "createClientSuccessMessage": "Client created successfully! Share the organization invite link to give them portal access.",
