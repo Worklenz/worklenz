@@ -35,6 +35,7 @@ import {
   CloseOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import {
@@ -53,6 +54,7 @@ const { Title, Text, Paragraph } = Typography;
 
 const ClientDetailsDrawer = () => {
   const { t } = useTranslation('client-portal-clients');
+  const navigate = useNavigate();
 
   const dispatch = useAppDispatch();
 
@@ -604,7 +606,16 @@ const ClientDetailsDrawer = () => {
                       <List.Item
                         actions={[
                           <Tooltip title={t('viewProjectTooltip') || 'View Project'}>
-                            <Button type="link" icon={<EyeOutlined />} size="small">
+                            <Button
+                              type="link"
+                              icon={<EyeOutlined />}
+                              size="small"
+                              onClick={() => {
+                                if (project.id) {
+                                  navigate(`/worklenz/projects/${project.id}?tab=tasks-list&pinned_tab=tasks-list`);
+                                }
+                              }}
+                            >
                               {t('viewButton') || 'View'}
                             </Button>
                           </Tooltip>,
