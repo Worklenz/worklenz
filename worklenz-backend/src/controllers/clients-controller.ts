@@ -1157,39 +1157,130 @@ export default class ClientsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async createPortalChat(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    // For organization-side, we need to extract clientId from request body or query
-    // and organizationId from user's team
-    const clientId = req.body?.clientId || req.query?.clientId;
-    const organizationId = req.user?.team_id;
-    
-    if (!clientId) {
-      return res.status(400).json(new ServerResponse(false, null, "Client ID is required"));
+    try {
+      // For organization-side, we need to extract clientId from request body or query
+      // and organizationId from user's team
+      const clientId = req.body?.clientId || req.query?.clientId;
+      const organizationId = req.user?.team_id;
+      const userId = req.user?.id;
+      const { subject, message } = req.body;
+      
+      if (!clientId) {
+        return res.status(400).json(new ServerResponse(false, null, "Client ID is required"));
+      }
+      
+      if (!organizationId) {
+        return res.status(400).json(new ServerResponse(false, null, "Organization ID is required"));
+      }
+      
+      if (!userId) {
+        return res.status(400).json(new ServerResponse(false, null, "User ID is required"));
+      }
+      
+      // Validate required fields
+      if (!message || message.trim().length === 0) {
+        return res.status(400).json(new ServerResponse(false, null, "Message content is required"));
+      }
+      
+      if (!subject || subject.trim().length === 0) {
+        return res.status(400).json(new ServerResponse(false, null, "Subject is required"));
+      }
+      
+      // Verify client exists and belongs to organization
+      const clientQuery = await db.query(
+        "SELECT id, name, email FROM clients WHERE id = $1 AND organization_team_id = $2",
+        [clientId, organizationId]
+      );
+      
+      if (clientQuery.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+      }
+      
+      const client = clientQuery.rows[0];
+      
+      // Get user name for sender
+      const userQuery = await db.query(
+        "SELECT name FROM users WHERE id = $1",
+        [userId]
+      );
+      const userName = userQuery.rows[0]?.name || "Team Member";
+      
+      // Create the first message with subject in the format "Subject: {subject}\n\n{message}"
+      const fullMessage = `Subject: ${subject.trim()}\n\n${message.trim()}`;
+      
+      // Insert message with team_member as sender_type (organization-side)
+      const insertQuery = `
+        INSERT INTO client_portal_chat_messages (
+          client_id, organization_team_id, sender_type, sender_id,
+          message, message_type, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        RETURNING id, sender_type, sender_id, message, message_type, created_at
+      `;
+      
+      const result = await db.query(insertQuery, [
+        clientId,
+        organizationId,
+        "team_member", // Organization-side: sender is team_member
+        userId, // Use team member's user ID
+        fullMessage,
+        "text",
+      ]);
+      
+      const newMessage = result.rows[0];
+      
+      // Generate proper chatId format: clientId-date
+      const chatDate = new Date(newMessage.created_at).toISOString().split('T')[0];
+      const chatId = `${clientId}-${chatDate}`;
+      
+      // Emit socket events for real-time updates
+      try {
+        const io = IO.getInstance();
+        if (io) {
+          // Emit to organization team members
+          io.emit(`client_portal:new_message`, {
+            id: newMessage.id,
+            clientId,
+            organizationId,
+            senderName: userName,
+            senderType: "team_member",
+            message: newMessage.message,
+            messageType: newMessage.message_type,
+            createdAt: newMessage.created_at,
+          });
+          
+          // Emit chat message event
+          io.emit("chat:message_received", {
+            id: newMessage.id,
+            chatId: chatId,
+            clientId,
+            organizationId,
+            senderId: userId,
+            senderName: userName,
+            senderType: "team_member",
+            message: newMessage.message,
+            messageType: newMessage.message_type,
+            createdAt: newMessage.created_at,
+          });
+        }
+      } catch (socketError) {
+        console.error("Error emitting socket events:", socketError);
+        // Continue execution even if socket fails
+      }
+      
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            chatId: chatId,
+            message: "Chat created successfully",
+          },
+          "Conversation started successfully!"
+        )
+      );
+    } catch (error) {
+      console.error("Error creating portal chat:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to create chat"));
     }
-    
-    if (!organizationId) {
-      return res.status(400).json(new ServerResponse(false, null, "Organization ID is required"));
-    }
-    
-    // Get client email from the client record
-    const clientQuery = await db.query(
-      "SELECT email FROM clients WHERE id = $1 AND organization_team_id = $2",
-      [clientId, organizationId]
-    );
-    
-    if (clientQuery.rows.length === 0) {
-      return res.status(404).json(new ServerResponse(false, null, "Client not found"));
-    }
-    
-    const clientEmail = clientQuery.rows[0].email;
-    
-    const modifiedReq = {
-      ...req,
-      user: req.user,
-      clientId,
-      organizationId,
-      clientEmail
-    } as any;
-    return ClientPortalController.createChat(modifiedReq, res as any);
   }
 
   @HandleExceptions()

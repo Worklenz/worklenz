@@ -660,13 +660,24 @@ export const clientPortalApi = createApi({
 
     // Organization-side Client Portal Chats Management (for admin/organization users)
     getOrganizationChats: builder.query<
-      ClientPortalChat[],
+      ClientPortalChat[] | { chats: ClientPortalChat[]; total: number; page: number; limit: number },
       { clientId?: string; page?: number; limit?: number }
     >({
       query: ({ clientId, page, limit }) => ({
         url: '/clients/portal/chats',
         params: clientId ? { clientId, page, limit } : { page, limit },
       }),
+      transformResponse: (response: any) => {
+        // Handle ServerResponse wrapper
+        if (response && response.body) {
+          // If body has chats array, return it; otherwise return the whole body
+          if (response.body.chats && Array.isArray(response.body.chats)) {
+            return response.body;
+          }
+          return response.body;
+        }
+        return response;
+      },
       providesTags: ['Chats'],
     }),
 
