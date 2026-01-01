@@ -236,7 +236,13 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   };
 
   const handleMondayValidate = async () => {
-    if (!job || !mondayToken.trim()) return;
+    if (!mondayToken.trim()) return;
+    if (!job) {
+      setAuthError(
+        t('auth.jobMissing', 'Connection not ready. Please close and reopen the modal.')
+      );
+      return;
+    }
     setAuthLoading(true);
     setAuthError(null);
     try {

@@ -14,24 +14,24 @@ export const createImportJob = async (payload: {
   targetTemplate?: string | null;
   sourceReference?: Record<string, unknown> | null;
 }) => {
-  const { data } = await apiClient.post('/api/imports', payload);
+  const { data } = await apiClient.post('/api/v1/imports', payload);
   return data?.data as ImportJob;
 };
 
 export const startAsanaAuth = async (jobId: string) => {
-  const { data } = await apiClient.post(`/api/imports/${jobId}/auth/asana/start`);
+  const { data } = await apiClient.post(`/api/v1/imports/${jobId}/auth/asana/start`);
   return data?.data as { authUrl: string; state: string };
 };
 
 export const mondayValidate = async (jobId: string, token: string) => {
-  const { data } = await apiClient.post(`/api/imports/${jobId}/auth/monday/validate`, {
+  const { data } = await apiClient.post(`/api/v1/imports/${jobId}/auth/monday/validate`, {
     token,
   });
   return data?.data as { authorized: boolean; boards: Array<{ id: string; name: string }> };
 };
 
 export const clickupWorkspaces = async (jobId: string, token: string) => {
-  const { data } = await apiClient.post(`/api/imports/${jobId}/auth/clickup/workspaces`, {
+  const { data } = await apiClient.post(`/api/v1/imports/${jobId}/auth/clickup/workspaces`, {
     token,
   });
   return data?.data as {
@@ -45,6 +45,6 @@ export const clickupWorkspaces = async (jobId: string, token: string) => {
 };
 
 export const getImportJob = async (jobId: string) => {
-  const { data } = await apiClient.get(`/api/imports/${jobId}`);
+  const { data } = await apiClient.get(`/api/v1/imports/${jobId}`);
   return data?.data as ImportJob;
 };

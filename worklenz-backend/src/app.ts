@@ -14,6 +14,7 @@ import hpp from "hpp";
 
 import passportConfig from "./passport";
 import apiRouter from "./routes/apis";
+import importsApiRouter from "./routes/apis/imports-api-router";
 import authRouter from "./routes/auth";
 import emailTemplatesRouter from "./routes/email-templates";
 import public_router from "./routes/public";
@@ -256,6 +257,8 @@ const apiLimiter = rateLimit({
 
 // Routes
 app.use("/api/v1", apiLimiter, isLoggedIn, apiRouter);
+// Backward compatibility for clients still calling /api/imports (without v1 prefix)
+app.use("/api/imports", apiLimiter, isLoggedIn, importsApiRouter);
 app.use("/api/client-portal", apiLimiter, clientPortalApiRouter);
 app.use("/secure", authRouter);
 app.use("/public", public_router);
