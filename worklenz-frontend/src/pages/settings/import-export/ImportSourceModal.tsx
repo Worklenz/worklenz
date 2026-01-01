@@ -1,6 +1,17 @@
 import React from 'react';
-import { Modal, Button, Typography, Upload, Steps, Collapse, Select, Input, Tooltip } from 'antd';
-import { InfoCircleOutlined } from '@ant-design/icons';
+import {
+  Modal,
+  Button,
+  Typography,
+  Upload,
+  Steps,
+  Collapse,
+  Select,
+  Input,
+  Tooltip,
+  Card,
+} from 'antd';
+import { InfoCircleOutlined, RightOutlined, SearchOutlined } from '@ant-design/icons';
 import { Switch } from 'antd';
 import Papa from 'papaparse';
 
@@ -121,10 +132,10 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         return (
           <div style={{ display: 'flex', gap: 48 }}>
             <div style={{ flex: 1, maxWidth: 400 }}>
-              <Typography.Title level={3}>{'Set up a space in Jira'}</Typography.Title>
+              <Typography.Title level={3}>{'Set up a space in Worklenz'}</Typography.Title>
               <Typography.Paragraph>
                 {
-                  'Your team’s data from Asana will be imported into this space. Check if you’re selecting the right Jira space, template, and space type as these options can’t be modified later. All fields are required.'
+                  'Your team’s data from Asana will be imported into this space. Check if you’re selecting the right Worklenz space, template, and space type as these options can’t be modified later. All fields are required.'
                 }
               </Typography.Paragraph>
               <label>{'Jira space'}</label>
@@ -154,36 +165,96 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       if (step === 2) {
         // Step 3: Review details (main or sub-screens)
         if (reviewSubScreen === 'main') {
+          const reviewCards = [
+            {
+              key: 'hierarchy',
+              title: 'Space hierarchy',
+              description: 'Sections from Asana are mapped to Status',
+              iconBg: '#1f6feb',
+              icon: '📦',
+              action: () => setReviewSubScreen('hierarchy'),
+              control: <RightOutlined style={{ color: '#9ca3af', fontSize: 16 }} />,
+            },
+            {
+              key: 'fieldMapping',
+              title: 'Field mapping',
+              description: '9/9 imported fields are automatically mapped',
+              iconBg: '#6e56cf',
+              icon: '📑',
+              action: () => setReviewSubScreen('fieldMapping'),
+              control: <RightOutlined style={{ color: '#9ca3af', fontSize: 16 }} />,
+            },
+            {
+              key: 'importMembers',
+              title: 'Import all members from Asana project',
+              description: 'Brings collaborators into the Jira space',
+              iconBg: '#0f9d58',
+              icon: '🧑‍🤝‍🧑',
+              action: undefined,
+              control: <Switch checked={importMembers} onChange={setImportMembers} />,
+            },
+            {
+              key: 'importAttachments',
+              title: 'Import all attachments',
+              description: 'Pulls files and images from tasks',
+              iconBg: '#f59e0b',
+              icon: '📎',
+              action: undefined,
+              control: <Switch checked={importAttachments} onChange={setImportAttachments} />,
+            },
+          ];
+
           return (
-            <div>
-              <Typography.Title level={3}>{'Review details'}</Typography.Title>
-              <Typography.Paragraph>
-                {
-                  'We’ve mapped your project and you’re ready to import. Here’s how the Asana data will be imported into the Jira project. Learn more about the project setup'
-                }
-              </Typography.Paragraph>
-              <div style={{ maxWidth: 600 }}>
-                <div
-                  style={{ marginBottom: 16, cursor: 'pointer' }}
-                  onClick={() => setReviewSubScreen('hierarchy')}
-                >
-                  <b>{'Space hierarchy'}</b>
-                  <div>{'Sections from Asana are mapped to Status'}</div>
-                </div>
-                <div
-                  style={{ marginBottom: 16, cursor: 'pointer' }}
-                  onClick={() => setReviewSubScreen('fieldMapping')}
-                >
-                  <b>{'Field mapping'}</b>
-                  <div>{'9/9 imported fields are automatically mapped'}</div>
-                </div>
-                <div style={{ marginBottom: 16 }}>
-                  <b>{'Import all members from Asana project'}</b>
-                  <Switch checked={importMembers} onChange={setImportMembers} />
-                </div>
-                <div style={{ marginBottom: 16 }}>
-                  <b>{'Import all attachments'}</b>
-                  <Switch checked={importAttachments} onChange={setImportAttachments} />
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <div style={{ width: '100%', maxWidth: 720 }}>
+                <Typography.Title level={3} style={{ marginBottom: 4 }}>
+                  {'Review details'}
+                </Typography.Title>
+                <Typography.Paragraph style={{ marginBottom: 24 }}>
+                  {
+                    'We’ve mapped your project and you’re ready to import. Here’s how the Asana data will be imported into the Jira project. Learn more about the project setup'
+                  }
+                </Typography.Paragraph>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {reviewCards.map(card => (
+                    <Card
+                      key={card.key}
+                      hoverable
+                      onClick={card.action}
+                      bordered={false}
+                      style={{
+                        borderRadius: 10,
+                        background: '#111318',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.22)',
+                        cursor: card.action ? 'pointer' : 'default',
+                      }}
+                      bodyStyle={{ padding: 14 }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div
+                          style={{
+                            width: 52,
+                            height: 52,
+                            borderRadius: 10,
+                            background: card.iconBg,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 22,
+                          }}
+                        >
+                          {card.icon}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ color: '#e5e7eb', fontWeight: 600, fontSize: 16 }}>
+                            {card.title}
+                          </div>
+                          <div style={{ color: '#9ca3af', fontSize: 13 }}>{card.description}</div>
+                        </div>
+                        <div>{card.control}</div>
+                      </div>
+                    </Card>
+                  ))}
                 </div>
               </div>
             </div>
@@ -192,90 +263,173 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         if (reviewSubScreen === 'hierarchy') {
           // Space hierarchy sub-screen
           return (
-            <div>
-              <a
-                href="#"
-                onClick={e => {
-                  e.preventDefault();
-                  setReviewSubScreen('main');
-                }}
-              >
-                {'Back to review details'}
-              </a>
-              <Typography.Title level={3}>{'Space hierarchy'}</Typography.Title>
-              <Typography.Paragraph>
-                {
-                  "Here’s how we've mapped your Asana data to Jira. More about project hierarchy in Jira"
-                }
-              </Typography.Paragraph>
-              <table style={{ width: '100%', marginTop: 16 }}>
-                <thead>
-                  <tr>
-                    <th>{'Asana'}</th>
-                    <th>{'Jira'}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {hierarchyRows.map(row => (
-                    <tr key={row.asana}>
-                      <td>{row.asana}</td>
-                      <td>{row.jira}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <div style={{ width: '100%', maxWidth: 900 }}>
+                <a
+                  href="#"
+                  style={{ color: '#7aa2f7', display: 'inline-flex', alignItems: 'center' }}
+                  onClick={e => {
+                    e.preventDefault();
+                    setReviewSubScreen('main');
+                  }}
+                >
+                  <RightOutlined
+                    style={{ fontSize: 12, marginRight: 6, transform: 'rotate(180deg)' }}
+                  />
+                  {'Back to review details'}
+                </a>
+                <Typography.Title level={3} style={{ marginTop: 12, marginBottom: 4 }}>
+                  {'Space hierarchy'}
+                </Typography.Title>
+                <Typography.Paragraph style={{ marginBottom: 20 }}>
+                  {
+                    "Here’s how we've mapped your Asana data to Worklenz. More about project hierarchy in Worklenz"
+                  }
+                </Typography.Paragraph>
+
+                <div
+                  style={{
+                    background: '#0e1116',
+                    borderRadius: 12,
+                    padding: 16,
+                    border: '1px solid #1e2633',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
+                    <span style={{ color: '#ea4335', fontSize: 16, fontWeight: 600 }}>Asana</span>
+                    <RightOutlined style={{ color: '#9ca3af' }} />
+                    <span style={{ color: '#60a5fa', fontSize: 16, fontWeight: 600 }}>
+                      Worklenz
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {hierarchyRows.map((row, idx) => (
+                      <div
+                        key={row.asana}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 36px 1.4fr 32px',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: 10,
+                          background: idx % 2 === 0 ? '#0b0e13' : '#0e1116',
+                          borderRadius: 8,
+                        }}
+                      >
+                        <div style={{ color: '#e5e7eb', fontWeight: 500 }}>{row.asana}</div>
+                        <RightOutlined style={{ color: '#9ca3af', fontSize: 12 }} />
+                        <Select
+                          value={row.jira}
+                          style={{ width: '100%' }}
+                          dropdownStyle={{ background: '#0f1117', color: '#e5e7eb' }}
+                          options={[
+                            { value: row.jira, label: row.jira },
+                            { value: 'Status', label: 'Status' },
+                          ]}
+                        />
+                        <Tooltip title="More info">
+                          <InfoCircleOutlined style={{ color: '#9ca3af' }} />
+                        </Tooltip>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           );
         }
         if (reviewSubScreen === 'fieldMapping') {
           // Field mapping sub-screen
           return (
-            <div>
-              <a
-                href="#"
-                onClick={e => {
-                  e.preventDefault();
-                  setReviewSubScreen('main');
-                }}
-              >
-                {'Back to review details'}
-              </a>
-              <Typography.Title level={3}>{'Field mapping'}</Typography.Title>
-              <Typography.Paragraph>
-                {
-                  "We've automatically mapped your Asana data into system and custom fields in Jira. You can customize some fields that have other compatible field types. More about field mapping"
-                }
-              </Typography.Paragraph>
-              <Input placeholder={'Search fields'} style={{ width: 300, marginBottom: 16 }} />
-              <table style={{ width: '100%' }}>
-                <thead>
-                  <tr>
-                    <th>{'Asana field'}</th>
-                    <th>{'Jira field'}</th>
-                    <th>{'Include in import'}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {fieldMappingRows.map(row => (
-                    <tr key={row.asana}>
-                      <td>{row.asana}</td>
-                      <td>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <div style={{ width: '100%', maxWidth: 980 }}>
+                <a
+                  href="#"
+                  style={{ color: '#7aa2f7', display: 'inline-flex', alignItems: 'center' }}
+                  onClick={e => {
+                    e.preventDefault();
+                    setReviewSubScreen('main');
+                  }}
+                >
+                  <RightOutlined
+                    style={{ fontSize: 12, marginRight: 6, transform: 'rotate(180deg)' }}
+                  />
+                  {'Back to review details'}
+                </a>
+                <Typography.Title level={3} style={{ marginTop: 12, marginBottom: 4 }}>
+                  {'Field mapping'}
+                </Typography.Title>
+                <Typography.Paragraph style={{ marginBottom: 20 }}>
+                  {
+                    "We've automatically mapped your Asana data into system and custom fields in Worklenz. You can customize some fields that have other compatible field types. More about field mapping"
+                  }
+                </Typography.Paragraph>
+
+                <div style={{ marginBottom: 16, maxWidth: 340 }}>
+                  <Input placeholder={'Search fields'} prefix={<SearchOutlined />} />
+                </div>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1.4fr 1.6fr 140px',
+                    color: '#9ca3af',
+                    fontWeight: 600,
+                    fontSize: 13,
+                    marginBottom: 8,
+                  }}
+                >
+                  <span style={{ paddingLeft: 6 }}>Asana field</span>
+                  <span>Jira field</span>
+                  <span style={{ textAlign: 'center' }}>Include in import</span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {fieldMappingRows.map((row, idx) => (
+                    <div
+                      key={row.asana}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1.4fr 1.6fr 140px',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: 12,
+                        background: idx % 2 === 0 ? '#0b0e13' : '#0e1116',
+                        borderRadius: 10,
+                        border: '1px solid #1e2633',
+                      }}
+                    >
+                      <span style={{ color: '#e5e7eb', paddingLeft: 6 }}>{row.asana}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <Select
                           value={row.jira}
-                          style={{ width: 160 }}
+                          style={{ width: '100%' }}
+                          dropdownStyle={{ background: '#0f1117', color: '#e5e7eb' }}
                           options={[{ value: row.jira, label: row.jira }]}
                         />
                         {row.required && (
-                          <span style={{ marginLeft: 8, color: '#888' }}>{'Required'}</span>
+                          <span
+                            style={{
+                              background: '#2d3748',
+                              color: '#cbd5e0',
+                              fontSize: 10,
+                              borderRadius: 6,
+                              padding: '2px 6px',
+                              letterSpacing: 0.4,
+                              textTransform: 'uppercase',
+                            }}
+                          >
+                            Required
+                          </span>
                         )}
-                      </td>
-                      <td>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
                         <Switch checked={row.include} />
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              </div>
             </div>
           );
         }
@@ -1251,6 +1405,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     }
   }
 
+  const showIllustration = !(integrationType === 'direct' && step === 2);
+
   return (
     <Modal
       open={open}
@@ -1361,34 +1517,36 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             >
               {renderStepContent()}
             </div>
-            <div
-              style={{
-                width: 400,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: '#e9eef6',
-                borderTopRightRadius: 12,
-                borderBottomRightRadius: 12,
-              }}
-            >
-              {/* Placeholder for illustration, you can replace with an SVG or image */}
+            {showIllustration && (
               <div
                 style={{
-                  width: 320,
-                  height: 180,
-                  background: '#fff',
-                  borderRadius: 16,
+                  width: 400,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 2px 16px 0 #b3c6e6',
+                  background: '#e9eef6',
+                  borderTopRightRadius: 12,
+                  borderBottomRightRadius: 12,
                 }}
               >
-                {/* You can replace this with a real SVG illustration */}
-                <span style={{ fontSize: 64 }}>{source.icon}</span>
+                {/* Placeholder for illustration, you can replace with an SVG or image */}
+                <div
+                  style={{
+                    width: 320,
+                    height: 180,
+                    background: '#fff',
+                    borderRadius: 16,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 16px 0 #b3c6e6',
+                  }}
+                >
+                  {/* You can replace this with a real SVG illustration */}
+                  <span style={{ fontSize: 64 }}>{source.icon}</span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
           <div
             style={{
