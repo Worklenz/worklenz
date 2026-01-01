@@ -1188,7 +1188,7 @@ export default class ClientsController extends WorklenzControllerBase {
       
       // Verify client exists and belongs to organization
       const clientQuery = await db.query(
-        "SELECT id, name, email FROM clients WHERE id = $1 AND organization_team_id = $2",
+        "SELECT id, name, email FROM clients WHERE id = $1 AND team_id = $2",
         [clientId, organizationId]
       );
       
@@ -1484,22 +1484,26 @@ export default class ClientsController extends WorklenzControllerBase {
       return res.status(400).json(new ServerResponse(false, null, "Chat ID is required"));
     }
     
-    // Try to extract clientId and date from chatId if not provided in query
+    // Always try to extract clientId and date from chatId
     let extractedClientId = clientId;
     let dateStr = chatId;
     
-    if (!extractedClientId && chatId.includes('-')) {
+    if (chatId.includes('-')) {
       // Parse format: clientId-date
       const parts = chatId.split('-');
-      if (parts.length >= 4) {
-        // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-        // Date format: YYYY-MM-DD
+      if (parts.length >= 8) {
+        // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (5 parts)
+        // Date format: YYYY-MM-DD (3 parts)
+        // Total: 8 parts minimum
         // So we need to find where the date starts (last 3 parts should be date)
         const dateParts = parts.slice(-3);
         const dateStrTest = dateParts.join('-');
         // Validate date format (YYYY-MM-DD)
         if (/^\d{4}-\d{2}-\d{2}$/.test(dateStrTest)) {
-          extractedClientId = parts.slice(0, -3).join('-');
+          // Extract clientId from the remaining parts if not provided in query
+          if (!extractedClientId) {
+            extractedClientId = parts.slice(0, -3).join('-');
+          }
           dateStr = dateStrTest;
         }
       }
