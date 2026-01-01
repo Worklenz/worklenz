@@ -324,6 +324,10 @@ class ClientPortalAPI {
     return this.request(`/projects/${id}`);
   }
 
+  async getProjectStatuses() {
+    return this.request('/projects/statuses');
+  }
+
   async getProjectTasks(projectId: string, params?: { page?: number; limit?: number; search?: string }) {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
