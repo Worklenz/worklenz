@@ -465,7 +465,7 @@ const ProjectView = React.memo(() => {
         activeKey={activeTab}
         onChange={handleTabChange}
         items={tabMenuItems}
-        destroyInactiveTabPane={true}
+        destroyOnHidden={true}
         animated={{
           inkBar: true,
           tabPane: false,

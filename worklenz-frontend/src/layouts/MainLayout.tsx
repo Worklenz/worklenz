@@ -87,7 +87,7 @@ const MainLayout = memo(() => {
         okButtonProps={{ hidden: true }}
         cancelButtonProps={{ hidden: true }}
         style={{ zIndex: 1000 }}
-        destroyOnClose
+        destroyOnHidden
         maskClosable={false}
       >
         <div style={{ padding: '20px' }}>

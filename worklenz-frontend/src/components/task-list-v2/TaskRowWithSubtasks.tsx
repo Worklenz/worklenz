@@ -1,4 +1,5 @@
 import React, { memo, useState, useCallback, useRef, useEffect } from 'react';
+import { createSelector } from '@reduxjs/toolkit';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
@@ -287,7 +288,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
 
     // Get all priorities to create ID-to-name mapping
     const allPriorities = useAppSelector(state => state.priorityReducer?.priorities || []);
-    
+
     // Create priority ID to name mapping
     const priorityIdToName = React.useMemo(() => {
       const map: Record<string, string> = {};
@@ -324,9 +325,9 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
       if (!task.sub_tasks || task.sub_tasks.length === 0) return [];
 
       // If no filters are active, show all subtasks
-      const hasActiveFilters = 
-        activeFilters.members.length > 0 || 
-        activeFilters.labels.length > 0 || 
+      const hasActiveFilters =
+        activeFilters.members.length > 0 ||
+        activeFilters.labels.length > 0 ||
         activeFilters.priorities.length > 0;
 
       if (!hasActiveFilters) {
@@ -352,7 +353,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
         if (activeFilters.members.length > 0) {
           const hasMatchingMember = subtask.assignees?.some((a: any) => {
             // Assignees can be either strings (IDs) or objects with team_member_id/id
-            const assigneeId = typeof a === 'string' ? a : (a.team_member_id || a.id);
+            const assigneeId = typeof a === 'string' ? a : a.team_member_id || a.id;
             return activeFilters.members.includes(assigneeId);
           });
           if (!hasMatchingMember) matchesFilters = false;
@@ -373,7 +374,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
           const filterPriorityNames = activeFilters.priorities
             .map(id => priorityIdToName[id])
             .filter(Boolean);
-          
+
           if (!filterPriorityNames.includes(subtask.priority)) {
             matchesFilters = false;
           }

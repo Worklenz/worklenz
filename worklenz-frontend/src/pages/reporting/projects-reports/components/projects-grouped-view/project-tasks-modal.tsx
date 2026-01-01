@@ -410,7 +410,7 @@ const ProjectTasksModal = ({ open, project, onClose }: ProjectTasksModalProps) =
       width="90%"
       style={{ maxWidth: 1400, top: 40 }}
       className="project-tasks-modal"
-      destroyOnClose
+      destroyOnHidden
       centered
     >
       <Spin spinning={loading}>

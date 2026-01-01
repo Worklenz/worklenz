@@ -239,39 +239,38 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     const searchField = options.search
       ? [
-        "t.name",
-        "CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no)",
-      ]
+          "t.name",
+          "CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no)",
+        ]
       : defaultSortColumn;
-    const { searchQuery, sortField, sortOrder } = TasksControllerV2.toPaginationOptions(
-      options,
-      searchField
-    );
+    const { searchQuery, sortField, sortOrder } =
+      TasksControllerV2.toPaginationOptions(options, searchField);
 
     // Map frontend field names to backend column names
     const fieldMapping: Record<string, string> = {
-      'name': 't.name',
-      'status': 't.status_id',
-      'priority': 't.priority_id',
-      'start_date': 't.start_date',
-      'end_date': 't.end_date',
-      'completed_at': 't.completed_at',
-      'created_at': 't.created_at',
-      'updated_at': 't.updated_at',
+      name: "t.name",
+      status: "t.status_id",
+      priority: "t.priority_id",
+      start_date: "t.start_date",
+      end_date: "t.end_date",
+      completed_at: "t.completed_at",
+      created_at: "t.created_at",
+      updated_at: "t.updated_at",
     };
 
     // Apply field mapping if needed
     let mappedSortField = sortField;
-    if (typeof sortField === 'string' && sortField !== defaultSortColumn) {
+    if (typeof sortField === "string" && sortField !== defaultSortColumn) {
       if (fieldMapping[sortField]) {
         mappedSortField = fieldMapping[sortField];
       }
     }
 
     // Construct final sort clause
-    const sortFields = mappedSortField && sortOrder 
-      ? `${mappedSortField} ${sortOrder.toUpperCase()}`
-      : defaultSortColumn;
+    const sortFields =
+      mappedSortField && sortOrder
+        ? `${mappedSortField} ${sortOrder.toUpperCase()}`
+        : defaultSortColumn;
 
     const statusesResult = TasksControllerV2.getFilterByStatusWhereClosure(
       options.statuses as string,
@@ -458,9 +457,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
       )`);
     }
 
-    const subtaskFilterClause = subtaskFilters.length > 0
-      ? `AND ${subtaskFilters.join(' AND ')}`
-      : '';
+    const subtaskFilterClause =
+      subtaskFilters.length > 0 ? `AND ${subtaskFilters.join(" AND ")}` : "";
 
     const q = `
       SELECT id,
@@ -913,11 +911,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
       groupType === "phase"
         ? [req.body.id, req.body.to_group_id]
         : [
-          req.body.id,
-          req.body.project_id,
-          req.body.parent_task_id,
-          req.body.to_group_id,
-        ];
+            req.body.id,
+            req.body.project_id,
+            req.body.parent_task_id,
+            req.body.to_group_id,
+          ];
     await db.query(q, params);
 
     // Reset the parent task's manual progress when converting a task to a subtask
@@ -986,10 +984,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
        name AS label,
        CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no) AS task_key
       FROM tasks t
-      WHERE t.name ILIKE '%${searchString}%'
-        AND t.project_id = $1 AND t.id != $2
+      WHERE t.name ILIKE $1
+        AND t.project_id = $2 AND t.id != $3
       LIMIT 15;`;
-    const result = await db.query(q, [projectId, taskId]);
+    const result = await db.query(q, [`%${searchString}%`, projectId, taskId]);
 
     return result.rows;
   }
@@ -1236,11 +1234,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
       // Run the recalculate_all_task_progress function only for tasks in this project
       const query = `
       DO $$
+      DECLARE
+        v_project_id UUID := $1;
       BEGIN
         -- First, reset manual_progress flag for all tasks that have subtasks within this project
         UPDATE tasks AS t
         SET manual_progress = FALSE
-        WHERE project_id = '${projectId}'
+        WHERE project_id = v_project_id
         AND EXISTS (
             SELECT 1
             FROM tasks
@@ -1257,7 +1257,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
                 parent_task_id,
                 0 AS level
             FROM tasks
-            WHERE project_id = '${projectId}'
+            WHERE project_id = v_project_id
             AND NOT EXISTS (
                 SELECT 1 FROM tasks AS sub
                 WHERE sub.parent_task_id = tasks.id
@@ -1285,12 +1285,12 @@ export default class TasksControllerV2 extends TasksControllerBase {
             ORDER BY level
         ) AS ordered_tasks
         WHERE tasks.id = ordered_tasks.id
-        AND tasks.project_id = '${projectId}'
+        AND tasks.project_id = v_project_id
         AND (manual_progress IS FALSE OR manual_progress IS NULL);
       END $$;
       `;
 
-      await db.query(query);
+      await db.query(query, [projectId]);
     } catch (error) {
       log_error("Error refreshing project task progress values", error);
     }
@@ -1461,7 +1461,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
         all_labels: task.all_labels || [],
         dueDate: task.end_date || task.END_DATE,
         startDate: task.start_date,
-        completedAt: task.completed_at || null,
         completed_at: task.completed_at || undefined,
         timeTracking: {
           estimated: convertToHours(task.total_minutes, false), // total_minutes is in minutes
@@ -1512,9 +1511,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
         groupBy === GroupBy.STATUS
           ? group.name.toLowerCase().replace(/\s+/g, "_")
           : groupBy === GroupBy.PRIORITY
-            ? priorityMap[(group as any).value?.toString()] ||
+          ? priorityMap[(group as any).value?.toString()] ||
             group.name.toLowerCase()
-            : group.name.toLowerCase().replace(/\s+/g, "_");
+          : group.name.toLowerCase().replace(/\s+/g, "_");
 
       groupedResponse[groupKey] = {
         id: group.id,
@@ -1602,10 +1601,12 @@ export default class TasksControllerV2 extends TasksControllerBase {
             total > 0 ? +((doingCount / total) * 100).toFixed(0) : 0;
           group.done_progress =
             total > 0 ? +((doneCount / total) * 100).toFixed(0) : 0;
+        } else {
+          // Only set to 0 if there are no tasks
+          group.todo_progress = 0;
+          group.doing_progress = 0;
+          group.done_progress = 0;
         }
-        group.todo_progress = 0;
-        group.doing_progress = 0;
-        group.done_progress = 0;
       });
     }
 
@@ -1671,9 +1672,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
           groupBy === GroupBy.STATUS
             ? group.name.toLowerCase().replace(/\s+/g, "_")
             : groupBy === GroupBy.PRIORITY
-              ? priorityMap[(group as any).value?.toString()] ||
+            ? priorityMap[(group as any).value?.toString()] ||
               group.name.toLowerCase()
-              : group.name.toLowerCase().replace(/\s+/g, "_");
+            : group.name.toLowerCase().replace(/\s+/g, "_");
 
         return groupedResponse[groupKey];
       })
@@ -1835,10 +1836,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
           completionPercentage:
             stats.total_tasks > 0
               ? Math.round(
-                (parseInt(stats.completed_tasks) /
-                  parseInt(stats.total_tasks)) *
-                100
-              )
+                  (parseInt(stats.completed_tasks) /
+                    parseInt(stats.total_tasks)) *
+                    100
+                )
               : 0,
         })
       );

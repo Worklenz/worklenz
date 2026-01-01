@@ -32,7 +32,7 @@ const ProjectReportsDrawerTabs = ({ projectId = null }: ProjectReportsDrawerProp
     },
   ];
 
-  return <Tabs type="card" items={tabItems} destroyInactiveTabPane />;
+  return <Tabs type="card" items={tabItems} destroyOnHidden />;
 };
 
 export default ProjectReportsDrawerTabs;

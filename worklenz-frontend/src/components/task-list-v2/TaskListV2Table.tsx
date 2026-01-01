@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { HolderOutlined } from '@/shared/antd-imports';
+import '../../pages/projects/project-view-1/taskList/taskListTable/column-resize.css';
 
 // Redux hooks and selectors
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -231,7 +232,9 @@ const TaskListV2Section: React.FC = () => {
   const selectedTaskIds = useAppSelector(selectSelectedTaskIds);
   const lastSelectedTaskId = useAppSelector(selectLastSelectedTaskId);
   const collapsedGroups = useAppSelector(selectCollapsedGroups);
-  const isOpenDuplicateTaskModal = useAppSelector(state => state.taskManagement.isOpenDuplicateTaskModal);
+  const isOpenDuplicateTaskModal = useAppSelector(
+    state => state.taskManagement.isOpenDuplicateTaskModal
+  );
 
   const fields = useAppSelector(state => state.taskManagementFields) || [];
   const columns = useAppSelector(selectColumns);
@@ -272,6 +275,82 @@ const TaskListV2Section: React.FC = () => {
   // Enable real-time updates via socket handlers
   useTaskSocketHandlers();
 
+  // State to store custom column widths (overrides BASE_COLUMNS widths)
+  // Load from localStorage on mount
+  const [columnWidths, setColumnWidths] = useState<Record<string, string>>(() => {
+    if (!urlProjectId) return {};
+    
+    try {
+      const stored = localStorage.getItem(`worklenz.taskList.columnWidths.${urlProjectId}`);
+      if (!stored) return {};
+
+      const parsed = JSON.parse(stored);
+    // Validate stored widths against minWidth and maxWidth constraints
+    const validated: Record<string, string> = {};
+    Object.entries(parsed).forEach(([columnId, width]) => {
+      const baseColumn = BASE_COLUMNS.find(col => col.id === columnId);
+      let validatedWidth = width as string;
+
+      if (baseColumn) {
+        const currentWidth = parseInt((width as string).replace('px', ''));
+
+        // Check minWidth constraint
+        if (baseColumn.minWidth) {
+          const minWidth = parseInt(baseColumn.minWidth.replace('px', ''));
+          if (currentWidth < minWidth) {
+            validatedWidth = baseColumn.minWidth;
+          }
+        }
+
+        // Check maxWidth constraint
+        if (baseColumn.maxWidth) {
+          const maxWidth = parseInt(baseColumn.maxWidth.replace('px', ''));
+          if (currentWidth > maxWidth) {
+            validatedWidth = baseColumn.maxWidth;
+          }
+        }
+
+        // Force title column to max width constraint
+        if (columnId === 'title' && currentWidth > 400) {
+          validatedWidth = '400px';
+        }
+
+        // Force description column to min width constraint
+        if (columnId === 'description' && currentWidth < 200) {
+          validatedWidth = '200px';
+        }
+      }
+
+      validated[columnId] = validatedWidth;
+    });
+    return validated;
+    } catch (error) {
+      // Handle localStorage errors gracefully
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        console.warn('localStorage quota exceeded. Column widths not loaded.');
+      } else {
+        console.error('Failed to load column widths from localStorage:', error);
+      }
+      return {};
+    }
+  });
+
+  // Save column widths to localStorage whenever they change
+  useEffect(() => {
+    if (urlProjectId && Object.keys(columnWidths).length > 0) {
+      try {
+        localStorage.setItem(`worklenz.taskList.columnWidths.${urlProjectId}`, JSON.stringify(columnWidths));
+      } catch (error) {
+        // Handle quota exceeded or other localStorage errors gracefully
+        if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+          console.warn('localStorage quota exceeded. Column widths not saved.');
+        } else {
+          console.error('Failed to save column widths to localStorage:', error);
+        }
+      }
+    }
+  }, [columnWidths, urlProjectId]);
+
   // Filter visible columns based on local fields (primary) and backend columns (fallback)
   const visibleColumns = useMemo(() => {
     // Start with base columns
@@ -293,6 +372,48 @@ const TaskListV2Section: React.FC = () => {
 
       // Default: hide if neither local field nor backend column found
       return false;
+    }).map(column => {
+      // Apply custom width if it exists, otherwise use default width
+      let width = columnWidths[column.id] || column.width;
+
+      // Force title column to maximum 400px to prevent covering other columns
+      if (column.id === 'title') {
+        const currentWidth = parseInt(width.replace('px', ''));
+        if (currentWidth > 400) {
+          width = '400px';
+        }
+      }
+
+      // Force description column to minimum 200px for readability
+      if (column.id === 'description') {
+        const currentWidth = parseInt(width.replace('px', ''));
+        if (currentWidth < 200) {
+          width = '200px';
+        }
+      }
+
+      // Validate width against minWidth constraint
+      if (column.minWidth) {
+        const minWidth = parseInt(column.minWidth.replace('px', ''));
+        const currentWidth = parseInt(width.replace('px', ''));
+        if (currentWidth < minWidth) {
+          width = column.minWidth;
+        }
+      }
+
+      // Validate width against maxWidth constraint
+      if (column.maxWidth) {
+        const maxWidth = parseInt(column.maxWidth.replace('px', ''));
+        const currentWidth = parseInt(width.replace('px', ''));
+        if (currentWidth > maxWidth) {
+          width = column.maxWidth;
+        }
+      }
+
+      return {
+        ...column,
+        width,
+      };
     });
 
     // Add visible custom columns
@@ -329,10 +450,11 @@ const TaskListV2Section: React.FC = () => {
             };
           }
 
+          const columnId = column.key || column.id || 'unknown';
           return {
-            id: column.key || column.id || 'unknown',
+            id: columnId,
             label: column.name || t('customColumns.customColumnHeader'),
-            width: `${(column as any).width || defaultWidth}px`,
+            width: columnWidths[columnId] || `${(column as any).width || defaultWidth}px`,
             key: column.key || column.id || 'unknown',
             custom_column: true,
             custom_column_obj: transformedColumnObj,
@@ -343,7 +465,16 @@ const TaskListV2Section: React.FC = () => {
         }) || [];
 
     return [...baseVisibleColumns, ...visibleCustomColumns];
-  }, [fields, columns, customColumns, t]);
+  }, [fields, columns, customColumns, t, columnWidths]);
+
+  // Create CSS style object with column width variables for instant resizing
+  const containerStyle = useMemo(() => {
+    const style: any = {};
+    visibleColumns.forEach(col => {
+      style[`--col-width-${col.id}`] = col.width;
+    });
+    return style;
+  }, [visibleColumns]);
 
   // Effects
   useEffect(() => {
@@ -659,18 +790,18 @@ const TaskListV2Section: React.FC = () => {
         >
           {visibleColumns.map((column, index) => {
             // Calculate left position for sticky columns
-            let leftPosition = 0;
+            let leftPosition = 4; // Account for px-1 (4px) padding on container
             if (column.isSticky) {
+              // For sticky columns, we need to account for ALL previous columns
+              // because non-sticky columns between sticky ones still take up space
               for (let i = 0; i < index; i++) {
                 const prevColumn = visibleColumns[i];
-                if (prevColumn.isSticky) {
-                  leftPosition += parseInt(prevColumn.width.replace('px', ''));
-                }
+                leftPosition += parseInt(prevColumn.width.replace('px', ''));
               }
             }
 
             const columnStyle: ColumnStyle = {
-              width: column.width,
+              width: `var(--col-width-${column.id})`,
               flexShrink: 0,
               ...((column as any).minWidth && { minWidth: (column as any).minWidth }),
               ...((column as any).maxWidth && { maxWidth: (column as any).maxWidth }),
@@ -685,6 +816,7 @@ const TaskListV2Section: React.FC = () => {
             return (
               <div
                 key={column.id}
+                data-column-id={column.id}
                 className={`text-sm font-semibold text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 ${
                   column.id === 'dragHandle'
                     ? 'flex items-center justify-center'
@@ -695,24 +827,167 @@ const TaskListV2Section: React.FC = () => {
                         : column.id === 'title'
                           ? 'flex items-center justify-between'
                           : column.id === 'description'
-                            ? 'flex items-center px-2'
+                            ? 'flex items-center pl-2'
                             : column.id === 'labels'
                               ? 'flex items-center gap-0.5 flex-wrap min-w-0 px-2'
                               : column.id === 'assignees'
                                 ? 'flex items-center px-2'
                                 : 'flex items-center justify-center px-2'
                 }`}
-                style={columnStyle}
+                style={{
+                  ...columnStyle,
+                  // Add position relative for resize handle positioning, but don't override sticky
+                  ...(!column.isSticky && { position: 'relative' }),
+                }}
               >
                 {column.id === 'dragHandle' || column.id === 'checkbox' ? (
                   <span></span>
-                ) : (column as any).isCustom ? (
+                ) : column.isCustom ? (
                   <CustomColumnHeader
                     column={column}
                     onSettingsClick={handleCustomColumnSettings}
                   />
                 ) : (
-                  t(column.label || '')
+                  <span
+                    style={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      paddingRight: '20px',
+                      flex: 1,
+                    }}
+                  >
+                    {t(column.label || '')}
+                  </span>
+                )}
+
+                {/* Column Resize Handle */}
+                {column.id !== 'dragHandle' && column.id !== 'checkbox' && (
+                  <div
+                    role="separator"
+                    aria-orientation="vertical"
+                    aria-label={`Resize ${t(column.label || '')} column`}
+                    tabIndex={0}
+                    className="column-resize-handle"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: -4,
+                      width: 8,
+                      height: '100%',
+                    }}
+                    onMouseDown={e => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const startX = e.clientX;
+                      const startWidth = parseInt(column.width.replace('px', ''));
+                      const columnId = column.id;
+                      const handleElement = e.currentTarget;
+
+                      // Get min/max widths from column config or use defaults
+                      const minWidth = column.minWidth
+                        ? parseInt(column.minWidth.replace('px', ''))
+                        : 100;
+                      const maxWidth = column.maxWidth
+                        ? parseInt(column.maxWidth.replace('px', ''))
+                        : 1200;
+
+                      // Find the scrollable table container
+                      const scrollableContainer = contentScrollRef.current ||
+                        e.currentTarget.closest('[style*="overflow"]') as HTMLElement ||
+                        document.getElementById('task-list-container')?.querySelector('[style*="overflow"]') as HTMLElement ||
+                        document.getElementById('task-list-container') ||
+                        e.currentTarget.closest('.border') as HTMLElement ||
+                        document.body;
+                      const tableContainer = scrollableContainer;
+                      
+                      // Create resize indicator line
+                      const indicator = document.createElement('div');
+                      indicator.className = 'column-resize-indicator';
+                      tableContainer.style.position = 'relative';
+                      tableContainer.appendChild(indicator);
+
+                      // Create tooltip
+                      const tooltip = document.createElement('div');
+                      tooltip.className = 'column-resize-tooltip';
+                      document.body.appendChild(tooltip);
+
+                      // Add resizing class
+                      handleElement.classList.add('resizing');
+                      document.body.classList.add('column-resizing');
+
+                      const updateIndicator = (x: number, width: number) => {
+                        // Calculate position relative to table container
+                        const containerRect = tableContainer.getBoundingClientRect();
+                        const relativeX = x - containerRect.left;
+                        indicator.style.left = `${relativeX}px`;
+                        indicator.style.opacity = '1';
+                        tooltip.textContent = `${width}px`;
+                        tooltip.style.left = `${x}px`;
+                        tooltip.style.top = `${e.clientY - 40}px`;
+                        tooltip.style.opacity = '1';
+
+                        // Check if at limit
+                        const atLimit = width <= minWidth || width >= maxWidth;
+                        if (atLimit) {
+                          handleElement.classList.add('at-limit');
+                        } else {
+                          handleElement.classList.remove('at-limit');
+                        }
+                      };
+
+                      const handleMouseMove = (moveEvent: MouseEvent) => {
+                        const diff = moveEvent.clientX - startX;
+                        const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + diff));
+
+                        // Update CSS variable once - all elements update together
+                        document.documentElement.style.setProperty(
+                          `--col-width-${columnId}`,
+                          `${newWidth}px`
+                        );
+
+                        // Update indicator and tooltip
+                        updateIndicator(moveEvent.clientX, newWidth);
+                      };
+
+                      const handleMouseUp = (upEvent: MouseEvent) => {
+                        document.removeEventListener('mousemove', handleMouseMove);
+                        document.removeEventListener('mouseup', handleMouseUp);
+                        document.body.style.cursor = '';
+                        document.body.style.userSelect = '';
+                        document.body.classList.remove('column-resizing');
+
+                        // Remove indicator and tooltip
+                        indicator.style.opacity = '0';
+                        tooltip.style.opacity = '0';
+                        setTimeout(() => {
+                          indicator.remove();
+                          tooltip.remove();
+                        }, 150);
+
+                        // Remove resizing class
+                        handleElement.classList.remove('resizing', 'at-limit');
+
+                        // Calculate final width and update state to persist
+                        const diff = upEvent.clientX - startX;
+                        const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + diff));
+                        setColumnWidths(prev => ({
+                          ...prev,
+                          [columnId]: `${newWidth}px`,
+                        }));
+                      };
+
+                      // Initial indicator position
+                      updateIndicator(e.clientX, startWidth);
+
+                      document.body.style.cursor = 'col-resize';
+                      document.body.style.userSelect = 'none';
+                      document.addEventListener('mousemove', handleMouseMove);
+                      document.addEventListener('mouseup', handleMouseUp);
+                    }}
+                    onClick={e => e.stopPropagation()}
+                    title={`Resize ${t(column.label || '')}`}
+                  />
                 )}
               </div>
             );
@@ -727,7 +1002,7 @@ const TaskListV2Section: React.FC = () => {
         </div>
       </div>
     ),
-    [visibleColumns, t, handleCustomColumnSettings]
+    [visibleColumns, t, handleCustomColumnSettings, isDarkMode]
   );
 
   // Loading and error states
@@ -863,7 +1138,11 @@ const TaskListV2Section: React.FC = () => {
         onDragEnd={handleDragEnd}
         modifiers={[restrictToVerticalAxis]}
       >
-        <div className="flex flex-col bg-white dark:bg-gray-900 h-full overflow-hidden">
+        <div
+          id="task-list-container"
+          className="flex flex-col bg-white dark:bg-gray-900 h-full overflow-hidden"
+          style={containerStyle}
+        >
           {/* Table Container */}
           <div
             className="border border-gray-200 dark:border-gray-700 rounded-lg"
@@ -1017,7 +1296,14 @@ const TaskListV2Section: React.FC = () => {
           {createPortal(<ConvertToSubtaskDrawer />, document.body, 'convert-to-subtask-drawer')}
 
           {/* Duplicate Task Modal */}
-          {createPortal(<DuplicateTaskModal open={isOpenDuplicateTaskModal} onClose={() => dispatch(setDuplicateTaskModalStatus(false))}/>, document.body, 'duplicate-task-modal')}
+          {createPortal(
+            <DuplicateTaskModal
+              open={isOpenDuplicateTaskModal}
+              onClose={() => dispatch(setDuplicateTaskModalStatus(false))}
+            />,
+            document.body,
+            'duplicate-task-modal'
+          )}
         </div>
       </DndContext>
     </>
