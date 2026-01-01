@@ -148,7 +148,7 @@ const ProjectsPage: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status: string, record: ClientProject) => (
-        <Tag color={getStatusColor(status)} style={{ color: record.status_color }}>
+        <Tag color={getStatusColor(status)}>
           {getStatusLabel(status)}
         </Tag>
       ),
