@@ -12,6 +12,7 @@ import bulkTasksStatusValidator from "../../middlewares/validators/bulk-tasks-st
 import bulkTasksPriorityValidator from "../../middlewares/validators/bulk-tasks-priority-validators";
 import bulkTasksPhaseValidator from "../../middlewares/validators/bulk-tasks-phase-validators";
 import bulkTasksValidator from "../../middlewares/validators/bulk-tasks-validator";
+import bulkTasksDueDateValidator from "../../middlewares/validators/bulk-tasks-due-date-validator";
 import mapTasksToBulkUpdate from "../../middlewares/map-tasks-to-bulk-update";
 import homeTaskBodyValidator from "../../middlewares/validators/home-task-body-validator";
 import TaskListColumnsController from "../../controllers/task-list-columns-controller";
@@ -57,6 +58,7 @@ tasksApiRouter.put("/bulk/archive", verifyBulkTaskAccessMiddleware(), mapTasksTo
 tasksApiRouter.put("/bulk/assign-me", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksValidator, safeControllerFunction(TasksController.bulkAssignMe));
 tasksApiRouter.put("/bulk/label", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksValidator, safeControllerFunction(TasksController.bulkAssignLabel));
 tasksApiRouter.put("/bulk/members", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksValidator, safeControllerFunction(TasksController.bulkAssignMembers));
+tasksApiRouter.put("/bulk/due-date", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksDueDateValidator, safeControllerFunction(TasksController.bulkChangeDueDate));
 tasksApiRouter.put("/duration/:id", verifyTaskAccess('params', 'id'), safeControllerFunction(TasksController.updateDuration));
 tasksApiRouter.put("/status/:status_id/:task_id", kanbanStatusUpdateValidator, verifyTaskAccess('params', 'task_id'), safeControllerFunction(TasksController.updateStatus));
 tasksApiRouter.put("/:id", idParamValidator, tasksBodyValidator, verifyTaskAccess('params', 'id'), safeControllerFunction(TasksController.update));
