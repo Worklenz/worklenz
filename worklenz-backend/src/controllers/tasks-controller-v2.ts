@@ -1490,18 +1490,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
       };
     });
 
-    // Debug log to verify completedAt is being sent
-    const completedTasks = transformedTasks.filter((t) => t.completedAt);
-    if (completedTasks.length > 0) {
-      // console.log(
-      //   "[DEBUG getTasksV3] Tasks with completedAt:",
-      //   completedTasks.map((t) => ({
-      //     id: t.id,
-      //     title: t.title,
-      //     completedAt: t.completedAt,
-      //   }))
-      // );
-    }
 
     const groupedResponse: Record<string, any> = {};
 
