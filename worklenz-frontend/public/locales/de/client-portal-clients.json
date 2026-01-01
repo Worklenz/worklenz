@@ -68,6 +68,9 @@
   "addressLabel": "Adresse",
   "addressPlaceholder": "Adresse eingeben (optional)",
 
+  "contactPersonLabel": "Kontaktperson",
+  "contactPersonPlaceholder": "Namen der Kontaktperson eingeben",
+
   "statusLabel": "Status",
 
   "createClientSuccessMessage": "Kunde erfolgreich erstellt! Teilen Sie den Organisations-Einladungslink, um ihm Portal-Zugang zu gewähren.",

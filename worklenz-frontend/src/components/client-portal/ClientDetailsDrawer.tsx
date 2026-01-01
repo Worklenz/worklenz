@@ -15,6 +15,8 @@ import {
   Empty,
   Tooltip,
   message,
+  Input,
+  Dropdown,
 } from '@/shared/antd-imports';
 import {
   UserOutlined,
@@ -28,6 +30,9 @@ import {
   EyeOutlined,
   EditOutlined,
   DeleteOutlined,
+  MoreOutlined,
+  CheckOutlined,
+  CloseOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../hooks/useAppSelector';
@@ -39,8 +44,10 @@ import {
 import {
   useGetClientDetailsQuery,
   useDeactivateClientMutation,
+  useUpdateClientMutation,
 } from '../../api/client-portal/client-portal-api';
 import { ClientPortalClient } from '../../api/client-portal/client-portal-api';
+import { useState } from 'react';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -58,6 +65,7 @@ const ClientDetailsDrawer = () => {
     data: clientDetails,
     isLoading: isLoadingClient,
     error: clientError,
+    refetch: refetchClientDetails,
   } = useGetClientDetailsQuery(selectedClientId || '', {
     skip: !selectedClientId,
   });
@@ -74,6 +82,11 @@ const ClientDetailsDrawer = () => {
   const isLoadingProjects = isLoadingClient;
 
   const [deactivateClient, { isLoading: isDeactivating }] = useDeactivateClientMutation();
+  const [updateClient, { isLoading: isUpdating }] = useUpdateClientMutation();
+
+  // Inline editing state
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<Record<string, string>>({});
 
   const handleClose = () => {
     dispatch(toggleClientDetailsDrawer(null));
@@ -97,6 +110,69 @@ const ClientDetailsDrawer = () => {
       );
     }
   };
+
+  // Inline editing handlers
+  const handleStartEdit = (field: string, currentValue: string) => {
+    setEditingField(field);
+    setEditValues({ ...editValues, [field]: currentValue || '' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingField(null);
+    setEditValues({});
+  };
+
+  const handleSaveEdit = async (field: string) => {
+    if (!selectedClientId || !client) return;
+
+    const newValue = editValues[field];
+    const currentValue = (client as any)[field];
+
+    // Only update if value changed
+    if (newValue === currentValue) {
+      setEditingField(null);
+      setEditValues({});
+      return;
+    }
+
+    try {
+      await updateClient({
+        id: selectedClientId,
+        data: {
+          [field]: newValue || null,
+        },
+      }).unwrap();
+
+      message.success(t('updateClientSuccessMessage') || 'Client updated successfully');
+      setEditingField(null);
+      setEditValues({});
+      refetchClientDetails();
+    } catch (error: any) {
+      message.error(
+        error?.data?.message || t('updateClientErrorMessage') || 'Failed to update client'
+      );
+    }
+  };
+
+  // Header menu items
+  const headerMenuItems = [
+    {
+      key: 'edit',
+      label: t('editButton') || 'Edit Client',
+      icon: <EditOutlined />,
+      onClick: handleEdit,
+    },
+    {
+      type: 'divider' as const,
+    },
+    {
+      key: 'deactivate',
+      label: t('deactivateButton') || 'Deactivate Client',
+      icon: <DeleteOutlined />,
+      danger: true,
+      onClick: handleDeactivateClient,
+    },
+  ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -123,36 +199,34 @@ const ClientDetailsDrawer = () => {
   return (
     <Drawer
       title={
-        <Flex align="center" gap={12}>
-          <Avatar size="large" icon={<UserOutlined />} />
-          <div>
-            <Title level={2} style={{ margin: 0 }}>
-              {client?.name || t('loadingText') || 'Loading...'}
-            </Title>
-            <Text type="secondary">{client?.email}</Text>
-          </div>
+        <Flex align="center" justify="space-between" style={{ width: '100%' }}>
+          <Flex align="center" gap={12}>
+            <Avatar size="large" icon={<UserOutlined />} />
+            <div>
+              <Title level={2} style={{ margin: 0 }}>
+                {client?.name || t('loadingText') || 'Loading...'}
+              </Title>
+              <Text type="secondary">{client?.email}</Text>
+            </div>
+          </Flex>
+          <Dropdown
+            menu={{ items: headerMenuItems }}
+            trigger={['click']}
+            placement="bottomRight"
+          >
+            <Button
+              type="text"
+              icon={<MoreOutlined />}
+              onClick={e => e.stopPropagation()}
+              loading={isDeactivating}
+            />
+          </Dropdown>
         </Flex>
       }
       placement="right"
       onClose={handleClose}
       open={isClientDetailsDrawerOpen}
       width={600}
-      footer={
-        <Flex gap={12} justify="flex-end">
-          <Button onClick={handleClose}>{t('closeButton') || 'Close'}</Button>
-          <Button type="primary" icon={<EditOutlined />} onClick={handleEdit}>
-            {t('editButton') || 'Edit Client'}
-          </Button>
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            onClick={handleDeactivateClient}
-            loading={isDeactivating}
-          >
-            {t('deactivateButton') || 'Deactivate Client'}
-          </Button>
-        </Flex>
-      }
     >
       <Spin spinning={isLoadingClient}>
         {clientError && (
@@ -184,47 +258,233 @@ const ClientDetailsDrawer = () => {
               style={{ marginBottom: 16 }}
             >
               <Flex vertical gap={16}>
-                <Flex gap={16} align="center">
-                  <MailOutlined style={{ color: '#1890ff' }} />
-                  <div>
-                    <Text strong>{t('emailLabel') || 'Email'}</Text>
-                    <br />
-                    <Text>{client.email}</Text>
-                  </div>
+                <Flex gap={16} align="center" justify="space-between">
+                  <Flex gap={16} align="center" style={{ flex: 1 }}>
+                    <MailOutlined style={{ color: '#1890ff' }} />
+                    <div style={{ flex: 1 }}>
+                      <Text strong>{t('emailLabel') || 'Email'}</Text>
+                      <br />
+                      {editingField === 'email' ? (
+                        <Flex gap={8} align="center" style={{ marginTop: 4 }}>
+                          <Input
+                            value={editValues.email}
+                            onChange={e => setEditValues({ ...editValues, email: e.target.value })}
+                            style={{ flex: 1 }}
+                            size="small"
+                            type="email"
+                          />
+                          <Button
+                            type="text"
+                            icon={<CheckOutlined />}
+                            onClick={() => handleSaveEdit('email')}
+                            loading={isUpdating}
+                            size="small"
+                          />
+                          <Button
+                            type="text"
+                            icon={<CloseOutlined />}
+                            onClick={handleCancelEdit}
+                            size="small"
+                          />
+                        </Flex>
+                      ) : (
+                        <Flex gap={8} align="center" style={{ marginTop: 4 }}>
+                          <Text>{client.email || '-'}</Text>
+                          <Button
+                            type="text"
+                            icon={<EditOutlined />}
+                            size="small"
+                            onClick={() => handleStartEdit('email', client.email || '')}
+                          />
+                        </Flex>
+                      )}
+                    </div>
+                  </Flex>
                 </Flex>
 
-                {client.company_name && (
-                  <Flex gap={16} align="center">
+                <Flex gap={16} align="center" justify="space-between">
+                  <Flex gap={16} align="center" style={{ flex: 1 }}>
                     <BuildOutlined style={{ color: '#1890ff' }} />
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <Text strong>{t('companyNameLabel') || 'Company'}</Text>
                       <br />
-                      <Text>{client.company_name}</Text>
+                      {editingField === 'company_name' ? (
+                        <Flex gap={8} align="center" style={{ marginTop: 4 }}>
+                          <Input
+                            value={editValues.company_name}
+                            onChange={e =>
+                              setEditValues({ ...editValues, company_name: e.target.value })
+                            }
+                            style={{ flex: 1 }}
+                            size="small"
+                          />
+                          <Button
+                            type="text"
+                            icon={<CheckOutlined />}
+                            onClick={() => handleSaveEdit('company_name')}
+                            loading={isUpdating}
+                            size="small"
+                          />
+                          <Button
+                            type="text"
+                            icon={<CloseOutlined />}
+                            onClick={handleCancelEdit}
+                            size="small"
+                          />
+                        </Flex>
+                      ) : (
+                        <Flex gap={8} align="center" style={{ marginTop: 4 }}>
+                          <Text>{client.company_name || '-'}</Text>
+                          <Button
+                            type="text"
+                            icon={<EditOutlined />}
+                            size="small"
+                            onClick={() => handleStartEdit('company_name', client.company_name || '')}
+                          />
+                        </Flex>
+                      )}
                     </div>
                   </Flex>
-                )}
+                </Flex>
 
-                {client.phone && (
-                  <Flex gap={16} align="center">
+                <Flex gap={16} align="center" justify="space-between">
+                  <Flex gap={16} align="center" style={{ flex: 1 }}>
                     <PhoneOutlined style={{ color: '#1890ff' }} />
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <Text strong>{t('phoneLabel') || 'Phone'}</Text>
                       <br />
-                      <Text>{client.phone}</Text>
+                      {editingField === 'phone' ? (
+                        <Flex gap={8} align="center" style={{ marginTop: 4 }}>
+                          <Input
+                            value={editValues.phone}
+                            onChange={e => setEditValues({ ...editValues, phone: e.target.value })}
+                            style={{ flex: 1 }}
+                            size="small"
+                          />
+                          <Button
+                            type="text"
+                            icon={<CheckOutlined />}
+                            onClick={() => handleSaveEdit('phone')}
+                            loading={isUpdating}
+                            size="small"
+                          />
+                          <Button
+                            type="text"
+                            icon={<CloseOutlined />}
+                            onClick={handleCancelEdit}
+                            size="small"
+                          />
+                        </Flex>
+                      ) : (
+                        <Flex gap={8} align="center" style={{ marginTop: 4 }}>
+                          <Text>{client.phone || '-'}</Text>
+                          <Button
+                            type="text"
+                            icon={<EditOutlined />}
+                            size="small"
+                            onClick={() => handleStartEdit('phone', client.phone || '')}
+                          />
+                        </Flex>
+                      )}
                     </div>
                   </Flex>
-                )}
+                </Flex>
 
-                {client.address && (
-                  <Flex gap={16} align="center">
+                <Flex gap={16} align="center" justify="space-between">
+                  <Flex gap={16} align="center" style={{ flex: 1 }}>
                     <EnvironmentOutlined style={{ color: '#1890ff' }} />
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <Text strong>{t('addressLabel') || 'Address'}</Text>
                       <br />
-                      <Text>{client.address}</Text>
+                      {editingField === 'address' ? (
+                        <Flex gap={8} align="center" style={{ marginTop: 4 }}>
+                          <Input.TextArea
+                            value={editValues.address}
+                            onChange={e =>
+                              setEditValues({ ...editValues, address: e.target.value })
+                            }
+                            style={{ flex: 1 }}
+                            rows={2}
+                            size="small"
+                          />
+                          <Flex vertical gap={4}>
+                            <Button
+                              type="text"
+                              icon={<CheckOutlined />}
+                              onClick={() => handleSaveEdit('address')}
+                              loading={isUpdating}
+                              size="small"
+                            />
+                            <Button
+                              type="text"
+                              icon={<CloseOutlined />}
+                              onClick={handleCancelEdit}
+                              size="small"
+                            />
+                          </Flex>
+                        </Flex>
+                      ) : (
+                        <Flex gap={8} align="center" style={{ marginTop: 4 }}>
+                          <Text style={{ flex: 1 }}>{client.address || '-'}</Text>
+                          <Button
+                            type="text"
+                            icon={<EditOutlined />}
+                            size="small"
+                            onClick={() => handleStartEdit('address', client.address || '')}
+                          />
+                        </Flex>
+                      )}
                     </div>
                   </Flex>
-                )}
+                </Flex>
+
+                <Flex gap={16} align="center" justify="space-between">
+                  <Flex gap={16} align="center" style={{ flex: 1 }}>
+                    <UserOutlined style={{ color: '#1890ff' }} />
+                    <div style={{ flex: 1 }}>
+                      <Text strong>{t('contactPersonLabel') || 'Contact Person'}</Text>
+                      <br />
+                      {editingField === 'contact_person' ? (
+                        <Flex gap={8} align="center" style={{ marginTop: 4 }}>
+                          <Input
+                            value={editValues.contact_person}
+                            onChange={e =>
+                              setEditValues({ ...editValues, contact_person: e.target.value })
+                            }
+                            style={{ flex: 1 }}
+                            size="small"
+                            placeholder={t('contactPersonPlaceholder') || 'Enter contact person name'}
+                          />
+                          <Button
+                            type="text"
+                            icon={<CheckOutlined />}
+                            onClick={() => handleSaveEdit('contact_person')}
+                            loading={isUpdating}
+                            size="small"
+                          />
+                          <Button
+                            type="text"
+                            icon={<CloseOutlined />}
+                            onClick={handleCancelEdit}
+                            size="small"
+                          />
+                        </Flex>
+                      ) : (
+                        <Flex gap={8} align="center" style={{ marginTop: 4 }}>
+                          <Text>{(client as any).contact_person || '-'}</Text>
+                          <Button
+                            type="text"
+                            icon={<EditOutlined />}
+                            size="small"
+                            onClick={() =>
+                              handleStartEdit('contact_person', (client as any).contact_person || '')
+                            }
+                          />
+                        </Flex>
+                      )}
+                    </div>
+                  </Flex>
+                </Flex>
 
                 <Flex gap={16} align="center">
                   <CalendarOutlined style={{ color: '#1890ff' }} />

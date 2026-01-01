@@ -664,6 +664,7 @@ const ClientsTable = () => {
         <div
           className="action-buttons-container"
           style={{ opacity: 0, transition: 'opacity 0.2s' }}
+          onClick={e => e.stopPropagation()}
         >
           <Dropdown
             menu={{ items: getActionMenuItems(record) }}
@@ -748,6 +749,9 @@ const ClientsTable = () => {
             }}
             size="middle"
             onRow={record => ({
+              onClick: () => {
+                dispatch(toggleClientDetailsDrawer(record.id));
+              },
               onMouseEnter: e => {
                 const row = e.currentTarget;
                 const actionContainer = row.querySelector('.action-buttons-container') as HTMLElement;
@@ -762,6 +766,7 @@ const ClientsTable = () => {
                   actionContainer.style.opacity = '0';
                 }
               },
+              style: { cursor: 'pointer' },
             })}
           />
         ) : (

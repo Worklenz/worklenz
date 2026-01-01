@@ -66,6 +66,9 @@
   "addressLabel": "Endereço",
   "addressPlaceholder": "Digite o endereço (opcional)",
 
+  "contactPersonLabel": "Pessoa de Contato",
+  "contactPersonPlaceholder": "Digite o nome da pessoa de contato",
+
   "statusLabel": "Status",
 
   "createClientSuccessMessage": "Cliente criado com sucesso! Compartilhe o link de convite da organização para dar acesso ao portal.",
