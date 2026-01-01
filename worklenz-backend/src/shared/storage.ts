@@ -1,5 +1,7 @@
 import path from "path";
 import {
+  CopyObjectCommand,
+  CopyObjectCommandInput,
   DeleteObjectCommand,
   DeleteObjectCommandInput,
   GetObjectCommand,
@@ -144,6 +146,14 @@ export function getAvatarKey(userId: string, type: string) {
 export function getClientPortalLogoKey(teamId: string, type: string) {
   const keyPath = path
     .join("client-portal-logos", getRootDir(), `${teamId}.${type}`)
+    .replace(/\\/g, "/");
+  
+  return keyPath;
+}
+
+export function getOrganizationLogoKey(organizationId: string, fileExtension: string) {
+  const keyPath = path
+    .join("organization-logos", getRootDir(), `${organizationId}.${fileExtension}`)
     .replace(/\\/g, "/");
   
   return keyPath;
@@ -342,6 +352,50 @@ export async function deleteObject(key: string) {
     return deleteObjectFromAzure(key);
   }
   return deleteObjectFromS3(key);
+}
+
+async function copyObjectInS3(sourceKey: string, destinationKey: string) {
+  try {
+    const copyParams: CopyObjectCommandInput = {
+      Bucket: BUCKET,
+      CopySource: `${BUCKET}/${sourceKey}`,
+      Key: destinationKey,
+    };
+    await s3Client.send(new CopyObjectCommand(copyParams));
+    return true;
+  } catch (error) {
+    log_error(error);
+    return false;
+  }
+}
+
+async function copyObjectInAzure(sourceKey: string, destinationKey: string) {
+  try {
+    if (!azureContainerClient) {
+      throw new Error("Azure Blob Storage not configured properly");
+    }
+
+    const sourceBlobClient = azureContainerClient.getBlockBlobClient(sourceKey);
+    const destinationBlobClient = azureContainerClient.getBlockBlobClient(destinationKey);
+    
+    // Azure Blob Storage copy operation - beginCopyFromURL returns a Promise that resolves to a poller
+    const poller = await destinationBlobClient.beginCopyFromURL(sourceBlobClient.url);
+    
+    // Wait for the copy operation to complete
+    await poller.pollUntilDone();
+    
+    return true;
+  } catch (error) {
+    log_error(error);
+    return false;
+  }
+}
+
+export async function copyObject(sourceKey: string, destinationKey: string) {
+  if (STORAGE_PROVIDER === "azure") {
+    return copyObjectInAzure(sourceKey, destinationKey);
+  }
+  return copyObjectInS3(sourceKey, destinationKey);
 }
 
 async function calculateStorageS3(prefix: string) {

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Divider, Empty, Flex, Popover, Typography } from '@/shared/antd-imports';
 import { PlayCircleFilled } from '@/shared/antd-imports';
-import { colors } from '../../../../../../styles/colors';
-import CustomAvatar from '../../../../../../components/CustomAvatar';
+import { colors } from '@/styles/colors';
+import CustomAvatar from '@/components/CustomAvatar';
 import { mockTimeLogs } from './mockTimeLogs';
 
 type TimeTrackerProps = {

@@ -79,8 +79,8 @@ const TaskCard: React.FC<TaskCardProps> = memo(
     const { socket } = useSocket();
     const themeMode = useSelector((state: RootState) => state.themeReducer.mode);
     const { projectId } = useSelector((state: RootState) => state.projectReducer);
-    const background = themeMode === 'dark' ? '#23272f' : '#fff';
-    const color = themeMode === 'dark' ? '#fff' : '#23272f';
+    const background = themeWiseColor('#fff', '#1e1e1e', themeMode);
+    const color = themeWiseColor('#181818', '#fff', themeMode);
     const dispatch = useAppDispatch();
     const { t } = useTranslation('kanban-board');
 
@@ -328,7 +328,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
               top: contextMenu.y,
               left: contextMenu.x,
               zIndex: 9999,
-              background: themeMode === 'dark' ? '#23272f' : '#fff',
+              background: themeWiseColor('#fff', '#1e1e1e', themeMode),
               borderRadius: 8,
               boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
               padding: 0,

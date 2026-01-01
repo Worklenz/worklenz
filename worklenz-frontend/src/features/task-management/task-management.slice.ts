@@ -330,7 +330,9 @@ export const fetchTasksV3 = createAsyncThunk(
           order: typeof task.sort_order === 'number' ? task.sort_order : 0,
           sub_tasks: task.sub_tasks || [],
           sub_tasks_count: task.sub_tasks_count || 0,
-          show_sub_tasks: task.show_sub_tasks || false,
+          // Auto-expand tasks that have filtered children (descendants matching the filter)
+          show_sub_tasks: task.show_sub_tasks || task.has_filtered_children || false,
+          has_filtered_children: task.has_filtered_children || false,
           parent_task_id: task.parent_task_id || undefined,
           weight: task.weight || 0,
           color: task.color || undefined,
@@ -1126,7 +1128,9 @@ const taskManagementSlice = createSlice({
             parent_task_id: parentTaskId,
             is_sub_task: true,
             sub_tasks_count: subtask.sub_tasks_count || 0, // Use actual count from backend
-            show_sub_tasks: false,
+            // Auto-expand subtasks that have filtered children
+            show_sub_tasks: subtask.has_filtered_children || false,
+            has_filtered_children: subtask.has_filtered_children || false,
             // Add indicator fields for icons
             comments_count: subtask.comments_count || 0,
             has_subscribers: subtask.has_subscribers || false,
@@ -1314,6 +1318,20 @@ export const selectTasksByPhase = createSelector(
 
 // Add archived selector
 export const selectArchived = (state: RootState) => state.taskManagement.archived;
+
+// Memoized selector for active filters to prevent unnecessary re-renders
+export const selectActiveFilters = createSelector(
+  [
+    (state: RootState) => state.taskReducer?.taskAssignees || [],
+    (state: RootState) => state.taskReducer?.labels || [],
+    (state: RootState) => state.taskReducer?.priorities || [],
+  ],
+  (taskAssignees, labels, priorities) => ({
+    members: taskAssignees.filter((m: any) => m.selected).map((m: any) => m.id),
+    labels: labels.filter((l: any) => l.selected).map((l: any) => l.id),
+    priorities: priorities,
+  })
+);
 
 // Export the reducer as default
 export default taskManagementSlice.reducer;

@@ -212,7 +212,7 @@ const TaskListTableWrapper = ({
         }}
       >
         <Flex vertical>
-          <Flex style={{ transform: 'translateY(6px)' }}>
+          <Flex style={{ marginTop: '6px' }}>
             {groupBy !== IGroupBy.PRIORITY &&
               !showRenameInput &&
               isEditable &&

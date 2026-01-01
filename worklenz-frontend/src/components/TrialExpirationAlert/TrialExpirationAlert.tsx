@@ -18,34 +18,45 @@ export const TrialExpirationAlert = () => {
   useEffect(() => {
     // Check if user has already dismissed this alert today
     const dismissedDate = localStorage.getItem('license-alert-dismissed');
-    const today = new Date().toDateString();
+    const todayString = new Date().toDateString();
 
-    if (dismissedDate === today) {
+    if (dismissedDate === todayString) {
       setVisible(false);
       return;
     }
 
-    // Calculate days remaining for expirable subscription types
-    const expirableTypes = [
-      ISUBSCRIPTION_TYPE.TRIAL,
-      ISUBSCRIPTION_TYPE.PADDLE,
-      ISUBSCRIPTION_TYPE.CUSTOM,
-    ];
+    const subscriptionType = currentSession?.subscription_type as ISUBSCRIPTION_TYPE;
+    const expireDateStr = currentSession?.valid_till_date || currentSession?.trial_expire_date;
 
-    if (
-      expirableTypes.includes(currentSession?.subscription_type as ISUBSCRIPTION_TYPE) &&
-      (currentSession.valid_till_date || currentSession.trial_expire_date)
-    ) {
-      const today = new Date();
-      const expireDateStr = currentSession.valid_till_date || currentSession.trial_expire_date;
-      const expiryDate = new Date(expireDateStr);
-      const diffTime = expiryDate.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (!expireDateStr) {
+      setVisible(false);
+      return;
+    }
 
+    const today = new Date();
+    const expiryDate = new Date(expireDateStr);
+    const diffTime = expiryDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // For TRIAL users: Show warnings 3 days before expiry or during grace period
+    if (subscriptionType === ISUBSCRIPTION_TYPE.TRIAL) {
       // Show alert if:
       // 1. 3 days or less remaining before expiry (diffDays <= 3 && diffDays >= 0)
       // 2. Within 7 days grace period after expiry (diffDays < 0 && diffDays >= -7)
       if ((diffDays <= 3 && diffDays >= 0) || (diffDays < 0 && diffDays >= -7)) {
+        setDaysRemaining(diffDays);
+        setVisible(true);
+      } else {
+        setVisible(false);
+      }
+    }
+    // For paid users (PADDLE, CUSTOM): Show warnings ONLY after expiration date (within grace period)
+    else if (
+      subscriptionType === ISUBSCRIPTION_TYPE.PADDLE ||
+      subscriptionType === ISUBSCRIPTION_TYPE.CUSTOM
+    ) {
+      // Show alert only if past expiration date and within 7 days grace period
+      if (diffDays < 0 && diffDays >= -7) {
         setDaysRemaining(diffDays);
         setVisible(true);
       } else {

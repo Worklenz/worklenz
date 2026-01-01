@@ -228,22 +228,22 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
       if (currentGrouping === 'status') {
         // Extract status ID from group ID (format: "status-{statusId}")
         const statusId = group.id.replace('status-', '');
-        
+
         // Look up the full status object to get category_id (required by backend validator)
         const currentStatus = statusList.find(s => s.id === statusId);
-        
+
         if (!currentStatus || !currentStatus.category_id) {
-          logger.error('Cannot rename status: missing category_id', { 
-            statusId, 
+          logger.error('Cannot rename status: missing category_id', {
+            statusId,
             projectId,
             hasStatus: !!currentStatus,
-            hasCategoryId: !!currentStatus?.category_id
+            hasCategoryId: !!currentStatus?.category_id,
           });
           setIsEditingName(false);
           setEditingName(group.name);
           return;
         }
-        
+
         const body: ITaskStatusUpdateModel = {
           name: editingName.trim(),
           project_id: projectId,
@@ -284,14 +284,19 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     statusList,
   ]);
 
+  // Check if this is the Unmapped phase for name click handler
+  const isUnmappedPhaseForClick = currentGrouping === 'phase' && (group.id === 'Unmapped' || group.name === 'Unmapped');
+
   const handleNameClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
       if (!isOwnerOrAdmin) return;
+      // Don't allow editing Unmapped phase name
+      if (isUnmappedPhaseForClick) return;
       setIsEditingName(true);
       setEditingName(group.name);
     },
-    [group.name, isOwnerOrAdmin]
+    [group.name, isOwnerOrAdmin, isUnmappedPhaseForClick]
   );
 
   const handleNameKeyDown = useCallback(
@@ -320,11 +325,11 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
 
   // Handle category change
   const handleCategoryChange = useCallback(
-    async (categoryId: string, e?: React.MouseEvent) => {
-      e?.stopPropagation();
+    async (categoryId: string) => {
       if (isChangingCategory) return;
 
       setIsChangingCategory(true);
+      setDropdownVisible(false);
       try {
         // Extract status ID from group ID (format: "status-{statusId}")
         const statusId = group.id.replace('status-', '');
@@ -344,9 +349,17 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     [group.id, projectId, dispatch, trackMixpanelEvent, isChangingCategory]
   );
 
+  // Check if this is the Unmapped phase (should not be editable)
+  const isUnmappedPhase = useMemo(() => {
+    return currentGrouping === 'phase' && (group.id === 'Unmapped' || group.name === 'Unmapped');
+  }, [currentGrouping, group.id, group.name]);
+
   // Create dropdown menu items
   const menuItems = useMemo(() => {
     if (!isOwnerOrAdmin) return [];
+    
+    // Don't show menu for Unmapped phase
+    if (isUnmappedPhase) return [];
 
     const items = [
       {
@@ -375,9 +388,9 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
             <span>{category.name}</span>
           </div>
         ),
-        onClick: (e: any) => {
-          e?.domEvent?.stopPropagation();
-          handleCategoryChange(category.id || '', e?.domEvent);
+        onClick: (info: any) => {
+          info?.domEvent?.stopPropagation();
+          handleCategoryChange(category.id || '');
         },
       }));
 
@@ -386,6 +399,9 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
         icon: <ArrowPathIcon className="h-4 w-4" />,
         label: t('changeCategory'),
         children: categorySubMenuItems,
+        onTitleClick: (info: any) => {
+          info?.domEvent?.stopPropagation();
+        },
       } as any);
     }
 
@@ -395,6 +411,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     handleRenameGroup,
     handleCategoryChange,
     isOwnerOrAdmin,
+    isUnmappedPhase,
     statusCategories,
     t,
   ]);
@@ -407,6 +424,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
           backgroundColor: headerBackgroundColor,
           color: headerTextColor,
           position: 'sticky',
+          left: 0,
           top: 0,
           zIndex: 25, // Higher than task rows but lower than column headers (z-30)
           height: '36px',
@@ -475,7 +493,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
               />
             ) : (
               <span
-                className="text-sm font-semibold pr-2 cursor-pointer hover:underline"
+                className={`text-sm font-semibold pr-2 ${isUnmappedPhase ? '' : 'cursor-pointer hover:underline'}`}
                 style={{ color: headerTextColor }}
                 onClick={handleNameClick}
               >

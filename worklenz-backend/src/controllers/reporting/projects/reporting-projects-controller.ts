@@ -7,13 +7,10 @@ import ReportingControllerBase from "../reporting-controller-base";
 import moment from "moment";
 import { DATE_RANGES, TASK_PRIORITY_COLOR_ALPHA } from "../../../shared/constants";
 import { getColor, int, formatDuration, formatLogText } from "../../../shared/utils";
+import { SqlHelper } from "../../../shared/sql-helpers";
 import db from "../../../config/db";
 
 export default class ReportingProjectsController extends ReportingProjectsBase {
-
-  private static flatString(text: string) {
-    return (text || "").split(",").map(s => `'${s}'`).join(",");
-  }
 
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
@@ -22,39 +19,67 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
 
     const teamId = this.getCurrentTeamId(req);
 
-    const statusesClause = req.query.statuses as string
-      ? `AND p.status_id IN (${this.flatString(req.query.statuses as string)})`
-      : "";
+    // Note: teamId is $1, size is $2, offset is $3, then filter params start at $4
+    const filterParams: any[] = [];
+    let paramOffset = 4; // Start after teamId, size, offset
 
-    const healthsClause = req.query.healths as string
-      ? `AND p.health_id IN (${this.flatString(req.query.healths as string)})`
-      : "";
+    let statusesClause = "";
+    if (req.query.statuses) {
+      const statusIds = (req.query.statuses as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(statusIds, paramOffset);
+      statusesClause = `AND p.status_id IN (${clause})`;
+      filterParams.push(...statusIds);
+      paramOffset += statusIds.length;
+    }
 
-    const categoriesClause = req.query.categories as string
-      ? `AND p.category_id IN (${this.flatString(req.query.categories as string)})`
-      : "";
+    let healthsClause = "";
+    if (req.query.healths) {
+      const healthIds = (req.query.healths as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(healthIds, paramOffset);
+      healthsClause = `AND p.health_id IN (${clause})`;
+      filterParams.push(...healthIds);
+      paramOffset += healthIds.length;
+    }
 
-    // const projectManagersClause = req.query.project_managers as string
-    //   ? `AND p.id IN (SELECT project_id from project_members WHERE team_member_id IN (${this.flatString(req.query.project_managers as string)}) AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'))`
-    //   : "";
+    let categoriesClause = "";
+    if (req.query.categories) {
+      const categoryIds = (req.query.categories as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(categoryIds, paramOffset);
+      categoriesClause = `AND p.category_id IN (${clause})`;
+      filterParams.push(...categoryIds);
+      paramOffset += categoryIds.length;
+    }
 
-    const projectManagersClause = req.query.project_managers as string
-    ? `AND p.id IN(SELECT project_id FROM project_members WHERE team_member_id IN(SELECT id FROM team_members WHERE user_id IN (${this.flatString(req.query.project_managers as string)})) AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'))`
-    : "";
+    let projectManagersClause = "";
+    if (req.query.project_managers) {
+      const managerIds = (req.query.project_managers as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(managerIds, paramOffset);
+      projectManagersClause = `AND p.id IN(SELECT project_id FROM project_members WHERE team_member_id IN(SELECT id FROM team_members WHERE user_id IN (${clause})) AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'))`;
+      filterParams.push(...managerIds);
+      paramOffset += managerIds.length;
+    }
 
-    const teamsClause = req.query.teams as string
-      ? `AND p.team_id IN (${this.flatString(req.query.teams as string)})`
-      : "";
+    let teamsClause = "";
+    if (req.query.teams) {
+      const teamIds = (req.query.teams as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(teamIds, paramOffset);
+      teamsClause = `AND p.team_id IN (${clause})`;
+      filterParams.push(...teamIds);
+      paramOffset += teamIds.length;
+    }
 
-    const archivedClause = archived
-      ? ""
-      : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
+    let archivedClause = "";
+    if (!archived) {
+      archivedClause = `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $${paramOffset})`;
+      filterParams.push(req.user?.id);
+      paramOffset++;
+    }
 
     // Add project filtering for Team Leads
     const projectFilterClause = await this.buildProjectFilterForTeamLead(req);
     const teamFilterClause = `in_organization(p.team_id, $1) ${projectFilterClause} ${teamsClause}`;
 
-    const result = await ReportingControllerBase.getProjectsByTeam(teamId as string, size, offset, searchQuery, sortField, sortOrder, statusesClause, healthsClause, categoriesClause, archivedClause, teamFilterClause, projectManagersClause);
+    const result = await ReportingControllerBase.getProjectsByTeam(teamId as string, size, offset, searchQuery, sortField, sortOrder, statusesClause, healthsClause, categoriesClause, archivedClause, teamFilterClause, projectManagersClause, filterParams);
 
     for (const project of result.projects) {
       project.team_color = getColor(project.team_name) + TASK_PRIORITY_COLOR_ALPHA;
@@ -229,29 +254,61 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
 
     const teamId = this.getCurrentTeamId(req);
 
-    const statusesClause = req.query.statuses as string
-      ? `AND p.status_id IN (${this.flatString(req.query.statuses as string)})`
-      : "";
+    // Note: teamId is $1, filter params start at $2 (no LIMIT/OFFSET in grouped query)
+    const filterParams: any[] = [];
+    let paramOffset = 2; // Start after teamId
 
-    const healthsClause = req.query.healths as string
-      ? `AND p.health_id IN (${this.flatString(req.query.healths as string)})`
-      : "";
+    let statusesClause = "";
+    if (req.query.statuses) {
+      const statusIds = (req.query.statuses as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(statusIds, paramOffset);
+      statusesClause = `AND p.status_id IN (${clause})`;
+      filterParams.push(...statusIds);
+      paramOffset += statusIds.length;
+    }
 
-    const categoriesClause = req.query.categories as string
-      ? `AND p.category_id IN (${this.flatString(req.query.categories as string)})`
-      : "";
+    let healthsClause = "";
+    if (req.query.healths) {
+      const healthIds = (req.query.healths as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(healthIds, paramOffset);
+      healthsClause = `AND p.health_id IN (${clause})`;
+      filterParams.push(...healthIds);
+      paramOffset += healthIds.length;
+    }
 
-    const projectManagersClause = req.query.project_managers as string
-      ? `AND p.id IN(SELECT project_id FROM project_members WHERE team_member_id IN(SELECT id FROM team_members WHERE user_id IN (${this.flatString(req.query.project_managers as string)})) AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'))`
-      : "";
+    let categoriesClause = "";
+    if (req.query.categories) {
+      const categoryIds = (req.query.categories as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(categoryIds, paramOffset);
+      categoriesClause = `AND p.category_id IN (${clause})`;
+      filterParams.push(...categoryIds);
+      paramOffset += categoryIds.length;
+    }
 
-    const teamsClause = req.query.teams as string
-      ? `AND p.team_id IN (${this.flatString(req.query.teams as string)})`
-      : "";
+    let projectManagersClause = "";
+    if (req.query.project_managers) {
+      const managerIds = (req.query.project_managers as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(managerIds, paramOffset);
+      projectManagersClause = `AND p.id IN(SELECT project_id FROM project_members WHERE team_member_id IN(SELECT id FROM team_members WHERE user_id IN (${clause})) AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'))`;
+      filterParams.push(...managerIds);
+      paramOffset += managerIds.length;
+    }
 
-    const archivedClause = archived
-      ? ""
-      : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
+    let teamsClause = "";
+    if (req.query.teams) {
+      const teamIds = (req.query.teams as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(teamIds, paramOffset);
+      teamsClause = `AND p.team_id IN (${clause})`;
+      filterParams.push(...teamIds);
+      paramOffset += teamIds.length;
+    }
+
+    let archivedClause = "";
+    if (!archived) {
+      archivedClause = `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $${paramOffset})`;
+      filterParams.push(req.user?.id);
+      paramOffset++;
+    }
 
     // Add project filtering for Team Leads
     const projectFilterClause = await this.buildProjectFilterForTeamLead(req);
@@ -364,7 +421,10 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       ORDER BY ${groupOrderBy}
     `;
 
-    const result = await db.query(q, [teamId]);
+    // Build final params: teamId ($1), then filter params ($2+)
+    // Note: getGrouped query doesn't use LIMIT/OFFSET
+    const finalParams = [teamId, ...filterParams];
+    const result = await db.query(q, finalParams);
 
     const groups = result.rows.map(row => ({
       group_id: row.group_id,

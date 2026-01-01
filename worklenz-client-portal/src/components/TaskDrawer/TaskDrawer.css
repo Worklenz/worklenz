@@ -1,0 +1,17 @@
+/* Ensure task drawer backdrop covers entire viewport including sidebar */
+.task-drawer-root {
+  z-index: 9999 !important;
+}
+
+.task-drawer-root .ant-drawer-mask {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 9999 !important;
+}
+
+.task-drawer-root .ant-drawer-content-wrapper {
+  z-index: 10000 !important;
+}

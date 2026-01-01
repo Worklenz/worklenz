@@ -187,7 +187,7 @@ const TaskGroup: React.FC<TaskGroupProps> = ({ taskGroup, groupBy, color, active
     <div ref={setNodeRef}>
       <Flex vertical>
         {/* Group Header */}
-        <Flex style={{ transform: 'translateY(6px)' }}>
+        <Flex style={{ marginTop: '6px' }}>
           <Button
             className="custom-collapse-button"
             style={{

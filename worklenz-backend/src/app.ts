@@ -23,6 +23,8 @@ import sessionMiddleware from "./middlewares/session-middleware";
 import safeControllerFunction from "./shared/safe-controller-function";
 import AwsSesController from "./controllers/aws-ses-controller";
 import { CSP_POLICIES } from "./shared/csp";
+import { sqlInjectionDetectorWithBlocking } from "./middlewares/sql-injection-detector";
+import { createCsrfRotation } from "./middlewares/csrf-rotation";
 
 const app = express();
 
@@ -43,11 +45,33 @@ app.use(helmet({
   crossOriginResourcePolicy: false,
 }));
 
-// Custom security headers
 app.use((_req: Request, res: Response, next: NextFunction) => {
-  res.setHeader("X-XSS-Protection", "1; mode=block");
+  // Remove server header to hide server information
   res.removeHeader("server");
+  
+  // Content Security Policy (already configured via CSP_POLICIES)
   res.setHeader("Content-Security-Policy", CSP_POLICIES);
+  
+  // Strict Transport Security (HSTS) - only in production with HTTPS
+  if (isProduction()) {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+  }
+  
+  // Prevent clickjacking attacks
+  res.setHeader("X-Frame-Options", "DENY");
+  
+  // Prevent MIME type sniffing
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  
+  // XSS Protection (legacy but still useful for older browsers)
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+  
+  // Control referrer information
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  
+  // Restrict browser features and APIs
+  res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+  
   next();
 });
 
@@ -83,7 +107,19 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!isProduction() || !origin || allowedOrigins.includes(origin)) {
+    // In development, allow all requests
+    if (!isProduction()) {
+      return callback(null, true);
+    }
+    
+    // In production, allow requests without Origin header (for mobile apps, native clients)
+    // Mobile apps and native clients typically don't send Origin headers
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // If Origin header is present in production, validate it against whitelist
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log("Blocked origin:", origin, process.env.NODE_ENV);
@@ -106,6 +142,11 @@ app.use(cors({
 
 // Handle preflight requests
 app.options("*", cors());
+
+// The middleware can be re-enabled for monitoring if needed, but blocking is no longer necessary
+// if (isProduction()) {
+//   app.use(sqlInjectionDetectorWithBlocking);
+// }
 
 // Session setup - must be before passport and CSRF
 app.use(sessionMiddleware);
@@ -140,32 +181,90 @@ function isLoggedIn(req: Request, _res: Response, next: NextFunction) {
   return req.user ? next() : next(createError(401));
 }
 
-// CSRF configuration using csrf-sync for session-based authentication
+// Enhanced with stronger token generation
 const {
   invalidCsrfTokenError,
   generateToken,
   csrfSynchronisedProtection,
 } = csrfSync({
-  getTokenFromRequest: (req: Request) => req.headers["x-csrf-token"] as string || (req.body && req.body["_csrf"])
+  getTokenFromRequest: (req: Request) => {
+    // Express normalizes headers to lowercase, so check both cases
+    const token = req.headers["x-csrf-token"] as string || 
+                  req.headers["X-CSRF-Token"] as string ||
+                  (req.body && req.body["_csrf"]);
+    
+    return token;
+  },
+  // Note: csrf-sync uses crypto.randomBytes internally, which is secure
+  // Token size is determined by the library (typically 32 bytes)
 });
 
-// Apply CSRF selectively (exclude webhooks, public routes, and invitation routes)
+// Only exclude: webhooks, public routes, and specific invitation endpoints
 app.use((req, res, next) => {
+  const stateChangingMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
+  const isStateChanging = stateChangingMethods.includes(req.method);
+  
+  // Always exclude webhooks (external services can't provide CSRF tokens)
+  if (req.path.startsWith("/webhook/")) {
+    return next();
+  }
+  
+  // Exclude public routes (read-only or public access)
+  if (req.path.startsWith("/public/")) {
+    return next();
+  }
+  
+  // Exclude specific invitation endpoints (these have their own token validation)
   if (
-    req.path.startsWith("/webhook/") ||
-    req.path.startsWith("/secure/") ||
-    req.path.startsWith("/api/") ||
-    req.path.startsWith("/public/") ||
     req.path.startsWith("/invite/team/") ||
     req.path.startsWith("/invite/project/") ||
     req.path.includes("/client-portal/invitation/") ||
-    req.path.includes("/client-portal/auth/login") ||
-    req.path.includes("/client-portal/auth/refresh") ||
     req.path.includes("/client-portal/handle-organization-invite")
   ) {
-    next();
-  } else {
+    return next();
+  }
+  
+  // Exclude client portal auth endpoints (they use different auth mechanism)
+  if (
+    req.path.includes("/client-portal/auth/login") ||
+    req.path.includes("/client-portal/auth/refresh")
+  ) {
+    return next();
+  }
+  
+  // Exclude the CSRF token endpoint itself (GET requests to fetch tokens)
+  if (req.path === "/csrf-token") {
+    return next();
+  }
+  
+  // Exclude mobile app authentication endpoints (mobile apps can't send CSRF tokens)
+  // Check both with and without /secure prefix since req.path might vary depending on mounting
+  const authPaths = [
+    "/login", "/secure/login",
+    "/signup", "/secure/signup",
+    "/signup/check", "/secure/signup/check",
+    "/verify", "/secure/verify",
+    "/reset-password", "/secure/reset-password",
+    "/update-password", "/secure/update-password",
+    "/verify-captcha", "/secure/verify-captcha",
+    "/google/mobile", "/secure/google/mobile",
+    "/apple/mobile", "/secure/apple/mobile",
+    "/google", "/secure/google",
+    "/google/verify", "/secure/google/verify",
+    "/apple", "/secure/apple",
+    "/apple/verify", "/secure/apple/verify"
+  ];
+  
+  if (authPaths.includes(req.path)) {
+    return next();
+  }
+  
+  // This protects POST, PUT, DELETE, PATCH operations from CSRF attacks
+  // GET, OPTIONS, HEAD requests don't need CSRF protection
+  if (isStateChanging) {
     csrfSynchronisedProtection(req, res, next);
+  } else {
+    next();
   }
 });
 
@@ -179,12 +278,26 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // CSRF token refresh endpoint
+// Note: This endpoint doesn't require authentication, but needs a session
 app.get("/csrf-token", (req: Request, res: Response) => {
   try {
+    // Check if session exists (csrf-sync requires session)
+    if (!req.session) {
+      return res.status(401).json({ done: false, message: "Session required for CSRF token" });
+    }
+    
     const token = generateToken(req);
+    if (!token) {
+      console.error('[CSRF] Failed to generate token');
+      return res.status(500).json({ done: false, message: "Failed to generate CSRF token" });
+    }
+    
+    // Also send token in header for convenience
+    res.setHeader('X-CSRF-Token', token);
     res.status(200).json({ done: true, message: "CSRF token refreshed", token });
-  } catch (error) {
-    res.status(500).json({ done: false, message: "Failed to generate CSRF token" });
+  } catch (error: any) {
+    console.error('[CSRF] Error generating token:', error);
+    res.status(500).json({ done: false, message: "Failed to generate CSRF token", error: error?.message });
   }
 });
 
@@ -221,12 +334,28 @@ if (isProduction()) {
 // API rate limiting
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1500,
+  max: isProduction() ? 1500 : 3000, // 100 req/min in production, 200 req/min in dev
   standardHeaders: false,
   legacyHeaders: false,
+  message: "Too many requests from this IP, please try again later.",
 });
 
+// Export endpoint rate limiting
+const exportLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50, // 50 exports per 15 minutes
+  standardHeaders: false,
+  legacyHeaders: false,
+  message: "Too many export requests, please try again later.",
+});
+
+// Create CSRF rotation middleware
+const csrfRotation = createCsrfRotation(generateToken);
+
 // Routes
+// Add CSRF token rotation to state-changing routes
+// TEMPORARY: Disable CSRF rotation to prevent token conflicts with concurrent requests
+// Token rotation causes issues when multiple requests are in flight
 app.use("/api/v1", apiLimiter, isLoggedIn, apiRouter);
 app.use("/api/client-portal", apiLimiter, clientPortalApiRouter);
 app.use("/secure", authRouter);

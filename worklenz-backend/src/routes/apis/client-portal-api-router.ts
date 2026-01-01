@@ -1,88 +1,105 @@
 import express from "express";
-import ClientPortalController from "../../controllers/client-portal-controller";
+import ClientPortalAuthController from "../../controllers/client-portal/client-portal-auth-controller";
+import ClientPortalDashboardController from "../../controllers/client-portal/client-portal-dashboard-controller";
+import ClientPortalServicesController from "../../controllers/client-portal/client-portal-services-controller";
+import ClientPortalRequestsController from "../../controllers/client-portal/client-portal-requests-controller";
+import ClientPortalCommentsController from "../../controllers/client-portal/client-portal-comments-controller";
+import ClientPortalProjectsController from "../../controllers/client-portal/client-portal-projects-controller";
+import ClientPortalInvoicesController from "../../controllers/client-portal/client-portal-invoices-controller";
+import ClientPortalChatController from "../../controllers/client-portal/client-portal-chat-controller";
+import ClientPortalSettingsController from "../../controllers/client-portal/client-portal-settings-controller";
+import ClientPortalProfileController from "../../controllers/client-portal/client-portal-profile-controller";
+import ClientPortalNotificationsController from "../../controllers/client-portal/client-portal-notifications-controller";
 import ClientPortalAttachmentController from "../../controllers/client-portal-attachment-controller";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import { authenticateClient, requireClientPermission } from "../../middlewares/client-auth-middleware";
+import phoneNumberValidator from "../../middlewares/validators/phone-number-validator";
 
 const router = express.Router();
 
 // Authentication routes (no authentication required)
-router.get("/invitation/validate", safeControllerFunction(ClientPortalController.validateInvitation));
-router.get("/invitation/validate/:slug", safeControllerFunction(ClientPortalController.validateInvitationBySlug));
-router.post("/invitation/accept", safeControllerFunction(ClientPortalController.acceptInvitation));
-router.post("/auth/login", safeControllerFunction(ClientPortalController.clientLogin));
-router.post("/auth/refresh", safeControllerFunction(ClientPortalController.refreshClientToken));
-router.post("/handle-organization-invite", safeControllerFunction(ClientPortalController.handleOrganizationInvite));
+router.get("/invitation/validate", safeControllerFunction(ClientPortalAuthController.validateInvitation));
+router.get("/invitation/validate/:slug", safeControllerFunction(ClientPortalAuthController.validateInvitationBySlug));
+router.post("/invitation/accept", safeControllerFunction(ClientPortalAuthController.acceptInvitation));
+router.post("/auth/login", safeControllerFunction(ClientPortalAuthController.clientLogin));
+router.post("/auth/refresh", safeControllerFunction(ClientPortalAuthController.refreshClientToken));
+router.post("/handle-organization-invite", safeControllerFunction(ClientPortalAuthController.handleOrganizationInvite));
 
 // Protected routes (authentication required)
 router.use(authenticateClient);
 
 // Dashboard
-router.get("/dashboard", safeControllerFunction(ClientPortalController.getDashboard));
+router.get("/dashboard", safeControllerFunction(ClientPortalDashboardController.getDashboard));
 
 // Services (client-facing)
-router.get("/services", safeControllerFunction(ClientPortalController.getServices));
-router.get("/services/:id", safeControllerFunction(ClientPortalController.getServiceDetails));
+router.get("/services", safeControllerFunction(ClientPortalServicesController.getServices));
+router.get("/services/:id", safeControllerFunction(ClientPortalServicesController.getServiceDetails));
 
 // Services (organization management)
-router.get("/services/organization/all", safeControllerFunction(ClientPortalController.getOrganizationServices));
-router.post("/services/organization", safeControllerFunction(ClientPortalController.createOrganizationService));
-router.get("/services/organization/:id", safeControllerFunction(ClientPortalController.getOrganizationServiceById));
-router.put("/services/organization/:id", safeControllerFunction(ClientPortalController.updateOrganizationService));
-router.delete("/services/organization/:id", safeControllerFunction(ClientPortalController.deleteOrganizationService));
+router.get("/services/organization/all", safeControllerFunction(ClientPortalServicesController.getOrganizationServices));
+router.post("/services/organization", safeControllerFunction(ClientPortalServicesController.createOrganizationService));
+router.get("/services/organization/:id", safeControllerFunction(ClientPortalServicesController.getOrganizationServiceById));
+router.put("/services/organization/:id", safeControllerFunction(ClientPortalServicesController.updateOrganizationService));
+router.delete("/services/organization/:id", safeControllerFunction(ClientPortalServicesController.deleteOrganizationService));
 
 // Requests
-router.get("/requests", safeControllerFunction(ClientPortalController.getRequests));
-router.post("/requests", safeControllerFunction(ClientPortalController.createRequest));
-router.get("/requests/status-options", safeControllerFunction(ClientPortalController.getRequestStatusOptions));
+router.get("/requests", safeControllerFunction(ClientPortalRequestsController.getRequests));
+router.post("/requests", safeControllerFunction(ClientPortalRequestsController.createRequest));
+router.get("/requests/status-options", safeControllerFunction(ClientPortalRequestsController.getRequestStatusOptions));
 // Comment routes must come before /:id route to avoid route matching conflicts
-router.get("/requests/:id/comments", safeControllerFunction(ClientPortalController.getRequestComments));
-router.post("/requests/:id/comments", safeControllerFunction(ClientPortalController.addRequestComment));
-router.get("/requests/:id", safeControllerFunction(ClientPortalController.getRequestDetails));
-router.put("/requests/:id", safeControllerFunction(ClientPortalController.updateRequest));
-router.delete("/requests/:id", safeControllerFunction(ClientPortalController.deleteRequest));
+router.get("/requests/:id/comments", safeControllerFunction(ClientPortalCommentsController.getRequestComments));
+router.post("/requests/:id/comments", safeControllerFunction(ClientPortalCommentsController.addRequestComment));
+router.get("/requests/:id", safeControllerFunction(ClientPortalRequestsController.getRequestDetails));
+router.put("/requests/:id", safeControllerFunction(ClientPortalRequestsController.updateRequest));
+router.delete("/requests/:id", safeControllerFunction(ClientPortalRequestsController.deleteRequest));
 
 // Projects
-router.get("/projects", safeControllerFunction(ClientPortalController.getProjects));
-router.get("/projects/:id", safeControllerFunction(ClientPortalController.getProjectDetails));
-router.get("/projects/:id/tasks", safeControllerFunction(ClientPortalController.getProjectTasks));
+router.get("/projects", safeControllerFunction(ClientPortalProjectsController.getProjects));
+router.get("/projects/:id", safeControllerFunction(ClientPortalProjectsController.getProjectDetails));
+router.get("/projects/:id/tasks", safeControllerFunction(ClientPortalProjectsController.getProjectTasks));
+
+// Tasks
+router.get("/tasks/:id/comments", safeControllerFunction(ClientPortalProjectsController.getTaskComments));
+router.post("/tasks/:id/comments", safeControllerFunction(ClientPortalProjectsController.addTaskComment));
+router.post("/tasks/:id/mark-viewed", safeControllerFunction(ClientPortalProjectsController.markTaskCommentsAsViewed));
+router.get("/tasks/:id", safeControllerFunction(ClientPortalProjectsController.getTaskDetails));
 
 // Invoices
-router.get("/invoices", safeControllerFunction(ClientPortalController.getInvoices));
-router.get("/invoices/:id", safeControllerFunction(ClientPortalController.getInvoiceDetails));
-router.post("/invoices/:id/pay", safeControllerFunction(ClientPortalController.payInvoice));
-router.get("/invoices/:id/download", safeControllerFunction(ClientPortalController.downloadInvoice));
+router.get("/invoices", safeControllerFunction(ClientPortalInvoicesController.getInvoices));
+router.get("/invoices/:id", safeControllerFunction(ClientPortalInvoicesController.getInvoiceDetails));
+router.post("/invoices/:id/pay", safeControllerFunction(ClientPortalInvoicesController.payInvoice));
+router.get("/invoices/:id/download", safeControllerFunction(ClientPortalInvoicesController.downloadInvoice));
 
 // Chat
-router.get("/chats", safeControllerFunction(ClientPortalController.getChats));
-router.post("/chats", safeControllerFunction(ClientPortalController.createChat));
-router.get("/chats/:id", safeControllerFunction(ClientPortalController.getChatDetails));
-router.post("/chats/:id/messages", safeControllerFunction(ClientPortalController.sendMessage));
-router.get("/chats/:id/messages", safeControllerFunction(ClientPortalController.getMessages));
+router.get("/chats", safeControllerFunction(ClientPortalChatController.getChats));
+router.post("/chats", safeControllerFunction(ClientPortalChatController.createChat));
+router.get("/chats/:id", safeControllerFunction(ClientPortalChatController.getChatDetails));
+router.post("/chats/:id/messages", safeControllerFunction(ClientPortalChatController.sendMessage));
+router.get("/chats/:id/messages", safeControllerFunction(ClientPortalChatController.getMessages));
 
 // Settings (for organization management - requires team_id)
-router.get("/settings", safeControllerFunction(ClientPortalController.getSettings));
-router.put("/settings", safeControllerFunction(ClientPortalController.updateSettings));
-router.post("/settings/upload-logo", safeControllerFunction(ClientPortalController.uploadLogo));
+router.get("/settings", safeControllerFunction(ClientPortalSettingsController.getSettings));
+router.put("/settings", phoneNumberValidator, safeControllerFunction(ClientPortalSettingsController.updateSettings));
+router.post("/settings/upload-logo", safeControllerFunction(ClientPortalSettingsController.uploadLogo));
 
 // Organization Settings (for client users - uses organizationId from token)
-router.get("/organization-settings", safeControllerFunction(ClientPortalController.getOrganizationSettings));
+router.get("/organization-settings", safeControllerFunction(ClientPortalSettingsController.getOrganizationSettings));
 
 // Profile
-router.get("/profile", safeControllerFunction(ClientPortalController.getClientProfile));
-router.put("/profile", safeControllerFunction(ClientPortalController.updateClientProfile));
+router.get("/profile", safeControllerFunction(ClientPortalProfileController.getClientProfile));
+router.put("/profile", safeControllerFunction(ClientPortalProfileController.updateClientProfile));
 
 // Authentication
-router.post("/auth/logout", safeControllerFunction(ClientPortalController.clientLogout));
+router.post("/auth/logout", safeControllerFunction(ClientPortalAuthController.clientLogout));
 
 // Organizations
-router.get("/organizations", safeControllerFunction(ClientPortalController.getClientOrganizations));
-router.post("/organizations/switch", safeControllerFunction(ClientPortalController.switchOrganization));
+router.get("/organizations", safeControllerFunction(ClientPortalAuthController.getClientOrganizations));
+router.post("/organizations/switch", safeControllerFunction(ClientPortalAuthController.switchOrganization));
 
 // Notifications
-router.get("/notifications", safeControllerFunction(ClientPortalController.getNotifications));
-router.put("/notifications/:id/read", safeControllerFunction(ClientPortalController.markNotificationRead));
-router.put("/notifications/read-all", safeControllerFunction(ClientPortalController.markAllNotificationsRead));
+router.get("/notifications", safeControllerFunction(ClientPortalNotificationsController.getNotifications));
+router.put("/notifications/:id/read", safeControllerFunction(ClientPortalNotificationsController.markNotificationRead));
+router.put("/notifications/read-all", safeControllerFunction(ClientPortalNotificationsController.markAllNotificationsRead));
 
 // File uploads and attachments (using new attachment controller with S3 storage)
 router.post("/upload", safeControllerFunction(ClientPortalAttachmentController.uploadFile));

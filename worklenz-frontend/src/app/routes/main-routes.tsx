@@ -6,17 +6,18 @@ import adminCenterRoutes from './admin-center-routes';
 import { useAuthService } from '@/hooks/useAuth';
 import { Navigate, useLocation } from 'react-router-dom';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
+import ChunkErrorHandler from '@/utils/chunk-error-handler';
 
-// Lazy load page components for better code splitting
-const HomePage = lazy(() => import('@/pages/home/HomePage'));
-const ProjectList = lazy(() => import('@/pages/projects/project-list'));
-const Schedule = lazy(() => import('@/pages/schedule/schedule'));
-const TeamLeadReports = lazy(() => import('@/pages/team-lead-reports/team-lead-reports'));
+// Lazy load page components for better code splitting with chunk error handling
+const HomePage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/home/HomePage'), 'HomePage'));
+const ProjectList = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/projects/project-list'), 'ProjectList'));
+const Schedule = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/schedule/schedule'), 'Schedule'));
+const TeamLeadReports = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/team-lead-reports/team-lead-reports'), 'TeamLeadReports'));
 
-const ProjectView = lazy(() => import('@/pages/projects/projectView/project-view'));
-const Unauthorized = lazy(() => import('@/pages/unauthorized/unauthorized'));
-const GanttDemoPage = lazy(() => import('@/pages/GanttDemoPage'));
-const LicenseExpiredPage = lazy(() => import('@/pages/license-expired/LicenseExpired'));
+const ProjectView = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/projects/projectView/project-view'), 'ProjectView'));
+const Unauthorized = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/unauthorized/unauthorized'), 'Unauthorized'));
+const GanttDemoPage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/GanttDemoPage'), 'GanttDemoPage'));
+const LicenseExpiredPage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/license-expired/LicenseExpired'), 'LicenseExpiredPage'));
 
 // Define AdminGuard component with defensive programming
 const AdminGuard = ({ children }: { children: React.ReactNode }) => {

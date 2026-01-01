@@ -5,79 +5,38 @@
   cursor: col-resize !important;
 }
 
-/* Resize handle base styles - improved visibility */
+/* Resize handle base styles */
 .column-resize-handle {
   position: absolute;
   top: 0;
-  right: -4px;
-  width: 8px;
+  right: -5px;
+  width: 10px;
   height: 100%;
   cursor: col-resize !important;
   user-select: none;
-  z-index: 20;
+  z-index: 10;
   background-color: transparent;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  border-left: 2px solid transparent;
+  transition: all 0.15s ease;
 }
 
-/* Subtle always-visible indicator for discoverability */
-.column-resize-handle::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 1px;
-  height: 20px;
-  background-color: rgba(0, 0, 0, 0.1);
-  opacity: 0.3;
-  transition: opacity 0.2s ease;
-}
-
-[data-theme="dark"] .column-resize-handle::before {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-/* Enhanced hover state - more visible */
-.column-resize-handle:hover {
-  background-color: rgba(24, 144, 255, 0.15);
-  border-left-color: #1890ff;
-  width: 10px;
-  right: -5px;
-}
-
-.column-resize-handle:hover::before {
-  opacity: 0.6;
+/* Hover state - show blue indicator */
+.column-resize-handle:hover,
+.column-resize-handle:active {
   background-color: #1890ff;
-  width: 2px;
-  height: 24px;
-}
-
-/* Active dragging state - prominent feedback */
-.column-resize-handle:active,
-.column-resize-handle.resizing {
-  background-color: rgba(24, 144, 255, 0.25);
-  border-left-color: #1890ff;
-  width: 3px;
-  right: -1.5px;
-  box-shadow: 0 0 8px rgba(24, 144, 255, 0.4);
-}
-
-.column-resize-handle:active::before,
-.column-resize-handle.resizing::before {
-  opacity: 1;
-  background-color: #1890ff;
-  width: 2px;
-  height: 100%;
-  top: 0;
-  transform: none;
-  left: 0;
+  cursor: col-resize !important;
 }
 
 /* Visual indicator on column header hover */
-th.group:hover .column-resize-handle,
-th:hover .column-resize-handle {
+th.group:hover .column-resize-handle {
   opacity: 1;
+  background-color: rgba(24, 144, 255, 0.3);
+}
+
+/* Active dragging state */
+.column-resize-handle:active {
+  background-color: #1890ff;
+  width: 4px;
+  box-shadow: 0 0 4px rgba(24, 144, 255, 0.5);
 }
 
 /* Prevent text selection during resize */
@@ -86,28 +45,17 @@ body.column-resizing {
   user-select: none !important;
 }
 
-body.column-resizing * {
-  cursor: col-resize !important;
-}
-
 /* Dark theme support */
-[data-theme="dark"] .column-resize-handle:hover {
-  background-color: rgba(23, 125, 220, 0.2);
-  border-left-color: #177ddc;
-}
-
-[data-theme="dark"] .column-resize-handle:active,
-[data-theme="dark"] .column-resize-handle.resizing {
-  background-color: rgba(23, 125, 220, 0.3);
-  border-left-color: #177ddc;
-  box-shadow: 0 0 8px rgba(23, 125, 220, 0.5);
+[data-theme="dark"] .column-resize-handle:hover,
+[data-theme="dark"] .column-resize-handle:active {
+  background-color: #177ddc;
 }
 
 [data-theme="dark"] th.group:hover .column-resize-handle {
-  background-color: rgba(23, 125, 220, 0.15);
+  background-color: rgba(23, 125, 220, 0.3);
 }
 
-/* Resize handle for sticky columns */
+/* Resize handle for sticky columns (task, selector) */
 th.sticky .column-resize-handle {
   position: absolute;
   right: 0;
@@ -115,83 +63,38 @@ th.sticky .column-resize-handle {
 
 /* Visual feedback - resize line during drag */
 .column-resize-indicator {
-  position: absolute;
+  position: fixed;
   top: 0;
   bottom: 0;
   width: 2px;
-  background: linear-gradient(to bottom, 
-    rgba(24, 144, 255, 0.8) 0%,
-    rgba(24, 144, 255, 1) 50%,
-    rgba(24, 144, 255, 0.8) 100%
-  );
+  background-color: #1890ff;
   pointer-events: none;
   z-index: 9999;
-  box-shadow: 
-    0 0 6px rgba(24, 144, 255, 0.6),
-    0 0 12px rgba(24, 144, 255, 0.3);
-  transform: translateX(-50%);
-  transition: opacity 0.1s ease;
+  box-shadow: 0 0 4px rgba(24, 144, 255, 0.6);
 }
 
-[data-theme="dark"] .column-resize-indicator {
-  background: linear-gradient(to bottom, 
-    rgba(23, 125, 220, 0.8) 0%,
-    rgba(23, 125, 220, 1) 50%,
-    rgba(23, 125, 220, 0.8) 100%
-  );
-  box-shadow: 
-    0 0 6px rgba(23, 125, 220, 0.6),
-    0 0 12px rgba(23, 125, 220, 0.3);
-}
-
-/* Tooltip for resize width display */
+/* Tooltip for resize hint */
 .column-resize-tooltip {
-  position: fixed;
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.85) 100%);
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.75);
   color: white;
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
   font-size: 12px;
-  font-weight: 500;
-  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
   pointer-events: none;
   white-space: nowrap;
-  z-index: 10000;
-  box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(8px);
-  transform: translate(-50%, -100%);
-  margin-top: -8px;
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-
-.column-resize-tooltip::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-top-color: rgba(0, 0, 0, 0.9);
+  z-index: 1000;
 }
 
 [data-theme="dark"] .column-resize-tooltip {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+  background-color: rgba(255, 255, 255, 0.9);
   color: #000;
-  box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
-[data-theme="dark"] .column-resize-tooltip::after {
-  border-top-color: rgba(255, 255, 255, 0.95);
-}
-
-/* Smooth column width transitions */
+/* Smooth column width transitions (optional - can be disabled for performance) */
 th,
 td {
-  transition: width 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.05s ease-out;
 }
 
 /* Disable transitions during active resize for better performance */
@@ -200,31 +103,33 @@ body.column-resizing td {
   transition: none !important;
 }
 
-/* Minimum/maximum width indicator when reaching limit */
-.column-resize-handle.at-limit {
-  background-color: rgba(255, 77, 79, 0.2) !important;
-  border-left-color: #ff4d4f !important;
-  animation: shake 0.3s ease;
+/* Double-click to auto-fit indicator */
+.column-resize-handle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 16px;
+  background-color: rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  transition: opacity 0.2s;
 }
 
-.column-resize-handle.at-limit::before {
+.column-resize-handle:hover::after {
+  opacity: 1;
+}
+
+/* Minimum width indicator when reaching limit */
+th.min-width-reached .column-resize-handle,
+th.max-width-reached .column-resize-handle {
   background-color: #ff4d4f !important;
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-2px); }
-  75% { transform: translateX(2px); }
+  cursor: not-allowed !important;
 }
 
 /* Accessibility - keyboard focus */
 .column-resize-handle:focus-visible {
   outline: 2px solid #1890ff;
   outline-offset: -2px;
-  background-color: rgba(24, 144, 255, 0.2);
-}
-
-/* Smooth resize animation class */
-.column-resizing-smooth {
-  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }

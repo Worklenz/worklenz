@@ -1,7 +1,6 @@
 import {
   Card,
   Flex,
-  message,
   Typography,
   Upload,
   UploadProps,
@@ -19,8 +18,10 @@ import {
   Input,
   Tabs,
 } from '@/shared/antd-imports';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { validatePhoneNumber } from '@/utils/validatePhoneNumber';
+import PhoneInput from '@/components/PhoneInput/PhoneInput';
 import {
   InboxOutlined,
   DeleteOutlined,
@@ -46,6 +47,8 @@ const ClientPortalSettings = () => {
 
   // State for custom logo
   const [customLogo, setCustomLogo] = useState<string | null>(null);
+  const [organizationLogo, setOrganizationLogo] = useState<string | null>(null);
+  const [isLogoSynced, setIsLogoSynced] = useState(false);
   const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
   const [pendingLogoUrl, setPendingLogoUrl] = useState<string | null>(null);
   const [pendingLogoRemoval, setPendingLogoRemoval] = useState(false);
@@ -53,6 +56,7 @@ const ClientPortalSettings = () => {
   const [saving, setSaving] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // State for company details
   const [companyDetails, setCompanyDetails] = useState({
@@ -104,7 +108,15 @@ const ClientPortalSettings = () => {
       if (response.done && response.body) {
         if (response.body.logo_url) {
           setCustomLogo(response.body.logo_url);
+          setIsLogoSynced(false);
+        } else {
+          setCustomLogo(null);
         }
+        // Track organization logo and sync status
+        if (response.body.organization_logo_url) {
+          setOrganizationLogo(response.body.organization_logo_url);
+        }
+        setIsLogoSynced(response.body.is_logo_synced || false);
         // Load company details
         const details = {
           company_name: response.body.company_name || '',
@@ -128,14 +140,12 @@ const ClientPortalSettings = () => {
     // Validate file type
     const isImage = file.type.startsWith('image/');
     if (!isImage) {
-      message.error('You can only upload image files!');
       return false;
     }
 
     // Validate file size (max 2MB)
     const isLt2M = file.size / 1024 / 1024 < 2;
     if (!isLt2M) {
-      message.error('Image must be smaller than 2MB!');
       return false;
     }
 
@@ -147,8 +157,6 @@ const ClientPortalSettings = () => {
     setPendingLogoUrl(previewUrl);
     setPendingLogoRemoval(false);
     setHasUnsavedChanges(true);
-
-    message.success(t('logoUploadedText'));
 
     return false; // Prevent default upload
   };
@@ -170,8 +178,6 @@ const ClientPortalSettings = () => {
     setPendingLogoFile(null);
     setPendingLogoUrl(null);
     setHasUnsavedChanges(true);
-
-    message.success(t('logoRemovedText'));
   };
 
   // Handle company details change
@@ -215,13 +221,11 @@ const ClientPortalSettings = () => {
             }
           } catch (error) {
             console.error('Logo upload error:', error);
-            message.error('Failed to upload logo');
             return;
           } finally {
             // Reset pending states
             resetPendingChanges();
             setSaving(false);
-            message.success(t('settingsSavedText'));
           }
         };
         reader.readAsDataURL(pendingLogoFile);
@@ -246,9 +250,8 @@ const ClientPortalSettings = () => {
 
           setCustomLogo(null);
           resetPendingChanges();
-          message.success(t('settingsSavedText'));
         } else {
-          message.error('Failed to remove logo');
+          console.error('Failed to remove logo');
         }
         setSaving(false);
       }
@@ -262,11 +265,6 @@ const ClientPortalSettings = () => {
 
         if (response.done) {
           setOriginalCompanyDetails(companyDetails);
-          if (!pendingLogoFile && !pendingLogoRemoval) {
-            message.success(t('settingsSavedText'));
-          }
-        } else {
-          message.error('Failed to save company details');
         }
       }
 
@@ -278,7 +276,6 @@ const ClientPortalSettings = () => {
       setSaving(false);
     } catch (error) {
       console.error('Failed to save settings:', error);
-      message.error('Failed to save settings');
       setSaving(false);
     }
   };
@@ -286,7 +283,6 @@ const ClientPortalSettings = () => {
   const handleCancelChanges = () => {
     resetPendingChanges();
     setCompanyDetails(originalCompanyDetails);
-    message.info(t('discardButton'));
   };
 
   const resetPendingChanges = () => {
@@ -298,6 +294,12 @@ const ClientPortalSettings = () => {
     // Clean up object URLs to prevent memory leaks
     if (pendingLogoUrl) {
       URL.revokeObjectURL(pendingLogoUrl);
+    }
+  };
+
+  const triggerFileInput = () => {
+    if (!saving && !pendingLogoRemoval) {
+      fileInputRef.current?.click();
     }
   };
 
@@ -354,7 +356,9 @@ const ClientPortalSettings = () => {
           ) : pendingLogoRemoval ? (
             <Flex vertical gap={8} align="center">
               <PictureOutlined style={{ fontSize: '32px', color: colors.lightGray }} />
-              <Typography.Text type="secondary">{t('noLogoUploadedText')}</Typography.Text>
+              <Typography.Text type="secondary">
+                {organizationLogo ? 'Organization logo will be used' : t('noLogoUploadedText')}
+              </Typography.Text>
               <Tag color="orange">Pending Removal</Tag>
             </Flex>
           ) : customLogo ? (
@@ -456,133 +460,292 @@ const ClientPortalSettings = () => {
             ),
             children: (
               <Row gutter={[24, 24]}>
-                {/* Left Column - Upload Section */}
+                {/* Left Column - Logo Management */}
                 <Col xs={24} lg={14}>
                   <Card
                     title={
                       <Flex align="center" gap={8}>
-                        <UploadOutlined />
+                        <PictureOutlined />
                         <span>{t('logoManagementTitle')}</span>
                       </Flex>
                     }
                     style={{ height: 'fit-content' }}
                   >
-                    <Flex vertical gap={24}>
-                      {/* Current/Pending Logo Section */}
-                      {(customLogo || pendingLogoUrl || pendingLogoRemoval) && (
-                        <>
-                          <div>
-                            <Typography.Text strong style={{ display: 'block', marginBottom: 12 }}>
-                              {pendingLogoUrl ? t('newLogoText') : t('currentLogoText')}
-                            </Typography.Text>
-
-                            {!pendingLogoRemoval && (
-                              <Flex
-                                align="center"
-                                gap={16}
-                                style={{
-                                  padding: '16px',
-                                  border: pendingLogoUrl
-                                    ? `2px dashed #1890ff`
-                                    : `1px solid ${colors.deepLightGray}`,
-                                  borderRadius: '8px',
-                                  backgroundColor: 'var(--ant-color-bg-layout)',
-                                }}
-                              >
-                                <img
-                                  src={pendingLogoUrl || customLogo || ''}
-                                  alt={pendingLogoUrl ? "New company logo" : "Current company logo"}
-                                  style={{
-                                    maxWidth: 120,
-                                    maxHeight: 60,
-                                    objectFit: 'contain',
-                                    borderRadius: '4px',
-                                  }}
-                                />
-                                <Space direction="vertical" size="small">
-                                  <Space>
-                                    <Tooltip title={t('previewLogoTooltip')}>
-                                      <Button
-                                        type="text"
-                                        icon={<EyeOutlined />}
-                                        onClick={() => setPreviewVisible(true)}
-                                        size="small"
-                                      />
-                                    </Tooltip>
-                                    <Tooltip title={t('removeLogoTooltip')}>
-                                      <Button
-                                        type="text"
-                                        danger
-                                        icon={<DeleteOutlined />}
-                                        onClick={handleStageLogoRemoval}
-                                        size="small"
-                                      />
-                                    </Tooltip>
-                                  </Space>
-                                  {pendingLogoUrl && (
-                                    <Tag color="blue" size="small">Pending Upload</Tag>
-                                  )}
-                                </Space>
-                              </Flex>
-                            )}
-
-                            {pendingLogoRemoval && (
-                              <Alert
-                                message="Logo will be removed"
-                                type="warning"
-                                showIcon
-                                icon={<ExclamationCircleOutlined />}
-                                style={{ marginBottom: 8 }}
-                              />
-                            )}
+                    <Flex vertical gap={20}>
+                      {/* Logo Display Area */}
+                      <div
+                        onClick={!pendingLogoRemoval && !pendingLogoUrl ? triggerFileInput : undefined}
+                        style={{
+                          width: '100%',
+                          minHeight: '180px',
+                          border: pendingLogoUrl
+                            ? `2px dashed #1890ff`
+                            : pendingLogoRemoval
+                            ? `2px dashed #ff4d4f`
+                            : `2px dashed ${colors.deepLightGray}`,
+                          borderRadius: '12px',
+                          backgroundColor: 'var(--ant-color-bg-layout)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          position: 'relative',
+                          cursor: !pendingLogoRemoval && !pendingLogoUrl && !saving ? 'pointer' : 'default',
+                          transition: 'all 0.2s ease',
+                          padding: '24px',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!pendingLogoRemoval && !pendingLogoUrl && !saving && !(customLogo || organizationLogo)) {
+                            e.currentTarget.style.borderColor = colors.skyBlue;
+                            e.currentTarget.style.backgroundColor = 'var(--ant-color-fill-tertiary)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!pendingLogoRemoval && !pendingLogoUrl && !saving && !(customLogo || organizationLogo)) {
+                            e.currentTarget.style.borderColor = colors.deepLightGray;
+                            e.currentTarget.style.backgroundColor = 'var(--ant-color-bg-layout)';
+                          }
+                        }}
+                      >
+                        {saving && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              background: 'rgba(0,0,0,0.3)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              zIndex: 1,
+                              borderRadius: '12px',
+                            }}
+                          >
+                            <Spin size="large" />
                           </div>
-                          <Divider />
-                        </>
-                      )}
+                        )}
 
-                      {/* Upload Section */}
-                      <div>
-                        <Typography.Text strong style={{ display: 'block', marginBottom: 12 }}>
-                          {t('uploadLogoText')}
-                        </Typography.Text>
-                        <Upload.Dragger
-                          {...props}
-                          style={{
-                            maxWidth: '100%',
-                            border: `2px dashed ${colors.deepLightGray}`,
-                            borderRadius: '8px',
-                            backgroundColor: 'var(--ant-color-bg-layout)',
-                          }}
-                        >
-                          <p className="ant-upload-drag-icon">
-                            <InboxOutlined style={{ fontSize: '32px', color: colors.skyBlue }} />
-                          </p>
-                          <p className="ant-upload-text" style={{ fontSize: '16px', marginBottom: '8px' }}>
-                            {t('uploadLogoText')}
-                          </p>
-                          <p className="ant-upload-hint" style={{ color: colors.lightGray }}>
-                            {t('uploadLogoAltText')}
-                          </p>
-                        </Upload.Dragger>
+                        {pendingLogoRemoval ? (
+                          <Flex vertical gap={12} align="center">
+                            <ExclamationCircleOutlined style={{ fontSize: '48px', color: colors.danger }} />
+                            <Typography.Text strong>Logo will be removed</Typography.Text>
+                            <Typography.Text type="secondary" style={{ fontSize: '12px', textAlign: 'center' }}>
+                              {organizationLogo
+                                ? 'After removal, the organization logo will be used automatically.'
+                                : 'No logo will be displayed.'}
+                            </Typography.Text>
+                          </Flex>
+                        ) : pendingLogoUrl || customLogo || organizationLogo ? (
+                          <Flex vertical gap={16} align="center" style={{ width: '100%' }}>
+                            <img
+                              src={pendingLogoUrl || customLogo || organizationLogo || ''}
+                              alt="Logo"
+                              style={{
+                                maxWidth: '240px',
+                                maxHeight: '120px',
+                                objectFit: 'contain',
+                                borderRadius: '8px',
+                              }}
+                            />
+                            <Flex gap={8} align="center">
+                              {pendingLogoUrl && (
+                                <Tag color="blue" icon={<UploadOutlined />}>
+                                  New logo (pending)
+                                </Tag>
+                              )}
+                              {isLogoSynced && organizationLogo && !customLogo && (
+                                <Tag color="green" icon={<CheckCircleOutlined />}>
+                                  From organization
+                                </Tag>
+                              )}
+                              {customLogo && !isLogoSynced && (
+                                <Tag color="orange" icon={<PictureOutlined />}>
+                                  Custom logo
+                                </Tag>
+                              )}
+                            </Flex>
+                          </Flex>
+                        ) : (
+                          <Flex vertical gap={12} align="center">
+                            <div
+                              style={{
+                                width: '64px',
+                                height: '64px',
+                                borderRadius: '50%',
+                                backgroundColor: 'var(--ant-color-fill-tertiary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <PictureOutlined style={{ fontSize: '32px', color: colors.skyBlue }} />
+                            </div>
+                            <Typography.Text strong style={{ fontSize: '16px' }}>
+                              {organizationLogo ? 'Using organization logo' : 'No logo uploaded'}
+                            </Typography.Text>
+                            <Typography.Text type="secondary" style={{ fontSize: '12px', textAlign: 'center' }}>
+                              {organizationLogo
+                                ? 'This logo is synced from your organization settings.'
+                                : 'Click to upload a logo for your client portal'}
+                            </Typography.Text>
+                          </Flex>
+                        )}
                       </div>
 
-                      {/* Guidelines */}
-                      <Alert
-                        message={t('logoGuidelinesTitle')}
-                        description={
-                          <Flex vertical gap={8}>
-                            <Typography.Text>{t('recommendedSizeText')}</Typography.Text>
-                            <Typography.Text>{t('maxFileSizeText')}</Typography.Text>
-                            <Typography.Text>{t('supportedFormatsText')}</Typography.Text>
-                            <Typography.Text>{t('autoScaledInfoText')}</Typography.Text>
+                      {/* Action Buttons */}
+                      <Flex gap={8} wrap="wrap">
+                        {pendingLogoUrl && (
+                          <Button
+                            type="primary"
+                            icon={<UploadOutlined />}
+                            onClick={handleSaveChanges}
+                            loading={saving}
+                            block
+                          >
+                            Save New Logo
+                          </Button>
+                        )}
+                        {!pendingLogoUrl && !pendingLogoRemoval && (customLogo || organizationLogo) && (
+                          <Flex gap={8} style={{ width: '100%' }}>
+                            <Button
+                              icon={<UploadOutlined />}
+                              onClick={triggerFileInput}
+                              disabled={saving}
+                              style={{ flex: 1 }}
+                            >
+                              {customLogo || organizationLogo ? 'Change Logo' : 'Upload Logo'}
+                            </Button>
+                            {customLogo && !isLogoSynced && (
+                              <Button
+                                danger
+                                icon={<DeleteOutlined />}
+                                onClick={handleStageLogoRemoval}
+                                disabled={saving}
+                                style={{ flex: 1 }}
+                              >
+                                Remove Logo
+                              </Button>
+                            )}
+                            {isLogoSynced && organizationLogo && (
+                              <Button
+                                type="default"
+                                onClick={async () => {
+                                  try {
+                                    setSaving(true);
+                                    const response = await profileSettingsApiService.updateClientPortalSettings({
+                                      logo_url: null,
+                                    });
+                                    if (response.done) {
+                                      setCustomLogo(null);
+                                      setIsLogoSynced(true);
+                                      await loadSettings();
+                                    }
+                                  } catch (error) {
+                                    console.error('Failed to reset to organization logo:', error);
+                                  } finally {
+                                    setSaving(false);
+                                  }
+                                }}
+                                loading={saving}
+                                style={{ flex: 1 }}
+                              >
+                                Use Custom Logo Instead
+                              </Button>
+                            )}
                           </Flex>
-                        }
-                        type="info"
-                        icon={<InfoCircleOutlined />}
-                        showIcon
-                        style={{
-                          border: `1px solid ${colors.midBlue}`,
-                          backgroundColor: 'var(--ant-color-bg-layout)',
+                        )}
+                        {pendingLogoRemoval && (
+                          <Flex gap={8} style={{ width: '100%' }}>
+                            <Button
+                              type="primary"
+                              onClick={handleSaveChanges}
+                              loading={saving}
+                              style={{ flex: 1 }}
+                            >
+                              Confirm Removal
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                setPendingLogoRemoval(false);
+                                setHasUnsavedChanges(false);
+                              }}
+                              disabled={saving}
+                              style={{ flex: 1 }}
+                            >
+                              Cancel
+                            </Button>
+                          </Flex>
+                        )}
+                      </Flex>
+
+                      {/* Sync Status Info */}
+                      {isLogoSynced && organizationLogo && !customLogo && (
+                        <Alert
+                          message={
+                            <Flex align="center" gap={8}>
+                              <CheckCircleOutlined />
+                              <span>Using organization logo</span>
+                            </Flex>
+                          }
+                          description={
+                            <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+                              This logo is automatically synced from your organization settings. It appears in client portal emails and invoices.{' '}
+                              <Button
+                                type="link"
+                                size="small"
+                                onClick={() => window.open('/worklenz/admin-center/overview', '_blank')}
+                                style={{ padding: 0, height: 'auto', fontSize: '12px' }}
+                              >
+                                Manage in Admin Center
+                              </Button>
+                            </Typography.Text>
+                          }
+                          type="info"
+                          showIcon={false}
+                          style={{ marginTop: 8 }}
+                        />
+                      )}
+
+                      {/* Guidelines - Collapsed by default */}
+                      <details style={{ marginTop: 8 }}>
+                        <summary
+                          style={{
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            color: colors.skyBlue,
+                            userSelect: 'none',
+                          }}
+                        >
+                          <InfoCircleOutlined style={{ marginRight: 4 }} />
+                          Logo guidelines
+                        </summary>
+                        <div style={{ marginTop: 12, paddingLeft: 20 }}>
+                          <Typography.Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: 4 }}>
+                            {t('recommendedSizeText')}
+                          </Typography.Text>
+                          <Typography.Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: 4 }}>
+                            {t('maxFileSizeText')}
+                          </Typography.Text>
+                          <Typography.Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: 4 }}>
+                            {t('supportedFormatsText')}
+                          </Typography.Text>
+                          <Typography.Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
+                            {t('autoScaledInfoText')}
+                          </Typography.Text>
+                        </div>
+                      </details>
+
+                      {/* Hidden file input */}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/jpg,image/webp"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            handleLogoSelect(e.target.files[0]);
+                          }
                         }}
                       />
                     </Flex>
@@ -676,11 +839,23 @@ const ClientPortalSettings = () => {
                   </Row>
                   <Row gutter={16}>
                     <Col xs={24} sm={12}>
-                      <Form.Item label={t('contactPhoneLabel')}>
-                        <Input
+                      <Form.Item
+                        label={t('contactPhoneLabel')}
+                        name="contact_phone"
+                        rules={[
+                          {
+                            validator: (_, value) => {
+                              if (!value || value.trim() === '') return Promise.resolve();
+                              if (validatePhoneNumber(value)) return Promise.resolve();
+                              return Promise.reject(new Error(t('invalidPhoneNumberFormat')));
+                            }
+                          }
+                        ]}
+                      >
+                        <PhoneInput
                           placeholder={t('contactPhonePlaceholder')}
                           value={companyDetails.contact_phone}
-                          onChange={(e) => handleCompanyDetailsChange('contact_phone', e.target.value)}
+                          onChange={(value) => handleCompanyDetailsChange('contact_phone', value)}
                         />
                       </Form.Item>
                     </Col>

@@ -6,6 +6,7 @@ import {isValidateEmail} from "../shared/utils";
 import {ServerResponse} from "../models/server-response";
 import {sendNewSubscriberNotification} from "../shared/email-templates";
 import WorklenzControllerBase from "./worklenz-controller-base";
+import { sanitizeCommentContent } from "../shared/utils";
 import HandleExceptions from "../decorators/handle-exceptions";
 import ClientPortalController from "./client-portal-controller";
 import {uploadBase64, deleteObject} from "../shared/storage";
@@ -1536,6 +1537,9 @@ export default class ClientsController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null, `Comment must not exceed ${MAX_COMMENT_LENGTH} characters`));
     }
 
+    // Sanitize comment to prevent XSS attacks
+    const sanitizedComment = sanitizeCommentContent(comment.trim());
+
     // Verify request belongs to this team and get client_id
     const requestCheck = await db.query(
       "SELECT id, client_id FROM client_portal_requests WHERE id = $1 AND organization_team_id = $2",
@@ -1568,7 +1572,7 @@ export default class ClientsController extends WorklenzControllerBase {
       requestId,
       teamId,
       clientId,
-      comment.trim(),
+      sanitizedComment,
       'team_member',
       userId,
       userName

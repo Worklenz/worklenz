@@ -334,6 +334,28 @@ class ClientPortalAPI {
     return this.request(`/projects/${projectId}/tasks${queryString ? `?${queryString}` : ''}`);
   }
 
+  // Tasks
+  async getTaskDetails(taskId: string) {
+    return this.request(`/tasks/${taskId}`);
+  }
+
+  async getTaskComments(taskId: string) {
+    return this.request(`/tasks/${taskId}/comments`);
+  }
+
+  async addTaskComment(taskId: string, comment: string) {
+    return this.request(`/tasks/${taskId}/comments`, {
+      method: 'POST',
+      data: { comment },
+    });
+  }
+
+  async markTaskCommentsAsViewed(taskId: string) {
+    return this.request(`/tasks/${taskId}/mark-viewed`, {
+      method: 'POST',
+    });
+  }
+
   // Invoices
   async getInvoices(params?: { page?: number; limit?: number; status?: string; search?: string }) {
     const queryParams = new URLSearchParams();

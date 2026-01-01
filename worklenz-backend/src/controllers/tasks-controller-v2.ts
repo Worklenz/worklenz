@@ -11,6 +11,7 @@ import {
   UNMAPPED,
 } from "../shared/constants";
 import { getColor, log_error } from "../shared/utils";
+import { SqlHelper } from "../shared/sql-helpers";
 import TasksControllerBase, {
   GroupBy,
   ITaskGroup,
@@ -51,72 +52,120 @@ export default class TasksControllerV2 extends TasksControllerBase {
     return TasksControllerV2.isCountsOnly(query) || query.parent_task;
   }
 
-  private static flatString(text: string) {
-    return (text || "")
-      .split(" ")
-      .map((s) => `'${s}'`)
-      .join(",");
+  private static getFilterByStatusWhereClosure(
+    text: string,
+    paramOffset: number = 1
+  ): { clause: string; params: string[] } {
+    if (!text) return { clause: "", params: [] };
+
+    const statusIds = text.split(" ").filter(id => id.trim());
+    const { clause, params } = SqlHelper.buildInClause(statusIds, paramOffset);
+    
+    return {
+      clause: `status_id IN (${clause})`,
+      params,
+    };
   }
 
-  private static getFilterByStatusWhereClosure(text: string) {
-    return text ? `status_id IN (${this.flatString(text)})` : "";
-  }
+  /**
+   * Filters tasks by priority, including tasks that have descendants matching the priority filter.
+   * Uses parameterized queries to prevent SQL injection.
+   */
+  private static getFilterByPriorityWhereClosure(
+    text: string,
+    paramOffset: number = 1
+  ): { clause: string; params: string[] } {
+    if (!text) return { clause: "", params: [] };
 
-  private static getFilterByPriorityWhereClosure(text: string) {
-    if (!text) return "";
+    const priorityIds = text.split(" ").filter(id => id.trim());
+    const { clause: inClause, params } = SqlHelper.buildInClause(priorityIds, paramOffset);
 
-    const priorityIds = this.flatString(text);
-    return `(
-      priority_id IN (${priorityIds})
+    const clause = `(
+      priority_id IN (${inClause})
       OR EXISTS (
         SELECT 1 FROM tasks subtask
         WHERE subtask.parent_task_id = t.id
-        AND subtask.priority_id IN (${priorityIds})
+        AND subtask.priority_id IN (${inClause})
         AND subtask.archived IS FALSE
       )
     )`;
+
+    return { clause, params };
   }
 
-  private static getFilterByLabelsWhereClosure(text: string) {
-    if (!text) return "";
+  /**
+   * Filters tasks by labels, including tasks that have descendants matching the label filter.
+   * Uses parameterized queries to prevent SQL injection.
+   */
+  private static getFilterByLabelsWhereClosure(
+    text: string,
+    paramOffset: number = 1
+  ): { clause: string; params: string[] } {
+    if (!text) return { clause: "", params: [] };
 
-    const labelIds = this.flatString(text);
-    return `(
-      id IN (SELECT task_id FROM task_labels WHERE label_id IN (${labelIds}))
+    const labelIds = text.split(" ").filter(id => id.trim());
+    const { clause: inClause, params } = SqlHelper.buildInClause(labelIds, paramOffset);
+
+    const clause = `(
+      id IN (SELECT task_id FROM task_labels WHERE label_id IN (${inClause}))
       OR EXISTS (
         SELECT 1 FROM tasks subtask
         JOIN task_labels tl ON tl.task_id = subtask.id
         WHERE subtask.parent_task_id = t.id
-        AND tl.label_id IN (${labelIds})
+        AND tl.label_id IN (${inClause})
         AND subtask.archived IS FALSE
       )
     )`;
+
+    return { clause, params };
   }
 
-  private static getFilterByMembersWhereClosure(text: string) {
-    if (!text) return "";
+  /**
+   * Filters tasks by assigned members, including tasks that have descendants matching the member filter.
+   * Uses parameterized queries to prevent SQL injection.
+   */
+  private static getFilterByMembersWhereClosure(
+    text: string,
+    paramOffset: number = 1
+  ): { clause: string; params: string[] } {
+    if (!text) return { clause: "", params: [] };
 
-    const memberIds = this.flatString(text);
-    return `(
-      id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${memberIds}))
+    const memberIds = text.split(" ").filter(id => id.trim());
+    const { clause: inClause, params } = SqlHelper.buildInClause(memberIds, paramOffset);
+
+    const clause = `(
+      id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${inClause}))
       OR EXISTS (
         SELECT 1 FROM tasks subtask
         JOIN tasks_assignees ta ON ta.task_id = subtask.id
         WHERE subtask.parent_task_id = t.id
-        AND ta.team_member_id IN (${memberIds})
+        AND ta.team_member_id IN (${inClause})
         AND subtask.archived IS FALSE
       )
     )`;
+
+    return { clause, params };
   }
 
-  private static getFilterByProjectsWhereClosure(text: string) {
-    return text ? `project_id IN (${this.flatString(text)})` : "";
+  private static getFilterByProjectsWhereClosure(
+    text: string,
+    paramOffset: number = 1
+  ): { clause: string; params: string[] } {
+    if (!text) return { clause: "", params: [] };
+
+    const projectIds = text.split(" ").filter(id => id.trim());
+    const { clause: inClause, params } = SqlHelper.buildInClause(projectIds, paramOffset);
+
+    return {
+      clause: `project_id IN (${inClause})`,
+      params,
+    };
   }
 
-  private static getFilterByAssignee(filterBy: string) {
+  private static getFilterByAssignee(filterBy: string, projectIdParam: number) {
     return filterBy === "member"
-      ? `id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id = $1)`
-      : "project_id = $1";
+      ? `id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id = $1::UUID)`
+      : projectIdParam > 0 ? `project_id = $${projectIdParam}::UUID` : "1 = 1";
   }
 
   private static getStatusesQuery(filterBy: string) {
@@ -152,7 +201,25 @@ export default class TasksControllerV2 extends TasksControllerBase {
     }
   }
 
-  private static getQuery(userId: string, options: ParsedQs) {
+  private static getQuery(userId: string, options: ParsedQs, projectId?: string): { query: string; params: any[]; isSubTasks: boolean } {
+    const queryParams: any[] = [userId]; // $1 is always userId
+    let paramOffset = 2; // Start at $2 (after userId)
+    
+    // Add project_id parameter if provided
+    let projectIdParam = 0;
+    if (projectId) {
+      queryParams.push(projectId);
+      projectIdParam = paramOffset++;
+    }
+
+    // Add parent_task parameter early if fetching subtasks (before other filters to maintain parameter positions)
+    const isSubTasks = !!options.parent_task;
+    let parentTaskParam = 0;
+    if (isSubTasks && options.parent_task) {
+      queryParams.push(options.parent_task as string);
+      parentTaskParam = paramOffset++;
+    }
+
     // Determine which sort column to use based on grouping
     const groupBy = options.group || "status";
     let defaultSortColumn = "sort_order";
@@ -178,8 +245,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
       : defaultSortColumn;
     const { searchQuery, sortField, sortOrder } =
       TasksControllerV2.toPaginationOptions(options, searchField);
-
-    const isSubTasks = !!options.parent_task;
 
     // Map frontend field names to backend column names
     const fieldMapping: Record<string, string> = {
@@ -207,52 +272,79 @@ export default class TasksControllerV2 extends TasksControllerBase {
         ? `${mappedSortField} ${sortOrder.toUpperCase()}`
         : defaultSortColumn;
 
-    // Enhanced search query that includes subtasks
-    // If a subtask matches the search, show the parent task too
+    const statusesResult = TasksControllerV2.getFilterByStatusWhereClosure(
+      options.statuses as string,
+      paramOffset
+    );
+    if (statusesResult.params.length > 0) {
+      queryParams.push(...statusesResult.params);
+      paramOffset += statusesResult.params.length;
+    }
+
+    const labelsResult = TasksControllerV2.getFilterByLabelsWhereClosure(
+      options.labels as string,
+      paramOffset
+    );
+    if (labelsResult.params.length > 0) {
+      queryParams.push(...labelsResult.params);
+      paramOffset += labelsResult.params.length;
+    }
+
+    const membersResult = TasksControllerV2.getFilterByMembersWhereClosure(
+      options.members as string,
+      paramOffset
+    );
+    if (membersResult.params.length > 0) {
+      queryParams.push(...membersResult.params);
+      paramOffset += membersResult.params.length;
+    }
+
+    const projectsResult = TasksControllerV2.getFilterByProjectsWhereClosure(
+      options.projects as string,
+      paramOffset
+    );
+    if (projectsResult.params.length > 0) {
+      queryParams.push(...projectsResult.params);
+      paramOffset += projectsResult.params.length;
+    }
+
+    const priorityResult = TasksControllerV2.getFilterByPriorityWhereClosure(
+      options.priorities as string,
+      paramOffset
+    );
+    if (priorityResult.params.length > 0) {
+      queryParams.push(...priorityResult.params);
+      paramOffset += priorityResult.params.length;
+    }
+
     let enhancedSearchQuery = searchQuery;
+    let searchParamNum = 0;
     if (options.search && !isSubTasks) {
       const searchTerm = options.search.toString().trim();
       if (searchTerm) {
-        // Build a search condition that checks both parent and subtasks
+        const searchParam = `%${searchTerm}%`;
+        queryParams.push(searchParam);
+        searchParamNum = paramOffset++;
+
         enhancedSearchQuery = `AND (
-          t.name ILIKE '%${searchTerm}%'
-          OR CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no) ILIKE '%${searchTerm}%'
+          t.name ILIKE $${searchParamNum}
+          OR CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no) ILIKE $${searchParamNum}
           OR EXISTS (
             SELECT 1 FROM tasks subtask
             WHERE subtask.parent_task_id = t.id
             AND subtask.archived IS FALSE
             AND (
-              subtask.name ILIKE '%${searchTerm}%'
-              OR CONCAT((SELECT key FROM projects WHERE id = subtask.project_id), '-', subtask.task_no) ILIKE '%${searchTerm}%'
+              subtask.name ILIKE $${searchParamNum}
+              OR CONCAT((SELECT key FROM projects WHERE id = subtask.project_id), '-', subtask.task_no) ILIKE $${searchParamNum}
             )
           )
         )`;
       }
     }
-
-    // Filter tasks by statuses
-    const statusesFilter = TasksControllerV2.getFilterByStatusWhereClosure(
-      options.statuses as string
-    );
-    // Filter tasks by labels
-    const labelsFilter = TasksControllerV2.getFilterByLabelsWhereClosure(
-      options.labels as string
-    );
-    // Filter tasks by its members
-    const membersFilter = TasksControllerV2.getFilterByMembersWhereClosure(
-      options.members as string
-    );
-    // Filter tasks by projects
-    const projectsFilter = TasksControllerV2.getFilterByProjectsWhereClosure(
-      options.projects as string
-    );
-    // Filter tasks by priorities
-    const priorityFilter = TasksControllerV2.getFilterByPriorityWhereClosure(
-      options.priorities as string
-    );
     // Filter tasks by a single assignee
     const filterByAssignee = TasksControllerV2.getFilterByAssignee(
-      options.filterBy as string
+      options.filterBy as string,
+      projectIdParam
     );
     // Returns statuses of each task as a json array if filterBy === "member"
     const statusesQuery = TasksControllerV2.getStatusesQuery(
@@ -289,25 +381,35 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const archivedFilter =
       options.archived === "true" ? "archived IS TRUE" : "archived IS FALSE";
 
+    // Add project_id filter if projectId is provided
+    const projectIdFilter = projectIdParam > 0 ? `t.project_id = $${projectIdParam}::UUID` : "";
+    
+    // Handle subtask filter - parent_task parameter was already added earlier if needed
     let subTasksFilter;
-
     if (options.isSubtasksInclude === "true") {
       subTasksFilter = "";
     } else {
-      subTasksFilter = isSubTasks
-        ? "parent_task_id = $2"
-        : "parent_task_id IS NULL";
+      if (isSubTasks && parentTaskParam > 0) {
+        // Use the parent_task parameter that was already added to queryParams
+        subTasksFilter = `parent_task_id = $${parentTaskParam}::UUID`;
+      } else if (isSubTasks) {
+        // Fallback: if parent_task is not provided, this shouldn't happen but handle gracefully
+        subTasksFilter = "1 = 0"; // Return no results
+      } else {
+        subTasksFilter = "parent_task_id IS NULL";
+      }
     }
-
+    
     const filters = [
+      projectIdFilter,
       subTasksFilter,
       isSubTasks ? "1 = 1" : archivedFilter,
-      isSubTasks ? "$1 = $1" : filterByAssignee, // ignored filter by member in peoples page for sub-tasks
-      statusesFilter,
-      priorityFilter,
-      labelsFilter,
-      membersFilter,
-      projectsFilter,
+      isSubTasks ? "$1 = $1" : filterByAssignee,
+      statusesResult.clause,
+      priorityResult.clause,
+      labelsResult.clause,
+      membersResult.clause,
+      projectsResult.clause,
     ]
       .filter((i) => !!i)
       .join(" AND ");
@@ -319,47 +421,46 @@ export default class TasksControllerV2 extends TasksControllerBase {
     subtaskFilters.push(archivedFilter);
 
     // Apply status filter to subtasks if present
-    if (statusesFilter) {
-      subtaskFilters.push(statusesFilter.replace(/\bt\./g, "subtask."));
+    if (statusesResult.clause) {
+      subtaskFilters.push(statusesResult.clause.replace(/\bt\./g, 'subtask.'));
     }
 
-    // Apply priority filter to subtasks if present
-    if (options.priorities) {
-      const priorityIds = this.flatString(options.priorities as string);
-      subtaskFilters.push(`subtask.priority_id IN (${priorityIds})`);
+    // Apply priority filter to subtasks if present (reuse parameters)
+    if (options.priorities && priorityResult.clause) {
+      const priorityIds = (options.priorities as string).split(" ").filter(id => id.trim());
+      const priorityParamStart = paramOffset - priorityResult.params.length;
+      const { clause: inClause } = SqlHelper.buildInClause(priorityIds, priorityParamStart);
+      subtaskFilters.push(`subtask.priority_id IN (${inClause})`);
     }
 
-    // Apply labels filter to subtasks if present
-    if (options.labels) {
-      const labelIds = this.flatString(options.labels as string);
-      subtaskFilters.push(
-        `subtask.id IN (SELECT task_id FROM task_labels WHERE label_id IN (${labelIds}))`
-      );
+    // Apply labels filter to subtasks if present (reuse parameters)
+    if (options.labels && labelsResult.clause) {
+      const labelIds = (options.labels as string).split(" ").filter(id => id.trim());
+      const labelParamStart = paramOffset - labelsResult.params.length - priorityResult.params.length;
+      const { clause: inClause } = SqlHelper.buildInClause(labelIds, labelParamStart);
+      subtaskFilters.push(`subtask.id IN (SELECT task_id FROM task_labels WHERE label_id IN (${inClause}))`);
     }
 
-    // Apply members filter to subtasks if present
-    if (options.members) {
-      const memberIds = this.flatString(options.members as string);
-      subtaskFilters.push(
-        `subtask.id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${memberIds}))`
-      );
+    // Apply members filter to subtasks if present (reuse parameters)
+    if (options.members && membersResult.clause) {
+      const memberIds = (options.members as string).split(" ").filter(id => id.trim());
+      const memberParamStart = paramOffset - membersResult.params.length - projectsResult.params.length;
+      const { clause: inClause } = SqlHelper.buildInClause(memberIds, memberParamStart);
+      subtaskFilters.push(`subtask.id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${inClause}))`);
     }
 
-    // Apply search filter to subtasks if present
-    if (options.search && !isSubTasks) {
-      const searchTerm = options.search.toString().trim();
-      if (searchTerm) {
-        subtaskFilters.push(`(
-          subtask.name ILIKE '%${searchTerm}%'
-          OR CONCAT((SELECT key FROM projects WHERE id = subtask.project_id), '-', subtask.task_no) ILIKE '%${searchTerm}%'
-        )`);
-      }
+    // Apply search filter to subtasks if present (reuse search parameter)
+    if (options.search && !isSubTasks && searchParamNum > 0) {
+      subtaskFilters.push(`(
+        subtask.name ILIKE $${searchParamNum}
+        OR CONCAT((SELECT key FROM projects WHERE id = subtask.project_id), '-', subtask.task_no) ILIKE $${searchParamNum}
+      )`);
     }
 
     const subtaskFilterClause =
       subtaskFilters.length > 0 ? `AND ${subtaskFilters.join(" AND ")}` : "";
 
-    return `
+    const q = `
       SELECT id,
              name,
              CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no) AS task_key,
@@ -368,9 +469,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
              t.parent_task_id,
              t.parent_task_id IS NOT NULL AS is_sub_task,
              (SELECT name FROM tasks WHERE id = t.parent_task_id) AS parent_task_name,
-             (SELECT COUNT(*)
+             (SELECT COUNT(*)::INT
               FROM tasks subtask
-              WHERE subtask.parent_task_id = t.id ${subtaskFilterClause})::INT AS sub_tasks_count,
+              WHERE subtask.parent_task_id = t.id
+              ${subtaskFilterClause}) AS sub_tasks_count,
+             FALSE AS has_filtered_children,
 
              t.status_id AS status,
              t.archived,
@@ -400,7 +503,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
              (SELECT start_time
               FROM task_timers
               WHERE task_id = t.id
-                AND user_id = '${userId}') AS timer_start_time,
+                AND user_id = $1) AS timer_start_time,
 
              (SELECT color_code
               FROM sys_task_status_categories
@@ -453,6 +556,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
       WHERE ${filters} ${enhancedSearchQuery}
       ORDER BY ${sortFields}
     `;
+
+    return { query: q, params: queryParams, isSubTasks };
   }
 
   public static async getGroups(
@@ -526,16 +631,12 @@ export default class TasksControllerV2 extends TasksControllerBase {
       const progressEndTime = performance.now();
     }
 
-    const isSubTasks = !!req.query.parent_task;
     const groupBy = (req.query.group || GroupBy.STATUS) as string;
 
     // Add customColumns flag to query params
     req.query.customColumns = "true";
 
-    const q = TasksControllerV2.getQuery(req.user?.id as string, req.query);
-    const params = isSubTasks
-      ? [req.params.id || null, req.query.parent_task]
-      : [req.params.id || null];
+    const { query: q, params, isSubTasks } = TasksControllerV2.getQuery(req.user?.id as string, req.query, req.params.id);
 
     const result = await db.query(q, params);
     const tasks = [...result.rows];
@@ -650,10 +751,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
     // Add customColumns flag to query params
     req.query.customColumns = "true";
 
-    const q = TasksControllerV2.getQuery(req.user?.id as string, req.query);
-    const params = isSubTasks
-      ? [req.params.id || null, req.query.parent_task]
-      : [req.params.id || null];
+    const { query: q, params } = TasksControllerV2.getQuery(req.user?.id as string, req.query, req.params.id);
     const result = await db.query(q, params);
 
     let data: any[] = [];
@@ -1265,7 +1363,6 @@ export default class TasksControllerV2 extends TasksControllerBase {
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
     const startTime = performance.now();
-    const isSubTasks = !!req.query.parent_task;
     const groupBy = (req.query.group || GroupBy.STATUS) as string;
 
     // PERFORMANCE OPTIMIZATION: Skip expensive progress calculation by default
@@ -1278,10 +1375,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
       await this.refreshProjectTaskProgressValues(req.params.id);
     }
 
-    const q = TasksControllerV2.getQuery(req.user?.id as string, req.query);
-    const params = isSubTasks
-      ? [req.params.id || null, req.query.parent_task]
-      : [req.params.id || null];
+    const { query: q, params, isSubTasks } = TasksControllerV2.getQuery(req.user?.id as string, req.query, req.params.id);
 
     const result = await db.query(q, params);
     const tasks = [...result.rows];
@@ -1382,6 +1476,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
         priorityColor: task.priority_color,
         // Add subtask count
         sub_tasks_count: task.sub_tasks_count || 0,
+        // Add flag for auto-expansion when filters match descendants
+        has_filtered_children: !!task.has_filtered_children,
         // Add indicator fields for frontend icons
         comments_count: task.comments_count || 0,
         has_subscribers: !!task.has_subscribers,
@@ -1391,6 +1487,19 @@ export default class TasksControllerV2 extends TasksControllerBase {
         reporter: task.reporter || null,
       };
     });
+
+    // Debug log to verify completedAt is being sent
+    const completedTasks = transformedTasks.filter((t) => t.completedAt);
+    if (completedTasks.length > 0) {
+      // console.log(
+      //   "[DEBUG getTasksV3] Tasks with completedAt:",
+      //   completedTasks.map((t) => ({
+      //     id: t.id,
+      //     title: t.title,
+      //     completedAt: t.completedAt,
+      //   }))
+      // );
+    }
 
     const groupedResponse: Record<string, any> = {};
 
