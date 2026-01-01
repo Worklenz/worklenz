@@ -263,11 +263,9 @@ const InvitePage: React.FC = () => {
             <Typography.Text style={{ marginBottom: 24, display: "block" }}>
               {t("invite.invalid_description")}
             </Typography.Text>
-            <Link to="/auth/login">
-              <Button type="primary" size="large">
-                {t("invite.back_to_login")}
-              </Button>
-            </Link>
+            <Button type="primary" size="large" onClick={() => navigate("/auth/login")}>
+              {t("invite.back_to_login")}
+            </Button>
           </div>
         </Card>
       </div>
