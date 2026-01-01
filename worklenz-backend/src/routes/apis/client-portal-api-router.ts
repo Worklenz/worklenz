@@ -73,6 +73,9 @@ router.get("/invoices/:id/download", safeControllerFunction(ClientPortalInvoices
 // Chat
 router.get("/chats", safeControllerFunction(ClientPortalChatController.getChats));
 router.post("/chats", safeControllerFunction(ClientPortalChatController.createChat));
+// Messages endpoints (must come before /chats/:id to avoid route conflicts)
+router.get("/messages", safeControllerFunction(ClientPortalChatController.getMessages));
+router.post("/messages", safeControllerFunction(ClientPortalChatController.sendMessage));
 router.get("/chats/:id", safeControllerFunction(ClientPortalChatController.getChatDetails));
 router.post("/chats/:id/messages", safeControllerFunction(ClientPortalChatController.sendMessage));
 router.get("/chats/:id/messages", safeControllerFunction(ClientPortalChatController.getMessages));

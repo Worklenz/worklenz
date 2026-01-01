@@ -1233,10 +1233,12 @@ const UpgradePlans = () => {
                 display: 'flex',
                 flexDirection: 'column',
               }}
-              bodyStyle={{
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
+              styles={{
+                body: {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                }
               }}
               onClick={() => {
                 setSelectedPlanType('free');
@@ -1283,10 +1285,12 @@ const UpgradePlans = () => {
                 display: 'flex',
                 flexDirection: 'column',
               }}
-              bodyStyle={{
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
+              styles={{
+                body: {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                }
               }}
               onClick={() => setSelectedPlanType('pro')}
               hoverable
@@ -1458,10 +1462,12 @@ const UpgradePlans = () => {
               display: 'flex',
               flexDirection: 'column',
             }}
-            bodyStyle={{
-              display: 'flex',
-              flexDirection: 'column',
-              height: '100%',
+            styles={{
+              body: {
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+              }
             }}
             onClick={() => setSelectedPlanType('business')}
             hoverable
@@ -1643,10 +1649,12 @@ const UpgradePlans = () => {
               display: 'flex',
               flexDirection: 'column',
             }}
-            bodyStyle={{
-              display: 'flex',
-              flexDirection: 'column',
-              height: '100%',
+            styles={{
+              body: {
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+              }
             }}
             onClick={() => setSelectedPlanType('enterprise')}
             hoverable

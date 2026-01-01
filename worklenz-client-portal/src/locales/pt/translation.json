@@ -290,6 +290,7 @@
     "title": "Conversas",
     "description": "Comunique-se com seus provedores de serviço",
     "conversations": "Conversas",
+    "chatTitle": "Chat - {{date}}",
     "chatMessages": "Mensagens do Chat",
     "selectConversation": "Selecione uma conversa",
     "selectToStart": "Selecione uma conversa para começar a conversar",

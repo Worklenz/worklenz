@@ -276,7 +276,7 @@ const ChatsPage: React.FC = () => {
         <Card 
           title={t('chats.conversations')} 
           style={{ width: 320, height: '100%' }}
-          bodyStyle={{ padding: 0, height: 'calc(100% - 57px)', overflow: 'auto' }}
+          styles={{ body: { padding: 0, height: 'calc(100% - 57px)', overflow: 'auto' } }}
           extra={
             <Button 
               type="text" 
@@ -331,11 +331,13 @@ const ChatsPage: React.FC = () => {
         <Card 
           title={selectedChat ? t('chats.chatMessages') : t('chats.selectConversation')}
           style={{ flex: 1, height: '100%' }}
-          bodyStyle={{ 
-            padding: 0, 
-            height: 'calc(100% - 57px)',
-            display: 'flex',
-            flexDirection: 'column'
+          styles={{ 
+            body: { 
+              padding: 0, 
+              height: 'calc(100% - 57px)',
+              display: 'flex',
+              flexDirection: 'column'
+            }
           }}
         >
           {selectedChat ? (

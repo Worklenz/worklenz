@@ -431,7 +431,7 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
           boxShadow: token.boxShadow,
           borderRadius: '8px'
         }}
-        bodyStyle={{ padding: '16px' }}
+        styles={{ body: { padding: '16px' } }}
       >
         {selectedDateWorkload && selectedDateWorkload.allocations.length > 0 ? (
           <Flex vertical gap={20}>
