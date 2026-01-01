@@ -1972,7 +1972,6 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                           }}
                           title={`Drag to resize ${column.name || column.key}`}
                         />
-                      </div>
                     </th>
                     );
                   })}
