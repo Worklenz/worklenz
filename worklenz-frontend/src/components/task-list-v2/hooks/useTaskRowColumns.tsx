@@ -270,15 +270,6 @@ export const useTaskRowColumns = ({
           default:
             // Handle custom columns
             const column = visibleColumns.find(col => col.id === columnId);
-            if (columnId?.toLowerCase().includes('complet')) {
-              console.log('[DEBUG default case - completed related]', {
-                taskId: task.id,
-                taskName: task.name || task.title,
-                columnId,
-                column,
-                isCustom: column?.custom_column || column?.isCustom,
-              });
-            }
             if (
               column &&
               (column.custom_column || column.isCustom) &&

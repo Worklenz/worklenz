@@ -187,7 +187,7 @@ const TimerButton = () => {
     } catch (error) {
       logError('Error setting up socket listeners', error);
     }
-  }, [socket, fetchTimerData]);
+  }, [socket, connected, fetchTimerData]);
 
   const hasRunningTimers = () => {
     return Array.isArray(runningTimers) && runningTimers.length > 0;

@@ -1002,7 +1002,7 @@ const TaskListV2Section: React.FC = () => {
         </div>
       </div>
     ),
-    [visibleColumns, t, handleCustomColumnSettings]
+    [visibleColumns, t, handleCustomColumnSettings, isDarkMode]
   );
 
   // Loading and error states

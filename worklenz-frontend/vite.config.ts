@@ -75,8 +75,11 @@ export default defineConfig(({ command, mode }) => {
         overlay: false,
       },
       // Allow-list specific dev hosts (e.g., ngrok) to prevent blocked host errors
-      // Add any local tunneling hosts used for development here.
-      allowedHosts: ['4d51ac803dbd.ngrok-free.app'],
+      // Configure via VITE_ALLOWED_HOSTS environment variable (comma-separated list)
+      // Example: VITE_ALLOWED_HOSTS=host1.example.com,host2.example.com
+      allowedHosts: process.env.VITE_ALLOWED_HOSTS
+        ? process.env.VITE_ALLOWED_HOSTS.split(',').map(host => host.trim()).filter(Boolean)
+        : [],
     },
 
     // **Build**

@@ -33,18 +33,6 @@ interface TaskRowWithSubtasksProps {
   maxDepth?: number; // Add maxDepth prop to limit nesting
 }
 
-// Memoized selector to prevent unnecessary rerenders
-const selectActiveFilters = createSelector(
-  (state: any) => state.taskReducer?.taskAssignees,
-  (state: any) => state.taskReducer?.labels,
-  (state: any) => state.taskReducer?.priorities,
-  (taskAssignees, labels, priorities) => ({
-    members: taskAssignees?.filter((m: any) => m.selected).map((m: any) => m.id) || [],
-    labels: labels?.filter((l: any) => l.selected).map((l: any) => l.id) || [],
-    priorities: priorities || [],
-  })
-);
-
 interface AddSubtaskRowProps {
   parentTaskId: string;
   projectId: string;

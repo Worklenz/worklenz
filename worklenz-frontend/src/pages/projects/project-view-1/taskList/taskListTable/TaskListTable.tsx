@@ -124,9 +124,6 @@ const TaskListTable = ({
   };
 
   // this use effect for realtime update the selected rows
-  useEffect(() => {
-    console.log('Selected tasks and subtasks:', selectedRows);
-  }, [selectedRows]);
 
   // select one row this triggers only in handle the context menu ==> righ click mouse event
   const selectOneRow = (task: IProjectTask) => {

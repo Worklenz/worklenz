@@ -65,19 +65,6 @@ export const useColumnResize = ({
     }
   }, [columnWidths, storageKey]);
 
-  // Cleanup event listeners on unmount
-  useEffect(() => {
-    return () => {
-      if (resizingColumnRef.current) {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-        resizingColumnRef.current = null;
-      }
-    };
-  }, [handleMouseMove, handleMouseUp]);
-
   const handleMouseMove = useCallback(
     (moveEvent: MouseEvent) => {
       if (!resizingColumnRef.current) return;
@@ -100,6 +87,19 @@ export const useColumnResize = ({
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
   }, [handleMouseMove]);
+
+  // Cleanup event listeners on unmount
+  useEffect(() => {
+    return () => {
+      if (resizingColumnRef.current) {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        resizingColumnRef.current = null;
+      }
+    };
+  }, [handleMouseMove, handleMouseUp]);
 
   const handleResizeStart = useCallback(
     (e: React.MouseEvent, columnKey: string) => {

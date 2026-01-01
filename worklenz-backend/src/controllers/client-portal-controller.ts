@@ -839,20 +839,11 @@ class ClientPortalController {
       const { id } = req.params;
       const { clientId, organizationId } = req;
 
-      // Verify request exists and belongs to client or organization
-      // First check if request exists with exact client match
-      let requestCheck = await db.query(
+      // Verify request exists and belongs to client
+      const requestCheck = await db.query(
         "SELECT id, client_id, organization_team_id FROM client_portal_requests WHERE id = $1 AND client_id = $2 AND organization_team_id = $3",
         [id, clientId, organizationId]
       );
-
-      // If not found, check if request exists in the same organization (for multi-client scenarios)
-      if (requestCheck.rows.length === 0) {
-        requestCheck = await db.query(
-          "SELECT id, client_id, organization_team_id FROM client_portal_requests WHERE id = $1 AND organization_team_id = $2",
-          [id, organizationId]
-        );
-      }
 
       if (requestCheck.rows.length === 0) {
         return res
@@ -4373,7 +4364,7 @@ class ClientPortalController {
         message,
         referenceId || null,
         referenceNumber || null,
-        JSON.stringify(metadata || {}),
+        metadata ?? null,
       ]);
       return result.rows[0]?.id;
     } catch (error) {
@@ -4455,18 +4446,33 @@ class ClientPortalController {
       );
 
       // Map notifications to response format
-      const notifications = notificationsResult.rows.map((row: any) => ({
-        id: row.id,
-        type: row.type,
-        referenceId: row.reference_id,
-        referenceNumber: row.reference_number,
-        title: row.title,
-        message: row.message,
-        metadata: row.metadata || {},
-        isRead: row.is_read,
-        readAt: row.read_at,
-        createdAt: row.created_at,
-      }));
+      const notifications = notificationsResult.rows.map((row: any) => {
+        // Handle metadata - it may be a string (if double-serialized) or an object
+        let metadata = {};
+        if (row.metadata) {
+          if (typeof row.metadata === "string") {
+            try {
+              metadata = JSON.parse(row.metadata);
+            } catch {
+              metadata = {};
+            }
+          } else {
+            metadata = row.metadata;
+          }
+        }
+        return {
+          id: row.id,
+          type: row.type,
+          referenceId: row.reference_id,
+          referenceNumber: row.reference_number,
+          title: row.title,
+          message: row.message,
+          metadata,
+          isRead: row.is_read,
+          readAt: row.read_at,
+          createdAt: row.created_at,
+        };
+      });
 
       return res.json(
         new ServerResponse(
@@ -8081,6 +8087,17 @@ class ClientPortalController {
           if (existingWorklenzUserResult.rows.length > 0) {
             // User already exists in Worklenz - verify their Worklenz password before linking
             const worklenzUser = existingWorklenzUserResult.rows[0];
+            
+            // Check if user has a password (SSO-only accounts may not have passwords)
+            if (!worklenzUser.password) {
+              return res.status(401).json({
+                done: false,
+                body: { isWorklenzUser: true },
+                titleKey: "errors.worklenz_account_found_title",
+                messageKey: "errors.worklenz_account_found_message",
+              });
+            }
+            
             const passwordMatch = bcrypt.compareSync(
               password,
               worklenzUser.password
@@ -8127,6 +8144,9 @@ class ClientPortalController {
                 [worklenzUserId, clientId, name, existingClientUserId]
               );
             } else {
+              // Hash password with bcrypt
+              const salt = bcrypt.genSaltSync(10);
+              const passwordHash = bcrypt.hashSync(password, salt);
               await db.query(
                 `UPDATE client_users 
                  SET client_id = $1, name = $2, password_hash = $3, status = 'active', updated_at = NOW()
@@ -8134,7 +8154,7 @@ class ClientPortalController {
                 [
                   clientId,
                   name,
-                  crypto.createHash("sha256").update(password).digest("hex"),
+                  passwordHash,
                   existingClientUserId,
                 ]
               );
@@ -8153,6 +8173,9 @@ class ClientPortalController {
             );
           } else {
             // Standalone client portal user - create with password_hash
+            // Hash password with bcrypt
+            const salt = bcrypt.genSaltSync(10);
+            const passwordHash = bcrypt.hashSync(password, salt);
             userResult = await db.query(
               `INSERT INTO client_users (id, client_id, email, name, password_hash, role, status, created_at)
              VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
@@ -8161,7 +8184,7 @@ class ClientPortalController {
                 clientId,
                 email,
                 name,
-                crypto.createHash("sha256").update(password).digest("hex"),
+                passwordHash,
               ]
             );
           }
@@ -8229,6 +8252,17 @@ class ClientPortalController {
       if (existingWorklenzUserResult.rows.length > 0) {
         // User already exists in Worklenz - verify their Worklenz password before linking
         const worklenzUser = existingWorklenzUserResult.rows[0];
+        
+        // Check if user has a password (SSO-only accounts may not have passwords)
+        if (!worklenzUser.password) {
+          return res.status(401).json({
+            done: false,
+            body: { isWorklenzUser: true },
+            titleKey: "errors.worklenz_account_found_title",
+            messageKey: "errors.worklenz_account_found_message",
+          });
+        }
+        
         const passwordMatch = bcrypt.compareSync(
           password,
           worklenzUser.password

@@ -11,8 +11,9 @@ export const COLUMN_WIDTH_CONSTRAINTS = {
 } as const;
 
 // Default column widths
+// Note: TITLE must not exceed TITLE_MAX_WIDTH (400) from COLUMN_WIDTH_CONSTRAINTS
 export const DEFAULT_COLUMN_WIDTHS = {
-  TITLE: 470,
+  TITLE: 350, // Matches columns.ts width and is within TITLE_MAX_WIDTH constraint
   DESCRIPTION: 260,
   DEFAULT: 150,
 } as const;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import DatePicker from 'antd/es/date-picker';
 import Checkbox from 'antd/es/checkbox';
 import Tag from 'antd/es/tag';
@@ -1349,6 +1349,11 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
     storageKey: `worklenz.taskList.columnWidths.${project?.id || 'default'}`,
   });
 
+  // Helper function to get column width
+  const getColumnWidth = useCallback((key: string): number => {
+    return columnWidths[key] || initialWidths[key] || 150;
+  }, [columnWidths, initialWidths]);
+
   // Function to update custom column values
   const updateTaskCustomColumnValue = (taskId: string, columnKey: string, value: string) => {
     try {
@@ -1909,6 +1914,9 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                             handleElement.classList.add('resizing');
                             document.body.classList.add('column-resizing');
 
+                            // Call handleResizeStart once at the start of resize
+                            handleResizeStart(e, column.key || '');
+
                             const updateIndicator = (x: number, width: number) => {
                               // Calculate position relative to table container
                               const containerRect = tableContainer.getBoundingClientRect();
@@ -1933,10 +1941,6 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                               const diff = moveEvent.clientX - startX;
                               const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + diff));
                               updateIndicator(moveEvent.clientX, newWidth);
-                              handleResizeStart(
-                                { ...e, clientX: moveEvent.clientX } as React.MouseEvent,
-                                column.key || ''
-                              );
                             };
 
                             const handleMouseUp = () => {
@@ -1970,7 +1974,8 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                         />
                       </div>
                     </th>
-                  )}))}
+                    );
+                  })}
                   <th className={getColumnStyles('customColumn', true)}>
                     <Flex justify="flex-start" style={{ marginInlineStart: 22 }}>
                       <AddCustomColumnButton />
