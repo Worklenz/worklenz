@@ -52,6 +52,7 @@ import { ClientPortalClient } from '@/api/client-portal/client-portal-api';
 import {
   useGetClientsQuery,
   useDeactivateClientMutation,
+  useUpdateClientMutation,
   useBulkDeactivateClientsMutation,
   useBulkUpdateClientsMutation,
   useGenerateClientInvitationLinkMutation,
@@ -115,6 +116,7 @@ const ClientsTable = () => {
   });
 
   const [deactivateClient, { isLoading: isDeactivating }] = useDeactivateClientMutation();
+  const [updateClient, { isLoading: isUpdating }] = useUpdateClientMutation();
   const [bulkDeactivateClients, { isLoading: isBulkDeactivating }] = useBulkDeactivateClientsMutation();
   const [bulkUpdateClients, { isLoading: isBulkUpdating }] = useBulkUpdateClientsMutation();
   const [generateInvitationLink] = useGenerateClientInvitationLinkMutation();
@@ -229,8 +231,27 @@ const ClientsTable = () => {
     try {
       await deactivateClient(clientId).unwrap();
       message.success(t('deactivateClientSuccessMessage', { defaultValue: 'Client deactivated successfully' }));
+      // Invalidate cache to refresh the UI
+      dispatch(clientPortalApi.util.invalidateTags(['Clients']));
     } catch (error) {
       message.error(t('deactivateClientErrorMessage', { defaultValue: 'Failed to deactivate client' }));
+    }
+  };
+
+  // Handle activate client
+  const handleActivateClient = async (clientId: string) => {
+    try {
+      await updateClient({
+        id: clientId,
+        data: { status: 'active' },
+      }).unwrap();
+      message.success(t('activateClientSuccessMessage', { defaultValue: 'Client activated successfully' }));
+      // Invalidate cache to refresh the UI
+      dispatch(clientPortalApi.util.invalidateTags(['Clients']));
+    } catch (error: any) {
+      message.error(
+        error?.data?.message || t('activateClientErrorMessage', { defaultValue: 'Failed to activate client' })
+      );
     }
   };
 
@@ -249,6 +270,21 @@ const ClientsTable = () => {
       cancelText: t('deactivateConfirmationCancel', { defaultValue: 'Cancel' }),
       okType: 'danger',
       onOk: confirmDeactivate,
+    });
+  };
+
+  // Handle activate client with confirmation
+  const handleActivateClientWithConfirmation = (clientId: string) => {
+    const confirmActivate = () => {
+      handleActivateClient(clientId);
+    };
+
+    Modal.confirm({
+      title: t('activateConfirmationTitle', { defaultValue: 'Activate Client' }),
+      content: t('activateConfirmationDescription', { defaultValue: 'Are you sure you want to activate this client? They will regain access to the portal.' }),
+      okText: t('activateConfirmationOk', { defaultValue: 'Activate' }),
+      cancelText: t('activateConfirmationCancel', { defaultValue: 'Cancel' }),
+      onOk: confirmActivate,
     });
   };
 
@@ -590,15 +626,25 @@ const ClientsTable = () => {
       {
         type: 'divider' as const,
       },
-      {
-        key: 'deactivate',
-        label: t('deactivateTooltip', { defaultValue: 'Deactivate Client' }),
-        icon: <DeleteOutlined />,
-        danger: true,
-        onClick: () => {
-          handleDeactivateClientWithConfirmation(record.id);
-        },
-      }
+      // Show Activate or Deactivate based on client status
+      record.status === 'inactive'
+        ? {
+            key: 'activate',
+            label: t('activateTooltip', { defaultValue: 'Activate Client' }),
+            icon: <EditOutlined />,
+            onClick: () => {
+              handleActivateClientWithConfirmation(record.id);
+            },
+          }
+        : {
+            key: 'deactivate',
+            label: t('deactivateTooltip', { defaultValue: 'Deactivate Client' }),
+            icon: <DeleteOutlined />,
+            danger: true,
+            onClick: () => {
+              handleDeactivateClientWithConfirmation(record.id);
+            },
+          }
     );
 
     return menuItems;

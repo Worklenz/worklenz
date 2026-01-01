@@ -105,10 +105,28 @@ const ClientDetailsDrawer = () => {
     try {
       await deactivateClient(selectedClientId).unwrap();
       message.success(t('deactivateClientSuccessMessage') || 'Client deactivated successfully');
+      refetchClientDetails();
       handleClose();
     } catch (error: any) {
       message.error(
         error?.data?.message || t('deactivateClientErrorMessage') || 'Failed to deactivate client'
+      );
+    }
+  };
+
+  const handleActivateClient = async () => {
+    if (!selectedClientId) return;
+
+    try {
+      await updateClient({
+        id: selectedClientId,
+        data: { status: 'active' },
+      }).unwrap();
+      message.success(t('activateClientSuccessMessage') || 'Client activated successfully');
+      refetchClientDetails();
+    } catch (error: any) {
+      message.error(
+        error?.data?.message || t('activateClientErrorMessage') || 'Failed to activate client'
       );
     }
   };
@@ -156,7 +174,7 @@ const ClientDetailsDrawer = () => {
     }
   };
 
-  // Header menu items
+  // Header menu items - show activate/deactivate based on client status
   const headerMenuItems = [
     {
       key: 'edit',
@@ -167,13 +185,25 @@ const ClientDetailsDrawer = () => {
     {
       type: 'divider' as const,
     },
-    {
-      key: 'deactivate',
-      label: t('deactivateButton') || 'Deactivate Client',
-      icon: <DeleteOutlined />,
-      danger: true,
-      onClick: handleDeactivateClient,
-    },
+    // Show Activate or Deactivate based on client status
+    ...(client?.status === 'inactive'
+      ? [
+          {
+            key: 'activate',
+            label: t('activateButton') || 'Activate Client',
+            icon: <EditOutlined />,
+            onClick: handleActivateClient,
+          },
+        ]
+      : [
+          {
+            key: 'deactivate',
+            label: t('deactivateButton') || 'Deactivate Client',
+            icon: <DeleteOutlined />,
+            danger: true,
+            onClick: handleDeactivateClient,
+          },
+        ]),
   ];
 
   const getStatusColor = (status: string) => {

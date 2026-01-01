@@ -32,6 +32,7 @@
   "shareTooltip": "Share",
   "deleteTooltip": "Delete",
   "deactivateTooltip": "Deactivate Client",
+  "activateTooltip": "Activate Client",
 
   "deleteConfirmationTitle": "Delete Client",
   "deleteConfirmationDescription": "Are you sure you want to delete this client? This action cannot be undone.",
@@ -42,6 +43,11 @@
   "deactivateConfirmationDescription": "Are you sure you want to deactivate this client? They will lose access to the portal, but all data will be preserved.",
   "deactivateConfirmationOk": "Deactivate",
   "deactivateConfirmationCancel": "Cancel",
+
+  "activateConfirmationTitle": "Activate Client",
+  "activateConfirmationDescription": "Are you sure you want to activate this client? They will regain access to the portal.",
+  "activateConfirmationOk": "Activate",
+  "activateConfirmationCancel": "Cancel",
 
   "searchClientsPlaceholder": "Search clients...",
   "portalStatusFilterPlaceholder": "Filter by portal status",
@@ -89,6 +95,8 @@
   "deleteClientErrorMessage": "Failed to delete client",
   "deactivateClientSuccessMessage": "Client deactivated successfully",
   "deactivateClientErrorMessage": "Failed to deactivate client",
+  "activateClientSuccessMessage": "Client activated successfully",
+  "activateClientErrorMessage": "Failed to activate client",
 
   "clientPortalAccessTitle": "Client Portal Access",
   "clientPortalAccessDescription": "Share this link with your client to give them access to their portal",
@@ -116,6 +124,7 @@
   "closeButton": "Close",
   "deleteButton": "Delete Client",
   "deactivateButton": "Deactivate Client",
+  "activateButton": "Activate Client",
 
   "clientInformationTitle": "Client Information",
   "createdAtLabel": "Created",
