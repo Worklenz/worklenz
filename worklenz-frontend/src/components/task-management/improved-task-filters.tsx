@@ -454,6 +454,18 @@ const FilterDropdown: React.FC<{
     }
   }, [isOpen]);
 
+  // Title for button tooltip - show selected count or selected value for Group By
+  const buttonTitle = useMemo(() => {
+    let title = section.label;
+    if (section.id === 'groupBy' && section.selectedValues[0]) {
+      const selectedOpt = section.options.find(o => o.value === section.selectedValues[0]);
+      if (selectedOpt?.label) title += `: ${selectedOpt.label}`;
+    } else if (section.id !== 'groupBy' && section.selectedValues.length > 0) {
+      title += `: ${section.selectedValues.length} ${t('selected', { defaultValue: 'selected' })}`;
+    }
+    return title;
+  }, [section, t]);
+
   const handleOptionToggle = useCallback(
     (optionValue: string) => {
       if (section.multiSelect) {
@@ -481,6 +493,8 @@ const FilterDropdown: React.FC<{
       {/* Trigger Button */}
       <button
         onClick={onToggle}
+        title={buttonTitle}
+        aria-label={buttonTitle}
         className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out
@@ -723,6 +737,8 @@ const SearchFilter: React.FC<{
       {!isExpanded && !value ? (
         <button
           onClick={handleToggle}
+          title={t('search', { defaultValue: 'Search' })}
+          aria-label={t('search', { defaultValue: 'Search' })}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
             themeClasses.containerBg === 'bg-gray-800'
               ? 'focus:ring-offset-gray-900'
@@ -1085,11 +1101,19 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
     [sortedFields]
   );
 
+  // Title for fields button tooltip
+  const fieldsTitle = useMemo(() => {
+    const base = t('fieldsText', { defaultValue: 'Fields' });
+    return visibleCount > 0 ? `${base}: ${visibleCount}` : base;
+  }, [visibleCount, t]);
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Trigger Button - matching FilterDropdown style */}
       <button
         onClick={() => setOpen(!open)}
+        title={fieldsTitle}
+        aria-label={fieldsTitle}
         className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out
