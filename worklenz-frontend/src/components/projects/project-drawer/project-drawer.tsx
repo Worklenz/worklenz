@@ -164,19 +164,14 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       }
     } else if (drawerVisible && !projectId) {
       // Creating new project - explicitly set form values to defaults
-      console.log('Setting up drawer for new project creation');
       setEditMode(false);
       setLoading(false);
       try {
         form.setFieldsValue({
           ...defaultFormValues,
-          start_date: null,
-          end_date: null,
         });
         setSelectedProjectManager(null);
-        console.log('Form initialized for new project creation');
       } catch (error) {
-        console.error('Error initializing form for new project:', error);
         logger.error('Error initializing form for new project', error);
       }
     } else if (drawerVisible && projectId && !project && !projectLoading) {
