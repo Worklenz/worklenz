@@ -120,5 +120,10 @@
   "optional": "Opcional",
   "selectRequestHelp": "Solo las solicitudes aceptadas, en progreso y completadas pueden ser facturadas",
   "searching": "Buscando...",
-  "noRequestsFound": "No se encontraron solicitudes"
+  "noRequestsFound": "No se encontraron solicitudes",
+  "paymentProof": "Comprobante de Pago",
+  "viewFullSize": "Ver Tamaño Completo",
+  "viewPdf": "Ver PDF",
+  "viewFile": "Ver Archivo",
+  "download": "Descargar"
 }

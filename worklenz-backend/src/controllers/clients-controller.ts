@@ -10,7 +10,7 @@ import { sanitizeCommentContent } from "../shared/utils";
 import HandleExceptions from "../decorators/handle-exceptions";
 import ClientPortalController from "./client-portal-controller";
 import ClientPortalInvoicesController from "./client-portal/client-portal-invoices-controller";
-import {uploadBase64, deleteObject} from "../shared/storage";
+import {uploadBase64, deleteObject, getClientPortalStorageKey} from "../shared/storage";
 import {sendClientPortalRequestCommentNotification} from "../shared/email-notifications";
 import {getClientPortalBaseUrl} from "../cron_jobs/helpers";
 import { IO } from "../shared/io";
@@ -526,7 +526,8 @@ export default class ClientsController extends WorklenzControllerBase {
       // Generate unique filename and storage key
       const fileExtension = imageName.substring(imageName.lastIndexOf("."));
       const uniqueFileName = `service_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
-      const storageKey = `client-portal/service-images/${teamId}/${uniqueFileName}`;
+      // Use getClientPortalStorageKey to ensure files are stored under organizations/{teamId}/client-portal/
+      const storageKey = getClientPortalStorageKey("service-images", teamId, uniqueFileName);
 
       try {
         // Upload to S3
@@ -645,7 +646,8 @@ export default class ClientsController extends WorklenzControllerBase {
       // Generate unique filename and storage key
       const fileExtension = imageName.substring(imageName.lastIndexOf("."));
       const uniqueFileName = `service_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
-      const storageKey = `client-portal/service-images/${teamId}/${uniqueFileName}`;
+      // Use getClientPortalStorageKey to ensure files are stored under organizations/{teamId}/client-portal/
+      const storageKey = getClientPortalStorageKey("service-images", teamId, uniqueFileName);
 
       try {
         // Upload to S3
@@ -802,9 +804,19 @@ export default class ClientsController extends WorklenzControllerBase {
       imageUrls.forEach(async (imageUrl: string) => {
         try {
           // Extract storage key from URL
-          // URL format: https://s3-bucket/client-portal/service-images/teamId/filename
+          // URL format: https://s3-bucket/{env}/organizations/{teamId}/client-portal/service-images/filename
+          // or: https://s3-bucket/client-portal/service-images/teamId/filename (legacy)
           const urlParts = imageUrl.split("/");
-          const storageKey = urlParts.slice(-4).join("/"); // client-portal/service-images/teamId/filename
+          // Check if it's the new format (contains "organizations")
+          const orgIndex = urlParts.findIndex(part => part === "organizations");
+          let storageKey;
+          if (orgIndex !== -1) {
+            // New format: extract from organizations onwards
+            storageKey = urlParts.slice(orgIndex).join("/");
+          } else {
+            // Legacy format: extract last 4 parts
+            storageKey = urlParts.slice(-4).join("/");
+          }
           
             await deleteObject(storageKey);
         } catch (deleteError) {

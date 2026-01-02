@@ -3,7 +3,7 @@ import { AuthenticatedClientRequest } from "../../middlewares/client-auth-middle
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import db from "../../config/db";
-import { uploadBase64, deleteObject } from "../../shared/storage";
+import { uploadBase64, deleteObject, getClientPortalStorageKey } from "../../shared/storage";
 
 export default class ClientPortalServicesController extends ClientPortalControllerBase {
 
@@ -387,7 +387,8 @@ export default class ClientPortalServicesController extends ClientPortalControll
         const uniqueFileName = `service_${Date.now()}_${Math.random()
           .toString(36)
           .substr(2, 9)}${fileExtension}`;
-        const storageKey = `client-portal/service-images/${organizationId}/${uniqueFileName}`;
+        // Use getClientPortalStorageKey to ensure files are stored under organizations/{orgId}/client-portal/
+        const storageKey = getClientPortalStorageKey("service-images", organizationId, uniqueFileName);
 
         try {
           // Upload to S3
@@ -582,7 +583,8 @@ export default class ClientPortalServicesController extends ClientPortalControll
         const uniqueFileName = `service_${Date.now()}_${Math.random()
           .toString(36)
           .substr(2, 9)}${fileExtension}`;
-        const storageKey = `client-portal/service-images/${organizationId}/${uniqueFileName}`;
+        // Use getClientPortalStorageKey to ensure files are stored under organizations/{orgId}/client-portal/
+        const storageKey = getClientPortalStorageKey("service-images", organizationId, uniqueFileName);
 
         try {
           // Upload to S3
@@ -858,9 +860,19 @@ export default class ClientPortalServicesController extends ClientPortalControll
         imageUrls.forEach(async (imageUrl: string) => {
           try {
             // Extract storage key from URL
-            // URL format: https://s3-bucket/client-portal/service-images/orgId/filename
+            // URL format: https://s3-bucket/{env}/organizations/{orgId}/client-portal/service-images/filename
+            // or: https://s3-bucket/client-portal/service-images/orgId/filename (legacy)
             const urlParts = imageUrl.split("/");
-            const storageKey = urlParts.slice(-4).join("/"); // client-portal/service-images/orgId/filename
+            // Check if it's the new format (contains "organizations")
+            const orgIndex = urlParts.findIndex(part => part === "organizations");
+            let storageKey;
+            if (orgIndex !== -1) {
+              // New format: extract from organizations onwards
+              storageKey = urlParts.slice(orgIndex).join("/");
+            } else {
+              // Legacy format: extract last 4 parts
+              storageKey = urlParts.slice(-4).join("/");
+            }
 
             console.log("Deleting image from S3:", {
               imageUrl,

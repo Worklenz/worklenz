@@ -89,6 +89,7 @@ export interface ClientPortalInvoice {
 
 export interface ClientPortalInvoiceDetails extends ClientPortalInvoice {
   notes?: string;
+  paymentProofUrl?: string | null;
   request: {
     id: string;
     requestNumber: string;

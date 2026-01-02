@@ -179,11 +179,15 @@ export type ClientPortalStoragePurpose =
   | "avatars"
   | "service-images"
   | "documents"
+  | "payment-proofs"
   | "general";
 
 /**
  * Generate a storage key for client portal files with environment-based directories
- * Structure: {env}/client-portal/{purpose}/{organizationId}/{...pathSegments}
+ * All files are stored under organizations/{organizationId}/client-portal/{purpose}/...
+ * This structure allows easy tracking of storage usage per organization/team
+ * 
+ * Structure: {env}/organizations/{organizationId}/client-portal/{purpose}/{...pathSegments}
  * 
  * @param purpose - The purpose/category of the file (request-attachments, chat-files, etc.)
  * @param organizationId - The organization team ID
@@ -193,7 +197,11 @@ export type ClientPortalStoragePurpose =
  * @example
  * // For request attachment:
  * getClientPortalStorageKey("request-attachments", "org-123", "client-456", "file.pdf")
- * // Returns: "prod/client-portal/request-attachments/org-123/client-456/file.pdf"
+ * // Returns: "prod/organizations/org-123/client-portal/request-attachments/client-456/file.pdf"
+ * 
+ * // For payment proof:
+ * getClientPortalStorageKey("payment-proofs", "org-123", "client-456", "proof.jpg")
+ * // Returns: "prod/organizations/org-123/client-portal/payment-proofs/client-456/proof.jpg"
  */
 export function getClientPortalStorageKey(
   purpose: ClientPortalStoragePurpose,
@@ -201,8 +209,11 @@ export function getClientPortalStorageKey(
   ...pathSegments: string[]
 ): string {
   const env = getEnvironmentPrefix();
+  
+  // All client portal files are stored under organizations/{orgId}/client-portal/{purpose}/
+  // This allows easy tracking of storage usage per organization/team
   const keyPath = path
-    .join(env, "client-portal", purpose, organizationId, ...pathSegments)
+    .join(env, "organizations", organizationId, "client-portal", purpose, ...pathSegments)
     .replace(/\\/g, "/");
   
   return keyPath;

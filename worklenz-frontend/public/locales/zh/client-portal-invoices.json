@@ -120,5 +120,10 @@
   "optional": "可选",
   "selectRequestHelp": "只有已接受、进行中和已完成的请求可以开具发票",
   "searching": "搜索中...",
-  "noRequestsFound": "未找到请求"
+  "noRequestsFound": "未找到请求",
+  "paymentProof": "付款凭证",
+  "viewFullSize": "查看完整尺寸",
+  "viewPdf": "查看PDF",
+  "viewFile": "查看文件",
+  "download": "下载"
 }

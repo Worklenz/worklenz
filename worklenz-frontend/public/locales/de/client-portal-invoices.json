@@ -120,5 +120,10 @@
   "optional": "Optional",
   "selectRequestHelp": "Nur akzeptierte, laufende und abgeschlossene Anfragen können fakturiert werden",
   "searching": "Suchen...",
-  "noRequestsFound": "Keine Anfragen gefunden"
+  "noRequestsFound": "Keine Anfragen gefunden",
+  "paymentProof": "Zahlungsnachweis",
+  "viewFullSize": "Vollständige Größe anzeigen",
+  "viewPdf": "PDF anzeigen",
+  "viewFile": "Datei anzeigen",
+  "download": "Herunterladen"
 }

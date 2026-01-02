@@ -120,5 +120,10 @@
   "optional": "Opsionale",
   "selectRequestHelp": "Vetëm kërkesat e pranuara, në progres dhe të përfunduara mund të faturohen",
   "searching": "Duke kërkuar...",
-  "noRequestsFound": "Nuk u gjetën kërkesa"
+  "noRequestsFound": "Nuk u gjetën kërkesa",
+  "paymentProof": "Dëshmia e Pagesës",
+  "viewFullSize": "Shiko Madhësinë e Plotë",
+  "viewPdf": "Shiko PDF",
+  "viewFile": "Shiko Skedarin",
+  "download": "Shkarko"
 }

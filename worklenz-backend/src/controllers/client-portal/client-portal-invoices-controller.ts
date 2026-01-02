@@ -515,6 +515,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           i.created_at,
           i.updated_at,
           i.notes,
+          i.payment_proof_url,
           r.id as request_id,
           r.req_no as request_number,
           r.request_data,
@@ -579,6 +580,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         createdAt: invoice.created_at,
         updatedAt: invoice.updated_at,
         notes: invoice.notes,
+        paymentProofUrl: invoice.payment_proof_url || null,
         isOverdue:
           invoice.due_date &&
           new Date(invoice.due_date) < new Date() &&
@@ -671,15 +673,15 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           .json(new ServerResponse(false, null, "Invoice is already paid"));
       }
 
-      // Update invoice status to paid
+      // Update invoice status to paid, store payment proof URL, and save notes
       const updateQuery = `
         UPDATE client_portal_invoices
-        SET status = 'paid', paid_at = NOW(), updated_at = NOW()
+        SET status = 'paid', paid_at = NOW(), updated_at = NOW(), payment_proof_url = $2, notes = COALESCE($3, notes)
         WHERE id = $1
-        RETURNING id, invoice_no, amount, currency, status, paid_at, updated_at
+        RETURNING id, invoice_no, amount, currency, status, paid_at, updated_at, payment_proof_url, notes
       `;
 
-      const result = await db.query(updateQuery, [id]);
+      const result = await db.query(updateQuery, [id, transactionId || null, notes || null]);
       const updatedInvoice = result.rows[0];
 
       // Here you would typically integrate with a payment processor
@@ -703,6 +705,8 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
             status: updatedInvoice.status,
             paidAt: updatedInvoice.paid_at,
             updatedAt: updatedInvoice.updated_at,
+            paymentProofUrl: updatedInvoice.payment_proof_url,
+            notes: updatedInvoice.notes,
           },
           "Invoice paid successfully"
         )

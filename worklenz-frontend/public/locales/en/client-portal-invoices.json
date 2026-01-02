@@ -120,5 +120,10 @@
   "saveDraft": "Save Draft",
   "createAndSend": "Create & Send",
   "addAtLeastOneItem": "Please add at least one item with description and amount",
-  "invoiceNotesPlaceholder": "Add payment terms, thank you message, or any additional notes..."
+  "invoiceNotesPlaceholder": "Add payment terms, thank you message, or any additional notes...",
+  "paymentProof": "Payment Proof",
+  "viewFullSize": "View Full Size",
+  "viewPdf": "View PDF",
+  "viewFile": "View File",
+  "download": "Download"
 }
