@@ -135,16 +135,16 @@ const ClientPortalInvoiceDetails: React.FC = () => {
   // Handle mark as paid
   const handleMarkAsPaid = async () => {
     Modal.confirm({
-      title: t('markAsPaid'),
-      content: 'Are you sure you want to mark this invoice as paid?',
-      okText: 'Yes',
-      cancelText: 'No',
+      title: t('markAsPaid.title'),
+      content: t('markAsPaid.confirm'),
+      okText: t('markAsPaid.okText'),
+      cancelText: t('markAsPaid.cancelText'),
       onOk: async () => {
         try {
           await markAsPaid(invoiceId!).unwrap();
-          message.success('Invoice marked as paid successfully');
+          message.success(t('markAsPaid.success'));
         } catch (error) {
-          message.error('Failed to mark invoice as paid');
+          message.error(t('markAsPaid.failure'));
         }
       },
     });
@@ -171,10 +171,10 @@ const ClientPortalInvoiceDetails: React.FC = () => {
       onOk: async () => {
         try {
           await deleteInvoice(invoiceId!).unwrap();
-          message.success('Invoice deleted successfully');
+          message.success(t('deleteInvoice.success'));
           navigate('/worklenz/client-portal/invoices');
         } catch (error) {
-          message.error('Failed to delete invoice');
+          message.error(t('deleteInvoice.failure'));
         }
       },
     });
