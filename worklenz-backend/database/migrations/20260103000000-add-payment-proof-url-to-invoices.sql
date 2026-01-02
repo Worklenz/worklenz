@@ -1,6 +1,6 @@
 -- Migration: Add Payment Proof URL to Client Portal Invoices
 -- Description: Adds payment_proof_url column to store payment proof images/files submitted by clients
--- Date: 2025-01-03
+-- Date: 2026-01-03
 -- Version: 2.3.2
 
 -- Add payment_proof_url column to client_portal_invoices table
