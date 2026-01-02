@@ -454,16 +454,31 @@ const FilterDropdown: React.FC<{
     }
   }, [isOpen]);
 
-  // Title for button tooltip - show selected count or selected value for Group By
+  // Title for button tooltip - use i18next interpolation for pluralization and word-order
   const buttonTitle = useMemo(() => {
-    let title = section.label;
+    // If grouped by a value, show the selected value (e.g. "Group by: Phase")
     if (section.id === 'groupBy' && section.selectedValues[0]) {
       const selectedOpt = section.options.find(o => o.value === section.selectedValues[0]);
-      if (selectedOpt?.label) title += `: ${selectedOpt.label}`;
-    } else if (section.id !== 'groupBy' && section.selectedValues.length > 0) {
-      title += `: ${section.selectedValues.length} ${t('selected', { defaultValue: 'selected' })}`;
+      if (selectedOpt?.label) {
+        return t('groupBySelected', {
+          label: section.label,
+          value: selectedOpt.label,
+          defaultValue: '{{label}}: {{value}}',
+        });
+      }
+      return section.label;
     }
-    return title;
+
+    // For other multi-select filters, use an interpolated count string (handles pluralization/word order)
+    if (section.id !== 'groupBy' && section.selectedValues.length > 0) {
+      return t('selectedCount', {
+        count: section.selectedValues.length,
+        label: section.label,
+        defaultValue: '{{label}}: {{count}} selected',
+      });
+    }
+
+    return section.label;
   }, [section, t]);
 
   const handleOptionToggle = useCallback(
@@ -1101,10 +1116,14 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
     [sortedFields]
   );
 
-  // Title for fields button tooltip
+  // Title for fields button tooltip - use i18next interpolation for count
   const fieldsTitle = useMemo(() => {
-    const base = t('fieldsText', { defaultValue: 'Fields' });
-    return visibleCount > 0 ? `${base}: ${visibleCount}` : base;
+    return visibleCount > 0
+      ? t('fieldsWithCount', {
+          count: visibleCount,
+          defaultValue: 'Fields: {{count}}',
+        })
+      : t('fieldsText', { defaultValue: 'Fields' });
   }, [visibleCount, t]);
 
   return (
