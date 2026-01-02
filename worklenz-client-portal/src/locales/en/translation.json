@@ -288,6 +288,7 @@
     "title": "Chats",
     "description": "Communicate with your service providers",
     "conversations": "Conversations",
+    "chatTitle": "Chat - {{date}}",
     "chatMessages": "Chat Messages",
     "selectConversation": "Select a conversation",
     "selectToStart": "Select a conversation to start chatting",

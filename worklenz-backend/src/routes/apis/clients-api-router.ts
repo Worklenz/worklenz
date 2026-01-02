@@ -7,6 +7,7 @@ import idParamValidator from "../../middlewares/validators/id-param-validator";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import projectManagerValidator from "../../middlewares/validators/project-manager-validator";
+import chatIdParamValidator from "../../middlewares/validators/chat-id-param-validator";
 
 const clientsApiRouter = express.Router();
 
@@ -85,8 +86,8 @@ clientsApiRouter.get("/portal/invoices/:id/download", idParamValidator, safeCont
 clientsApiRouter.get("/portal/chats", safeControllerFunction(ClientsController.getPortalChats));
 clientsApiRouter.post("/portal/chats", safeControllerFunction(ClientsController.createPortalChat));
 clientsApiRouter.get("/portal/chats/:id", idParamValidator, safeControllerFunction(ClientsController.getPortalChatById));
-clientsApiRouter.post("/portal/chats/:chatId/messages", idParamValidator, safeControllerFunction(ClientsController.sendPortalMessage));
-clientsApiRouter.get("/portal/chats/:chatId/messages", idParamValidator, safeControllerFunction(ClientsController.getPortalMessages));
+clientsApiRouter.post("/portal/chats/:chatId/messages", chatIdParamValidator, safeControllerFunction(ClientsController.sendPortalMessage));
+clientsApiRouter.get("/portal/chats/:chatId/messages", chatIdParamValidator, safeControllerFunction(ClientsController.getPortalMessages));
 
 // Organization-side Client Portal Dashboard
 clientsApiRouter.get("/portal/dashboard", safeControllerFunction(ClientsController.getPortalDashboard));

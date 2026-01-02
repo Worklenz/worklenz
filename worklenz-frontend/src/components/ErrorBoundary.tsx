@@ -184,7 +184,7 @@ const ErrorFallback: React.FC<{ error?: Error; onReset?: () => void }> = ({ erro
             : '0 4px 12px rgba(0, 0, 0, 0.1)',
           borderRadius: '8px',
         }}
-        bodyStyle={{ padding: '32px' }}
+        styles={{ body: { padding: '32px' } }}
       >
         <Result
           status="error"

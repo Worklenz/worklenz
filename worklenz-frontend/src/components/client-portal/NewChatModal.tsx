@@ -80,10 +80,13 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess, c
         message: values.message,
       }).unwrap();
 
-      message.success(t('newChatCreatedSuccessfully') || 'Chat created successfully!');
+      message.success(t('newChatCreatedSuccessfully') || 'Conversation started successfully!');
       form.resetFields();
       onClose();
-      onSuccess?.(response.chatId);
+      // Call onSuccess with chatId to open the new chat and refresh the list
+      if (response?.chatId) {
+        onSuccess?.(response.chatId);
+      }
     } catch (error) {
       console.error('Failed to create new chat:', error);
       message.error(t('newChatFailed') || 'Failed to create chat. Please try again.');

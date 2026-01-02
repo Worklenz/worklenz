@@ -13,6 +13,7 @@ import {uploadBase64, deleteObject} from "../shared/storage";
 import {sendClientPortalRequestCommentNotification} from "../shared/email-notifications";
 import {getClientPortalBaseUrl} from "../cron_jobs/helpers";
 import { IO } from "../shared/io";
+import moment from "moment-timezone";
 
 export default class ClientsController extends WorklenzControllerBase {
 
@@ -1157,39 +1158,148 @@ export default class ClientsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async createPortalChat(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    // For organization-side, we need to extract clientId from request body or query
-    // and organizationId from user's team
-    const clientId = req.body?.clientId || req.query?.clientId;
-    const organizationId = req.user?.team_id;
-    
-    if (!clientId) {
-      return res.status(400).json(new ServerResponse(false, null, "Client ID is required"));
+    try {
+      // For organization-side, we need to extract clientId from request body or query
+      // and organizationId from user's team
+      const clientId = req.body?.clientId || req.query?.clientId;
+      const organizationId = req.user?.team_id;
+      const userId = req.user?.id;
+      const { subject, message } = req.body;
+      
+      if (!clientId) {
+        return res.status(400).json(new ServerResponse(false, null, "Client ID is required"));
+      }
+      
+      if (!organizationId) {
+        return res.status(400).json(new ServerResponse(false, null, "Organization ID is required"));
+      }
+      
+      if (!userId) {
+        return res.status(400).json(new ServerResponse(false, null, "User ID is required"));
+      }
+      
+      // Validate required fields
+      if (!message || message.trim().length === 0) {
+        return res.status(400).json(new ServerResponse(false, null, "Message content is required"));
+      }
+      
+      if (!subject || subject.trim().length === 0) {
+        return res.status(400).json(new ServerResponse(false, null, "Subject is required"));
+      }
+      
+      // Verify client exists and belongs to organization
+      const clientQuery = await db.query(
+        "SELECT id, name, email FROM clients WHERE id = $1 AND team_id = $2",
+        [clientId, organizationId]
+      );
+      
+      if (clientQuery.rows.length === 0) {
+        return res.status(404).json(new ServerResponse(false, null, "Client not found"));
+      }
+      
+      const client = clientQuery.rows[0];
+      
+      // Get user name for sender
+      const userQuery = await db.query(
+        "SELECT name FROM users WHERE id = $1",
+        [userId]
+      );
+      const userName = userQuery.rows[0]?.name || "Team Member";
+      
+      // Create the first message with subject in the format "Subject: {subject}\n\n{message}"
+      const fullMessage = `Subject: ${subject.trim()}\n\n${message.trim()}`;
+      
+      // Insert message with team_member as sender_type (organization-side)
+      // Extract date in database timezone for chatId generation
+      const insertQuery = `
+        INSERT INTO client_portal_chat_messages (
+          client_id, organization_team_id, sender_type, sender_id,
+          message, message_type, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        RETURNING id, sender_type, sender_id, message, message_type, created_at,
+          DATE(created_at AT TIME ZONE 'UTC') as chat_date
+      `;
+      
+      const result = await db.query(insertQuery, [
+        clientId,
+        organizationId,
+        "team_member", // Organization-side: sender is team_member
+        userId, // Use team member's user ID
+        fullMessage,
+        "text",
+      ]);
+      
+      const newMessage = result.rows[0];
+      
+      // Get user's timezone for timezone-aware date extraction
+      let userTimezone = "UTC";
+      try {
+        const timezoneQuery = await db.query(
+          `SELECT tz.name as timezone 
+           FROM users u 
+           JOIN timezones tz ON u.timezone_id = tz.id 
+           WHERE u.id = $1`,
+          [userId]
+        );
+        userTimezone = timezoneQuery.rows[0]?.timezone || "UTC";
+      } catch (err) {
+        console.error("Error fetching user timezone:", err);
+      }
+      
+      // Generate proper chatId format: clientId-date using timezone-aware date extraction
+      // Convert timestamp to user's timezone and extract date to avoid UTC date shift issues
+      const chatDate = moment.tz(newMessage.created_at, userTimezone).format('YYYY-MM-DD');
+      const chatId = `${clientId}-${chatDate}`;
+      
+      // Emit socket events for real-time updates
+      try {
+        const io = IO.getInstance();
+        if (io) {
+          // Emit to organization team members
+          io.emit(`client_portal:new_message`, {
+            id: newMessage.id,
+            clientId,
+            organizationId,
+            senderName: userName,
+            senderType: "team_member",
+            message: newMessage.message,
+            messageType: newMessage.message_type,
+            createdAt: newMessage.created_at,
+          });
+          
+          // Emit chat message event
+          io.emit("chat:message_received", {
+            id: newMessage.id,
+            chatId: chatId,
+            clientId,
+            organizationId,
+            senderId: userId,
+            senderName: userName,
+            senderType: "team_member",
+            message: newMessage.message,
+            messageType: newMessage.message_type,
+            createdAt: newMessage.created_at,
+          });
+        }
+      } catch (socketError) {
+        console.error("Error emitting socket events:", socketError);
+        // Continue execution even if socket fails
+      }
+      
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            chatId: chatId,
+            message: "Chat created successfully",
+          },
+          "Conversation started successfully!"
+        )
+      );
+    } catch (error) {
+      console.error("Error creating portal chat:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to create chat"));
     }
-    
-    if (!organizationId) {
-      return res.status(400).json(new ServerResponse(false, null, "Organization ID is required"));
-    }
-    
-    // Get client email from the client record
-    const clientQuery = await db.query(
-      "SELECT email FROM clients WHERE id = $1 AND organization_team_id = $2",
-      [clientId, organizationId]
-    );
-    
-    if (clientQuery.rows.length === 0) {
-      return res.status(404).json(new ServerResponse(false, null, "Client not found"));
-    }
-    
-    const clientEmail = clientQuery.rows[0].email;
-    
-    const modifiedReq = {
-      ...req,
-      user: req.user,
-      clientId,
-      organizationId,
-      clientEmail
-    } as any;
-    return ClientPortalController.createChat(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -1393,22 +1503,26 @@ export default class ClientsController extends WorklenzControllerBase {
       return res.status(400).json(new ServerResponse(false, null, "Chat ID is required"));
     }
     
-    // Try to extract clientId and date from chatId if not provided in query
+    // Always try to extract clientId and date from chatId
     let extractedClientId = clientId;
     let dateStr = chatId;
     
-    if (!extractedClientId && chatId.includes('-')) {
+    if (chatId.includes('-')) {
       // Parse format: clientId-date
       const parts = chatId.split('-');
-      if (parts.length >= 4) {
-        // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-        // Date format: YYYY-MM-DD
+      if (parts.length >= 8) {
+        // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (5 parts)
+        // Date format: YYYY-MM-DD (3 parts)
+        // Total: 8 parts minimum
         // So we need to find where the date starts (last 3 parts should be date)
         const dateParts = parts.slice(-3);
         const dateStrTest = dateParts.join('-');
         // Validate date format (YYYY-MM-DD)
         if (/^\d{4}-\d{2}-\d{2}$/.test(dateStrTest)) {
-          extractedClientId = parts.slice(0, -3).join('-');
+          // Extract clientId from the remaining parts if not provided in query
+          if (!extractedClientId) {
+            extractedClientId = parts.slice(0, -3).join('-');
+          }
           dateStr = dateStrTest;
         }
       }

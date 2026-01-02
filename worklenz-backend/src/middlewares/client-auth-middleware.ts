@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { ServerResponse } from "../models/server-response";
 import TokenService from "../services/token-service";
+import db from "../config/db";
 
 export interface AuthenticatedClientRequest extends Request {
   clientId?: string;
@@ -33,6 +34,41 @@ export const authenticateClient = async (
     if (!tokenPayload) {
       return res.status(401).json(
         new ServerResponse(false, null, "Invalid or expired client token")
+      );
+    }
+
+    // Check if client is active and has portal access
+    const clientCheckQuery = `
+      SELECT 
+        c.status as client_status,
+        COALESCE(cpa.is_active, true) as portal_access_active
+      FROM clients c
+      LEFT JOIN client_portal_access cpa ON c.id = cpa.client_id
+      WHERE c.id = $1
+      LIMIT 1
+    `;
+    
+    const clientCheckResult = await db.query(clientCheckQuery, [tokenPayload.clientId]);
+    
+    if (clientCheckResult.rows.length === 0) {
+      return res.status(404).json(
+        new ServerResponse(false, null, "Client not found")
+      );
+    }
+
+    const clientData = clientCheckResult.rows[0];
+    
+    // Block access if client is inactive
+    if (clientData.client_status === 'inactive') {
+      return res.status(403).json(
+        new ServerResponse(false, null, "Client account is deactivated. Please contact your administrator.")
+      );
+    }
+
+    // Block access if portal access is explicitly disabled
+    if (clientData.portal_access_active === false) {
+      return res.status(403).json(
+        new ServerResponse(false, null, "Portal access is disabled for this client. Please contact your administrator.")
       );
     }
 

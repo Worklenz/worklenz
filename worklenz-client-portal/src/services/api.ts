@@ -324,6 +324,10 @@ class ClientPortalAPI {
     return this.request(`/projects/${id}`);
   }
 
+  async getProjectStatuses() {
+    return this.request('/projects/statuses');
+  }
+
   async getProjectTasks(projectId: string, params?: { page?: number; limit?: number; search?: string }) {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
@@ -402,21 +406,11 @@ class ClientPortalAPI {
     return this.request(`/chats/${date}${queryString ? `?${queryString}` : ''}`);
   }
 
-  async sendMessage(messageData: { message: string; messageType?: string; fileUrl?: string }): Promise<ApiResponse<any>> {
-    return this.request<any>('/messages', {
+  async sendMessage(chatId: string, messageData: { message: string; messageType?: string; fileUrl?: string }): Promise<ApiResponse<any>> {
+    return this.request<any>(`/chats/${chatId}/messages`, {
       method: 'POST',
       data: messageData,
     });
-  }
-
-  async getMessages(params?: { page?: number; limit?: number; since?: string }): Promise<ApiResponse<any>> {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append('page', params.page.toString());
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.since) queryParams.append('since', params.since);
-    
-    const queryString = queryParams.toString();
-    return this.request<any>(`/messages${queryString ? `?${queryString}` : ''}`);
   }
 
   // Settings

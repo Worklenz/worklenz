@@ -3,7 +3,8 @@ import React, { ReactNode, useState } from 'react';
 import ChatList from '../chat-list';
 import ChatBox from './chat-box';
 import { useAppSelector } from '../../../../../hooks/useAppSelector';
-import { useGetOrganizationChatsQuery } from '../../../../../api/client-portal/client-portal-api';
+import { useAppDispatch } from '../../../../../hooks/useAppDispatch';
+import { useGetOrganizationChatsQuery, clientPortalApi } from '../../../../../api/client-portal/client-portal-api';
 import { useTranslation } from 'react-i18next';
 import { MessageOutlined, ReloadOutlined, InboxOutlined } from '@ant-design/icons';
 import NewChatModal from '../../../../../components/client-portal/NewChatModal';
@@ -30,6 +31,7 @@ const ChatBoxWrapper = () => {
   const [openedChatId, setOpenedChatId] = useState<string | null>(null);
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const dispatch = useAppDispatch();
 
   const { t } = useTranslation('client-portal-chats');
 
@@ -105,6 +107,8 @@ const ChatBoxWrapper = () => {
   const handleNewChatSuccess = (chatId: string) => {
     setOpenedChatId(chatId);
     setIsNewChatModalOpen(false);
+    // Invalidate cache and refetch chat list to show the new conversation
+    dispatch(clientPortalApi.util.invalidateTags(['Chats']));
     refetch();
   };
 

@@ -26,11 +26,22 @@ import { ClientProject } from '@/types';
 const { Title, Text } = Typography;
 const { Search } = Input;
 
+interface ProjectStatus {
+  id: string;
+  name: string;
+  colorCode: string;
+  icon: string | null;
+  isDefault: boolean;
+  sortOrder: number;
+}
+
 const ProjectsPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [projects, setProjects] = useState<ClientProject[]>([]);
+  const [projectStatuses, setProjectStatuses] = useState<ProjectStatus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isStatusesLoading, setIsStatusesLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -72,6 +83,24 @@ const ProjectsPage: React.FC = () => {
     }
   }, [t]);
 
+  const fetchProjectStatuses = useCallback(async () => {
+    try {
+      setIsStatusesLoading(true);
+      const response = await clientPortalAPI.getProjectStatuses();
+      if (response.done && response.body) {
+        setProjectStatuses(response.body as ProjectStatus[]);
+      }
+    } catch (err) {
+      console.error('Error loading project statuses:', err);
+    } finally {
+      setIsStatusesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProjectStatuses();
+  }, [fetchProjectStatuses]);
+
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
@@ -90,23 +119,33 @@ const ProjectsPage: React.FC = () => {
     fetchProjects(1, pagination.pageSize, value, filters.status);
   };
 
-  const handleStatusFilter = (value: string) => {
-    setFilters({ ...filters, status: value });
-    fetchProjects(1, pagination.pageSize, filters.search, value);
+  const handleStatusFilter = (value: string | null) => {
+    const statusValue = value || '';
+    setFilters({ ...filters, status: statusValue });
+    fetchProjects(1, pagination.pageSize, filters.search, statusValue);
   };
 
   const getStatusColor = (status: string) => {
-    const statusColors: { [key: string]: string } = {
-      'Active': 'blue',
-      'Completed': 'green',
-      'On Hold': 'orange',
-      'Cancelled': 'red',
-      'Planning': 'purple',
-    };
-    return statusColors[status] || 'default';
+    const statusObj = projectStatuses.find(s => s.name === status);
+    if (statusObj?.colorCode) {
+      // Convert hex color to Ant Design Tag color if it's a standard color
+      const colorMap: { [key: string]: string } = {
+        '#1890ff': 'blue',
+        '#52c41a': 'green',
+        '#faad14': 'orange',
+        '#f5222d': 'red',
+        '#722ed1': 'purple',
+        '#13c2c2': 'cyan',
+        '#eb2f96': 'magenta',
+        '#fa8c16': 'orange',
+      };
+      return colorMap[statusObj.colorCode.toLowerCase()] || statusObj.colorCode;
+    }
+    return 'default';
   };
 
   const getStatusLabel = (status: string) => {
+    // Try to find translation first, fallback to status name from database
     const statusMap: { [key: string]: string } = {
       'Active': t('projects.active'),
       'Completed': t('projects.completed'),
@@ -147,18 +186,15 @@ const ProjectsPage: React.FC = () => {
       title: t('projects.status'),
       dataIndex: 'status',
       key: 'status',
-      render: (status: string, record: ClientProject) => (
+      render: (status: string) => (
         <Tag color={getStatusColor(status)}>
           {getStatusLabel(status)}
         </Tag>
       ),
-      filters: [
-        { text: t('projects.active'), value: 'Active' },
-        { text: t('projects.completed'), value: 'Completed' },
-        { text: t('projects.onHold'), value: 'On Hold' },
-        { text: t('projects.cancelled'), value: 'Cancelled' },
-        { text: t('projects.planning'), value: 'Planning' },
-      ],
+      filters: projectStatuses.map(status => ({
+        text: getStatusLabel(status.name),
+        value: status.name,
+      })),
     },
     {
       title: t('projects.progress'),
@@ -256,13 +292,11 @@ const ProjectsPage: React.FC = () => {
             style={{ width: 140 }}
             onChange={handleStatusFilter}
             value={filters.status || undefined}
-            options={[
-              { value: 'Active', label: t('projects.active') },
-              { value: 'Completed', label: t('projects.completed') },
-              { value: 'On Hold', label: t('projects.onHold') },
-              { value: 'Cancelled', label: t('projects.cancelled') },
-              { value: 'Planning', label: t('projects.planning') },
-            ]}
+            loading={isStatusesLoading}
+            options={projectStatuses.map(status => ({
+              value: status.name,
+              label: getStatusLabel(status.name),
+            }))}
           />
         </div>
 

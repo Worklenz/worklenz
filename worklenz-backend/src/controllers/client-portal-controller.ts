@@ -22,6 +22,7 @@ import {
   sendClientPortalNewRequestNotification,
   sendClientPortalRequestCommentNotification,
 } from "../shared/email-notifications";
+import moment from "moment-timezone";
 
 class ClientPortalController {
   // Dashboard
@@ -3364,12 +3365,14 @@ class ClientPortalController {
       const fullMessage = `Subject: ${subject.trim()}\n\n${message.trim()}`;
 
       // Insert message
+      // Extract date in database timezone for chatId generation
       const insertQuery = `
         INSERT INTO client_portal_chat_messages (
           client_id, organization_team_id, sender_type, sender_id,
           message, message_type, created_at
         ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
-        RETURNING id, sender_type, sender_id, message, message_type, created_at
+        RETURNING id, sender_type, sender_id, message, message_type, created_at,
+          DATE(created_at AT TIME ZONE 'UTC') as chat_date
       `;
 
       const result = await db.query(insertQuery, [
@@ -3383,8 +3386,24 @@ class ClientPortalController {
 
       const newMessage = result.rows[0];
 
-      // Generate proper chatId format: clientId-date
-      const chatDate = new Date(newMessage.created_at).toISOString().split('T')[0];
+      // Get organization's timezone for timezone-aware date extraction
+      let userTimezone = "UTC";
+      try {
+        const timezoneQuery = await db.query(
+          `SELECT tz.name as timezone 
+           FROM teams t 
+           JOIN timezones tz ON t.timezone_id = tz.id 
+           WHERE t.id = $1`,
+          [organizationId]
+        );
+        userTimezone = timezoneQuery.rows[0]?.timezone || "UTC";
+      } catch (err) {
+        console.error("Error fetching organization timezone:", err);
+      }
+      
+      // Generate proper chatId format: clientId-date using timezone-aware date extraction
+      // Convert timestamp to organization's timezone and extract date to avoid UTC date shift issues
+      const chatDate = moment.tz(newMessage.created_at, userTimezone).format('YYYY-MM-DD');
       const chatId = `${clientId}-${chatDate}`;
 
       // Emit socket events for real-time updates
