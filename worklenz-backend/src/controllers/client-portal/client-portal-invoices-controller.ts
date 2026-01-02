@@ -4,6 +4,7 @@ import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import db from "../../config/db";
+import SqlHelper from "../../shared/sql-helpers";
 
 export default class ClientPortalInvoicesController extends ClientPortalControllerBase {
 
@@ -823,7 +824,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
 
       // Verify invoice exists and belongs to organization
       const checkQuery = `
-        SELECT id FROM client_portal_invoices
+        SELECT id, status as current_status FROM client_portal_invoices
         WHERE id = $1 AND organization_team_id = $2
       `;
       const checkResult = await db.query(checkQuery, [id, organizationId]);
@@ -834,28 +835,107 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           .json(new ServerResponse(false, null, "Invoice not found"));
       }
 
-      // Update invoice
+      const currentInvoice = checkResult.rows[0];
+      const currentStatus = currentInvoice.current_status;
+
+      // Define allowed status transitions
+      const allowedTransitions: Record<string, string[]> = {
+        draft: ["sent"],
+        sent: ["paid"],
+        paid: [], // Paid invoices cannot transition to other states
+      };
+
+      // Validate status transition if status is being updated
+      if (status && status !== currentStatus) {
+        const allowedNextStates = allowedTransitions[currentStatus] || [];
+        
+        if (!allowedNextStates.includes(status)) {
+          return res
+            .status(400)
+            .json(
+              new ServerResponse(
+                false,
+                null,
+                `Invalid status transition: cannot change from '${currentStatus}' to '${status}'. Use dedicated endpoints for status changes (sendInvoice, markInvoiceAsPaid).`
+              )
+            );
+        }
+      }
+
+      // Build SET clause for fields to update
+      const setFields: Record<string, any> = {};
+
+      if (amount !== undefined) {
+        setFields.amount = amount;
+      }
+
+      if (currency !== undefined) {
+        setFields.currency = currency;
+      }
+
+      if (dueDate !== undefined) {
+        setFields.due_date = dueDate;
+      }
+
+      if (notes !== undefined) {
+        setFields.notes = notes;
+      }
+
+      // Only include status in update if it's a valid transition
+      if (status && status !== currentStatus) {
+        setFields.status = status;
+      }
+
+      if (Object.keys(setFields).length === 0) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "No valid fields to update"));
+      }
+
+      // Build secure UPDATE query using SqlHelper for parameterized fields
+      const params: any[] = [];
+      let paramIndex = 1;
+
+      const setClauses = Object.entries(setFields).map(([field, value]) => {
+        params.push(value);
+        return `${field} = $${paramIndex++}`;
+      });
+
+      // Add timestamp updates based on status transition
+      if (status && status !== currentStatus) {
+        if (status === "sent" && currentStatus === "draft") {
+          setClauses.push("sent_at = NOW()");
+        } else if (status === "paid" && currentStatus === "sent") {
+          setClauses.push("paid_at = NOW()");
+        }
+      }
+
+      // Always update the updated_at timestamp
+      setClauses.push("updated_at = NOW()");
+
+      // Build WHERE clause using SqlHelper for security
+      const { where: whereClause, params: whereParams } = SqlHelper.buildWhereClause([
+        { field: "id", operator: "=", value: id },
+        { field: "organization_team_id", operator: "=", value: organizationId, conjunction: "AND" }
+      ], paramIndex);
+
+      params.push(...whereParams);
+
+      // Build final query
       const updateQuery = `
         UPDATE client_portal_invoices
-        SET
-          amount = COALESCE($1, amount),
-          currency = COALESCE($2, currency),
-          due_date = COALESCE($3, due_date),
-          notes = COALESCE($4, notes),
-          status = COALESCE($5, status),
-          updated_at = NOW()
-        WHERE id = $6
-        RETURNING id, invoice_no, amount, currency, status, due_date, updated_at
+        SET ${setClauses.join(", ")}
+        WHERE ${whereClause}
+        RETURNING id, invoice_no, amount, currency, status, due_date, sent_at, paid_at, updated_at
       `;
 
-      const result = await db.query(updateQuery, [
-        amount,
-        currency,
-        dueDate,
-        notes,
-        status,
-        id,
-      ]);
+      const result = await db.query(updateQuery, params);
+
+      if (result.rows.length === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Invoice not found"));
+      }
 
       return res.json(
         new ServerResponse(true, result.rows[0], "Invoice updated successfully")
