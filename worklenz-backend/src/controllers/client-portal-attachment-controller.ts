@@ -337,7 +337,7 @@ export default class ClientPortalAttachmentController {
 
       // Validate purpose if provided
       if (purpose) {
-        const allowedPurposes = ["request", "chat", "avatar", "document", "general"];
+        const allowedPurposes = ["request", "chat", "avatar", "document", "payment_proof", "general"];
         if (allowedPurposes.includes(purpose as string)) {
           query += ` AND purpose = $3`;
           queryParams.push(purpose);

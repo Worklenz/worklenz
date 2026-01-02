@@ -721,44 +721,106 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
   }
 
   static async downloadInvoice(
-    req: AuthenticatedClientRequest,
+    req: AuthenticatedClientRequest | IWorkLenzRequest,
     res: IWorkLenzResponse
   ) {
     try {
       const { id } = req.params;
-      const { clientId } = req;
-      const { organizationId } = req;
-      const { format = "pdf" } = req.query;
+      
+      // Determine if this is a client request or admin request
+      const isClientRequest = 'clientId' in req && req.clientId;
+      const clientId = isClientRequest ? (req as AuthenticatedClientRequest).clientId : null;
+      const organizationId = isClientRequest 
+        ? (req as AuthenticatedClientRequest).organizationId 
+        : (req as IWorkLenzRequest).user?.team_id;
 
-      // Verify invoice exists and belongs to client
-      const invoiceQuery = `
-        SELECT
-          i.id,
-          i.invoice_no,
-          i.amount,
-          i.currency,
-          i.status,
-          i.due_date,
-          i.created_at,
-          c.name as client_name,
-          c.company_name,
-          c.email as client_email,
-          c.address as client_address,
-          r.req_no as request_number,
-          s.name as service_name,
-          s.description as service_description
-        FROM client_portal_invoices i
-        LEFT JOIN clients c ON i.client_id = c.id
-        LEFT JOIN client_portal_requests r ON i.request_id = r.id
-        LEFT JOIN client_portal_services s ON r.service_id = s.id
-        WHERE i.id = $1 AND i.client_id = $2 AND i.organization_team_id = $3
-      `;
+      if (!organizationId) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Organization ID is required"));
+      }
 
-      const result = await db.query(invoiceQuery, [
-        id,
-        clientId,
-        organizationId,
-      ]);
+      // Build query based on request type
+      let invoiceQuery: string;
+      let queryParams: any[];
+
+      if (isClientRequest && clientId) {
+        // Client-side: verify invoice belongs to client
+        invoiceQuery = `
+          SELECT
+            i.id,
+            i.invoice_no,
+            i.amount,
+            i.currency,
+            i.status,
+            i.due_date,
+            i.created_at,
+            i.notes,
+            c.id as client_id,
+            c.name as client_name,
+            c.company_name,
+            c.email as client_email,
+            c.phone as client_phone,
+            c.address as client_address,
+            r.req_no as request_number,
+            s.name as service_name,
+            s.description as service_description,
+            ot.name as organization_name,
+            ot.logo_url as organization_logo_url,
+            ot.primary_color as organization_primary_color,
+            ot.email as organization_email,
+            ot.phone as organization_phone,
+            ot.address_line_1 as organization_address_line_1,
+            ot.address_line_2 as organization_address_line_2,
+            ot.invoice_footer_message as organization_invoice_footer_message
+          FROM client_portal_invoices i
+          LEFT JOIN clients c ON i.client_id = c.id
+          LEFT JOIN client_portal_requests r ON i.request_id = r.id
+          LEFT JOIN client_portal_services s ON r.service_id = s.id
+          LEFT JOIN organization_teams ot ON i.organization_team_id = ot.id
+          WHERE i.id = $1 AND i.client_id = $2 AND i.organization_team_id = $3
+        `;
+        queryParams = [id, clientId, organizationId];
+      } else {
+        // Admin-side: verify invoice belongs to organization
+        invoiceQuery = `
+          SELECT
+            i.id,
+            i.invoice_no,
+            i.amount,
+            i.currency,
+            i.status,
+            i.due_date,
+            i.created_at,
+            i.notes,
+            c.id as client_id,
+            c.name as client_name,
+            c.company_name,
+            c.email as client_email,
+            c.phone as client_phone,
+            c.address as client_address,
+            r.req_no as request_number,
+            s.name as service_name,
+            s.description as service_description,
+            ot.name as organization_name,
+            ot.logo_url as organization_logo_url,
+            ot.primary_color as organization_primary_color,
+            ot.email as organization_email,
+            ot.phone as organization_phone,
+            ot.address_line_1 as organization_address_line_1,
+            ot.address_line_2 as organization_address_line_2,
+            ot.invoice_footer_message as organization_invoice_footer_message
+          FROM client_portal_invoices i
+          LEFT JOIN clients c ON i.client_id = c.id
+          LEFT JOIN client_portal_requests r ON i.request_id = r.id
+          LEFT JOIN client_portal_services s ON r.service_id = s.id
+          LEFT JOIN organization_teams ot ON i.organization_team_id = ot.id
+          WHERE i.id = $1 AND i.organization_team_id = $2
+        `;
+        queryParams = [id, organizationId];
+      }
+
+      const result = await db.query(invoiceQuery, queryParams);
 
       if (result.rows.length === 0) {
         return res
@@ -768,43 +830,78 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
 
       const invoice = result.rows[0];
 
-      // For now, return invoice data that could be used to generate a PDF
-      // In a full implementation, you would use a PDF generation library
+      // Check if due date has passed
+      const isOverdue = invoice.due_date && new Date(invoice.due_date) < new Date() && invoice.status !== 'paid';
+
+      // Prepare invoice data for template generator
       const invoiceData = {
-        id: invoice.id,
         invoiceNumber: invoice.invoice_no,
+        status: invoice.status,
+        createdAt: invoice.created_at,
+        dueDate: invoice.due_date,
         amount: parseFloat(invoice.amount || "0"),
         currency: invoice.currency,
-        status: invoice.status,
-        dueDate: invoice.due_date,
-        createdAt: invoice.created_at,
+        isOverdue,
         client: {
           name: invoice.client_name,
           companyName: invoice.company_name,
           email: invoice.client_email,
+          phone: invoice.client_phone,
           address: invoice.client_address,
         },
-        service: {
-          name: invoice.service_name,
-          description: invoice.service_description,
+        request: invoice.request_number ? {
+          requestNumber: invoice.request_number,
+          service: {
+            name: invoice.service_name,
+            description: invoice.service_description,
+          },
+        } : null,
+        notes: invoice.notes,
+        organization: {
+          name: invoice.organization_name,
+          logoUrl: invoice.organization_logo_url,
+          primaryColor: invoice.organization_primary_color,
+          email: invoice.organization_email,
+          phone: invoice.organization_phone,
+          addressLine1: invoice.organization_address_line_1,
+          addressLine2: invoice.organization_address_line_2,
+          invoiceFooterMessage: invoice.organization_invoice_footer_message,
         },
-        requestNumber: invoice.request_number,
       };
 
-      // TODO: Generate actual PDF/document using a library like puppeteer or jsPDF
-      // For now, return the data that would be used for PDF generation
-      return res.json(
-        new ServerResponse(
-          true,
-          {
-            downloadUrl: `/api/client-portal/invoices/${id}/download?format=${format}`,
-            format,
-            invoiceData,
-            message: "Invoice download link generated",
-          },
-          "Invoice download initiated"
-        )
-      );
+      // Generate PDF using puppeteer
+      const puppeteer = require('puppeteer');
+      const { InvoiceTemplateGenerator } = require('../../shared/invoice-template-generator');
+      
+      const html = InvoiceTemplateGenerator.generateInvoiceHTML(invoiceData);
+      
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      });
+      
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle0' });
+      
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: {
+          top: '20mm',
+          right: '20mm',
+          bottom: '20mm',
+          left: '20mm',
+        },
+      });
+      
+      await browser.close();
+
+      // Set response headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoice_no}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      return res.send(pdfBuffer);
     } catch (error) {
       console.error("Error downloading invoice:", error);
       return res

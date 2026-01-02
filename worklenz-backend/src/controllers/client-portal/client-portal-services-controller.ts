@@ -388,6 +388,11 @@ export default class ClientPortalServicesController extends ClientPortalControll
           .toString(36)
           .substr(2, 9)}${fileExtension}`;
         // Use getClientPortalStorageKey to ensure files are stored under organizations/{orgId}/client-portal/
+        if (!organizationId) {
+          return res
+            .status(400)
+            .json(new ServerResponse(false, null, "Organization ID is required"));
+        }
         const storageKey = getClientPortalStorageKey("service-images", organizationId, uniqueFileName);
 
         try {
@@ -584,6 +589,11 @@ export default class ClientPortalServicesController extends ClientPortalControll
           .toString(36)
           .substr(2, 9)}${fileExtension}`;
         // Use getClientPortalStorageKey to ensure files are stored under organizations/{orgId}/client-portal/
+        if (!organizationId) {
+          return res
+            .status(400)
+            .json(new ServerResponse(false, null, "Organization ID is required"));
+        }
         const storageKey = getClientPortalStorageKey("service-images", organizationId, uniqueFileName);
 
         try {
