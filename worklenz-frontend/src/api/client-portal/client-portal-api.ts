@@ -125,6 +125,62 @@ export interface ClientPortalInvoiceDetails extends ClientPortalInvoice {
   };
 }
 
+// Invoice mutation request/response interfaces
+export interface UpdateInvoiceRequest {
+  amount?: number;
+  currency?: string;
+  dueDate?: string;
+  notes?: string;
+  status?: string;
+}
+
+export interface UpdateInvoiceResponseBody {
+  id: string;
+  invoice_no: string;
+  amount: number;
+  currency: string;
+  status: string;
+  due_date: string | null;
+  sent_at: string | null;
+  paid_at: string | null;
+  updated_at: string;
+}
+
+export interface UpdateInvoiceResponse {
+  done: boolean;
+  body: UpdateInvoiceResponseBody;
+  message: string;
+  title: string | null;
+}
+
+export interface SendInvoiceResponseBody {
+  id: string;
+  invoice_no: string;
+  status: string;
+  sent_at: string;
+}
+
+export interface SendInvoiceResponse {
+  done: boolean;
+  body: SendInvoiceResponseBody;
+  message: string;
+  title: string | null;
+}
+
+export interface MarkInvoiceAsPaidResponseBody {
+  id: string;
+  invoice_no: string;
+  status: string;
+  paid_at: string;
+}
+
+export interface MarkInvoiceAsPaidResponse {
+  done: boolean;
+  body: MarkInvoiceAsPaidResponseBody;
+  message: string;
+  title: string | null;
+}
+
 export interface ClientPortalChat {
   id: string;
   title: string;
@@ -606,7 +662,7 @@ export const clientPortalApi = createApi({
       invalidatesTags: ['Invoices', 'Dashboard'],
     }),
 
-    updateInvoice: builder.mutation<any, { id: string; data: any }>({
+    updateInvoice: builder.mutation<UpdateInvoiceResponse, { id: string; data: UpdateInvoiceRequest }>({
       query: ({ id, data }) => ({
         url: `/clients/portal/invoices/${id}`,
         method: 'PUT',
@@ -619,7 +675,7 @@ export const clientPortalApi = createApi({
       ],
     }),
 
-    sendInvoice: builder.mutation<any, string>({
+    sendInvoice: builder.mutation<SendInvoiceResponse, string>({
       query: id => ({
         url: `/clients/portal/invoices/${id}/send`,
         method: 'POST',
@@ -631,7 +687,7 @@ export const clientPortalApi = createApi({
       ],
     }),
 
-    markInvoiceAsPaid: builder.mutation<any, string>({
+    markInvoiceAsPaid: builder.mutation<MarkInvoiceAsPaidResponse, string>({
       query: id => ({
         url: `/clients/portal/invoices/${id}/mark-paid`,
         method: 'POST',
