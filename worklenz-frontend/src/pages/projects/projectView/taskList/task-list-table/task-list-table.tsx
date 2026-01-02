@@ -2030,7 +2030,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                           isDragging: boolean;
                         }) => (
                           <>
-                            <Flex align="center" gap={4}>
+                            <Flex align="center" gap={4} className="column-header-cell">
                               {column.key === 'PHASE' && (
                                 <Flex className="w-full min-w-[120px]">
                                   {project?.phase_label}
@@ -2056,9 +2056,10 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                                   ref={dragParams?.setActivatorNodeRef}
                                   {...dragParams?.attributes}
                                   {...dragParams?.listeners}
+                                  aria-label={t('moveColumnHandle')}
+                                  title={t('moveColumnHandle')}
                                 >
                                   <HolderOutlined style={{ fontSize: 12 }} />
-                                  <span className="whitespace-nowrap">{t('moveColumnHandle')}</span>
                                 </span>
                               )}
                             </Flex>

@@ -937,7 +937,7 @@ const TaskListV2Section: React.FC = () => {
                 }) => (
                   <div
                     data-column-id={column.id}
-                    className={`text-sm font-semibold text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 ${
+                    className={`text-sm font-semibold text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 column-header-cell ${
                       column.id === 'dragHandle'
                         ? 'flex items-center justify-center'
                         : column.id === 'checkbox'
@@ -989,9 +989,10 @@ const TaskListV2Section: React.FC = () => {
                         ref={dragParams?.setActivatorNodeRef}
                         {...dragParams?.attributes}
                         {...dragParams?.listeners}
+                        aria-label={t('moveColumnHandle')}
+                        title={t('moveColumnHandle')}
                       >
                         <HolderOutlined style={{ fontSize: 12 }} />
-                        <span className="whitespace-nowrap">{t('moveColumnHandle')}</span>
                       </span>
                     )}
 

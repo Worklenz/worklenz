@@ -140,7 +140,12 @@ th.max-width-reached .column-resize-handle {
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease,
-    transform 0.15s ease;
+    transform 0.15s ease,
+    opacity 0.12s ease,
+    visibility 0.12s ease;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .column-drag-handle:hover {
@@ -152,6 +157,13 @@ th.max-width-reached .column-resize-handle {
 .column-drag-handle:active {
   cursor: grabbing;
   transform: translateY(0);
+}
+
+.column-header-cell:hover .column-drag-handle,
+.column-drag-handle:focus-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 [data-theme="dark"] .column-drag-handle {
