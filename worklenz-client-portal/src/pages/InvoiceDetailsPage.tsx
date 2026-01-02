@@ -22,6 +22,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import clientPortalAPI from "@/services/api";
 import { InvoiceDetails } from "@/types";
 import type { UploadFile } from "antd/es/upload/interface";
+import { escapeHtml } from "@/utils/escapeHtml";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -71,7 +72,32 @@ const InvoiceDetailsPage: React.FC = () => {
 
       if (response.done) {
         const invoiceData = response.body.invoiceData;
-        const invoiceNumber = invoiceData.invoiceNumber || "invoice";
+        
+        // Escape all user-provided values to prevent XSS
+        const escapedInvoiceNumber = escapeHtml(invoiceData.invoiceNumber || "invoice");
+        const escapedClientName = escapeHtml(invoiceData.client?.name || "");
+        const escapedCompanyName = escapeHtml(invoiceData.client?.companyName || "");
+        const escapedClientEmail = escapeHtml(invoiceData.client?.email || "");
+        const escapedClientAddress = escapeHtml(invoiceData.client?.address || "");
+        const escapedStatus = escapeHtml(invoiceData.status || "Pending");
+        const escapedStatusLower = escapeHtml((invoiceData.status?.toLowerCase() || "pending"));
+        const escapedServiceName = escapeHtml(invoiceData.service?.name || "");
+        const escapedServiceDescription = escapeHtml(
+          invoiceData.service?.description ? invoiceData.service.description.replace(/<[^>]+>/g, "") : ""
+        );
+        const escapedRequestNumber = escapeHtml(invoiceData.requestNumber || "");
+        
+        // Format currency amount (safe - numeric value)
+        const formattedAmount = new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: invoiceData.currency || "USD",
+        }).format(invoiceData.amount || 0);
+        
+        // Format dates (safe - Date objects)
+        const issueDate = new Date(invoiceData.createdAt).toLocaleDateString();
+        const dueDate = invoiceData.dueDate ? new Date(invoiceData.dueDate).toLocaleDateString() : "N/A";
+        const generatedDate = new Date().toLocaleDateString();
+        const generatedTime = new Date().toLocaleTimeString();
         
         const printWindow = window.open("", "_blank");
         if (printWindow) {
@@ -79,7 +105,7 @@ const InvoiceDetailsPage: React.FC = () => {
             <!DOCTYPE html>
             <html>
             <head>
-              <title>Invoice ${invoiceNumber}</title>
+              <title>Invoice ${escapedInvoiceNumber}</title>
               <style>
                 body {
                   font-family: Arial, sans-serif;
@@ -151,30 +177,27 @@ const InvoiceDetailsPage: React.FC = () => {
             <body>
               <div class="header">
                 <div class="invoice-title">INVOICE</div>
-                <div class="invoice-number">#${invoiceNumber}</div>
+                <div class="invoice-number">#${escapedInvoiceNumber}</div>
               </div>
               
               <div class="grid">
                 <div class="section">
                   <div class="section-title">Billed To</div>
-                  <div class="section-content">${invoiceData.client.name || ""}</div>
-                  <div>${invoiceData.client.companyName || ""}</div>
-                  <div>${invoiceData.client.email || ""}</div>
-                  ${invoiceData.client.address ? `<div>${invoiceData.client.address}</div>` : ""}
+                  <div class="section-content">${escapedClientName}</div>
+                  ${escapedCompanyName ? `<div>${escapedCompanyName}</div>` : ""}
+                  ${escapedClientEmail ? `<div>${escapedClientEmail}</div>` : ""}
+                  ${escapedClientAddress ? `<div>${escapedClientAddress}</div>` : ""}
                 </div>
                 
                 <div style="text-align: right;">
                   <div class="section">
                     <div class="section-title">Invoice Amount</div>
-                    <div class="amount">${new Intl.NumberFormat("en-US", {
-                      style: "currency",
-                      currency: invoiceData.currency || "USD",
-                    }).format(invoiceData.amount || 0)}</div>
+                    <div class="amount">${formattedAmount}</div>
                   </div>
                   
                   <div class="section">
                     <div class="section-title">Status</div>
-                    <span class="status status-${invoiceData.status?.toLowerCase() || "pending"}">${invoiceData.status || "Pending"}</span>
+                    <span class="status status-${escapedStatusLower}">${escapedStatus}</span>
                   </div>
                 </div>
               </div>
@@ -182,32 +205,32 @@ const InvoiceDetailsPage: React.FC = () => {
               <div class="grid">
                 <div class="section">
                   <div class="section-title">Issue Date</div>
-                  <div class="section-content">${new Date(invoiceData.createdAt).toLocaleDateString()}</div>
+                  <div class="section-content">${issueDate}</div>
                 </div>
                 
                 <div class="section" style="text-align: right;">
                   <div class="section-title">Due Date</div>
-                  <div class="section-content">${invoiceData.dueDate ? new Date(invoiceData.dueDate).toLocaleDateString() : "N/A"}</div>
+                  <div class="section-content">${dueDate}</div>
                 </div>
               </div>
               
-              ${invoiceData.service?.name ? `
+              ${escapedServiceName ? `
                 <div class="section">
                   <div class="section-title">Service</div>
-                  <div class="section-content">${invoiceData.service.name}</div>
-                  ${invoiceData.service.description ? `<div style="margin-top: 10px;">${invoiceData.service.description.replace(/<[^>]+>/g, "")}</div>` : ""}
+                  <div class="section-content">${escapedServiceName}</div>
+                  ${escapedServiceDescription ? `<div style="margin-top: 10px;">${escapedServiceDescription}</div>` : ""}
                 </div>
               ` : ""}
               
-              ${invoiceData.requestNumber ? `
+              ${escapedRequestNumber ? `
                 <div class="section">
                   <div class="section-title">Request Number</div>
-                  <div class="section-content">${invoiceData.requestNumber}</div>
+                  <div class="section-content">${escapedRequestNumber}</div>
                 </div>
               ` : ""}
               
               <div class="footer">
-                Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}
+                Generated on ${generatedDate} at ${generatedTime}
               </div>
             </body>
             </html>
