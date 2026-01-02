@@ -63,6 +63,30 @@ export default class ClientPortalDashboardController extends ClientPortalControl
       ]);
       const invoiceStats = invoiceStatsResult.rows[0];
 
+      // Get team members count
+      // First verify the client and team relationship
+      const clientTeamQuery = `
+        SELECT c.id as client_id, c.team_id, t.name as team_name
+        FROM clients c
+        JOIN teams t ON c.team_id = t.id
+        WHERE c.id = $1
+      `;
+      const clientTeamResult = await db.query(clientTeamQuery, [clientId]);
+      console.log('[Dashboard] Client-Team relationship:', clientTeamResult.rows[0]);
+      console.log('[Dashboard] organizationId from token:', organizationId);
+
+      const teamMembersQuery = `
+        SELECT COUNT(*) as team_members_count
+        FROM team_members
+        WHERE team_id = $1 AND active = true
+      `;
+
+      const teamMembersResult = await db.query(teamMembersQuery, [
+        organizationId,
+      ]);
+      const teamMembersStats = teamMembersResult.rows[0];
+      console.log('[Dashboard] Team members count:', teamMembersStats);
+
       const dashboardData = {
         totalProjects: parseInt(projectStats.total_projects || "0"),
         activeProjects: parseInt(projectStats.active_projects || "0"),
@@ -76,6 +100,7 @@ export default class ClientPortalDashboardController extends ClientPortalControl
         totalInvoices: parseInt(invoiceStats.total_invoices || "0"),
         unpaidInvoices: parseInt(invoiceStats.unpaid_invoices || "0"),
         unpaidAmount: parseFloat(invoiceStats.unpaid_amount || "0"),
+        teamMembers: parseInt(teamMembersStats.team_members_count || "0"),
       };
 
       return res.json(

@@ -3255,7 +3255,7 @@ class ClientPortalController {
         new ServerResponse(
           true,
           {
-            downloadUrl: `/api/client-portal/invoices/${id}/download?format=${format}`,
+            downloadUrl: `/api/v1/clients/portal/invoices/${id}/download?format=${format}`,
             format,
             invoiceData,
             message: "Invoice download link generated",

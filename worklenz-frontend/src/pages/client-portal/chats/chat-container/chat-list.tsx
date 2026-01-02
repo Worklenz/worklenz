@@ -67,8 +67,8 @@ const ChatList = ({ chatList, setOpenedChatId, selectedChatId }: ChatListProps) 
     // Check if lastMessageTime exists - if it does, there might be messages but lastMessage wasn't loaded
     if (record.lastMessageTime) {
       // If there's a timestamp but no message, it might be loading or there's a sync issue
-      // Don't show "No messages yet" in this case
-      return '';
+      // Show a meaningful message instead of empty string
+      return t('messageUnavailable');
     }
     return t('noMessagesYet');
   };
