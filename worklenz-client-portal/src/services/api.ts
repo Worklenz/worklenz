@@ -49,6 +49,21 @@ class ClientPortalAPI {
                                originalRequest.url?.includes('/auth/register') ||
                                originalRequest.url?.includes('/auth/accept-invite');
         
+        // Check if this is a 403 error due to client deactivation
+        const errorMessage = error.response?.data?.message || '';
+        const isDeactivated = error.response?.status === 403 && 
+          (errorMessage.toLowerCase().includes('deactivated') || 
+           errorMessage.toLowerCase().includes('portal access is disabled'));
+        
+        // If client is deactivated, immediately clear token and trigger logout
+        if (isDeactivated) {
+          this.clearToken();
+          localStorage.removeItem('clientTokenExpiry');
+          // Trigger a custom event that the app can listen to for logout
+          window.dispatchEvent(new CustomEvent('client-deactivated'));
+          return Promise.reject(error);
+        }
+        
         if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry && !isAuthEndpoint) {
           originalRequest._retry = true;
 
