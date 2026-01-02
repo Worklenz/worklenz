@@ -154,7 +154,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
       label: (
         <Space size={4}>
           <span style={{ fontSize: '16px' }}>{getFlagEmoji(country)}</span>
-          <span>{country}</span>
+          <span>+{callingCode}</span>
         </Space>
       ),
       searchLabel: `${displayName} +${callingCode} ${country}`,
