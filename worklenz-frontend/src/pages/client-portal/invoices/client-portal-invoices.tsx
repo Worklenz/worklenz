@@ -3,7 +3,7 @@ import Button from 'antd/lib/button';
 import { useTranslation } from 'react-i18next';
 import { PlusOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import InvoicesTable from './Invoices-table/invoices-table';
+import { InvoicesTable } from './Invoices-table/invoices-table';
 import { useResponsive } from '../../../hooks/useResponsive';
 
 const ClientPortalInvoices = () => {

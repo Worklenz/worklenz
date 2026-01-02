@@ -17,6 +17,9 @@ import {
   Statistic,
   Avatar,
   Tooltip,
+  Modal,
+  message,
+  Image,
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import {
@@ -34,7 +37,13 @@ import {
   ExclamationCircleOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
-import { useGetInvoiceDetailsQuery } from '@/api/client-portal/client-portal-api';
+import { FileImageOutlined, FilePdfOutlined } from '@ant-design/icons';
+import { 
+  useGetInvoiceDetailsQuery,
+  useSendInvoiceMutation,
+  useMarkInvoiceAsPaidMutation,
+  useDeleteInvoiceMutation,
+} from '@/api/client-portal/client-portal-api';
 import InvoicePreviewModal from './invoice-preview-modal';
 
 const { Title, Text } = Typography;
@@ -44,6 +53,12 @@ const ClientPortalInvoiceDetails: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('client-portal-invoices');
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [paymentProofPreviewOpen, setPaymentProofPreviewOpen] = useState(false);
+
+  // Mutations
+  const [sendInvoice, { isLoading: isSending }] = useSendInvoiceMutation();
+  const [markAsPaid, { isLoading: isMarkingPaid }] = useMarkInvoiceAsPaidMutation();
+  const [deleteInvoice, { isLoading: isDeleting }] = useDeleteInvoiceMutation();
 
   const {
     data,
@@ -105,6 +120,64 @@ const ClientPortalInvoiceDetails: React.FC = () => {
       style: 'currency',
       currency: currency,
     }).format(amount);
+  };
+
+  // Handle send invoice
+  const handleSendInvoice = async () => {
+    try {
+      await sendInvoice(invoiceId!).unwrap();
+      message.success(t('sendInvoice') + ' ' + t('createInvoiceSuccessMessage'));
+    } catch (error) {
+      message.error(t('createInvoiceErrorMessage'));
+    }
+  };
+
+  // Handle mark as paid
+  const handleMarkAsPaid = async () => {
+    Modal.confirm({
+      title: t('markAsPaid.title'),
+      content: t('markAsPaid.confirm'),
+      okText: t('markAsPaid.okText'),
+      cancelText: t('markAsPaid.cancelText'),
+      onOk: async () => {
+        try {
+          await markAsPaid(invoiceId!).unwrap();
+          message.success(t('markAsPaid.success'));
+        } catch (error) {
+          message.error(t('markAsPaid.failure'));
+        }
+      },
+    });
+  };
+
+  // Handle download invoice
+  const handleDownloadInvoice = () => {
+    window.open(`/api/client-portal/invoices/${invoiceId}/download`, '_blank');
+  };
+
+  // Handle edit invoice
+  const handleEditInvoice = () => {
+    navigate(`/worklenz/client-portal/invoices/${invoiceId}/edit`);
+  };
+
+  // Handle delete invoice
+  const handleDeleteInvoice = () => {
+    Modal.confirm({
+      title: t('deleteInvoice'),
+      content: t('deleteConfirmationTitle'),
+      okText: t('deleteConfirmationOk'),
+      cancelText: t('deleteConfirmationCancel'),
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          await deleteInvoice(invoiceId!).unwrap();
+          message.success(t('deleteInvoice.success'));
+          navigate('/worklenz/client-portal/invoices');
+        } catch (error) {
+          message.error(t('deleteInvoice.failure'));
+        }
+      },
+    });
   };
 
   // Loading state
@@ -170,23 +243,43 @@ const ClientPortalInvoiceDetails: React.FC = () => {
             {t('previewInvoice')}
           </Button>
           {invoice.status === 'draft' && (
-            <Button icon={<SendOutlined />} type="primary">
+            <Button 
+              icon={<SendOutlined />} 
+              type="primary"
+              onClick={handleSendInvoice}
+              loading={isSending}
+            >
               {t('sendInvoice')}
             </Button>
           )}
-          {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
-            <Button icon={<CheckCircleOutlined />}>
+          {invoice.status === 'sent' && (
+            <Button 
+              icon={<CheckCircleOutlined />}
+              onClick={handleMarkAsPaid}
+              loading={isMarkingPaid}
+            >
               {t('markAsPaid')}
             </Button>
           )}
           <Tooltip title={t('downloadInvoice')}>
-            <Button icon={<DownloadOutlined />} />
+            <Button 
+              icon={<DownloadOutlined />} 
+              onClick={handleDownloadInvoice}
+            />
           </Tooltip>
           <Tooltip title={t('editInvoice')}>
-            <Button icon={<EditOutlined />} />
+            <Button 
+              icon={<EditOutlined />} 
+              onClick={handleEditInvoice}
+            />
           </Tooltip>
           <Tooltip title={t('deleteInvoice')}>
-            <Button icon={<DeleteOutlined />} danger />
+            <Button 
+              icon={<DeleteOutlined />} 
+              danger 
+              onClick={handleDeleteInvoice}
+              loading={isDeleting}
+            />
           </Tooltip>
         </Space>
       </Flex>
@@ -345,6 +438,107 @@ const ClientPortalInvoiceDetails: React.FC = () => {
               </Flex>
             </Space>
           </Card>
+
+          {/* Payment Proof Card */}
+          {invoice.status === 'paid' && invoice.paymentProofUrl && (
+            <Card 
+              title={
+                <Flex align="center" gap={8}>
+                  <FileImageOutlined />
+                  <Text strong>{t('paymentProof')}</Text>
+                </Flex>
+              }
+              style={{ marginBottom: 24 }}
+            >
+              <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                <Flex vertical gap={12}>
+                  {(() => {
+                    const fileExtension = invoice.paymentProofUrl?.split('.').pop()?.toLowerCase() || '';
+                    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(fileExtension);
+                    const isPdf = fileExtension === 'pdf';
+
+                    if (isImage) {
+                      return (
+                        <div style={{ textAlign: 'center' }}>
+                          <Image
+                            src={invoice.paymentProofUrl}
+                            alt="Payment Proof"
+                            style={{
+                              maxWidth: '100%',
+                              maxHeight: 300,
+                              borderRadius: 8,
+                              cursor: 'pointer',
+                            }}
+                            preview={{
+                              visible: paymentProofPreviewOpen,
+                              onVisibleChange: (visible) => setPaymentProofPreviewOpen(visible),
+                            }}
+                            onClick={() => setPaymentProofPreviewOpen(true)}
+                          />
+                          <Button
+                            type="link"
+                            icon={<EyeOutlined />}
+                            onClick={() => setPaymentProofPreviewOpen(true)}
+                            style={{ marginTop: 8 }}
+                          >
+                            {t('viewFullSize')}
+                          </Button>
+                        </div>
+                      );
+                    } else if (isPdf) {
+                      return (
+                        <Flex vertical gap={12} align="center">
+                          <FilePdfOutlined style={{ fontSize: 48, color: '#ff4d4f' }} />
+                          <Button
+                            type="primary"
+                            icon={<EyeOutlined />}
+                            onClick={() => window.open(invoice.paymentProofUrl!, '_blank')}
+                          >
+                            {t('viewPdf')}
+                          </Button>
+                          <Button
+                            icon={<DownloadOutlined />}
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = invoice.paymentProofUrl!;
+                              link.download = `payment-proof-${invoice.invoiceNumber}.pdf`;
+                              link.click();
+                            }}
+                          >
+                            {t('download')}
+                          </Button>
+                        </Flex>
+                      );
+                    } else {
+                      return (
+                        <Flex vertical gap={12} align="center">
+                          <FileTextOutlined style={{ fontSize: 48 }} />
+                          <Button
+                            type="primary"
+                            icon={<EyeOutlined />}
+                            onClick={() => window.open(invoice.paymentProofUrl!, '_blank')}
+                          >
+                            {t('viewFile')}
+                          </Button>
+                          <Button
+                            icon={<DownloadOutlined />}
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = invoice.paymentProofUrl!;
+                              link.download = `payment-proof-${invoice.invoiceNumber}`;
+                              link.click();
+                            }}
+                          >
+                            {t('download')}
+                          </Button>
+                        </Flex>
+                      );
+                    }
+                  })()}
+                </Flex>
+              </Space>
+            </Card>
+          )}
 
           {/* Created By Card */}
           {invoice.createdBy && (

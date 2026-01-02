@@ -21,8 +21,6 @@ import {
   Divider,
   Drawer,
   message,
-} from '@/shared/antd-imports';
-import {
   CheckCircleOutlined,
   CloseOutlined,
   SunOutlined,

@@ -79,8 +79,15 @@ clientsApiRouter.get("/portal/projects/:id", idParamValidator, safeControllerFun
 clientsApiRouter.get("/portal/invoices", safeControllerFunction(ClientsController.getPortalInvoices));
 clientsApiRouter.post("/portal/invoices", safeControllerFunction(ClientsController.createPortalInvoice));
 clientsApiRouter.get("/portal/invoices/:id", idParamValidator, safeControllerFunction(ClientsController.getPortalInvoiceById));
+clientsApiRouter.put("/portal/invoices/:id", idParamValidator, safeControllerFunction(ClientsController.updatePortalInvoice));
+clientsApiRouter.delete("/portal/invoices/:id", idParamValidator, safeControllerFunction(ClientsController.deletePortalInvoice));
 clientsApiRouter.post("/portal/invoices/:id/pay", idParamValidator, safeControllerFunction(ClientsController.payPortalInvoice));
+clientsApiRouter.post("/portal/invoices/:id/send", idParamValidator, safeControllerFunction(ClientsController.sendPortalInvoice));
+clientsApiRouter.post("/portal/invoices/:id/mark-paid", idParamValidator, safeControllerFunction(ClientsController.markPortalInvoiceAsPaid));
 clientsApiRouter.get("/portal/invoices/:id/download", idParamValidator, safeControllerFunction(ClientsController.downloadPortalInvoice));
+
+// Admin-only invoice download route (separate from client portal)
+clientsApiRouter.get("/:clientId/invoices/:id/download", idParamValidator, safeControllerFunction(ClientsController.downloadPortalInvoice));
 
 // Organization-side Client Portal Chats Management
 clientsApiRouter.get("/portal/chats", safeControllerFunction(ClientsController.getPortalChats));
