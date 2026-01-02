@@ -31,62 +31,86 @@ import { ILocalPlans } from '@/shared/constants';
 const UpgradePlansLKR: React.FC = () => {
   const dispatch = useAppDispatch();
   const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);
-  // const [selectedPlan, setSelectedPlan] = useState(2);
-  const { t } = useTranslation('admin-center/current-bill');
+  const { t } = useTranslation(['admin-center/current-bill', 'pricing-modal']);
   const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const userCurrency = timeZoneCurrencyMap[userTimeZone] || 'USD';
-  const [switchingToFreePlan, setSwitchingToFreePlan] = useState(false);
-  const currentSession = useAuthService().getCurrentSession();
-  const [billingFrequency, setBillingFrequency] = useState<BillingFrequency>('annual');
-  const [annualSavingsPercent] = useState<number>(20);
-  const localPlans = ILocalPlans;
-  const [selectedPlan, setSelectedCard] = useState(localPlans.ANNUAL);
-  const ANNUAL_TOTAL = 2000;
-  const MONTHLY_TOTAL = 250;
+  const userCurrency = timeZoneCurrencyMap[userTimeZone] || 'LKR';
 
-  const cardStyles = {
-    title: {
-      color: themeMode === 'dark' ? '#ffffffd9' : '#000000d9',
-      fontWeight: 500,
-      fontSize: '16px',
-      display: 'flex',
-      gap: '4px',
-      justifyContent: 'center',
+  const [billingFrequency, setBillingFrequency] = useState<BillingFrequency>('annual');
+  const [selectedPlan, setSelectedPlan] = useState<ILocalPlans[keyof ILocalPlans]>(ILocalPlans.ANNUAL);
+  const [switchingToFreePlan, setSwitchingToFreePlan] = useState(false);
+
+  const currentSession = useAuthService().getCurrentSession();
+  const annualSavingsPercent = 20;
+
+  // Pricing data
+  const plans = {
+    free: {
+      title: t('freePlan'),
+      price: 0,
+      subtitle: t('freeSubtitle'),
+      users: t('freeUsers'),
+      features: ['freeText01', 'freeText02', 'freeText03'],
+      tag: selectedPlan === ILocalPlans.FREE ? t('currentPlan') : undefined,
     },
-    priceContainer: {
-      display: 'grid',
-      gridTemplateColumns: 'auto',
-      rowGap: '10px',
-      padding: '20px 30px 0',
+    startup: {
+      title: t('startup'),
+      priceMonthly: 549, // Monthly price in LKR
+      priceAnnual: 4990, // Annual price in LKR (with discount)
+      subtitle: t('startupSubtitle'),
+      users: t('startupUsers'),
+      features: [
+        'startupText01',
+        'startupText02',
+        'startupText03',
+        'startupText04',
+        'startupText05',
+      ],
+      tag: 'Recommended',
     },
-    featureList: {
-      display: 'grid',
-      gridTemplateRows: 'auto auto auto',
-      gridTemplateColumns: '200px',
-      rowGap: '7px',
-      padding: '10px',
-      justifyItems: 'start',
-      alignItems: 'start',
-    },
-    checkIcon: { color: '#52c41a' },
   };
 
-  // const handlePlanSelect = (planIndex: number) => {
-  //   setSelectedPlan(planIndex);
-  // };
+  const cardStyles = {
+    checkIcon: { color: '#52c41a', fontSize: '16px' },
+    title: {
+      fontWeight: 600,
+      fontSize: '18px',
+      color: themeMode === 'dark' ? '#ffffffd9' : '#000000d9',
+    },
+    price: {
+      fontSize: '36px',
+      fontWeight: 700,
+      margin: 0,
+      color: themeMode === 'dark' ? '#fff' : '#000',
+    },
+    subtitle: {
+      color: '#8c8c8c',
+      fontSize: '14px',
+    },
+  };
 
-  // const handleSeatsChange = (values: { seats: number }) => {
-  //   if (values.seats <= 15) {
-  //     setSelectedPlan(2);
-  //   } else if (values.seats > 15 && values.seats <= 200) {
-  //     setSelectedPlan(3);
-  //   } else if (values.seats > 200) {
-  //     setSelectedPlan(4);
-  //   }
-  // };
+  const getCardStyle = (isSelected: boolean) => ({
+    height: '100%',
+    cursor: 'pointer',
+    border: isSelected ? '2px solid #1890ff' : '1px solid #d9d9d9',
+    boxShadow: isSelected ? '0 0 12px rgba(24, 144, 255, 0.25)' : 'none',
+    transition: 'all 0.3s',
+  });
 
-  const isSelected = (planIndex: number) =>
-    { border: '2px solid #1890ff' };
+  const handlePlanSelect = (plan: keyof typeof plans) => {
+    if (plan === 'free') {
+      setSelectedPlan(ILocalPlans.FREE);
+    } else {
+      setSelectedPlan(billingFrequency === 'annual' ? ILocalPlans.ANNUAL : ILocalPlans.MONTHLY);
+    }
+  };
+
+  const onBillingFrequencyChange = (frequency: BillingFrequency) => {
+    setBillingFrequency(frequency);
+    // Keep selection consistent with frequency
+    if (selectedPlan !== ILocalPlans.FREE) {
+      setSelectedPlan(frequency === 'annual' ? ILocalPlans.ANNUAL : ILocalPlans.MONTHLY);
+    }
+  };
 
   const handleSubmit = () => {
     notification.success({
@@ -96,50 +120,6 @@ const UpgradePlansLKR: React.FC = () => {
     });
     dispatch(toggleUpgradeModal());
   };
-
-  const renderFeature = (text: string) => (
-    <div>
-      <CheckCircleFilled style={cardStyles.checkIcon} />
-      &nbsp;
-      <span>{text}</span>
-    </div>
-  );
-
-  const renderPlanCard = (
-    planIndex: number,
-    title: string,
-    price: string | number,
-    subtitle: string,
-    users: string,
-    features: string[],
-    tag?: string
-  ) => (
-    <Col span={6} style={{ padding: '0 4px' }}>
-      <Card
-        style={{ border: '2px solid #1890ff', height: '100%' }}
-        hoverable
-        title={
-          <span style={cardStyles.title}>
-            {title}
-            {tag && <Tag color="volcano">{tag}</Tag>}
-          </span>
-        }
-        onClick={() => {}}
-      >
-        <div style={cardStyles.priceContainer}>
-          <Typography.Title level={1}>
-            {userCurrency} {price}
-          </Typography.Title>
-          <span>{subtitle}</span>
-          <Typography.Title level={5}>{users}</Typography.Title>
-        </div>
-
-        <div style={cardStyles.featureList}>
-          {features.map((feature, index) => renderFeature(t(feature)))}
-        </div>
-      </Card>
-    </Col>
-  );
 
   const switchToFreePlan = async () => {
     const teamId = currentSession?.team_id;
@@ -165,111 +145,148 @@ const UpgradePlansLKR: React.FC = () => {
     }
   };
 
-  const onBillingFrequencyChange = (frequency: BillingFrequency) => {
-      const oldFrequency = billingFrequency;
-      setBillingFrequency(frequency);
-      setSelectedCard(frequency === 'annual' ? localPlans.ANNUAL : localPlans.MONTHLY);
-  
-      // Track billing frequency change
-      const annualTotal = ANNUAL_TOTAL.toString();
-      const monthlyTotal = MONTHLY_TOTAL.toString();
-      const annualSavings = parseFloat(monthlyTotal) * 12 - parseFloat(annualTotal);
-    };
+  const renderFeature = (text: string) => (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+      <CheckCircleFilled style={cardStyles.checkIcon} />
+      <span style={{ textAlign: 'left', fontSize: '14px' }}>{t(text)}</span>
+    </div>
+  );
+
+  const isPlanSelected = (planKey: 'free' | 'startup') => {
+    if (planKey === 'free') return selectedPlan === ILocalPlans.FREE;
+    return selectedPlan === ILocalPlans.ANNUAL || selectedPlan === ILocalPlans.MONTHLY;
+  };
 
   return (
-    <div className="upgrade-plans" style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+    <div className="upgrade-plans" style={{ padding: '2rem 1rem', textAlign: 'center' }}>
       <Typography.Title level={2}>{t('modalTitle')}</Typography.Title>
-      {/* Team Size Input and Billing Frequency Toggle */}
-      <Space align="center" size="small">
-        <Typography.Text strong style={{ fontSize: '13px' }}>{t('pricing-modal:billingCycle.label')}:</Typography.Text>
-        <Button.Group size="middle">
+
+      {/* Billing Frequency Toggle */}
+      <Space align="center" size="middle" style={{ marginBottom: '2rem' }}>
+        <Typography.Text strong>{t('pricing-modal:billingCycle.label')}:</Typography.Text>
+        <Button.Group>
           <Button
             type={billingFrequency === 'monthly' ? 'primary' : 'default'}
             onClick={() => onBillingFrequencyChange('monthly')}
-            // disabled={isLoadingPlans}
           >
             {t('pricing-modal:billingCycle.monthly')}
           </Button>
           <Button
             type={billingFrequency === 'annual' ? 'primary' : 'default'}
             onClick={() => onBillingFrequencyChange('annual')}
-            // disabled={isLoadingPlans}
           >
             {t('pricing-modal:billingCycle.yearly')}
           </Button>
         </Button.Group>
-        {annualSavingsPercent !== undefined && annualSavingsPercent > 0 && (
-          <Typography.Text style={{ color: '#52c41a', fontWeight: 600, marginLeft: 8, fontSize: '12px' }}>
-            {t('pricing-modal:billing.annualSavingsShortOff', 'Up to {{percent}}% off', { percent: annualSavingsPercent })}
+        {annualSavingsPercent > 0 && (
+          <Typography.Text style={{ color: '#52c41a', fontWeight: 600 }}>
+            {t('pricing-modal:billing.annualSavingsShortOff', 'Up to {{percent}}% off', {
+              percent: annualSavingsPercent,
+            })}
           </Typography.Text>
         )}
       </Space>
 
-      <Row>
-        {renderPlanCard(1, t('freePlan'), 0.0, t('freeSubtitle'), t('freeUsers'), [
-          'freeText01',
-          'freeText02',
-          'freeText03',
-        ])}
+      {/* Plan Cards - Centered and Responsive */}
+      <Row justify="center" gutter={[24, 32]}>
+        {/* Free Plan */}
+        <Col xs={22} sm={18} md={12} lg={10} xl={8}>
+          <Card
+            hoverable
+            style={getCardStyle(isPlanSelected('free'))}
+            onClick={() => handlePlanSelect('free')}
+            title={
+              <div style={cardStyles.title}>
+                {plans.free.title}
+                {plans.free.tag && <Tag color="orange">{plans.free.tag}</Tag>}
+              </div>
+            }
+          >
+            <div style={{ padding: '24px 16px' }}>
+              <Typography.Title level={1} style={cardStyles.price}>
+                {userCurrency} {plans.free.price}
+              </Typography.Title>
+              <Typography.Text style={cardStyles.subtitle}>{plans.free.subtitle}</Typography.Text>
+              <Typography.Paragraph style={{ margin: '16px 0', color: '#8c8c8c' }}>
+                {plans.free.users}
+              </Typography.Paragraph>
+              <div style={{ textAlign: 'left', marginTop: '24px' }}>
+                {plans.free.features.map((f) => renderFeature(f))}
+              </div>
+            </div>
+          </Card>
+        </Col>
 
-        {renderPlanCard(2, t('startup'), 4990, t('startupSubtitle'), t('startupUsers'), [
-          'startupText01',
-          'startupText02',
-          'startupText03',
-          'startupText04',
-          'startupText05',
-        ])}
-
-        {renderPlanCard(
-          3,
-          t('business'),
-          300,
-          t('businessSubtitle'),
-          '16 - 200 users',
-          ['startupText01', 'startupText02', 'startupText03', 'startupText04', 'startupText05'],
-          t('tag')
-        )}
-
-        {renderPlanCard(4, t('enterprise'), 250, t('businessSubtitle'), t('enterpriseUsers'), [
-          'startupText01',
-          'startupText02',
-          'startupText03',
-          'startupText04',
-          'startupText05',
-        ])}
+        {/* Startup Plan */}
+        <Col xs={22} sm={18} md={12} lg={10} xl={8}>
+          <Card
+            hoverable
+            style={getCardStyle(isPlanSelected('startup'))}
+            onClick={() => handlePlanSelect('startup')}
+            title={
+              <div style={cardStyles.title}>
+                {plans.startup.title}
+                <Tag color="volcano">{plans.startup.tag}</Tag>
+              </div>
+            }
+          >
+            <div style={{ padding: '24px 16px' }}>
+              <Typography.Title level={1} style={cardStyles.price}>
+                {userCurrency}{' '}
+                {billingFrequency === 'annual' ? plans.startup.priceAnnual : plans.startup.priceMonthly}
+              </Typography.Title>
+              <Typography.Text style={cardStyles.subtitle}>
+                {billingFrequency === 'annual' ? '/year' : '/month'}
+              </Typography.Text>
+              <Typography.Paragraph style={{ margin: '16px 0', color: '#8c8c8c' }}>
+                {plans.startup.users}
+              </Typography.Paragraph>
+              <div style={{ textAlign: 'left', marginTop: '24px' }}>
+                {plans.startup.features.map((f) => renderFeature(f))}
+              </div>
+            </div>
+          </Card>
+        </Col>
       </Row>
 
-      {selectedPlan === localPlans.FREE ? (
-        <Row justify="center" style={{ marginTop: '1.5rem' }}>
-          <Button type="primary" loading={switchingToFreePlan} onClick={switchToFreePlan}>
+      {/* Action Section */}
+      {selectedPlan === ILocalPlans.FREE ? (
+        <Row justify="center" style={{ marginTop: '3rem' }}>
+          <Button type="primary" size="large" loading={switchingToFreePlan} onClick={switchToFreePlan}>
             {t('switchToFreePlan')}
           </Button>
         </Row>
       ) : (
         <div
           style={{
-            backgroundColor: themeMode === 'dark' ? '#141414' : '#e2e3e5',
-            padding: '1rem',
-            marginTop: '1.5rem',
+            backgroundColor: themeMode === 'dark' ? '#141414' : '#f5f5f5',
+            padding: '2rem',
+            marginTop: '3rem',
+            borderRadius: '8px',
           }}
         >
           <Typography.Title level={4}>{t('footerTitle')}</Typography.Title>
-          <Form onFinish={handleSubmit}>
-            <Row justify="center" style={{ height: '32px' }}>
-              <Form.Item
-                style={{ margin: '0 24px 0 0' }}
-                name="contactNumber"
-                label={t('footerLabel')}
-                rules={[{ required: true }]}
-              >
-                <Input type="number" placeholder="07xxxxxxxx" maxLength={10} minLength={10} />
-              </Form.Item>
-              <Form.Item>
-                <Button type="primary" htmlType="submit">
-                  {t('footerButton')}
-                </Button>
-              </Form.Item>
-            </Row>
+          <Form onFinish={handleSubmit} layout="inline" style={{ justifyContent: 'center' }}>
+            <Form.Item
+              name="contactNumber"
+              label={t('footerLabel')}
+              rules={[
+                { required: true, message: 'Please enter your contact number' },
+                { len: 10, message: 'Must be 10 digits' },
+              ]}
+            >
+              <Input
+                type="text"
+                placeholder="07xxxxxxxx"
+                maxLength={10}
+                style={{ width: '200px' }}
+              />
+            </Form.Item>
+            <Form.Item>
+              <Button type="primary" size="large" htmlType="submit">
+                {t('footerButton')}
+              </Button>
+            </Form.Item>
           </Form>
         </div>
       )}
