@@ -635,7 +635,7 @@ const ClientDetailsDrawer = () => {
                     renderItem={project => (
                       <List.Item
                         actions={[
-                          <Tooltip title={t('viewProjectTooltip') || 'View Project'}>
+                          <Tooltip title={t('viewProjectTooltip')}>
                             <Button
                               type="link"
                               icon={<EyeOutlined />}
@@ -646,7 +646,7 @@ const ClientDetailsDrawer = () => {
                                 }
                               }}
                             >
-                              {t('viewButton') || 'View'}
+                              {t('viewButton')}
                             </Button>
                           </Tooltip>,
                         ]}
