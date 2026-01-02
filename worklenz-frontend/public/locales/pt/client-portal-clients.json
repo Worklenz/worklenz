@@ -191,10 +191,6 @@
 
   "assignProjectTitle": "Atribuir Novo Projeto",
   "assignedProjectsTitle": "Projetos Atribuídos",
-  "statusColumn": "Status",
-  "removeConfirmationOk": "Remover",
-  "removeConfirmationCancel": "Cancelar",
-  "removeProjectTooltip": "Remover Projeto",
 
   "portalStatusColumn": "Status do Portal",
   "portalStatus": {
@@ -205,7 +201,6 @@
   },
 
   "inviteToPortalTooltip": "Convidar para o Portal",
-  "resendInvitationTooltip": "Reenviar Convite",
   "resendInviteEmailTooltip": "Reenviar Email de Convite",
   "copyInviteLinkTooltip": "Copiar Link de Convite",
   "resendInvitationSuccess": "Email de convite enviado com sucesso!",
@@ -232,7 +227,6 @@
   "activateClientSuccessMessage": "Cliente ativado com sucesso",
   "activateClientErrorMessage": "Falha ao ativar cliente",
   "activateButton": "Ativar Cliente",
-  "deactivateSelected": "Desativar Selecionados",
   "selectClientsToDeactivate": "Por favor selecione clientes para desativar",
   "bulkDeactivateSuccessMessage": "Clientes selecionados desativados com sucesso",
   "bulkDeactivateErrorMessage": "Falha ao desativar clientes selecionados",
