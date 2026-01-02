@@ -145,6 +145,8 @@
 
   "projectsTitle": "Projects",
   "noProjectsText": "No projects found",
+  "viewProjectTooltip": "View Project",
+  "viewButton": "View",
 
   "overviewTab": "Overview",
   "teamTab": "Team",
