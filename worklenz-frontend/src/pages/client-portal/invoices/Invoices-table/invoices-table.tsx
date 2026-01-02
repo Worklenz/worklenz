@@ -8,18 +8,20 @@ import {
   Spin,
   Alert,
   Empty,
+  theme,
 } from '@/shared/antd-imports';
 import { TableProps } from 'antd/lib';
 import { useTranslation } from 'react-i18next';
-import { colors } from '../../../../styles/colors';
 import { useNavigate } from 'react-router-dom';
 import { useGetInvoicesQuery } from '../../../../api/client-portal/client-portal-api';
 import { PlusOutlined } from '@ant-design/icons';
+import { formatDate } from '../../../../utils/dateUtils';
 
-const InvoicesTable = () => {
+export const InvoicesTable = () => {
   // localization
   const { t } = useTranslation('client-portal-invoices');
   const navigate = useNavigate();
+  const { token } = theme.useToken();
 
   // Fetch invoices from API
   const {
@@ -136,20 +138,13 @@ const InvoicesTable = () => {
     );
   }
 
-  // Sort invoices by created date (newest first)
-  const sortedInvoices = [...invoices].sort((a, b) => {
-    const dateA = new Date(a.createdAt).getTime();
-    const dateB = new Date(b.createdAt).getTime();
-    return dateB - dateA;
-  });
-
   // table columns
   const columns: TableProps['columns'] = [
     {
       key: 'invoice_no',
       title: t('invoiceNoColumn'),
       render: record => (
-        <Typography.Text strong style={{ color: colors.skyBlue }}>
+        <Typography.Text strong style={{ color: token.colorPrimary }}>
           {record.invoiceNumber}
         </Typography.Text>
       ),
@@ -198,7 +193,7 @@ const InvoicesTable = () => {
       title: t('createdDateColumn'),
       render: record => (
         <Typography.Text>
-          {record.createdAt ? new Date(record.createdAt).toLocaleDateString() : '-'}
+          {record.createdAt ? formatDate(record.createdAt, 'MMM D, YYYY') : '-'}
         </Typography.Text>
       ),
       width: 130,
@@ -208,7 +203,7 @@ const InvoicesTable = () => {
       title: t('dueDateColumn'),
       render: record => (
         <Typography.Text>
-          {record.dueDate ? new Date(record.dueDate).toLocaleDateString() : '-'}
+          {record.dueDate ? formatDate(record.dueDate, 'MMM D, YYYY') : '-'}
         </Typography.Text>
       ),
       width: 130,
@@ -219,7 +214,7 @@ const InvoicesTable = () => {
     <Card style={{ height: 'calc(100vh - 280px)' }}>
       <Table
         columns={columns}
-        dataSource={sortedInvoices}
+        dataSource={invoices}
         pagination={{
           size: 'small',
           total: invoicesResponse.total || invoices.length,
@@ -237,5 +232,3 @@ const InvoicesTable = () => {
     </Card>
   );
 };
-
-export default InvoicesTable;
