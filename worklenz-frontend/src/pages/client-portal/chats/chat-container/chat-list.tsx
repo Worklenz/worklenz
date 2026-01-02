@@ -1,12 +1,11 @@
-import { Button, Flex, Typography, Badge, Input } from '@/shared/antd-imports';
+import { Flex, Typography, Badge, Input } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { TempChatsType } from './chat-box/chat-box-wrapper';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import NewChatModal from '@/components/client-portal/NewChatModal';
-import CustomAvatar from '../../../../components/CustomAvatar';
-import { useAppSelector } from '../../../../hooks/useAppSelector';
-import { themeWiseColor } from '../../../../utils/themeWiseColor';
+import CustomAvatar from '@components/CustomAvatar';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { themeWiseColor } from '@utils/themeWiseColor';
 
 type ChatListProps = {
   chatList: TempChatsType[];
@@ -55,12 +54,21 @@ const ChatList = ({ chatList, setOpenedChatId, selectedChatId }: ChatListProps) 
   };
 
   const getLastMessagePreview = (record: TempChatsType) => {
-    if (record.lastMessage) {
+    // First check if lastMessage exists and is not empty
+    if (record.lastMessage && record.lastMessage.trim()) {
       return record.lastMessage;
     }
+    // Then check if there are messages in chats_data
     if (record.chats_data && Array.isArray(record.chats_data) && record.chats_data.length > 0) {
       const lastMsg = record.chats_data[record.chats_data.length - 1];
       return lastMsg.is_me ? `${t('youText')}: ${lastMsg.content}` : String(lastMsg.content);
+    }
+    // Only show "No messages yet" if we're certain there are no messages
+    // Check if lastMessageTime exists - if it does, there might be messages but lastMessage wasn't loaded
+    if (record.lastMessageTime) {
+      // If there's a timestamp but no message, it might be loading or there's a sync issue
+      // Don't show "No messages yet" in this case
+      return '';
     }
     return t('noMessagesYet');
   };
@@ -77,7 +85,7 @@ const ChatList = ({ chatList, setOpenedChatId, selectedChatId }: ChatListProps) 
     >
       {/* Header */}
       <Flex
-        justify="space-between"
+        justify="center"
         align="center"
         style={{
           padding: '16px',
@@ -87,14 +95,6 @@ const ChatList = ({ chatList, setOpenedChatId, selectedChatId }: ChatListProps) 
         <Typography.Text strong style={{ fontSize: 16 }}>
           {t('chatsTitle')}
         </Typography.Text>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleNewChat}
-          size="small"
-        >
-          {t('startConversation')}
-        </Button>
       </Flex>
 
       {/* Search */}
@@ -210,11 +210,6 @@ const ChatList = ({ chatList, setOpenedChatId, selectedChatId }: ChatListProps) 
         )}
       </Flex>
 
-      <NewChatModal
-        open={isNewChatModalOpen}
-        onClose={() => setIsNewChatModalOpen(false)}
-        onSuccess={handleNewChatSuccess}
-      />
     </Flex>
   );
 };
