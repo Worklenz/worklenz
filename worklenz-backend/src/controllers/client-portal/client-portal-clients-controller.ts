@@ -93,15 +93,11 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       if (status) {
         // Normalize status to lowercase and validate
         const normalizedStatus = String(status).toLowerCase().trim();
-        console.log(`[DEBUG] Status filter received: "${status}" -> normalized: "${normalizedStatus}"`);
         // Only apply filter if status is one of the valid values
-        if (['active', 'inactive', 'pending'].includes(normalizedStatus)) {
+        if (["active", "inactive", "pending"].includes(normalizedStatus)) {
           // Use COALESCE to treat NULL status as 'active' (the default)
           whereConditions.push(`LOWER(COALESCE(c.status, 'active')) = $${queryParams.length + 1}`);
           queryParams.push(normalizedStatus);
-          console.log(`[DEBUG] Status filter applied with value: "${normalizedStatus}"`);
-        } else {
-          console.log(`[DEBUG] Status filter ignored - invalid value: "${normalizedStatus}"`);
         }
       }
 
@@ -142,11 +138,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       }`;
       queryParams.push(Number(limit), offset);
 
-      console.log(`[DEBUG] Final query params:`, queryParams);
-      console.log(`[DEBUG] WHERE conditions:`, whereConditions);
-      
       const result = await db.query(query, queryParams);
-      console.log(`[DEBUG] Query returned ${result.rows.length} rows`);
       
       const clients = result.rows.map((row: any) => {
         // Determine portal status based on the data
@@ -362,8 +354,6 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         subject: `Welcome to your Client Portal - ${teamName}`,
         html: emailContent,
       });
-
-      console.log(`Client invitation email sent to ${client.email}`);
     } catch (error) {
       console.error("Error sending client invitation email:", error);
       throw error;
@@ -690,7 +680,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         );
 
         // Update client_portal_access is_active based on status
-        const isActive = updateData.status === 'active';
+        const isActive = updateData.status === "active";
         await db.query(
           "UPDATE client_portal_access SET is_active = $1, updated_at = NOW() WHERE client_id = $2",
           [isActive, id]
@@ -735,7 +725,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       const client = clientCheck.rows[0];
 
       // If invite_slug is null or empty, remove it
-      if (!invite_slug || invite_slug.trim() === '') {
+      if (!invite_slug || invite_slug.trim() === "") {
         await db.query(
           "UPDATE clients SET invite_slug = NULL, updated_at = NOW() WHERE id = $1",
           [id]
@@ -1624,16 +1614,16 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       return `${diffInSeconds} seconds ago`;
     } else if (diffInSeconds < 3600) {
       const minutes = Math.floor(diffInSeconds / 60);
-      return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+      return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
     } else if (diffInSeconds < 86400) {
       const hours = Math.floor(diffInSeconds / 3600);
-      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+      return `${hours} hour${hours > 1 ? "s" : ""} ago`;
     } else if (diffInSeconds < 2592000) {
       const days = Math.floor(diffInSeconds / 86400);
-      return `${days} day${days > 1 ? 's' : ''} ago`;
-    } else {
+      return `${days} day${days > 1 ? "s" : ""} ago`;
+    } 
       const months = Math.floor(diffInSeconds / 2592000);
-      return `${months} month${months > 1 ? 's' : ''} ago`;
-    }
+      return `${months} month${months > 1 ? "s" : ""} ago`;
+    
   }
 }
