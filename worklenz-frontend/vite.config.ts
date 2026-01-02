@@ -80,6 +80,19 @@ export default defineConfig(({ command, mode }) => {
       allowedHosts: process.env.VITE_ALLOWED_HOSTS
         ? process.env.VITE_ALLOWED_HOSTS.split(',').map(host => host.trim()).filter(Boolean)
         : [],
+      // **Proxy API requests to backend server**
+      proxy: {
+        '/api': {
+          target: process.env.VITE_API_URL || 'http://localhost:3000',
+          changeOrigin: true,
+          secure: false,
+        },
+        '/socket.io': {
+          target: process.env.VITE_SOCKET_URL || 'ws://localhost:3000',
+          changeOrigin: true,
+          ws: true,
+        },
+      },
     },
 
     // **Build**
