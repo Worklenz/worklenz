@@ -194,7 +194,271 @@ public/locales/en/
 - **Data validation** - validate and sanitize all inputs
 - **SQL injection prevention** - use prepared statements
 
-## 📚 Documentation Standards
+## � Authentication & Security Configuration
+
+### CSRF Protection
+
+Worklenz uses CSRF (Cross-Site Request Forgery) protection for the main application API routes.
+
+#### Backend Configuration
+
+**Location**: `worklenz-backend/src/app.ts`
+
+```typescript
+// CSRF protection is applied to /api/v1 routes
+app.use("/api/v1", apiLimiter, isLoggedIn, apiRouter);
+
+// Client portal routes are EXCLUDED from CSRF protection
+app.use("/api/client-portal", apiLimiter, clientPortalApiRouter);
+```
+
+**CSRF Exclusion Middleware**:
+```typescript
+app.use((req, res, next) => {
+  // Exclude client portal endpoints (they use client token authentication)
+  if (req.path.startsWith("/client-portal") || req.originalUrl.startsWith("/api/client-portal")) {
+    return next();
+  }
+  
+  // Apply CSRF protection to state-changing operations
+  const isStateChanging = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method);
+  if (isStateChanging) {
+    csrfSynchronisedProtection(req, res, next);
+  } else {
+    next();
+  }
+});
+```
+
+#### Frontend Configuration (Main App)
+
+**Location**: `worklenz-frontend/src/api/api-client.ts`
+
+```typescript
+// CSRF token management
+export const getCsrfToken = (): string | null => {
+  return localStorage.getItem('csrfToken');
+};
+
+export const refreshCsrfToken = async (): Promise<string> => {
+  // Fetch new CSRF token from backend
+  const response = await fetch('/api/v1/csrf-token');
+  const { token } = await response.json();
+  localStorage.setItem('csrfToken', token);
+  return token;
+};
+
+// RTK Query configuration with CSRF
+prepareHeaders: async headers => {
+  let token = getCsrfToken();
+  if (!token) {
+    token = await refreshCsrfToken();
+  }
+  if (token) {
+    headers.set('X-CSRF-Token', token);
+  }
+  return headers;
+}
+```
+
+**Key Points**:
+- CSRF tokens are stored in `localStorage`
+- Tokens are automatically refreshed when missing
+- All state-changing requests include `X-CSRF-Token` header
+- CSRF protection applies to `/api/v1/*` routes only
+
+### Client Portal Authentication
+
+The Client Portal uses a **separate authentication mechanism** with client-specific tokens.
+
+#### Two Frontend Applications
+
+1. **Main Admin App** (`worklenz-frontend`)
+   - For organization/admin users
+   - Uses session-based auth + CSRF tokens
+   - Manages client portal data from admin perspective
+   - Base URL: `/api/v1` or `/api` (depending on API)
+
+2. **Client Portal App** (`worklenz-client-portal`)
+   - For client users
+   - Uses `x-client-token` authentication
+   - Direct client access to their data
+   - Base URL: `/api/client-portal`
+
+#### Client Portal Backend Routes
+
+**Location**: `worklenz-backend/src/routes/apis/client-portal-api-router.ts`
+
+```typescript
+const router = express.Router();
+
+// Public routes (no authentication)
+router.post("/auth/login", safeControllerFunction(ClientPortalAuthController.clientLogin));
+router.get("/invitation/validate", safeControllerFunction(ClientPortalAuthController.validateInvitation));
+
+// Protected routes (require client authentication)
+router.use(authenticateClient);
+
+router.get("/dashboard", safeControllerFunction(ClientPortalDashboardController.getDashboard));
+router.get("/invoices", safeControllerFunction(ClientPortalInvoicesController.getInvoices));
+router.post("/invoices", safeControllerFunction(ClientPortalInvoicesController.createInvoice));
+router.delete("/invoices/:id", safeControllerFunction(ClientPortalInvoicesController.deleteInvoice));
+// ... more routes
+```
+
+#### Client Authentication Middleware
+
+**Location**: `worklenz-backend/src/middlewares/client-auth-middleware.ts`
+
+```typescript
+export const authenticateClient = async (
+  req: AuthenticatedClientRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  // Get client token from headers or query params
+  const clientToken = req.headers["x-client-token"] || req.query.clientToken;
+
+  if (!clientToken) {
+    return res.status(401).json(
+      new ServerResponse(false, null, "Client token is required")
+    );
+  }
+
+  // Verify client token
+  const tokenPayload = TokenService.verifyClientToken(clientToken as string);
+  
+  if (!tokenPayload) {
+    return res.status(401).json(
+      new ServerResponse(false, null, "Invalid or expired client token")
+    );
+  }
+
+  // Attach client info to request
+  req.clientId = tokenPayload.clientId;
+  req.organizationId = tokenPayload.organizationId;
+  next();
+};
+```
+
+#### Client Portal Frontend Configuration
+
+**For Client Portal App** (`worklenz-client-portal/src/store/api.ts`):
+
+```typescript
+export const api = createApi({
+  baseQuery: fetchBaseQuery({
+    baseUrl: '/api/client-portal',
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem('clientToken');
+      if (token) {
+        headers.set('x-client-token', token);
+      }
+      return headers;
+    },
+  }),
+});
+```
+
+**For Admin App** (`worklenz-frontend/src/api/client-portal/client-portal-api.ts`):
+
+```typescript
+export const clientPortalApi = createApi({
+  reducerPath: 'clientPortalApi',
+  baseQuery: fetchBaseQuery({
+    baseUrl: `${config.apiUrl}${API_BASE_URL}`,  // /api/v1
+    prepareHeaders: async headers => {
+      // Admin app uses CSRF tokens
+      let token = getCsrfToken();
+      if (!token) {
+        token = await refreshCsrfToken();
+      }
+      if (token) {
+        headers.set('X-CSRF-Token', token);
+      }
+      return headers;
+    },
+    credentials: 'include',
+  }),
+  endpoints: builder => ({
+    // Endpoints use /clients/portal/* paths for admin management
+    getInvoices: builder.query({
+      query: () => '/clients/portal/invoices',  // Becomes /api/v1/clients/portal/invoices
+    }),
+  }),
+});
+```
+
+### API Path Configuration Summary
+
+| Frontend App | Base URL | Auth Method | Backend Route | Example Full URL |
+|--------------|----------|-------------|---------------|------------------|
+| Main Admin | `/api/v1` | CSRF Token + Session | `/api/v1/*` | `/api/v1/projects` |
+| Admin (Client Portal Mgmt) | `/api/v1` | CSRF Token + Session | `/api/v1/clients/portal/*` | `/api/v1/clients/portal/invoices` |
+| Client Portal App | `/api/client-portal` | x-client-token | `/api/client-portal/*` | `/api/client-portal/dashboard` |
+
+### Common Authentication Issues
+
+#### Issue: 401 Unauthorized on Client Portal Routes
+
+**Cause**: Missing or invalid `x-client-token` header
+
+**Solution**:
+```typescript
+// Ensure token is stored after login
+localStorage.setItem('clientToken', token);
+
+// Ensure token is sent in requests
+headers.set('x-client-token', localStorage.getItem('clientToken'));
+```
+
+#### Issue: 404 Not Found on API Calls
+
+**Cause**: Incorrect base URL or endpoint path configuration
+
+**Solution**:
+- **Admin managing client portal**: Use base URL `/api/v1` with endpoint paths `/clients/portal/*`
+  - Example: `/api/v1/clients/portal/invoices`
+- **Client portal app**: Use base URL `/api/client-portal` with endpoint paths starting with `/`
+  - Example: `/api/client-portal/dashboard`
+- **Main admin app**: Use base URL `/api/v1` with standard paths
+  - Example: `/api/v1/projects`
+
+#### Issue: CSRF Token Mismatch
+
+**Cause**: Client portal routes receiving CSRF protection
+
+**Solution**: Ensure client portal routes are excluded in `app.ts`:
+```typescript
+if (req.path.startsWith("/client-portal") || req.originalUrl.startsWith("/api/client-portal")) {
+  return next(); // Skip CSRF protection
+}
+```
+
+### Security Best Practices
+
+1. **Never mix authentication methods**
+   - Main app routes: Use CSRF tokens
+   - Client portal routes: Use x-client-token
+   - Don't apply CSRF to client portal routes
+
+2. **Token storage**
+   - CSRF tokens: `localStorage.getItem('csrfToken')`
+   - Client tokens: `localStorage.getItem('clientToken')`
+   - Never expose tokens in URLs or logs
+
+3. **Route organization**
+   - Client-facing portal routes: `/api/client-portal/*` (uses x-client-token)
+   - Admin portal management routes: `/api/v1/clients/portal/*` (uses session + CSRF)
+   - Main app routes: `/api/v1/*` (uses session + CSRF)
+   - Use clear separation in route files
+
+4. **Error handling**
+   - Return 401 for authentication failures
+   - Return 403 for authorization failures
+   - Provide clear error messages for debugging
+
+## �📚 Documentation Standards
 
 ### Code Documentation
 - **JSDoc comments** for complex functions and components

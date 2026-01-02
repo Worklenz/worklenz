@@ -89,6 +89,9 @@ const InvoiceBuilder = () => {
   // Currency state
   const [currency, setCurrency] = useState<string>('USD');
 
+  // Loading state for tracking which button was clicked
+  const [savingAs, setSavingAs] = useState<'draft' | 'sent' | null>(null);
+
   // Create invoice mutation
   const [createInvoice, { isLoading: isCreating }] = useCreateInvoiceMutation();
 
@@ -225,7 +228,7 @@ const InvoiceBuilder = () => {
   ];
 
   // Handle form submit
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (status: 'draft' | 'sent') => {
     // Validate request is selected
     const finalRequestId = requestId || selectedRequestId;
     if (!finalRequestId) {
@@ -239,13 +242,17 @@ const InvoiceBuilder = () => {
       return;
     }
 
+    setSavingAs(status);
+
     try {
+      const values = await form.validateFields();
       const invoiceData = {
         requestId: finalRequestId,
         amount: calculations.total,
         currency,
         dueDate: values.dueDate ? dayjs(values.dueDate).format('YYYY-MM-DD') : undefined,
         notes: values.notes,
+        status,
         lineItems: lineItems.filter(item => item.description && item.amount > 0),
         taxRate,
         discountType,
@@ -260,6 +267,8 @@ const InvoiceBuilder = () => {
       navigate('/worklenz/client-portal/invoices');
     } catch (error) {
       message.error(t('createInvoiceErrorMessage') || 'Failed to create invoice');
+    } finally {
+      setSavingAs(null);
     }
   };
 
@@ -278,16 +287,25 @@ const InvoiceBuilder = () => {
           </Typography.Title>
         </Flex>
         <Space>
-          <Button icon={<SaveOutlined />} onClick={() => form.submit()}>
+          <Button 
+            icon={<SaveOutlined />} 
+            onClick={() => handleSubmit('draft')}
+            loading={isCreating && savingAs === 'draft'}
+          >
             {t('saveDraft') || 'Save Draft'}
           </Button>
-          <Button type="primary" icon={<SendOutlined />} onClick={() => form.submit()} loading={isCreating}>
+          <Button 
+            type="primary" 
+            icon={<SendOutlined />} 
+            onClick={() => handleSubmit('sent')}
+            loading={isCreating && savingAs === 'sent'}
+          >
             {t('createAndSend') || 'Create & Send'}
           </Button>
         </Space>
       </Flex>
 
-      <Form form={form} layout="vertical" onFinish={handleSubmit}>
+      <Form form={form} layout="vertical">
         <Flex gap={24} style={{ width: '100%' }} wrap="wrap">
           {/* Left Column - Invoice Details */}
           <Flex vertical gap={24} style={{ flex: 2, minWidth: 500 }}>

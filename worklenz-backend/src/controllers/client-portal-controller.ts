@@ -10,6 +10,7 @@ import {
   uploadBase64,
   getClientPortalLogoKey,
   deleteObject,
+  getClientPortalStorageKey,
 } from "../shared/storage";
 import { log_error, sanitizeCommentContent, sanitizePlainText } from "../shared/utils";
 import { IO } from "../shared/io";
@@ -1296,7 +1297,11 @@ class ClientPortalController {
         const uniqueFileName = `service_${Date.now()}_${Math.random()
           .toString(36)
           .substr(2, 9)}${fileExtension}`;
-        const storageKey = `client-portal/service-images/${organizationId}/${uniqueFileName}`;
+        // Use getClientPortalStorageKey to ensure files are stored under organizations/{orgId}/client-portal/
+        if (!organizationId) {
+          return res.status(400).json(new ServerResponse(false, null, "Organization ID is required"));
+        }
+        const storageKey = getClientPortalStorageKey("service-images", organizationId, uniqueFileName);
 
         try {
           // Upload to S3
@@ -1491,7 +1496,11 @@ class ClientPortalController {
         const uniqueFileName = `service_${Date.now()}_${Math.random()
           .toString(36)
           .substr(2, 9)}${fileExtension}`;
-        const storageKey = `client-portal/service-images/${organizationId}/${uniqueFileName}`;
+        // Use getClientPortalStorageKey to ensure files are stored under organizations/{orgId}/client-portal/
+        if (!organizationId) {
+          return res.status(400).json(new ServerResponse(false, null, "Organization ID is required"));
+        }
+        const storageKey = getClientPortalStorageKey("service-images", organizationId, uniqueFileName);
 
         try {
           // Upload to S3
@@ -1767,9 +1776,19 @@ class ClientPortalController {
         imageUrls.forEach(async (imageUrl: string) => {
           try {
             // Extract storage key from URL
-            // URL format: https://s3-bucket/client-portal/service-images/orgId/filename
+            // URL format: https://s3-bucket/{env}/organizations/{orgId}/client-portal/service-images/filename
+            // or: https://s3-bucket/client-portal/service-images/orgId/filename (legacy)
             const urlParts = imageUrl.split("/");
-            const storageKey = urlParts.slice(-4).join("/"); // client-portal/service-images/orgId/filename
+            // Check if it's the new format (contains "organizations")
+            const orgIndex = urlParts.findIndex(part => part === "organizations");
+            let storageKey;
+            if (orgIndex !== -1) {
+              // New format: extract from organizations onwards
+              storageKey = urlParts.slice(orgIndex).join("/");
+            } else {
+              // Legacy format: extract last 4 parts
+              storageKey = urlParts.slice(-4).join("/");
+            }
 
             console.log("Deleting image from S3:", {
               imageUrl,
@@ -2948,6 +2967,7 @@ class ClientPortalController {
           i.created_at,
           i.updated_at,
           i.notes,
+          i.payment_proof_url,
           r.id as request_id,
           r.req_no as request_number,
           r.request_data,
@@ -3012,6 +3032,7 @@ class ClientPortalController {
         createdAt: invoice.created_at,
         updatedAt: invoice.updated_at,
         notes: invoice.notes,
+        paymentProofUrl: invoice.payment_proof_url || null,
         isOverdue:
           invoice.due_date &&
           new Date(invoice.due_date) < new Date() &&
@@ -3104,15 +3125,22 @@ class ClientPortalController {
           .json(new ServerResponse(false, null, "Invoice is already paid"));
       }
 
-      // Update invoice status to paid
+      // Only allow payment if invoice status is 'sent'
+      if (invoice.status !== 'sent') {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Only sent invoices can be paid"));
+      }
+
+      // Update invoice status to paid, store payment proof URL, and save notes
       const updateQuery = `
         UPDATE client_portal_invoices 
-        SET status = 'paid', paid_at = NOW(), updated_at = NOW()
+        SET status = 'paid', paid_at = NOW(), updated_at = NOW(), payment_proof_url = $2, notes = COALESCE($3, notes)
         WHERE id = $1
-        RETURNING id, invoice_no, amount, currency, status, paid_at, updated_at
+        RETURNING id, invoice_no, amount, currency, status, paid_at, updated_at, payment_proof_url, notes
       `;
 
-      const result = await db.query(updateQuery, [id]);
+      const result = await db.query(updateQuery, [id, transactionId || null, notes || null]);
       const updatedInvoice = result.rows[0];
 
       // Here you would typically integrate with a payment processor
@@ -3136,6 +3164,8 @@ class ClientPortalController {
             status: updatedInvoice.status,
             paidAt: updatedInvoice.paid_at,
             updatedAt: updatedInvoice.updated_at,
+            paymentProofUrl: updatedInvoice.payment_proof_url,
+            notes: updatedInvoice.notes,
           },
           "Invoice paid successfully"
         )
@@ -4692,21 +4722,24 @@ class ClientPortalController {
         .toString(36)
         .substr(2, 9)}${fileExtension}`;
 
-      // Generate storage key based on purpose
-      let storageKey;
-      switch (purpose) {
-        case "avatar":
-          storageKey = `client-portal/avatars/${organizationId}/${uniqueFileName}`;
-          break;
-        case "document":
-          storageKey = `client-portal/documents/${organizationId}/${clientId}/${uniqueFileName}`;
-          break;
-        case "chat":
-          storageKey = `client-portal/chat-files/${organizationId}/${clientId}/${uniqueFileName}`;
-          break;
-        default:
-          storageKey = `client-portal/files/${organizationId}/${clientId}/${uniqueFileName}`;
+      // Generate storage key based on purpose using the standard function
+      // This ensures all files are stored under organizations/{orgId}/client-portal/
+      if (!organizationId || !clientId) {
+        return res.status(400).json(new ServerResponse(false, null, "Organization ID and Client ID are required"));
       }
+      const purposeMap: Record<string, any> = {
+        "avatar": "avatars",
+        "document": "documents",
+        "chat": "chat-files",
+        "payment_proof": "payment-proofs",
+      };
+      const storagePurpose = purposeMap[purpose] || "general";
+      const storageKey = getClientPortalStorageKey(
+        storagePurpose,
+        organizationId,
+        clientId,
+        uniqueFileName
+      );
 
       try {
         // Upload to storage using existing uploadBase64 function
@@ -4842,8 +4875,13 @@ class ClientPortalController {
 
       // Add status filter
       if (status) {
-        whereConditions.push(`c.status = $${queryParams.length + 1}`);
-        queryParams.push(String(status));
+        // Normalize status to lowercase and validate
+        const normalizedStatus = String(status).toLowerCase().trim();
+        // Only apply filter if status is one of the valid values
+        if (['active', 'inactive', 'pending'].includes(normalizedStatus)) {
+          whereConditions.push(`LOWER(c.status) = $${queryParams.length + 1}`);
+          queryParams.push(normalizedStatus);
+        }
       }
 
       if (whereConditions.length > 0) {
