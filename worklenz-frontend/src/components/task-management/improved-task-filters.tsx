@@ -454,6 +454,33 @@ const FilterDropdown: React.FC<{
     }
   }, [isOpen]);
 
+  // Title for button tooltip - use i18next interpolation for pluralization and word-order
+  const buttonTitle = useMemo(() => {
+    // If grouped by a value, show the selected value (e.g. "Group by: Phase")
+    if (section.id === 'groupBy' && section.selectedValues[0]) {
+      const selectedOpt = section.options.find(o => o.value === section.selectedValues[0]);
+      if (selectedOpt?.label) {
+        return t('groupBySelected', {
+          label: section.label,
+          value: selectedOpt.label,
+          defaultValue: '{{label}}: {{value}}',
+        });
+      }
+      return section.label;
+    }
+
+    // For other multi-select filters, use an interpolated count string (handles pluralization/word order)
+    if (section.id !== 'groupBy' && section.selectedValues.length > 0) {
+      return t('selectedCount', {
+        count: section.selectedValues.length,
+        label: section.label,
+        defaultValue: '{{label}}: {{count}} selected',
+      });
+    }
+
+    return section.label;
+  }, [section, t]);
+
   const handleOptionToggle = useCallback(
     (optionValue: string) => {
       if (section.multiSelect) {
@@ -481,6 +508,8 @@ const FilterDropdown: React.FC<{
       {/* Trigger Button */}
       <button
         onClick={onToggle}
+        title={buttonTitle}
+        aria-label={buttonTitle}
         className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out
@@ -723,6 +752,8 @@ const SearchFilter: React.FC<{
       {!isExpanded && !value ? (
         <button
           onClick={handleToggle}
+          title={t('search', { defaultValue: 'Search' })}
+          aria-label={t('search', { defaultValue: 'Search' })}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
             themeClasses.containerBg === 'bg-gray-800'
               ? 'focus:ring-offset-gray-900'
@@ -1085,11 +1116,23 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
     [sortedFields]
   );
 
+  // Title for fields button tooltip - use i18next interpolation for count
+  const fieldsTitle = useMemo(() => {
+    return visibleCount > 0
+      ? t('fieldsWithCount', {
+          count: visibleCount,
+          defaultValue: 'Fields: {{count}}',
+        })
+      : t('fieldsText', { defaultValue: 'Fields' });
+  }, [visibleCount, t]);
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Trigger Button - matching FilterDropdown style */}
       <button
         onClick={() => setOpen(!open)}
+        title={fieldsTitle}
+        aria-label={fieldsTitle}
         className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out
