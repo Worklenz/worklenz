@@ -91,8 +91,18 @@ export default class ClientPortalClientsController extends ClientPortalControlle
 
       // Add status filter
       if (status) {
-        whereConditions.push(`c.status = $${queryParams.length + 1}`);
-        queryParams.push(String(status));
+        // Normalize status to lowercase and validate
+        const normalizedStatus = String(status).toLowerCase().trim();
+        console.log(`[DEBUG] Status filter received: "${status}" -> normalized: "${normalizedStatus}"`);
+        // Only apply filter if status is one of the valid values
+        if (['active', 'inactive', 'pending'].includes(normalizedStatus)) {
+          // Use COALESCE to treat NULL status as 'active' (the default)
+          whereConditions.push(`LOWER(COALESCE(c.status, 'active')) = $${queryParams.length + 1}`);
+          queryParams.push(normalizedStatus);
+          console.log(`[DEBUG] Status filter applied with value: "${normalizedStatus}"`);
+        } else {
+          console.log(`[DEBUG] Status filter ignored - invalid value: "${normalizedStatus}"`);
+        }
       }
 
       if (whereConditions.length > 0) {
@@ -132,7 +142,12 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       }`;
       queryParams.push(Number(limit), offset);
 
+      console.log(`[DEBUG] Final query params:`, queryParams);
+      console.log(`[DEBUG] WHERE conditions:`, whereConditions);
+      
       const result = await db.query(query, queryParams);
+      console.log(`[DEBUG] Query returned ${result.rows.length} rows`);
+      
       const clients = result.rows.map((row: any) => {
         // Determine portal status based on the data
         let portalStatus: { status: string; label: string; color: string };

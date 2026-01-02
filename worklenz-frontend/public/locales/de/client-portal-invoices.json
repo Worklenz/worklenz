@@ -66,6 +66,7 @@
   "statusColumn": "Status",
   "amountColumn": "Betrag",
   "dueDateColumn": "Fälligkeitsdatum",
+  "createdDateColumn": "Erstellungsdatum",
   "issuedTimeColumn": "Ausstellungszeit",
   "actionBtnsColumn": "Aktionen",
   "statusPaid": "Bezahlt",

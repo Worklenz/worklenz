@@ -36,6 +36,7 @@ const InvoiceDetailsPage: React.FC = () => {
   const [paymentNotes, setPaymentNotes] = useState("");
   const [paymentProofFile, setPaymentProofFile] = useState<UploadFile[]>([]);
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -60,6 +61,173 @@ const InvoiceDetailsPage: React.FC = () => {
       console.error("Invoice details API error:", err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDownloadInvoice = async () => {
+    try {
+      setIsDownloading(true);
+      const response = await clientPortalAPI.downloadInvoice(id!, "pdf");
+
+      if (response.done) {
+        const invoiceData = response.body.invoiceData;
+        const invoiceNumber = invoiceData.invoiceNumber || "invoice";
+        
+        const printWindow = window.open("", "_blank");
+        if (printWindow) {
+          printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>Invoice ${invoiceNumber}</title>
+              <style>
+                body {
+                  font-family: Arial, sans-serif;
+                  padding: 40px;
+                  max-width: 800px;
+                  margin: 0 auto;
+                }
+                .header {
+                  text-align: center;
+                  margin-bottom: 40px;
+                  border-bottom: 2px solid #333;
+                  padding-bottom: 20px;
+                }
+                .invoice-title {
+                  font-size: 32px;
+                  font-weight: bold;
+                  margin-bottom: 10px;
+                }
+                .invoice-number {
+                  font-size: 18px;
+                  color: #666;
+                }
+                .section {
+                  margin-bottom: 30px;
+                }
+                .section-title {
+                  font-size: 14px;
+                  color: #666;
+                  margin-bottom: 5px;
+                }
+                .section-content {
+                  font-size: 16px;
+                  font-weight: bold;
+                }
+                .grid {
+                  display: grid;
+                  grid-template-columns: 1fr 1fr;
+                  gap: 30px;
+                  margin-bottom: 30px;
+                }
+                .amount {
+                  font-size: 28px;
+                  color: #3aaf85;
+                  font-weight: bold;
+                }
+                .status {
+                  display: inline-block;
+                  padding: 5px 15px;
+                  border-radius: 4px;
+                  font-size: 14px;
+                  font-weight: bold;
+                }
+                .status-paid { background-color: #d4edda; color: #155724; }
+                .status-pending { background-color: #fff3cd; color: #856404; }
+                .status-overdue { background-color: #f8d7da; color: #721c24; }
+                .footer {
+                  margin-top: 60px;
+                  padding-top: 20px;
+                  border-top: 1px solid #ddd;
+                  text-align: center;
+                  color: #666;
+                  font-size: 12px;
+                }
+                @media print {
+                  body { padding: 20px; }
+                }
+              </style>
+            </head>
+            <body>
+              <div class="header">
+                <div class="invoice-title">INVOICE</div>
+                <div class="invoice-number">#${invoiceNumber}</div>
+              </div>
+              
+              <div class="grid">
+                <div class="section">
+                  <div class="section-title">Billed To</div>
+                  <div class="section-content">${invoiceData.client.name || ""}</div>
+                  <div>${invoiceData.client.companyName || ""}</div>
+                  <div>${invoiceData.client.email || ""}</div>
+                  ${invoiceData.client.address ? `<div>${invoiceData.client.address}</div>` : ""}
+                </div>
+                
+                <div style="text-align: right;">
+                  <div class="section">
+                    <div class="section-title">Invoice Amount</div>
+                    <div class="amount">${new Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: invoiceData.currency || "USD",
+                    }).format(invoiceData.amount || 0)}</div>
+                  </div>
+                  
+                  <div class="section">
+                    <div class="section-title">Status</div>
+                    <span class="status status-${invoiceData.status?.toLowerCase() || "pending"}">${invoiceData.status || "Pending"}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="grid">
+                <div class="section">
+                  <div class="section-title">Issue Date</div>
+                  <div class="section-content">${new Date(invoiceData.createdAt).toLocaleDateString()}</div>
+                </div>
+                
+                <div class="section" style="text-align: right;">
+                  <div class="section-title">Due Date</div>
+                  <div class="section-content">${invoiceData.dueDate ? new Date(invoiceData.dueDate).toLocaleDateString() : "N/A"}</div>
+                </div>
+              </div>
+              
+              ${invoiceData.service?.name ? `
+                <div class="section">
+                  <div class="section-title">Service</div>
+                  <div class="section-content">${invoiceData.service.name}</div>
+                  ${invoiceData.service.description ? `<div style="margin-top: 10px;">${invoiceData.service.description.replace(/<[^>]+>/g, "")}</div>` : ""}
+                </div>
+              ` : ""}
+              
+              ${invoiceData.requestNumber ? `
+                <div class="section">
+                  <div class="section-title">Request Number</div>
+                  <div class="section-content">${invoiceData.requestNumber}</div>
+                </div>
+              ` : ""}
+              
+              <div class="footer">
+                Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}
+              </div>
+            </body>
+            </html>
+          `);
+          printWindow.document.close();
+          
+          setTimeout(() => {
+            printWindow.print();
+          }, 250);
+        }
+        
+        message.success("Invoice ready for download");
+      } else {
+        message.error("Failed to download invoice");
+      }
+    } catch (err) {
+      console.error("Download error:", err);
+      message.error("Failed to download invoice. Please try again later.");
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -270,7 +438,7 @@ const InvoiceDetailsPage: React.FC = () => {
 
           {/* Action Buttons */}
           <Flex gap={12} wrap="wrap">
-            {invoice.status.toLowerCase() !== "paid" && (
+            {invoice.status.toLowerCase() === "sent" && (
               <Button
                 type="primary"
                 icon={<UploadOutlined />}
@@ -279,7 +447,13 @@ const InvoiceDetailsPage: React.FC = () => {
                 Submit Payment Proof
               </Button>
             )}
-            <Button icon={<DownloadOutlined />}>Download Invoice</Button>
+            <Button 
+              icon={<DownloadOutlined />} 
+              onClick={handleDownloadInvoice}
+              loading={isDownloading}
+            >
+              Download Invoice
+            </Button>
             <Button icon={<PrinterOutlined />} onClick={() => window.print()}>
               Print
             </Button>

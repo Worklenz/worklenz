@@ -594,12 +594,58 @@ export const clientPortalApi = createApi({
         currency?: string;
         dueDate?: string;
         notes?: string;
+        status?: string;
       }
     >({
       query: invoiceData => ({
         url: '/clients/portal/invoices',
         method: 'POST',
         body: invoiceData,
+      }),
+      invalidatesTags: ['Invoices', 'Dashboard'],
+    }),
+
+    updateInvoice: builder.mutation<any, { id: string; data: any }>({
+      query: ({ id, data }) => ({
+        url: `/clients/portal/invoices/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Invoices', id },
+        'Invoices',
+        'Dashboard',
+      ],
+    }),
+
+    sendInvoice: builder.mutation<any, string>({
+      query: id => ({
+        url: `/clients/portal/invoices/${id}/send`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Invoices', id },
+        'Invoices',
+        'Dashboard',
+      ],
+    }),
+
+    markInvoiceAsPaid: builder.mutation<any, string>({
+      query: id => ({
+        url: `/clients/portal/invoices/${id}/mark-paid`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Invoices', id },
+        'Invoices',
+        'Dashboard',
+      ],
+    }),
+
+    deleteInvoice: builder.mutation<void, string>({
+      query: id => ({
+        url: `/clients/portal/invoices/${id}`,
+        method: 'DELETE',
       }),
       invalidatesTags: ['Invoices', 'Dashboard'],
     }),
@@ -1213,6 +1259,10 @@ export const {
   usePayInvoiceMutation,
   useDownloadInvoiceQuery,
   useCreateInvoiceMutation,
+  useUpdateInvoiceMutation,
+  useSendInvoiceMutation,
+  useMarkInvoiceAsPaidMutation,
+  useDeleteInvoiceMutation,
 
   // Chat
   useGetChatsQuery,

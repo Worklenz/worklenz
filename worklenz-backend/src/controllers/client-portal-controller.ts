@@ -3104,6 +3104,13 @@ class ClientPortalController {
           .json(new ServerResponse(false, null, "Invoice is already paid"));
       }
 
+      // Only allow payment if invoice status is 'sent'
+      if (invoice.status !== 'sent') {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Only sent invoices can be paid"));
+      }
+
       // Update invoice status to paid
       const updateQuery = `
         UPDATE client_portal_invoices 
@@ -4842,8 +4849,13 @@ class ClientPortalController {
 
       // Add status filter
       if (status) {
-        whereConditions.push(`c.status = $${queryParams.length + 1}`);
-        queryParams.push(String(status));
+        // Normalize status to lowercase and validate
+        const normalizedStatus = String(status).toLowerCase().trim();
+        // Only apply filter if status is one of the valid values
+        if (['active', 'inactive', 'pending'].includes(normalizedStatus)) {
+          whereConditions.push(`LOWER(c.status) = $${queryParams.length + 1}`);
+          queryParams.push(normalizedStatus);
+        }
       }
 
       if (whereConditions.length > 0) {

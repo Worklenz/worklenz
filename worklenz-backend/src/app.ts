@@ -224,11 +224,8 @@ app.use((req, res, next) => {
     return next();
   }
   
-  // Exclude client portal auth endpoints (they use different auth mechanism)
-  if (
-    req.path.includes("/client-portal/auth/login") ||
-    req.path.includes("/client-portal/auth/refresh")
-  ) {
+  // Exclude all client portal endpoints (they use client token authentication)
+  if (req.path.startsWith("/client-portal") || req.originalUrl.startsWith("/api/client-portal")) {
     return next();
   }
   

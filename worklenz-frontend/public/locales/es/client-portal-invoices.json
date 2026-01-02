@@ -66,6 +66,7 @@
   "statusColumn": "Estado",
   "amountColumn": "Monto",
   "dueDateColumn": "Fecha de Vencimiento",
+  "createdDateColumn": "Fecha de Creación",
   "issuedTimeColumn": "Tiempo de Emisión",
   "actionBtnsColumn": "Acciones",
   "statusPaid": "Pagada",

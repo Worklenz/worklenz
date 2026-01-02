@@ -17,6 +17,8 @@ import {
   Statistic,
   Avatar,
   Tooltip,
+  Modal,
+  message,
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import {
@@ -34,7 +36,12 @@ import {
   ExclamationCircleOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
-import { useGetInvoiceDetailsQuery } from '@/api/client-portal/client-portal-api';
+import { 
+  useGetInvoiceDetailsQuery,
+  useSendInvoiceMutation,
+  useMarkInvoiceAsPaidMutation,
+  useDeleteInvoiceMutation,
+} from '@/api/client-portal/client-portal-api';
 import InvoicePreviewModal from './invoice-preview-modal';
 
 const { Title, Text } = Typography;
@@ -44,6 +51,11 @@ const ClientPortalInvoiceDetails: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('client-portal-invoices');
   const [previewOpen, setPreviewOpen] = useState(false);
+
+  // Mutations
+  const [sendInvoice, { isLoading: isSending }] = useSendInvoiceMutation();
+  const [markAsPaid, { isLoading: isMarkingPaid }] = useMarkInvoiceAsPaidMutation();
+  const [deleteInvoice, { isLoading: isDeleting }] = useDeleteInvoiceMutation();
 
   const {
     data,
@@ -105,6 +117,64 @@ const ClientPortalInvoiceDetails: React.FC = () => {
       style: 'currency',
       currency: currency,
     }).format(amount);
+  };
+
+  // Handle send invoice
+  const handleSendInvoice = async () => {
+    try {
+      await sendInvoice(invoiceId!).unwrap();
+      message.success(t('sendInvoice') + ' ' + t('createInvoiceSuccessMessage'));
+    } catch (error) {
+      message.error(t('createInvoiceErrorMessage'));
+    }
+  };
+
+  // Handle mark as paid
+  const handleMarkAsPaid = async () => {
+    Modal.confirm({
+      title: t('markAsPaid'),
+      content: 'Are you sure you want to mark this invoice as paid?',
+      okText: 'Yes',
+      cancelText: 'No',
+      onOk: async () => {
+        try {
+          await markAsPaid(invoiceId!).unwrap();
+          message.success('Invoice marked as paid successfully');
+        } catch (error) {
+          message.error('Failed to mark invoice as paid');
+        }
+      },
+    });
+  };
+
+  // Handle download invoice
+  const handleDownloadInvoice = () => {
+    window.open(`/api/client-portal/invoices/${invoiceId}/download`, '_blank');
+  };
+
+  // Handle edit invoice
+  const handleEditInvoice = () => {
+    navigate(`/worklenz/client-portal/invoices/${invoiceId}/edit`);
+  };
+
+  // Handle delete invoice
+  const handleDeleteInvoice = () => {
+    Modal.confirm({
+      title: t('deleteInvoice'),
+      content: t('deleteConfirmationTitle'),
+      okText: t('deleteConfirmationOk'),
+      cancelText: t('deleteConfirmationCancel'),
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          await deleteInvoice(invoiceId!).unwrap();
+          message.success('Invoice deleted successfully');
+          navigate('/worklenz/client-portal/invoices');
+        } catch (error) {
+          message.error('Failed to delete invoice');
+        }
+      },
+    });
   };
 
   // Loading state
@@ -170,23 +240,43 @@ const ClientPortalInvoiceDetails: React.FC = () => {
             {t('previewInvoice')}
           </Button>
           {invoice.status === 'draft' && (
-            <Button icon={<SendOutlined />} type="primary">
+            <Button 
+              icon={<SendOutlined />} 
+              type="primary"
+              onClick={handleSendInvoice}
+              loading={isSending}
+            >
               {t('sendInvoice')}
             </Button>
           )}
-          {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
-            <Button icon={<CheckCircleOutlined />}>
+          {invoice.status === 'sent' && (
+            <Button 
+              icon={<CheckCircleOutlined />}
+              onClick={handleMarkAsPaid}
+              loading={isMarkingPaid}
+            >
               {t('markAsPaid')}
             </Button>
           )}
           <Tooltip title={t('downloadInvoice')}>
-            <Button icon={<DownloadOutlined />} />
+            <Button 
+              icon={<DownloadOutlined />} 
+              onClick={handleDownloadInvoice}
+            />
           </Tooltip>
           <Tooltip title={t('editInvoice')}>
-            <Button icon={<EditOutlined />} />
+            <Button 
+              icon={<EditOutlined />} 
+              onClick={handleEditInvoice}
+            />
           </Tooltip>
           <Tooltip title={t('deleteInvoice')}>
-            <Button icon={<DeleteOutlined />} danger />
+            <Button 
+              icon={<DeleteOutlined />} 
+              danger 
+              onClick={handleDeleteInvoice}
+              loading={isDeleting}
+            />
           </Tooltip>
         </Space>
       </Flex>

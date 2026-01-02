@@ -66,6 +66,7 @@
   "statusColumn": "状态",
   "amountColumn": "金额",
   "dueDateColumn": "到期日",
+  "createdDateColumn": "创建日期",
   "issuedTimeColumn": "开具时间",
   "actionBtnsColumn": "操作",
   "statusPaid": "已付款",

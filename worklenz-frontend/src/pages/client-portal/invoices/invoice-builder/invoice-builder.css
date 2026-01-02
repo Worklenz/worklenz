@@ -19,6 +19,88 @@
   text-align: right;
 }
 
+/* Rate input default styles */
+.invoice-builder-table .ant-input-number {
+  border-radius: 6px;
+  transition: all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+  font-size: 14px;
+  line-height: 1.5715;
+  min-height: 32px;
+  position: relative;
+}
+
+.invoice-builder-table .ant-input-number:not(:hover):not(.ant-input-number-focused) {
+  border: 1px solid transparent;
+}
+
+.invoice-builder-table .ant-input-number:hover {
+  border-color: var(--ant-color-primary-hover, rgba(64, 150, 255, 0.5));
+  background: var(--ant-color-bg-container);
+  box-shadow: 0 0 0 1px var(--ant-color-primary-hover, rgba(64, 150, 255, 0.2));
+}
+
+.invoice-builder-table .ant-input-number-focused,
+.invoice-builder-table .ant-input-number:focus-within {
+  border-color: var(--ant-color-primary, #4096ff);
+  box-shadow: 0 0 0 2px var(--ant-color-primary-bg, rgba(64, 150, 255, 0.1));
+  background: var(--ant-color-bg-container);
+}
+
+/* Prefix styling - prevent cursor interference */
+.invoice-builder-table .ant-input-number-prefix {
+  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.45));
+  margin-right: 4px;
+  font-weight: 500;
+  font-size: 14px;
+  pointer-events: none;
+  user-select: none;
+  cursor: default;
+}
+
+[data-theme='dark'] .invoice-builder-table .ant-input-number-prefix {
+  color: var(--ant-color-text-secondary, rgba(255, 255, 255, 0.45));
+}
+
+/* Input element - only this should show text cursor */
+.invoice-builder-table .ant-input-number-input {
+  padding: 4px 8px;
+  color: var(--ant-color-text);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: text !important;
+  caret-color: var(--ant-color-primary, #4096ff);
+}
+
+.invoice-builder-table .ant-input-number-input::placeholder {
+  color: var(--ant-color-text-placeholder, rgba(0, 0, 0, 0.25));
+  opacity: 0.6;
+}
+
+[data-theme='dark'] .invoice-builder-table .ant-input-number-input::placeholder {
+  color: var(--ant-color-text-placeholder, rgba(255, 255, 255, 0.25));
+}
+
+/* Prevent cursor overlap - ensure wrapper and other elements don't interfere */
+.invoice-builder-table .ant-input-number .ant-input-number-input-wrap {
+  cursor: text;
+}
+
+.invoice-builder-table .ant-input-number .ant-input-number-input-wrap > *:not(.ant-input-number-input) {
+  pointer-events: none;
+  cursor: default;
+}
+
+/* Handler buttons - separate cursor */
+.invoice-builder-table .ant-input-number-handler-wrap {
+  cursor: default;
+  pointer-events: auto;
+}
+
+.invoice-builder-table .ant-input-number-handler {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
 /* Summary card styling */
 .invoice-summary-card {
   position: sticky;

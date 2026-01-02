@@ -163,10 +163,22 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         setLoading(false);
       }
     } else if (drawerVisible && !projectId) {
-      // Creating new project
+      // Creating new project - explicitly set form values to defaults
       console.log('Setting up drawer for new project creation');
       setEditMode(false);
       setLoading(false);
+      try {
+        form.setFieldsValue({
+          ...defaultFormValues,
+          start_date: null,
+          end_date: null,
+        });
+        setSelectedProjectManager(null);
+        console.log('Form initialized for new project creation');
+      } catch (error) {
+        console.error('Error initializing form for new project:', error);
+        logger.error('Error initializing form for new project', error);
+      }
     } else if (drawerVisible && projectId && !project && !projectLoading) {
       // Project data failed to load or is empty
       console.warn('Project drawer is visible but no project data available');
@@ -188,8 +200,14 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   const resetForm = useCallback(() => {
     setEditMode(false);
     form.resetFields();
+    // Reset to default values to ensure clean state
+    form.setFieldsValue({
+      ...defaultFormValues,
+      start_date: null,
+      end_date: null,
+    });
     setSelectedProjectManager(null);
-  }, [form]);
+  }, [form, defaultFormValues]);
 
   useEffect(() => {
     const startDate = form.getFieldValue('start_date');
@@ -227,9 +245,9 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         man_days: parseInt(values.man_days),
         hours_per_day: parseInt(values.hours_per_day),
         project_manager: selectedProjectManager,
-        use_manual_progress: values.use_manual_progress || false,
-        use_weighted_progress: values.use_weighted_progress || false,
-        use_time_progress: values.use_time_progress || false,
+        use_manual_progress: Boolean(values.use_manual_progress),
+        use_weighted_progress: Boolean(values.use_weighted_progress),
+        use_time_progress: Boolean(values.use_time_progress),
       };
 
       const action =

@@ -9,6 +9,7 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import { sanitizeCommentContent } from "../shared/utils";
 import HandleExceptions from "../decorators/handle-exceptions";
 import ClientPortalController from "./client-portal-controller";
+import ClientPortalInvoicesController from "./client-portal/client-portal-invoices-controller";
 import {uploadBase64, deleteObject} from "../shared/storage";
 import {sendClientPortalRequestCommentNotification} from "../shared/email-notifications";
 import {getClientPortalBaseUrl} from "../cron_jobs/helpers";
@@ -1060,6 +1061,26 @@ export default class ClientsController extends WorklenzControllerBase {
       user: req.user
     } as any;
     return ClientPortalController.downloadInvoice(modifiedReq, res as any);
+  }
+
+  @HandleExceptions()
+  public static async updatePortalInvoice(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    return ClientPortalInvoicesController.updateInvoice(req, res);
+  }
+
+  @HandleExceptions()
+  public static async deletePortalInvoice(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    return ClientPortalInvoicesController.deleteInvoice(req, res);
+  }
+
+  @HandleExceptions()
+  public static async sendPortalInvoice(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    return ClientPortalInvoicesController.sendInvoice(req, res);
+  }
+
+  @HandleExceptions()
+  public static async markPortalInvoiceAsPaid(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    return ClientPortalInvoicesController.markInvoiceAsPaid(req, res);
   }
 
   // Organization-side Client Portal Chats Management (wrapper methods)

@@ -35,7 +35,7 @@ import {
   ShoppingCartOutlined,
   FireOutlined,
   ClockCircleOutlined,
-} from '@/shared/antd-imports';
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useSelector, useDispatch } from 'react-redux';
 import { toggleTheme } from '@/features/theme/themeSlice';

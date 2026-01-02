@@ -270,7 +270,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
 
   static async createInvoice(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
-      const { requestId, amount, currency = "USD", dueDate, notes } = req.body;
+      const { requestId, amount, currency = "USD", dueDate, notes, status = "draft" } = req.body;
       const organizationId = req.user?.team_id;
       const createdBy = req.user?.id;
 
@@ -314,13 +314,15 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         .toUpperCase()}`;
 
       // Create invoice
+      // If status is 'sent', set sent_at timestamp
+      const sentAt = status === 'sent' ? new Date() : null;
       const insertQuery = `
         INSERT INTO client_portal_invoices (
           invoice_no, request_id, client_id, organization_team_id,
-          amount, currency, status, due_date, notes, created_by_user_id, created_at, updated_at
+          amount, currency, status, due_date, notes, created_by_user_id, sent_at, created_at, updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, 'draft', $7, $8, $9, NOW(), NOW())
-        RETURNING id, invoice_no, amount, currency, status, due_date, created_at
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+        RETURNING id, invoice_no, amount, currency, status, due_date, sent_at, created_at
       `;
 
       const result = await db.query(insertQuery, [
@@ -330,9 +332,11 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         organizationId,
         amount,
         currency,
+        status,
         dueDate || null,
         notes || null,
         createdBy,
+        sentAt,
       ]);
 
       const newInvoice = result.rows[0];
@@ -801,6 +805,270 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
       return res
         .status(500)
         .json(new ServerResponse(false, null, "Failed to download invoice"));
+    }
+  }
+
+  static async updateInvoice(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const { id } = req.params;
+      const { amount, currency, dueDate, notes, status } = req.body;
+      const organizationId = req.user?.team_id;
+
+      // Verify invoice exists and belongs to organization
+      const checkQuery = `
+        SELECT id FROM client_portal_invoices
+        WHERE id = $1 AND organization_team_id = $2
+      `;
+      const checkResult = await db.query(checkQuery, [id, organizationId]);
+
+      if (checkResult.rows.length === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Invoice not found"));
+      }
+
+      // Update invoice
+      const updateQuery = `
+        UPDATE client_portal_invoices
+        SET
+          amount = COALESCE($1, amount),
+          currency = COALESCE($2, currency),
+          due_date = COALESCE($3, due_date),
+          notes = COALESCE($4, notes),
+          status = COALESCE($5, status),
+          updated_at = NOW()
+        WHERE id = $6
+        RETURNING id, invoice_no, amount, currency, status, due_date, updated_at
+      `;
+
+      const result = await db.query(updateQuery, [
+        amount,
+        currency,
+        dueDate,
+        notes,
+        status,
+        id,
+      ]);
+
+      return res.json(
+        new ServerResponse(true, result.rows[0], "Invoice updated successfully")
+      );
+    } catch (error) {
+      console.error("Error updating invoice:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to update invoice"));
+    }
+  }
+
+  static async deleteInvoice(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const { id } = req.params;
+      const organizationId = req.user?.team_id;
+
+      // Verify invoice exists and belongs to organization
+      const checkQuery = `
+        SELECT id, status FROM client_portal_invoices
+        WHERE id = $1 AND organization_team_id = $2
+      `;
+      const checkResult = await db.query(checkQuery, [id, organizationId]);
+
+      if (checkResult.rows.length === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Invoice not found"));
+      }
+
+      // Prevent deletion of paid invoices
+      if (checkResult.rows[0].status === "paid") {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Cannot delete paid invoices"));
+      }
+
+      // Delete invoice
+      const deleteQuery = `
+        DELETE FROM client_portal_invoices
+        WHERE id = $1
+      `;
+      await db.query(deleteQuery, [id]);
+
+      return res.json(
+        new ServerResponse(true, null, "Invoice deleted successfully")
+      );
+    } catch (error) {
+      console.error("Error deleting invoice:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to delete invoice"));
+    }
+  }
+
+  static async sendInvoice(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const { id } = req.params;
+      const organizationId = req.user?.team_id;
+
+      if (!organizationId) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Organization ID is required"));
+      }
+
+      // Verify invoice exists and belongs to organization
+      const checkQuery = `
+        SELECT i.id, i.status, i.client_id, c.email as client_email, c.name as client_name
+        FROM client_portal_invoices i
+        LEFT JOIN clients c ON i.client_id = c.id
+        WHERE i.id = $1 AND i.organization_team_id = $2
+      `;
+      const checkResult = await db.query(checkQuery, [id, organizationId]);
+
+      if (checkResult.rows.length === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Invoice not found"));
+      }
+
+      const invoice = checkResult.rows[0];
+
+      // Update invoice status to 'sent' if it's 'draft', otherwise keep current status
+      // Set sent_at timestamp when sending
+      const updateQuery = `
+        UPDATE client_portal_invoices
+        SET
+          status = CASE WHEN status = 'draft' THEN 'sent' ELSE status END,
+          sent_at = CASE WHEN status = 'draft' THEN NOW() ELSE sent_at END,
+          updated_at = NOW()
+        WHERE id = $1
+        RETURNING id, invoice_no, status, sent_at
+      `;
+
+      const result = await db.query(updateQuery, [id]);
+
+      // Create notification for the client
+      if (invoice.client_id) {
+        await this.createNotification(
+          invoice.client_id,
+          organizationId,
+          "invoice_sent",
+          "Invoice Sent",
+          `Invoice ${result.rows[0].invoice_no} has been sent to you`,
+          id,
+          result.rows[0].invoice_no,
+          {
+            status: result.rows[0].status,
+            sentAt: result.rows[0].sent_at,
+          }
+        );
+      }
+
+      return res.json(
+        new ServerResponse(true, result.rows[0], "Invoice sent successfully")
+      );
+    } catch (error) {
+      console.error("Error sending invoice:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to send invoice"));
+    }
+  }
+
+  static async markInvoiceAsPaid(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const { id } = req.params;
+      const organizationId = req.user?.team_id;
+
+      if (!organizationId) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Organization ID is required"));
+      }
+
+      // Verify invoice exists and belongs to organization
+      const checkQuery = `
+        SELECT i.id, i.status, i.client_id, i.invoice_no
+        FROM client_portal_invoices i
+        WHERE i.id = $1 AND i.organization_team_id = $2
+      `;
+      const checkResult = await db.query(checkQuery, [id, organizationId]);
+
+      if (checkResult.rows.length === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Invoice not found"));
+      }
+
+      const invoice = checkResult.rows[0];
+
+      // Check if invoice is already paid
+      if (invoice.status === 'paid') {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Invoice is already paid"));
+      }
+
+      // Only allow marking as paid if invoice status is 'sent'
+      if (invoice.status !== 'sent') {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Only sent invoices can be marked as paid"));
+      }
+
+      // Update invoice status to 'paid' and set paid_at timestamp
+      const updateQuery = `
+        UPDATE client_portal_invoices
+        SET
+          status = 'paid',
+          paid_at = NOW(),
+          updated_at = NOW()
+        WHERE id = $1
+        RETURNING id, invoice_no, status, paid_at
+      `;
+
+      const result = await db.query(updateQuery, [id]);
+
+      // Create notification for the client
+      if (invoice.client_id) {
+        await this.createNotification(
+          invoice.client_id,
+          organizationId,
+          "invoice_paid",
+          "Invoice Paid",
+          `Invoice ${invoice.invoice_no} has been marked as paid`,
+          id,
+          invoice.invoice_no,
+          {
+            status: "paid",
+            paidAt: result.rows[0].paid_at,
+          }
+        );
+      }
+
+      return res.json(
+        new ServerResponse(
+          true,
+          result.rows[0],
+          "Invoice marked as paid successfully"
+        )
+      );
+    } catch (error) {
+      console.error("Error marking invoice as paid:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to mark invoice as paid"));
     }
   }
 

@@ -136,6 +136,13 @@ const InvoicesTable = () => {
     );
   }
 
+  // Sort invoices by created date (newest first)
+  const sortedInvoices = [...invoices].sort((a, b) => {
+    const dateA = new Date(a.createdAt).getTime();
+    const dateB = new Date(b.createdAt).getTime();
+    return dateB - dateA;
+  });
+
   // table columns
   const columns: TableProps['columns'] = [
     {
@@ -147,6 +154,14 @@ const InvoicesTable = () => {
         </Typography.Text>
       ),
       onCell: () => ({
+        style: { minWidth: 150 },
+      }),
+    },
+    {
+      key: 'client',
+      title: t('clientColumn'),
+      render: record => <Typography.Text>{record.clientName || '-'}</Typography.Text>,
+      onCell: () => ({
         style: { minWidth: 200 },
       }),
     },
@@ -155,7 +170,7 @@ const InvoicesTable = () => {
       title: t('serviceColumn'),
       render: record => <Typography.Text>{record.serviceName || '-'}</Typography.Text>,
       onCell: () => ({
-        style: { minWidth: 250 },
+        style: { minWidth: 200 },
       }),
     },
     {
@@ -167,7 +182,7 @@ const InvoicesTable = () => {
         </Typography.Text>
       ),
       onCell: () => ({
-        style: { minWidth: 150 },
+        style: { minWidth: 130 },
       }),
     },
     {
@@ -179,6 +194,16 @@ const InvoicesTable = () => {
       width: 120,
     },
     {
+      key: 'created_at',
+      title: t('createdDateColumn'),
+      render: record => (
+        <Typography.Text>
+          {record.createdAt ? new Date(record.createdAt).toLocaleDateString() : '-'}
+        </Typography.Text>
+      ),
+      width: 130,
+    },
+    {
       key: 'due_date',
       title: t('dueDateColumn'),
       render: record => (
@@ -186,7 +211,7 @@ const InvoicesTable = () => {
           {record.dueDate ? new Date(record.dueDate).toLocaleDateString() : '-'}
         </Typography.Text>
       ),
-      width: 150,
+      width: 130,
     },
   ];
 
@@ -194,7 +219,7 @@ const InvoicesTable = () => {
     <Card style={{ height: 'calc(100vh - 280px)' }}>
       <Table
         columns={columns}
-        dataSource={invoices}
+        dataSource={sortedInvoices}
         pagination={{
           size: 'small',
           total: invoicesResponse.total || invoices.length,

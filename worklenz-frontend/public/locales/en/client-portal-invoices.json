@@ -72,6 +72,7 @@
   "statusColumn": "Status",
   "amountColumn": "Amount",
   "dueDateColumn": "Due Date",
+  "createdDateColumn": "Created Date",
   "issuedTimeColumn": "Issued Time",
   "actionBtnsColumn": "Actions",
   "statusPaid": "Paid",
