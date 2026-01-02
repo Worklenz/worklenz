@@ -86,6 +86,9 @@ clientsApiRouter.post("/portal/invoices/:id/send", idParamValidator, safeControl
 clientsApiRouter.post("/portal/invoices/:id/mark-paid", idParamValidator, safeControllerFunction(ClientsController.markPortalInvoiceAsPaid));
 clientsApiRouter.get("/portal/invoices/:id/download", idParamValidator, safeControllerFunction(ClientsController.downloadPortalInvoice));
 
+// Admin-only invoice download route (separate from client portal)
+clientsApiRouter.get("/:clientId/invoices/:id/download", idParamValidator, safeControllerFunction(ClientsController.downloadPortalInvoice));
+
 // Organization-side Client Portal Chats Management
 clientsApiRouter.get("/portal/chats", safeControllerFunction(ClientsController.getPortalChats));
 clientsApiRouter.post("/portal/chats", safeControllerFunction(ClientsController.createPortalChat));

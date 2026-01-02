@@ -51,6 +51,16 @@ const ClientViewInvoiceDetails = () => {
     }).format(amount);
   };
 
+  const handleDownloadInvoice = () => {
+    // Using admin-only route that bypasses client portal authentication
+    // Note: clientId parameter is not used by backend, just for route matching
+    window.open(`/api/v1/clients/admin/invoices/${id}/download`, '_blank');
+  };
+
+  const handlePrintInvoice = () => {
+    window.print();
+  };
+
   return (
     <Flex vertical gap={24} style={{ width: '100%' }}>
       <Flex align="center" justify="space-between">
@@ -58,8 +68,8 @@ const ClientViewInvoiceDetails = () => {
           {t('invoiceDetails')} - {invoiceDetails.invoice_no || 'INV-001'}
         </Typography.Title>
         <Flex gap={8}>
-          <Button icon={<DownloadOutlined />}>{t('download')}</Button>
-          <Button icon={<PrinterOutlined />}>{t('print')}</Button>
+          <Button icon={<DownloadOutlined />} onClick={handleDownloadInvoice}>{t('download')}</Button>
+          <Button icon={<PrinterOutlined />} onClick={handlePrintInvoice}>{t('print')}</Button>
           <Button onClick={() => navigate('/client-portal/invoices')}>{t('backToInvoices')}</Button>
         </Flex>
       </Flex>

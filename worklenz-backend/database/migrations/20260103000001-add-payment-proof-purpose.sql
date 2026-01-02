@@ -1,6 +1,6 @@
 -- Migration: Add payment_proof to client_portal_attachments purpose constraint
 -- Description: Adds 'payment_proof' as a valid purpose for client portal attachments
--- Date: 2025-01-03
+-- Date: 2026-01-03
 -- Version: 2.3.2
 
 -- Drop the existing CHECK constraint

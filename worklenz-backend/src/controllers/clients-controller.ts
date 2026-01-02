@@ -527,6 +527,9 @@ export default class ClientsController extends WorklenzControllerBase {
       const fileExtension = imageName.substring(imageName.lastIndexOf("."));
       const uniqueFileName = `service_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
       // Use getClientPortalStorageKey to ensure files are stored under organizations/{teamId}/client-portal/
+      if (!teamId) {
+        return res.status(400).send(new ServerResponse(false, null, "Team ID is required"));
+      }
       const storageKey = getClientPortalStorageKey("service-images", teamId, uniqueFileName);
 
       try {
@@ -647,6 +650,9 @@ export default class ClientsController extends WorklenzControllerBase {
       const fileExtension = imageName.substring(imageName.lastIndexOf("."));
       const uniqueFileName = `service_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExtension}`;
       // Use getClientPortalStorageKey to ensure files are stored under organizations/{teamId}/client-portal/
+      if (!teamId) {
+        return res.status(400).send(new ServerResponse(false, null, "Team ID is required"));
+      }
       const storageKey = getClientPortalStorageKey("service-images", teamId, uniqueFileName);
 
       try {
