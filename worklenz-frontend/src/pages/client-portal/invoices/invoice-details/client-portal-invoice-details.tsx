@@ -152,7 +152,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
 
   // Handle download invoice
   const handleDownloadInvoice = () => {
-    window.open(`/api/client-portal/invoices/${invoiceId}/download`, '_blank');
+    window.open(`/api/v1/clients/portal/invoices/${invoiceId}/download`, '_blank');
   };
 
   // Handle edit invoice

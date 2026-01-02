@@ -5,15 +5,15 @@ import RecivedChatItem from './recived-chat-item';
 import { SendOutlined, PaperClipOutlined, SmileOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { TempChatsType } from './chat-box-wrapper';
-import { useAppDispatch } from '../../../../../hooks/useAppDispatch';
-import { sendMessage } from '../../../../../features/clients-portal/chats/chats-slice';
-import { useAppSelector } from '../../../../../hooks/useAppSelector';
-import { themeWiseColor } from '../../../../../utils/themeWiseColor';
-import CustomAvatar from '../../../../../components/CustomAvatar';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { sendMessage } from '@features/clients-portal/chats/chats-slice';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { themeWiseColor } from '@utils/themeWiseColor';
+import CustomAvatar from '@components/CustomAvatar';
 import {
   useGetOrganizationMessagesQuery,
   useSendOrganizationMessageMutation,
-  ClientPortalMessage,
+  clientPortalApi,
 } from '../../../../../api/client-portal/client-portal-api';
 
 type ChatBoxProps = {
@@ -50,7 +50,11 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
 
   const { data: messagesData, isLoading, error, refetch } = useGetOrganizationMessagesQuery(
     { chatId: openedChat.id, clientId: clientId || '' },
-    { skip: !clientId }
+    { 
+      skip: !clientId,
+      refetchOnMountOrArgChange: true, // Always refetch when chat is opened
+      refetchOnFocus: true, // Refetch when window regains focus
+    }
   );
   const [sendMessageMutation, { isLoading: isSending }] = useSendOrganizationMessageMutation();
 
@@ -62,16 +66,17 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
         return messagesData;
       }
       // getChatDetails returns { date, messages, total, page, limit }
-      if (messagesData.messages && Array.isArray(messagesData.messages)) {
+      if ('messages' in messagesData && Array.isArray(messagesData.messages)) {
         return messagesData.messages;
       }
-      // Some APIs wrap in body
-      if (messagesData.body) {
-        if (Array.isArray(messagesData.body)) {
-          return messagesData.body;
+      // Some APIs wrap in body - check with type guard
+      const dataWithBody = messagesData as any;
+      if (dataWithBody.body) {
+        if (Array.isArray(dataWithBody.body)) {
+          return dataWithBody.body;
         }
-        if (messagesData.body.messages && Array.isArray(messagesData.body.messages)) {
-          return messagesData.body.messages;
+        if (dataWithBody.body.messages && Array.isArray(dataWithBody.body.messages)) {
+          return dataWithBody.body.messages;
         }
       }
     }
@@ -110,7 +115,18 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
         }).unwrap();
 
         setMessage('');
-        refetch();
+        
+        // The mutation already invalidates tags, but we'll also explicitly invalidate to ensure refetch
+        dispatch(clientPortalApi.util.invalidateTags([
+          { type: 'Chats', id: openedChat.id },
+          'Chats'
+        ]));
+        
+        // Explicitly refetch messages to get the latest data
+        // Use a small delay to ensure backend has processed the message
+        setTimeout(async () => {
+          await refetch();
+        }, 300);
       } catch (err) {
         console.error('Error sending message:', err);
         dispatch(sendMessage({ chatId: openedChat.id, message }));
@@ -156,11 +172,6 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
             }}
           >
             {openedChat.name}
-          </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {openedChat.participants?.length
-              ? `${openedChat.participants.length} participants`
-              : t('online')}
           </Typography.Text>
         </Flex>
         <Tooltip title={t('refresh')}>

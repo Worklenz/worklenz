@@ -123,6 +123,8 @@
 
   "projectsTitle": "Proyectos",
   "noProjectsText": "No se encontraron proyectos",
+  "viewProjectTooltip": "Ver Proyecto",
+  "viewButton": "Ver",
 
   "overviewTab": "Resumen",
   "teamTab": "Equipo",
