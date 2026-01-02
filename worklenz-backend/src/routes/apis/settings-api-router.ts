@@ -26,5 +26,6 @@ settingsApiRouter.put("/team-name/:id", idParamValidator, teamSettingsBodyValida
 settingsApiRouter.get("/client-portal", safeControllerFunction(ClientPortalController.getSettings));
 settingsApiRouter.put("/client-portal", safeControllerFunction(ClientPortalController.updateSettings));
 settingsApiRouter.post("/client-portal/upload-logo", safeControllerFunction(ClientPortalController.uploadLogo));
+settingsApiRouter.get("/client-portal/base-url", safeControllerFunction(ClientPortalController.getClientPortalBaseUrl));
 
 export default settingsApiRouter;

@@ -3815,6 +3815,20 @@ class ClientPortalController {
     }
   }
 
+  static async getClientPortalBaseUrl(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    try {
+      const baseUrl = getClientPortalBaseUrl();
+      return res.json(
+        new ServerResponse(true, { baseUrl }, null)
+      );
+    } catch (error) {
+      log_error(error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to get client portal base URL"));
+    }
+  }
+
   static async updateSettings(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
       const teamId = req.user?.team_id;

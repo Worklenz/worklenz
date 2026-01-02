@@ -616,14 +616,6 @@ const ClientsTable = () => {
         },
       },
       {
-        key: 'team',
-        label: t('manageTeamTooltip', { defaultValue: 'Manage Team' }),
-        icon: <ShareAltOutlined />,
-        onClick: () => {
-          dispatch(toggleClientTeamsDrawer(record.id));
-        },
-      },
-      {
         type: 'divider' as const,
       },
       // Show Activate or Deactivate based on client status
