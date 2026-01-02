@@ -21,8 +21,6 @@ import {
   Divider,
   Drawer,
   message,
-} from '@/shared/antd-imports';
-import {
   CheckCircleOutlined,
   CloseOutlined,
   SunOutlined,
@@ -35,7 +33,7 @@ import {
   ShoppingCartOutlined,
   FireOutlined,
   ClockCircleOutlined,
-} from '@ant-design/icons';
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useSelector, useDispatch } from 'react-redux';
 import { toggleTheme } from '@/features/theme/themeSlice';
