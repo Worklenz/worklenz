@@ -191,11 +191,7 @@
   
   "assignProjectTitle": "分配新项目",
   "assignedProjectsTitle": "已分配项目",
-  "statusColumn": "状态",
-  "removeConfirmationOk": "移除",
-  "removeConfirmationCancel": "取消",
-  "removeProjectTooltip": "移除项目",
-
+  
   "portalStatusColumn": "门户状态",
   "portalStatus": {
     "active": "活跃",
@@ -205,7 +201,6 @@
   },
 
   "inviteToPortalTooltip": "邀请至门户",
-  "resendInvitationTooltip": "重新发送邀请",
   "resendInviteEmailTooltip": "重新发送邀请邮件",
   "copyInviteLinkTooltip": "复制邀请链接",
   "resendInvitationSuccess": "邀请邮件发送成功！",
@@ -232,7 +227,6 @@
   "activateClientSuccessMessage": "客户激活成功",
   "activateClientErrorMessage": "激活客户失败",
   "activateButton": "激活客户",
-  "deactivateSelected": "停用选中项",
   "selectClientsToDeactivate": "请选择要停用的客户",
   "bulkDeactivateSuccessMessage": "选中的客户停用成功",
   "bulkDeactivateErrorMessage": "停用选中的客户失败",
