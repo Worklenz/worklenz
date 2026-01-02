@@ -151,7 +151,6 @@ const TaskListTable = ({
   const selectOneRow = (task: IProjectTask) => {
     setSelectedRows([task.id || '']);
 
-    // log the task object when selected
     if (!selectedRows.includes(task.id || '')) {
       console.log('Selected task:', task);
     }
@@ -332,7 +331,7 @@ const TaskListTable = ({
                   <ColumnResizeHandle
                     columnKey={column.key}
                     currentWidth={columnWidths[column.key] || column.width}
-                    onResize={(newWidth) => {
+                    onResize={newWidth => {
                       // Update CSS variable for immediate visual feedback
                       document.documentElement.style.setProperty(
                         `--col-width-${column.key}`,

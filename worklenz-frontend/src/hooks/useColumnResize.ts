@@ -13,7 +13,7 @@ interface UseColumnResizeProps {
 
 interface UseColumnResizeReturn {
   columnWidths: ColumnWidths;
-  handleResizeStart: (e: React.MouseEvent, columnKey: string) => void;
+  handleResizeStart: (e: React.MouseEvent, columnKey: string, measuredWidth?: number) => void;
   updateColumnWidth: (columnKey: string, width: number) => void;
   resetColumnWidth: (columnKey: string) => void;
   resetAllWidths: () => void;
@@ -103,7 +103,7 @@ export const useColumnResize = ({
     if (isReloadingRef.current) {
       return;
     }
-    
+
     try {
       localStorage.setItem(storageKey, JSON.stringify(columnWidths));
     } catch (error) {
@@ -153,13 +153,15 @@ export const useColumnResize = ({
   }, [handleMouseMove, handleMouseUp]);
 
   const handleResizeStart = useCallback(
-    (e: React.MouseEvent, columnKey: string) => {
+    (e: React.MouseEvent, columnKey: string, measuredWidth?: number) => {
       e.preventDefault();
       e.stopPropagation();
 
       resizingColumnRef.current = columnKey;
       startXRef.current = e.clientX;
-      startWidthRef.current = columnWidths[columnKey] || initialWidths[columnKey] || 150;
+      // Prefer live measured width to avoid jump/lag if actual width differs from stored width
+      startWidthRef.current =
+        measuredWidth || columnWidths[columnKey] || initialWidths[columnKey] || 150;
 
       // Set cursor and disable text selection during resize
       document.body.style.cursor = 'col-resize';
@@ -171,15 +173,12 @@ export const useColumnResize = ({
     [columnWidths, initialWidths, handleMouseMove, handleMouseUp]
   );
 
-  const updateColumnWidth = useCallback(
-    (columnKey: string, width: number) => {
-      setColumnWidths(prev => ({
-        ...prev,
-        [columnKey]: width,
-      }));
-    },
-    []
-  );
+  const updateColumnWidth = useCallback((columnKey: string, width: number) => {
+    setColumnWidths(prev => ({
+      ...prev,
+      [columnKey]: width,
+    }));
+  }, []);
 
   const resetColumnWidth = useCallback(
     (columnKey: string) => {
