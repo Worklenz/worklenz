@@ -136,7 +136,7 @@
     "network_error": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung.",
     "server_error": "Serverfehler. Bitte versuchen Sie es später erneut.",
     "worklenz_account_found_title": "Worklenz-Konto gefunden",
-    "worklenz_account_found_message": "Diese E-Mail ist bereits mit einem Worklenz-Konto registriert. Bitte verwenden Sie Ihr Worklenz-Passwort, um sich für das Kundenportal anzumelden."
+    "worklenz_account_found_message": "Diese E-Mail ist bereits mit einem Worklenz-Konto registriert. Bitte verwenden Sie Ihr bestehendes Worklenz-Kontopasswort, um sich für das Kundenportal anzumelden."
   },
   "dashboard": {
     "title": "Dashboard",

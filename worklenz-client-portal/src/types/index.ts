@@ -38,6 +38,7 @@ export interface DashboardStats {
   totalInvoices: number;
   unpaidInvoices: number;
   unpaidAmount: number;
+  teamMembers: number;
 }
 
 export interface ClientService {

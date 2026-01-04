@@ -95,7 +95,7 @@ const ClientDetailsDrawer = () => {
   };
 
   const handleEdit = () => {
-    dispatch(toggleClientDetailsDrawer(null));
+    // Keep details drawer open and open edit drawer
     dispatch(toggleEditClientDrawer(selectedClientId));
   };
 

@@ -380,14 +380,24 @@ export const clientPortalApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: `${config.apiUrl}${API_BASE_URL}`,
     prepareHeaders: async headers => {
-      // Get CSRF token, refresh if needed
+      // Always try to get CSRF token, refresh if needed
       let token = getCsrfToken();
+      
+      // If no token, try to refresh it
       if (!token) {
-        token = await refreshCsrfToken();
+        try {
+          token = await refreshCsrfToken();
+        } catch (error) {
+          console.error('[CSRF] Failed to refresh CSRF token:', error);
+        }
       }
 
+      // Set token if available
       if (token) {
         headers.set('X-CSRF-Token', token);
+      } else {
+        // Log warning if no token available (backend will return proper error)
+        console.warn('[CSRF] No CSRF token available - request may fail');
       }
 
       headers.set('Content-Type', 'application/json');

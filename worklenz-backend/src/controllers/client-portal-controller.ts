@@ -3255,7 +3255,7 @@ class ClientPortalController {
         new ServerResponse(
           true,
           {
-            downloadUrl: `/api/client-portal/invoices/${id}/download?format=${format}`,
+            downloadUrl: `/api/v1/clients/portal/invoices/${id}/download?format=${format}`,
             format,
             invoiceData,
             message: "Invoice download link generated",
@@ -8126,24 +8126,6 @@ class ClientPortalController {
               );
           }
 
-          // For organization invites, create a new client user account
-          // First, check if user already exists
-          const existingUserCheck = await db.query(
-            "SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)",
-            [email]
-          );
-
-          if (existingUserCheck.rows.length > 0) {
-            return res.status(400).json({
-              done: false,
-              body: null,
-              title: "Email Already Registered",
-              message:
-                "A user with this email already exists. Please login instead.",
-              messageKey: "errors.email_already_registered_message", // For frontend i18n
-            });
-          }
-
           // Check if email exists in Worklenz users table for linking
           const existingWorklenzUserQuery = `
             SELECT id, email, name, password FROM users
@@ -8199,37 +8181,42 @@ class ClientPortalController {
           // Create the client user - link to Worklenz user if exists, otherwise use password_hash
           // Check if email already exists in client_users to avoid duplicate key error
           const emailExistsCheck = await db.query(
-            `SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)`,
+            `SELECT id, user_id, password_hash FROM client_users WHERE LOWER(email) = LOWER($1)`,
             [email]
           );
 
           let userResult;
           if (emailExistsCheck.rows.length > 0) {
-            // Email already exists - update the existing record
+            // Email already exists - this user is joining a second organization
             const existingClientUserId = emailExistsCheck.rows[0].id;
-            if (worklenzUserId) {
-              await db.query(
-                `UPDATE client_users 
-                 SET user_id = $1, client_id = $2, name = $3, status = 'active', updated_at = NOW()
-                 WHERE id = $4`,
-                [worklenzUserId, clientId, name, existingClientUserId]
-              );
+            const existingUserId = emailExistsCheck.rows[0].user_id;
+            const existingPasswordHash = emailExistsCheck.rows[0].password_hash;
+            
+            // Verify password before allowing access to second organization
+            if (existingUserId) {
+              // User is linked to Worklenz account - password already verified above
+              if (!worklenzUserId || existingUserId !== worklenzUserId) {
+                return res.status(401).json({
+                  done: false,
+                  body: null,
+                  titleKey: "errors.invalid_credentials_title",
+                  messageKey: "errors.invalid_credentials_message"
+                });
+              }
             } else {
-              // Hash password with bcrypt
-              const salt = bcrypt.genSaltSync(10);
-              const passwordHash = bcrypt.hashSync(password, salt);
-              await db.query(
-                `UPDATE client_users 
-                 SET client_id = $1, name = $2, password_hash = $3, status = 'active', updated_at = NOW()
-                 WHERE id = $4`,
-                [
-                  clientId,
-                  name,
-                  passwordHash,
-                  existingClientUserId,
-                ]
-              );
+              // Standalone client portal user - verify password hash (bcrypt)
+              const passwordMatch = bcrypt.compareSync(password, existingPasswordHash);
+              if (!passwordMatch) {
+                return res.status(401).json({
+                  done: false,
+                  body: null,
+                  titleKey: "errors.invalid_credentials_title",
+                  messageKey: "errors.invalid_credentials_message"
+                });
+              }
             }
+            
+            // Password verified - don't update client_id, just fetch the user
             userResult = await db.query(
               `SELECT id, email, name, role, client_id FROM client_users WHERE id = $1`,
               [existingClientUserId]
@@ -8262,11 +8249,21 @@ class ClientPortalController {
 
           const newUser = userResult.rows[0];
 
+          // Create organization access record for multi-org support
+          const orgAccessQuery = `
+            INSERT INTO client_user_organizations (client_user_id, team_id, client_id, is_default, created_at, updated_at)
+            VALUES ($1, $2, $3, TRUE, NOW(), NOW())
+            ON CONFLICT (client_user_id, team_id) 
+            DO UPDATE SET client_id = $3, updated_at = NOW()
+          `;
+          await db.query(orgAccessQuery, [newUser.id, orgInvitePayload.teamId, clientId]);
+
           // Generate client access token
           const permissions = await TokenService.getClientPermissions(clientId);
           const tokenPayload = {
             clientId,
             organizationId: orgInvitePayload.teamId,
+            clientUserId: newUser.id,
             email: newUser.email,
             permissions,
             type: "client" as const,

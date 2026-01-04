@@ -13,7 +13,6 @@ import CustomAvatar from '@components/CustomAvatar';
 import {
   useGetOrganizationMessagesQuery,
   useSendOrganizationMessageMutation,
-  clientPortalApi,
 } from '../../../../../api/client-portal/client-portal-api';
 
 type ChatBoxProps = {
@@ -115,18 +114,7 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
         }).unwrap();
 
         setMessage('');
-        
-        // The mutation already invalidates tags, but we'll also explicitly invalidate to ensure refetch
-        dispatch(clientPortalApi.util.invalidateTags([
-          { type: 'Chats', id: openedChat.id },
-          'Chats'
-        ]));
-        
-        // Explicitly refetch messages to get the latest data
-        // Use a small delay to ensure backend has processed the message
-        setTimeout(async () => {
-          await refetch();
-        }, 300);
+        // The mutation's invalidatesTags will automatically trigger a refetch of the messages query
       } catch (err) {
         console.error('Error sending message:', err);
         dispatch(sendMessage({ chatId: openedChat.id, message }));
