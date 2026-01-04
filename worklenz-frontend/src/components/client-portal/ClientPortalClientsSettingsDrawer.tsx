@@ -78,26 +78,15 @@ const ClientPortalClientsSettingsDrawer = () => {
 
   // Get available projects (excluding already assigned ones)
   const projectOptions = useMemo(() => {
-    // Debug: Check the actual response structure
-    if (availableProjects) {
-      console.log('[ClientPortalClientsSettingsDrawer] Full response:', availableProjects);
-      console.log('[ClientPortalClientsSettingsDrawer] Response body:', availableProjects.body);
-      console.log('[ClientPortalClientsSettingsDrawer] Response body.data:', availableProjects.body?.data);
-      console.log('[ClientPortalClientsSettingsDrawer] Is loading:', isLoadingProjects);
-    }
-
     // Check response structure - projects API returns IServerResponse<IProjectsViewModel>
     // Structure: response.body.data (array) and response.body.total
     const projectsData = availableProjects?.body?.data;
     
     if (!projectsData || !Array.isArray(projectsData) || projectsData.length === 0) {
-      console.log('[ClientPortalClientsSettingsDrawer] No projects data or empty array');
       return [];
     }
 
-    console.log('[ClientPortalClientsSettingsDrawer] Total projects from API:', projectsData.length);
     const assignedProjectIds = client?.projects?.map((p) => p.id).filter((id): id is string => !!id) || [];
-    console.log('[ClientPortalClientsSettingsDrawer] Assigned project IDs:', assignedProjectIds);
     
     const filtered = projectsData
       .filter((project: IProjectViewModel) => {
@@ -113,13 +102,11 @@ const ClientPortalClientsSettingsDrawer = () => {
         return true;
       });
     
-    console.log('[ClientPortalClientsSettingsDrawer] Available projects after filtering:', filtered.length);
-    
     return filtered.map((project: IProjectViewModel) => ({
       label: project.name,
       value: project.id!,
     }));
-  }, [availableProjects, client, isLoadingProjects]);
+  }, [availableProjects, client]);
 
   // Update client name when client data changes
   React.useEffect(() => {

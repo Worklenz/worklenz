@@ -72,8 +72,31 @@ export default class ClientPortalDashboardController extends ClientPortalControl
         WHERE c.id = $1
       `;
       const clientTeamResult = await db.query(clientTeamQuery, [clientId]);
-      console.log('[Dashboard] Client-Team relationship:', clientTeamResult.rows[0]);
-      console.log('[Dashboard] organizationId from token:', organizationId);
+
+      // Handle case where client is not found
+      if (clientTeamResult.rows.length === 0) {
+        return res
+          .status(404)
+          .json(
+            new ServerResponse(false, null, "Client not found")
+          );
+      }
+
+      const clientTeam = clientTeamResult.rows[0];
+      const teamId = clientTeam.team_id;
+
+      // Authorization check: verify organizationId matches client's team_id
+      if (organizationId !== teamId) {
+        return res
+          .status(403)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Access denied: Organization mismatch"
+            )
+          );
+      }
 
       const teamMembersQuery = `
         SELECT COUNT(*) as team_members_count
@@ -81,11 +104,8 @@ export default class ClientPortalDashboardController extends ClientPortalControl
         WHERE team_id = $1 AND active = true
       `;
 
-      const teamMembersResult = await db.query(teamMembersQuery, [
-        organizationId,
-      ]);
+      const teamMembersResult = await db.query(teamMembersQuery, [teamId]);
       const teamMembersStats = teamMembersResult.rows[0];
-      console.log('[Dashboard] Team members count:', teamMembersStats);
 
       const dashboardData = {
         totalProjects: parseInt(projectStats.total_projects || "0"),
