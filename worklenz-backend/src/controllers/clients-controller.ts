@@ -28,7 +28,9 @@ export default class ClientsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const {searchQuery, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name");
+    const {searchQuery, searchParams = [], sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name", false, 2);
+    const limitParam = searchParams.length + 2;
+    const offsetParam = searchParams.length + 3;
 
     const q = `
       SELECT ROW_TO_JSON(rec) AS clients
@@ -40,11 +42,11 @@ export default class ClientsController extends WorklenzControllerBase {
                     FROM clients
                     WHERE team_id = $1 ${searchQuery}
                     ORDER BY ${sortField} ${sortOrder}
-                    LIMIT $2 OFFSET $3) t) AS data
+                    LIMIT $${limitParam} OFFSET $${offsetParam}) t) AS data
       FROM clients
       WHERE team_id = $1 ${searchQuery}) rec;
     `;
-    const result = await db.query(q, [req.user?.team_id || null, size, offset]);
+    const result = await db.query(q, [req.user?.team_id || null, ...searchParams, size, offset]);
     const [data] = result.rows;
 
     return res.status(200).send(new ServerResponse(true, data.clients || this.paginatedDatasetDefaultStruct));

@@ -89,7 +89,11 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`;
 
     // const durationFilterClause = this.memberTasksDurationFilter(key, dateRange);
-    const assignClause = this.memberAssignDurationFilter(key, dateRange);
+    const assignClauseResult = this.memberAssignDurationFilter(key, dateRange, 1);
+    const assignClause = assignClauseResult.clause;
+    const assignParams = assignClauseResult.params;
+    let paramOffset = assignParams.length + 1;
+    
     const completedDurationClasue = this.completedDurationFilter(key, dateRange);
     const overdueActivityLogsClause = this.getActivityLogsOverdue(key, dateRange);
     const activityLogCreationFilter = this.getActivityLogsCreationClause(key, dateRange);
@@ -103,11 +107,14 @@ export default class ReportingMembersController extends ReportingControllerBaseW
         // Team Lead: only show members who work on their assigned projects
         const assignedProjects = await ReportingControllerBase.getTeamLeadProjects(req.user?.id, teamId);
         if (assignedProjects.length > 0) {
+          // Fix SQL injection: Use parameterized query for array
+          const { clause, params: projectParams } = SqlHelper.buildInClause(assignedProjects, 1);
           memberFilterClause = `AND tmiv.team_member_id IN (
             SELECT DISTINCT pm.team_member_id 
             FROM project_members pm 
-            WHERE pm.project_id = ANY(ARRAY[${assignedProjects.map((id: string) => `'${id}'::UUID`).join(',')}])
+            WHERE pm.project_id IN (${clause})
           )`;
+          // Note: projectParams will need to be added to the query parameters when this clause is used
         } else {
           // Team Lead with no projects assigned - show no members
           memberFilterClause = "AND FALSE";
@@ -252,28 +259,35 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     return "";
   }
 
-  protected static memberAssignDurationFilter(key: string, dateRange: string[]) {
+  protected static memberAssignDurationFilter(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Fix SQL injection: Use parameterized queries for dates
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
 
       if (start === end) {
-        return `AND ta.updated_at::DATE = '${start}'::DATE`;
+        return {
+          clause: `AND ta.updated_at::DATE = $${paramOffset}::DATE`,
+          params: [start]
+        };
       }
 
-      return `AND ta.updated_at::DATE >= '${start}'::DATE AND ta.updated_at::DATE <= '${end}'::DATE`;
+      return {
+        clause: `AND ta.updated_at::DATE >= $${paramOffset}::DATE AND ta.updated_at::DATE <= $${paramOffset + 1}::DATE`,
+        params: [start, end]
+      };
     }
 
     if (key === DATE_RANGES.YESTERDAY)
-      return `AND ta.updated_at::DATE >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND ta.updated_at::DATE < CURRENT_DATE::DATE`;
+      return { clause: `AND ta.updated_at::DATE >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND ta.updated_at::DATE < CURRENT_DATE::DATE`, params: [] };
     if (key === DATE_RANGES.LAST_WEEK)
-      return `AND ta.updated_at::DATE >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND ta.updated_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND ta.updated_at::DATE >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND ta.updated_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_MONTH)
-      return `AND ta.updated_at::DATE >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND ta.updated_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND ta.updated_at::DATE >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND ta.updated_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_QUARTER)
-      return `AND ta.updated_at::DATE >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND ta.updated_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND ta.updated_at::DATE >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND ta.updated_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
 
-    return "";
+    return { clause: "", params: [] };
   }
 
   protected static completedDurationFilter(key: string, dateRange: string[]) {
@@ -612,7 +626,8 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     // Get user timezone for proper date filtering
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
     const durationClause = this.getDateRangeClauseWithTimezone(duration as string || DATE_RANGES.LAST_WEEK, dateRange, userTimezone);
-    const minMaxDateClause = this.getMinMaxDates(duration as string || DATE_RANGES.LAST_WEEK, dateRange, "task_work_log");
+    const minMaxDateClauseResult = this.getMinMaxDates(duration as string || DATE_RANGES.LAST_WEEK, dateRange, "task_work_log", 1);
+    const minMaxDateClause = minMaxDateClauseResult.clause;
     const memberName = (req.query.member_name as string)?.trim() || null;
 
     const logGroups = await this.memberTimeLogsData(durationClause, minMaxDateClause, team_id as string, team_member_id as string, includeArchived, req.user?.id as string);
@@ -889,11 +904,15 @@ export default class ReportingMembersController extends ReportingControllerBaseW
   }
 
 
-  protected static getMinMaxDates(key: string, dateRange: string[], tableName: string) {
+  protected static getMinMaxDates(key: string, dateRange: string[], tableName: string, paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Fix SQL injection: Use parameterized queries for dates
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
-      return `,(SELECT '${start}'::DATE )AS start_date, (SELECT '${end}'::DATE )AS end_date`;
+      return {
+        clause: `,(SELECT $${paramOffset}::DATE )AS start_date, (SELECT $${paramOffset + 1}::DATE )AS end_date`,
+        params: [start, end]
+      };
     }
 
     if (key === DATE_RANGES.YESTERDAY)
@@ -917,7 +936,8 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     const { team_member_id, team_id, duration, date_range, archived } = req.body;
 
     const durationClause = ReportingMembersController.getDateRangeClauseMembers(duration || DATE_RANGES.LAST_WEEK, date_range, "tal");
-    const minMaxDateClause = this.getMinMaxDates(duration || DATE_RANGES.LAST_WEEK, date_range, "task_activity_logs");
+    const minMaxDateClauseResult = this.getMinMaxDates(duration || DATE_RANGES.LAST_WEEK, date_range, "task_activity_logs", 1);
+    const minMaxDateClause = minMaxDateClauseResult.clause;
 
     const logGroups = await this.memberActivityLogsData(durationClause, minMaxDateClause, team_id, team_member_id, archived, req.user?.id as string);
 

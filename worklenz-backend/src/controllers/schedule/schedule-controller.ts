@@ -669,9 +669,20 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
 
   @HandleExceptions()
   public static async deleteMemberAllocations(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const ids = req.body.toString() as string;
-    const q = `DELETE FROM project_member_allocations WHERE id IN (${(ids || "").split(",").map(s => `'${s}'`).join(",")})`;
-    await db.query(q);
+    // Fix SQL injection: Use parameterized queries for DELETE statement
+    const ids = Array.isArray(req.body.ids) 
+      ? req.body.ids 
+      : typeof req.body.ids === 'string' 
+        ? req.body.ids.split(",").filter((id: string) => id.trim())
+        : [];
+    
+    if (ids.length === 0) {
+      return res.status(400).send(new ServerResponse(false, null, "No IDs provided"));
+    }
+    
+    const { clause, params } = SqlHelper.buildInClause(ids, 1);
+    const q = `DELETE FROM project_member_allocations WHERE id IN (${clause})`;
+    await db.query(q, params);
     return res.status(200).send(new ServerResponse(true, []));
   }
 

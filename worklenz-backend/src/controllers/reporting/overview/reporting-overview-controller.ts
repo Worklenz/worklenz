@@ -386,7 +386,8 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
     const teamId = req.params.team_id || null;
     const archived = req.query.archived === "true";
 
-    const archivedClause = await this.getArchivedProjectsClause(archived, req.user?.id as string, "projects.id");
+    const archivedClauseResult = await this.getArchivedProjectsClause(archived, req.user?.id as string, "projects.id", 1);
+    const archivedClause = archivedClauseResult.clause;
 
     const byStatus = await this.getProjectsByStatus(teamId, archivedClause);
     const byCategory = await this.getProjectsByCategory(teamId, archivedClause);

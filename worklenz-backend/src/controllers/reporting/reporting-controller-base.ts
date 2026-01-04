@@ -92,10 +92,15 @@ export default abstract class ReportingControllerBase extends WorklenzController
     return data.count || 0;
   }
 
-  protected static async getArchivedProjectsClause(archived = false, user_id: string, column_name: string) {
-    return archived
-      ? ""
-      : `AND ${column_name} NOT IN (SELECT project_id FROM archived_projects WHERE project_id = ${column_name} AND user_id = '${user_id}') `;
+  protected static async getArchivedProjectsClause(archived = false, user_id: string, column_name: string, paramOffset = 1): Promise<{ clause: string; params: any[] }> {
+    // Fix SQL injection: Use parameterized query for user_id
+    if (archived) {
+      return { clause: "", params: [] };
+    }
+    return {
+      clause: `AND ${column_name} NOT IN (SELECT project_id FROM archived_projects WHERE project_id = ${column_name} AND user_id = $${paramOffset}) `,
+      params: [user_id]
+    };
   }
 
   protected static async getAllTasks(projectId: string | null) {
@@ -330,29 +335,37 @@ export default abstract class ReportingControllerBase extends WorklenzController
     return result.rows;
   }
 
-  protected static getDateRangeClause(key: string, dateRange: string[]) {
-    if (dateRange.length === 2) {
+  protected static getDateRangeClause(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
+    if (dateRange && dateRange.length === 2) {
+      // Fix SQL injection: Use parameterized queries for custom date ranges
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
-      let query = `AND task_work_log.created_at::DATE >= '${start}'::DATE AND task_work_log.created_at < '${end}'::DATE + INTERVAL '1 day'`;
-
+      
+      let query: string;
+      const params: any[] = [];
+      
       if (start === end) {
-        query = `AND task_work_log.created_at::DATE = '${start}'::DATE`;
+        query = `AND task_work_log.created_at::DATE = $${paramOffset}::DATE`;
+        params.push(start);
+      } else {
+        query = `AND task_work_log.created_at::DATE >= $${paramOffset}::DATE AND task_work_log.created_at < $${paramOffset + 1}::DATE + INTERVAL '1 day'`;
+        params.push(start, end);
       }
 
-      return query;
+      return { clause: query, params };
     }
 
+    // Predefined ranges are safe (no user input)
     if (key === DATE_RANGES.YESTERDAY)
-      return "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE";
+      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE", params: [] };
     if (key === DATE_RANGES.LAST_WEEK)
-      return "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'";
+      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'", params: [] };
     if (key === DATE_RANGES.LAST_MONTH)
-      return "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'";
+      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'", params: [] };
     if (key === DATE_RANGES.LAST_QUARTER)
-      return "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'";
+      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'", params: [] };
 
-    return "";
+    return { clause: "", params: [] };
   }
 
   protected static buildBillableQuery(selectedStatuses: { billable: boolean; nonBillable: boolean }): string {

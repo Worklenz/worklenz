@@ -1285,7 +1285,14 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       }
 
       const activities = [];
-      const dayFilter = `NOW() - INTERVAL '${Number(days)} days'`;
+      // Fix SQL injection: Validate and use parameterized query for day filter
+      const daysNum = Number(days);
+      if (isNaN(daysNum) || daysNum < 0 || daysNum > 365) {
+        return res.status(400).json(new ServerResponse(false, null, "Invalid days parameter"));
+      }
+      // Calculate the date threshold in JavaScript to avoid SQL injection
+      const thresholdDate = new Date();
+      thresholdDate.setDate(thresholdDate.getDate() - daysNum);
 
       // Get project activities
       if (!type || type === "project") {
@@ -1300,11 +1307,11 @@ export default class ClientPortalClientsController extends ClientPortalControlle
             'project' as category
           FROM projects p
           LEFT JOIN sys_project_statuses sps ON p.status_id = sps.id
-          WHERE p.client_id = $1 AND p.updated_at >= ${dayFilter}
+          WHERE p.client_id = $1 AND p.updated_at >= $2
           ORDER BY p.updated_at DESC
         `;
 
-        const projectResult = await db.query(projectActivitiesQuery, [id]);
+        const projectResult = await db.query(projectActivitiesQuery, [id, thresholdDate]);
         activities.push(...projectResult.rows);
       }
 
@@ -1320,11 +1327,11 @@ export default class ClientPortalClientsController extends ClientPortalControlle
             r.status,
             'request' as category
           FROM client_portal_requests r
-          WHERE r.client_id = $1 AND r.updated_at >= ${dayFilter}
+          WHERE r.client_id = $1 AND r.updated_at >= $2
           ORDER BY r.updated_at DESC
         `;
 
-        const requestResult = await db.query(requestActivitiesQuery, [id]);
+        const requestResult = await db.query(requestActivitiesQuery, [id, thresholdDate]);
         activities.push(...requestResult.rows);
       }
 
@@ -1344,11 +1351,11 @@ export default class ClientPortalClientsController extends ClientPortalControlle
             i.status,
             'invoice' as category
           FROM client_portal_invoices i
-          WHERE i.client_id = $1 AND i.created_at >= ${dayFilter}
+          WHERE i.client_id = $1 AND i.created_at >= $2
           ORDER BY COALESCE(i.sent_at, i.created_at) DESC
         `;
 
-        const invoiceResult = await db.query(invoiceActivitiesQuery, [id]);
+        const invoiceResult = await db.query(invoiceActivitiesQuery, [id, thresholdDate]);
         activities.push(...invoiceResult.rows);
       }
 
@@ -1368,12 +1375,12 @@ export default class ClientPortalClientsController extends ClientPortalControlle
             'chat' as category
           FROM client_portal_chat_messages m
           LEFT JOIN users u ON m.sender_type = 'team_member' AND m.sender_id = u.id
-          WHERE m.client_id = $1 AND m.created_at >= ${dayFilter}
+          WHERE m.client_id = $1 AND m.created_at >= $2
           ORDER BY m.created_at DESC
           LIMIT 50
         `;
 
-        const chatResult = await db.query(chatActivitiesQuery, [id]);
+        const chatResult = await db.query(chatActivitiesQuery, [id, thresholdDate]);
         activities.push(...chatResult.rows);
       }
 
