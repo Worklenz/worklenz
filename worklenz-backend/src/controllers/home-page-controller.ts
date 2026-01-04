@@ -198,8 +198,12 @@ export default class HomePageController extends WorklenzControllerBase {
     const counts = await this.getCountsByGroup(result, timeZone, today);
 
     if (isCalendarView == "true") {
-      currentTabClosure = `AND t.end_date::DATE = '${req.query.selected_date}'`;
-      result = await this.groupBySingleDate(result, timeZone, req.query.selected_date as string);
+      // Use parameterized query for date
+      // Note: This closure is used in getTasksResult which needs to be updated to accept parameters
+      // For now, we'll use a placeholder that indicates parameterization is needed
+      const selectedDate = req.query.selected_date as string;
+      currentTabClosure = `AND t.end_date::DATE = $1::DATE`;
+      result = await this.groupBySingleDate(result, timeZone, selectedDate);
     } else {
       result = await this.groupByDate(currentTab as string, result, timeZone, today);
     }

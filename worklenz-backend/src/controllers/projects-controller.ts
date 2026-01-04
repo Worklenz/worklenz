@@ -135,7 +135,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     const {searchQuery, searchParams = [], size, offset} = this.toPaginationOptions(req.query, "name", false, 1);
     const userId = req.user?.id;
     
-    // Fix SQL injection: Use parameterized queries for user ID
+    // Use parameterized queries for user ID
     // Calculate parameter offsets: team_id=$1, then searchParams, then userId references
     const teamIdParam = 1;
     const firstSearchParam = teamIdParam + 1;
@@ -230,7 +230,7 @@ export default class ProjectsController extends WorklenzControllerBase {
   }
 
   /**
-   * Validates and maps sort field to prevent SQL injection
+   * Validates and maps sort field
    * Maps frontend field names to safe database column names
    */
   private static validateAndMapSortField(field: string | string[] | undefined, defaultField: string = "name"): string {
@@ -256,7 +256,7 @@ export default class ProjectsController extends WorklenzControllerBase {
       // Check if it's already a qualified column name (e.g., "projects.name")
       if (sortField.includes('.') || sortField === 'updated_at') {
         // Validate it's a safe column name (alphanumeric, underscore, dot only)
-        // Remove any SQL injection attempts
+        // Remove any invalid characters
         const sanitized = sortField.replace(/[^a-zA-Z0-9_.]/g, '');
         if (/^[a-zA-Z_][a-zA-Z0-9_.]*$/.test(sanitized)) {
           return sanitized;
@@ -274,7 +274,7 @@ export default class ProjectsController extends WorklenzControllerBase {
   }
 
   /**
-   * Validates and maps sort field for project members to prevent SQL injection
+   * Validates and maps sort field for project members
    */
   private static validateAndMapMemberSortField(field: string | string[] | undefined, defaultField: string = "name"): string {
     const sortField = Array.isArray(field) ? field[0] : (field || defaultField);
@@ -307,7 +307,7 @@ export default class ProjectsController extends WorklenzControllerBase {
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const {searchQuery, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name");
 
-    // Validate and sanitize sort field to prevent SQL injection
+    // Validate and sanitize sort field
     const safeSortField = this.validateAndMapSortField(sortField, "name");
     const safeSortOrder = (sortOrder === "desc" || sortOrder === "DESC") ? "DESC" : "ASC";
 
@@ -462,7 +462,7 @@ export default class ProjectsController extends WorklenzControllerBase {
   public static async getMembersByProjectId(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const {sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name");
     
-    // Validate and sanitize sort field to prevent SQL injection
+    // Validate and sanitize sort field
     const safeSortField = this.validateAndMapMemberSortField(sortField, "name");
     const safeSortOrder = (sortOrder === "desc" || sortOrder === "DESC") ? "DESC" : "ASC";
     
@@ -806,7 +806,7 @@ export default class ProjectsController extends WorklenzControllerBase {
   public static async getAllTasks(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const {searchQuery, searchParams = [], size, offset} = this.toPaginationOptions(req.query, ["tasks.name"], false, 2);
     const userId = req.user?.id;
-    // Fix SQL injection: Use parameterized query for user ID
+    // Use parameterized query for user ID
     const filterByMember = !req.user?.owner && !req.user?.is_admin ?
       ` AND is_member_of_project(p.id, $${searchParams.length + 1}, $1) ` : "";
 
@@ -814,7 +814,7 @@ export default class ProjectsController extends WorklenzControllerBase {
 
     const dueSoon = isDueSoon ? "AND tasks.end_date IS NOT NULL" : "";
     const orderBy = isDueSoon ? "tasks.end_date DESC" : "p.name";
-    // Fix SQL injection: Use parameterized query for user ID
+    // Use parameterized query for user ID
     const userIdParam = searchParams.length + 1;
     const assignedToMe = req.query.filter == "2" ? `
       AND tasks.id IN (SELECT task_id
@@ -1023,7 +1023,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     const groupBy = req.query.groupBy as string || "category";
     const userId = req.user?.id;
     
-    // Fix SQL injection: Use parameterized queries for user ID
+    // Use parameterized queries for user ID
     // Calculate parameter offsets: team_id=$1, then searchParams, then categories, statuses, userId
     const teamIdParam = 1;
     let paramOffset = teamIdParam + searchParams.length;
@@ -1082,7 +1082,7 @@ export default class ProjectsController extends WorklenzControllerBase {
         groupOrderBy = "COALESCE(project_categories.name, 'Uncategorized')";
     }
 
-    // Validate and sanitize sort field to prevent SQL injection
+    // Validate and sanitize sort field
     const safeSortField = this.validateAndMapSortField(sortField, "projects.name");
     const safeSortOrder = (sortOrder === "desc" || sortOrder === "DESC") ? "DESC" : "ASC";
     

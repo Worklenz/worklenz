@@ -29,11 +29,11 @@ export default class ReportingController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getEstimatedVsActualTime(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teams = (req.body.teams || []) as string[]; // ids
-    // Fix SQL injection: Use SqlHelper.buildInClause for safe IN clause
+    // Use SqlHelper.buildInClause for safe IN clause
     const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teams, 1);
 
     const projectStatus = (req.body.projectStatus || []) as string[]; // ids
-    // Fix SQL injection: Use SqlHelper.buildInClause for safe IN clause
+    // Use SqlHelper.buildInClause for safe IN clause
     const { clause: projectStatusIdsClause, params: projectStatusIdsParams } = SqlHelper.buildInClause(projectStatus, teamIdsParams.length + 1);
 
     if (!teams.length || !projectStatus.length) {
@@ -84,7 +84,7 @@ export default class ReportingController extends WorklenzControllerBase {
 
   private static getDateRangeClause(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange && dateRange.length === 2) {
-      // Fix SQL injection: Use parameterized queries for custom date ranges
+      // Use parameterized queries for custom date ranges
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
 
@@ -117,7 +117,7 @@ export default class ReportingController extends WorklenzControllerBase {
 
   private static async getTimeLoggesByProjects(projects: string[], users: string[], key: string, dateRange: string[], archived = false) {
     try {
-      // Fix SQL injection: Use SqlHelper.buildInClause for safe IN clauses
+      // Use SqlHelper.buildInClause for safe IN clauses
       const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, 1);
       const { clause: userIdsClause, params: userIdsParams } = SqlHelper.buildInClause(users, projectIdsParams.length + 1);
       let paramOffset = projectIdsParams.length + userIdsParams.length + 1;
@@ -403,7 +403,7 @@ export default class ReportingController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getAllocation(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teams = (req.body.teams || []) as string[]; // ids
-    // Fix SQL injection: Use SqlHelper.buildInClause for safe IN clause
+    // Use SqlHelper.buildInClause for safe IN clause
     const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teams, 1);
 
     const projectIds = (req.body.projects || []) as string[];
@@ -447,7 +447,7 @@ export default class ReportingController extends WorklenzControllerBase {
   public static async getCategoriesByTeams(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const selectedTeams = (req.body || []) as string[]; // ids
 
-    // Fix SQL injection: Use SqlHelper.buildInClause for safe IN clause
+    // Use SqlHelper.buildInClause for safe IN clause
     const { clause: idsClause, params: idsParams } = SqlHelper.buildInClause(selectedTeams, 1);
 
     if (!selectedTeams.length)
@@ -466,7 +466,7 @@ export default class ReportingController extends WorklenzControllerBase {
     const selectedCategories = (req.body.selectedCategories || []) as string[];
     const isNoCategorySelected = req.body.noCategoryIncluded;
 
-    // Fix SQL injection: Use SqlHelper.buildInClause for safe IN clauses
+    // Use SqlHelper.buildInClause for safe IN clauses
     const { clause: idsClause, params: idsParams } = SqlHelper.buildInClause(selectedTeams, 1);
     const { clause: categoriesClause, params: categoriesParams } = SqlHelper.buildInClause(selectedCategories, idsParams.length + 1);
 
@@ -655,7 +655,7 @@ export default class ReportingController extends WorklenzControllerBase {
     if (!teamIds.length || !projectIds.length)
       return { users: [], projects: [] };
 
-    // Fix SQL injection: Use SqlHelper.buildInClause for safe IN clause
+    // Use SqlHelper.buildInClause for safe IN clause
     const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teamIds, 1);
 
     const q = `SELECT id, (SELECT name)
@@ -854,12 +854,12 @@ export default class ReportingController extends WorklenzControllerBase {
     const { searchQuery, searchParams = [], size, offset } = this.toPaginationOptions(req.query, "name", false, 1);
 
     const teams = (req.body.teams || []) as string[]; // ids
-    // Fix SQL injection: Use SqlHelper.buildInClause for safe IN clause
+    // Use SqlHelper.buildInClause for safe IN clause
     const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teams, searchParams.length + 1);
     let paramOffset = searchParams.length + teamIdsParams.length + 1;
 
     const status = (req.body.status || []) as string[];
-    // Fix SQL injection: Use SqlHelper.buildInClause for safe IN clause
+    // Use SqlHelper.buildInClause for safe IN clause
     const { clause: statusIdsClause, params: statusIdsParams } = SqlHelper.buildInClause(status, paramOffset);
     paramOffset += statusIdsParams.length;
 
@@ -983,7 +983,7 @@ export default class ReportingController extends WorklenzControllerBase {
     if (!teams.length || !status.length || !user_id)
       return { users: [], projects: [] };
 
-    // Fix SQL injection: Use SqlHelper.buildInClause for safe IN clauses
+    // Use SqlHelper.buildInClause for safe IN clauses
     const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teams, 1);
     const { clause: statusIdsClause, params: statusIdsParams } = SqlHelper.buildInClause(status, teamIdsParams.length + 1);
 
@@ -1546,7 +1546,7 @@ export default class ReportingController extends WorklenzControllerBase {
   }
 
   public static async getTeamMemberInsightData(team_id: string | undefined, projects: string, status: string, search: string, duration: string, userId: string | undefined) {
-    // Fix SQL injection: Use parameterized query for full-text search
+    // Use parameterized query for full-text search
     // Use $3 since team_id is $1 and userId is $2
     const searchQuery = search ? `AND TO_TSVECTOR(tmiv.name || ' ' || tmiv.email || ' ' || u.name) @@ TO_TSQUERY($3)` : "";
     const searchParam = search ? `${search}:*` : null;
@@ -1694,7 +1694,7 @@ export default class ReportingController extends WorklenzControllerBase {
       return res.status(200).send(new ServerResponse(true, { total: 0, data: [] }));
     }
 
-    // Fix SQL injection: Use SqlHelper.buildInClause for safe IN clauses
+    // Use SqlHelper.buildInClause for safe IN clauses
     // Note: getTeamMemberInsightData still expects strings, so we'll need to refactor it
     // For now, we'll pass the arrays and let the method handle parameterization
     const projectIds = projects.join(",");
@@ -1718,7 +1718,7 @@ export default class ReportingController extends WorklenzControllerBase {
   }
 
   public static async getProjectsOfMember(projectIds: string[], statusIds: string[], dateRangeClause: { clause: string; params: any[] } | null, memberId: string) {
-    // Fix SQL injection: Use parameterized queries
+    // Use parameterized queries
     const params: any[] = [memberId];
     let paramOffset = 2;
     
@@ -1762,7 +1762,7 @@ export default class ReportingController extends WorklenzControllerBase {
   public static async getProjectsByMember(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { dateRange, projects, status, duration, memberId } = req.body;
 
-    // Fix SQL injection: Pass arrays directly instead of concatenated strings
+    // Pass arrays directly instead of concatenated strings
     const projectIds = projects as string[];
     const statusIds = status as string[];
 

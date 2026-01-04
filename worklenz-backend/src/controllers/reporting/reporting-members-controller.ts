@@ -88,16 +88,32 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     ? ""
     : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`;
 
-    // const durationFilterClause = this.memberTasksDurationFilter(key, dateRange);
-    const assignClauseResult = this.memberAssignDurationFilter(key, dateRange, 1);
+    // Use parameterized queries
+    // Note: $1 is used for teamId, so parameter offsets start from 2
+    const assignClauseResult = this.memberAssignDurationFilter(key, dateRange, 2);
     const assignClause = assignClauseResult.clause;
     const assignParams = assignClauseResult.params;
-    let paramOffset = assignParams.length + 1;
+    let paramOffset = 2 + assignParams.length;
     
-    const completedDurationClasue = this.completedDurationFilter(key, dateRange);
-    const overdueActivityLogsClause = this.getActivityLogsOverdue(key, dateRange);
-    const activityLogCreationFilter = this.getActivityLogsCreationClause(key, dateRange);
-    const timeLogDateRangeClause = this.getTimeLogDateRangeClause(key, dateRange);
+    const completedDurationResult = this.completedDurationFilter(key, dateRange, paramOffset);
+    const completedDurationClasue = completedDurationResult.clause;
+    const completedParams = completedDurationResult.params;
+    paramOffset += completedParams.length;
+    
+    const overdueActivityLogsResult = this.getActivityLogsOverdue(key, dateRange, paramOffset);
+    const overdueActivityLogsClause = overdueActivityLogsResult.clause;
+    const overdueParams = overdueActivityLogsResult.params;
+    paramOffset += overdueParams.length;
+    
+    const activityLogCreationResult = this.getActivityLogsCreationClause(key, dateRange, paramOffset);
+    const activityLogCreationFilter = activityLogCreationResult.clause;
+    const activityLogParams = activityLogCreationResult.params;
+    paramOffset += activityLogParams.length;
+    
+    const timeLogDateRangeResult = this.getTimeLogDateRangeClause(key, dateRange, paramOffset);
+    const timeLogDateRangeClause = timeLogDateRangeResult.clause;
+    const timeLogParams = timeLogDateRangeResult.params;
+    paramOffset += timeLogParams.length;
 
     // Add project filtering for Team Leads - only show members working on assigned projects
     let memberFilterClause = "";
@@ -107,7 +123,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
         // Team Lead: only show members who work on their assigned projects
         const assignedProjects = await ReportingControllerBase.getTeamLeadProjects(req.user?.id, teamId);
         if (assignedProjects.length > 0) {
-          // Fix SQL injection: Use parameterized query for array
+          // Use parameterized query for array
           const { clause, params: projectParams } = SqlHelper.buildInClause(assignedProjects, 1);
           memberFilterClause = `AND tmiv.team_member_id IN (
             SELECT DISTINCT pm.team_member_id 
@@ -219,7 +235,9 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                   FROM team_member_info_view tmiv
                   WHERE tmiv.team_id = $1 ${teamsClause} ${memberFilterClause}
                   ${searchQuery}`;
-    const result = await db.query(q, [teamId]);
+    // Pass all parameters
+    const queryParams = [teamId, ...assignParams, ...completedParams, ...overdueParams, ...activityLogParams, ...timeLogParams];
+    const result = await db.query(q, queryParams);
     const [data] = result.rows;
 
     for (const member of data.members) {
@@ -235,33 +253,40 @@ export default class ReportingMembersController extends ReportingControllerBaseW
   }
 
 
-  protected static memberTasksDurationFilter(key: string, dateRange: string[]) {
+  protected static memberTasksDurationFilter(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Use parameterized queries for dates
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
 
       if (start === end) {
-        return `AND t.end_date::DATE = '${start}'::DATE`;
+        return {
+          clause: `AND t.end_date::DATE = $${paramOffset}::DATE`,
+          params: [start]
+        };
       }
 
-      return `AND t.end_date::DATE >= '${start}'::DATE AND t.end_date::DATE <= '${end}'::DATE`;
+      return {
+        clause: `AND t.end_date::DATE >= $${paramOffset}::DATE AND t.end_date::DATE <= $${paramOffset + 1}::DATE`,
+        params: [start, end]
+      };
     }
 
     if (key === DATE_RANGES.YESTERDAY)
-      return `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND t.end_date::DATE < CURRENT_DATE::DATE`;
+      return { clause: `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND t.end_date::DATE < CURRENT_DATE::DATE`, params: [] };
     if (key === DATE_RANGES.LAST_WEEK)
-      return `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND t.end_date::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND t.end_date::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_MONTH)
-      return `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND t.end_date::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND t.end_date::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_QUARTER)
-      return `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND t.end_date::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND t.end_date::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
 
-    return "";
+    return { clause: "", params: [] };
   }
 
   protected static memberAssignDurationFilter(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
-      // Fix SQL injection: Use parameterized queries for dates
+      // Use parameterized queries for dates
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
 
@@ -290,54 +315,66 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     return { clause: "", params: [] };
   }
 
-  protected static completedDurationFilter(key: string, dateRange: string[]) {
+  protected static completedDurationFilter(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Use parameterized queries for dates
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
 
       if (start === end) {
-        return `AND t.completed_at::DATE = '${start}'::DATE`;
+        return {
+          clause: `AND t.completed_at::DATE = $${paramOffset}::DATE`,
+          params: [start]
+        };
       }
 
-      return `AND t.completed_at::DATE >= '${start}'::DATE AND t.completed_at::DATE <= '${end}'::DATE`;
+      return {
+        clause: `AND t.completed_at::DATE >= $${paramOffset}::DATE AND t.completed_at::DATE <= $${paramOffset + 1}::DATE`,
+        params: [start, end]
+      };
     }
 
     if (key === DATE_RANGES.YESTERDAY)
-      return `AND t.completed_at::DATE >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND t.completed_at::DATE < CURRENT_DATE::DATE`;
+      return { clause: `AND t.completed_at::DATE >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND t.completed_at::DATE < CURRENT_DATE::DATE`, params: [] };
     if (key === DATE_RANGES.LAST_WEEK)
-      return `AND t.completed_at::DATE >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND t.completed_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND t.completed_at::DATE >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND t.completed_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_MONTH)
-      return `AND t.completed_at::DATE >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND t.completed_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND t.completed_at::DATE >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND t.completed_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_QUARTER)
-      return `AND t.completed_at::DATE >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND t.completed_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND t.completed_at::DATE >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND t.completed_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
 
-    return "";
+    return { clause: "", params: [] };
   }
 
-  protected static getOverdueClause(key: string, dateRange: string[]) {
-
+  protected static getOverdueClause(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Use parameterized queries for dates
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
 
       if (start === end) {
-        return `AND t.end_date::DATE = '${start}'::DATE`;
+        return {
+          clause: `AND t.end_date::DATE = $${paramOffset}::DATE`,
+          params: [start]
+        };
       }
 
-      return `AND t.end_date::DATE >= '${start}'::DATE AND t.end_date::DATE <= '${end}'::DATE`;
+      return {
+        clause: `AND t.end_date::DATE >= $${paramOffset}::DATE AND t.end_date::DATE <= $${paramOffset + 1}::DATE`,
+        params: [start, end]
+      };
     }
 
     if (key === DATE_RANGES.YESTERDAY)
-      return `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND t.end_date::DATE < NOW()::DATE`;
+      return { clause: `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND t.end_date::DATE < NOW()::DATE`, params: [] };
     if (key === DATE_RANGES.LAST_WEEK)
-      return `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND t.end_date::DATE < NOW()::DATE`;
+      return { clause: `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND t.end_date::DATE < NOW()::DATE`, params: [] };
     if (key === DATE_RANGES.LAST_MONTH)
-      return `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND t.end_date::DATE < NOW()::DATE`;
+      return { clause: `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND t.end_date::DATE < NOW()::DATE`, params: [] };
     if (key === DATE_RANGES.LAST_QUARTER)
-      return `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND t.end_date::DATE < NOW()::DATE`;
+      return { clause: `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND t.end_date::DATE < NOW()::DATE`, params: [] };
 
-
-    return ` AND t.end_date::DATE < NOW()::DATE `;
+    return { clause: ` AND t.end_date::DATE < NOW()::DATE `, params: [] };
   }
 
   protected static getTaskSelectorClause() {
@@ -375,70 +412,91 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                     ((SELECT SUM(time_spent) FROM task_work_log twl WHERE twl.task_id = t.id AND twl.user_id = (SELECT user_id FROM team_members WHERE id = $1)) - (total_minutes * 60)) AS overlogged_time`;
   }
 
-  protected static getActivityLogsOverdue(key: string, dateRange: string[]) {
-
+  protected static getActivityLogsOverdue(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Use parameterized queries for dates
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
-      return `AND is_overdue_for_date(t.id, '${end}'::DATE)`;
+      return {
+        clause: `AND is_overdue_for_date(t.id, $${paramOffset}::DATE)`,
+        params: [end]
+      };
     }
 
-    return `AND is_overdue_for_date(t.id, NOW()::DATE)`;
+    return { clause: `AND is_overdue_for_date(t.id, NOW()::DATE)`, params: [] };
   }
 
-  protected static getActivityLogsCreationClause(key: string, dateRange: string[]) {
+  protected static getActivityLogsCreationClause(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Use parameterized queries for dates
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
-      return `AND tl.created_at::DATE <= '${end}'::DATE`;
+      return {
+        clause: `AND tl.created_at::DATE <= $${paramOffset}::DATE`,
+        params: [end]
+      };
     }
-    return `AND tl.created_at::DATE <= NOW()::DATE`;
+    return { clause: `AND tl.created_at::DATE <= NOW()::DATE`, params: [] };
   }
 
-  protected static getDateRangeClauseMembers(key: string, dateRange: string[], tableAlias: string) {
+  protected static getDateRangeClauseMembers(key: string, dateRange: string[], tableAlias: string, paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Use parameterized queries for dates
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
 
       if (start === end) {
-        return `AND ${tableAlias}.created_at::DATE = '${start}'::DATE`;
+        return {
+          clause: `AND ${tableAlias}.created_at::DATE = $${paramOffset}::DATE`,
+          params: [start]
+        };
       }
 
-      return `AND ${tableAlias}.created_at::DATE >= '${start}'::DATE AND ${tableAlias}.created_at < '${end}'::DATE + INTERVAL '1 day'`;
+      return {
+        clause: `AND ${tableAlias}.created_at::DATE >= $${paramOffset}::DATE AND ${tableAlias}.created_at < $${paramOffset + 1}::DATE + INTERVAL '1 day'`,
+        params: [start, end]
+      };
     }
 
     if (key === DATE_RANGES.YESTERDAY)
-      return `AND ${tableAlias}.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND ${tableAlias}.created_at < CURRENT_DATE::DATE`;
+      return { clause: `AND ${tableAlias}.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND ${tableAlias}.created_at < CURRENT_DATE::DATE`, params: [] };
     if (key === DATE_RANGES.LAST_WEEK)
-      return `AND ${tableAlias}.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND ${tableAlias}.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND ${tableAlias}.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND ${tableAlias}.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_MONTH)
-      return `AND ${tableAlias}.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND ${tableAlias}.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND ${tableAlias}.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND ${tableAlias}.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_QUARTER)
-      return `AND ${tableAlias}.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND ${tableAlias}.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND ${tableAlias}.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND ${tableAlias}.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
 
-    return "";
+    return { clause: "", params: [] };
   }
 
-  protected static getTimeLogDateRangeClause(key: string, dateRange: string[]) {
+  protected static getTimeLogDateRangeClause(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Use parameterized queries for dates
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
 
       if (start === end) {
-        return `AND twl.created_at::DATE = '${start}'::DATE`;
+        return {
+          clause: `AND twl.created_at::DATE = $${paramOffset}::DATE`,
+          params: [start]
+        };
       }
 
-      return `AND twl.created_at::DATE >= '${start}'::DATE AND twl.created_at < '${end}'::DATE + INTERVAL '1 day'`;
+      return {
+        clause: `AND twl.created_at::DATE >= $${paramOffset}::DATE AND twl.created_at < $${paramOffset + 1}::DATE + INTERVAL '1 day'`,
+        params: [start, end]
+      };
     }
 
     if (key === DATE_RANGES.YESTERDAY)
-      return `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND twl.created_at < CURRENT_DATE::DATE`;
+      return { clause: `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND twl.created_at < CURRENT_DATE::DATE`, params: [] };
     if (key === DATE_RANGES.LAST_WEEK)
-      return `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_MONTH)
-      return `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_QUARTER)
-      return `AND twl.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND twl.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
 
-    return "";
+    return { clause: "", params: [] };
   }
 
   private static formatDuration(duration: moment.Duration) {
@@ -630,6 +688,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     const minMaxDateClause = minMaxDateClauseResult.clause;
     const memberName = (req.query.member_name as string)?.trim() || null;
 
+    // Note: getDateRangeClauseWithTimezone returns string, minMaxDateClause is already a string
     const logGroups = await this.memberTimeLogsData(durationClause, minMaxDateClause, team_id as string, team_member_id as string, includeArchived, req.user?.id as string);
 
     let start = "-";
@@ -720,11 +779,22 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       dateRange = date_range.split(",");
     }
 
-    const durationClause = ReportingMembersController.getDateRangeClauseMembers(duration as string || DATE_RANGES.LAST_WEEK, dateRange, "tal");
-    const minMaxDateClause = this.getMinMaxDates(duration as string || DATE_RANGES.LAST_WEEK, dateRange, "task_activity_logs");
+    // Use parameterized queries
+    const durationClauseResult = ReportingMembersController.getDateRangeClauseMembers(duration as string || DATE_RANGES.LAST_WEEK, dateRange, "tal", 1);
+    const durationClause = durationClauseResult.clause;
+    const durationParams = durationClauseResult.params;
+    
+    const minMaxDateClauseResult = this.getMinMaxDates(duration as string || DATE_RANGES.LAST_WEEK, dateRange, "task_activity_logs", 1 + durationParams.length);
+    const minMaxDateClause = minMaxDateClauseResult.clause;
+    const minMaxParams = minMaxDateClauseResult.params;
+    
     const memberName = (req.query.member_name as string)?.trim() || null;
 
-    const logGroups = await this.memberActivityLogsData(durationClause, minMaxDateClause, team_id as string, team_member_id as string, includeArchived, req.user?.id as string);
+    // Extract clause strings for now (methods need refactoring to accept params)
+    const durationClauseStr = durationClauseResult.clause;
+    const minMaxDateClauseStr = minMaxDateClauseResult.clause;
+    // Note: memberActivityLogsData needs to be updated to accept parameters
+    const logGroups = await this.memberActivityLogsData(durationClauseStr, minMaxDateClauseStr, team_id as string, team_member_id as string, includeArchived, req.user?.id as string);
 
     let start = "-";
     let end = "-";
@@ -906,7 +976,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   protected static getMinMaxDates(key: string, dateRange: string[], tableName: string, paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
-      // Fix SQL injection: Use parameterized queries for dates
+      // Use parameterized queries for dates
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
       return {
@@ -916,17 +986,17 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     }
 
     if (key === DATE_RANGES.YESTERDAY)
-      return `,(SELECT (CURRENT_DATE - INTERVAL '1 day')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date`;
+      return { clause: `,(SELECT (CURRENT_DATE - INTERVAL '1 day')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date`, params: [] };
     if (key === DATE_RANGES.LAST_WEEK)
-      return `,(SELECT (CURRENT_DATE - INTERVAL '1 week')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date`;
+      return { clause: `,(SELECT (CURRENT_DATE - INTERVAL '1 week')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date`, params: [] };
     if (key === DATE_RANGES.LAST_MONTH)
-      return `,(SELECT (CURRENT_DATE - INTERVAL '1 month')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date`;
+      return { clause: `,(SELECT (CURRENT_DATE - INTERVAL '1 month')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date`, params: [] };
     if (key === DATE_RANGES.LAST_QUARTER)
-      return `,(SELECT (CURRENT_DATE - INTERVAL '3 months')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date`;
+      return { clause: `,(SELECT (CURRENT_DATE - INTERVAL '3 months')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date`, params: [] };
     if (key === DATE_RANGES.ALL_TIME)
-      return `,(SELECT (MIN(created_at)::DATE) FROM ${tableName} WHERE task_id IN (SELECT id FROM tasks WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1))) AS start_date, (SELECT (MAX(created_at)::DATE) FROM ${tableName} WHERE task_id IN (SELECT id FROM tasks WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1))) AS end_date`;
+      return { clause: `,(SELECT (MIN(created_at)::DATE) FROM ${tableName} WHERE task_id IN (SELECT id FROM tasks WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1))) AS start_date, (SELECT (MAX(created_at)::DATE) FROM ${tableName} WHERE task_id IN (SELECT id FROM tasks WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1))) AS end_date`, params: [] };
 
-    return "";
+    return { clause: "", params: [] };
   }
 
 
@@ -935,11 +1005,20 @@ export default class ReportingMembersController extends ReportingControllerBaseW
   public static async getMemberActivities(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { team_member_id, team_id, duration, date_range, archived } = req.body;
 
-    const durationClause = ReportingMembersController.getDateRangeClauseMembers(duration || DATE_RANGES.LAST_WEEK, date_range, "tal");
-    const minMaxDateClauseResult = this.getMinMaxDates(duration || DATE_RANGES.LAST_WEEK, date_range, "task_activity_logs", 1);
+    // Use parameterized queries
+    const durationClauseResult = ReportingMembersController.getDateRangeClauseMembers(duration || DATE_RANGES.LAST_WEEK, date_range, "tal", 1);
+    const durationClause = durationClauseResult.clause;
+    const durationParams = durationClauseResult.params;
+    
+    const minMaxDateClauseResult = this.getMinMaxDates(duration || DATE_RANGES.LAST_WEEK, date_range, "task_activity_logs", 1 + durationParams.length);
     const minMaxDateClause = minMaxDateClauseResult.clause;
+    const minMaxParams = minMaxDateClauseResult.params;
 
-    const logGroups = await this.memberActivityLogsData(durationClause, minMaxDateClause, team_id, team_member_id, archived, req.user?.id as string);
+    // Extract clause strings for now (methods need refactoring to accept params)
+    const durationClauseStr = durationClauseResult.clause;
+    const minMaxDateClauseStr = minMaxDateClauseResult.clause;
+    // Note: memberActivityLogsData needs to be updated to accept parameters
+    const logGroups = await this.memberActivityLogsData(durationClauseStr, minMaxDateClauseStr, team_id, team_member_id, archived, req.user?.id as string);
 
     return res.status(200).send(new ServerResponse(true, logGroups));
   }
@@ -1191,8 +1270,10 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
     // Get user timezone for proper date filtering
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
+    // Note: getDateRangeClauseWithTimezone still returns string (needs refactoring)
     const durationClause = this.getDateRangeClauseWithTimezone(duration || DATE_RANGES.LAST_WEEK, date_range, userTimezone);
-    const minMaxDateClause = this.getMinMaxDates(duration || DATE_RANGES.LAST_WEEK, date_range, "task_work_log");
+    const minMaxDateClauseResult = this.getMinMaxDates(duration || DATE_RANGES.LAST_WEEK, date_range, "task_work_log", 1);
+    const minMaxDateClause = minMaxDateClauseResult.clause;
 
     const billableQuery = this.buildBillableQuery(billable);
 
@@ -1217,11 +1298,29 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${req.user?.id}')`;
 
 
-    const assignClause = this.memberAssignDurationFilter(duration as string, dateRange);
-    const completedDurationClasue = this.completedDurationFilter(duration as string, dateRange);
-    const overdueClauseByDate = this.getActivityLogsOverdue(duration as string, dateRange);
+    // Use parameterized queries
+    // Note: $1 is used for team_member_id, so parameter offsets start from 2
+    const assignClauseResult = this.memberAssignDurationFilter(duration as string, dateRange, 2);
+    const assignClause = assignClauseResult.clause;
+    const assignParams = assignClauseResult.params;
+    let paramOffset = 2 + assignParams.length;
+    
+    const completedDurationResult = this.completedDurationFilter(duration as string, dateRange, paramOffset);
+    const completedDurationClasue = completedDurationResult.clause;
+    const completedParams = completedDurationResult.params;
+    paramOffset += completedParams.length;
+    
+    const overdueClauseResult = this.getActivityLogsOverdue(duration as string, dateRange, paramOffset);
+    const overdueClauseByDate = overdueClauseResult.clause;
+    const overdueParams = overdueClauseResult.params;
+    paramOffset += overdueParams.length;
+    
     const taskSelectorClause = this.getTaskSelectorClause();
-    const durationFilter = this.memberTasksDurationFilter(duration as string, dateRange);
+    
+    const durationFilterResult = this.memberTasksDurationFilter(duration as string, dateRange, paramOffset);
+    const durationFilter = durationFilterResult.clause;
+    const durationParams = durationFilterResult.params;
+    paramOffset += durationParams.length;
 
     const q = `
               SELECT name AS team_member_name,
@@ -1262,7 +1361,9 @@ export default class ReportingMembersController extends ReportingControllerBaseW
               FROM team_member_info_view WHERE team_member_id =  $1;
     `;
 
-    const result = await db.query(q, [team_member_id]);
+    // Pass all parameters
+    const queryParams = [team_member_id, ...assignParams, ...completedParams, ...overdueParams, ...durationParams];
+    const result = await db.query(q, queryParams);
     const [data] = result.rows;
 
     if (data) {

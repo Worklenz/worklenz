@@ -1,11 +1,11 @@
 /**
- * This middleware detects and blocks SQL injection attempts.
+ * This middleware detects and blocks malicious SQL patterns in requests.
  */
 
 import { Request, Response, NextFunction } from "express";
 
 /**
- * Common SQL injection patterns to detect
+ * Common malicious SQL patterns to detect
  */
 const SQL_INJECTION_PATTERNS = [
   // UNION-based injection
@@ -88,7 +88,7 @@ const SUSPICIOUS_PARAM_NAMES = [
 ];
 
 /**
- * Check if a value contains SQL injection patterns
+ * Check if a value contains malicious SQL patterns
  */
 function containsSqlInjection(value: any): boolean {
   if (typeof value !== 'string') {
@@ -108,7 +108,7 @@ function containsSqlInjection(value: any): boolean {
 }
 
 /**
- * Recursively check an object for SQL injection patterns
+ * Recursively check an object for malicious SQL patterns
  */
 function checkObjectForInjection(obj: any, path: string = ''): { found: boolean; location: string; value: string } | null {
   if (obj === null || obj === undefined) {
@@ -166,7 +166,7 @@ function logSecurityIncident(req: Request, detection: { location: string; value:
   };
   
   // Log to console (in production, send to monitoring service)
-  console.error('[SECURITY ALERT] SQL Injection Attempt Detected:', JSON.stringify(incident, null, 2));
+  console.error('[SECURITY ALERT] Malicious SQL Pattern Detected:', JSON.stringify(incident, null, 2));
   
   // TODO: Send alert to security team
   // TODO: Log to security audit table
@@ -174,9 +174,9 @@ function logSecurityIncident(req: Request, detection: { location: string; value:
 }
 
 /**
- * SQL Injection Detection Middleware
+ * SQL Pattern Detection Middleware
  * 
- * This middleware checks all incoming requests for SQL injection patterns
+ * This middleware checks all incoming requests for malicious SQL patterns
  * and blocks suspicious requests.
  */
 export const sqlInjectionDetector = (req: Request, res: Response, next: NextFunction) => {
@@ -243,7 +243,7 @@ export const sqlInjectionDetector = (req: Request, res: Response, next: NextFunc
     next();
   } catch (error) {
     // Don't let the security middleware crash the app
-    console.error('[SQL Injection Detector] Error:', error);
+    console.error('[SQL Pattern Detector] Error:', error);
     next();
   }
 };

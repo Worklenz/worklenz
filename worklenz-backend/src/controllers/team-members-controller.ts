@@ -683,7 +683,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
   public static async getProjectsByTeamMember(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { project, status, startDate, endDate } = req.query;
 
-    // Fix SQL injection: Use parameterized queries
+    // Use parameterized queries
     let projectsString = "";
     let statusString = "";
     let dateFilterString1 = "";
@@ -762,7 +762,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
   }
 
   public static async getTeamMemberInsightData(team_id: string | undefined, start: any, end: any, project: any, status: any, searchQuery: string, sortField: string, sortOrder: string, size: any, offset: any, all: any) {
-    // Fix SQL injection: Use parameterized queries
+    // Use parameterized queries
     let timeRangeTaskWorkLog = "";
     let projectsFilterString = "";
     let statusFilterString = "";

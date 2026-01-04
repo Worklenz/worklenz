@@ -93,7 +93,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
   }
 
   protected static async getArchivedProjectsClause(archived = false, user_id: string, column_name: string, paramOffset = 1): Promise<{ clause: string; params: any[] }> {
-    // Fix SQL injection: Use parameterized query for user_id
+    // Use parameterized query for user_id
     if (archived) {
       return { clause: "", params: [] };
     }
@@ -201,7 +201,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
       paramIndex++;
     }
 
-    // Validate sort field to prevent SQL injection
+    // Validate sort field
     const allowedSortFields: { [key: string]: string } = {
       'name': 't.name',
       'end_date': 't.end_date',
@@ -337,7 +337,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
 
   protected static getDateRangeClause(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange && dateRange.length === 2) {
-      // Fix SQL injection: Use parameterized queries for custom date ranges
+      // Use parameterized queries for custom date ranges
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
       

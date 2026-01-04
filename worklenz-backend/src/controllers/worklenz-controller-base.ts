@@ -40,7 +40,7 @@ export default abstract class WorklenzControllerBase {
     let searchParams: string[] = [];
 
     if (search) {
-      // Fix SQL injection: Use parameterized queries instead of string interpolation
+      // Use parameterized queries instead of string interpolation
       const searchPattern = `%${search}%`;
       let s = "";
       let currentParam = paramOffset;

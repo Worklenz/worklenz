@@ -37,7 +37,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
   private static async getTimeLoggedByProjects(projects: string[], users: string[], key: string, dateRange: string[], archived = false, user_id = "", billable: { billable: boolean; nonBillable: boolean }): Promise<any> {
     try {
-      // Fix SQL injection: Use SqlHelper.buildInClause for safe IN clauses
+      // Use SqlHelper.buildInClause for safe IN clauses
       const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, 1);
       const { clause: userIdsClause, params: userIdsParams } = SqlHelper.buildInClause(users, projectIdsParams.length + 1);
       let paramOffset = projectIdsParams.length + userIdsParams.length + 1;
@@ -163,7 +163,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
   private static async getUserIds(teamIds: string[]) {
     try {
-      // Fix SQL injection: Use SqlHelper.buildInClause for safe IN clause
+      // Use SqlHelper.buildInClause for safe IN clause
       const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teamIds, 1);
       const q = `SELECT id, (SELECT name)
                FROM users
@@ -185,7 +185,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const teams = (req.body.teams || []) as string[]; // ids
     const billable = req.body.billable;
 
-    // Fix SQL injection: Pass array directly instead of concatenated string
+    // Pass array directly instead of concatenated string
     const projectIds = (req.body.projects || []) as string[];
 
     if (!teams.length || !projectIds.length)
@@ -213,7 +213,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
   @HandleExceptions()
   public static async export(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     const teams = (req.query.teams as string)?.split(",").filter(t => t.trim());
-    // Fix SQL injection: Use parameterized queries
+    // Use parameterized queries
     const billable = req.body.billable ? req.body.billable : { billable: req.query.billable === "true", nonBillable: req.query.nonBillable === "true" };
 
     const projectIds = (req.query.projects as string)?.split(",").filter(p => p.trim());
@@ -367,11 +367,11 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const archived = req.query.archived === "true";
 
     const teams = (req.body.teams || []) as string[]; // ids
-    // Fix SQL injection: Use parameterized queries
+    // Use parameterized queries
     const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teams, 1);
 
     const projects = (req.body.projects || []) as string[];
-    // Fix SQL injection: Use parameterized queries
+    // Use parameterized queries
     const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, teamIdsParams.length + 1);
     let paramOffset = teamIdsParams.length + projectIdsParams.length + 1;
 
@@ -459,11 +459,11 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const archived = req.query.archived === "true";
 
     const teams = (req.body.teams || []) as string[]; // ids
-    // Fix SQL injection: Use parameterized queries
+    // Use parameterized queries
     const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teams, 1);
 
     const projects = (req.body.projects || []) as string[];
-    // Fix SQL injection: Use parameterized queries
+    // Use parameterized queries
     const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, teamIdsParams.length + 1);
 
     const categories = (req.body.categories || []) as string[];
@@ -483,7 +483,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
       endDate = moment(date_range[1]);
     } else if (duration === DATE_RANGES.ALL_TIME) {
       // Fetch the earliest start_date (or created_at if null) from selected projects
-      // Fix SQL injection: Use parameterized queries
+      // Use parameterized queries
       let minDateQuery: string;
       let minDateParams: any[];
       if (projects.length > 0) {
@@ -544,7 +544,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
     };
 
     // Get organization ID for holiday queries
-    // Fix SQL injection: Use parameterized query
+    // Use parameterized query
     const orgIdQuery = `SELECT t.organization_id FROM teams t WHERE t.id IN (${teamIdsClause}) LIMIT 1`;
     const orgIdResult = await db.query(orgIdQuery, teamIdsParams);
     const organizationId = orgIdResult.rows[0]?.organization_id;
@@ -675,7 +675,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
     }
 
     // Get organization working hours
-    // Fix SQL injection: Use parameterized query
+    // Use parameterized query
     const orgWorkingHoursQuery = `SELECT hours_per_day FROM organizations WHERE id = (SELECT t.organization_id FROM teams t WHERE t.id IN (${teamIdsClause}) LIMIT 1)`;
     const orgWorkingHoursResult = await db.query(orgWorkingHoursQuery, teamIdsParams);
     const orgWorkingHours = orgWorkingHoursResult.rows[0]?.hours_per_day || 8;
@@ -702,9 +702,14 @@ export default class ReportingAllocationController extends ReportingControllerBa
     
     // Prepare members filter
     let membersFilter = "";
+    let memberParams: any[] = [];
+    let paramOffsetForFilters = teamIdsParams.length + projectIdsParams.length + 1;
     if (members.length > 0) {
-      const memberIds = members.map(id => `'${id}'`).join(",");
-      membersFilter = `AND tmiv.team_member_id IN (${memberIds})`;
+      // Use parameterized query
+      const { clause: memberIdsClause, params: memParams } = SqlHelper.buildInClause(members, paramOffsetForFilters);
+      membersFilter = `AND tmiv.team_member_id IN (${memberIdsClause})`;
+      memberParams = memParams;
+      paramOffsetForFilters += memParams.length;
     } else {
       // If no members are selected, we should not show any data
       // This is different from other filters where no selection means "show all"
@@ -714,15 +719,20 @@ export default class ReportingAllocationController extends ReportingControllerBa
     // Note: Members filter works differently - when no members are selected, show nothing
 
     // Create custom duration clause for twl table alias
+    // Use parameterized queries for dates
     let customDurationClause = "";
+    let customDurationParams: any[] = [];
     if (date_range && date_range.length === 2) {
       const start = moment(date_range[0]).format("YYYY-MM-DD");
       const end = moment(date_range[1]).format("YYYY-MM-DD");
       if (start === end) {
-        customDurationClause = `AND twl.created_at::DATE = '${start}'::DATE`;
+        customDurationClause = `AND twl.created_at::DATE = $${paramOffsetForFilters}::DATE`;
+        customDurationParams = [start];
       } else {
-        customDurationClause = `AND twl.created_at::DATE >= '${start}'::DATE AND twl.created_at < '${end}'::DATE + INTERVAL '1 day'`;
+        customDurationClause = `AND twl.created_at::DATE >= $${paramOffsetForFilters}::DATE AND twl.created_at < $${paramOffsetForFilters + 1}::DATE + INTERVAL '1 day'`;
+        customDurationParams = [start, end];
       }
+      paramOffsetForFilters += customDurationParams.length;
     } else {
       const key = duration || DATE_RANGES.LAST_WEEK;
       if (key === DATE_RANGES.YESTERDAY)
@@ -737,22 +747,29 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
     // Prepare conditional filters for the subquery - only apply if selections are made
     let conditionalProjectsFilter = "";
+    let conditionalProjectParams: any[] = [];
     let conditionalCategoriesFilter = "";
+    let conditionalCategoryParams: any[] = [];
 
     // Only apply project filter if projects are actually selected
     if (projects.length > 0) {
       conditionalProjectsFilter = `AND p.id IN (${projectIdsClause})`;
+      conditionalProjectParams = projectIdsParams;
     }
 
     // Only apply category filter if categories are selected or noCategory is true
     if (categories.length > 0 && noCategory) {
-      const categoryIds = categories.map(id => `'${id}'`).join(",");
-      conditionalCategoriesFilter = `AND (p.category_id IS NULL OR p.category_id IN (${categoryIds}))`;
+      // Use parameterized query
+      const { clause: categoryIdsClause, params: catParams } = SqlHelper.buildInClause(categories, paramOffsetForFilters);
+      conditionalCategoriesFilter = `AND (p.category_id IS NULL OR p.category_id IN (${categoryIdsClause}))`;
+      conditionalCategoryParams = catParams;
     } else if (categories.length === 0 && noCategory) {
       conditionalCategoriesFilter = `AND p.category_id IS NULL`;
     } else if (categories.length > 0 && !noCategory) {
-      const categoryIds = categories.map(id => `'${id}'`).join(",");
-      conditionalCategoriesFilter = `AND p.category_id IN (${categoryIds})`;
+      // Use parameterized query
+      const { clause: categoryIdsClause, params: catParams } = SqlHelper.buildInClause(categories, paramOffsetForFilters);
+      conditionalCategoriesFilter = `AND p.category_id IN (${categoryIdsClause})`;
+      conditionalCategoryParams = catParams;
     }
     // If no categories and no noCategory, don't filter by category (show all)
 
@@ -800,7 +817,9 @@ export default class ReportingAllocationController extends ReportingControllerBa
       GROUP BY tmiv.email, tmiv.name, tmiv.team_member_id, tmiv.user_id, tmiv.team_id
       ORDER BY logged_time DESC;`;
 
-    const result = await db.query(q, []);
+    // Pass all parameters
+    const queryParams = [...teamIdsParams, ...conditionalProjectParams, ...conditionalCategoryParams, ...memberParams, ...customDurationParams];
+    const result = await db.query(q, queryParams);
     const utilization = (req.body.utilization || []) as string[];
 
     // Precompute totalWorkingHours * 3600 for efficiency
@@ -963,11 +982,11 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const archived = req.query.archived === "true";
 
     const teams = (req.body.teams || []) as string[]; // ids
-    // Fix SQL injection: Use parameterized queries
+    // Use parameterized queries
     const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teams, 1);
 
     const projects = (req.body.projects || []) as string[];
-    // Fix SQL injection: Use parameterized queries
+    // Use parameterized queries
     const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, teamIdsParams.length + 1);
     let paramOffset = teamIdsParams.length + projectIdsParams.length + 1;
     
@@ -1002,7 +1021,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
     let categoryParams: any[] = [];
     if (categories.length > 0 && noCategory) {
       // Both specific categories and "No Category" are selected
-      // Fix SQL injection: Use parameterized query
+      // Use parameterized query
       const { clause: categoryIdsClause, params: catParams } = SqlHelper.buildInClause(categories, paramOffset);
       categoriesFilter = `AND (p.category_id IS NULL OR p.category_id IN (${categoryIdsClause}))`;
       categoryParams = catParams;
@@ -1011,7 +1030,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
       categoriesFilter = `AND p.category_id IS NULL`;
     } else if (categories.length > 0 && !noCategory) {
       // Only specific categories are selected
-      // Fix SQL injection: Use parameterized query
+      // Use parameterized query
       const { clause: categoryIdsClause, params: catParams } = SqlHelper.buildInClause(categories, paramOffset);
       categoriesFilter = `AND p.category_id IN (${categoryIdsClause})`;
       categoryParams = catParams;

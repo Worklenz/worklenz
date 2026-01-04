@@ -4893,7 +4893,7 @@ class ClientPortalController {
       // Add sorting
       const sortField = String(sortBy || "name");
       const sortDirection = sortOrder === "desc" ? "DESC" : "ASC";
-      // Validate sort field to prevent SQL injection and ensure it's a valid column
+      // Validate sort field and ensure it's a valid column
       const validSortFields = ["id", "name", "created_at", "updated_at"];
       const safeSortField = validSortFields.includes(sortField)
         ? sortField
@@ -7491,12 +7491,12 @@ class ClientPortalController {
       }
 
       const activities = [];
-      // Fix SQL injection: Validate and use parameterized query for day filter
+      // Validate and use parameterized query for day filter
       const daysNum = Number(days);
       if (isNaN(daysNum) || daysNum < 0 || daysNum > 365) {
         return res.status(400).json(new ServerResponse(false, null, "Invalid days parameter"));
       }
-      // Calculate the date threshold in JavaScript to avoid SQL injection
+      // Calculate the date threshold in JavaScript
       const thresholdDate = new Date();
       thresholdDate.setDate(thresholdDate.getDate() - daysNum);
 

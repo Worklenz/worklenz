@@ -69,7 +69,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
   /**
    * Filters tasks by priority, including tasks that have descendants matching the priority filter.
-   * Uses parameterized queries to prevent SQL injection.
+   * Uses parameterized queries.
    */
   private static getFilterByPriorityWhereClosure(
     text: string,
@@ -95,7 +95,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
   /**
    * Filters tasks by labels, including tasks that have descendants matching the label filter.
-   * Uses parameterized queries to prevent SQL injection.
+   * Uses parameterized queries.
    */
   private static getFilterByLabelsWhereClosure(
     text: string,
@@ -122,7 +122,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
   /**
    * Filters tasks by assigned members, including tasks that have descendants matching the member filter.
-   * Uses parameterized queries to prevent SQL injection.
+   * Uses parameterized queries.
    */
   private static getFilterByMembersWhereClosure(
     text: string,

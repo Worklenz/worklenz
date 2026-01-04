@@ -1,6 +1,6 @@
 /**
  * This module provides secure utilities for building SQL queries with proper
- * parameterization to prevent SQL injection vulnerabilities.
+ * parameterization for secure query building.
  * 
  * These helpers replace unsafe patterns like:
  * - Direct string interpolation: `SELECT * FROM users WHERE id = '${userId}'`
@@ -180,7 +180,7 @@ export class SqlHelper {
   }
 
   /**
-   * Escape identifier (table/column name) to prevent SQL injection
+   * Escape identifier (table/column name) for secure query building
    */
   static escapeIdentifier(identifier: string): string {
     const cleaned = identifier.replace(/"/g, "");

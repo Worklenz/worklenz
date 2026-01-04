@@ -669,7 +669,7 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
 
   @HandleExceptions()
   public static async deleteMemberAllocations(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    // Fix SQL injection: Use parameterized queries for DELETE statement
+    // Use parameterized queries for DELETE statement
     const ids = Array.isArray(req.body.ids) 
       ? req.body.ids 
       : typeof req.body.ids === 'string' 
