@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Button,
   Drawer,
@@ -16,6 +16,7 @@ import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
 import { toggleAddClientDrawer } from '../../features/clients-portal/clients/clients-slice';
 import { useCreateClientMutation } from '../../api/client-portal/client-portal-api';
+import { refreshCsrfToken } from '../../api/api-client';
 
 const { Option } = Select;
 
@@ -35,9 +36,22 @@ const AddClientDrawer = () => {
 
   const [form] = Form.useForm();
 
+  // Initialize CSRF token when drawer opens
+  useEffect(() => {
+    if (isDrawerOpen) {
+      // Refresh CSRF token to ensure it's valid when the drawer opens
+      refreshCsrfToken().catch(error => {
+        console.error('Failed to refresh CSRF token:', error);
+      });
+    }
+  }, [isDrawerOpen]);
+
   // this function for handle form submit
   const handleFormSubmit = async (values: any) => {
     try {
+      // Ensure CSRF token is fresh before submitting
+      await refreshCsrfToken();
+
       await createClient({
         name: values.name,
         email: values.email,
@@ -56,9 +70,27 @@ const AddClientDrawer = () => {
       message.success(successMessage, 5); // Show for 5 seconds
       dispatch(toggleAddClientDrawer());
     } catch (error: any) {
-      message.error(
-        error?.data?.message || t('createClientErrorMessage') || 'Failed to create client'
-      );
+      // Handle CSRF token errors specifically
+      const errorMessage = error?.data?.message || error?.message || '';
+      const isCsrfError = 
+        errorMessage.toLowerCase().includes('csrf') ||
+        errorMessage.toLowerCase().includes('invalid') ||
+        error?.status === 403;
+
+      if (isCsrfError) {
+        message.error(
+          t('csrfError') || 'Security token expired. Please try again.',
+          5
+        );
+        // Try to refresh token for next attempt
+        refreshCsrfToken().catch(() => {
+          // Silent fail - user can try again
+        });
+      } else {
+        message.error(
+          errorMessage || t('createClientErrorMessage') || 'Failed to create client'
+        );
+      }
     }
   };
 
