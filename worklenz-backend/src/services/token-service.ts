@@ -200,8 +200,8 @@ class TokenService {
     try {
       await client.query("BEGIN");
 
-      // Always hash password and attach to invitation object for use in subsequent queries
-      const passwordHash = crypto.createHash("sha256").update(userData.password).digest("hex");
+      // Always hash password with bcrypt and attach to invitation object for use in subsequent queries
+      const passwordHash = this.hashClientPassword(userData.password);
       (invitation as any).password_hash = passwordHash;
 
       let userResult: any;
@@ -226,7 +226,7 @@ class TokenService {
             [userData.userId, invitation.client_id, userData.name, invitation.role, invitation.team_id, actualClientUserId]
           );
         } else {
-          // Standalone client portal user - update with password_hash
+          // Standalone client portal user - update with password_hash (bcrypt)
           await client.query(
             `UPDATE client_users 
              SET client_id = $1, name = $2, password_hash = $3, role = $4, team_id = $5, status = 'active', updated_at = NOW()
@@ -261,7 +261,7 @@ class TokenService {
             invitation.team_id
           ];
         } else {
-          // Standalone client portal user - create with password_hash
+          // Standalone client portal user - create with password_hash (bcrypt)
           createUserQuery = `
             INSERT INTO client_users (
               client_id, email, name, password_hash, role, team_id, status, created_at, updated_at
@@ -272,7 +272,7 @@ class TokenService {
             invitation.client_id,
             invitation.email,
             userData.name,
-            passwordHash, // Use the hash created earlier
+            passwordHash, // Bcrypt hash created earlier
             invitation.role,
             invitation.team_id
           ];
@@ -333,10 +333,55 @@ class TokenService {
     }
   }
 
+  // Verify client password - supports both bcrypt and SHA256 with lazy migration
+  async verifyClientPassword(password: string, storedHash: string): Promise<{ isValid: boolean; needsMigration: boolean }> {
+    try {
+      // Try bcrypt first (modern hashing)
+      try {
+        const bcryptMatch = bcrypt.compareSync(password, storedHash);
+        if (bcryptMatch) {
+          return { isValid: true, needsMigration: false };
+        }
+      } catch (bcryptError) {
+        // Not a valid bcrypt hash, continue to SHA256 check
+      }
+
+      // Try SHA256 (legacy hashing)
+      const sha256Hash = crypto.createHash("sha256").update(password).digest("hex");
+      if (storedHash === sha256Hash) {
+        return { isValid: true, needsMigration: true }; // Valid but needs migration to bcrypt
+      }
+
+      return { isValid: false, needsMigration: false };
+    } catch (error) {
+      console.error("Error verifying client password:", error);
+      return { isValid: false, needsMigration: false };
+    }
+  }
+
+  // Hash client password using bcrypt (modern standard)
+  hashClientPassword(password: string): string {
+    const salt = bcrypt.genSaltSync(10);
+    return bcrypt.hashSync(password, salt);
+  }
+
+  // Migrate password hash from SHA256 to bcrypt
+  async migratePasswordHash(clientUserId: string, newPassword: string): Promise<void> {
+    try {
+      const newHash = this.hashClientPassword(newPassword);
+      await db.query(
+        "UPDATE client_users SET password_hash = $1, updated_at = NOW() WHERE id = $2",
+        [newHash, clientUserId]
+      );
+      console.log(`[Password Migration] Successfully migrated password for client_user_id: ${clientUserId}`);
+    } catch (error) {
+      console.error("Error migrating password hash:", error);
+    }
+  }
+
   // Authenticate client user
   async authenticateClient(email: string, password: string): Promise<any> {
     try {
-      const passwordHash = crypto.createHash("sha256").update(password).digest("hex");
       const normalizedEmail = email.toLowerCase().trim();
 
       // First, check if user exists (without status filter for debugging)
@@ -406,21 +451,28 @@ class TokenService {
         console.log(`[Client Auth] Password mismatch for linked user: ${normalizedEmail}`);
         return null; // Password doesn't match
       } else {
-        // Standalone client portal user - authenticate against password_hash (SHA256)
+        // Standalone client portal user - authenticate against password_hash (supports both bcrypt and SHA256)
         if (!clientUser.password_hash) {
           console.log(`[Client Auth] Standalone user has no password_hash set for email: ${normalizedEmail}`);
           return null; // No password hash set
         }
 
-        // Compare password hashes (case-sensitive comparison)
-        if (clientUser.password_hash === passwordHash) {
+        // Verify password using centralized method (supports both bcrypt and SHA256)
+        const verificationResult = await this.verifyClientPassword(password, clientUser.password_hash);
+        
+        if (verificationResult.isValid) {
           console.log(`[Client Auth] Successfully authenticated standalone user: ${normalizedEmail}`);
+          
+          // Lazy migration: if password is SHA256, migrate to bcrypt
+          if (verificationResult.needsMigration) {
+            console.log(`[Client Auth] Migrating password from SHA256 to bcrypt for user: ${normalizedEmail}`);
+            await this.migratePasswordHash(clientUser.id, password);
+          }
+          
           return clientUser; // Password matches
         }
 
-        console.log(`[Client Auth] Password hash mismatch for standalone user: ${normalizedEmail}`);
-        console.log(`[Client Auth] Expected hash (first 20 chars): ${clientUser.password_hash.substring(0, 20)}...`);
-        console.log(`[Client Auth] Received hash (first 20 chars): ${passwordHash.substring(0, 20)}...`);
+        console.log(`[Client Auth] Password verification failed for standalone user: ${normalizedEmail}`);
         return null; // Password doesn't match
       }
     } catch (error) {

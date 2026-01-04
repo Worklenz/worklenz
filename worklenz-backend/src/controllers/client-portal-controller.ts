@@ -4319,14 +4319,9 @@ class ClientPortalController {
               );
           }
 
-          // Verify current password
-          const crypto = require("crypto");
-          const currentPasswordHash = crypto
-            .createHash("sha256")
-            .update(currentPassword)
-            .digest("hex");
-
-          if (currentPasswordHash !== currentUser.password_hash) {
+          // Verify current password using centralized method (supports both bcrypt and SHA256)
+          const verificationResult = await TokenService.verifyClientPassword(currentPassword, currentUser.password_hash);
+          if (!verificationResult.isValid) {
             return res
               .status(400)
               .json(
@@ -4334,11 +4329,8 @@ class ClientPortalController {
               );
           }
 
-          // Hash new password
-          const newPasswordHash = crypto
-            .createHash("sha256")
-            .update(newPassword)
-            .digest("hex");
+          // Hash new password with bcrypt
+          const newPasswordHash = TokenService.hashClientPassword(newPassword);
           userUpdateFields.push(`password_hash = $${userParamIndex}`);
           userUpdateValues.push(newPasswordHash);
           userParamIndex++;
@@ -8211,15 +8203,20 @@ class ClientPortalController {
                 });
               }
             } else {
-              // Standalone client portal user - verify password hash (bcrypt)
-              const passwordMatch = bcrypt.compareSync(password, existingPasswordHash);
-              if (!passwordMatch) {
+              // Standalone client portal user - verify password hash (supports both bcrypt and SHA256)
+              const verificationResult = await TokenService.verifyClientPassword(password, existingPasswordHash);
+              if (!verificationResult.isValid) {
                 return res.status(401).json({
                   done: false,
                   body: null,
                   titleKey: "errors.invalid_credentials_title",
                   messageKey: "errors.invalid_credentials_message"
                 });
+              }
+              
+              // Lazy migration: if password is SHA256, migrate to bcrypt
+              if (verificationResult.needsMigration) {
+                await TokenService.migratePasswordHash(existingClientUserId, password);
               }
             }
             
@@ -8237,10 +8234,8 @@ class ClientPortalController {
               [clientId, worklenzUserId, email, name]
             );
           } else {
-            // Standalone client portal user - create with password_hash
-            // Hash password with bcrypt
-            const salt = bcrypt.genSaltSync(10);
-            const passwordHash = bcrypt.hashSync(password, salt);
+            // Standalone client portal user - create with password_hash (bcrypt)
+            const passwordHash = TokenService.hashClientPassword(password);
             userResult = await db.query(
               `INSERT INTO client_users (id, client_id, email, name, password_hash, role, status, created_at)
              VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
@@ -8864,14 +8859,9 @@ class ClientPortalController {
             );
         }
 
-        // Verify current password
-        const crypto = require("crypto");
-        const currentPasswordHash = crypto
-          .createHash("sha256")
-          .update(currentPassword)
-          .digest("hex");
-
-        if (currentPasswordHash !== user.password_hash) {
+        // Verify current password using centralized method (supports both bcrypt and SHA256)
+        const verificationResult = await TokenService.verifyClientPassword(currentPassword, user.password_hash);
+        if (!verificationResult.isValid) {
           return res
             .status(400)
             .json(
@@ -8879,11 +8869,8 @@ class ClientPortalController {
             );
         }
 
-        // Hash new password
-        const newPasswordHash = crypto
-          .createHash("sha256")
-          .update(newPassword)
-          .digest("hex");
+        // Hash new password with bcrypt
+        const newPasswordHash = TokenService.hashClientPassword(newPassword);
         updateFields.push(`password_hash = $${paramIndex}`);
         updateValues.push(newPasswordHash);
         paramIndex++;

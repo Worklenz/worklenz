@@ -196,15 +196,20 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
                 });
               }
             } else {
-              // Standalone client portal user - verify password hash
-              const passwordHash = crypto.createHash("sha256").update(password).digest("hex");
-              if (existingPasswordHash !== passwordHash) {
+              // Standalone client portal user - verify password hash (supports both bcrypt and SHA256)
+              const verificationResult = await TokenService.verifyClientPassword(password, existingPasswordHash);
+              if (!verificationResult.isValid) {
                 return res.status(401).json({
                   done: false,
                   body: null,
                   titleKey: "errors.invalid_credentials_title",
                   messageKey: "errors.invalid_credentials_message"
                 });
+              }
+              
+              // Lazy migration: if password is SHA256, migrate to bcrypt
+              if (verificationResult.needsMigration) {
+                await TokenService.migratePasswordHash(existingClientUserId, password);
               }
             }
             
@@ -222,7 +227,8 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
               [clientId, worklenzUserId, email, name]
             );
           } else {
-            // Standalone client portal user - create with password_hash
+            // Standalone client portal user - create with password_hash (bcrypt)
+            const passwordHash = TokenService.hashClientPassword(password);
             userResult = await db.query(
               `INSERT INTO client_users (id, client_id, email, name, password_hash, role, status, created_at)
              VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
@@ -231,7 +237,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
                 clientId,
                 email,
                 name,
-                crypto.createHash("sha256").update(password).digest("hex"),
+                passwordHash,
               ]
             );
           }
