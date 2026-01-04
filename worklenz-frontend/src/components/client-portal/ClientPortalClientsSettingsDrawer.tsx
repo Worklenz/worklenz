@@ -1,10 +1,9 @@
-import { Drawer, Typography, Input, Flex, Select, Table, message } from '@/shared/antd-imports';
+import { Drawer, Typography, Input, Flex, Select, Table, message, ColumnsType } from '@/shared/antd-imports';
 import React, { useState, useMemo } from 'react';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 
 import { useTranslation } from 'react-i18next';
-import TableColumns from '../project-list/table-columns';
 import {
   toggleClientSettingsDrawer,
   updateClientName,
@@ -13,8 +12,136 @@ import { useGetProjectsQuery } from '../../api/projects/projects.v1.api.service'
 import { 
   useGetClientDetailsQuery,
   useAssignProjectToClientMutation,
+  ClientPortalProject,
 } from '../../api/client-portal/client-portal-api';
 import { IProjectViewModel } from '../../types/project/projectViewModel.types';
+import { Avatar, Badge, Progress, Tooltip } from '@/shared/antd-imports';
+
+const avatarColors = ['#f56a00', '#7265e6', '#ffbf00', '#00a2ae', '#87d068'];
+
+const getClientPortalProjectColumns = (t: (key: string) => string): ColumnsType<ClientPortalProject> => {
+  return [
+    {
+      title: t('name') || 'Name',
+      key: 'name',
+      dataIndex: 'name',
+      sorter: (a, b) => (a.name || '').length - (b.name || '').length,
+      width: 240,
+      showSorterTooltip: false,
+      render: (text, record) => {
+        return (
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Flex gap={2} align="center">
+              <Badge color="geekblue" style={{ marginRight: '0.5rem' }} />
+              <Typography.Text ellipsis={{ expanded: false }}>{record.name}</Typography.Text>
+            </Flex>
+          </div>
+        );
+      },
+    },
+    {
+      title: t('status') || 'Status',
+      key: 'status',
+      dataIndex: 'status',
+      sorter: (a, b) => (a.status || '').length - (b.status || '').length,
+      showSorterTooltip: false,
+    },
+    {
+      title: t('tasksProgress') || 'Tasks Progress',
+      key: 'tasksProgress',
+      render: (text, record) => {
+        const { totalTasks, completedTasks } = record;
+        const percent = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+        return (
+          <Tooltip title={`${completedTasks} / ${totalTasks} tasks completed.`}>
+            <Progress percent={percent} className="project-progress" />
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: t('lastUpdated') || 'Last Updated',
+      key: 'lastUpdated',
+      dataIndex: 'lastUpdated',
+      width: 160,
+      sorter: (a, b) => {
+        const dateA = a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0;
+        const dateB = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
+        return dateA - dateB;
+      },
+      showSorterTooltip: false,
+      render: (date: string) => {
+        if (!date) return '-';
+        
+        const now = new Date();
+        const updatedDate = new Date(date);
+
+        const timeDifference = now.getTime() - updatedDate.getTime();
+        const minuteInMs = 60 * 1000;
+        const hourInMs = 60 * minuteInMs;
+        const dayInMs = 24 * hourInMs;
+
+        let displayText = '';
+
+        if (timeDifference < hourInMs) {
+          const minutesAgo = Math.floor(timeDifference / minuteInMs);
+          displayText = `${minutesAgo} minute${minutesAgo === 1 ? '' : 's'} ago`;
+        } else if (timeDifference < dayInMs) {
+          const hoursAgo = Math.floor(timeDifference / hourInMs);
+          displayText = `${hoursAgo} hour${hoursAgo === 1 ? '' : 's'} ago`;
+        } else if (timeDifference < 7 * dayInMs) {
+          const daysAgo = Math.floor(timeDifference / dayInMs);
+          displayText = `${daysAgo} day${daysAgo === 1 ? '' : 's'} ago`;
+        } else {
+          displayText = updatedDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+        }
+
+        return (
+          <Tooltip
+            title={updatedDate.toLocaleString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+              hour: 'numeric',
+              minute: 'numeric',
+              second: 'numeric',
+              hour12: true,
+            })}
+          >
+            {displayText}
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: t('members') || 'Members',
+      key: 'members',
+      dataIndex: 'members',
+      render: (members: string[]) => (
+        <Avatar.Group>
+          {members?.map((member, index) => (
+            <Tooltip key={index} title={member}>
+              <Avatar
+                style={{
+                  backgroundColor: avatarColors[index % avatarColors.length],
+                  width: '28px',
+                  height: '28px',
+                  border: 'none',
+                }}
+              >
+                {member?.charAt(0)?.toUpperCase() || ''}
+              </Avatar>
+            </Tooltip>
+          ))}
+        </Avatar.Group>
+      ),
+    },
+  ];
+};
 
 const ClientPortalClientsSettingsDrawer = () => {
   // localization
@@ -207,8 +334,9 @@ const ClientPortalClientsSettingsDrawer = () => {
         </Flex>
 
         <Table
-          columns={TableColumns() as any}
+          columns={getClientPortalProjectColumns(t)}
           dataSource={client?.projects}
+          rowKey="id"
           className="custom-two-colors-row-table"
           rowClassName={() => 'custom-row'}
           scroll={{
@@ -227,4 +355,4 @@ const ClientPortalClientsSettingsDrawer = () => {
   );
 };
 
-export default ClientPortalClientsSettingsDrawer;
+export { ClientPortalClientsSettingsDrawer };
