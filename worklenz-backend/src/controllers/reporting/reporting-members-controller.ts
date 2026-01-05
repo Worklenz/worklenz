@@ -792,11 +792,9 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     
     const memberName = (req.query.member_name as string)?.trim() || null;
 
-    // Extract clause strings for now (methods need refactoring to accept params)
-    const durationClauseStr = durationClauseResult.clause;
-    const minMaxDateClauseStr = minMaxDateClauseResult.clause;
-    // Note: memberActivityLogsData needs to be updated to accept parameters
-    const logGroups = await this.memberActivityLogsData(durationClauseStr, minMaxDateClauseStr, team_id as string, team_member_id as string, includeArchived, req.user?.id as string);
+    // Combine all parameters for the query
+    const allParams = [...durationParams, ...minMaxParams];
+    const logGroups = await this.memberActivityLogsData(durationClause, minMaxDateClause, team_id as string, team_member_id as string, includeArchived, req.user?.id as string, allParams);
 
     let start = "-";
     let end = "-";
@@ -1016,11 +1014,9 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     const minMaxDateClause = minMaxDateClauseResult.clause;
     const minMaxParams = minMaxDateClauseResult.params;
 
-    // Extract clause strings for now (methods need refactoring to accept params)
-    const durationClauseStr = durationClauseResult.clause;
-    const minMaxDateClauseStr = minMaxDateClauseResult.clause;
-    // Note: memberActivityLogsData needs to be updated to accept parameters
-    const logGroups = await this.memberActivityLogsData(durationClauseStr, minMaxDateClauseStr, team_id, team_member_id, archived, req.user?.id as string);
+    // Combine all parameters for the query
+    const allParams = [...durationParams, ...minMaxParams];
+    const logGroups = await this.memberActivityLogsData(durationClause, minMaxDateClause, team_id, team_member_id, archived, req.user?.id as string, allParams);
 
     return res.status(200).send(new ServerResponse(true, logGroups));
   }
@@ -1139,9 +1135,14 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     return logGroups;
   }
 
-  private static async memberActivityLogsData(durationClause: string, minMaxDateClause: string, team_id: string, team_member_id: string, includeArchived:boolean, userId: string) {
+  private static async memberActivityLogsData(durationClause: string, minMaxDateClause: string, team_id: string, team_member_id: string, includeArchived:boolean, userId: string, params: any[]) {
 
-    const archivedClause = includeArchived ? `` : `AND (SELECT project_id FROM tasks WHERE id = tal.task_id) NOT IN (SELECT project_id FROM archived_projects WHERE archived_projects.user_id = '${userId}')`;
+    let archivedClause = "";
+    let archivedParams: any[] = [];
+    if (!includeArchived) {
+      archivedClause = `AND (SELECT project_id FROM tasks WHERE id = tal.task_id) NOT IN (SELECT project_id FROM archived_projects WHERE archived_projects.user_id = $${params.length + 3})`;
+      archivedParams = [userId];
+    }
 
     const q = `
                 SELECT user_id,
@@ -1235,7 +1236,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                 AND tmiv.team_member_id = $2
       `;
 
-    const result = await db.query(q, [team_id, team_member_id]);
+    const result = await db.query(q, [team_id, team_member_id, ...params, ...archivedParams]);
 
     let logGroups: any[] = [];
 
