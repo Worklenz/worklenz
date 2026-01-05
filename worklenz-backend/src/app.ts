@@ -225,7 +225,22 @@ app.use((req, res, next) => {
   }
   
   // Exclude all client portal endpoints (they use client token authentication)
-  if (req.path.startsWith("/client-portal") || req.originalUrl.startsWith("/api/client-portal")) {
+  // SECURITY NOTE: Client portal uses token-based auth (x-client-token header) instead of cookies.
+  // Custom headers are NOT automatically sent by browsers in cross-origin requests, making this
+  // inherently CSRF-resistant. CSRF attacks rely on browsers automatically including credentials
+  // (cookies), which doesn't apply to custom headers that require explicit JavaScript to send.
+  // Additional protections: token verification, origin validation, and rate limiting are still applied.
+  // Check both path and originalUrl to handle different routing scenarios
+  const path = req.path || "";
+  const originalUrl = req.originalUrl || req.url || "";
+  const isClientPortalRoute = 
+    path.startsWith("/client-portal") || 
+    path.startsWith("/api/client-portal") ||
+    originalUrl.startsWith("/api/client-portal") ||
+    originalUrl.startsWith("/client-portal") ||
+    originalUrl.includes("/client-portal/");
+  
+  if (isClientPortalRoute) {
     return next();
   }
   
