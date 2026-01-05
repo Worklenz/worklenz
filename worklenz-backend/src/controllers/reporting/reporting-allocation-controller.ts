@@ -389,9 +389,9 @@ export default class ReportingAllocationController extends ReportingControllerBa
     }
 
     // Use parameterized queries
-    const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teams, 1);
-    const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, teamIdsParams.length + 1);
-    let paramOffset = teamIdsParams.length + projectIdsParams.length + 1;
+    // Note: teams are not used in the query, so we start project IDs at $1
+    const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, 1);
+    let paramOffset = projectIdsParams.length + 1;
 
     const { duration, date_range } = req.body;
 
@@ -403,22 +403,26 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
     const billableQuery = this.buildBillableQuery(billable);
 
-    // Prepare projects filter
+    // Prepare projects filter with UUID casting
     let projectsFilter = "";
     if (projects.length > 0) {
-      projectsFilter = `AND p.id IN (${projectIdsClause})`;
+      // Cast each parameter to UUID to help PostgreSQL determine the type
+      const castedProjectIdsClause = projectIdsClause.split(", ").map(param => `${param}::uuid`).join(", ");
+      projectsFilter = `p.id IN (${castedProjectIdsClause})`;
     } else {
       // If no projects are selected, don't show any data
-      projectsFilter = `AND 1=0`; // This will match no rows
+      projectsFilter = `1=0`; // This will match no rows
     }
 
-    // Prepare categories filter - updated logic
+    // Prepare categories filter - updated logic with UUID casting
     let categoriesFilter = "";
     let categoryParams: any[] = [];
     if (categories.length > 0 && noCategory) {
       // Both specific categories and "No Category" are selected
       const { clause: categoryIdsClause, params: catParams } = SqlHelper.buildInClause(categories, paramOffset);
-      categoriesFilter = `AND (p.category_id IS NULL OR p.category_id IN (${categoryIdsClause}))`;
+      // Cast each parameter to UUID
+      const castedCategoryIdsClause = categoryIdsClause.split(", ").map(param => `${param}::uuid`).join(", ");
+      categoriesFilter = `AND (p.category_id IS NULL OR p.category_id IN (${castedCategoryIdsClause}))`;
       categoryParams = catParams;
     } else if (categories.length === 0 && noCategory) {
       // Only "No Category" is selected
@@ -426,7 +430,9 @@ export default class ReportingAllocationController extends ReportingControllerBa
     } else if (categories.length > 0 && !noCategory) {
       // Only specific categories are selected
       const { clause: categoryIdsClause, params: catParams } = SqlHelper.buildInClause(categories, paramOffset);
-      categoriesFilter = `AND p.category_id IN (${categoryIdsClause})`;
+      // Cast each parameter to UUID
+      const castedCategoryIdsClause = categoryIdsClause.split(", ").map(param => `${param}::uuid`).join(", ");
+      categoriesFilter = `AND p.category_id IN (${castedCategoryIdsClause})`;
       categoryParams = catParams;
     } else {
       // categories.length === 0 && !noCategory - no categories selected, show nothing
@@ -442,7 +448,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
         FROM projects p
                 LEFT JOIN tasks ON tasks.project_id = p.id
                 LEFT JOIN task_work_log ON task_work_log.task_id = tasks.id
-        WHERE p.id IN (${projectIdsClause}) ${durationClause} ${archivedClause} ${categoriesFilter} ${billableQuery}
+        WHERE ${projectsFilter} ${durationClause} ${archivedClause} ${categoriesFilter} ${billableQuery}
         GROUP BY p.id, p.name
         ORDER BY logged_time DESC;`;
     const result = await db.query(q, [...projectIdsParams, ...durationParams, ...archivedParams, ...categoryParams]);
