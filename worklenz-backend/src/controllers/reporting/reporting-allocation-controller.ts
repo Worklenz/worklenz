@@ -442,14 +442,14 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const q = `
         SELECT p.id,
             p.name,
-            (SELECT SUM(time_spent)) AS logged_time,
-            SUM(total_minutes) AS estimated,
-            color_code
+            COALESCE(SUM(task_work_log.time_spent), 0) AS logged_time,
+            COALESCE(SUM(tasks.total_minutes), 0) AS estimated,
+            p.color_code
         FROM projects p
                 LEFT JOIN tasks ON tasks.project_id = p.id
                 LEFT JOIN task_work_log ON task_work_log.task_id = tasks.id
         WHERE ${projectsFilter} ${durationClause} ${archivedClause} ${categoriesFilter} ${billableQuery}
-        GROUP BY p.id, p.name
+        GROUP BY p.id, p.name, p.color_code
         ORDER BY logged_time DESC;`;
     const result = await db.query(q, [...projectIdsParams, ...durationParams, ...archivedParams, ...categoryParams]);
 
@@ -474,6 +474,9 @@ export default class ReportingAllocationController extends ReportingControllerBa
   @HandleExceptions()
   public static async getMemberTimeSheets(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const archived = req.query.archived === "true";
+    console.log("=== ARCHIVED FILTER DEBUG ===");
+    console.log("req.query.archived:", req.query.archived);
+    console.log("archived (parsed):", archived);
 
     const teams = (req.body.teams || []) as string[]; // ids
     // Use parameterized queries
@@ -717,6 +720,28 @@ export default class ReportingAllocationController extends ReportingControllerBa
       archivedClause = `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $${paramOffsetForFilters})`;
       archivedParams = [req.user?.id];
       paramOffsetForFilters += 1;
+      console.log("Applying archived filter - excluding archived projects for user:", req.user?.id);
+    } else {
+      console.log("NOT applying archived filter - showing all projects including archived");
+    }
+    
+    // Debug: Check if there are any archived projects for this user
+    const archivedCheckQuery = `SELECT COUNT(*) as count FROM archived_projects WHERE user_id = $1`;
+    const archivedCheckResult = await db.query(archivedCheckQuery, [req.user?.id]);
+    console.log("Total archived projects for user:", archivedCheckResult.rows[0]?.count || 0);
+    
+    // Debug: Check if archived projects have time logs in selected teams
+    if (teams.length > 0) {
+      const archivedTimeLogsQuery = `
+        SELECT COUNT(DISTINCT twl.id) as log_count, COUNT(DISTINCT p.id) as project_count
+        FROM task_work_log twl
+        INNER JOIN tasks t ON t.id = twl.task_id
+        INNER JOIN projects p ON p.id = t.project_id
+        INNER JOIN archived_projects ap ON ap.project_id = p.id AND ap.user_id = $1
+        WHERE p.team_id IN (${teamIdsClause})
+      `;
+      const archivedTimeLogsResult = await db.query(archivedTimeLogsQuery, [req.user?.id, ...teamIdsParams]);
+      console.log("Archived projects in selected teams with time logs:", archivedTimeLogsResult.rows[0]);
     }
 
     const billableQuery = this.buildBillableQueryWithAlias(billable, 't');
@@ -838,8 +863,9 @@ export default class ReportingAllocationController extends ReportingControllerBa
       GROUP BY tmiv.email, tmiv.name, tmiv.team_member_id, tmiv.user_id, tmiv.team_id
       ORDER BY logged_time DESC;`;
 
-    // Pass all parameters
-    const queryParams = [...teamIdsParams, ...conditionalProjectParams, ...conditionalCategoryParams, ...archivedParams, ...memberParams, ...customDurationParams];
+    // Pass all parameters in order: teams, projects, archived, members, dates, categories
+    // This matches the query placeholder order: $1-2 (teams), $3-25 (projects), $26 (archived), $27-46 (members), $47-48 (dates), $49-50 (categories)
+    const queryParams = [...teamIdsParams, ...conditionalProjectParams, ...archivedParams, ...memberParams, ...customDurationParams, ...conditionalCategoryParams];
     const result = await db.query(q, queryParams);
     const utilization = (req.body.utilization || []) as string[];
 
