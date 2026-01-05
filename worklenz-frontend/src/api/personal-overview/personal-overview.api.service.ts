@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
-import { getCsrfToken, refreshCsrfToken } from '../api-client';
+import { getCsrfToken, ensureCsrfToken } from '../api-client';
 import config from '@/config/env';
 
 const rootUrl = '/personal-overview';
@@ -21,7 +21,11 @@ const personalOverviewApi = createApi({
       // Get CSRF token, refresh if needed
       let token = getCsrfToken();
       if (!token) {
-        token = await refreshCsrfToken();
+        try {
+          token = await ensureCsrfToken();
+        } catch (error) {
+          console.error('[CSRF] Failed to refresh CSRF token:', error);
+        }
       }
 
       if (token) {

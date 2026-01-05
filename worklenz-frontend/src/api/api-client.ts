@@ -62,6 +62,31 @@ export const initializeCsrfToken = async (): Promise<void> => {
   }
 };
 
+// Ensure CSRF token is available, with deduplication to prevent concurrent refresh requests
+export const ensureCsrfToken = async (): Promise<string | null> => {
+  // If we already have a token, return it
+  if (csrfToken) {
+    return csrfToken;
+  }
+
+  // If initialization is already in progress, wait for it
+  if (tokenInitializationPromise) {
+    const token = await tokenInitializationPromise;
+    return token;
+  }
+
+  // Otherwise, start a new refresh
+  try {
+    tokenInitializationPromise = refreshCsrfToken();
+    const token = await tokenInitializationPromise;
+    tokenInitializationPromise = null;
+    return token;
+  } catch (error) {
+    tokenInitializationPromise = null;
+    throw error;
+  }
+};
+
 const apiClient = axios.create({
   baseURL: config.apiUrl,
   withCredentials: true,
@@ -203,10 +228,26 @@ apiClient.interceptors.response.use(
       }
 
         // Try to refresh the CSRF token and retry the request
-        const newToken = await refreshCsrfToken();
+        // For CSRF errors, we need to force a refresh (token is invalid)
+        // Use deduplication pattern to prevent concurrent refresh requests
+        let newToken: string | null = null;
+        if (tokenInitializationPromise) {
+          // If refresh is already in progress, wait for it
+          newToken = await tokenInitializationPromise;
+        } else {
+          // Start a new refresh
+          try {
+            tokenInitializationPromise = refreshCsrfToken();
+            newToken = await tokenInitializationPromise;
+            tokenInitializationPromise = null;
+          } catch (refreshError) {
+            tokenInitializationPromise = null;
+            console.error('[CSRF] Failed to refresh CSRF token in error handler:', refreshError);
+          }
+        }
+        
         if (newToken && error.config) {
-          // Update the stored token IMMEDIATELY before retrying
-          csrfToken = newToken;
+          // Token is already updated in refreshCsrfToken, no need to update here
           
           // Mark that we're retrying
           (error.config as any)._retryCount = retryCount + 1;

@@ -1,10 +1,9 @@
-import { Drawer, Typography, Input, Flex, Select, Table, message } from '@/shared/antd-imports';
+import { Drawer, Typography, Input, Flex, Select, Table, message, TableColumnsType, theme } from '@/shared/antd-imports';
 import React, { useState, useMemo } from 'react';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 
 import { useTranslation } from 'react-i18next';
-import TableColumns from '../project-list/table-columns';
 import {
   toggleClientSettingsDrawer,
   updateClientName,
@@ -13,12 +12,160 @@ import { useGetProjectsQuery } from '../../api/projects/projects.v1.api.service'
 import { 
   useGetClientDetailsQuery,
   useAssignProjectToClientMutation,
+  ClientPortalProject,
 } from '../../api/client-portal/client-portal-api';
 import { IProjectViewModel } from '../../types/project/projectViewModel.types';
+import { Avatar, Badge, Progress, Tooltip } from '@/shared/antd-imports';
+
+const getClientPortalProjectColumns = (
+  t: (key: string, options?: { defaultValue: string }) => string,
+  avatarColors: string[],
+  primaryColor: string
+): TableColumnsType<ClientPortalProject> => {
+  return [
+    {
+      title: t('name', { defaultValue: 'Name' }),
+      key: 'name',
+      dataIndex: 'name',
+      sorter: (a: ClientPortalProject, b: ClientPortalProject) => (a.name || '').localeCompare(b.name || ''),
+      width: 240,
+      showSorterTooltip: false,
+      render: (text, record) => {
+        return (
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Flex gap={2} align="center">
+              <Badge color={primaryColor} style={{ marginRight: '0.5rem' }} />
+              <Typography.Text ellipsis={{ expanded: false }}>{record.name}</Typography.Text>
+            </Flex>
+          </div>
+        );
+      },
+    },
+    {
+      title: t('status', { defaultValue: 'Status' }),
+      key: 'status',
+      dataIndex: 'status',
+      sorter: (a: ClientPortalProject, b: ClientPortalProject) => (a.status || '').localeCompare(b.status || ''),
+      showSorterTooltip: false,
+    },
+    {
+      title: t('tasksProgress', { defaultValue: 'Tasks Progress' }),
+      key: 'tasksProgress',
+      render: (text, record) => {
+        const { totalTasks, completedTasks } = record;
+        const percent = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+        return (
+          <Tooltip title={`${completedTasks} / ${totalTasks} tasks completed.`}>
+            <Progress percent={percent} className="project-progress" />
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: t('lastUpdated', { defaultValue: 'Last Updated' }),
+      key: 'lastUpdated',
+      dataIndex: 'lastUpdated',
+      width: 160,
+      sorter: (a: ClientPortalProject, b: ClientPortalProject) => {
+        const dateA = a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0;
+        const dateB = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
+        return dateA - dateB;
+      },
+      showSorterTooltip: false,
+      render: (date: string) => {
+        if (!date) return '-';
+        
+        const now = new Date();
+        const updatedDate = new Date(date);
+
+        const timeDifference = now.getTime() - updatedDate.getTime();
+        const minuteInMs = 60 * 1000;
+        const hourInMs = 60 * minuteInMs;
+        const dayInMs = 24 * hourInMs;
+
+        let displayText = '';
+
+        if (timeDifference < hourInMs) {
+          const minutesAgo = Math.floor(timeDifference / minuteInMs);
+          displayText = `${minutesAgo} minute${minutesAgo === 1 ? '' : 's'} ago`;
+        } else if (timeDifference < dayInMs) {
+          const hoursAgo = Math.floor(timeDifference / hourInMs);
+          displayText = `${hoursAgo} hour${hoursAgo === 1 ? '' : 's'} ago`;
+        } else if (timeDifference < 7 * dayInMs) {
+          const daysAgo = Math.floor(timeDifference / dayInMs);
+          displayText = `${daysAgo} day${daysAgo === 1 ? '' : 's'} ago`;
+        } else {
+          displayText = updatedDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+        }
+
+        return (
+          <Tooltip
+            title={updatedDate.toLocaleString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+              hour: 'numeric',
+              minute: 'numeric',
+              second: 'numeric',
+              hour12: true,
+            })}
+          >
+            {displayText}
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: t('members', { defaultValue: 'Members' }),
+      key: 'members',
+      dataIndex: 'members',
+      render: (members: string[]) => (
+        <Avatar.Group>
+          {members?.map((member, index) => (
+            <Tooltip key={index} title={member}>
+              <Avatar
+                style={{
+                  backgroundColor: avatarColors[index % avatarColors.length],
+                  width: '28px',
+                  height: '28px',
+                  border: 'none',
+                }}
+              >
+                {member?.charAt(0)?.toUpperCase() || ''}
+              </Avatar>
+            </Tooltip>
+          ))}
+        </Avatar.Group>
+      ),
+    },
+  ];
+};
 
 const ClientPortalClientsSettingsDrawer = () => {
   // localization
   const { t } = useTranslation('client-portal-clients');
+
+  // Get theme tokens for avatar colors
+  const { token } = theme.useToken();
+
+  // Generate avatar colors from theme tokens
+  // These colors automatically adapt to light/dark themes using Ant Design's semantic tokens
+  const avatarColors = useMemo(() => {
+    // Map original colors to semantic theme tokens for theme-aware avatar colors
+    // Original: ['#f56a00', '#7265e6', '#ffbf00', '#00a2ae', '#87d068']
+    // Using semantic tokens ensures proper light/dark theme compatibility
+    return [
+      token.colorWarning, // Orange/warning color (replaces #f56a00)
+      token.colorPrimary, // Primary brand color (replaces #7265e6)
+      token.colorError, // Error/red color for variety (replaces #ffbf00)
+      token.colorPrimary, // Primary color for cyan/teal variation (replaces #00a2ae)
+      token.colorSuccess, // Green/success color (replaces #87d068)
+    ];
+  }, [token]);
 
   // get drawer data from client reducer
   const {
@@ -78,26 +225,15 @@ const ClientPortalClientsSettingsDrawer = () => {
 
   // Get available projects (excluding already assigned ones)
   const projectOptions = useMemo(() => {
-    // Debug: Check the actual response structure
-    if (availableProjects) {
-      console.log('[ClientPortalClientsSettingsDrawer] Full response:', availableProjects);
-      console.log('[ClientPortalClientsSettingsDrawer] Response body:', availableProjects.body);
-      console.log('[ClientPortalClientsSettingsDrawer] Response body.data:', availableProjects.body?.data);
-      console.log('[ClientPortalClientsSettingsDrawer] Is loading:', isLoadingProjects);
-    }
-
     // Check response structure - projects API returns IServerResponse<IProjectsViewModel>
     // Structure: response.body.data (array) and response.body.total
     const projectsData = availableProjects?.body?.data;
     
     if (!projectsData || !Array.isArray(projectsData) || projectsData.length === 0) {
-      console.log('[ClientPortalClientsSettingsDrawer] No projects data or empty array');
       return [];
     }
 
-    console.log('[ClientPortalClientsSettingsDrawer] Total projects from API:', projectsData.length);
     const assignedProjectIds = client?.projects?.map((p) => p.id).filter((id): id is string => !!id) || [];
-    console.log('[ClientPortalClientsSettingsDrawer] Assigned project IDs:', assignedProjectIds);
     
     const filtered = projectsData
       .filter((project: IProjectViewModel) => {
@@ -113,13 +249,11 @@ const ClientPortalClientsSettingsDrawer = () => {
         return true;
       });
     
-    console.log('[ClientPortalClientsSettingsDrawer] Available projects after filtering:', filtered.length);
-    
     return filtered.map((project: IProjectViewModel) => ({
       label: project.name,
       value: project.id!,
     }));
-  }, [availableProjects, client, isLoadingProjects]);
+  }, [availableProjects, client]);
 
   // Update client name when client data changes
   React.useEffect(() => {
@@ -152,13 +286,13 @@ const ClientPortalClientsSettingsDrawer = () => {
         projectId,
       }).unwrap();
 
-      message.success(t('projectAssignedSuccessMessage') || 'Project assigned successfully');
+      message.success(t('projectAssignedSuccessMessage', { defaultValue: 'Project assigned successfully' }));
       
       // Refetch client details to update the project list
       await refetchClientDetails();
     } catch (error: any) {
       message.error(
-        error?.data?.message || t('projectAssignedErrorMessage') || 'Failed to assign project'
+        error?.data?.message || t('projectAssignedErrorMessage', { defaultValue: 'Failed to assign project' })
       );
     }
   };
@@ -184,7 +318,7 @@ const ClientPortalClientsSettingsDrawer = () => {
             }}
             onClick={() => setIsEditing(true)}
           >
-            {client?.name || 'Unnamed Client'}
+            {client?.name || t('unnamedClient', { defaultValue: 'Unnamed Client' })}
           </Typography.Title>
         )
       }
@@ -195,17 +329,17 @@ const ClientPortalClientsSettingsDrawer = () => {
       <Flex vertical gap={24}>
         <Flex vertical gap={8}>
           <Typography.Title level={4} style={{ margin: 0 }}>
-            {t('assignProjectLabel') || 'Assign Project'}
+            {t('assignProjectLabel', { defaultValue: 'Assign Project' })}
           </Typography.Title>
           <Typography.Text type="secondary">
-            {t('assignProjectDescription') || 'Select a project to assign to this client'}
+            {t('assignProjectDescription', { defaultValue: 'Select a project to assign to this client' })}
           </Typography.Text>
           <Select
             showSearch
             value={null} // reset after selection
             onChange={handleProjectSelect}
             style={{ maxWidth: 400 }}
-            placeholder={t('selectProjectPlaceholder') || 'Select a project'}
+            placeholder={t('selectProjectPlaceholder', { defaultValue: 'Select a project' })}
             loading={isLoadingProjects || isAssigning}
             filterOption={(input, option) =>
               (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
@@ -213,15 +347,16 @@ const ClientPortalClientsSettingsDrawer = () => {
             options={projectOptions}
             notFoundContent={
               isLoadingProjects
-                ? t('loadingText') || 'Loading...'
-                : t('noProjectsFoundText') || 'No projects found'
+                ? t('loadingText', { defaultValue: 'Loading...' })
+                : t('noProjectsFoundText', { defaultValue: 'No projects found' })
             }
           />
         </Flex>
 
         <Table
-          columns={TableColumns() as any}
+          columns={getClientPortalProjectColumns(t, avatarColors, token.colorPrimary)}
           dataSource={client?.projects}
+          rowKey="id"
           className="custom-two-colors-row-table"
           rowClassName={() => 'custom-row'}
           scroll={{
@@ -240,4 +375,4 @@ const ClientPortalClientsSettingsDrawer = () => {
   );
 };
 
-export default ClientPortalClientsSettingsDrawer;
+export { ClientPortalClientsSettingsDrawer };

@@ -4319,14 +4319,9 @@ class ClientPortalController {
               );
           }
 
-          // Verify current password
-          const crypto = require("crypto");
-          const currentPasswordHash = crypto
-            .createHash("sha256")
-            .update(currentPassword)
-            .digest("hex");
-
-          if (currentPasswordHash !== currentUser.password_hash) {
+          // Verify current password using centralized method (supports both bcrypt and SHA256)
+          const verificationResult = await TokenService.verifyClientPassword(currentPassword, currentUser.password_hash);
+          if (!verificationResult.isValid) {
             return res
               .status(400)
               .json(
@@ -4334,11 +4329,8 @@ class ClientPortalController {
               );
           }
 
-          // Hash new password
-          const newPasswordHash = crypto
-            .createHash("sha256")
-            .update(newPassword)
-            .digest("hex");
+          // Hash new password with bcrypt
+          const newPasswordHash = TokenService.hashClientPassword(newPassword);
           userUpdateFields.push(`password_hash = $${userParamIndex}`);
           userUpdateValues.push(newPasswordHash);
           userParamIndex++;
@@ -4893,7 +4885,7 @@ class ClientPortalController {
       // Add sorting
       const sortField = String(sortBy || "name");
       const sortDirection = sortOrder === "desc" ? "DESC" : "ASC";
-      // Validate sort field to prevent SQL injection and ensure it's a valid column
+      // Validate sort field and ensure it's a valid column
       const validSortFields = ["id", "name", "created_at", "updated_at"];
       const safeSortField = validSortFields.includes(sortField)
         ? sortField
@@ -7491,7 +7483,14 @@ class ClientPortalController {
       }
 
       const activities = [];
-      const dayFilter = `NOW() - INTERVAL '${Number(days)} days'`;
+      // Validate and use parameterized query for day filter
+      const daysNum = Number(days);
+      if (isNaN(daysNum) || daysNum < 0 || daysNum > 365) {
+        return res.status(400).json(new ServerResponse(false, null, "Invalid days parameter"));
+      }
+      // Calculate the date threshold in JavaScript
+      const thresholdDate = new Date();
+      thresholdDate.setDate(thresholdDate.getDate() - daysNum);
 
       // Get project activities
       if (!type || type === "project") {
@@ -7506,11 +7505,11 @@ class ClientPortalController {
             'project' as category
           FROM projects p
           LEFT JOIN sys_project_statuses sps ON p.status_id = sps.id
-          WHERE p.client_id = $1 AND p.updated_at >= ${dayFilter}
+          WHERE p.client_id = $1 AND p.updated_at >= $2
           ORDER BY p.updated_at DESC
         `;
 
-        const projectResult = await db.query(projectActivitiesQuery, [id]);
+        const projectResult = await db.query(projectActivitiesQuery, [id, thresholdDate]);
         activities.push(...projectResult.rows);
       }
 
@@ -7526,11 +7525,11 @@ class ClientPortalController {
             r.status,
             'request' as category
           FROM client_portal_requests r
-          WHERE r.client_id = $1 AND r.updated_at >= ${dayFilter}
+          WHERE r.client_id = $1 AND r.updated_at >= $2
           ORDER BY r.updated_at DESC
         `;
 
-        const requestResult = await db.query(requestActivitiesQuery, [id]);
+        const requestResult = await db.query(requestActivitiesQuery, [id, thresholdDate]);
         activities.push(...requestResult.rows);
       }
 
@@ -7550,11 +7549,11 @@ class ClientPortalController {
             i.status,
             'invoice' as category
           FROM client_portal_invoices i
-          WHERE i.client_id = $1 AND i.created_at >= ${dayFilter}
+          WHERE i.client_id = $1 AND i.created_at >= $2
           ORDER BY COALESCE(i.sent_at, i.created_at) DESC
         `;
 
-        const invoiceResult = await db.query(invoiceActivitiesQuery, [id]);
+        const invoiceResult = await db.query(invoiceActivitiesQuery, [id, thresholdDate]);
         activities.push(...invoiceResult.rows);
       }
 
@@ -7574,12 +7573,12 @@ class ClientPortalController {
             'chat' as category
           FROM client_portal_chat_messages m
           LEFT JOIN users u ON m.sender_type = 'team_member' AND m.sender_id = u.id
-          WHERE m.client_id = $1 AND m.created_at >= ${dayFilter}
+          WHERE m.client_id = $1 AND m.created_at >= $2
           ORDER BY m.created_at DESC
           LIMIT 50
         `;
 
-        const chatResult = await db.query(chatActivitiesQuery, [id]);
+        const chatResult = await db.query(chatActivitiesQuery, [id, thresholdDate]);
         activities.push(...chatResult.rows);
       }
 
@@ -8204,15 +8203,20 @@ class ClientPortalController {
                 });
               }
             } else {
-              // Standalone client portal user - verify password hash (bcrypt)
-              const passwordMatch = bcrypt.compareSync(password, existingPasswordHash);
-              if (!passwordMatch) {
+              // Standalone client portal user - verify password hash (supports both bcrypt and SHA256)
+              const verificationResult = await TokenService.verifyClientPassword(password, existingPasswordHash);
+              if (!verificationResult.isValid) {
                 return res.status(401).json({
                   done: false,
                   body: null,
                   titleKey: "errors.invalid_credentials_title",
                   messageKey: "errors.invalid_credentials_message"
                 });
+              }
+              
+              // Lazy migration: if password is SHA256, migrate to bcrypt
+              if (verificationResult.needsMigration) {
+                await TokenService.migratePasswordHash(existingClientUserId, password);
               }
             }
             
@@ -8230,10 +8234,8 @@ class ClientPortalController {
               [clientId, worklenzUserId, email, name]
             );
           } else {
-            // Standalone client portal user - create with password_hash
-            // Hash password with bcrypt
-            const salt = bcrypt.genSaltSync(10);
-            const passwordHash = bcrypt.hashSync(password, salt);
+            // Standalone client portal user - create with password_hash (bcrypt)
+            const passwordHash = TokenService.hashClientPassword(password);
             userResult = await db.query(
               `INSERT INTO client_users (id, client_id, email, name, password_hash, role, status, created_at)
              VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
@@ -8857,14 +8859,9 @@ class ClientPortalController {
             );
         }
 
-        // Verify current password
-        const crypto = require("crypto");
-        const currentPasswordHash = crypto
-          .createHash("sha256")
-          .update(currentPassword)
-          .digest("hex");
-
-        if (currentPasswordHash !== user.password_hash) {
+        // Verify current password using centralized method (supports both bcrypt and SHA256)
+        const verificationResult = await TokenService.verifyClientPassword(currentPassword, user.password_hash);
+        if (!verificationResult.isValid) {
           return res
             .status(400)
             .json(
@@ -8872,11 +8869,8 @@ class ClientPortalController {
             );
         }
 
-        // Hash new password
-        const newPasswordHash = crypto
-          .createHash("sha256")
-          .update(newPassword)
-          .digest("hex");
+        // Hash new password with bcrypt
+        const newPasswordHash = TokenService.hashClientPassword(newPassword);
         updateFields.push(`password_hash = $${paramIndex}`);
         updateValues.push(newPasswordHash);
         paramIndex++;
