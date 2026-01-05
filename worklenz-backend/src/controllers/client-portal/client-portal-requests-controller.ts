@@ -162,25 +162,31 @@ export default class ClientPortalRequestsController extends ClientPortalControll
           );
       }
 
-      // Generate request number at application level with retry logic
-      // Use a transaction to ensure atomicity between sequence increment and insert
+      // Generate request number at application level with transaction and row-level lock
       let reqNo: string;
       let newRequest: any;
-      const maxRetries = 3;
+      const maxRetries = 5;
       
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         const client = await db.pool.connect();
         try {
           await client.query('BEGIN');
           
-          // Atomically get and increment the next request number within transaction
-          const seqResult = await client.query(
+          // Lock the sequence row and get/increment the number atomically
+          // First ensure the row exists
+          await client.query(
             `INSERT INTO client_portal_request_sequences (organization_team_id, last_request_number)
-             VALUES ($1, 1)
-             ON CONFLICT (organization_team_id) 
-             DO UPDATE SET 
-               last_request_number = client_portal_request_sequences.last_request_number + 1,
-               updated_at = NOW()
+             VALUES ($1, 0)
+             ON CONFLICT (organization_team_id) DO NOTHING`,
+            [organizationId]
+          );
+          
+          // Now lock and update the row
+          const seqResult = await client.query(
+            `UPDATE client_portal_request_sequences
+             SET last_request_number = last_request_number + 1,
+                 updated_at = NOW()
+             WHERE organization_team_id = $1
              RETURNING last_request_number`,
             [organizationId]
           );
@@ -220,8 +226,7 @@ export default class ClientPortalRequestsController extends ClientPortalControll
           
           // If duplicate key error and not last attempt, retry
           if (error.code === '23505' && attempt < maxRetries - 1) {
-            console.log(`Duplicate req_no detected, retrying... (attempt ${attempt + 1})`);
-            await new Promise(resolve => setTimeout(resolve, 50 * (attempt + 1))); // Exponential backoff
+            await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1))); // Exponential backoff
             continue;
           }
           throw error; // Re-throw if not duplicate or last attempt

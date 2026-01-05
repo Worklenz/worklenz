@@ -18,7 +18,7 @@ import authRouter from "./routes/auth";
 import emailTemplatesRouter from "./routes/email-templates";
 import public_router from "./routes/public";
 import clientPortalApiRouter from "./routes/apis/client-portal-api-router";
-import { isInternalServer, isProduction } from "./shared/utils";
+import { isInternalServer, isProduction, log_error } from "./shared/utils";
 import sessionMiddleware from "./middlewares/session-middleware";
 import safeControllerFunction from "./shared/safe-controller-function";
 import AwsSesController from "./controllers/aws-ses-controller";
@@ -148,25 +148,6 @@ app.options("*", cors());
 //   app.use(sqlInjectionDetectorWithBlocking);
 // }
 
-// EARLY REQUEST LOGGING - This runs for ALL requests to verify they reach the server
-app.use((req, res, next) => {
-  // Log ALL requests to /api/client-portal immediately
-  if (req.originalUrl?.includes('/client-portal') || req.path?.includes('/client-portal')) {
-    console.log('='.repeat(80));
-    console.log(`[EARLY LOG] ${new Date().toISOString()} - ${req.method} ${req.originalUrl || req.path}`);
-    console.log(`[EARLY LOG] Path: ${req.path}, OriginalUrl: ${req.originalUrl}, URL: ${req.url}`);
-    console.log(`[EARLY LOG] Headers:`, {
-      origin: req.headers.origin,
-      referer: req.headers.referer,
-      'x-client-token': req.headers['x-client-token'] ? 'PRESENT' : 'MISSING',
-      'x-csrf-token': req.headers['x-csrf-token'] ? 'PRESENT' : 'MISSING',
-      'content-type': req.headers['content-type']
-    });
-    console.log('='.repeat(80));
-  }
-  next();
-});
-
 // Session setup - must be before passport and CSRF
 app.use(sessionMiddleware);
 
@@ -281,12 +262,9 @@ app.use((req, res, next) => {
     baseUrl.includes("/client-portal");
   
   if (isClientPortalRoute) {
-    console.log(`[CSRF] ✅ EXCLUDING client portal route from CSRF: ${req.method} path=${path}, originalUrl=${originalUrl}, baseUrl=${baseUrl}`);
     return next();
   }
-  
-  console.log(`[CSRF] Route NOT excluded, will check CSRF: ${req.method} ${path}`);
-  
+    
   // Exclude the CSRF token endpoint itself (GET requests to fetch tokens)
   if (req.path === "/csrf-token") {
     return next();
@@ -317,8 +295,6 @@ app.use((req, res, next) => {
   // This protects POST, PUT, DELETE, PATCH operations from CSRF attacks
   // GET, OPTIONS, HEAD requests don't need CSRF protection
   if (isStateChanging) {
-    console.log(`[CSRF] ⚠️ APPLYING CSRF protection to: ${req.method} ${path} (originalUrl: ${originalUrl})`);
-    console.log(`[CSRF] This should NOT happen for client portal routes!`);
     csrfSynchronisedProtection(req, res, (err) => {
       if (err) {
         console.error(`[CSRF] CSRF protection error:`, err);
@@ -356,7 +332,7 @@ app.get("/csrf-token", (req: Request, res: Response) => {
     
     const token = generateToken(req);
     if (!token) {
-      console.error('[CSRF] Failed to generate token');
+      log_error('[CSRF] Failed to generate token');
       return res.status(500).json({ done: false, message: "Failed to generate CSRF token" });
     }
     
@@ -364,7 +340,7 @@ app.get("/csrf-token", (req: Request, res: Response) => {
     res.setHeader('X-CSRF-Token', token);
     res.status(200).json({ done: true, message: "CSRF token refreshed", token });
   } catch (error: any) {
-    console.error('[CSRF] Error generating token:', error);
+    log_error('[CSRF] Error generating token:', error);
     res.status(500).json({ done: false, message: "Failed to generate CSRF token", error: error?.message });
   }
 });
@@ -436,17 +412,6 @@ if (isInternalServer()) {
 // CSRF error handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   if (err === invalidCsrfTokenError) {
-    console.error(`[CSRF ERROR HANDLER] Invalid CSRF token for ${req.method} ${req.path}`, {
-      originalUrl: req.originalUrl,
-      url: req.url,
-      baseUrl: req.baseUrl,
-      headers: {
-        origin: req.headers.origin,
-        referer: req.headers.referer,
-        'x-client-token': req.headers['x-client-token'] ? 'PRESENT' : 'MISSING',
-        'x-csrf-token': req.headers['x-csrf-token'] ? 'PRESENT' : 'MISSING'
-      }
-    });
     return res.status(403).json({
       done: false,
       message: "Invalid CSRF token",
