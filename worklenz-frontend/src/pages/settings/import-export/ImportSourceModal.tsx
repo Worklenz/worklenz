@@ -28,10 +28,15 @@ import {
   clickupWorkspaces,
   createImportJob,
   getImportJob,
+  commitImportJob,
+  ingestImportJob,
   mondayValidate,
+  updateImportTarget,
   startAsanaAuth,
 } from '@/api/imports';
 import type { ImportJob } from '@/api/imports';
+import { projectsApiService } from '@/api/projects/projects.api.service';
+import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 
 interface ImportSourceModalProps {
   open: boolean;
@@ -57,6 +62,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const lowerKey = source.key.toLowerCase();
   const integrationType = directIntegrationApps.includes(lowerKey) ? 'direct' : 'csv';
   const authNeeded = authGateApps.includes(lowerKey);
+  const providerForApi = directIntegrationApps.includes(lowerKey) ? lowerKey : 'csv';
 
   const [job, setJob] = React.useState<ImportJob | null>(null);
   const [authLoading, setAuthLoading] = React.useState(false);
@@ -101,12 +107,16 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     setClickupToken('');
     setAuthError(null);
     setShowCompletion(false);
+    setCsvText('');
+    setSpaceName(source.label ? `${source.label} import` : '');
+    setSpaceType('software');
+    setIsImporting(false);
 
     let cancelled = false;
     const initJob = async () => {
       try {
         const created = await createImportJob({
-          provider: lowerKey,
+          provider: providerForApi,
           flowType: integrationType as 'direct' | 'csv',
         });
         if (!cancelled) setJob(created);
@@ -161,6 +171,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
 
   // State for CSV columns and mapping
   const [csvColumns, setCsvColumns] = React.useState<string[]>([]);
+  const [csvText, setCsvText] = React.useState<string>('');
   const [fieldMappings, setFieldMappings] = React.useState<Record<string, string>>({});
   const [includeInImport, setIncludeInImport] = React.useState<Record<string, boolean>>({});
   // Delimiter for CSV parsing
@@ -179,8 +190,58 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
 
   // Importing state
   const [isImporting, setIsImporting] = React.useState<boolean>(false);
+  const [spaceName, setSpaceName] = React.useState<string>('');
+  const [spaceType, setSpaceType] = React.useState<string>('software');
+  const [defaultProjectStatusId, setDefaultProjectStatusId] = React.useState<string | null>(null);
+  const worklenzFieldOptions = React.useMemo(
+    () => [
+      { value: 'key', label: 'Key' },
+      { value: 'description', label: 'Description' },
+      { value: 'progress', label: 'Progress' },
+      { value: 'status', label: 'Status' },
+      { value: 'assignees', label: 'Assignees' },
+      { value: 'labels', label: 'Labels' },
+      { value: 'phase', label: 'Phase' },
+      { value: 'priority', label: 'Priority' },
+      { value: 'timeTracking', label: 'Time Tracking' },
+      { value: 'estimation', label: 'Estimation' },
+      { value: 'startDate', label: 'Start Date' },
+      { value: 'dueDate', label: 'Due Date' },
+      { value: 'dueTime', label: 'Due Time' },
+      { value: 'completedDate', label: 'Completed Date' },
+      { value: 'createdDate', label: 'Created Date' },
+      { value: 'lastUpdated', label: 'Last Updated' },
+      { value: 'reporter', label: 'Reporter' },
+    ],
+    []
+  );
 
   const navigationDisabled = authNeeded && !authCompleted;
+
+  const ensureImportJob = React.useCallback(async () => {
+    if (job) return job;
+    const created = await createImportJob({
+      provider: providerForApi,
+      flowType: integrationType as 'direct' | 'csv',
+    });
+    setJob(created);
+    return created;
+  }, [integrationType, job, providerForApi]);
+
+  const ensureDefaultProjectStatusId = React.useCallback(async (): Promise<string> => {
+    if (defaultProjectStatusId) return defaultProjectStatusId;
+
+    const resp = await projectsApiService.getProjectStatuses();
+    const statuses = resp?.body || [];
+    const defaultStatus = statuses.find(status => status.is_default) || statuses[0];
+
+    if (!defaultStatus?.id) {
+      throw new Error(t('importStep.projectStatusMissing', 'No project status available'));
+    }
+
+    setDefaultProjectStatusId(defaultStatus.id);
+    return defaultStatus.id;
+  }, [defaultProjectStatusId, t]);
 
   const handleBack = () => setStep(s => Math.max(0, s - 1));
   const handleNext = () => setStep(s => Math.min(totalSteps - 1, s + 1));
@@ -188,7 +249,74 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     setStep(0);
     onClose();
   };
-  const handleFinish = () => setShowCompletion(true);
+  const handleFinish = async () => {
+    if (integrationType !== 'csv') {
+      setShowCompletion(true);
+      return;
+    }
+
+    if (!csvText.trim()) {
+      message.error(t('importStep.csvMissing', 'Please upload a CSV file before importing.'));
+      return;
+    }
+
+    if (!spaceName.trim()) {
+      message.error(t('importStep.spaceNameRequired', 'Please enter a space name.'));
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const activeJob = await ensureImportJob();
+      const statusId = await ensureDefaultProjectStatusId();
+
+      const projectPayload: IProjectViewModel = {
+        name: spaceName.trim(),
+        color_code: '#2563eb',
+        status_id: statusId,
+        category_id: null,
+        health_id: null,
+        notes: '',
+        working_days: 0,
+        man_days: 0,
+        hours_per_day: 0,
+        use_manual_progress: false,
+        use_weighted_progress: false,
+        use_time_progress: false,
+      };
+
+      const projectResp = await projectsApiService.createProject(projectPayload);
+      const projectId = projectResp?.body?.id;
+      if (!projectResp?.done || !projectId) {
+        throw new Error(
+          projectResp?.message || t('importStep.projectCreateError', 'Failed to create project')
+        );
+      }
+
+      await updateImportTarget(activeJob.id, {
+        targetProjectId: projectId,
+        targetSpaceType: spaceType,
+        targetTemplate: null,
+      });
+
+      await ingestImportJob(activeJob.id, {
+        csvText,
+        sourceReference: { provider: lowerKey },
+      });
+
+      const commitProgress = await commitImportJob(activeJob.id);
+      if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
+
+      setShowCompletion(true);
+      message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
+    } catch (err: any) {
+      message.error(
+        err?.message || t('importStep.importError', 'Import failed. Please try again.')
+      );
+    } finally {
+      setIsImporting(false);
+    }
+  };
   const handleStartNewImport = () => {
     setShowCompletion(false);
     handleModalClose();
@@ -399,14 +527,19 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               <label>{'Jira space'}</label>
               <Select
                 style={{ width: '100%', marginBottom: 16 }}
-                value="business"
+                value={spaceType}
+                onChange={setSpaceType}
                 options={[
                   { value: 'business', label: 'Business space' },
                   { value: 'software', label: 'Software space' },
                 ]}
               />
               <label>{'Space name'}</label>
-              <Input style={{ width: '100%', marginBottom: 8 }} value="worklenzse" />
+              <Input
+                style={{ width: '100%', marginBottom: 8 }}
+                value={spaceName}
+                onChange={e => setSpaceName(e.target.value)}
+              />
               <a href="#" style={{ color: '#4096ff', fontSize: 14 }}>
                 {'Show more'}
               </a>
@@ -740,6 +873,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 const reader = new FileReader();
                 reader.onload = e => {
                   const text = e.target?.result as string;
+                  setCsvText(text || '');
                   const parsed = Papa.parse<string[]>(text, { header: true });
                   if (parsed.meta.fields) {
                     setCsvColumns(parsed.meta.fields);
@@ -849,7 +983,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 </Typography.Text>
                 <Select
                   style={{ width: '100%', marginTop: 6 }}
-                  defaultValue="software"
+                  value={spaceType}
+                  onChange={setSpaceType}
                   dropdownStyle={{ background: '#23272f', color: '#fff' }}
                   optionLabelProp="label"
                 >
@@ -913,7 +1048,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                     color: '#fff',
                     border: '1px solid #333',
                   }}
-                  placeholder="Project name"
+                  placeholder={t('importStep.spaceNamePlaceholder', 'Project name')}
+                  value={spaceName}
+                  onChange={e => setSpaceName(e.target.value)}
                 />
               </div>
               {/* Show more (collapsible) */}
@@ -1070,7 +1207,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               }}
             >
               <span style={{ flex: 2, paddingLeft: 8 }}>Columns in CSV</span>
-              <span style={{ flex: 2 }}>Jira fields</span>
+              <span style={{ flex: 2 }}>Worklenz fields</span>
               <span style={{ width: 140, textAlign: 'center' }}>Include in import</span>
             </div>
             {/* Mapping rows for each CSV column */}
@@ -1100,18 +1237,11 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                       value={fieldMappings[col] || undefined}
                       onChange={val => setFieldMappings(m => ({ ...m, [col]: val }))}
                     >
-                      <Select.Option value="assignee">Assignee</Select.Option>
-                      <Select.Option value="attachment">Attachment</Select.Option>
-                      <Select.Option value="comment">Comment</Select.Option>
-                      <Select.Option value="created">Created</Select.Option>
-                      <Select.Option value="creator">Creator</Select.Option>
-                      <Select.Option value="description">Description</Select.Option>
-                      <Select.Option value="duedate">Due date</Select.Option>
-                      <Select.Option value="environment">Environment</Select.Option>
-                      <Select.Option value="issuetype">Issue Type</Select.Option>
-                      <Select.Option value="labels">Labels</Select.Option>
-                      {/* ...more fields... */}
-                      <Select.Option value="custom">Create a new custom field</Select.Option>
+                      {worklenzFieldOptions.map(option => (
+                        <Select.Option key={option.value} value={option.value}>
+                          {option.label}
+                        </Select.Option>
+                      ))}
                     </Select>
                   </span>
                   <span style={{ width: 140, textAlign: 'center' }}>
@@ -1493,9 +1623,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         );
       case 5:
         // Review details step
-        // Example summary values (replace with real state as needed)
-        const spaceName = 'worklenz 2'; // TODO: get from state
-        const spaceType = 'Kanban'; // TODO: get from state
+        const reviewSpaceName = spaceName || t('importStep.defaultSpaceName', 'Imported space');
+        const reviewSpaceType = spaceType || 'software';
         const mappedFields = Object.values(fieldMappings).filter(Boolean).length;
         const totalFields = csvColumns.length;
         const workTypes = 1; // TODO: get from mapping logic
@@ -1531,10 +1660,10 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 />
                 <div>
                   <div style={{ color: '#fff', fontWeight: 600, fontSize: 18 }}>
-                    1 Worklenz space: {spaceName}
+                    1 Worklenz space: {reviewSpaceName}
                   </div>
                   <div style={{ color: '#b0b0b0', fontSize: 15 }}>
-                    A team-managed software space ({spaceType}) will be created.
+                    A team-managed software space ({reviewSpaceType}) will be created.
                   </div>
                 </div>
               </div>
@@ -1925,7 +2054,14 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   type="primary"
                   icon={step === totalSteps - 1 ? undefined : <ArrowRightOutlined />}
                   onClick={step === totalSteps - 1 ? handleFinish : handleNext}
-                  disabled={navigationDisabled}
+                  loading={isImporting && step === totalSteps - 1}
+                  disabled={
+                    navigationDisabled ||
+                    isImporting ||
+                    (step === totalSteps - 1 &&
+                      integrationType === 'csv' &&
+                      (!csvText.trim() || !spaceName.trim()))
+                  }
                 >
                   {step === totalSteps - 1
                     ? t('common.finish', 'Finish')

@@ -81,10 +81,10 @@ export default class ImportsController {
     return id;
   }
 
-  private static async assertJob(jobId: string, userId: string) {
-    const job = await ImportsService.getJobForUser(jobId, userId);
-    if (!job) throw createHttpError(404, "Import job not found");
-    return job;
+  private static async assertJob(jobId: string, _userId?: string) {
+    const job = await ImportsService.getJob(jobId);
+    if (job) return job;
+    throw createHttpError(404, "Import job not found");
   }
 
   static create = safeControllerFunction(
@@ -110,6 +110,26 @@ export default class ImportsController {
         sourceReference,
       });
       return res.status(200).send(new ServerResponse(true, job));
+    }
+  );
+
+  static setTarget = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      this.getUserId(req); // ensure authenticated
+      const job = await this.assertJob(req.params.jobId);
+      const { targetProjectId, targetSpaceType, targetTemplate } =
+        req.body || {};
+      if (!targetProjectId)
+        throw createHttpError(400, "targetProjectId is required");
+
+      await ImportsService.updateJobTargets(
+        job.id,
+        targetProjectId,
+        targetSpaceType,
+        targetTemplate
+      );
+      const updated = await ImportsService.getJob(job.id);
+      return res.status(200).send(new ServerResponse(true, updated));
     }
   );
 

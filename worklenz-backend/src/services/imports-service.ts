@@ -136,6 +136,28 @@ class ImportsService {
     );
   }
 
+  async updateJobTargets(
+    jobId: string,
+    targetProjectId?: string | null,
+    targetSpaceType?: string | null,
+    targetTemplate?: string | null
+  ) {
+    await db.query(
+      `UPDATE import_jobs
+         SET target_project_id = COALESCE($2, target_project_id),
+             target_space_type = COALESCE($3, target_space_type),
+             target_template   = COALESCE($4, target_template),
+             updated_at        = NOW()
+       WHERE id = $1`,
+      [
+        jobId,
+        targetProjectId || null,
+        targetSpaceType || null,
+        targetTemplate || null,
+      ]
+    );
+  }
+
   async appendLog(
     jobId: string,
     level: string,
@@ -410,16 +432,78 @@ class ImportsService {
     try {
       await client.query("BEGIN");
       await this.updateJobStatus(jobId, "running");
+
       const job = await this.getJob(jobId);
       if (!job?.target_project_id)
         throw new Error("Target project is required for commit");
-      const { rows: staged } = await client.query(
-        "SELECT * FROM import_stage_tasks WHERE job_id = $1 ORDER BY id",
-        [jobId]
-      );
+
+      const [
+        { rows: staged },
+        { rows: statusRows },
+        { rows: priorityRows },
+        { rows: userRows },
+      ] = await Promise.all([
+        client.query(
+          "SELECT * FROM import_stage_tasks WHERE job_id = $1 ORDER BY id",
+          [jobId]
+        ),
+        client.query(
+          "SELECT id, name FROM task_statuses WHERE project_id = $1 ORDER BY position",
+          [job.target_project_id]
+        ),
+        client.query(
+          "SELECT id, name, value FROM task_priorities WHERE project_id = $1 ORDER BY value NULLS LAST",
+          [job.target_project_id]
+        ),
+        client.query(
+          "SELECT source_user_id, source_email, target_user_id FROM import_user_mappings WHERE job_id = $1 AND (include IS NULL OR include = true)",
+          [jobId]
+        ),
+      ]);
+
+      const statusMap = new Map<string, string>();
+      statusRows.forEach((row: any) => {
+        if (row.name) statusMap.set(row.name.toString().toLowerCase(), row.id);
+      });
+      const defaultStatusId = statusRows[0]?.id || null;
+
+      if (!defaultStatusId) {
+        throw new Error("Target project has no statuses configured");
+      }
+
+      const defaultPriorityId = priorityRows[0]?.id || null;
+
+      const assigneeMap = new Map<string, string>();
+      userRows.forEach((row: any) => {
+        if (row.source_user_id && row.target_user_id)
+          assigneeMap.set(row.source_user_id.toString(), row.target_user_id);
+        if (row.source_email && row.target_user_id)
+          assigneeMap.set(
+            row.source_email.toString().toLowerCase(),
+            row.target_user_id
+          );
+      });
 
       const createdTasks: any[] = [];
-      for (const task of staged) {
+      const sourceToId = new Map<string, string>();
+      const roots = staged.filter((task: any) => !task.parent_source_task_id);
+      const deferred = staged.filter((task: any) => task.parent_source_task_id);
+
+      const resolveStatusId = (value?: string | null) => {
+        if (!value) return defaultStatusId;
+        const key = value.toString().trim().toLowerCase();
+        return statusMap.get(key) || defaultStatusId;
+      };
+
+      const resolveAssignees = (value?: string | null) => {
+        if (!value) return [] as Array<{ user_id: string }>;
+        const direct = assigneeMap.get(value.toString());
+        const email = assigneeMap.get(value.toString().toLowerCase());
+        const userId = direct || email;
+        return userId ? [{ user_id: userId }] : [];
+      };
+
+      const createTask = async (task: any, parentId?: string | null) => {
         const payload: Record<string, unknown> = {
           name: task.title,
           project_id: job.target_project_id,
@@ -427,18 +511,42 @@ class ImportsService {
           start_date: task.start_at,
           end_date: task.due_at,
           reporter_id: job.created_by,
-          // Placeholder mappings; refine with actual status/priority/phase resolutions
-          status_id: null,
-          priority_id: null,
-          parent_task_id: null,
-          assignees: task.assignee_source_id
-            ? [{ user_id: task.assignee_source_id }]
-            : [],
+          status_id: resolveStatusId(task.status),
+          priority_id: defaultPriorityId,
+          parent_task_id: parentId || null,
+          assignees: resolveAssignees(task.assignee_source_id),
         };
+
         const result = await client.query("SELECT create_task($1) AS task;", [
           JSON.stringify(payload),
         ]);
-        createdTasks.push(result.rows[0]?.task || null);
+        const created = result.rows[0]?.task || null;
+        if (created?.id && task.source_task_id) {
+          sourceToId.set(task.source_task_id, created.id);
+        }
+        createdTasks.push(created);
+      };
+
+      for (const task of roots) {
+        await createTask(task, null);
+      }
+
+      let guard = deferred.length * 2;
+      while (deferred.length && guard > 0) {
+        const task = deferred.shift() as any;
+        const parentId = task.parent_source_task_id
+          ? sourceToId.get(task.parent_source_task_id) || null
+          : null;
+        if (task.parent_source_task_id && !parentId) {
+          deferred.push(task);
+          guard -= 1;
+          continue;
+        }
+        await createTask(task, parentId);
+      }
+
+      if (deferred.length) {
+        throw new Error("Failed to resolve parent tasks for all staged items");
       }
 
       const progress = await this.progress(jobId);

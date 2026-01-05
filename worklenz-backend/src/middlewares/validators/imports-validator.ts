@@ -169,6 +169,17 @@ const ingestSchema: Schema = {
   additionalProperties: true,
 };
 
+const targetSchema: Schema = {
+  type: "object",
+  properties: {
+    targetProjectId: { type: "string" },
+    targetSpaceType: { type: ["string", "null"] },
+    targetTemplate: { type: ["string", "null"] },
+  },
+  required: ["targetProjectId"],
+  additionalProperties: false,
+};
+
 export const validateCreate = schemaValidator(createSchema);
 export const validateFields = schemaValidator(fieldsSchema);
 export const validateHierarchy = schemaValidator(hierarchySchema);
@@ -177,4 +188,5 @@ export const validateUsers = schemaValidator(usersSchema);
 export const validateAttachments = schemaValidator(attachmentsSchema);
 export const validateTasks = schemaValidator(tasksSchema);
 export const validateIngest = schemaValidator(ingestSchema);
+export const validateTarget = schemaValidator(targetSchema);
 export { providerEnum };

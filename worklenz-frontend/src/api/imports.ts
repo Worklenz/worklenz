@@ -6,6 +6,19 @@ export interface ImportJob {
   flow_type: 'direct' | 'csv';
 }
 
+export interface ImportProgress {
+  job: ImportJob;
+  counts: {
+    hierarchy: number;
+    fields: number;
+    values: number;
+    users: number;
+    stageTasks: number;
+    attachments: number;
+  };
+  recentLogs: Array<{ level: string; message: string; created_at: string }>;
+}
+
 export const createImportJob = async (payload: {
   provider: string;
   flowType: 'direct' | 'csv';
@@ -15,26 +28,26 @@ export const createImportJob = async (payload: {
   sourceReference?: Record<string, unknown> | null;
 }) => {
   const { data } = await apiClient.post('/api/v1/imports', payload);
-  return data?.data as ImportJob;
+  return data?.body as ImportJob;
 };
 
 export const startAsanaAuth = async (jobId: string) => {
   const { data } = await apiClient.post(`/api/v1/imports/${jobId}/auth/asana/start`);
-  return data?.data as { authUrl: string; state: string };
+  return data?.body as { authUrl: string; state: string };
 };
 
 export const mondayValidate = async (jobId: string, token: string) => {
   const { data } = await apiClient.post(`/api/v1/imports/${jobId}/auth/monday/validate`, {
     token,
   });
-  return data?.data as { authorized: boolean; boards: Array<{ id: string; name: string }> };
+  return data?.body as { authorized: boolean; boards: Array<{ id: string; name: string }> };
 };
 
 export const clickupWorkspaces = async (jobId: string, token: string) => {
   const { data } = await apiClient.post(`/api/v1/imports/${jobId}/auth/clickup/workspaces`, {
     token,
   });
-  return data?.data as {
+  return data?.body as {
     authorized: boolean;
     teams: Array<{
       id: string;
@@ -46,5 +59,35 @@ export const clickupWorkspaces = async (jobId: string, token: string) => {
 
 export const getImportJob = async (jobId: string) => {
   const { data } = await apiClient.get(`/api/v1/imports/${jobId}`);
-  return data?.data as ImportJob;
+  return data?.body as ImportJob;
+};
+
+export const updateImportTarget = async (
+  jobId: string,
+  payload: {
+    targetProjectId: string;
+    targetSpaceType?: string | null;
+    targetTemplate?: string | null;
+  }
+) => {
+  const { data } = await apiClient.post(`/api/v1/imports/${jobId}/target`, payload);
+  return data?.body as ImportJob;
+};
+
+export const ingestImportJob = async (
+  jobId: string,
+  payload: { csvText?: string; sourceReference?: Record<string, unknown> }
+) => {
+  const { data } = await apiClient.post(`/api/v1/imports/${jobId}/ingest`, payload);
+  return data?.body as { job: ImportJob };
+};
+
+export const commitImportJob = async (jobId: string) => {
+  const { data } = await apiClient.post(`/api/v1/imports/${jobId}/commit`);
+  return data?.body as ImportProgress;
+};
+
+export const getImportProgress = async (jobId: string) => {
+  const { data } = await apiClient.get(`/api/v1/imports/${jobId}/progress`);
+  return data?.body as ImportProgress;
 };

@@ -7,6 +7,7 @@ import {
   validateFields,
   validateHierarchy,
   validateIngest,
+  validateTarget,
   validateTasks,
   validateUsers,
   validateValues,
@@ -15,6 +16,11 @@ import {
 const importsApiRouter = express.Router();
 
 importsApiRouter.post("/", validateCreate, ImportsController.create);
+importsApiRouter.post(
+  "/:jobId/target",
+  validateTarget,
+  ImportsController.setTarget
+);
 importsApiRouter.get("/:jobId", ImportsController.get);
 importsApiRouter.post(
   "/:jobId/auth/asana/start",
