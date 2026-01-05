@@ -1283,7 +1283,7 @@ DECLARE
 BEGIN
     -- Optimized version using CTEs for better performance and maintainability
     WITH user_team_data AS (
-        SELECT
+        SELECT 
             u.id,
             u.name,
             u.email,
@@ -1301,7 +1301,7 @@ BEGIN
         WHERE u.id = _id
     ),
     team_org_data AS (
-        SELECT
+        SELECT 
             utd.*,
             t.name AS team_name,
             t.user_id AS owner_id,
@@ -1313,7 +1313,7 @@ BEGIN
         LEFT JOIN organizations o ON o.user_id = t.user_id
     ),
     notification_data AS (
-        SELECT
+        SELECT 
             tod.*,
             COALESCE(ns.email_notifications_enabled, TRUE) AS email_notifications_enabled
         FROM team_org_data tod
@@ -1324,7 +1324,7 @@ BEGIN
         FROM (SELECT description, type FROM worklenz_alerts WHERE active IS TRUE) alert_rec
     ),
     complete_user_data AS (
-        SELECT
+        SELECT 
             nd.*,
             tz.name AS timezone_name,
             slt.key AS subscription_type,
@@ -1332,18 +1332,18 @@ BEGIN
             ad.alerts,
             CASE
                 WHEN nd.subscription_status = 'trialing' THEN nd.trial_expire_date::DATE
-                WHEN EXISTS(SELECT 1 FROM licensing_custom_subs WHERE user_id = nd.owner_id)
+                WHEN EXISTS(SELECT 1 FROM licensing_custom_subs WHERE user_id = nd.owner_id) 
                     THEN (SELECT end_date FROM licensing_custom_subs WHERE user_id = nd.owner_id LIMIT 1)::DATE
                 WHEN EXISTS(SELECT 1 FROM licensing_user_subscriptions WHERE user_id = nd.owner_id AND active IS TRUE)
-                    THEN (SELECT (next_bill_date)::DATE - INTERVAL '1 day'
-                          FROM licensing_user_subscriptions
-                          WHERE user_id = nd.owner_id AND active IS TRUE
+                    THEN (SELECT (next_bill_date)::DATE - INTERVAL '1 day' 
+                          FROM licensing_user_subscriptions 
+                          WHERE user_id = nd.owner_id AND active IS TRUE 
                           LIMIT 1)::DATE
                 ELSE NULL
             END AS valid_till_date,
             CASE
                 WHEN is_owner(nd.id, nd.active_team) THEN nd.my_setup_completed
-                ELSE TRUE
+                ELSE TRUE 
             END AS setup_completed,
             is_owner(nd.id, nd.active_team) AS owner,
             is_admin(nd.id, nd.active_team) AS is_admin
@@ -1357,8 +1357,8 @@ BEGIN
 
     -- Ensure notification settings exist using INSERT...ON CONFLICT for better concurrency
     INSERT INTO notification_settings (user_id, team_id, email_notifications_enabled, popup_notifications_enabled, show_unread_items_count)
-    SELECT _id,
-           COALESCE((SELECT active_team FROM users WHERE id = _id),
+    SELECT _id, 
+           COALESCE((SELECT active_team FROM users WHERE id = _id), 
                    (SELECT id FROM teams WHERE user_id = _id LIMIT 1)),
            TRUE, TRUE, TRUE
     ON CONFLICT (user_id, team_id) DO NOTHING;
@@ -3448,7 +3448,14 @@ BEGIN
     _total_completed = _parent_task_done + _sub_tasks_done;
 --     _total_tasks = _sub_tasks_count + 1; -- +1 for the parent task
     _total_tasks = _sub_tasks_count; -- +1 for the parent task
-    _ratio = (_total_completed / _total_tasks) * 100;
+    
+    -- Fix: Handle division by zero when there are no subtasks
+    IF _total_tasks > 0 THEN
+        _ratio = (_total_completed / _total_tasks) * 100;
+    ELSE
+        -- If no subtasks, use parent task completion status
+        _ratio = _parent_task_done * 100;
+    END IF;
 
     RETURN JSON_BUILD_OBJECT(
         'ratio', _ratio,
