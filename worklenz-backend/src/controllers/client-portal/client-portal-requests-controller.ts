@@ -163,14 +163,18 @@ export default class ClientPortalRequestsController extends ClientPortalControll
       }
 
       // Generate request number at application level with retry logic
+      // Use a transaction to ensure atomicity between sequence increment and insert
       let reqNo: string;
       let newRequest: any;
       const maxRetries = 3;
       
       for (let attempt = 0; attempt < maxRetries; attempt++) {
+        const client = await db.pool.connect();
         try {
-          // Atomically get and increment the next request number
-          const seqResult = await db.query(
+          await client.query('BEGIN');
+          
+          // Atomically get and increment the next request number within transaction
+          const seqResult = await client.query(
             `INSERT INTO client_portal_request_sequences (organization_team_id, last_request_number)
              VALUES ($1, 1)
              ON CONFLICT (organization_team_id) 
@@ -184,7 +188,7 @@ export default class ClientPortalRequestsController extends ClientPortalControll
           const nextNumber = seqResult.rows[0].last_request_number;
           reqNo = `REQ-${String(nextNumber).padStart(4, '0')}`;
 
-          // Create request with generated req_no
+          // Create request with generated req_no in same transaction
           const insertQuery = `
             INSERT INTO client_portal_requests (
               req_no, service_id, client_id, organization_team_id,
@@ -203,11 +207,17 @@ export default class ClientPortalRequestsController extends ClientPortalControll
             notes || null,
           ];
 
-          const result = await db.query(insertQuery, insertValues);
+          const result = await client.query(insertQuery, insertValues);
           newRequest = result.rows[0];
+          
+          await client.query('COMMIT');
+          client.release();
           break; // Success, exit retry loop
           
         } catch (error: any) {
+          await client.query('ROLLBACK');
+          client.release();
+          
           // If duplicate key error and not last attempt, retry
           if (error.code === '23505' && attempt < maxRetries - 1) {
             console.log(`Duplicate req_no detected, retrying... (attempt ${attempt + 1})`);
