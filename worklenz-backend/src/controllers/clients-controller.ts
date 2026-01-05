@@ -8,8 +8,15 @@ import {sendNewSubscriberNotification} from "../shared/email-templates";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import { sanitizeCommentContent } from "../shared/utils";
 import HandleExceptions from "../decorators/handle-exceptions";
-import ClientPortalController from "./client-portal-controller";
+import ClientPortalControllerBase from "./client-portal/client-portal-base";
+import ClientPortalClientsController from "./client-portal/client-portal-clients-controller";
+import ClientPortalTeamController from "./client-portal/client-portal-team-controller";
+import ClientPortalProjectsController from "./client-portal/client-portal-projects-controller";
 import ClientPortalInvoicesController from "./client-portal/client-portal-invoices-controller";
+import ClientPortalChatController from "./client-portal/client-portal-chat-controller";
+import ClientPortalDashboardController from "./client-portal/client-portal-dashboard-controller";
+import ClientPortalAuthController from "./client-portal/client-portal-auth-controller";
+import ClientPortalBulkController from "./client-portal/client-portal-bulk-controller";
 import {uploadBase64, deleteObject, getClientPortalStorageKey} from "../shared/storage";
 import {sendClientPortalRequestCommentNotification} from "../shared/email-notifications";
 import {getClientPortalBaseUrl} from "../cron_jobs/helpers";
@@ -291,7 +298,7 @@ export default class ClientsController extends WorklenzControllerBase {
 
       // Create notification for the client
       if (currentRequest.client_id && teamId) {
-        await ClientPortalController.createNotification(
+        await ClientPortalControllerBase.createNotification(
           currentRequest.client_id,
           teamId,
           "request_update",
@@ -845,7 +852,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.getClients(modifiedReq, res as any);
+    return ClientPortalClientsController.getClients(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -854,7 +861,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.createClient(modifiedReq, res as any);
+    return ClientPortalClientsController.createClient(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -863,7 +870,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.getClientById(modifiedReq, res as any);
+    return ClientPortalClientsController.getClientById(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -872,7 +879,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.getClientDetails(modifiedReq, res as any);
+    return ClientPortalClientsController.getClientDetails(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -881,7 +888,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.updateClient(modifiedReq, res as any);
+    return ClientPortalClientsController.updateClient(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -890,7 +897,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.deleteClient(modifiedReq, res as any);
+    return ClientPortalClientsController.deleteClient(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -899,7 +906,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.setClientInviteSlug(modifiedReq, res as any);
+    return ClientPortalClientsController.setClientInviteSlug(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -908,7 +915,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.suggestClientInviteSlug(modifiedReq, res as any);
+    return ClientPortalClientsController.suggestClientInviteSlug(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -917,7 +924,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.getClientProjects(modifiedReq, res as any);
+    return ClientPortalClientsController.getClientProjects(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -926,7 +933,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.assignProjectToClient(modifiedReq, res as any);
+    return ClientPortalClientsController.assignProjectToClient(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -935,7 +942,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.removeProjectFromClient(modifiedReq, res as any);
+    return ClientPortalClientsController.removeProjectFromClient(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -944,7 +951,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.getClientTeam(modifiedReq, res as any);
+    return ClientPortalTeamController.getClientTeam(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -953,7 +960,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.inviteTeamMember(modifiedReq, res as any);
+    return ClientPortalTeamController.inviteTeamMember(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -962,7 +969,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.updateTeamMember(modifiedReq, res as any);
+    return ClientPortalTeamController.updateTeamMember(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -971,7 +978,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.removeTeamMember(modifiedReq, res as any);
+    return ClientPortalTeamController.removeTeamMember(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -980,7 +987,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.resendTeamInvitation(modifiedReq, res as any);
+    return ClientPortalTeamController.resendTeamInvitation(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -989,7 +996,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.getClientStats(modifiedReq, res as any);
+    return ClientPortalClientsController.getClientStats(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -998,7 +1005,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.getClientActivity(modifiedReq, res as any);
+    return ClientPortalClientsController.getClientActivity(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -1007,7 +1014,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.exportClientData(modifiedReq, res as any);
+    return ClientPortalClientsController.exportClientData(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -1016,7 +1023,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.bulkUpdateClients(modifiedReq, res as any);
+    return ClientPortalBulkController.bulkUpdateClients(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -1025,7 +1032,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.bulkDeleteClients(modifiedReq, res as any);
+    return ClientPortalBulkController.bulkDeleteClients(modifiedReq, res as any);
   }
 
   // Organization-side Client Portal Projects Management (wrapper methods)
@@ -1036,7 +1043,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.getProjects(modifiedReq, res as any);
+    return ClientPortalProjectsController.getProjects(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -1045,24 +1052,24 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.getProjectDetails(modifiedReq, res as any);
+    return ClientPortalProjectsController.getProjectDetails(modifiedReq, res as any);
   }
 
   // Organization-side Client Portal Invoices Management (wrapper methods)
   
   @HandleExceptions()
   public static async getPortalInvoices(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    return ClientPortalController.getOrganizationInvoices(req, res);
+    return ClientPortalInvoicesController.getOrganizationInvoices(req, res);
   }
 
   @HandleExceptions()
   public static async createPortalInvoice(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    return ClientPortalController.createInvoice(req, res as any);
+    return ClientPortalInvoicesController.createInvoice(req, res as any);
   }
 
   @HandleExceptions()
   public static async getPortalInvoiceById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    return ClientPortalController.getOrganizationInvoiceDetails(req, res);
+    return ClientPortalInvoicesController.getOrganizationInvoiceDetails(req, res);
   }
 
   @HandleExceptions()
@@ -1071,7 +1078,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.payInvoice(modifiedReq, res as any);
+    return ClientPortalInvoicesController.payInvoice(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -1080,7 +1087,7 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.downloadInvoice(modifiedReq, res as any);
+    return ClientPortalInvoicesController.downloadInvoice(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -1124,7 +1131,7 @@ export default class ClientsController extends WorklenzControllerBase {
         clientId,
         organizationId
       } as any;
-      return ClientPortalController.getChats(modifiedReq, res as any);
+      return ClientPortalChatController.getChats(modifiedReq, res as any);
     } else {
       // Get all chats for the organization (across all clients)
       try {
@@ -1391,7 +1398,7 @@ export default class ClientsController extends WorklenzControllerBase {
       clientId: extractedClientId,
       organizationId
     } as any;
-    return ClientPortalController.getChatDetails(modifiedReq, res as any);
+    return ClientPortalChatController.getChatDetails(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -1586,7 +1593,7 @@ export default class ClientsController extends WorklenzControllerBase {
       clientId: extractedClientId,
       organizationId
     } as any;
-    return ClientPortalController.getChatDetails(modifiedReq, res as any);
+    return ClientPortalChatController.getChatDetails(modifiedReq, res as any);
   }
 
   // Organization-side Client Portal Dashboard (wrapper method)
@@ -1597,19 +1604,19 @@ export default class ClientsController extends WorklenzControllerBase {
       ...req,
       user: req.user
     } as any;
-    return ClientPortalController.getDashboard(modifiedReq, res as any);
+    return ClientPortalDashboardController.getDashboard(modifiedReq, res as any);
   }
 
   // Organization-side Client Portal Invitation Management
 
   @HandleExceptions()
   public static async generateClientInvitationLink(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    return ClientPortalController.generateClientInvitationLink(req, res);
+    return ClientPortalAuthController.generateClientInvitationLink(req, res);
   }
 
   @HandleExceptions()
   public static async resendClientInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    return ClientPortalController.resendClientInvitation(req, res);
+    return ClientPortalAuthController.resendClientInvitation(req, res);
   }
 
   // Organization-side Client Portal Request Comments
