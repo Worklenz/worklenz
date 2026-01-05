@@ -201,18 +201,6 @@ const {
 
 // Only exclude: webhooks, public routes, and specific invitation endpoints
 app.use((req, res, next) => {
-  // AGGRESSIVE LOGGING - Log ALL requests to see what's happening
-  console.log(`[CSRF MIDDLEWARE] ${req.method} ${req.path}`, {
-    originalUrl: req.originalUrl,
-    url: req.url,
-    baseUrl: req.baseUrl,
-    headers: {
-      origin: req.headers.origin,
-      referer: req.headers.referer,
-      'x-client-token': req.headers['x-client-token'] ? 'PRESENT' : 'MISSING'
-    }
-  });
-
   const stateChangingMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
   const isStateChanging = stateChangingMethods.includes(req.method);
   
@@ -223,13 +211,13 @@ app.use((req, res, next) => {
   
   // Always exclude webhooks (external services can't provide CSRF tokens)
   if (path.startsWith("/webhook/") || originalUrl.startsWith("/webhook/")) {
-    console.log(`[CSRF] Excluding webhook: ${path}`);
+    log_error(`[CSRF] Excluding webhook: ${path}`);
     return next();
   }
   
   // Exclude public routes (read-only or public access)
   if (path.startsWith("/public/") || originalUrl.startsWith("/public/")) {
-    console.log(`[CSRF] Excluding public route: ${path}`);
+    log_error(`[CSRF] Excluding public route: ${path}`);
     return next();
   }
   
@@ -242,7 +230,7 @@ app.use((req, res, next) => {
     originalUrl.includes("/client-portal/invitation/") ||
     originalUrl.includes("/client-portal/handle-organization-invite")
   ) {
-    console.log(`[CSRF] Excluding invitation route: ${path}`);
+    log_error(`[CSRF] Excluding invitation route: ${path}`);
     return next();
   }
   
