@@ -162,35 +162,55 @@ export default class ClientPortalRequestsController extends ClientPortalControll
           );
       }
 
-      // Generate request number (sequential per organization)
-      const countResult = await db.query(
-        "SELECT COUNT(*) + 1 as next_num FROM client_portal_requests WHERE organization_team_id = $1",
-        [organizationId]
-      );
-      const nextNum = countResult.rows[0]?.next_num || 1;
-      const requestNumber = `REQ-${String(nextNum).padStart(4, '0')}`;
+      // Generate request number (sequential per organization) with transaction to prevent race conditions
+      // Use a transaction with row-level locking to ensure thread-safe number generation
+      const client = await db.pool.connect();
+      let newRequest;
+      
+      try {
+        await client.query('BEGIN');
+        
+        // Lock and get the next number atomically using FOR UPDATE to prevent concurrent access
+        const countResult = await client.query(
+          `SELECT COALESCE(MAX(CAST(SUBSTRING(req_no FROM 5) AS INTEGER)), 0) + 1 as next_num 
+           FROM client_portal_requests 
+           WHERE organization_team_id = $1 
+           FOR UPDATE`,
+          [organizationId]
+        );
+        
+        const nextNum = countResult.rows[0]?.next_num || 1;
+        const requestNumber = `REQ-${String(nextNum).padStart(4, '0')}`;
 
-      // Create request
-      const query = `
-        INSERT INTO client_portal_requests (
-          req_no, service_id, client_id, organization_team_id,
-          status, request_data, notes, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-        RETURNING id, req_no, service_id, status, request_data, notes, created_at, updated_at
-      `;
+        // Create request within the same transaction
+        const insertQuery = `
+          INSERT INTO client_portal_requests (
+            req_no, service_id, client_id, organization_team_id,
+            status, request_data, notes, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+          RETURNING id, req_no, service_id, status, request_data, notes, created_at, updated_at
+        `;
 
-      const values = [
-        requestNumber,
-        serviceId,
-        clientId,
-        organizationId,
-        "pending",
-        requestData ? JSON.stringify(requestData) : null,
-        notes || null,
-      ];
+        const insertValues = [
+          requestNumber,
+          serviceId,
+          clientId,
+          organizationId,
+          "pending",
+          requestData ? JSON.stringify(requestData) : null,
+          notes || null,
+        ];
 
-      const result = await db.query(query, values);
-      const newRequest = result.rows[0];
+        const result = await client.query(insertQuery, insertValues);
+        newRequest = result.rows[0];
+        
+        await client.query('COMMIT');
+      } catch (error: any) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
 
       // Get service name for response
       const service = serviceCheck.rows[0];
