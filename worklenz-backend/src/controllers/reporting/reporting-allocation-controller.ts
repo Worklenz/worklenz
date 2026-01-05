@@ -43,13 +43,18 @@ export default class ReportingAllocationController extends ReportingControllerBa
       let paramOffset = projectIdsParams.length + userIdsParams.length + 1;
 
       const { clause: durationClause, params: durationParams } = this.getDateRangeClause(key || DATE_RANGES.LAST_WEEK, dateRange, paramOffset);
-      const archivedClause = archived
-        ? ""
-        : `AND projects.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND user_id = '${user_id}') `;
+      paramOffset += durationParams.length;
+
+      let archivedClause = "";
+      let archivedParams: any[] = [];
+      if (!archived) {
+        archivedClause = `AND projects.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND user_id = $${paramOffset})`;
+        archivedParams = [user_id];
+      }
 
       const billableQuery = this.buildBillableQuery(billable);
 
-      const projectTimeLogs = await this.getTotalTimeLogsByProject(archived, durationClause, projectIdsClause, userIdsClause, archivedClause, billableQuery, projectIdsParams, userIdsParams, durationParams);
+      const projectTimeLogs = await this.getTotalTimeLogsByProject(archived, durationClause, projectIdsClause, userIdsClause, archivedClause, billableQuery, projectIdsParams, userIdsParams, durationParams, archivedParams);
       const userTimeLogs = await this.getTotalTimeLogsByUser(archived, durationClause, projectIdsClause, userIdsClause, billableQuery, projectIdsParams, userIdsParams, durationParams);
 
       const format = (seconds: number) => {
@@ -90,7 +95,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
     return [];
   }
 
-  private static async getTotalTimeLogsByProject(archived: boolean, durationClause: string, projectIdsClause: string, userIdsClause: string, archivedClause: string, billableQuery: string, projectIdsParams: any[], userIdsParams: any[], durationParams: any[]) {
+  private static async getTotalTimeLogsByProject(archived: boolean, durationClause: string, projectIdsClause: string, userIdsClause: string, archivedClause: string, billableQuery: string, projectIdsParams: any[], userIdsParams: any[], durationParams: any[], archivedParams: any[]) {
     try {
       const q = `SELECT projects.name,
                projects.color_code,
@@ -131,7 +136,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
                 LEFT JOIN sys_project_statuses sps ON projects.status_id = sps.id
             WHERE projects.id IN (${projectIdsClause}) ${archivedClause};`;
 
-      const result = await db.query(q, [archived, ...projectIdsParams, ...userIdsParams, ...durationParams]);
+      const result = await db.query(q, [archived, ...projectIdsParams, ...userIdsParams, ...durationParams, ...archivedParams]);
       return result.rows;
     } catch (error) {
       log_error(error);
@@ -693,9 +698,14 @@ export default class ReportingAllocationController extends ReportingControllerBa
       isNonWorkingPeriod = true;
     }
 
-    const archivedClause = archived
-      ? ""
-      : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
+    let archivedClause = "";
+    let archivedParams: any[] = [];
+    let paramOffsetForFilters = teamIdsParams.length + projectIdsParams.length + 1;
+    if (!archived) {
+      archivedClause = `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $${paramOffsetForFilters})`;
+      archivedParams = [req.user?.id];
+      paramOffsetForFilters += 1;
+    }
 
     const billableQuery = this.buildBillableQueryWithAlias(billable, 't');
     const members = (req.body.members || []) as string[];
@@ -703,7 +713,6 @@ export default class ReportingAllocationController extends ReportingControllerBa
     // Prepare members filter
     let membersFilter = "";
     let memberParams: any[] = [];
-    let paramOffsetForFilters = teamIdsParams.length + projectIdsParams.length + 1;
     if (members.length > 0) {
       // Use parameterized query
       const { clause: memberIdsClause, params: memParams } = SqlHelper.buildInClause(members, paramOffsetForFilters);
@@ -818,7 +827,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
       ORDER BY logged_time DESC;`;
 
     // Pass all parameters
-    const queryParams = [...teamIdsParams, ...conditionalProjectParams, ...conditionalCategoryParams, ...memberParams, ...customDurationParams];
+    const queryParams = [...teamIdsParams, ...conditionalProjectParams, ...conditionalCategoryParams, ...archivedParams, ...memberParams, ...customDurationParams];
     const result = await db.query(q, queryParams);
     const utilization = (req.body.utilization || []) as string[];
 
@@ -915,9 +924,12 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
     const durationClause = this.getDateRangeClause(duration as string || DATE_RANGES.LAST_WEEK, date_range as string[]);
 
-    const archivedClause = archived
-      ? ""
-      : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
+    let archivedClause = "";
+    let archivedParams: any[] = [];
+    if (!archived) {
+      archivedClause = `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $2)`;
+      archivedParams = [req.user?.id];
+    }
 
     const q = `
         SELECT p.id,
@@ -932,7 +944,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
         ${durationClause} ${archivedClause}
         GROUP BY p.id, p.name
         ORDER BY p.name ASC;`;
-    const result = await db.query(q, [teamId]);
+    const result = await db.query(q, [teamId, ...archivedParams]);
 
     const labelsX = [];
     const dataX = [];
