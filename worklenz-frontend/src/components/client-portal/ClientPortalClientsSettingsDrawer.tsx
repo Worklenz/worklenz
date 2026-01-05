@@ -26,7 +26,7 @@ const getClientPortalProjectColumns = (
       title: t('name', { defaultValue: 'Name' }),
       key: 'name',
       dataIndex: 'name',
-      sorter: (a, b) => (a.name || '').length - (b.name || '').length,
+      sorter: (a, b) => (a.name || '').localeCompare(b.name || ''),
       width: 240,
       showSorterTooltip: false,
       render: (text, record) => {
@@ -44,7 +44,7 @@ const getClientPortalProjectColumns = (
       title: t('status', { defaultValue: 'Status' }),
       key: 'status',
       dataIndex: 'status',
-      sorter: (a, b) => (a.status || '').length - (b.status || '').length,
+      sorter: (a, b) => (a.status || '').localeCompare(b.status || ''),
       showSorterTooltip: false,
     },
     {
