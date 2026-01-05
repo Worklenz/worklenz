@@ -305,12 +305,6 @@ export default class ProjectsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const {searchQuery, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name");
-
-    // Validate and sanitize sort field
-    const safeSortField = this.validateAndMapSortField(sortField, "name");
-    const safeSortOrder = (sortOrder === "desc" || sortOrder === "DESC") ? "DESC" : "ASC";
-
     const queryParams: any[] = [req.user?.team_id || null];
     let paramOffset = 2;
 
@@ -353,6 +347,19 @@ export default class ProjectsController extends WorklenzControllerBase {
       queryParams.push(...statusesResult.params);
       paramOffset += statusesResult.params.length;
     }
+
+    // Now get search query with correct paramOffset
+    const {searchQuery, searchParams, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name", false, paramOffset);
+    
+    // Add search parameters to queryParams
+    if (searchParams.length > 0) {
+      queryParams.push(...searchParams);
+      paramOffset += searchParams.length;
+    }
+
+    // Validate and sanitize sort field
+    const safeSortField = this.validateAndMapSortField(sortField, "name");
+    const safeSortOrder = (sortOrder === "desc" || sortOrder === "DESC") ? "DESC" : "ASC";
 
     const categories = categoriesResult.clause;
     const statuses = statusesResult.clause;
