@@ -204,22 +204,29 @@ app.use((req, res, next) => {
   const stateChangingMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
   const isStateChanging = stateChangingMethods.includes(req.method);
   
+  // Get all possible path variations early
+  const path = req.path || "";
+  const originalUrl = req.originalUrl || req.url || "";
+  const baseUrl = req.baseUrl || "";
+  
   // Always exclude webhooks (external services can't provide CSRF tokens)
-  if (req.path.startsWith("/webhook/")) {
+  if (path.startsWith("/webhook/") || originalUrl.startsWith("/webhook/")) {
     return next();
   }
   
   // Exclude public routes (read-only or public access)
-  if (req.path.startsWith("/public/")) {
+  if (path.startsWith("/public/") || originalUrl.startsWith("/public/")) {
     return next();
   }
   
   // Exclude specific invitation endpoints (these have their own token validation)
   if (
-    req.path.startsWith("/invite/team/") ||
-    req.path.startsWith("/invite/project/") ||
-    req.path.includes("/client-portal/invitation/") ||
-    req.path.includes("/client-portal/handle-organization-invite")
+    path.startsWith("/invite/team/") ||
+    path.startsWith("/invite/project/") ||
+    path.includes("/client-portal/invitation/") ||
+    path.includes("/client-portal/handle-organization-invite") ||
+    originalUrl.includes("/client-portal/invitation/") ||
+    originalUrl.includes("/client-portal/handle-organization-invite")
   ) {
     return next();
   }
@@ -230,17 +237,17 @@ app.use((req, res, next) => {
   // inherently CSRF-resistant. CSRF attacks rely on browsers automatically including credentials
   // (cookies), which doesn't apply to custom headers that require explicit JavaScript to send.
   // Additional protections: token verification, origin validation, and rate limiting are still applied.
-  // Check both path and originalUrl to handle different routing scenarios
-  const path = req.path || "";
-  const originalUrl = req.originalUrl || req.url || "";
+  // Check multiple path variations to ensure we catch all cases
   const isClientPortalRoute = 
     path.startsWith("/client-portal") || 
     path.startsWith("/api/client-portal") ||
     originalUrl.startsWith("/api/client-portal") ||
     originalUrl.startsWith("/client-portal") ||
-    originalUrl.includes("/client-portal/");
+    originalUrl.includes("/client-portal/") ||
+    baseUrl.includes("/client-portal");
   
   if (isClientPortalRoute) {
+    console.log(`[CSRF] Excluding client portal route from CSRF: ${req.method} path=${path}, originalUrl=${originalUrl}, baseUrl=${baseUrl}`);
     return next();
   }
   
@@ -274,6 +281,7 @@ app.use((req, res, next) => {
   // This protects POST, PUT, DELETE, PATCH operations from CSRF attacks
   // GET, OPTIONS, HEAD requests don't need CSRF protection
   if (isStateChanging) {
+    console.log(`[CSRF] Applying CSRF protection to: ${req.method} ${path}`);
     csrfSynchronisedProtection(req, res, next);
   } else {
     next();

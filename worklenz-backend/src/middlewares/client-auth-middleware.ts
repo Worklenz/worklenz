@@ -19,8 +19,17 @@ export const authenticateClient = async (
   next: NextFunction
 ) => {
   try {
+    // Log request details for debugging
+    console.log(`[Client Auth] Request: ${req.method} ${req.path}`, {
+      origin: req.headers.origin,
+      referer: req.headers.referer,
+      hasToken: !!req.headers["x-client-token"],
+      userAgent: req.headers["user-agent"]
+    });
+
     // Additional security: Validate Origin/Referer header for state-changing operations
     // This provides defense-in-depth even though custom headers are CSRF-resistant
+    // NOTE: Made lenient - only blocks if explicitly configured and origin doesn't match
     const stateChangingMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
     const isStateChanging = stateChangingMethods.includes(req.method);
     
@@ -34,9 +43,13 @@ export const authenticateClient = async (
         'http://localhost:3000',
         'https://clients.worklenz.com',
         'https://wl-client.ceydigital.dev',
+        'https://dev.worklenz.com', // Add dev environment
+        'http://dev.worklenz.com',  // Add dev environment (http)
       ].filter((url): url is string => Boolean(url));
       
-      // Only validate if we have origin/referer and allowed origins configured
+      // Only validate if we have origin/referer AND explicitly configured allowed origins
+      // If no origin header is present, allow (some clients don't send it)
+      // If origin is present but no allowed origins configured, allow (development mode)
       if (origin && typeof origin === 'string' && allowedOrigins.length > 0) {
         try {
           const originUrl = new URL(origin);
@@ -51,13 +64,21 @@ export const authenticateClient = async (
           
           if (!isAllowed) {
             console.error(`[Client Auth] 403 - Invalid origin: ${origin} for ${req.method} ${req.path}`);
+            console.error(`[Client Auth] Allowed origins:`, allowedOrigins);
             return res.status(403).json(
               new ServerResponse(false, null, "Request origin not allowed")
             );
+          } else {
+            console.log(`[Client Auth] Origin validated: ${origin}`);
           }
         } catch (error) {
           // Invalid origin format - log but don't block (defense-in-depth, not primary security)
-          console.warn(`[Client Auth] Invalid origin format: ${origin}`);
+          console.warn(`[Client Auth] Invalid origin format: ${origin}`, error);
+        }
+      } else {
+        // No origin validation - log for debugging
+        if (isStateChanging) {
+          console.log(`[Client Auth] Skipping origin validation - origin: ${origin}, allowedOrigins: ${allowedOrigins.length}`);
         }
       }
     }
