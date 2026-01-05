@@ -1033,7 +1033,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     // Use parameterized queries for user ID
     // Calculate parameter offsets: team_id=$1, then searchParams, then categories, statuses, userId
     const teamIdParam = 1;
-    let paramOffset = teamIdParam + searchParams.length;
+    let paramOffset = 2 + searchParams.length; // Start at 2 (after $1 for teamId)
     
     const categoriesResult = this.getFilterByCategoryWhereClosure(req.query.categories as string, paramOffset);
     const categories = categoriesResult.clause;
@@ -1044,6 +1044,12 @@ export default class ProjectsController extends WorklenzControllerBase {
     paramOffset += statusesResult.params.length;
     
     const userIdParam = paramOffset;
+    paramOffset++;
+    
+    const sizeParam = paramOffset;
+    paramOffset++;
+    
+    const offsetParam = paramOffset;
     paramOffset++;
     
     const filterByMember = !req.user?.owner && !req.user?.is_admin ?
@@ -1116,11 +1122,11 @@ export default class ProjectsController extends WorklenzControllerBase {
                                    (SELECT sys_project_statuses.icon FROM sys_project_statuses WHERE sys_project_statuses.id = p2.status_id) AS status_icon,
                                    EXISTS(SELECT user_id
                                           FROM favorite_projects
-                                          WHERE user_id = '${req.user?.id}'
+                                          WHERE user_id = $${userIdParam}
                                             AND project_id = p2.id) AS favorite,
                                    EXISTS(SELECT user_id
                                           FROM archived_projects
-                                          WHERE user_id = '${req.user?.id}'
+                                          WHERE user_id = $${userIdParam}
                                             AND project_id = p2.id) AS archived,
                                    p2.color_code,
                                    p2.start_date,
@@ -1156,7 +1162,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                                    (SELECT project_members.default_view
                                       FROM project_members
                                       WHERE project_members.project_id = p2.id
-                                        AND project_members.team_member_id = '${req.user?.team_member_id}') AS team_member_default_view,
+                                        AND project_members.team_member_id = (SELECT id FROM team_members WHERE user_id = $${userIdParam} AND team_id = $${teamIdParam} LIMIT 1)) AS team_member_default_view,
                                    (SELECT CASE
                                              WHEN ((SELECT MAX(tasks.updated_at)
                                                     FROM tasks
@@ -1186,7 +1192,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                   WHERE projects.team_id = $${teamIdParam} ${categories} ${statuses} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
                   GROUP BY ${groupByFields}
                   ORDER BY ${groupOrderBy}
-                  LIMIT $${paramOffset} OFFSET $${paramOffset + 1}
+                  LIMIT $${sizeParam}::INTEGER OFFSET $${offsetParam}::INTEGER
                 ) group_data
                ) AS data
         FROM projects

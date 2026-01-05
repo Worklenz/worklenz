@@ -430,7 +430,7 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       ORDER BY ${groupOrderBy}
     `;
 
-    // Build final params: teamId ($1), then filter params ($2+)
+    // Build final params: teamId ($1), searchParams ($2+), then filter params
     // Note: getGrouped query doesn't use LIMIT/OFFSET
     const finalParams = [teamId, ...filterParams];
     const result = await db.query(q, finalParams);
