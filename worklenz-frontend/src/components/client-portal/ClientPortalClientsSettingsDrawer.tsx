@@ -1,4 +1,4 @@
-import { Drawer, Typography, Input, Flex, Select, Table, message, ColumnsType } from '@/shared/antd-imports';
+import { Drawer, Typography, Input, Flex, Select, Table, message, ColumnsType, theme } from '@/shared/antd-imports';
 import React, { useState, useMemo } from 'react';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
@@ -17,12 +17,13 @@ import {
 import { IProjectViewModel } from '../../types/project/projectViewModel.types';
 import { Avatar, Badge, Progress, Tooltip } from '@/shared/antd-imports';
 
-const avatarColors = ['#f56a00', '#7265e6', '#ffbf00', '#00a2ae', '#87d068'];
-
-const getClientPortalProjectColumns = (t: (key: string) => string): ColumnsType<ClientPortalProject> => {
+const getClientPortalProjectColumns = (
+  t: (key: string, options?: { defaultValue: string }) => string,
+  avatarColors: string[]
+): ColumnsType<ClientPortalProject> => {
   return [
     {
-      title: t('name') || 'Name',
+      title: t('name', { defaultValue: 'Name' }),
       key: 'name',
       dataIndex: 'name',
       sorter: (a, b) => (a.name || '').length - (b.name || '').length,
@@ -40,14 +41,14 @@ const getClientPortalProjectColumns = (t: (key: string) => string): ColumnsType<
       },
     },
     {
-      title: t('status') || 'Status',
+      title: t('status', { defaultValue: 'Status' }),
       key: 'status',
       dataIndex: 'status',
       sorter: (a, b) => (a.status || '').length - (b.status || '').length,
       showSorterTooltip: false,
     },
     {
-      title: t('tasksProgress') || 'Tasks Progress',
+      title: t('tasksProgress', { defaultValue: 'Tasks Progress' }),
       key: 'tasksProgress',
       render: (text, record) => {
         const { totalTasks, completedTasks } = record;
@@ -60,7 +61,7 @@ const getClientPortalProjectColumns = (t: (key: string) => string): ColumnsType<
       },
     },
     {
-      title: t('lastUpdated') || 'Last Updated',
+      title: t('lastUpdated', { defaultValue: 'Last Updated' }),
       key: 'lastUpdated',
       dataIndex: 'lastUpdated',
       width: 160,
@@ -118,7 +119,7 @@ const getClientPortalProjectColumns = (t: (key: string) => string): ColumnsType<
       },
     },
     {
-      title: t('members') || 'Members',
+      title: t('members', { defaultValue: 'Members' }),
       key: 'members',
       dataIndex: 'members',
       render: (members: string[]) => (
@@ -146,6 +147,24 @@ const getClientPortalProjectColumns = (t: (key: string) => string): ColumnsType<
 const ClientPortalClientsSettingsDrawer = () => {
   // localization
   const { t } = useTranslation('client-portal-clients');
+
+  // Get theme tokens for avatar colors
+  const { token } = theme.useToken();
+
+  // Generate avatar colors from theme tokens
+  // These colors automatically adapt to light/dark themes using Ant Design's semantic tokens
+  const avatarColors = useMemo(() => {
+    // Map original colors to semantic theme tokens for theme-aware avatar colors
+    // Original: ['#f56a00', '#7265e6', '#ffbf00', '#00a2ae', '#87d068']
+    // Using semantic tokens ensures proper light/dark theme compatibility
+    return [
+      token.colorWarning, // Orange/warning color (replaces #f56a00)
+      token.colorPrimary, // Primary brand color (replaces #7265e6)
+      token.colorError, // Error/red color for variety (replaces #ffbf00)
+      token.colorPrimary, // Primary color for cyan/teal variation (replaces #00a2ae)
+      token.colorSuccess, // Green/success color (replaces #87d068)
+    ];
+  }, [token]);
 
   // get drawer data from client reducer
   const {
@@ -266,13 +285,13 @@ const ClientPortalClientsSettingsDrawer = () => {
         projectId,
       }).unwrap();
 
-      message.success(t('projectAssignedSuccessMessage') || 'Project assigned successfully');
+      message.success(t('projectAssignedSuccessMessage', { defaultValue: 'Project assigned successfully' }));
       
       // Refetch client details to update the project list
       await refetchClientDetails();
     } catch (error: any) {
       message.error(
-        error?.data?.message || t('projectAssignedErrorMessage') || 'Failed to assign project'
+        error?.data?.message || t('projectAssignedErrorMessage', { defaultValue: 'Failed to assign project' })
       );
     }
   };
@@ -298,7 +317,7 @@ const ClientPortalClientsSettingsDrawer = () => {
             }}
             onClick={() => setIsEditing(true)}
           >
-            {client?.name || 'Unnamed Client'}
+            {client?.name || t('unnamedClient', { defaultValue: 'Unnamed Client' })}
           </Typography.Title>
         )
       }
@@ -309,17 +328,17 @@ const ClientPortalClientsSettingsDrawer = () => {
       <Flex vertical gap={24}>
         <Flex vertical gap={8}>
           <Typography.Title level={4} style={{ margin: 0 }}>
-            {t('assignProjectLabel') || 'Assign Project'}
+            {t('assignProjectLabel', { defaultValue: 'Assign Project' })}
           </Typography.Title>
           <Typography.Text type="secondary">
-            {t('assignProjectDescription') || 'Select a project to assign to this client'}
+            {t('assignProjectDescription', { defaultValue: 'Select a project to assign to this client' })}
           </Typography.Text>
           <Select
             showSearch
             value={null} // reset after selection
             onChange={handleProjectSelect}
             style={{ maxWidth: 400 }}
-            placeholder={t('selectProjectPlaceholder') || 'Select a project'}
+            placeholder={t('selectProjectPlaceholder', { defaultValue: 'Select a project' })}
             loading={isLoadingProjects || isAssigning}
             filterOption={(input, option) =>
               (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
@@ -327,14 +346,14 @@ const ClientPortalClientsSettingsDrawer = () => {
             options={projectOptions}
             notFoundContent={
               isLoadingProjects
-                ? t('loadingText') || 'Loading...'
-                : t('noProjectsFoundText') || 'No projects found'
+                ? t('loadingText', { defaultValue: 'Loading...' })
+                : t('noProjectsFoundText', { defaultValue: 'No projects found' })
             }
           />
         </Flex>
 
         <Table
-          columns={getClientPortalProjectColumns(t)}
+          columns={getClientPortalProjectColumns(t, avatarColors)}
           dataSource={client?.projects}
           rowKey="id"
           className="custom-two-colors-row-table"
