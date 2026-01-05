@@ -38,12 +38,18 @@ export default class ReportingAllocationController extends ReportingControllerBa
   private static async getTimeLoggedByProjects(projects: string[], users: string[], key: string, dateRange: string[], archived = false, user_id = "", billable: { billable: boolean; nonBillable: boolean }): Promise<any> {
     try {
       // Use SqlHelper.buildInClause for safe IN clauses
-      const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, 1);
-      const { clause: userIdsClause, params: userIdsParams } = SqlHelper.buildInClause(users, projectIdsParams.length + 1);
-      let paramOffset = projectIdsParams.length + userIdsParams.length + 1;
-
-      const { clause: durationClause, params: durationParams } = this.getDateRangeClause(key || DATE_RANGES.LAST_WEEK, dateRange, paramOffset);
-      paramOffset += durationParams.length;
+      // Start from $2 because $1 is used for 'archived' parameter in subqueries
+      const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, 2);
+      
+      // For getTotalTimeLogsByUser: duration comes after projectIds, then userIds
+      const { clause: durationClauseForUser, params: durationParamsForUser } = this.getDateRangeClause(key || DATE_RANGES.LAST_WEEK, dateRange, 2 + projectIdsParams.length);
+      const { clause: userIdsClauseForUser, params: userIdsParamsForUser } = SqlHelper.buildInClause(users, 2 + projectIdsParams.length + durationParamsForUser.length);
+      
+      // For getTotalTimeLogsByProject: userIds comes after projectIds, then duration
+      const { clause: userIdsClauseForProject, params: userIdsParamsForProject } = SqlHelper.buildInClause(users, 2 + projectIdsParams.length);
+      const { clause: durationClauseForProject, params: durationParamsForProject } = this.getDateRangeClause(key || DATE_RANGES.LAST_WEEK, dateRange, 2 + projectIdsParams.length + userIdsParamsForProject.length);
+      
+      let paramOffset = 2 + projectIdsParams.length + userIdsParamsForProject.length + durationParamsForProject.length;
 
       let archivedClause = "";
       let archivedParams: any[] = [];
@@ -54,8 +60,8 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
       const billableQuery = this.buildBillableQuery(billable);
 
-      const projectTimeLogs = await this.getTotalTimeLogsByProject(archived, durationClause, projectIdsClause, userIdsClause, archivedClause, billableQuery, projectIdsParams, userIdsParams, durationParams, archivedParams);
-      const userTimeLogs = await this.getTotalTimeLogsByUser(archived, durationClause, projectIdsClause, userIdsClause, billableQuery, projectIdsParams, userIdsParams, durationParams);
+      const projectTimeLogs = await this.getTotalTimeLogsByProject(archived, durationClauseForProject, projectIdsClause, userIdsClauseForProject, archivedClause, billableQuery, projectIdsParams, userIdsParamsForProject, durationParamsForProject, archivedParams);
+      const userTimeLogs = await this.getTotalTimeLogsByUser(archived, durationClauseForUser, projectIdsClause, userIdsClauseForUser, billableQuery, projectIdsParams, durationParamsForUser, userIdsParamsForUser);
 
       const format = (seconds: number) => {
         if (seconds === 0) return "-";
