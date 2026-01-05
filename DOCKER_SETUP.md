@@ -8,12 +8,12 @@ This repository now includes a **production-ready Docker setup** with enterprise
 ```bash
 ./quick-setup.sh
 ```
-This script will:
-- Create `.env` file from `.env.example`
-- Auto-generate all security secrets
-- Configure URLs based on your domain
-- Set up SSL certificates (self-signed for localhost, Let's Encrypt for production)
 - Install and start Worklenz
+
+During the process, you will be prompted for:
+1. **Domain**: Enter `localhost` for local testing. For production, enter your server's domain.
+2. **Build and push images**: Answer `no` (recommended) to use pre-built images from Docker Hub, which is much faster. Answer `yes` only if you want to build custom images.
+3. **Docker Hub username**: If you chose to build custom images, enter your Docker Hub username. This is used to tag and push the images to your own repository.
 
 ### Option 2: Manual Setup
 ```bash

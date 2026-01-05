@@ -168,11 +168,12 @@ echo -e "${YELLOW}Domain Configuration${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo "Enter your domain name:"
-echo "  - For local testing: enter 'localhost'"
+echo "  - Recommended for local testing: enter 'localhost'"
 echo "  - For production: enter your domain (e.g., worklenz.example.com)"
 echo ""
 read -p "Domain [localhost]: " domain
 domain=${domain:-localhost}
+echo ""
 
 # Update DOMAIN in .env
 sed -i.bak "s/^DOMAIN=.*/DOMAIN=$domain/" "$ENV_FILE"
@@ -182,18 +183,18 @@ print_success "Domain set to: $domain"
 
 # Ask if user wants to build and push Docker images
 echo ""
-echo -e "${YELLOW}Docker Image Build${NC}"
+echo -e "${YELLOW}Docker Image Build (Optional)${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
-echo "Do you want to build and push Docker images to Docker Hub?"
-echo "  - Answer 'yes' if you want to create custom images"
-echo "  - Answer 'no' to use pre-built images from Docker Hub"
+echo "Do you want to build and push custom Docker images?"
+echo "  - Answer 'no' (Recommended): Use official pre-built images from Docker Hub"
+echo "  - Answer 'yes': Build your own images and push to your Docker Hub account"
 echo ""
-read -p "Build and push images? (y/N): " build_images
+read -p "Build custom images? (y/N): " build_images
 
 if [[ "$build_images" =~ ^[Yy]$ ]]; then
     echo ""
-    echo "Enter your Docker Hub username:"
+    echo "Enter your Docker Hub username (used to tag and push your custom images):"
     read -p "Docker Hub username: " docker_username
 
     if [ -n "$docker_username" ]; then
