@@ -373,7 +373,6 @@ class TokenService {
         "UPDATE client_users SET password_hash = $1, updated_at = NOW() WHERE id = $2",
         [newHash, clientUserId]
       );
-      console.log(`[Password Migration] Successfully migrated password for client_user_id: ${clientUserId}`);
     } catch (error) {
       console.error("Error migrating password hash:", error);
     }
@@ -384,7 +383,7 @@ class TokenService {
     try {
       const normalizedEmail = email.toLowerCase().trim();
 
-      // First, check if user exists (without status filter for debugging)
+      // First, check if user exists
       const userExistsQuery = `
         SELECT cu.*, c.name as client_name, c.company_name, c.team_id, c.status as client_status
         FROM client_users cu
@@ -395,7 +394,6 @@ class TokenService {
       const userExistsResult = await db.query(userExistsQuery, [normalizedEmail]);
 
       if (userExistsResult.rows.length === 0) {
-        console.log(`[Client Auth] No client user found with email: ${normalizedEmail}`);
         return null; // No client user found with this email
       }
 
@@ -403,19 +401,16 @@ class TokenService {
 
       // Check user status
       if (clientUser.status !== 'active') {
-        console.log(`[Client Auth] User found but status is '${clientUser.status}', not 'active' for email: ${normalizedEmail}`);
         return null; // User is not active
       }
 
       // Check if client exists (required for authentication)
       if (!clientUser.client_id) {
-        console.log(`[Client Auth] User found but has no client_id for email: ${normalizedEmail}`);
         return null; // User has no associated client
       }
 
       // Check if client exists in clients table
       if (!clientUser.client_name) {
-        console.log(`[Client Auth] Client not found in clients table for client_id: ${clientUser.client_id}, email: ${normalizedEmail}`);
         return null; // Client doesn't exist
       }
 
@@ -430,30 +425,25 @@ class TokenService {
         const worklenzUserResult = await db.query(worklenzAuthQuery, [clientUser.user_id]);
 
         if (worklenzUserResult.rows.length === 0) {
-          console.log(`[Client Auth] Linked Worklenz user not found or deleted for user_id: ${clientUser.user_id}, email: ${normalizedEmail}`);
           return null; // Linked Worklenz user not found
         }
 
         const worklenzUser = worklenzUserResult.rows[0];
 
         if (!worklenzUser.password) {
-          console.log(`[Client Auth] Linked Worklenz user has no password set for user_id: ${clientUser.user_id}, email: ${normalizedEmail}`);
           return null; // No password set for linked user
         }
 
         // Verify password against Worklenz user password (bcrypt)
         const passwordMatch = bcrypt.compareSync(password, worklenzUser.password);
         if (passwordMatch) {
-          console.log(`[Client Auth] Successfully authenticated linked user: ${normalizedEmail}`);
           return clientUser; // Password matches, return client user info
         }
 
-        console.log(`[Client Auth] Password mismatch for linked user: ${normalizedEmail}`);
         return null; // Password doesn't match
       } else {
         // Standalone client portal user - authenticate against password_hash (supports both bcrypt and SHA256)
         if (!clientUser.password_hash) {
-          console.log(`[Client Auth] Standalone user has no password_hash set for email: ${normalizedEmail}`);
           return null; // No password hash set
         }
 
@@ -461,18 +451,14 @@ class TokenService {
         const verificationResult = await this.verifyClientPassword(password, clientUser.password_hash);
         
         if (verificationResult.isValid) {
-          console.log(`[Client Auth] Successfully authenticated standalone user: ${normalizedEmail}`);
-          
           // Lazy migration: if password is SHA256, migrate to bcrypt
           if (verificationResult.needsMigration) {
-            console.log(`[Client Auth] Migrating password from SHA256 to bcrypt for user: ${normalizedEmail}`);
             await this.migratePasswordHash(clientUser.id, password);
           }
           
           return clientUser; // Password matches
         }
 
-        console.log(`[Client Auth] Password verification failed for standalone user: ${normalizedEmail}`);
         return null; // Password doesn't match
       }
     } catch (error) {
