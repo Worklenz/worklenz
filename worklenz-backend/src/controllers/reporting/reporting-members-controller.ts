@@ -117,20 +117,22 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
     // Add project filtering for Team Leads - only show members working on assigned projects
     let memberFilterClause = "";
+    let projectParams: any[] = [];
     if (req) {
       const projectFilter = await ReportingControllerBase.buildProjectFilterForTeamLead(req);
       if (projectFilter && projectFilter !== "") {
         // Team Lead: only show members who work on their assigned projects
         const assignedProjects = await ReportingControllerBase.getTeamLeadProjects(req.user?.id, teamId);
         if (assignedProjects.length > 0) {
-          // Use parameterized query for array
-          const { clause, params: projectParams } = SqlHelper.buildInClause(assignedProjects, 1);
+          // Use parameterized query for array with correct offset
+          const { clause, params } = SqlHelper.buildInClause(assignedProjects, paramOffset);
+          projectParams = params;
           memberFilterClause = `AND tmiv.team_member_id IN (
             SELECT DISTINCT pm.team_member_id 
             FROM project_members pm 
             WHERE pm.project_id IN (${clause})
           )`;
-          // Note: projectParams will need to be added to the query parameters when this clause is used
+          paramOffset += projectParams.length;
         } else {
           // Team Lead with no projects assigned - show no members
           memberFilterClause = "AND FALSE";
@@ -236,7 +238,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                   WHERE tmiv.team_id = $1 ${teamsClause} ${memberFilterClause}
                   ${searchQuery}`;
     // Pass all parameters
-    const queryParams = [teamId, ...assignParams, ...completedParams, ...overdueParams, ...activityLogParams, ...timeLogParams];
+    const queryParams = [teamId, ...assignParams, ...completedParams, ...overdueParams, ...activityLogParams, ...timeLogParams, ...projectParams];
     const result = await db.query(q, queryParams);
     const [data] = result.rows;
 
