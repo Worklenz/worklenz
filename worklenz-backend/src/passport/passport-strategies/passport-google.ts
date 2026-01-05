@@ -1,9 +1,9 @@
 import GoogleStrategy from "passport-google-oauth20";
-import {sendWelcomeEmail} from "../../shared/email-templates";
-import {log_error} from "../../shared/utils";
+import { sendWelcomeEmail } from "../../shared/email-templates";
+import { log_error } from "../../shared/utils";
 import db from "../../config/db";
-import {ERROR_KEY} from "./passport-constants";
-import {Request} from "express";
+import { ERROR_KEY } from "./passport-constants";
+import { Request } from "express";
 
 async function handleGoogleLogin(req: Request, _accessToken: string, _refreshToken: string, profile: GoogleStrategy.Profile, done: GoogleStrategy.VerifyCallback) {
   try {
@@ -51,7 +51,7 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
       const [data] = result2.rows;
 
       sendWelcomeEmail(data.user.email, body.displayName);
-      return done(null, data.user, {message: "User successfully logged in"});
+      return done(null, data.user, { message: "User successfully logged in" });
     }
 
     return done(null);
@@ -60,14 +60,14 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
   }
 }
 
-/**
- * Passport strategy for authenticate with google
- * http://www.passportjs.org/packages/passport-google-oauth20/
- */
-export default new GoogleStrategy.Strategy({
-    clientID: process.env.GOOGLE_CLIENT_ID as string,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+const googleStrategy = process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+  ? new GoogleStrategy.Strategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: process.env.GOOGLE_CALLBACK_URL as string,
     passReqToCallback: true
   },
-  (req, _accessToken, _refreshToken, profile, done) => void handleGoogleLogin(req, _accessToken, _refreshToken, profile, done));
+    (req, _accessToken, _refreshToken, profile, done) => void handleGoogleLogin(req, _accessToken, _refreshToken, profile, done))
+  : null;
+
+export default googleStrategy;

@@ -78,4 +78,9 @@ $RECYCLE.BIN/
 # TypeScript
 *.tsbuildinfo
 
-
+# Docker & SSL
+nginx/ssl/
+backups/
+*.bak
+*.tmp
+nginx/conf.d/*.bak
