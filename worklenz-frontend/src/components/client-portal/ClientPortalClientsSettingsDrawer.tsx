@@ -1,4 +1,4 @@
-import { Drawer, Typography, Input, Flex, Select, Table, message, ColumnsType, theme } from '@/shared/antd-imports';
+import { Drawer, Typography, Input, Flex, Select, Table, message, TableColumnsType, theme } from '@/shared/antd-imports';
 import React, { useState, useMemo } from 'react';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
@@ -19,21 +19,22 @@ import { Avatar, Badge, Progress, Tooltip } from '@/shared/antd-imports';
 
 const getClientPortalProjectColumns = (
   t: (key: string, options?: { defaultValue: string }) => string,
-  avatarColors: string[]
-): ColumnsType<ClientPortalProject> => {
+  avatarColors: string[],
+  primaryColor: string
+): TableColumnsType<ClientPortalProject> => {
   return [
     {
       title: t('name', { defaultValue: 'Name' }),
       key: 'name',
       dataIndex: 'name',
-      sorter: (a, b) => (a.name || '').localeCompare(b.name || ''),
+      sorter: (a: ClientPortalProject, b: ClientPortalProject) => (a.name || '').localeCompare(b.name || ''),
       width: 240,
       showSorterTooltip: false,
       render: (text, record) => {
         return (
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <Flex gap={2} align="center">
-              <Badge color="geekblue" style={{ marginRight: '0.5rem' }} />
+              <Badge color={primaryColor} style={{ marginRight: '0.5rem' }} />
               <Typography.Text ellipsis={{ expanded: false }}>{record.name}</Typography.Text>
             </Flex>
           </div>
@@ -44,7 +45,7 @@ const getClientPortalProjectColumns = (
       title: t('status', { defaultValue: 'Status' }),
       key: 'status',
       dataIndex: 'status',
-      sorter: (a, b) => (a.status || '').localeCompare(b.status || ''),
+      sorter: (a: ClientPortalProject, b: ClientPortalProject) => (a.status || '').localeCompare(b.status || ''),
       showSorterTooltip: false,
     },
     {
@@ -65,7 +66,7 @@ const getClientPortalProjectColumns = (
       key: 'lastUpdated',
       dataIndex: 'lastUpdated',
       width: 160,
-      sorter: (a, b) => {
+      sorter: (a: ClientPortalProject, b: ClientPortalProject) => {
         const dateA = a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0;
         const dateB = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
         return dateA - dateB;
@@ -353,7 +354,7 @@ const ClientPortalClientsSettingsDrawer = () => {
         </Flex>
 
         <Table
-          columns={getClientPortalProjectColumns(t, avatarColors)}
+          columns={getClientPortalProjectColumns(t, avatarColors, token.colorPrimary)}
           dataSource={client?.projects}
           rowKey="id"
           className="custom-two-colors-row-table"
