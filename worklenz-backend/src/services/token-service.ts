@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import db from "../config/db";
+import { generatePrefixedToken, isValidBase62 } from "../utils/base62";
 
 interface ClientOrganization {
   id: string;
@@ -52,13 +53,13 @@ class TokenService {
     });
   }
 
-  // Generate invitation token
-  generateInviteToken(payload: InviteTokenPayload): string {
-    return jwt.sign(payload, this.INVITE_SECRET, {
-      expiresIn: "7d", // Invitations expire in 7 days
-      issuer: "worklenz-client-portal",
-      audience: "invite"
-    });
+  // Generate invitation token (short Base62 token with prefix)
+  generateInviteToken(payload?: InviteTokenPayload): string {
+    // Generate a secure Base62 token with "wli" prefix (Worklenz Invite)
+    // 10 bytes = ~14 base62 characters + prefix = ~18 total characters
+    // This is much shorter than the previous 64-character hex token
+    // Example: wli_aB3xK9pL2mN4qR
+    return generatePrefixedToken('wli', 10);
   }
 
   // Generate organization invitation token
@@ -68,6 +69,13 @@ class TokenService {
       issuer: "worklenz-client-portal",
       audience: "organization_invite"
     });
+  }
+
+  // Check if a token is an organization invite token (JWT format)
+  isOrganizationInviteToken(token: string): boolean {
+    // Organization invite tokens are JWTs (3 parts separated by dots)
+    // Regular invite tokens start with a prefix like `wli_`
+    return token.split('.').length === 3;
   }
 
   // Verify client token
@@ -84,20 +92,26 @@ class TokenService {
     }
   }
 
-  // Verify invitation token
-  verifyInviteToken(token: string): InviteTokenPayload | null {
+  // Verify invitation token (now uses database lookup instead of JWT verification)
+  async verifyInviteToken(token: string): Promise<InviteTokenPayload | null> {
     try {
-      const decoded = jwt.verify(token, this.INVITE_SECRET, {
-        issuer: "worklenz-client-portal",
-        audience: "invite"
-      }) as InviteTokenPayload;
+      // Look up invitation from database
+      const invitation = await this.getInvitationByToken(token);
       
-      // Check if token is expired
-      if (Date.now() > decoded.expiresAt) {
+      if (!invitation) {
         return null;
       }
       
-      return decoded;
+      // Return token payload structure for backward compatibility
+      return {
+        clientId: invitation.client_id,
+        email: invitation.email,
+        name: invitation.name,
+        role: invitation.role,
+        invitedBy: invitation.invited_by,
+        expiresAt: new Date(invitation.expires_at).getTime(),
+        type: "invite"
+      };
     } catch (error) {
       console.error("Invite token verification failed:", error);
       return null;
@@ -186,48 +200,87 @@ class TokenService {
     try {
       await client.query("BEGIN");
 
-      let createUserQuery: string;
-      let queryParams: any[];
-      const clientUserId = crypto.randomUUID();
+      // Always hash password with bcrypt and attach to invitation object for use in subsequent queries
+      const passwordHash = this.hashClientPassword(userData.password);
+      (invitation as any).password_hash = passwordHash;
 
-      if (userData.userId) {
-        // Linking existing Worklenz user - no password_hash needed
-        createUserQuery = `
-          INSERT INTO client_users (
-            id, user_id, client_id, email, name, role, team_id, status, created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', NOW(), NOW())
-          RETURNING id, email, name, role, client_id
-        `;
-        queryParams = [
-          clientUserId,
-          userData.userId,
-          invitation.client_id,
-          invitation.email,
-          userData.name,
-          invitation.role,
-          invitation.team_id
-        ];
+      let userResult: any;
+      let actualClientUserId: string;
+
+      // Check if email already exists in client_users to avoid duplicate key error
+      const emailExistsCheck = await client.query(
+        `SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)`,
+        [invitation.email]
+      );
+
+      if (emailExistsCheck.rows.length > 0) {
+        // Email already exists - update the existing record
+        actualClientUserId = emailExistsCheck.rows[0].id;
+        
+        if (userData.userId) {
+          // Linking existing Worklenz user
+          await client.query(
+            `UPDATE client_users 
+             SET user_id = $1, client_id = $2, name = $3, role = $4, team_id = $5, status = 'active', updated_at = NOW()
+             WHERE id = $6`,
+            [userData.userId, invitation.client_id, userData.name, invitation.role, invitation.team_id, actualClientUserId]
+          );
+        } else {
+          // Standalone client portal user - update with password_hash (bcrypt)
+          await client.query(
+            `UPDATE client_users 
+             SET client_id = $1, name = $2, password_hash = $3, role = $4, team_id = $5, status = 'active', updated_at = NOW()
+             WHERE id = $6`,
+            [invitation.client_id, userData.name, passwordHash, invitation.role, invitation.team_id, actualClientUserId]
+          );
+        }
+        
+        userResult = await client.query(
+          `SELECT id, email, name, role, client_id FROM client_users WHERE id = $1`,
+          [actualClientUserId]
+        );
       } else {
-        // Standalone client portal user - create with password_hash
-        const passwordHash = crypto.createHash("sha256").update(userData.password).digest("hex");
-        createUserQuery = `
-          INSERT INTO client_users (
-            id, client_id, email, name, password_hash, role, team_id, status, created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', NOW(), NOW())
-          RETURNING id, email, name, role, client_id
-        `;
-        queryParams = [
-          clientUserId,
-          invitation.client_id,
-          invitation.email,
-          userData.name,
-          passwordHash,
-          invitation.role,
-          invitation.team_id
-        ];
-      }
+        // Email doesn't exist - create new record (let DB generate UUID)
+        let createUserQuery: string;
+        let queryParams: any[];
 
-      const userResult = await client.query(createUserQuery, queryParams);
+        if (userData.userId) {
+          // Linking existing Worklenz user - no password_hash needed for client_users table
+          createUserQuery = `
+            INSERT INTO client_users (
+              user_id, client_id, email, name, role, team_id, status, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, 'active', NOW(), NOW())
+            RETURNING id, email, name, role, client_id
+          `;
+          queryParams = [
+            userData.userId,
+            invitation.client_id,
+            invitation.email,
+            userData.name,
+            invitation.role,
+            invitation.team_id
+          ];
+        } else {
+          // Standalone client portal user - create with password_hash (bcrypt)
+          createUserQuery = `
+            INSERT INTO client_users (
+              client_id, email, name, password_hash, role, team_id, status, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, 'active', NOW(), NOW())
+            RETURNING id, email, name, role, client_id
+          `;
+          queryParams = [
+            invitation.client_id,
+            invitation.email,
+            userData.name,
+            passwordHash, // Bcrypt hash created earlier
+            invitation.role,
+            invitation.team_id
+          ];
+        }
+
+        userResult = await client.query(createUserQuery, queryParams);
+        actualClientUserId = userResult.rows[0].id;
+      }
 
       // Create organization access record for multi-org support
       const orgAccessQuery = `
@@ -235,7 +288,7 @@ class TokenService {
         VALUES ($1, $2, $3, TRUE, NOW(), NOW())
         ON CONFLICT (client_user_id, team_id) DO NOTHING
       `;
-      await client.query(orgAccessQuery, [clientUserId, invitation.team_id, invitation.client_id]);
+      await client.query(orgAccessQuery, [actualClientUserId, invitation.team_id, invitation.client_id]);
 
       // Update invitation status
       await client.query(
@@ -250,12 +303,13 @@ class TokenService {
       );
 
       // Create client portal access record with full permissions
+      // Create client portal access record with full permissions
       const portalAccessQuery = `
-        INSERT INTO client_portal_access (client_id, is_active, created_at, updated_at)
-        VALUES ($1, TRUE, NOW(), NOW())
-        ON CONFLICT (client_id) DO UPDATE SET is_active = TRUE, updated_at = NOW()
+        INSERT INTO client_portal_access (client_id, email, password_hash, is_active, created_at, updated_at)
+        VALUES ($1, $2, $3, TRUE, NOW(), NOW())
+        ON CONFLICT (client_id) DO UPDATE SET is_active = TRUE, email = $2, password_hash = $3, updated_at = NOW()
       `;
-      await client.query(portalAccessQuery, [invitation.client_id]);
+      await client.query(portalAccessQuery, [invitation.client_id, invitation.email, (invitation as any).password_hash]);
 
       await client.query("COMMIT");
 
@@ -279,56 +333,151 @@ class TokenService {
     }
   }
 
+  // Verify client password - supports both bcrypt and SHA256 with lazy migration
+  async verifyClientPassword(password: string, storedHash: string): Promise<{ isValid: boolean; needsMigration: boolean }> {
+    try {
+      // Try bcrypt first (modern hashing)
+      try {
+        const bcryptMatch = bcrypt.compareSync(password, storedHash);
+        if (bcryptMatch) {
+          return { isValid: true, needsMigration: false };
+        }
+      } catch (bcryptError) {
+        // Not a valid bcrypt hash, continue to SHA256 check
+      }
+
+      // Try SHA256 (legacy hashing)
+      const sha256Hash = crypto.createHash("sha256").update(password).digest("hex");
+      if (storedHash === sha256Hash) {
+        return { isValid: true, needsMigration: true }; // Valid but needs migration to bcrypt
+      }
+
+      return { isValid: false, needsMigration: false };
+    } catch (error) {
+      console.error("Error verifying client password:", error);
+      return { isValid: false, needsMigration: false };
+    }
+  }
+
+  // Hash client password using bcrypt (modern standard)
+  hashClientPassword(password: string): string {
+    const salt = bcrypt.genSaltSync(10);
+    return bcrypt.hashSync(password, salt);
+  }
+
+  // Migrate password hash from SHA256 to bcrypt
+  async migratePasswordHash(clientUserId: string, newPassword: string): Promise<void> {
+    try {
+      const newHash = this.hashClientPassword(newPassword);
+      await db.query(
+        "UPDATE client_users SET password_hash = $1, updated_at = NOW() WHERE id = $2",
+        [newHash, clientUserId]
+      );
+      console.log(`[Password Migration] Successfully migrated password for client_user_id: ${clientUserId}`);
+    } catch (error) {
+      console.error("Error migrating password hash:", error);
+    }
+  }
+
   // Authenticate client user
   async authenticateClient(email: string, password: string): Promise<any> {
-    const passwordHash = crypto.createHash("sha256").update(password).digest("hex");
+    try {
+      const normalizedEmail = email.toLowerCase().trim();
 
-    // First, try to find the client user by email
-    const clientUserQuery = `
-      SELECT cu.*, c.name as client_name, c.company_name, c.team_id
-      FROM client_users cu
-      JOIN clients c ON cu.client_id = c.id
-      WHERE LOWER(cu.email) = LOWER($1) AND cu.status = 'active'
-    `;
-
-    const clientUserResult = await db.query(clientUserQuery, [email]);
-
-    if (clientUserResult.rows.length === 0) {
-      return null; // No client user found with this email
-    }
-
-    const clientUser = clientUserResult.rows[0];
-
-    // Check if this is a linked Worklenz user (has user_id)
-    if (clientUser.user_id) {
-      // Authenticate against Worklenz users table
-      const worklenzAuthQuery = `
-        SELECT u.id, u.email, u.name, u.password
-        FROM users u
-        WHERE u.id = $1
+      // First, check if user exists (without status filter for debugging)
+      const userExistsQuery = `
+        SELECT cu.*, c.name as client_name, c.company_name, c.team_id, c.status as client_status
+        FROM client_users cu
+        LEFT JOIN clients c ON cu.client_id = c.id
+        WHERE LOWER(cu.email) = LOWER($1)
       `;
-      const worklenzUserResult = await db.query(worklenzAuthQuery, [clientUser.user_id]);
 
-      if (worklenzUserResult.rows.length === 0) {
-        return null; // Linked Worklenz user not found
+      const userExistsResult = await db.query(userExistsQuery, [normalizedEmail]);
+
+      if (userExistsResult.rows.length === 0) {
+        console.log(`[Client Auth] No client user found with email: ${normalizedEmail}`);
+        return null; // No client user found with this email
       }
 
-      const worklenzUser = worklenzUserResult.rows[0];
+      const clientUser = userExistsResult.rows[0];
 
-      // Verify password against Worklenz user password (bcrypt)
-      const passwordMatch = bcrypt.compareSync(password, worklenzUser.password);
-      if (passwordMatch) {
-        return clientUser; // Password matches, return client user info
+      // Check user status
+      if (clientUser.status !== 'active') {
+        console.log(`[Client Auth] User found but status is '${clientUser.status}', not 'active' for email: ${normalizedEmail}`);
+        return null; // User is not active
       }
 
-      return null; // Password doesn't match
-    } else {
-      // Standalone client portal user - authenticate against password_hash (SHA256)
-      if (clientUser.password_hash === passwordHash) {
-        return clientUser; // Password matches
+      // Check if client exists (required for authentication)
+      if (!clientUser.client_id) {
+        console.log(`[Client Auth] User found but has no client_id for email: ${normalizedEmail}`);
+        return null; // User has no associated client
       }
 
-      return null; // Password doesn't match
+      // Check if client exists in clients table
+      if (!clientUser.client_name) {
+        console.log(`[Client Auth] Client not found in clients table for client_id: ${clientUser.client_id}, email: ${normalizedEmail}`);
+        return null; // Client doesn't exist
+      }
+
+      // Check if this is a linked Worklenz user (has user_id)
+      if (clientUser.user_id) {
+        // Authenticate against Worklenz users table
+        const worklenzAuthQuery = `
+          SELECT u.id, u.email, u.name, u.password
+          FROM users u
+          WHERE u.id = $1 AND u.is_deleted = FALSE
+        `;
+        const worklenzUserResult = await db.query(worklenzAuthQuery, [clientUser.user_id]);
+
+        if (worklenzUserResult.rows.length === 0) {
+          console.log(`[Client Auth] Linked Worklenz user not found or deleted for user_id: ${clientUser.user_id}, email: ${normalizedEmail}`);
+          return null; // Linked Worklenz user not found
+        }
+
+        const worklenzUser = worklenzUserResult.rows[0];
+
+        if (!worklenzUser.password) {
+          console.log(`[Client Auth] Linked Worklenz user has no password set for user_id: ${clientUser.user_id}, email: ${normalizedEmail}`);
+          return null; // No password set for linked user
+        }
+
+        // Verify password against Worklenz user password (bcrypt)
+        const passwordMatch = bcrypt.compareSync(password, worklenzUser.password);
+        if (passwordMatch) {
+          console.log(`[Client Auth] Successfully authenticated linked user: ${normalizedEmail}`);
+          return clientUser; // Password matches, return client user info
+        }
+
+        console.log(`[Client Auth] Password mismatch for linked user: ${normalizedEmail}`);
+        return null; // Password doesn't match
+      } else {
+        // Standalone client portal user - authenticate against password_hash (supports both bcrypt and SHA256)
+        if (!clientUser.password_hash) {
+          console.log(`[Client Auth] Standalone user has no password_hash set for email: ${normalizedEmail}`);
+          return null; // No password hash set
+        }
+
+        // Verify password using centralized method (supports both bcrypt and SHA256)
+        const verificationResult = await this.verifyClientPassword(password, clientUser.password_hash);
+        
+        if (verificationResult.isValid) {
+          console.log(`[Client Auth] Successfully authenticated standalone user: ${normalizedEmail}`);
+          
+          // Lazy migration: if password is SHA256, migrate to bcrypt
+          if (verificationResult.needsMigration) {
+            console.log(`[Client Auth] Migrating password from SHA256 to bcrypt for user: ${normalizedEmail}`);
+            await this.migratePasswordHash(clientUser.id, password);
+          }
+          
+          return clientUser; // Password matches
+        }
+
+        console.log(`[Client Auth] Password verification failed for standalone user: ${normalizedEmail}`);
+        return null; // Password doesn't match
+      }
+    } catch (error) {
+      console.error(`[Client Auth] Error during authentication for email: ${email}`, error);
+      return null;
     }
   }
 

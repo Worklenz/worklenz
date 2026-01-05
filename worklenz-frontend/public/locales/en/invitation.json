@@ -9,6 +9,7 @@
   "in": "in",
   "accessLevel": "Access Level",
   "loggedInAs": "You're logged in as {{name}}. Your details are pre-filled.",
+  "joiningAs": "You will join as {{name}} ({{email}})",
   "fullName": "Full Name",
   "fullNameRequired": "Please enter your full name",
   "fullNameMinLength": "Name must be at least 2 characters",

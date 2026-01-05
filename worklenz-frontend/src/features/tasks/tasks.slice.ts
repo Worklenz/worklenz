@@ -592,7 +592,7 @@ const taskSlice = createSlice({
         completedCount: number;
       }>
     ) => {
-      const { taskId, progress, totalTasksCount, completedCount} = action.payload;
+      const { taskId, progress, totalTasksCount, completedCount } = action.payload;
 
       // Helper function to find and update a task at any nesting level
       const findAndUpdateTask = (tasks: IProjectTask[]) => {
@@ -671,11 +671,19 @@ const taskSlice = createSlice({
     },
 
     updateTaskStatus: (state, action: PayloadAction<ITaskListStatusChangeResponse>) => {
-      const { id, status_id, color_code, color_code_dark, complete_ratio, statusCategory } =
-        action.payload;
+      const {
+        id,
+        status_id,
+        color_code,
+        color_code_dark,
+        complete_ratio,
+        completed_at,
+        statusCategory,
+      } = action.payload;
 
       // Find the task in any group
       const taskInfo = findTaskInGroups(state.taskGroups, id);
+
       if (!taskInfo || !status_id) return;
 
       const { task, groupId } = taskInfo;
@@ -688,6 +696,7 @@ const taskSlice = createSlice({
       task.progress_value = +complete_ratio; // Also update progress_value field
       task.status = status_id;
       task.status_category = statusCategory;
+      task.completed_at = completed_at; // Update completed date
 
       // If grouped by status and not a subtask, move the task to the new status group
       if (state.groupBy === GROUP_BY_STATUS_VALUE && !task.is_sub_task && groupId !== status_id) {

@@ -42,9 +42,9 @@ export default defineConfig(({ command, mode }) => {
               '<head>',
               `<head>\n  <script>window.buildTimestamp = '${buildTimestamp}';</script>`
             );
-          }
-        }
-      }
+          },
+        },
+      },
     ],
 
     // **Resolve**
@@ -63,7 +63,6 @@ export default defineConfig(({ command, mode }) => {
         { find: '@shared', replacement: path.resolve(__dirname, './src/shared') },
         { find: '@layouts', replacement: path.resolve(__dirname, './src/layouts') },
         { find: '@services', replacement: path.resolve(__dirname, './src/services') },
-
       ],
       // **Ensure single React instance**
       dedupe: ['react', 'react-dom'],
@@ -76,10 +75,24 @@ export default defineConfig(({ command, mode }) => {
         overlay: false,
       },
       // Allow-list specific dev hosts (e.g., ngrok) to prevent blocked host errors
-      // Add any local tunneling hosts used for development here.
-      allowedHosts: [
-        '4d51ac803dbd.ngrok-free.app'
-      ],
+      // Configure via VITE_ALLOWED_HOSTS environment variable (comma-separated list)
+      // Example: VITE_ALLOWED_HOSTS=host1.example.com,host2.example.com
+      allowedHosts: process.env.VITE_ALLOWED_HOSTS
+        ? process.env.VITE_ALLOWED_HOSTS.split(',').map(host => host.trim()).filter(Boolean)
+        : [],
+      // **Proxy API requests to backend server**
+      proxy: {
+        '/api': {
+          target: process.env.VITE_API_URL || 'http://localhost:3000',
+          changeOrigin: true,
+          secure: false,
+        },
+        '/socket.io': {
+          target: process.env.VITE_SOCKET_URL || 'ws://localhost:3000',
+          changeOrigin: true,
+          ws: true,
+        },
+      },
     },
 
     // **Build**
@@ -94,6 +107,11 @@ export default defineConfig(({ command, mode }) => {
 
       // **Sourcemaps**
       sourcemap: !isProduction ? 'inline' : false, // Disable sourcemaps in production for smaller bundles
+
+      // **Module Preload Polyfill** - Helps with chunk loading reliability
+      modulePreload: {
+        polyfill: true,
+      },
 
       // **Minification**
       minify: isProduction ? 'terser' : false,
@@ -185,10 +203,5 @@ export default defineConfig(({ command, mode }) => {
 
     // **Public Directory** - sw.js will be automatically copied from public/ to build/
     publicDir: 'public',
-
-    // **Experimental - Add versioning to assets**
-    experimental: {
-      buildAdvancedBaseOptions: true,
-    },
   };
 });

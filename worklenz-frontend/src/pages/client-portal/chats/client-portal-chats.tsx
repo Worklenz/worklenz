@@ -1,12 +1,11 @@
-import { Flex, Typography, Button, Tooltip } from '@/shared/antd-imports';
-import React, { useEffect } from 'react';
+import { Flex, Typography, Button, Tooltip, Space } from '@/shared/antd-imports';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ChatBoxWrapper from './chat-container/chat-box/chat-box-wrapper';
-import { MessageOutlined, ReloadOutlined } from '@ant-design/icons';
-import { useGetChatsQuery } from '../../../api/client-portal/client-portal-api';
-import { useAppSelector } from '../../../hooks/useAppSelector';
-import { useResponsive } from '../../../hooks/useResponsive';
-import { useMixpanelTracking } from '../../../hooks/useMixpanelTracking';
+import { MessageOutlined, ReloadOutlined, PlusOutlined } from '@ant-design/icons';
+import { useGetOrganizationChatsQuery } from '@api/client-portal/client-portal-api';
+import { useResponsive } from '@/hooks/useResponsive';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { MixpanelEvents, ClientPortalEventProps, ClientPortalActionEventProps } from '../../../types/mixpanel-events.types';
 
 const ClientPortalChats = () => {
@@ -14,9 +13,11 @@ const ClientPortalChats = () => {
   const { t } = useTranslation('client-portal-chats');
   const { isDesktop } = useResponsive();
   const { trackMixpanelEvent } = useMixpanelTracking();
+  const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
 
-  // API hooks
-  const { data: chats, isLoading, error, refetch } = useGetChatsQuery();
+  // API hooks - using organization-side endpoint (clientId is optional)
+  const { data: chatsData, isLoading, error, refetch } = useGetOrganizationChatsQuery({});
+  const chats = chatsData?.chats || [];
 
   // Track page visit
   useEffect(() => {
@@ -77,18 +78,31 @@ const ClientPortalChats = () => {
             </Typography.Text>
           </div>
 
-          <Tooltip title={t('refresh') || 'Refresh'}>
+          <Space>
             <Button
-              type="text"
-              icon={<ReloadOutlined />}
-              onClick={handleRefresh}
-              loading={isLoading}
-            />
-          </Tooltip>
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setIsNewChatModalOpen(true)}
+              size={isDesktop ? 'middle' : 'small'}
+            >
+              {t('startConversation') || 'New Conversation'}
+            </Button>
+            <Tooltip title={t('refresh') || 'Refresh'}>
+              <Button
+                type="text"
+                icon={<ReloadOutlined />}
+                onClick={handleRefresh}
+                loading={isLoading}
+              />
+            </Tooltip>
+          </Space>
         </Flex>
       </div>
 
-      <ChatBoxWrapper />
+      <ChatBoxWrapper 
+        isNewChatModalOpen={isNewChatModalOpen}
+        setIsNewChatModalOpen={setIsNewChatModalOpen}
+      />
     </div>
   );
 };

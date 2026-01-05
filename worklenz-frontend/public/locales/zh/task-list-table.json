@@ -49,6 +49,7 @@
   "manageLabelsPath": "设置 → 标签",
   "pendingInvitation": "待处理邀请",
   "contextMenu": {
+    "duplicateTask":"重复任务",
     "assignToMe": "分配给我",
     "copyLink": "复制任务链接",
     "linkCopied": "链接已复制到剪贴板",

@@ -41,6 +41,10 @@ export {
   Modal,
   Breadcrumb,
   Radio,
+  Result,
+  Collapse,
+  Tabs,
+  Skeleton,
 } from "antd/es";
 
 // Types
@@ -85,6 +89,8 @@ export {
   VideoCameraOutlined,
   FilePdfOutlined,
   CheckCircleOutlined,
+  CheckCircleTwoTone,
+  CloseCircleTwoTone,
   ClockCircleOutlined,
   DollarOutlined,
   ReloadOutlined,
@@ -96,4 +102,6 @@ export {
   LeftOutlined,
   SyncOutlined,
   LoadingOutlined,
+  CommentOutlined,
+  FlagOutlined,
 } from "@ant-design/icons";

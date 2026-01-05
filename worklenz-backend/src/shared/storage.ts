@@ -1,5 +1,7 @@
 import path from "path";
 import {
+  CopyObjectCommand,
+  CopyObjectCommandInput,
   DeleteObjectCommand,
   DeleteObjectCommandInput,
   GetObjectCommand,
@@ -149,6 +151,14 @@ export function getClientPortalLogoKey(teamId: string, type: string) {
   return keyPath;
 }
 
+export function getOrganizationLogoKey(organizationId: string, fileExtension: string) {
+  const keyPath = path
+    .join("organization-logos", getRootDir(), `${organizationId}.${fileExtension}`)
+    .replace(/\\/g, "/");
+  
+  return keyPath;
+}
+
 /**
  * Get the environment prefix for client portal storage
  * Uses explicit environment names: prod, uat, dev
@@ -169,11 +179,15 @@ export type ClientPortalStoragePurpose =
   | "avatars"
   | "service-images"
   | "documents"
+  | "payment-proofs"
   | "general";
 
 /**
  * Generate a storage key for client portal files with environment-based directories
- * Structure: {env}/client-portal/{purpose}/{organizationId}/{...pathSegments}
+ * All files are stored under organizations/{organizationId}/client-portal/{purpose}/...
+ * This structure allows easy tracking of storage usage per organization/team
+ * 
+ * Structure: {env}/organizations/{organizationId}/client-portal/{purpose}/{...pathSegments}
  * 
  * @param purpose - The purpose/category of the file (request-attachments, chat-files, etc.)
  * @param organizationId - The organization team ID
@@ -183,7 +197,11 @@ export type ClientPortalStoragePurpose =
  * @example
  * // For request attachment:
  * getClientPortalStorageKey("request-attachments", "org-123", "client-456", "file.pdf")
- * // Returns: "prod/client-portal/request-attachments/org-123/client-456/file.pdf"
+ * // Returns: "prod/organizations/org-123/client-portal/request-attachments/client-456/file.pdf"
+ * 
+ * // For payment proof:
+ * getClientPortalStorageKey("payment-proofs", "org-123", "client-456", "proof.jpg")
+ * // Returns: "prod/organizations/org-123/client-portal/payment-proofs/client-456/proof.jpg"
  */
 export function getClientPortalStorageKey(
   purpose: ClientPortalStoragePurpose,
@@ -191,8 +209,11 @@ export function getClientPortalStorageKey(
   ...pathSegments: string[]
 ): string {
   const env = getEnvironmentPrefix();
+  
+  // All client portal files are stored under organizations/{orgId}/client-portal/{purpose}/
+  // This allows easy tracking of storage usage per organization/team
   const keyPath = path
-    .join(env, "client-portal", purpose, organizationId, ...pathSegments)
+    .join(env, "organizations", organizationId, "client-portal", purpose, ...pathSegments)
     .replace(/\\/g, "/");
   
   return keyPath;
@@ -342,6 +363,50 @@ export async function deleteObject(key: string) {
     return deleteObjectFromAzure(key);
   }
   return deleteObjectFromS3(key);
+}
+
+async function copyObjectInS3(sourceKey: string, destinationKey: string) {
+  try {
+    const copyParams: CopyObjectCommandInput = {
+      Bucket: BUCKET,
+      CopySource: `${BUCKET}/${sourceKey}`,
+      Key: destinationKey,
+    };
+    await s3Client.send(new CopyObjectCommand(copyParams));
+    return true;
+  } catch (error) {
+    log_error(error);
+    return false;
+  }
+}
+
+async function copyObjectInAzure(sourceKey: string, destinationKey: string) {
+  try {
+    if (!azureContainerClient) {
+      throw new Error("Azure Blob Storage not configured properly");
+    }
+
+    const sourceBlobClient = azureContainerClient.getBlockBlobClient(sourceKey);
+    const destinationBlobClient = azureContainerClient.getBlockBlobClient(destinationKey);
+    
+    // Azure Blob Storage copy operation - beginCopyFromURL returns a Promise that resolves to a poller
+    const poller = await destinationBlobClient.beginCopyFromURL(sourceBlobClient.url);
+    
+    // Wait for the copy operation to complete
+    await poller.pollUntilDone();
+    
+    return true;
+  } catch (error) {
+    log_error(error);
+    return false;
+  }
+}
+
+export async function copyObject(sourceKey: string, destinationKey: string) {
+  if (STORAGE_PROVIDER === "azure") {
+    return copyObjectInAzure(sourceKey, destinationKey);
+  }
+  return copyObjectInS3(sourceKey, destinationKey);
 }
 
 async function calculateStorageS3(prefix: string) {

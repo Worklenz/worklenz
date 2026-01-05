@@ -23,5 +23,22 @@
   "serviceQuestionsLabel": "Pyetjet e shërbimit",
   "noFilesUploaded": "Nuk u ngarkuan skedarë",
   "noAnswer": "Nuk u dha përgjigje",
-  "createInvoiceButton": "Krijo Faturë"
+  "createInvoiceButton": "Krijo Faturë",
+  "untitledRequest": "Kërkesë pa titull",
+  "backToRequests": "Kthehu te Kërkesat",
+  "requestDetails": "Detajet e Kërkesës",
+  "statusUpdateSuccess": "Statusi u përditësua me sukses",
+  "statusUpdateError": "Dështoi përditësimi i statusit",
+  "downloadAttachment": "Shkarko",
+  "viewAttachment": "Shiko",
+  "commentsTab": "Komentet",
+  "noComments": "Ende nuk ka komente. Filloni bisedën!",
+  "addComment": "Shto Koment",
+  "addCommentPlaceholder": "Shkruani komentin tuaj këtu...",
+  "commentRequired": "Ju lutemi shkruani një koment",
+  "commentAdded": "Komenti u shtua me sukses",
+  "commentError": "Dështoi shtimi i komentit",
+  "teamMember": "Ekipi",
+  "client": "Klienti",
+  "pressEnterToSend": "Shtypni Enter për të dërguar, Shift+Enter për rresht të ri"
 }

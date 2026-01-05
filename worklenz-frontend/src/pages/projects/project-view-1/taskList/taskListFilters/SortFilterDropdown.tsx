@@ -54,7 +54,7 @@ const SortFilterDropdown = () => {
     { key: 'status', label: t('statusText') },
     { key: 'priority', label: t('priorityText') },
     { key: 'startDate', label: t('startDateText') },
-    { key: 'endDate', label: t('endDateText') },
+    { key: 'endDate', label: t('dueDateText') },
     { key: 'completedDate', label: t('completedDateText') },
     { key: 'createdDate', label: t('createdDateText') },
     { key: 'lastUpdated', label: t('lastUpdatedText') },

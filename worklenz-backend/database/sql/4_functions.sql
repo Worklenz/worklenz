@@ -575,6 +575,25 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION escape_html(_text text) RETURNS text
+    LANGUAGE plpgsql IMMUTABLE
+AS $$
+BEGIN
+    IF _text IS NULL THEN
+        RETURN '';
+    END IF;
+    
+    -- Escape HTML special characters to prevent XSS attacks
+    RETURN REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+        _text,
+        '&', '&amp;'),
+        '<', '&lt;'),
+        '>', '&gt;'),
+        '"', '&quot;'),
+        '''', '&#x27;');
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION create_notification(_user_id uuid, _team_id uuid, _task_id uuid, _project_id uuid, _message text) RETURNS json
     LANGUAGE plpgsql
 AS
@@ -706,7 +725,6 @@ BEGIN
 
     FOR _mention IN SELECT * FROM JSON_ARRAY_ELEMENTS((_body ->> 'mentions')::JSON)
         LOOP
-
             INSERT INTO project_comment_mentions (comment_id, mentioned_index, mentioned_by, informed_by)
             VALUES (_comment_id, _mention_index, _created_by, (_mention ->> 'id')::UUID);
 
@@ -715,7 +733,7 @@ BEGIN
                     (_team_id)::UUID,
                     null,
                     (_project_id)::UUID,
-                    CONCAT('<b>', _user_name, '</b> has mentioned you in a comment on <b>', _project_name, '</b>')
+                    CONCAT('<b>', escape_html(_user_name), '</b> has mentioned you in a comment on <b>', escape_html(_task_name), '</b>')
                 );
             _mention_index := _mention_index + 1;
 
@@ -748,12 +766,20 @@ BEGIN
     _team_id = (_body ->> 'team_id')::UUID;
     _project_id = (_body ->> 'project_id')::UUID;
     _user_id = (_body ->> 'user_id')::UUID;
-    _access_level = (_body ->> 'access_level')::TEXT;
+    _access_level = COALESCE(NULLIF(TRIM((_body ->> 'access_level')::TEXT), ''), 'MEMBER');
+
+    -- Map team-lead access level to PROJECT_MANAGER since Team Lead is a role, not a project access level
+    IF UPPER(_access_level) IN ('TEAM-LEAD', 'TEAM_LEAD') THEN
+        _access_level = 'PROJECT_MANAGER';
+    END IF;
 
     SELECT user_id FROM team_members WHERE id = _team_member_id INTO _member_user_id;
 
     INSERT INTO project_members (team_member_id, project_access_level_id, project_id, role_id)
-    VALUES (_team_member_id, (SELECT id FROM project_access_levels WHERE key = _access_level)::UUID,
+    VALUES (_team_member_id, COALESCE(
+            (SELECT id FROM project_access_levels WHERE key = _access_level),
+            (SELECT id FROM project_access_levels WHERE key = 'MEMBER')
+        )::UUID,
             _project_id,
             (SELECT id FROM roles WHERE team_id = _team_id AND default_role IS TRUE))
     RETURNING id INTO _id;
@@ -761,9 +787,9 @@ BEGIN
     IF (_member_user_id != _user_id)
     THEN
         _notification = CONCAT('You have been added to the <b>',
-                               (SELECT name FROM projects WHERE id = _project_id),
+                               escape_html((SELECT name FROM projects WHERE id = _project_id)),
                                '</b> by <b>',
-                               (SELECT name FROM users WHERE id = _user_id), '</b>');
+                               escape_html((SELECT name FROM users WHERE id = _user_id)), '</b>');
         PERFORM create_notification(
                 (SELECT user_id FROM team_members WHERE id = _team_member_id),
                 _team_id,
@@ -1073,7 +1099,7 @@ BEGIN
                 (_body ->> 'team_id')::UUID,
                 _task_id,
                 (SELECT project_id FROM tasks WHERE id = _task_id),
-                CONCAT('<b>', _user_name, '</b> has mentioned you in a comment on <b>', _task_name, '</b>')
+                CONCAT('<b>', escape_html(_user_name), '</b> has mentioned you in a comment on <b>', escape_html(_task_name), '</b>')
                 );
             _mention_index := _mention_index + 1;
         END LOOP;
@@ -4085,6 +4111,7 @@ $$
 DECLARE
     _updater_name         TEXT;
     _task_name            TEXT;
+    _previous_status_id   UUID;
     _previous_status_name TEXT;
     _new_status_name      TEXT;
     _message              TEXT;
@@ -4092,19 +4119,39 @@ DECLARE
     _status_category      JSON;
     _schedule_id          JSON;
     _task_completed_at    TIMESTAMPTZ;
+    _is_new_status_done   BOOLEAN;
 BEGIN
     SELECT COALESCE(name, '') FROM tasks WHERE id = _task_id INTO _task_name;
 
-    SELECT COALESCE(name, '')
-    FROM task_statuses
-    WHERE id = (SELECT status_id FROM tasks WHERE id = _task_id)
-    INTO _previous_status_name;
+    -- Get previous status ID and name
+    SELECT t.status_id, COALESCE(ts.name, '')
+    FROM tasks t
+    LEFT JOIN task_statuses ts ON t.status_id = ts.id
+    WHERE t.id = _task_id
+    INTO _previous_status_id, _previous_status_name;
 
     SELECT COALESCE(name, '') FROM task_statuses WHERE id = _status_id INTO _new_status_name;
 
-    IF (_previous_status_name != _new_status_name)
+    -- Check if the new status is in a "done" category
+    SELECT EXISTS(
+        SELECT 1 
+        FROM sys_task_status_categories 
+        WHERE id = (SELECT category_id FROM task_statuses WHERE id = _status_id) 
+        AND is_done IS TRUE
+    ) INTO _is_new_status_done;
+
+    -- Update if status ID has changed
+    IF (_previous_status_id IS DISTINCT FROM _status_id)
     THEN
-        UPDATE tasks SET status_id = _status_id WHERE id = _task_id;
+        -- Update status_id and completed_at in a single statement
+        -- Set completed_at based on whether the new status is "done"
+        UPDATE tasks 
+        SET status_id = _status_id,
+            completed_at = CASE 
+                WHEN _is_new_status_done THEN CURRENT_TIMESTAMP 
+                ELSE NULL 
+            END
+        WHERE id = _task_id;
 
         SELECT get_task_complete_info(_task_id, _status_id) INTO _task_info;
 
@@ -5306,9 +5353,9 @@ BEGIN
          FROM sys_task_status_categories
          WHERE id = (SELECT category_id FROM task_statuses WHERE id = NEW.status_id)) IS TRUE)
     THEN
-        UPDATE tasks SET completed_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+        NEW.completed_at = CURRENT_TIMESTAMP;
     ELSE
-        UPDATE tasks SET completed_at = NULL WHERE id = NEW.id;
+        NEW.completed_at = NULL;
     END IF;
 
     RETURN NEW;

@@ -88,5 +88,6 @@
   "capacityAvailableForNewProjects": "Capacidade disponível para novos projetos",
   "optimal": "Ótimo",
   "underUtilized": "Subutilizado",
-  "overUtilized": "Sobreutilizado"
+  "overUtilized": "Sobreutilizado",
+  "noDataAvailable": "Nenhum dado disponível"
 }

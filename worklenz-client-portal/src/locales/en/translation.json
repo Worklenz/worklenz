@@ -3,11 +3,31 @@
     "title": "Client Portal",
     "description": "Sign in to your client account",
     "email": "Email",
+    "emailLabel": "Email Address",
+    "emailRequired": "Please enter your email address",
+    "emailInvalid": "Please enter a valid email address",
     "password": "Password",
+    "passwordLabel": "Password",
+    "passwordRequired": "Please enter your password",
+    "passwordMin": "Password must be at least 8 characters",
     "remember": "Remember me",
     "forgot": "Forgot password?",
     "signin": "Sign In",
+    "success": "Login successful! Redirecting...",
+    "failed": "Login failed. Please try again.",
     "invite_only": "Access by invitation only. Contact your account manager for access."
+  },
+  "forgotPassword": {
+    "description": "Enter your email to reset your password",
+    "emailRequired": "Please enter a valid email address",
+    "emailPlaceholder": "Enter your email",
+    "resetPasswordButton": "Reset Password",
+    "orText": "or",
+    "returnToLoginButton": "Return to Login",
+    "successTitle": "Password Reset Email Sent",
+    "successMessage": "If an account exists with this email, you will receive password reset instructions shortly.",
+    "backToLogin": "Back to Login",
+    "errorMessage": "Failed to send password reset email. Please try again."
   },
   "invite": {
     "description": "Complete your account setup",
@@ -25,7 +45,17 @@
     "email_placeholder": "Email Address",
     "password_required": "Please enter a password",
     "password_min": "Password must be at least 8 characters",
+    "password_max": "Password must be at most 32 characters",
+    "password_pattern": "Password must include uppercase, lowercase, number, and special character",
+    "password_guideline": "Password must be at least 8 characters, include uppercase and lowercase letters, a number, and a special character.",
     "password_placeholder": "Create Password",
+    "passwordChecklist": {
+      "minLength": "At least 8 characters",
+      "uppercase": "One uppercase letter",
+      "lowercase": "One lowercase letter",
+      "number": "One number",
+      "special": "One special character"
+    },
     "confirm_password_required": "Please confirm your password",
     "confirm_password_placeholder": "Confirm Password",
     "password_mismatch": "Passwords do not match",
@@ -102,7 +132,9 @@
     "failed_to_accept_invite": "Failed to accept invitation",
     "failed_to_validate_invite": "Failed to validate invitation",
     "network_error": "Network error. Please check your connection.",
-    "server_error": "Server error. Please try again later."
+    "server_error": "Server error. Please try again later.",
+    "worklenz_account_found_title": "Worklenz Account Found",
+    "worklenz_account_found_message": "This email is already registered with a Worklenz account. Please use your existing Worklenz account password to sign up for the client portal."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -224,7 +256,11 @@
     "noAnswer": "No answer provided",
     "noFilesUploaded": "No files uploaded",
     "loadingQuestions": "Loading questions...",
-    "enterAnswer": "Enter your answer"
+    "enterAnswer": "Enter your answer",
+    "noComments": "No comments yet. Start the conversation!",
+    "teamMember": "Team",
+    "client": "Client",
+    "pressEnterToSend": "Press Enter to send, Shift+Enter for new line"
   },
   "invoices": {
     "title": "Invoices",
@@ -252,6 +288,7 @@
     "title": "Chats",
     "description": "Communicate with your service providers",
     "conversations": "Conversations",
+    "chatTitle": "Chat - {{date}}",
     "chatMessages": "Chat Messages",
     "selectConversation": "Select a conversation",
     "selectToStart": "Select a conversation to start chatting",
@@ -339,5 +376,32 @@
     "fileTypeError": "File type not allowed. Accepted types: {{types}}",
     "maxFilesError": "You can only upload up to {{count}} files",
     "uploadedOn": "Uploaded on {{date}}"
+  },
+  "tasks": {
+    "taskDetails": "Task Details",
+    "detailsTab": "Details",
+    "commentsTab": "Comments",
+    "taskInformation": "Task Information",
+    "teamAndPriority": "Team & Priority",
+    "attachments": "Attachments",
+    "status": "Status",
+    "description": "Description",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "created": "Created",
+    "lastUpdated": "Last Updated",
+    "priority": "Priority",
+    "assignedTo": "Assigned To",
+    "noAssignees": "No assignees",
+    "noAttachments": "No attachments",
+    "noComments": "No comments yet. Be the first to comment!",
+    "commentPlaceholder": "Type your comment... (Shift+Enter for new line)",
+    "commentRequired": "Please enter a comment",
+    "commentAdded": "Comment added successfully",
+    "commentError": "Failed to add comment",
+    "loadingTaskDetails": "Loading task details...",
+    "taskNotAvailable": "Task details not available",
+    "failedToLoad": "Failed to load task details",
+    "download": "Download"
   }
 }

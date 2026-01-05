@@ -26,6 +26,7 @@ export interface Task {
   sub_tasks?: Task[];
   sub_tasks_count?: number;
   show_sub_tasks?: boolean;
+  has_filtered_children?: boolean; // Flag to auto-expand when filtered descendants exist
   parent_task_id?: string;
   is_sub_task?: boolean; // Add this property
   progress?: number;
@@ -119,6 +120,13 @@ export interface TaskManagementState {
   // Add sort-related state
   sortField: string;
   sortOrder: 'ASC' | 'DESC';
+  isOpenDuplicateTaskModal: boolean;
+  duplicateTask: DuplicateTask;
+}
+
+export interface DuplicateTask {
+  taskId?: string;
+  title?: string;
 }
 
 export interface TaskGroupsState {

@@ -150,6 +150,8 @@ const TaskTimer = ({
         trigger="click"
         placement="bottomRight"
         onOpenChange={handleOpenChange}
+        zIndex={1100}
+        getPopupContainer={() => document.body}
       >
         <Typography.Text style={{ cursor: 'pointer' }}>{timeString}</Typography.Text>
       </Popover>

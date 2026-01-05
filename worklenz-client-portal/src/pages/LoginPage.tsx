@@ -38,12 +38,12 @@ const LoginPage: React.FC = () => {
 
   const validationRules = {
     email: [
-      { required: true, message: t("login.email") },
-      { type: "email" as const, message: t("login.email") },
+      { required: true, message: t("login.emailRequired") },
+      { type: "email" as const, message: t("login.emailInvalid") },
     ],
     password: [
-      { required: true, message: t("login.password") },
-      { min: 8, message: t("login.password") },
+      { required: true, message: t("login.passwordRequired") },
+      { min: 8, message: t("login.passwordMin") },
     ],
   };
 
@@ -74,10 +74,6 @@ const LoginPage: React.FC = () => {
         if (loginUser.fulfilled.match(result)) {
           message.success(t("login.success"));
           navigate("/dashboard", { replace: true });
-        } else {
-          // Error is already set in the slice
-          const errorMessage = (result.payload as string) || t("login.failed");
-          message.error(errorMessage);
         }
       } catch (error) {
         console.error("Login failed", error);
@@ -109,6 +105,7 @@ const LoginPage: React.FC = () => {
           <Alert
             message={error}
             type="error"
+            showIcon
             closable
             onClose={() => dispatch(setError(null))}
             style={{ marginBottom: 24 }}
@@ -151,8 +148,8 @@ const LoginPage: React.FC = () => {
               <Form.Item name="remember" valuePropName="checked" noStyle>
                 <Checkbox>{t("login.remember")}</Checkbox>
               </Form.Item>
-              <Link to="/forgot-password">
-                <Typography.Link>{t("login.forgot")}</Typography.Link>
+              <Link to="/forgot-password" className="ant-typography ant-typography-link">
+                {t("login.forgot")}
               </Link>
             </Flex>
           </Form.Item>

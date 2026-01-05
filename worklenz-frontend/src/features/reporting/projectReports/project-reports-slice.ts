@@ -23,6 +23,21 @@ const selectedTeams = (state: ProjectReportsState) => {
   return state.teams.filter(team => team.selected).map(team => team.id) as string[];
 };
 
+export type ProjectReportsViewMode = 'table' | 'grouped';
+export type ProjectReportsGroupBy = 'category' | 'status' | 'health' | 'team' | 'client' | 'manager';
+
+export interface IProjectReportGroup {
+  group_id: string;
+  group_name: string;
+  group_color: string;
+  project_count: number;
+  total_tasks: number;
+  done_tasks: number;
+  doing_tasks: number;
+  todo_tasks: number;
+  projects: IRPTProject[];
+}
+
 type ProjectReportsState = {
   isProjectReportsDrawerOpen: boolean;
 
@@ -34,6 +49,14 @@ type ProjectReportsState = {
   total: number;
   isLoading: boolean;
   error: string | null;
+
+  // Grouped view data
+  groupedProjects: IProjectReportGroup[];
+  totalGroups: number;
+
+  // View mode
+  viewMode: ProjectReportsViewMode;
+  groupBy: ProjectReportsGroupBy;
 
   // filters
   index: number;
@@ -49,6 +72,7 @@ type ProjectReportsState = {
   selectedProjectHealths: IProjectHealth[];
   selectedProjectCategories: IProjectCategory[];
   selectedProjectManagers: IProjectManager[];
+  isLoadingMore: boolean; // For "Load More" button loading state
 };
 
 export const fetchReportingTeams = createAsyncThunk(
@@ -82,6 +106,53 @@ export const fetchProjectData = createAsyncThunk(
   }
 );
 
+// Fetch more projects for grouped view (append to existing list)
+// This enables progressive loading with "Load More" button
+export const fetchMoreProjectsForGroupedView = createAsyncThunk(
+  'projectReports/fetchMoreProjectsForGroupedView',
+  async (_, { getState }) => {
+    const state = (getState() as any).projectReportsReducer;
+    const body: IGetProjectsRequestBody = {
+      index: state.index,
+      size: state.pageSize,
+      field: state.field,
+      order: state.order,
+      search: state.searchQuery,
+      filter: state.filterIndex.toString(),
+      statuses: state.selectedProjectStatuses.map((s: IProjectStatus) => s.id || ''),
+      healths: state.selectedProjectHealths.map((h: IProjectHealth) => h.id || ''),
+      categories: state.selectedProjectCategories.map((c: IProjectCategory) => c.id || ''),
+      project_managers: state.selectedProjectManagers.map((m: IProjectManager) => m.id || ''),
+      archived: state.archived,
+      teams: selectedTeams(state),
+    };
+    const response = await reportingProjectsApiService.getProjects(body);
+    return response.body;
+  }
+);
+
+// Fetch grouped projects with accurate task counts
+export const fetchGroupedProjects = createAsyncThunk(
+  'projectReports/fetchGroupedProjects',
+  async (_, { getState }) => {
+    const state = (getState() as any).projectReportsReducer;
+    const params = {
+      group_by: state.groupBy,
+      search: state.searchQuery,
+      field: state.field,
+      order: state.order,
+      statuses: state.selectedProjectStatuses.map((s: IProjectStatus) => s.id || '').join(','),
+      healths: state.selectedProjectHealths.map((h: IProjectHealth) => h.id || '').join(','),
+      categories: state.selectedProjectCategories.map((c: IProjectCategory) => c.id || '').join(','),
+      project_managers: state.selectedProjectManagers.map((m: IProjectManager) => m.id || '').join(','),
+      teams: selectedTeams(state).join(','),
+      archived: state.archived,
+    };
+    const response = await reportingProjectsApiService.getProjectsGrouped(params);
+    return response.body;
+  }
+);
+
 export const updateProjectCategory = createAction<{
   projectId: string;
   category: IProjectCategory;
@@ -104,6 +175,14 @@ const initialState: ProjectReportsState = {
   isLoading: false,
   error: null,
 
+  // Grouped view data
+  groupedProjects: [],
+  totalGroups: 0,
+
+  // View mode
+  viewMode: 'table',
+  groupBy: 'category',
+
   // filters
   index: 1,
   pageSize: 10,
@@ -118,6 +197,7 @@ const initialState: ProjectReportsState = {
   selectedProjectHealths: [],
   selectedProjectCategories: [],
   selectedProjectManagers: [],
+  isLoadingMore: false,
 };
 
 const projectReportsSlice = createSlice({
@@ -229,9 +309,17 @@ const projectReportsSlice = createSlice({
         project.category_color = category.color_code;
       }
     },
+    setViewMode: (state, action) => {
+      state.viewMode = action.payload;
+    },
+    setGroupBy: (state, action) => {
+      state.groupBy = action.payload;
+    },
     resetProjectReports: state => {
       state.projectList = [];
       state.total = 0;
+      state.groupedProjects = [];
+      state.totalGroups = 0;
       state.isLoading = false;
       state.error = null;
       state.index = 1;
@@ -246,6 +334,8 @@ const projectReportsSlice = createSlice({
       state.searchQuery = '';
       state.archived = false;
       state.index = 1;
+      state.viewMode = 'table';
+      state.groupBy = 'category';
       state.teams.forEach(team => {
         team.selected = true;
       });
@@ -284,6 +374,20 @@ const projectReportsSlice = createSlice({
         state.isLoading = false;
         state.error = action.error.message || 'Failed to fetch project data';
       })
+      .addCase(fetchMoreProjectsForGroupedView.pending, state => {
+        state.isLoadingMore = true;
+        state.error = null;
+      })
+      .addCase(fetchMoreProjectsForGroupedView.fulfilled, (state, action) => {
+        state.isLoadingMore = false;
+        state.total = action.payload.total || 0;
+        // Append new projects to existing list
+        state.projectList = [...state.projectList, ...(action.payload.projects || [])];
+      })
+      .addCase(fetchMoreProjectsForGroupedView.rejected, (state, action) => {
+        state.isLoadingMore = false;
+        state.error = action.error.message || 'Failed to fetch more projects';
+      })
       .addCase(updateProjectCategory, (state, action) => {
         const { projectId, category } = action.payload;
         const projectIndex = state.projectList.findIndex(project => project.id === projectId);
@@ -303,6 +407,19 @@ const projectReportsSlice = createSlice({
           state.projectList[projectIndex].status_name = status.name ?? '';
           state.projectList[projectIndex].status_color = status.color_code ?? '';
         }
+      })
+      .addCase(fetchGroupedProjects.pending, state => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchGroupedProjects.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.groupedProjects = action.payload.groups || [];
+        state.totalGroups = action.payload.total_groups || 0;
+      })
+      .addCase(fetchGroupedProjects.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to fetch grouped projects';
       });
   },
 });
@@ -329,6 +446,8 @@ export const {
   setSelectedMember,
   setSelectedProject,
   setSelectedProjectCategory,
+  setViewMode,
+  setGroupBy,
   resetProjectReports,
   resetAllFilters,
 } = projectReportsSlice.actions;

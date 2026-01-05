@@ -7,6 +7,16 @@ import {
 } from '@/shared/antd-imports';
 import dayjs from 'dayjs';
 
+// logos
+export const LOGO_LIGHT =
+  'https://s3.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-light-mode.png';
+export const LOGO_DARK =
+  'https://s3.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-dark-mode.png';
+export const XMAS_LOGO_LIGHT =
+  'https://s3.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-xmas-light.webp';
+export const XMAS_LOGO_DARK =
+  'https://s3.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-xmas-dark.webp';
+
 export const avatarNamesMap: { [x: string]: string } = {
   A: '#154c9b',
   B: '#3b7ad4',
@@ -145,6 +155,7 @@ export const PriorityColorCodes: { [x: number]: string } = {
 
 export const API_BASE_URL = '/api/v1';
 export const AUTH_API_BASE_URL = '/secure';
+export const CLIENT_PORTAL_API_BASE_URL = '/api/client-portal';
 
 export const DEFAULT_TASK_NAME = 'Untitled Task';
 

@@ -36,9 +36,9 @@ BEGIN
               WHERE id = (SELECT category_id FROM task_statuses WHERE id = NEW.status_id)
                 AND is_done IS TRUE)
     THEN
-        UPDATE tasks SET completed_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+        NEW.completed_at = CURRENT_TIMESTAMP;
     ELSE
-        UPDATE tasks SET completed_at = NULL WHERE id = NEW.id;
+        NEW.completed_at = NULL;
     END IF;
 
     RETURN NEW;
@@ -46,7 +46,7 @@ END
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE TRIGGER tasks_status_id_change
-    AFTER UPDATE OF status_id
+    BEFORE UPDATE OF status_id
     ON tasks
     FOR EACH ROW
     WHEN (OLD.status_id IS DISTINCT FROM new.status_id)

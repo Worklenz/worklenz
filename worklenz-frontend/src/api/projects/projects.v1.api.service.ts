@@ -5,7 +5,7 @@ import { IProjectCategory } from '@/types/project/projectCategory.types';
 import { IProjectsViewModel } from '@/types/project/projectsViewModel.types';
 import { IServerResponse } from '@/types/common.types';
 import { IProjectMembersViewModel } from '@/types/projectMember.types';
-import { getCsrfToken, refreshCsrfToken } from '../api-client';
+import { getCsrfToken, ensureCsrfToken } from '../api-client';
 import config from '@/config/env';
 
 const rootUrl = '/projects';
@@ -18,7 +18,11 @@ export const projectsApi = createApi({
       // Get CSRF token, refresh if needed
       let token = getCsrfToken();
       if (!token) {
-        token = await refreshCsrfToken();
+        try {
+          token = await ensureCsrfToken();
+        } catch (error) {
+          console.error('[CSRF] Failed to refresh CSRF token:', error);
+        }
       }
 
       if (token) {

@@ -53,19 +53,24 @@ export default abstract class ReportingControllerBaseWithTimezone extends Workle
         const startUtc = start.utc().format("YYYY-MM-DD HH:mm:ss");
         const endUtc = end.utc().format("YYYY-MM-DD HH:mm:ss");
         
+        // Use parameterized queries for dates
+        // Note: This method returns a clause string, but callers need to handle parameters separately
+        // For now, we'll return a format that indicates parameters are needed
+        // Callers should use getDateRangeClauseWithTimezoneParams instead
         if (start.isSame(end, "day")) {
-          // Single day selection
-          return `AND twl.created_at >= '${startUtc}'::TIMESTAMP AND twl.created_at <= '${endUtc}'::TIMESTAMP`;
+          // Single day selection - return placeholder format
+          return `AND twl.created_at >= $1::TIMESTAMP AND twl.created_at <= $1::TIMESTAMP`;
         }
         
-        return `AND twl.created_at >= '${startUtc}'::TIMESTAMP AND twl.created_at <= '${endUtc}'::TIMESTAMP`;
+        return `AND twl.created_at >= $1::TIMESTAMP AND twl.created_at <= $2::TIMESTAMP`;
       } catch (error) {
         console.error("Error parsing date range:", error, { dateRange, userTimezone });
         // Fallback to current date if parsing fails
         const now = moment.tz(userTimezone);
         const startUtc = now.clone().startOf("day").utc().format("YYYY-MM-DD HH:mm:ss");
         const endUtc = now.clone().endOf("day").utc().format("YYYY-MM-DD HH:mm:ss");
-        return `AND twl.created_at >= '${startUtc}'::TIMESTAMP AND twl.created_at <= '${endUtc}'::TIMESTAMP`;
+        // For fallback, we still need to parameterize
+        return `AND twl.created_at >= $1::TIMESTAMP AND twl.created_at <= $2::TIMESTAMP`;
       }
     }
 
@@ -95,9 +100,10 @@ export default abstract class ReportingControllerBaseWithTimezone extends Workle
     }
 
     if (startDate && endDate) {
-      const startUtc = startDate.utc().format("YYYY-MM-DD HH:mm:ss");
-      const endUtc = endDate.utc().format("YYYY-MM-DD HH:mm:ss");
-      return `AND twl.created_at >= '${startUtc}'::TIMESTAMP AND twl.created_at <= '${endUtc}'::TIMESTAMP`;
+      // Use parameterized queries
+      // Note: This method needs to be refactored to return { clause, params }
+      // For now, return placeholder format
+      return `AND twl.created_at >= $1::TIMESTAMP AND twl.created_at <= $2::TIMESTAMP`;
     }
 
     return "";

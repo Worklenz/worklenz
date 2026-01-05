@@ -129,7 +129,7 @@ export const on_task_custom_column_update = async (_io: Server, socket: Socket, 
       })
     );
 
-    console.log("Task custom column updated successfully", { task_id, column_key });
+    // console.log("Task custom column updated successfully", { task_id, column_key });
   } catch (error) {
     log_error(error);
     console.error("Error updating task custom column", error);

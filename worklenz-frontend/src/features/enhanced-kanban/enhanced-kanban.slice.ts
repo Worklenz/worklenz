@@ -19,6 +19,7 @@ import { ITaskAssigneesUpdateResponse } from '@/types/tasks/task-assignee-update
 import { ITaskAssignee } from '@/types/project/projectTasksViewModel.types';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 import { ILabelsChangeResponse } from '@/types/tasks/taskList.types';
+import { RootState } from '@/app/store';
 
 export enum IGroupBy {
   STATUS = 'status',
@@ -285,9 +286,76 @@ export const fetchBoardSubTasks = createAsyncThunk(
     { rejectWithValue, getState }
   ) => {
     try {
-      // Use the dedicated subtasks API endpoint
-      const response = await subTasksApiService.getSubTasks(taskId);
-      return response.body || [];
+      const state = getState() as RootState;
+      
+      // Get active filters from enhancedKanbanReducer
+      const selectedLabels = state.enhancedKanbanReducer.labels
+        .filter((l: any) => l.selected && l.id)
+        .map((l: any) => l.id)
+        .join(' ');
+
+      const selectedAssignees = state.enhancedKanbanReducer.taskAssignees
+        .filter((m: any) => m.selected && m.id)
+        .map((m: any) => m.id)
+        .join(' ');
+
+      const selectedPriorities = state.enhancedKanbanReducer.priorities.join(' ');
+
+      // Get search value
+      const searchValue = state.enhancedKanbanReducer.search || '';
+
+      // Get current grouping
+      const currentGrouping = state.enhancedKanbanReducer.groupBy || 'status';
+
+      // Use the filtered task list API instead of the basic subtasks API
+      const config: ITaskListConfigV2 = {
+        id: projectId,
+        archived: false,
+        group: currentGrouping,
+        field: '',
+        order: '',
+        search: searchValue,
+        statuses: '', // Status filter not typically applied to subtasks
+        members: selectedAssignees,
+        projects: '',
+        isSubtasksInclude: false,
+        labels: selectedLabels,
+        priorities: selectedPriorities,
+        parent_task: taskId,
+      };
+
+      const response = await tasksApiService.getTaskListV3(config);
+      const tasks = response.body.allTasks || [];
+      
+      // Transform V3 API response back to IProjectTask format expected by BoardSubTaskCard
+      const transformedTasks: IProjectTask[] = tasks.map((task: any) => ({
+        id: task.id,
+        name: task.title || task.name,
+        task_no: task.task_key,
+        project_id: projectId,
+        parent_task_id: taskId,
+        status_id: task.originalStatusId || task.status,
+        priority_id: task.originalPriorityId || task.priority,
+        priority_color: task.priorityColor,
+        priority_value: task.priority === 'high' ? 2 : task.priority === 'medium' ? 1 : 0,
+        end_date: task.dueDate || task.end_date,
+        start_date: task.startDate || task.start_date,
+        complete_ratio: task.complete_ratio || task.progress || 0,
+        manual_progress: false,
+        assignees: task.assignees || [],
+        names: task.assignee_names || task.names || [],
+        labels: task.labels || [],
+        sub_tasks_count: task.sub_tasks_count || 0,
+        total_tasks_count: task.sub_tasks_count || 0,
+        completed_count: 0,
+        show_sub_tasks: false,
+        sub_tasks: [],
+        sub_tasks_loading: false,
+        created_at: task.createdAt || task.created_at,
+        updated_at: task.updatedAt || task.updated_at,
+      } as IProjectTask));
+      
+      return transformedTasks;
     } catch (error) {
       logger.error('Fetch Enhanced Board Sub Tasks', error);
       if (error instanceof Error) {
@@ -526,6 +594,7 @@ const enhancedKanbanSlice = createSlice({
         color_code,
         color_code_dark,
         complete_ratio,
+        completed_at,
         statusCategory,
       } = action.payload;
       let oldGroupId: string | null = null;
@@ -549,6 +618,7 @@ const enhancedKanbanSlice = createSlice({
       foundTask.progress_value = +complete_ratio; // Also update progress_value field
       foundTask.status = status_id;
       foundTask.status_category = statusCategory;
+      foundTask.completed_at = completed_at; // Update completed date
 
       // If grouped by status and the group changes, move the task
       if (state.groupBy === IGroupBy.STATUS && oldGroupId && oldGroupId !== status_id) {

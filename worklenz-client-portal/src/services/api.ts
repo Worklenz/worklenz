@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { ApiResponse, ClientSettings, ClientUser, ClientToken, ClientNotification } from '@/types';
+import { ApiResponse, ClientSettings, ClientUser, ClientToken, ClientNotification, ProfileUpdateData } from '@/types';
 
 class ClientPortalAPI {
   private api: AxiosInstance;
@@ -44,7 +44,28 @@ class ClientPortalAPI {
           return Promise.reject(error);
         }
 
-        if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
+        // Skip token refresh for auth endpoints (login, register, etc.)
+        const isAuthEndpoint = originalRequest.url?.includes('/auth/login') || 
+                               originalRequest.url?.includes('/auth/register') ||
+                               originalRequest.url?.includes('/auth/accept-invite') ||
+                               originalRequest.url?.includes('/invitation/accept');
+        
+        // Check if this is a 403 error due to client deactivation
+        const errorMessage = error.response?.data?.message || '';
+        const isDeactivated = error.response?.status === 403 && 
+          (errorMessage.toLowerCase().includes('deactivated') || 
+           errorMessage.toLowerCase().includes('portal access is disabled'));
+        
+        // If client is deactivated, immediately clear token and trigger logout
+        if (isDeactivated) {
+          this.clearToken();
+          localStorage.removeItem('clientTokenExpiry');
+          // Trigger a custom event that the app can listen to for logout
+          window.dispatchEvent(new CustomEvent('client-deactivated'));
+          return Promise.reject(error);
+        }
+        
+        if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry && !isAuthEndpoint) {
           originalRequest._retry = true;
 
           try {
@@ -319,6 +340,10 @@ class ClientPortalAPI {
     return this.request(`/projects/${id}`);
   }
 
+  async getProjectStatuses() {
+    return this.request('/projects/statuses');
+  }
+
   async getProjectTasks(projectId: string, params?: { page?: number; limit?: number; search?: string }) {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
@@ -327,6 +352,28 @@ class ClientPortalAPI {
     
     const queryString = queryParams.toString();
     return this.request(`/projects/${projectId}/tasks${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Tasks
+  async getTaskDetails(taskId: string) {
+    return this.request(`/tasks/${taskId}`);
+  }
+
+  async getTaskComments(taskId: string) {
+    return this.request(`/tasks/${taskId}/comments`);
+  }
+
+  async addTaskComment(taskId: string, comment: string) {
+    return this.request(`/tasks/${taskId}/comments`, {
+      method: 'POST',
+      data: { comment },
+    });
+  }
+
+  async markTaskCommentsAsViewed(taskId: string) {
+    return this.request(`/tasks/${taskId}/mark-viewed`, {
+      method: 'POST',
+    });
   }
 
   // Invoices
@@ -375,21 +422,11 @@ class ClientPortalAPI {
     return this.request(`/chats/${date}${queryString ? `?${queryString}` : ''}`);
   }
 
-  async sendMessage(messageData: { message: string; messageType?: string; fileUrl?: string }): Promise<ApiResponse<any>> {
-    return this.request<any>('/messages', {
+  async sendMessage(chatId: string, messageData: { message: string; messageType?: string; fileUrl?: string }): Promise<ApiResponse<any>> {
+    return this.request<any>(`/chats/${chatId}/messages`, {
       method: 'POST',
       data: messageData,
     });
-  }
-
-  async getMessages(params?: { page?: number; limit?: number; since?: string }): Promise<ApiResponse<any>> {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append('page', params.page.toString());
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.since) queryParams.append('since', params.since);
-    
-    const queryString = queryParams.toString();
-    return this.request<any>(`/messages${queryString ? `?${queryString}` : ''}`);
   }
 
   // Settings
@@ -409,7 +446,7 @@ class ClientPortalAPI {
     return this.request('/profile');
   }
 
-  async updateProfile(profileData: Partial<ClientUser>) {
+  async updateProfile(profileData: ProfileUpdateData) {
     return this.request('/profile', {
       method: 'PUT',
       data: profileData,

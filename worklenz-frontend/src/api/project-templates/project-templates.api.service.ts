@@ -12,6 +12,10 @@ import { ICustomProjectTemplateCreateRequest } from '@/types/project/projectTemp
 const rootUrl = `${API_BASE_URL}/project-templates`;
 
 export const projectTemplatesApiService = {
+  renameCustomTemplate: async (id: string, name: string) => {
+    const response = await apiClient.patch(`${rootUrl}/custom-template/${id}`, { name });
+    return response.data;
+  },
   getWorklenzTemplates: async (): Promise<IServerResponse<IWorklenzTemplate[]>> => {
     const response = await apiClient.get(`${rootUrl}/worklenz-templates`);
     return response.data;
@@ -34,7 +38,9 @@ export const projectTemplatesApiService = {
     return response.data;
   },
 
-  createCustomTemplate: async (body: ICustomProjectTemplateCreateRequest): Promise<IServerResponse<IProjectTemplate>> => {
+  createCustomTemplate: async (
+    body: ICustomProjectTemplateCreateRequest
+  ): Promise<IServerResponse<IProjectTemplate>> => {
     const response = await apiClient.post(`${rootUrl}/custom-template`, body);
     return response.data;
   },

@@ -98,14 +98,12 @@ export const useTaskRowColumns = ({
       currentBg?: string,
       rowBackgrounds?: any
     ) => {
-      // Calculate left position for sticky columns
-      let leftPosition = 0;
+      // Calculate left position for sticky columns - must account for ALL previous columns
+      let leftPosition = 4; // Account for px-1 (4px) padding on container
       if (isSticky && typeof index === 'number') {
         for (let i = 0; i < index; i++) {
           const prevColumn = visibleColumns[i];
-          if (prevColumn.isSticky) {
-            leftPosition += parseInt(prevColumn.width.replace('px', ''));
-          }
+          leftPosition += parseInt(prevColumn.width.replace('px', ''));
         }
       }
 
@@ -117,9 +115,11 @@ export const useTaskRowColumns = ({
             zIndex: 5, // Lower than header but above regular content
             backgroundColor: currentBg || (isDarkMode ? '#1e1e1e' : '#ffffff'), // Use dynamic background or fallback
             overflow: 'hidden', // Prevent content from spilling over
-            width: width, // Ensure the wrapper respects column width
+            width: width,
           }
-        : {};
+        : {
+            width: width,
+          };
 
       const renderColumnContent = () => {
         switch (columnId) {
@@ -294,8 +294,10 @@ export const useTaskRowColumns = ({
         const hoverBg = rowBackgrounds?.hover || (isDarkMode ? '#2a2a2a' : '#f9fafb');
         return (
           <div
+            data-column-id={columnId}
             style={{
               ...wrapperStyle,
+              width: `var(--col-width-${columnId})`,
               // @ts-ignore - CSS custom property
               '--hover-bg': hoverBg,
             }}
@@ -306,7 +308,11 @@ export const useTaskRowColumns = ({
         );
       }
 
-      return content;
+      return (
+        <div data-column-id={columnId} style={{ width: `var(--col-width-${columnId})` }}>
+          {content}
+        </div>
+      );
     },
     [
       task,

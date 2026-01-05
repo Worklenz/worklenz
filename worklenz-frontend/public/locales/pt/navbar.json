@@ -31,5 +31,21 @@
     "accept": "Aceitar",
     "acceptAndJoin": "Aceitar e participar",
     "noNotifications": "Sem notificações"
+  },
+  "timerButton": {
+    "runningTimers": "Temporizadores em Execução",
+    "recentTimeLogs": "Registros de Tempo Recentes",
+    "unnamedTask": "Tarefa sem Nome",
+    "unnamedProject": "Projeto sem Nome",
+    "parent": "Pai",
+    "started": "Iniciado",
+    "noTimersOrLogs": "Sem temporizadores ou registros",
+    "errorLoadingTimers": "Erro ao carregar temporizadores",
+    "errorRenderingTimers": "Erro ao renderizar temporizadores",
+    "timerError": "Erro de Temporizador",
+    "timerRunning": "{{count}} temporizador em execução",
+    "timerRunning_other": "{{count}} temporizadores em execução",
+    "recentLog": "{{count}} registro recente",
+    "recentLog_other": "{{count}} registros recentes"
   }
 }

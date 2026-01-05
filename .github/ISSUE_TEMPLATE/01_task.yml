@@ -1,0 +1,79 @@
+name: Task
+description: Sprint-ready development task (≤ 2–3 dev days)
+title: "[TASK] "
+labels: ["task"]
+body:
+
+  - type: markdown
+    attributes:
+      value: |
+        ## 📌 Task Overview
+        This task must be **small, testable, and deployable**.
+        Tasks larger than 3 dev-days must be split before entering a sprint.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Requirement
+      description: Clearly describe what problem this task solves.
+      placeholder: |
+        What is broken, missing, or needs improvement?
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: Define clear, testable outcomes.
+      placeholder: |
+        - Given ...
+        - When ...
+        - Then ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: estimate
+    attributes:
+      label: Estimated Effort (Dev-Days)
+      description: Must be set BEFORE the sprint.
+      options:
+        - 1 day
+        - 2 days
+        - 3 days
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: dor
+    attributes:
+      label: Definition of Ready (DoR)
+      description: All must be true for this task to enter Sprint Ready.
+      options:
+        - label: Acceptance criteria are clear and complete
+          required: true
+        - label: Task is testable by QA
+          required: true
+        - label: Task can be completed within 2–3 dev days
+          required: true
+        - label: Deployment impact is understood
+          required: true
+
+  - type: textarea
+    id: technical_notes
+    attributes:
+      label: Technical Notes (Optional)
+      description: Any implementation notes, links, or constraints.
+      placeholder: |
+        API changes, affected modules, migration notes, etc.
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        ## 🧪 QA Test Checklist
+        _To be added by QA once the task is in **Sprint Ready**._
+
+        QA should convert the Acceptance Criteria into test checklists
+        and record **Pass / Fail** results here or as a comment.

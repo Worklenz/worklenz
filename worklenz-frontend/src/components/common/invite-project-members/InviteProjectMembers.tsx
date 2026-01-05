@@ -76,18 +76,19 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
             const emailList = values.emails || [];
 
             if (emailList.length === 0) {
-                message.error(t('Please enter at least one email address'));
+                message.error(t('projectInvite_emailRequired'));
                 setLoading(false);
                 return;
             }
 
             // Send invitations for each email - wrap each call to catch individual errors
+            // Note: access_level defaults to MEMBER on backend - can be changed later if needed
             const invitePromises = emailList.map(async (email) => {
                 try {
                     const body = {
                         email: email.trim(),
                         project_id: projectId,
-                        access_level: values.access.toUpperCase(),
+                        // access_level is omitted - backend defaults to MEMBER
                         role_name:
                             values.access === 'team-lead'
                                 ? ROLE_NAMES.TEAM_LEAD
@@ -124,9 +125,9 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
                 const failedEmails = failedResults.map(r => r.email).join(', ');
                 message.error(`Failed to invite: ${failedEmails}`);
             }
-        } catch (error) {
+            } catch (error) {
             console.error('Error inviting project members:', error);
-            message.error(t('Failed to invite project members'));
+            message.error(t('projectInvite_inviteFailed'));
         } finally {
             setLoading(false);
         }
@@ -148,10 +149,10 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
                 setInvitationLink(res.body.invitation_url);
                 setLinkExpiry(res.body.expires_at);
                 setHasActiveLink(true);
-                message.success(t('Project invitation link created successfully'));
+                message.success(t('projectInvite_linkCreatedSuccess'));
             }
         } catch (error) {
-            message.error(t('Failed to create project invitation link'));
+            message.error(t('projectInvite_linkCreateFailed'));
         } finally {
             setLinkLoading(false);
         }
@@ -161,10 +162,10 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
         try {
             await navigator.clipboard.writeText(invitationLink);
             setLinkCopied(true);
-            message.success(t('Project invitation link copied to clipboard'));
+            message.success(t('projectInvite_linkCopied'));
             setTimeout(() => setLinkCopied(false), 2000);
         } catch (error) {
-            message.error(t('Failed to copy link'));
+            message.error(t('projectInvite_linkCopyFailed'));
         }
     };
 
@@ -200,7 +201,7 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
             }
             open={isDrawerOpen}
             onCancel={handleClose}
-            destroyOnClose={false}
+            destroyOnHidden={false}
             width={500}
             loading={loading}
             footer={
@@ -211,8 +212,8 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
                         icon={hasActiveLink ? (linkCopied ? <CheckOutlined /> : <CopyOutlined />) : <ShareAltOutlined />}
                     >
                         {hasActiveLink
-                            ? (linkCopied ? t('Copied!') : t('Copy project link'))
-                            : t('Copy project link')
+                            ? (linkCopied ? t('projectInvite_copiedShort') : t('projectInvite_copyLinkButton'))
+                            : t('projectInvite_copyLinkButton')
                         }
                     </Button>
                 </Flex>
@@ -229,14 +230,14 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
                     <Flex gap={16} align="flex-start">
                         <Form.Item
                             name="emails"
-                            label={t('Invite with email')}
+                            label={t('projectInvite_emailLabel')}
                             style={{ flex: 1, marginBottom: 16 }}
                             rules={[
                                 {
                                     validator: (_, value) => {
                                         // Check if value exists and has items
                                         if (!value || !Array.isArray(value) || value.length === 0) {
-                                            return Promise.reject(new Error(t('Please enter at least one email address')));
+                                            return Promise.reject(new Error(t('projectInvite_emailRequired')));
                                         }
 
                                         // Validate each email format
@@ -244,7 +245,7 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
                                         const invalidEmails = value.filter((email: string) => !emailRegex.test(email.trim()));
 
                                         if (invalidEmails.length > 0) {
-                                            return Promise.reject(new Error(t('Please enter valid email addresses')));
+                                            return Promise.reject(new Error(t('projectInvite_emailInvalid')));
                                         }
 
                                         return Promise.resolve();
@@ -255,19 +256,23 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
                             <Select
                                 mode="tags"
                                 style={{ width: '100%' }}
-                                placeholder={t('Add people or Email')}
+                                placeholder={t('projectInvite_emailPlaceholder')}
                                 notFoundContent={
-                                    <Typography.Text type="secondary">{t('Type email and press Enter')}</Typography.Text>
+                                    <Typography.Text type="secondary">{t('projectInvite_emailHelp')}</Typography.Text>
                                 }
                                 tokenSeparators={[',', ' ', ';']}
                             />
                         </Form.Item>
                         <Button htmlType="submit" type="primary" loading={loading} style={{ marginTop: 30 }}>
-                            {t('Invite')}
+                            {t('projectInvite_inviteButton')}
                         </Button>
                     </Flex>
 
-                    <Form.Item label={t('Access level')} name="access">
+                    <Form.Item 
+                        label={t('projectInvite_teamRoleLabel')} 
+                        name="access"
+                        tooltip={t('projectInvite_teamRoleTooltip')}
+                    >
                         <Select
                             options={[
                                 { value: 'member', label: t('memberText') },

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useSocket } from '@/socket/socketContext';
 import { Tooltip } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -6,8 +7,28 @@ export const ConnectionStatusIndicator = () => {
   const { connected } = useSocket();
   const { t } = useTranslation('common');
 
-  // Only show indicator when disconnected
-  if (connected) return null;
+  const [shouldShowOffline, setShouldShowOffline] = useState<boolean>(false);
+
+  // Add a grace period before showing offline status to avoid flashes on refresh/reconnect
+  useEffect(() => {
+    // If reconnected, hide immediately and clear any pending timers
+    if (connected) {
+      setShouldShowOffline(false);
+      return;
+    }
+
+    // When disconnected, wait for a delay before showing the offline indicator
+    const timeoutId = window.setTimeout(() => {
+      setShouldShowOffline(true);
+    }, 10_000); // 10 seconds
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [connected]);
+
+  // Only show indicator when disconnected AND the grace period has passed
+  if (connected || !shouldShowOffline) return null;
 
   return (
     <Tooltip title={t('disconnected')} placement="bottom">

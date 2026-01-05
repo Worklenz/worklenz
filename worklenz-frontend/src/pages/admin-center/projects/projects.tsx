@@ -33,8 +33,8 @@ const Projects: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const isTablet = useDebouncedMediaQuery({ query: '(min-width: 1000px)' });
   const [projects, setProjects] = useState<IOrganizationProject[]>([]);
+  const [total, setTotal] = useState(0);
   const [requestParams, setRequestParams] = useState({
-    total: 0,
     index: 1,
     size: DEFAULT_PAGE_SIZE,
     field: 'name',
@@ -50,9 +50,12 @@ const Projects: React.FC = () => {
   const fetchProjects = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await adminCenterApiService.getOrganizationProjects(requestParams);
+      const res = await adminCenterApiService.getOrganizationProjects({
+        ...requestParams,
+        total: 0,
+      });
       if (res.done) {
-        setRequestParams(prev => ({ ...prev, total: res.body.total ?? 0 }));
+        setTotal(res.body.total ?? 0);
         setProjects(res.body.data ?? []);
       }
     } catch (error) {
@@ -193,7 +196,7 @@ const Projects: React.FC = () => {
               />
             </Tooltip>
             <Input
-              placeholder={t('searchPlaceholder')}
+              placeholder={t('search', { defaultValue: 'Search' })}
               suffix={<SearchOutlined />}
               type="text"
               value={requestParams.search}
@@ -216,7 +219,7 @@ const Projects: React.FC = () => {
             defaultPageSize: 20,
             pageSizeOptions: ['5', '10', '15', '20', '50', '100'],
             size: 'small',
-            total: requestParams.total,
+            total: total,
             current: requestParams.index,
             pageSize: requestParams.size,
             onChange: (page, pageSize) =>

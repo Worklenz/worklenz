@@ -656,4 +656,15 @@ export default class TasksController extends TasksControllerBase {
 
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
+
+  @HandleExceptions()
+  public static async bulkChangeDueDate(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const q = `SELECT bulk_change_tasks_due_date($1, $2) AS result;`;
+    const result = await db.query(q, [JSON.stringify(req.body), req.user?.id]);
+    const [data] = result.rows;
+
+    TasksController.notifyProjectUpdates(req.user?.socket_id as string, req.query.project as string);
+
+    return res.status(200).send(new ServerResponse(true, data?.result || { updated_count: 0 }));
+  }
 }

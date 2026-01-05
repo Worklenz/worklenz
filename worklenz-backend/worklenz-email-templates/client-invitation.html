@@ -47,20 +47,22 @@
     .modern-btn {
       text-decoration: none;
       display: inline-block;
-      color: #fff;
-      background: linear-gradient(90deg, #54bf6b 0%, #4992f0d9 100%);
+      color: #ffffff !important;
+      background-color: #4992f0;
+      background-image: linear-gradient(90deg, #54bf6b 0%, #4992f0d9 100%);
       border-radius: 6px;
       font-weight: 600;
-      padding: 12px 40px;
-      font-size: 17px;
+      padding: 14px 40px;
+      font-size: 18px;
+      line-height: 120%;
+      border: 1px solid #4992f0;
       box-shadow: 0 2px 8px rgba(73, 146, 240, 0.15);
       transition: background 0.2s, box-shadow 0.2s;
-      margin-top: 10px;
-      margin-bottom: 30px;
+      mso-padding-alt: 14px 40px;
     }
 
     .modern-btn:hover {
-      background: linear-gradient(90deg, #4992f0d9 0%, #54bf6b 100%);
+      background-image: linear-gradient(90deg, #4992f0d9 0%, #54bf6b 100%);
       box-shadow: 0 4px 16px rgba(73, 146, 240, 0.18);
     }
 
@@ -158,7 +160,7 @@
                       <tr>
                         <td class="pad" style="width:100%;padding-right:0;padding-left:0">
                           <div align="left" class="alignment" style="line-height:10px">
-                            <a href="www.worklenz.com" style="outline:none;width: 170px;" tabindex="-1" target="_blank"><img src="https://worklenz.s3.amazonaws.com/email-templates-assets/email-logo.png" style="display:block;height:auto;border:0;max-width:100%;margin-top: 10px;margin-bottom: 5px;"></a>
+                            <a href="https://www.worklenz.com" style="outline:none;width: 170px;" tabindex="-1" target="_blank"><img src="https://s3.us-west-2.amazonaws.com/worklenz.com/email-templates-assets/worklenz-light-mode.png" style="display:block;height:auto;border:0;max-width:100%;margin-top: 10px;margin-bottom: 5px;"></a>
                           </div>
                         </td>
                       </tr>
@@ -175,12 +177,12 @@
                                   </h1>
                                 </td>
                               </tr>
-                              <tr>
+                              <!-- <tr>
                                 <td class="pad" style="width:100%;padding-right:0;padding-left:0">
                                   <div align="center" class="alignment" style="line-height:10px"><img src="https://worklenz.s3.amazonaws.com/email-templates-assets/email-welcome.png" style="display:block;height:auto;border:0;width:180px;max-width:100%;margin-top: 30px;margin-bottom: 10px;" width="180">
                                   </div>
                                 </td>
-                              </tr>
+                              </tr> -->
                             </table>
                             <table border="0" cellpadding="5" cellspacing="0" class="paragraph_block block-4 padding-30" role="presentation" style="mso-table-lspace:0;mso-table-rspace:0;word-break:break-word" width="100%">
                               <tr>
@@ -209,14 +211,26 @@
                               <div class="value">Contact: [VAR_CLIENT_PHONE]</div>
                             </div>
 
-                            <table border="0" cellpadding="10" cellspacing="0" class="button_block block-6" role="presentation" style="mso-table-lspace:0;mso-table-rspace:0;margin-top: 10px;margin-bottom: 30px;" width="100%">
+                            <table border="0" cellpadding="10" cellspacing="0" class="button_block block-6" role="presentation" style="mso-table-lspace:0;mso-table-rspace:0;margin-top: 20px;margin-bottom: 30px;" width="100%">
                               <tr>
-                                <td class="pad">
-                                  <div align="center" class="alignment">
-                                    <a href="[VAR_PORTAL_LINK]" class="modern-btn">
-                                      Access Your Portal
-                                    </a>
-                                  </div>
+                                <td class="pad" align="center" style="text-align:center;">
+                                  <!--[if mso]>
+                                  <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="[VAR_PORTAL_LINK]" style="height:50px;v-text-anchor:middle;width:240px;" arcsize="12%" stroke="f" fillcolor="#4992f0">
+                                    <w:anchorlock/>
+                                    <center style="color:#ffffff;font-family:'Mada',Arial,sans-serif;font-size:18px;font-weight:600;">Access Your Portal</center>
+                                  </v:roundrect>
+                                  <![endif]-->
+                                  <!--[if !mso]><!-- -->
+                                  <table align="center" role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;margin:0 auto;">
+                                    <tr>
+                                      <td align="center" valign="middle" bgcolor="#4992f0" style="border-radius:6px;background-color:#4992f0;background-image:linear-gradient(90deg, #54bf6b 0%, #4992f0d9 100%);mso-padding-alt:14px 40px;">
+                                        <a href="[VAR_PORTAL_LINK]" style="display:inline-block;color:#ffffff !important;font-size:18px;font-weight:600;text-decoration:none;border-radius:6px;line-height:48px;padding:14px 40px;border:1px solid #4992f0;background-color:#4992f0;background-image:linear-gradient(90deg, #54bf6b 0%, #4992f0d9 100%);font-family:'Mada', Arial, sans-serif;mso-hide:none;">
+                                          Access Your Portal
+                                        </a>
+                                      </td>
+                                    </tr>
+                                  </table>
+                                  <!--<![endif]-->
                                 </td>
                               </tr>
                             </table>

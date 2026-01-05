@@ -18,11 +18,16 @@ const HomeCalendar = () => {
   );
 
   // Fetch task counts for current month
-  const { data: taskCounts } = useGetTaskCountsByMonthQuery({
-    month: currentMonth,
-    group_by: homeTasksConfig.tasks_group_by || 0,
-    time_zone: homeTasksConfig.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-  });
+  const { data: taskCounts } = useGetTaskCountsByMonthQuery(
+    {
+      month: currentMonth,
+      group_by: homeTasksConfig.tasks_group_by || 0,
+      time_zone: homeTasksConfig.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+    },
+    {
+      refetchOnMountOrArgChange: true,
+    }
+  );
 
   // Create a map for quick lookup
   const countsByDate = useMemo(() => {

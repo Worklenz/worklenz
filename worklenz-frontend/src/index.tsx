@@ -8,10 +8,10 @@ import './i18n';
 import { Provider } from 'react-redux';
 import { store } from './app/store';
 import { applyCssVariables } from './styles/colors';
-import { ConfigProvider, theme } from '@/shared/antd-imports';
-import { colors } from './styles/colors';
+import { ConfigProvider } from '@/shared/antd-imports';
 import { getInitialTheme } from './utils/get-initial-theme';
 import { initializePerformanceMonitoring } from './utils/enhanced-performance-monitoring';
+import { getThemeConfig } from './config/theme.config';
 
 const initialTheme = getInitialTheme();
 
@@ -27,19 +27,7 @@ document.documentElement.classList.add(initialTheme);
 document.documentElement.style.colorScheme = initialTheme;
 
 root.render(
-  <ConfigProvider
-    theme={{
-      algorithm: initialTheme === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
-      components: {
-        Layout: {
-          colorBgLayout: initialTheme === 'dark' ? colors.darkGray : '#fafafa',
-        },
-        Spin: {
-          colorPrimary: initialTheme === 'dark' ? '#fff' : '#1890ff',
-        },
-      },
-    }}
-  >
+  <ConfigProvider theme={getThemeConfig(initialTheme)}>
     <Provider store={store}>
       <React.StrictMode>
         <App />

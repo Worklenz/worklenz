@@ -13,6 +13,7 @@ import {
   TaskGroup,
   TaskGrouping,
   getSortOrderField,
+  DuplicateTask,
 } from '@/types/task-management.types';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
 import { RootState } from '@/app/store';
@@ -21,6 +22,7 @@ import {
   ITaskListConfigV2,
   ITaskListV3Response,
 } from '@/api/tasks/tasks.api.service';
+import duplicateTaskApiService from '@/api/tasks/task-duplicate.api.service';
 import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';
 import logger from '@/utils/errorLogger';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
@@ -73,6 +75,8 @@ const initialState: TaskManagementState = {
   // Add sort-related state
   sortField: '',
   sortOrder: 'ASC',
+  isOpenDuplicateTaskModal: false,
+  duplicateTask: {}
 };
 
 // Async thunk to fetch tasks from API
@@ -175,6 +179,7 @@ export const fetchTasks = createAsyncThunk(
             })) || [],
           dueDate: task.dueDate,
           startDate: task.startDate,
+          completedAt: task.completedAt || task.completed_at || undefined,
           timeTracking: {
             estimated: convertTimeValue(task.total_time),
             logged: convertTimeValue(task.time_spent),
@@ -184,6 +189,7 @@ export const fetchTasks = createAsyncThunk(
           updatedAt: task.updatedAt || task.updated_at || new Date().toISOString(),
           created_at: task.createdAt || task.created_at || new Date().toISOString(),
           updated_at: task.updatedAt || task.updated_at || new Date().toISOString(),
+          completed_at: task.completedAt || task.completed_at || undefined,
           order: typeof task.sort_order === 'number' ? task.sort_order : 0,
           // Ensure all Task properties are mapped, even if undefined in API response
           sub_tasks: task.sub_tasks || [],
@@ -197,6 +203,7 @@ export const fetchTasks = createAsyncThunk(
           comments_count: task.comments_count || 0,
           attachments_count: task.attachments_count || 0,
           has_dependencies: task.has_dependencies || false,
+          has_subscribers: task.has_subscribers || false,
           schedule_id: task.schedule_id || null,
           reporter: task.reporter || undefined,
         }))
@@ -308,6 +315,7 @@ export const fetchTasksV3 = createAsyncThunk(
             ) || [],
           dueDate: task.dueDate,
           startDate: task.startDate,
+          completedAt: task.completedAt || task.completed_at || undefined,
           timeTracking: {
             estimated: task.timeTracking?.estimated || 0,
             logged: task.timeTracking?.logged || 0,
@@ -318,10 +326,13 @@ export const fetchTasksV3 = createAsyncThunk(
           updatedAt: task.updatedAt || task.updated_at || now,
           created_at: task.createdAt || task.created_at || now,
           updated_at: task.updatedAt || task.updated_at || now,
+          completed_at: task.completedAt || task.completed_at || undefined,
           order: typeof task.sort_order === 'number' ? task.sort_order : 0,
           sub_tasks: task.sub_tasks || [],
           sub_tasks_count: task.sub_tasks_count || 0,
-          show_sub_tasks: task.show_sub_tasks || false,
+          // Auto-expand tasks that have filtered children (descendants matching the filter)
+          show_sub_tasks: task.show_sub_tasks || task.has_filtered_children || false,
+          has_filtered_children: task.has_filtered_children || false,
           parent_task_id: task.parent_task_id || undefined,
           weight: task.weight || 0,
           color: task.color || undefined,
@@ -330,6 +341,7 @@ export const fetchTasksV3 = createAsyncThunk(
           comments_count: task.comments_count || 0,
           attachments_count: task.attachments_count || 0,
           has_dependencies: task.has_dependencies || false,
+          has_subscribers: task.has_subscribers || false,
           schedule_id: task.schedule_id || null,
           reporter: task.reporter || undefined,
         };
@@ -364,19 +376,35 @@ export const fetchSubTasks = createAsyncThunk(
       const state = getState() as RootState;
       const currentGrouping = state.grouping.currentGrouping;
 
+      // Get active filters from taskReducer (same as fetchTasksV3)
+      const selectedLabels = state.taskReducer.labels
+        .filter((l: any) => l.selected && l.id)
+        .map((l: any) => l.id)
+        .join(' ');
+
+      const selectedAssignees = state.taskReducer.taskAssignees
+        .filter((m: any) => m.selected && m.id)
+        .map((m: any) => m.id)
+        .join(' ');
+
+      const selectedPriorities = state.taskReducer.priorities.join(' ');
+
+      // Get search value from taskManagement slice
+      const searchValue = state.taskManagement.search || '';
+
       const config: ITaskListConfigV2 = {
         id: projectId,
         archived: false,
         group: currentGrouping || '',
         field: '',
         order: '',
-        search: '',
-        statuses: '',
-        members: '',
+        search: searchValue,
+        statuses: '', // Status filter not typically applied to subtasks
+        members: selectedAssignees,
         projects: '',
         isSubtasksInclude: false,
-        labels: '',
-        priorities: '',
+        labels: selectedLabels,
+        priorities: selectedPriorities,
         parent_task: taskId,
       };
 
@@ -404,6 +432,22 @@ export const refreshTaskProgress = createAsyncThunk(
         return rejectWithValue(error.message);
       }
       return rejectWithValue('Failed to refresh task progress');
+    }
+  }
+);
+
+export const duplicateTask = createAsyncThunk(
+  'taskManagement/duplicateTask',
+  async ({projectId, taskId, duplicateOptions}: {projectId: string, taskId: string, duplicateOptions: any },{ rejectWithValue }) => {
+    try {
+      const response = await duplicateTaskApiService.duplicate({task_id: taskId, project_id: projectId, options: duplicateOptions});
+      return response;
+    } catch (error) {
+      logger.error('Failed to duplicate task', error);
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to duplicate task');
     }
   }
 );
@@ -784,6 +828,12 @@ const taskManagementSlice = createSlice({
     setArchived: (state, action: PayloadAction<boolean>) => {
       state.archived = action.payload;
     },
+    setDuplicateTaskModalStatus: (state, action: PayloadAction<boolean>) => {
+      state.isOpenDuplicateTaskModal = action.payload;
+    },
+    setDuplicateTask: (state, action: PayloadAction<DuplicateTask>) => {
+      state.duplicateTask = action.payload;
+    },
     toggleArchived: state => {
       state.archived = !state.archived;
     },
@@ -1078,7 +1128,15 @@ const taskManagementSlice = createSlice({
             parent_task_id: parentTaskId,
             is_sub_task: true,
             sub_tasks_count: subtask.sub_tasks_count || 0, // Use actual count from backend
-            show_sub_tasks: false,
+            // Auto-expand subtasks that have filtered children
+            show_sub_tasks: subtask.has_filtered_children || false,
+            has_filtered_children: subtask.has_filtered_children || false,
+            // Add indicator fields for icons
+            comments_count: subtask.comments_count || 0,
+            has_subscribers: subtask.has_subscribers || false,
+            attachments_count: subtask.attachments_count || 0,
+            has_dependencies: subtask.has_dependencies || false,
+            schedule_id: subtask.schedule_id || null,
           }));
 
           // Update parent task with subtasks
@@ -1195,6 +1253,8 @@ export const {
   setSelectedPriorities,
   setSearch,
   setArchived,
+  setDuplicateTaskModalStatus,
+  setDuplicateTask,
   toggleArchived,
   setSortField,
   setSortOrder,
@@ -1258,6 +1318,20 @@ export const selectTasksByPhase = createSelector(
 
 // Add archived selector
 export const selectArchived = (state: RootState) => state.taskManagement.archived;
+
+// Memoized selector for active filters to prevent unnecessary re-renders
+export const selectActiveFilters = createSelector(
+  [
+    (state: RootState) => state.taskReducer?.taskAssignees || [],
+    (state: RootState) => state.taskReducer?.labels || [],
+    (state: RootState) => state.taskReducer?.priorities || [],
+  ],
+  (taskAssignees, labels, priorities) => ({
+    members: taskAssignees.filter((m: any) => m.selected).map((m: any) => m.id),
+    labels: labels.filter((l: any) => l.selected).map((l: any) => l.id),
+    priorities: priorities,
+  })
+);
 
 // Export the reducer as default
 export default taskManagementSlice.reducer;

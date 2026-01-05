@@ -127,7 +127,11 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
   }
 
   @HandleExceptions()
+  @HandleExceptions()
   protected static async getCustomTemplateData(template_id: string) {
+    // Use recursive CTE to ensure deterministic hierarchical ordering
+    // This guarantees parents are always returned before their children
+    // and the order is stable across multiple query executions
     const q = `SELECT id,
                         name,
                         notes AS description,
@@ -156,29 +160,56 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                                         color_code
                                 FROM task_priorities) rec) AS priorities,
                         (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
-                           FROM (SELECT id AS original_task_id,
-                                        name,
-                                        parent_task_id,
-                                        description,
-                                        total_minutes,
-                                        (SELECT name FROM cpt_task_statuses cts WHERE status_id = cts.id) AS status_name,
-                                        (SELECT name FROM task_priorities tp WHERE priority_id = tp.id) AS priority_name,
-
-                                        (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
+                           FROM (
+                                WITH RECURSIVE task_tree AS (
+                                    -- Base case: root tasks (no parent)
+                                    SELECT id, name, parent_task_id, description, total_minutes, 
+                                           sort_order, task_no, status_sort_order, priority_sort_order, phase_sort_order,
+                                           status_id, priority_id, template_id,
+                                           0 AS depth,
+                                           ARRAY[LPAD(sort_order::TEXT, 10, '0'), LPAD(COALESCE(task_no, 0)::TEXT, 10, '0'), id::TEXT] AS path
+                                    FROM cpt_tasks
+                                    WHERE template_id = pt.id AND parent_task_id IS NULL
+                                    
+                                    UNION ALL
+                                    
+                                    -- Recursive case: child tasks
+                                    SELECT c.id, c.name, c.parent_task_id, c.description, c.total_minutes,
+                                           c.sort_order, c.task_no, c.status_sort_order, c.priority_sort_order, c.phase_sort_order,
+                                           c.status_id, c.priority_id, c.template_id,
+                                           tt.depth + 1,
+                                           tt.path || ARRAY[LPAD(c.sort_order::TEXT, 10, '0'), LPAD(COALESCE(c.task_no, 0)::TEXT, 10, '0'), c.id::TEXT]
+                                    FROM cpt_tasks c
+                                    INNER JOIN task_tree tt ON c.parent_task_id = tt.id
+                                    WHERE c.template_id = pt.id
+                                )
+                                SELECT tt.id AS original_task_id,
+                                       tt.name,
+                                       tt.parent_task_id,
+                                       tt.description,
+                                       tt.total_minutes,
+                                       tt.sort_order,
+                                       tt.task_no,
+                                       tt.status_sort_order,
+                                       tt.priority_sort_order,
+                                       tt.phase_sort_order,
+                                       (SELECT name FROM cpt_task_statuses cts WHERE tt.status_id = cts.id) AS status_name,
+                                       (SELECT name FROM task_priorities tp WHERE tt.priority_id = tp.id) AS priority_name,
+                                       (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                                         FROM (SELECT name
                                                 FROM cpt_phases pl
                                                 WHERE pl.id =
-                                                    (SELECT phase_id FROM cpt_task_phases WHERE task_id = cpt_tasks.id)) rec) AS phases,
-                                        (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
+                                                (SELECT phase_id FROM cpt_task_phases WHERE task_id = tt.id)) rec) AS phases,
+                                       (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                                             FROM (SELECT name
                                                     FROM team_labels pl
                                                             LEFT JOIN cpt_task_labels cttl ON pl.id = cttl.label_id
-                                                    WHERE cttl.task_id = cpt_tasks.id) rec) AS labels
-                                FROM cpt_tasks
-                                WHERE template_id = pt.id
-                                ORDER BY parent_task_id NULLS FIRST) rec) AS tasks
+                                                    WHERE cttl.task_id = tt.id) rec) AS labels
+                                FROM task_tree tt
+                                ORDER BY path
+                           ) rec) AS tasks
                     FROM custom_project_templates pt
-                    WHERE id =  $1;`;
+                    WHERE id = $1;`;
     const result = await db.query(q, [template_id]);
     const [data] = result.rows;
     return data;
@@ -352,12 +383,13 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
   }
 
   @HandleExceptions()
+  @HandleExceptions()
   protected static async getTasksByProject(project_id: string, taskIncludes: ITaskIncludes) {
     let taskIncludesClause = "";
 
     if (taskIncludes.description) taskIncludesClause += " description,";
     if (taskIncludes.estimation) taskIncludesClause += " total_minutes,";
-    if (taskIncludes.status) taskIncludesClause += ` (SELECT name FROM task_statuses WHERE status_id = id) AS status_name,`;
+    if (taskIncludes.status) taskIncludesClause += ` (SELECT name FROM task_statuses WHERE task_statuses.id = t.status_id) AS status_name,`;
     if (taskIncludes.labels) {
       taskIncludesClause += ` (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                     FROM (SELECT (SELECT name FROM team_labels WHERE id = task_labels.label_id)
@@ -377,11 +409,15 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                 name,
                 sort_order,
                 task_no,
+                status_sort_order,
+                priority_sort_order,
+                phase_sort_order,
                 ${taskIncludesClause}
                 priority_id
             FROM tasks t
                 WHERE project_id = $1
-                AND archived IS FALSE ORDER BY parent_task_id NULLS FIRST;`;
+                AND archived IS FALSE
+            ORDER BY parent_task_id NULLS FIRST, sort_order ASC, task_no ASC;`;
     const result = await db.query(q, [project_id]);
     return result.rows;
   }
@@ -417,20 +453,45 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
 
   @HandleExceptions()
   protected static async insertCustomTemplateTasks(body: IProjectTemplateTask[], template_id: string, team_id: string, status = true) {
+    // Two-pass approach to handle nested subtasks (3+ levels):
+    // Pass 1: Insert all tasks without parent_task_id, storing original_task_id for mapping
+    // Pass 2: Update parent_task_id relationships using the mapping
+
+    const taskIdMap: Map<string, string> = new Map(); // original task id -> new cpt_task id
+
+    // Pass 1: Insert all tasks without parent relationships
     for await (const task of body) {
-      const { name, description, total_minutes, sort_order, priority_id, status_name, task_no, parent_task_id, id, phase_name } = task;
+      const { name, description, total_minutes, sort_order, priority_id, status_name, task_no, id, phase_name, status_sort_order, priority_sort_order, phase_sort_order } = task;
 
       const q = `INSERT INTO cpt_tasks(name, description, total_minutes, sort_order, priority_id, template_id, status_id, task_no,
-                      parent_task_id, original_task_id)
+                      parent_task_id, original_task_id, status_sort_order, priority_sort_order, phase_sort_order)
                         VALUES ($1, $2, $3, $4, $5, $6, (SELECT id FROM cpt_task_statuses cts WHERE cts.name = $7 AND cts.template_id = $6), $8,
-                                (SELECT id FROM cpt_tasks WHERE original_task_id = $9 AND template_id = $6), $10)
+                                NULL, $9, $10, $11, $12)
                         RETURNING id;`;
-      const result = await db.query(q, [name, description, total_minutes || 0, sort_order, priority_id, template_id, status_name, task_no, parent_task_id, id]);
+      const result = await db.query(q, [name, description, total_minutes || 0, sort_order, priority_id, template_id, status_name, task_no, id, status_sort_order || 0, priority_sort_order || 0, phase_sort_order || 0]);
       const [data] = result.rows;
+
+      // Store mapping from original task id to new template task id
+      if (id && data.id) {
+        taskIdMap.set(id, data.id);
+      }
 
       if (data.id) {
         if (phase_name) await this.insertCustomTemplateTaskPhases(data.id, template_id, phase_name);
         if (task.labels) await this.insertCustomTemplateTaskLabels(data.id, task.labels, team_id);
+      }
+    }
+
+    // Pass 2: Update parent_task_id relationships
+    for await (const task of body) {
+      if (task.parent_task_id && task.id) {
+        const newTaskId = taskIdMap.get(task.id);
+        const newParentId = taskIdMap.get(task.parent_task_id);
+        
+        if (newTaskId && newParentId) {
+          const updateQ = `UPDATE cpt_tasks SET parent_task_id = $1 WHERE id = $2;`;
+          await db.query(updateQ, [newParentId, newTaskId]);
+        }
       }
     }
   }
@@ -480,16 +541,37 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
     if (!project_id) return;
 
     try {
+      // Two-pass approach to handle nested subtasks (3+ levels):
+      // Pass 1: Insert all tasks without parent_task_id, storing mapping for later
+      // Pass 2: Update parent_task_id relationships using the mapping
+      
+      const templateIdToNewIdMap: Map<string, string> = new Map();
+      const tasksWithParent: Array<{ newId: string; parentTemplateId: string }> = [];
+
+      // Pass 1: Insert all tasks without parent relationships
       for await (const [key, task] of tasks.entries()) {
-        const q = `INSERT INTO tasks(name, project_id, status_id, priority_id, reporter_id, sort_order, parent_task_id, description, total_minutes)
+        const q = `INSERT INTO tasks(name, project_id, status_id, priority_id, reporter_id, sort_order, parent_task_id, description, total_minutes, task_no, status_sort_order, priority_sort_order, phase_sort_order)
                     VALUES ($1, $2, (SELECT id FROM task_statuses ts WHERE ts.name = $3 AND ts.project_id = $2),
-                            (SELECT id FROM task_priorities tp WHERE tp.name = $4), $5, $6, $7, $8, $9)
+                            (SELECT id FROM task_priorities tp WHERE tp.name = $4), $5, $6, NULL, $7, $8, $9, $10, $11, $12)
                     RETURNING id, status_id;`;
 
-        const parent_task: IProjectTemplateTask = tasks.find(t => t.original_task_id === task.parent_task_id) || {};
+        // Use sequential index (key) for ALL sort orders to ensure deterministic ordering
+        // This prevents non-deterministic ordering when importing the same template multiple times
+        const sortOrderValue = key;
 
-        const result = await db.query(q, [task.name, project_id, task.status_name, task.priority_name, user_id, key, parent_task.id, task.description, task.total_minutes ? task.total_minutes : 0]);
+        const result = await db.query(q, [task.name, project_id, task.status_name, task.priority_name, user_id, sortOrderValue, task.description, task.total_minutes ? task.total_minutes : 0, task.task_no, sortOrderValue, sortOrderValue, sortOrderValue]);
         const [data] = result.rows;
+        
+        // Store the mapping from template task ID (original_task_id which is cpt_tasks.id) to newly created task ID
+        if (task.original_task_id) {
+          templateIdToNewIdMap.set(task.original_task_id, data.id);
+        }
+        
+        // Track tasks that have parents for Pass 2
+        if (task.parent_task_id) {
+          tasksWithParent.push({ newId: data.id, parentTemplateId: task.parent_task_id });
+        }
+        
         task.id = data.id;
 
         if (task.phases) {
@@ -512,8 +594,17 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
             old_value: null
           });
         }
-
       }
+
+      // Pass 2: Update parent_task_id relationships
+      for (const { newId, parentTemplateId } of tasksWithParent) {
+        const newParentId = templateIdToNewIdMap.get(parentTemplateId);
+        if (newParentId) {
+          const updateQ = `UPDATE tasks SET parent_task_id = $1 WHERE id = $2;`;
+          await db.query(updateQ, [newParentId, newId]);
+        }
+      }
+
     } catch (error) {
       log_error(error);
     }

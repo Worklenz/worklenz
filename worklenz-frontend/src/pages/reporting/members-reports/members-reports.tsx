@@ -9,7 +9,7 @@ import {
   Typography,
 } from '@/shared/antd-imports';
 import { DownOutlined } from '@/shared/antd-imports';
-import MembersReportsTable from './members-reports-table/members-reports-table';
+import MembersReportsTable from './components/members-reports-table/members-reports-table';
 import TimeWiseFilter from '@/components/reporting/time-wise-filter';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';

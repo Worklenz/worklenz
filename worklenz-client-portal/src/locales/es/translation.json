@@ -3,11 +3,31 @@
     "title": "Portal del Cliente",
     "description": "Inicia sesión en tu cuenta de cliente",
     "email": "Correo electrónico",
+    "emailLabel": "Dirección de Correo Electrónico",
+    "emailRequired": "Por favor ingresa tu correo electrónico",
+    "emailInvalid": "Por favor ingresa un correo electrónico válido",
     "password": "Contraseña",
+    "passwordLabel": "Contraseña",
+    "passwordRequired": "Por favor ingresa tu contraseña",
+    "passwordMin": "La contraseña debe tener al menos 8 caracteres",
     "remember": "Recuérdame",
     "forgot": "¿Olvidaste tu contraseña?",
     "signin": "Iniciar sesión",
+    "success": "¡Inicio de sesión exitoso! Redirigiendo...",
+    "failed": "Error de inicio de sesión. Por favor intenta de nuevo.",
     "invite_only": "Acceso solo por invitación. Contacta a tu gerente de cuenta para obtener acceso."
+  },
+  "forgotPassword": {
+    "description": "Ingresa tu correo electrónico para restablecer tu contraseña",
+    "emailRequired": "Por favor ingresa una dirección de correo electrónico válida",
+    "emailPlaceholder": "Ingresa tu correo electrónico",
+    "resetPasswordButton": "Restablecer Contraseña",
+    "orText": "o",
+    "returnToLoginButton": "Volver al Inicio de Sesión",
+    "successTitle": "Correo de Restablecimiento Enviado",
+    "successMessage": "Si existe una cuenta con este correo electrónico, recibirás instrucciones para restablecer tu contraseña en breve.",
+    "backToLogin": "Volver al Inicio de Sesión",
+    "errorMessage": "Error al enviar el correo de restablecimiento de contraseña. Por favor, inténtalo de nuevo."
   },
   "invite": {
     "description": "Completa la configuración de tu cuenta",
@@ -25,7 +45,17 @@
     "email_placeholder": "Dirección de Correo Electrónico",
     "password_required": "Por favor ingresa una contraseña",
     "password_min": "La contraseña debe tener al menos 8 caracteres",
+    "password_max": "La contraseña debe tener como máximo 32 caracteres",
+    "password_pattern": "La contraseña debe incluir mayúsculas, minúsculas, número y carácter especial",
+    "password_guideline": "La contraseña debe tener al menos 8 caracteres, incluir letras mayúsculas y minúsculas, un número y un carácter especial.",
     "password_placeholder": "Crear Contraseña",
+    "passwordChecklist": {
+      "minLength": "Al menos 8 caracteres",
+      "uppercase": "Una letra mayúscula",
+      "lowercase": "Una letra minúscula",
+      "number": "Un número",
+      "special": "Un carácter especial"
+    },
     "confirm_password_required": "Por favor confirma tu contraseña",
     "confirm_password_placeholder": "Confirmar Contraseña",
     "password_mismatch": "Las contraseñas no coinciden",
@@ -102,7 +132,9 @@
     "failed_to_accept_invite": "Error al aceptar la invitación",
     "failed_to_validate_invite": "Error al validar la invitación",
     "network_error": "Error de red. Por favor verifica tu conexión.",
-    "server_error": "Error del servidor. Por favor intenta de nuevo más tarde."
+    "server_error": "Error del servidor. Por favor intenta de nuevo más tarde.",
+    "worklenz_account_found_title": "Cuenta de Worklenz encontrada",
+    "worklenz_account_found_message": "Este correo electrónico ya está registrado con una cuenta de Worklenz. Por favor usa tu contraseña existente de Worklenz para registrarte en el portal del cliente."
   },
   "dashboard": {
     "title": "Panel",
@@ -224,7 +256,11 @@
     "noAnswer": "Sin respuesta proporcionada",
     "noFilesUploaded": "No se subieron archivos",
     "loadingQuestions": "Cargando preguntas...",
-    "enterAnswer": "Ingrese su respuesta"
+    "enterAnswer": "Ingrese su respuesta",
+    "noComments": "Aún no hay comentarios. ¡Inicia la conversación!",
+    "teamMember": "Equipo",
+    "client": "Cliente",
+    "pressEnterToSend": "Presiona Enter para enviar, Shift+Enter para nueva línea"
   },
   "invoices": {
     "title": "Facturas",
@@ -252,6 +288,7 @@
     "title": "Chats",
     "description": "Comunícate con tus proveedores de servicios",
     "conversations": "Conversaciones",
+    "chatTitle": "Chat - {{date}}",
     "chatMessages": "Mensajes del Chat",
     "selectConversation": "Selecciona una conversación",
     "selectToStart": "Selecciona una conversación para comenzar a chatear",

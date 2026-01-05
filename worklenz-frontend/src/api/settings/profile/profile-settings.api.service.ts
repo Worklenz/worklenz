@@ -92,4 +92,11 @@ export const profileSettingsApiService = {
     );
     return response.data;
   },
+
+  getClientPortalBaseUrl: async (): Promise<IServerResponse<{ baseUrl: string }>> => {
+    const response = await apiClient.get<IServerResponse<{ baseUrl: string }>>(
+      `${rootUrl}/client-portal/base-url`
+    );
+    return response.data;
+  },
 };

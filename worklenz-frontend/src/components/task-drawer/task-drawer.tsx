@@ -275,8 +275,10 @@ const TaskDrawer = () => {
     destroyOnClose: true,
     title: <TaskDrawerHeader inputRef={taskNameInputRef} t={t} />,
     footer: renderFooter(),
-    bodyStyle: getBodyStyle(),
-    footerStyle: getFooterStyle(),
+    styles: {
+      body: getBodyStyle(),
+      footer: getFooterStyle(),
+    },
     closeIcon: getCloseIcon(),
   };
 

@@ -107,7 +107,26 @@ export default class SlackController extends WorklenzControllerBase {
           : status === "cancelled"
             ? "SLACK_AUTH_CANCELLED"
             : "SLACK_AUTH_ERROR";
-      const fallbackUrl = `${frontendUrl}/settings/integrations?slack=${status}`;
+
+      const title = status === "success"
+        ? "Integration Complete!"
+        : status === "cancelled"
+          ? "Integration Cancelled"
+          : "Integration Failed";
+
+      const message = status === "success"
+        ? "Your Slack workspace has been successfully connected to Worklenz."
+        : status === "cancelled"
+          ? "The Slack integration was cancelled."
+          : "Failed to connect your Slack workspace. Please try again.";
+
+      const iconColor = status === "success" ? "#10b981" : status === "cancelled" ? "#f59e0b" : "#ef4444";
+      const icon = status === "success"
+        ? "✓"
+        : status === "cancelled"
+          ? "ℹ"
+          : "✕";
+
       const html = `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -126,67 +145,119 @@ export default class SlackController extends WorklenzControllerBase {
       }
       .container {
         text-align: center;
-        padding: 24px;
+        padding: 40px;
         background: #fff;
-        border-radius: 12px;
+        border-radius: 16px;
         box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1);
+        max-width: 400px;
       }
-      a {
-        color: #2563eb;
-        text-decoration: none;
+      .icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: ${iconColor};
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        margin: 0 auto 20px;
+        font-weight: bold;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 24px;
         font-weight: 600;
       }
-      a:hover {
-        text-decoration: underline;
+      p {
+        margin: 0 0 24px;
+        color: #64748b;
+        font-size: 15px;
+        line-height: 1.5;
+      }
+      .close-btn {
+        background: #1890ff;
+        color: white;
+        border: none;
+        padding: 10px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .close-btn:hover {
+        background: #0c7cd5;
+      }
+      .auto-close {
+        margin-top: 16px;
+        font-size: 13px;
+        color: #94a3b8;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <h1>Slack Authorization ${status === "success" ? "Complete" : "Notice"}</h1>
-      <p>You can safely close this window.</p>
-      <p><a href="${fallbackUrl}">Return to Worklenz</a></p>
+      <div class="icon">${icon}</div>
+      <h1>${title}</h1>
+      <p>${message}</p>
+      <button class="close-btn" onclick="window.close()">Close Window</button>
+      <p class="auto-close" id="autoCloseMsg">This window will close automatically in <span id="countdown">3</span> seconds...</p>
     </div>
     <script>
       (function() {
         var payload = { type: ${JSON.stringify(messageType)}, status: ${JSON.stringify(status)} };
         var targetOrigin = ${JSON.stringify(frontendOrigin)};
-        var fallbackUrl = ${JSON.stringify(fallbackUrl)};
         var closed = false;
-        
-        // Try to notify parent window and close
+        var countdown = 3;
+
+        // Countdown timer
+        var countdownInterval = setInterval(function() {
+          countdown--;
+          var countdownEl = document.getElementById('countdown');
+          if (countdownEl) {
+            countdownEl.textContent = countdown;
+          }
+
+          if (countdown <= 0) {
+            clearInterval(countdownInterval);
+          }
+        }, 1000);
+
+        // Try to notify parent window and close after countdown
         try {
           if (window.opener && !window.opener.closed) {
             window.opener.postMessage(payload, targetOrigin);
-            // Give a small delay to ensure message is sent before closing
+
+            // Close after 3 seconds
             setTimeout(function() {
               if (!closed) {
                 window.close();
                 closed = true;
               }
-            }, 100);
-            // Also try immediate close as fallback
+            }, 3000);
+
+            // If auto-close doesn't work, hide the countdown message
             setTimeout(function() {
-              if (!closed && window.opener && !window.opener.closed) {
-                window.close();
-                closed = true;
+              if (!closed) {
+                var autoCloseMsg = document.getElementById('autoCloseMsg');
+                if (autoCloseMsg) {
+                  autoCloseMsg.style.display = 'none';
+                }
               }
-            }, 500);
-            return;
+            }, 3500);
+          } else {
+            // No opener, just close after countdown
+            setTimeout(function() {
+              window.close();
+            }, 3000);
           }
         } catch (err) {
-          console.error('Slack OAuth popup could not notify opener', err);
-        }
-        
-        // If we couldn't close, redirect to fallback URL
-        if (!closed) {
-          try {
-            window.location.replace(fallbackUrl);
-          } catch (err) {
-            console.error('Failed to redirect:', err);
-            // Last resort: try setting location.href
-            window.location.href = fallbackUrl;
-          }
+          console.error('Slack OAuth popup error', err);
+          // Still try to close after countdown
+          setTimeout(function() {
+            window.close();
+          }, 3000);
         }
       })();
     </script>
@@ -227,8 +298,7 @@ export default class SlackController extends WorklenzControllerBase {
 
       if (!tokenData.ok) {
         log_error(tokenData);
-        res.redirect(`${frontendUrl}/settings/integrations?slack=error`);
-        return res as IWorkLenzResponse;
+        return sendPopupResponse("error");
       }
 
       // Store workspace connection

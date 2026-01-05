@@ -87,5 +87,6 @@
   "capacityAvailableForNewProjects": "Kapaciteti i disponueshëm për projekte të reja",
   "optimal": "Optimal",
   "underUtilized": "I Përdorur Pak",
-  "overUtilized": "I Përdorur Shumë"
+  "overUtilized": "I Përdorur Shumë",
+  "noDataAvailable": "Nuk ka të dhëna të disponueshme"
 }

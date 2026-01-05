@@ -45,6 +45,8 @@ export const evt_project_insights_members_visit = 'project_insights_members_visi
 export const evt_project_insights_tasks_visit = 'project_insights_tasks_visit';
 export const evt_project_files_visit = 'project_files_visit';
 export const evt_project_members_visit = 'project_members_visit';
+export const evt_project_task_duplicate = 'project_task_duplicate';
+export const evt_project_sub_task_duplicate = 'project_sub_task_duplicate';
 
 // Project Actions
 export const evt_project_task_create = 'project_task_create';
@@ -85,6 +87,7 @@ export const evt_project_task_list_bulk_assign_me = 'project_task_list_bulk_assi
 export const evt_project_task_list_bulk_assign_members = 'project_task_list_bulk_assign_members';
 export const evt_project_task_list_bulk_archive = 'project_task_list_bulk_archive';
 export const evt_project_task_list_bulk_delete = 'project_task_list_bulk_delete';
+export const evt_project_task_list_bulk_change_due_date = 'project_task_list_bulk_change_due_date';
 export const evt_project_task_list_context_menu_assign_me =
   'project_task_list_context_menu_assign_me';
 export const evt_project_task_list_context_menu_archive = 'project_task_list_context_menu_archive';

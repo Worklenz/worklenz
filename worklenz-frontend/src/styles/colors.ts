@@ -1,7 +1,9 @@
 // colors.ts
+// Aligned with client-portal dark mode colors for consistency
 export const colors = {
   white: '#fff',
-  darkGray: '#1E1E1E',
+  darkGray: '#141414', // Updated to match client-portal layout background
+  darkContainer: '#1f1f1f', // Added for consistent container background in dark mode
   lightGray: '#707070',
   deepLightGray: '#d1d0d3',
   lightBeige: '#fde8b5',
