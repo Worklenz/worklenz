@@ -148,6 +148,25 @@ app.options("*", cors());
 //   app.use(sqlInjectionDetectorWithBlocking);
 // }
 
+// EARLY REQUEST LOGGING - This runs for ALL requests to verify they reach the server
+app.use((req, res, next) => {
+  // Log ALL requests to /api/client-portal immediately
+  if (req.originalUrl?.includes('/client-portal') || req.path?.includes('/client-portal')) {
+    console.log('='.repeat(80));
+    console.log(`[EARLY LOG] ${new Date().toISOString()} - ${req.method} ${req.originalUrl || req.path}`);
+    console.log(`[EARLY LOG] Path: ${req.path}, OriginalUrl: ${req.originalUrl}, URL: ${req.url}`);
+    console.log(`[EARLY LOG] Headers:`, {
+      origin: req.headers.origin,
+      referer: req.headers.referer,
+      'x-client-token': req.headers['x-client-token'] ? 'PRESENT' : 'MISSING',
+      'x-csrf-token': req.headers['x-csrf-token'] ? 'PRESENT' : 'MISSING',
+      'content-type': req.headers['content-type']
+    });
+    console.log('='.repeat(80));
+  }
+  next();
+});
+
 // Session setup - must be before passport and CSRF
 app.use(sessionMiddleware);
 
@@ -201,6 +220,18 @@ const {
 
 // Only exclude: webhooks, public routes, and specific invitation endpoints
 app.use((req, res, next) => {
+  // AGGRESSIVE LOGGING - Log ALL requests to see what's happening
+  console.log(`[CSRF MIDDLEWARE] ${req.method} ${req.path}`, {
+    originalUrl: req.originalUrl,
+    url: req.url,
+    baseUrl: req.baseUrl,
+    headers: {
+      origin: req.headers.origin,
+      referer: req.headers.referer,
+      'x-client-token': req.headers['x-client-token'] ? 'PRESENT' : 'MISSING'
+    }
+  });
+
   const stateChangingMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
   const isStateChanging = stateChangingMethods.includes(req.method);
   
@@ -211,11 +242,13 @@ app.use((req, res, next) => {
   
   // Always exclude webhooks (external services can't provide CSRF tokens)
   if (path.startsWith("/webhook/") || originalUrl.startsWith("/webhook/")) {
+    console.log(`[CSRF] Excluding webhook: ${path}`);
     return next();
   }
   
   // Exclude public routes (read-only or public access)
   if (path.startsWith("/public/") || originalUrl.startsWith("/public/")) {
+    console.log(`[CSRF] Excluding public route: ${path}`);
     return next();
   }
   
@@ -228,6 +261,7 @@ app.use((req, res, next) => {
     originalUrl.includes("/client-portal/invitation/") ||
     originalUrl.includes("/client-portal/handle-organization-invite")
   ) {
+    console.log(`[CSRF] Excluding invitation route: ${path}`);
     return next();
   }
   
@@ -247,9 +281,11 @@ app.use((req, res, next) => {
     baseUrl.includes("/client-portal");
   
   if (isClientPortalRoute) {
-    console.log(`[CSRF] Excluding client portal route from CSRF: ${req.method} path=${path}, originalUrl=${originalUrl}, baseUrl=${baseUrl}`);
+    console.log(`[CSRF] ✅ EXCLUDING client portal route from CSRF: ${req.method} path=${path}, originalUrl=${originalUrl}, baseUrl=${baseUrl}`);
     return next();
   }
+  
+  console.log(`[CSRF] Route NOT excluded, will check CSRF: ${req.method} ${path}`);
   
   // Exclude the CSRF token endpoint itself (GET requests to fetch tokens)
   if (req.path === "/csrf-token") {
@@ -281,8 +317,20 @@ app.use((req, res, next) => {
   // This protects POST, PUT, DELETE, PATCH operations from CSRF attacks
   // GET, OPTIONS, HEAD requests don't need CSRF protection
   if (isStateChanging) {
-    console.log(`[CSRF] Applying CSRF protection to: ${req.method} ${path}`);
-    csrfSynchronisedProtection(req, res, next);
+    console.log(`[CSRF] ⚠️ APPLYING CSRF protection to: ${req.method} ${path} (originalUrl: ${originalUrl})`);
+    console.log(`[CSRF] This should NOT happen for client portal routes!`);
+    csrfSynchronisedProtection(req, res, (err) => {
+      if (err) {
+        console.error(`[CSRF] CSRF protection error:`, err);
+        console.error(`[CSRF] Request details:`, {
+          method: req.method,
+          path: req.path,
+          originalUrl: req.originalUrl,
+          url: req.url
+        });
+      }
+      next(err);
+    });
   } else {
     next();
   }
@@ -388,6 +436,17 @@ if (isInternalServer()) {
 // CSRF error handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   if (err === invalidCsrfTokenError) {
+    console.error(`[CSRF ERROR HANDLER] Invalid CSRF token for ${req.method} ${req.path}`, {
+      originalUrl: req.originalUrl,
+      url: req.url,
+      baseUrl: req.baseUrl,
+      headers: {
+        origin: req.headers.origin,
+        referer: req.headers.referer,
+        'x-client-token': req.headers['x-client-token'] ? 'PRESENT' : 'MISSING',
+        'x-csrf-token': req.headers['x-csrf-token'] ? 'PRESENT' : 'MISSING'
+      }
+    });
     return res.status(403).json({
       done: false,
       message: "Invalid CSRF token",
