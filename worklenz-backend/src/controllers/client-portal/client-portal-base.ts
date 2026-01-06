@@ -38,7 +38,7 @@ export default abstract class ClientPortalControllerBase extends WorklenzControl
   /**
    * Helper method to create a notification in the client_portal_notifications table
    */
-  protected static async createNotification(
+  public static async createNotification(
     clientId: string,
     organizationId: string,
     type: string,

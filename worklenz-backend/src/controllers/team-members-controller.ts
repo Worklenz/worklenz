@@ -8,6 +8,7 @@ import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import db from "../config/db";
 import { IPassportSession } from "../interfaces/passport-session";
 import { ServerResponse } from "../models/server-response";
+import { SqlHelper } from "../shared/sql-helpers";
 import { sendInvitationEmail } from "../shared/email-templates";
 import { IO } from "../shared/io";
 import { SocketEvents } from "../socket.io/events";
@@ -682,23 +683,39 @@ export default class TeamMembersController extends WorklenzControllerBase {
   public static async getProjectsByTeamMember(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { project, status, startDate, endDate } = req.query;
 
-    let projectsString, statusString, dateFilterString1, dateFilterString2, dateFilterString3 = "";
+    // Use parameterized queries
+    let projectsString = "";
+    let statusString = "";
+    let dateFilterString1 = "";
+    let dateFilterString2 = "";
+    let dateFilterString3 = "";
+    const params: any[] = [];
+    let paramOffset = 1;
 
     if (project && typeof project === "string") {
-      const projects = project.split(",").map(s => `'${s}'`).join(",");
-      projectsString = `AND project_id IN (${projects})`;
+      const projectIds = project.split(",").filter(id => id.trim());
+      const { clause, params: projectParams } = SqlHelper.buildInClause(projectIds, paramOffset);
+      projectsString = `AND project_id IN (${clause})`;
+      params.push(...projectParams);
+      paramOffset += projectParams.length;
     }
 
     if (status && typeof status === "string") {
-      const statuses = status.split(",").map(s => `'${s}'`).join(",");
-      statusString = `AND status_id IN (${statuses})`;
+      const statusIds = status.split(",").filter(id => id.trim());
+      const { clause, params: statusParams } = SqlHelper.buildInClause(statusIds, paramOffset);
+      statusString = `AND status_id IN (${clause})`;
+      params.push(...statusParams);
+      paramOffset += statusParams.length;
     }
 
     if (startDate && endDate) {
-      dateFilterString1 = `AND twl2.created_at::DATE BETWEEN ${startDate}::DATE AND ${endDate}::DATE) AS total_logged_time`;
+      // Fix: Use parameterized dates
+      dateFilterString1 = `AND twl2.created_at::DATE BETWEEN $${paramOffset}::DATE AND $${paramOffset + 1}::DATE) AS total_logged_time`;
       dateFilterString2 = `LEFT JOIN tasks t ON p.id = t.project_id LEFT JOIN task_work_log twl ON t.id = twl.task_id`;
       dateFilterString3 = `AND twl.user_id = (SELECT user_id FROM team_members WHERE id = project_members.team_member_id)
-                          AND twl.created_at::DATE BETWEEN ${startDate}::DATE AND ${endDate}::DATE;`;
+                          AND twl.created_at::DATE BETWEEN $${paramOffset}::DATE AND $${paramOffset + 1}::DATE;`;
+      params.push(startDate, endDate);
+      paramOffset += 2;
     }
 
     const q = `
@@ -721,7 +738,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
                   ${dateFilterString2}
         WHERE team_member_id = $1 ${projectsString} ${statusString} ${dateFilterString3}
         ORDER BY name)`;
-    const result = await db.query(q, [req.params.id]);
+    const result = await db.query(q, [req.params.id, ...params]);
 
     result.rows.forEach((element: { total_logged_time: string; }) => {
       element.total_logged_time = formatDuration(moment.duration(element.total_logged_time || "0", "seconds"));
@@ -745,32 +762,50 @@ export default class TeamMembersController extends WorklenzControllerBase {
   }
 
   public static async getTeamMemberInsightData(team_id: string | undefined, start: any, end: any, project: any, status: any, searchQuery: string, sortField: string, sortOrder: string, size: any, offset: any, all: any) {
+    // Use parameterized queries
     let timeRangeTaskWorkLog = "";
     let projectsFilterString = "";
     let statusFilterString = "";
+    const params: any[] = [team_id || null];
+    let paramOffset = 2; // Start after team_id ($1)
 
     if (start && end) {
+      // Fix: Use parameterized dates
       timeRangeTaskWorkLog = `AND EXISTS(SELECT id FROM task_work_log
-        WHERE created_at::DATE BETWEEN '${start}'::DATE AND '${end}'::DATE
+        WHERE created_at::DATE BETWEEN $${paramOffset}::DATE AND $${paramOffset + 1}::DATE
         AND task_work_log.user_id = u.id)`;
+      params.push(start, end);
+      paramOffset += 2;
     }
 
     if (project && typeof project === "string") {
-      const projects = project.split(",").map(s => `'${s}'`).join(",");
-      projectsFilterString = `AND team_members.id IN (SELECT team_member_id FROM project_members WHERE project_id IN (${projects}))`;
+      // Fix: Use SqlHelper.buildInClause for safe IN clause
+      const projectIds = project.split(",");
+      const { clause, params: projectParams } = SqlHelper.buildInClause(projectIds, paramOffset);
+      projectsFilterString = `AND team_members.id IN (SELECT team_member_id FROM project_members WHERE project_id IN (${clause}))`;
+      params.push(...projectParams);
+      paramOffset += projectParams.length;
     }
 
     if (status && typeof status === "string") {
-      const projects = status.split(",").map(s => `'${s}'`).join(",");
+      // Fix: Use SqlHelper.buildInClause (team_id is already $1, so use paramOffset for status)
+      const statusIds = status.split(",");
+      const { clause: statusClause, params: statusParams } = SqlHelper.buildInClause(statusIds, paramOffset);
       statusFilterString = `AND team_members.id IN (SELECT team_member_id
                                 FROM project_members
                                 WHERE project_id IN (SELECT id
                                                      FROM projects
-                                                     WHERE projects.team_id = '${team_id}'
-                                                       AND status_id IN (${projects})))`;
+                                                     WHERE projects.team_id = $1
+                                                       AND status_id IN (${statusClause})))`;
+      params.push(...statusParams);
+      paramOffset += statusParams.length;
     }
 
-    const paginate = all === "false" ? `LIMIT ${size} OFFSET ${offset}` : "";
+    // Fix: Use parameterized pagination
+    const paginate = all === "false" ? `LIMIT $${paramOffset} OFFSET $${paramOffset + 1}` : "";
+    if (all === "false") {
+      params.push(size, offset);
+    }
 
     const q = `
       SELECT ROW_TO_JSON(rec) AS team_members
@@ -827,7 +862,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
                    LEFT JOIN team_member_info_view tmiv ON team_members.id = tmiv.team_member_id
             WHERE team_members.team_id = $1 ${searchQuery} ${timeRangeTaskWorkLog} ${projectsFilterString} ${statusFilterString}) rec;
     `;
-    const result = await db.query(q, [team_id || null]);
+    const result = await db.query(q, params);
     const [data] = result.rows;
 
     return data.team_members;

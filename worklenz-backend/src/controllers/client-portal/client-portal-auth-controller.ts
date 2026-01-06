@@ -135,24 +135,6 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
               );
           }
 
-          // For organization invites, create a new client user account
-          // First, check if user already exists
-          const existingUserCheck = await db.query(
-            "SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)",
-            [email]
-          );
-
-          if (existingUserCheck.rows.length > 0) {
-            return res.status(400).json({
-              done: false,
-              body: null,
-              title: "Email Already Registered",
-              message:
-                "A user with this email already exists. Please login instead.",
-              messageKey: "errors.email_already_registered_message", // For frontend i18n
-            });
-          }
-
           // Check if email exists in Worklenz users table for linking
           const existingWorklenzUserQuery = `
             SELECT id, email, name, password FROM users
@@ -191,29 +173,47 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
           // Create the client user - link to Worklenz user if exists, otherwise use password_hash
           // Check if email already exists in client_users to avoid duplicate key error
           const emailExistsCheck = await db.query(
-            `SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)`,
+            `SELECT id, user_id, password_hash FROM client_users WHERE LOWER(email) = LOWER($1)`,
             [email]
           );
 
           let userResult;
           if (emailExistsCheck.rows.length > 0) {
-            // Email already exists - update the existing record
+            // Email already exists - this user is joining a second organization
             const existingClientUserId = emailExistsCheck.rows[0].id;
-            if (worklenzUserId) {
-              await db.query(
-                `UPDATE client_users
-                 SET user_id = $1, client_id = $2, name = $3, status = 'active', updated_at = NOW()
-                 WHERE id = $4`,
-                [worklenzUserId, clientId, name, existingClientUserId]
-              );
+            const existingUserId = emailExistsCheck.rows[0].user_id;
+            const existingPasswordHash = emailExistsCheck.rows[0].password_hash;
+            
+            // Verify password before allowing access to second organization
+            if (existingUserId) {
+              // User is linked to Worklenz account - password already verified above
+              if (!worklenzUserId || existingUserId !== worklenzUserId) {
+                return res.status(401).json({
+                  done: false,
+                  body: null,
+                  titleKey: "errors.invalid_credentials_title",
+                  messageKey: "errors.invalid_credentials_message"
+                });
+              }
             } else {
-              await db.query(
-                `UPDATE client_users
-                 SET client_id = $1, name = $2, password_hash = $3, status = 'active', updated_at = NOW()
-                 WHERE id = $4`,
-                [clientId, name, crypto.createHash("sha256").update(password).digest("hex"), existingClientUserId]
-              );
+              // Standalone client portal user - verify password hash (supports both bcrypt and SHA256)
+              const verificationResult = await TokenService.verifyClientPassword(password, existingPasswordHash);
+              if (!verificationResult.isValid) {
+                return res.status(401).json({
+                  done: false,
+                  body: null,
+                  titleKey: "errors.invalid_credentials_title",
+                  messageKey: "errors.invalid_credentials_message"
+                });
+              }
+              
+              // Lazy migration: if password is SHA256, migrate to bcrypt
+              if (verificationResult.needsMigration) {
+                await TokenService.migratePasswordHash(existingClientUserId, password);
+              }
             }
+            
+            // Password verified - don't update client_id, just fetch the user
             userResult = await db.query(
               `SELECT id, email, name, role, client_id FROM client_users WHERE id = $1`,
               [existingClientUserId]
@@ -227,7 +227,8 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
               [clientId, worklenzUserId, email, name]
             );
           } else {
-            // Standalone client portal user - create with password_hash
+            // Standalone client portal user - create with password_hash (bcrypt)
+            const passwordHash = TokenService.hashClientPassword(password);
             userResult = await db.query(
               `INSERT INTO client_users (id, client_id, email, name, password_hash, role, status, created_at)
              VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
@@ -236,18 +237,28 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
                 clientId,
                 email,
                 name,
-                crypto.createHash("sha256").update(password).digest("hex"),
+                passwordHash,
               ]
             );
           }
 
           const newUser = userResult.rows[0];
 
+          // Create organization access record for multi-org support
+          const orgAccessQuery = `
+            INSERT INTO client_user_organizations (client_user_id, team_id, client_id, is_default, created_at, updated_at)
+            VALUES ($1, $2, $3, TRUE, NOW(), NOW())
+            ON CONFLICT (client_user_id, team_id) 
+            DO UPDATE SET client_id = $3, updated_at = NOW()
+          `;
+          await db.query(orgAccessQuery, [newUser.id, orgInvitePayload.teamId, clientId]);
+
           // Generate client access token
           const permissions = await TokenService.getClientPermissions(clientId);
           const tokenPayload = {
             clientId,
             organizationId: orgInvitePayload.teamId,
+            clientUserId: newUser.id,
             email: newUser.email,
             permissions,
             type: "client" as const,
@@ -830,21 +841,34 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
             [user.email]
           );
 
+          let clientUserId: string;
           if (emailExistsCheck.rows.length > 0) {
             // Update existing record
+            clientUserId = emailExistsCheck.rows[0].id;
             await db.query(
               `UPDATE client_users
                SET user_id = $1, client_id = $2, name = $3, team_id = $4, status = 'active', updated_at = NOW()
                WHERE id = $5`,
-              [userId, clientId, user.name, invitation.team_id, emailExistsCheck.rows[0].id]
+              [userId, clientId, user.name, invitation.team_id, clientUserId]
             );
           } else {
             const linkUserQuery = `
               INSERT INTO client_users (user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
               VALUES ($1, $2, $3, $4, 'member', $5, 'active', NOW(), NOW())
+              RETURNING id
             `;
-            await db.query(linkUserQuery, [userId, clientId, user.email, user.name, invitation.team_id]);
+            const result = await db.query(linkUserQuery, [userId, clientId, user.email, user.name, invitation.team_id]);
+            clientUserId = result.rows[0].id;
           }
+
+          // Create organization access record for multi-org support
+          const orgAccessQuery = `
+            INSERT INTO client_user_organizations (client_user_id, team_id, client_id, is_default, created_at, updated_at)
+            VALUES ($1, $2, $3, FALSE, NOW(), NOW())
+            ON CONFLICT (client_user_id, team_id) 
+            DO UPDATE SET client_id = $3, updated_at = NOW()
+          `;
+          await db.query(orgAccessQuery, [clientUserId, invitation.team_id, clientId]);
 
           return res.json(
             new ServerResponse(true, {

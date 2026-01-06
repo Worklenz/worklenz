@@ -136,7 +136,7 @@
     "network_error": "Erro de rede. Por favor, verifique sua conexão.",
     "server_error": "Erro no servidor. Por favor, tente novamente mais tarde.",
     "worklenz_account_found_title": "Conta Worklenz encontrada",
-    "worklenz_account_found_message": "Este e-mail já está registrado com uma conta Worklenz. Por favor, use sua senha do Worklenz para se cadastrar no portal do cliente."
+    "worklenz_account_found_message": "Este e-mail já está registrado com uma conta Worklenz. Por favor, use sua senha existente do Worklenz para se cadastrar no portal do cliente."
   },
   "dashboard": {
     "title": "Painel",

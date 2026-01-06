@@ -18,7 +18,7 @@ import authRouter from "./routes/auth";
 import emailTemplatesRouter from "./routes/email-templates";
 import public_router from "./routes/public";
 import clientPortalApiRouter from "./routes/apis/client-portal-api-router";
-import { isInternalServer, isProduction } from "./shared/utils";
+import { isInternalServer, isProduction, log_error } from "./shared/utils";
 import sessionMiddleware from "./middlewares/session-middleware";
 import safeControllerFunction from "./shared/safe-controller-function";
 import AwsSesController from "./controllers/aws-ses-controller";
@@ -204,31 +204,55 @@ app.use((req, res, next) => {
   const stateChangingMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
   const isStateChanging = stateChangingMethods.includes(req.method);
   
+  // Get all possible path variations early
+  const path = req.path || "";
+  const originalUrl = req.originalUrl || req.url || "";
+  const baseUrl = req.baseUrl || "";
+  
   // Always exclude webhooks (external services can't provide CSRF tokens)
-  if (req.path.startsWith("/webhook/")) {
+  if (path.startsWith("/webhook/") || originalUrl.startsWith("/webhook/")) {
+    log_error(`[CSRF] Excluding webhook: ${path}`);
     return next();
   }
   
   // Exclude public routes (read-only or public access)
-  if (req.path.startsWith("/public/")) {
+  if (path.startsWith("/public/") || originalUrl.startsWith("/public/")) {
+    log_error(`[CSRF] Excluding public route: ${path}`);
     return next();
   }
   
   // Exclude specific invitation endpoints (these have their own token validation)
   if (
-    req.path.startsWith("/invite/team/") ||
-    req.path.startsWith("/invite/project/") ||
-    req.path.includes("/client-portal/invitation/") ||
-    req.path.includes("/client-portal/handle-organization-invite")
+    path.startsWith("/invite/team/") ||
+    path.startsWith("/invite/project/") ||
+    path.includes("/client-portal/invitation/") ||
+    path.includes("/client-portal/handle-organization-invite") ||
+    originalUrl.includes("/client-portal/invitation/") ||
+    originalUrl.includes("/client-portal/handle-organization-invite")
   ) {
+    log_error(`[CSRF] Excluding invitation route: ${path}`);
     return next();
   }
   
   // Exclude all client portal endpoints (they use client token authentication)
-  if (req.path.startsWith("/client-portal") || req.originalUrl.startsWith("/api/client-portal")) {
+  // SECURITY NOTE: Client portal uses token-based auth (x-client-token header) instead of cookies.
+  // Custom headers are NOT automatically sent by browsers in cross-origin requests, making this
+  // inherently CSRF-resistant. CSRF attacks rely on browsers automatically including credentials
+  // (cookies), which doesn't apply to custom headers that require explicit JavaScript to send.
+  // Additional protections: token verification, origin validation, and rate limiting are still applied.
+  // Check multiple path variations to ensure we catch all cases
+  const isClientPortalRoute = 
+    path.startsWith("/client-portal") || 
+    path.startsWith("/api/client-portal") ||
+    originalUrl.startsWith("/api/client-portal") ||
+    originalUrl.startsWith("/client-portal") ||
+    originalUrl.includes("/client-portal/") ||
+    baseUrl.includes("/client-portal");
+  
+  if (isClientPortalRoute) {
     return next();
   }
-  
+    
   // Exclude the CSRF token endpoint itself (GET requests to fetch tokens)
   if (req.path === "/csrf-token") {
     return next();
@@ -259,7 +283,18 @@ app.use((req, res, next) => {
   // This protects POST, PUT, DELETE, PATCH operations from CSRF attacks
   // GET, OPTIONS, HEAD requests don't need CSRF protection
   if (isStateChanging) {
-    csrfSynchronisedProtection(req, res, next);
+    csrfSynchronisedProtection(req, res, (err) => {
+      if (err) {
+        console.error(`[CSRF] CSRF protection error:`, err);
+        console.error(`[CSRF] Request details:`, {
+          method: req.method,
+          path: req.path,
+          originalUrl: req.originalUrl,
+          url: req.url
+        });
+      }
+      next(err);
+    });
   } else {
     next();
   }
@@ -285,7 +320,7 @@ app.get("/csrf-token", (req: Request, res: Response) => {
     
     const token = generateToken(req);
     if (!token) {
-      console.error('[CSRF] Failed to generate token');
+      log_error('[CSRF] Failed to generate token');
       return res.status(500).json({ done: false, message: "Failed to generate CSRF token" });
     }
     
@@ -293,7 +328,7 @@ app.get("/csrf-token", (req: Request, res: Response) => {
     res.setHeader('X-CSRF-Token', token);
     res.status(200).json({ done: true, message: "CSRF token refreshed", token });
   } catch (error: any) {
-    console.error('[CSRF] Error generating token:', error);
+    log_error('[CSRF] Error generating token:', error);
     res.status(500).json({ done: false, message: "Failed to generate CSRF token", error: error?.message });
   }
 });

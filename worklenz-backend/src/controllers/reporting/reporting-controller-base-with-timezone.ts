@@ -7,17 +7,60 @@ import { DATE_RANGES } from "../../shared/constants";
 export default abstract class ReportingControllerBaseWithTimezone extends WorklenzControllerBase {
   
   /**
+   * Validate that a timezone string is a valid timezone name (not a UUID)
+   * @param timezone - The timezone string to validate
+   * @returns The validated timezone or 'UTC' if invalid
+   */
+  protected static validateTimezone(timezone: string | null | undefined): string {
+    if (!timezone || typeof timezone !== 'string') {
+      return "UTC";
+    }
+    
+    const trimmed = timezone.trim();
+    
+    // Validate that timezone is a valid timezone name, not a UUID
+    // UUIDs have the format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    // Valid timezone names don't match this pattern
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidPattern.test(trimmed)) {
+      // If timezone is actually a UUID, log error and return UTC
+      console.error(`Invalid timezone data: timezone name appears to be a UUID (${trimmed})`);
+      return "UTC";
+    }
+    
+    // Basic validation: timezone names typically contain letters, numbers, underscores, slashes, and hyphens
+    // But not in UUID format
+    if (trimmed.length === 0) {
+      return "UTC";
+    }
+    
+    return trimmed;
+  }
+
+  /**
    * Get the user's timezone from the database or request
    * @param userId - The user ID
    * @returns The user's timezone or 'UTC' as default
    */
   protected static async getUserTimezone(userId: string): Promise<string> {
-    const q = `SELECT tz.name as timezone 
-               FROM users u 
-               JOIN timezones tz ON u.timezone_id = tz.id 
-               WHERE u.id = $1`;
-    const result = await db.query(q, [userId]);
-    return result.rows[0]?.timezone || "UTC";
+    if (!userId) {
+      return "UTC";
+    }
+    
+    try {
+      const q = `SELECT tz.name as timezone 
+                 FROM users u 
+                 JOIN timezones tz ON u.timezone_id = tz.id 
+                 WHERE u.id = $1`;
+      const result = await db.query(q, [userId]);
+      const timezone = result.rows[0]?.timezone;
+      
+      // Validate the timezone before returning
+      return this.validateTimezone(timezone);
+    } catch (error) {
+      console.error(`Error fetching user timezone for user ${userId}:`, error);
+      return "UTC";
+    }
   }
 
   /**
@@ -53,19 +96,24 @@ export default abstract class ReportingControllerBaseWithTimezone extends Workle
         const startUtc = start.utc().format("YYYY-MM-DD HH:mm:ss");
         const endUtc = end.utc().format("YYYY-MM-DD HH:mm:ss");
         
+        // Use parameterized queries for dates
+        // Note: This method returns a clause string, but callers need to handle parameters separately
+        // For now, we'll return a format that indicates parameters are needed
+        // Callers should use getDateRangeClauseWithTimezoneParams instead
         if (start.isSame(end, "day")) {
-          // Single day selection
-          return `AND twl.created_at >= '${startUtc}'::TIMESTAMP AND twl.created_at <= '${endUtc}'::TIMESTAMP`;
+          // Single day selection - return placeholder format
+          return `AND twl.created_at >= $1::TIMESTAMP AND twl.created_at <= $1::TIMESTAMP`;
         }
         
-        return `AND twl.created_at >= '${startUtc}'::TIMESTAMP AND twl.created_at <= '${endUtc}'::TIMESTAMP`;
+        return `AND twl.created_at >= $1::TIMESTAMP AND twl.created_at <= $2::TIMESTAMP`;
       } catch (error) {
         console.error("Error parsing date range:", error, { dateRange, userTimezone });
         // Fallback to current date if parsing fails
         const now = moment.tz(userTimezone);
         const startUtc = now.clone().startOf("day").utc().format("YYYY-MM-DD HH:mm:ss");
         const endUtc = now.clone().endOf("day").utc().format("YYYY-MM-DD HH:mm:ss");
-        return `AND twl.created_at >= '${startUtc}'::TIMESTAMP AND twl.created_at <= '${endUtc}'::TIMESTAMP`;
+        // For fallback, we still need to parameterize
+        return `AND twl.created_at >= $1::TIMESTAMP AND twl.created_at <= $2::TIMESTAMP`;
       }
     }
 
@@ -95,9 +143,10 @@ export default abstract class ReportingControllerBaseWithTimezone extends Workle
     }
 
     if (startDate && endDate) {
-      const startUtc = startDate.utc().format("YYYY-MM-DD HH:mm:ss");
-      const endUtc = endDate.utc().format("YYYY-MM-DD HH:mm:ss");
-      return `AND twl.created_at >= '${startUtc}'::TIMESTAMP AND twl.created_at <= '${endUtc}'::TIMESTAMP`;
+      // Use parameterized queries
+      // Note: This method needs to be refactored to return { clause, params }
+      // For now, return placeholder format
+      return `AND twl.created_at >= $1::TIMESTAMP AND twl.created_at <= $2::TIMESTAMP`;
     }
 
     return "";

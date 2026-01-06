@@ -47,7 +47,8 @@ class ClientPortalAPI {
         // Skip token refresh for auth endpoints (login, register, etc.)
         const isAuthEndpoint = originalRequest.url?.includes('/auth/login') || 
                                originalRequest.url?.includes('/auth/register') ||
-                               originalRequest.url?.includes('/auth/accept-invite');
+                               originalRequest.url?.includes('/auth/accept-invite') ||
+                               originalRequest.url?.includes('/invitation/accept');
         
         // Check if this is a 403 error due to client deactivation
         const errorMessage = error.response?.data?.message || '';

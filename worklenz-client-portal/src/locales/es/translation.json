@@ -134,7 +134,7 @@
     "network_error": "Error de red. Por favor verifica tu conexión.",
     "server_error": "Error del servidor. Por favor intenta de nuevo más tarde.",
     "worklenz_account_found_title": "Cuenta de Worklenz encontrada",
-    "worklenz_account_found_message": "Este correo electrónico ya está registrado con una cuenta de Worklenz. Por favor usa tu contraseña de Worklenz para registrarte en el portal del cliente."
+    "worklenz_account_found_message": "Este correo electrónico ya está registrado con una cuenta de Worklenz. Por favor usa tu contraseña existente de Worklenz para registrarte en el portal del cliente."
   },
   "dashboard": {
     "title": "Panel",

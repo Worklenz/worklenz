@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '@/shared/constants';
-import { getCsrfToken, refreshCsrfToken } from '../api-client';
+import { getCsrfToken, ensureCsrfToken } from '../api-client';
 import config from '@/config/env';
 
 export interface ClientPortalDashboardData {
@@ -380,14 +380,24 @@ export const clientPortalApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: `${config.apiUrl}${API_BASE_URL}`,
     prepareHeaders: async headers => {
-      // Get CSRF token, refresh if needed
+      // Always try to get CSRF token, refresh if needed
       let token = getCsrfToken();
+      
+      // If no token, try to refresh it with deduplication
       if (!token) {
-        token = await refreshCsrfToken();
+        try {
+          token = await ensureCsrfToken();
+        } catch (error) {
+          console.error('[CSRF] Failed to refresh CSRF token:', error);
+        }
       }
 
+      // Set token if available
       if (token) {
         headers.set('X-CSRF-Token', token);
+      } else {
+        // Log warning if no token available (backend will return proper error)
+        console.warn('[CSRF] No CSRF token available - request may fail');
       }
 
       headers.set('Content-Type', 'application/json');
@@ -966,7 +976,13 @@ export const clientPortalApi = createApi({
         method: 'PUT',
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Client', id }, 'Clients'],
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Client', id },
+        { type: 'ClientStats', id },
+        { type: 'ClientProjects', id },
+        { type: 'ClientTeam', id },
+        'Clients'
+      ],
     }),
 
     deactivateClient: builder.mutation<void, string>({

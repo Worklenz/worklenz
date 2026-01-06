@@ -19,6 +19,52 @@ export const authenticateClient = async (
   next: NextFunction
 ) => {
   try {
+    // Additional security: Validate Origin/Referer header for state-changing operations
+    // This provides defense-in-depth even though custom headers are CSRF-resistant
+    // NOTE: Made lenient - only blocks if explicitly configured and origin doesn't match
+    const stateChangingMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
+    const isStateChanging = stateChangingMethods.includes(req.method);
+    
+    if (isStateChanging) {
+      const origin = req.headers.origin || req.headers.referer;
+      const allowedOrigins = [
+        process.env.CLIENT_PORTAL_URL,
+        process.env.FRONTEND_URL,
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://localhost:3000',
+        'https://clients.worklenz.com',
+        'https://wl-client.ceydigital.dev',
+        'https://dev.worklenz.com', // Add dev environment
+        'http://dev.worklenz.com',  // Add dev environment (http)
+      ].filter((url): url is string => Boolean(url));
+      
+      // Only validate if we have origin/referer AND explicitly configured allowed origins
+      // If no origin header is present, allow (some clients don't send it)
+      // If origin is present but no allowed origins configured, allow (development mode)
+      if (origin && typeof origin === 'string' && allowedOrigins.length > 0) {
+        try {
+          const originUrl = new URL(origin);
+          const isAllowed = allowedOrigins.some(allowed => {
+            try {
+              const allowedUrl = new URL(allowed);
+              return originUrl.origin === allowedUrl.origin;
+            } catch {
+              return origin.includes(allowed);
+            }
+          });
+          
+          if (!isAllowed) {
+            return res.status(403).json(
+              new ServerResponse(false, null, "Request origin not allowed")
+            );
+          }
+        } catch (error) {
+          // Invalid origin format - don't block (defense-in-depth, not primary security)
+        }
+      }
+    }
+
     // Get client token from headers or query params
     const clientToken = req.headers["x-client-token"] || req.query.clientToken;
 
@@ -110,7 +156,7 @@ export const authenticateClient = async (
 
     next();
   } catch (error) {
-    console.error("Client authentication error:", error);
+    console.error("[Client Auth] Authentication error:", error);
     return res.status(401).json(
       new ServerResponse(false, null, "Authentication failed")
     );

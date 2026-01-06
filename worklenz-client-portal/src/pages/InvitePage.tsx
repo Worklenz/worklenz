@@ -191,11 +191,13 @@ const InvitePage: React.FC = () => {
           const errorKey = result.payload as string;
           
           // Check if the error is an i18n key (starts with "errors.")
-          const errorMessage = errorKey && errorKey.startsWith("errors.") 
-            ? t(errorKey) 
-            : errorKey || t("invite.acceptance_error");
-          
-          message.error(errorMessage);
+          if (errorKey && errorKey.startsWith("errors.")) {
+            const errorMessage = t(errorKey);
+            // Show error message for longer duration to give user time to read
+            message.error(errorMessage, 6);
+          } else {
+            message.error(errorKey || t("invite.acceptance_error"));
+          }
         }
       } catch (error) {
         console.error("Invite acceptance failed:", error);

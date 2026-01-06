@@ -138,6 +138,9 @@ export default TaskCard;
 
 ### i18next Integration
 - **No hardcoded strings** - all user text must be localized
+- **Always include defaultValue** - every `t()` call must include a `defaultValue` parameter for fallback text
+  - Example: `t('taskNameColumn', { defaultValue: 'Task' })`
+  - This ensures graceful degradation when translation keys are missing
 - **Namespace organization** - group related strings by feature
 - **Pluralization support** - use i18next pluralization features
 - **Interpolation** - use variables safely with proper escaping

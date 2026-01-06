@@ -15,7 +15,7 @@ export async function on_task_timer_stop(_io: Server, socket: Socket, data?: str
       return;
     }
     
-    // Validate UUID format (defense in depth - parameterized queries already prevent SQL injection)
+    // Validate UUID format (defense in depth - parameterized queries already provide security)
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(body.task_id)) {
       socket.emit(SocketEvents.TASK_TIMER_STOP.toString(), null);

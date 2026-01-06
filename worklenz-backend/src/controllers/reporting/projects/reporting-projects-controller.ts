@@ -128,25 +128,29 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
     return res.status(200).send(new ServerResponse(true, result));
   }
 
-  protected static getMinMaxDates(key: string, dateRange: string[]) {
+  protected static getMinMaxDates(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Use parameterized queries for dates
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
-      return `,(SELECT '${start}'::DATE )AS start_date, (SELECT '${end}'::DATE )AS end_date`;
+      return {
+        clause: `,(SELECT $${paramOffset}::DATE )AS start_date, (SELECT $${paramOffset + 1}::DATE )AS end_date`,
+        params: [start, end]
+      };
     }
 
     if (key === DATE_RANGES.YESTERDAY)
-      return ",(SELECT (CURRENT_DATE - INTERVAL '1 day')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date";
+      return { clause: ",(SELECT (CURRENT_DATE - INTERVAL '1 day')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date", params: [] };
     if (key === DATE_RANGES.LAST_WEEK)
-      return ",(SELECT (CURRENT_DATE - INTERVAL '1 week')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date";
+      return { clause: ",(SELECT (CURRENT_DATE - INTERVAL '1 week')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date", params: [] };
     if (key === DATE_RANGES.LAST_MONTH)
-      return ",(SELECT (CURRENT_DATE - INTERVAL '1 month')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date";
+      return { clause: ",(SELECT (CURRENT_DATE - INTERVAL '1 month')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date", params: [] };
     if (key === DATE_RANGES.LAST_QUARTER)
-      return ",(SELECT (CURRENT_DATE - INTERVAL '3 months')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date";
+      return { clause: ",(SELECT (CURRENT_DATE - INTERVAL '3 months')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date", params: [] };
     if (key === DATE_RANGES.ALL_TIME)
-      return ",(SELECT (MIN(task_work_log.created_at)::DATE) FROM task_work_log WHERE task_id IN (SELECT id FROM tasks WHERE project_id = $1)) AS start_date, (SELECT (MAX(task_work_log.created_at)::DATE) FROM task_work_log WHERE task_id IN (SELECT id FROM tasks WHERE project_id = $1)) AS end_date";
+      return { clause: ",(SELECT (MIN(task_work_log.created_at)::DATE) FROM task_work_log WHERE task_id IN (SELECT id FROM tasks WHERE project_id = $1)) AS start_date, (SELECT (MAX(task_work_log.created_at)::DATE) FROM task_work_log WHERE task_id IN (SELECT id FROM tasks WHERE project_id = $1)) AS end_date", params: [] };
 
-    return "";
+    return { clause: "", params: [] };
   }
 
   @HandleExceptions()
@@ -155,7 +159,10 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
     const { duration, date_range } = req.body;
 
     const durationClause = this.getDateRangeClause(duration || DATE_RANGES.LAST_WEEK, date_range);
-    const minMaxDateClause = this.getMinMaxDates(duration || DATE_RANGES.LAST_WEEK, date_range);
+    // Extract clause and params from getMinMaxDates
+    const minMaxDateClauseResult = this.getMinMaxDates(duration || DATE_RANGES.LAST_WEEK, date_range, 2);
+    const minMaxDateClause = minMaxDateClauseResult.clause;
+    const minMaxParams = minMaxDateClauseResult.params;
 
     const q = `SELECT
                     (SELECT name FROM projects WHERE projects.id = $1) AS project_name,
@@ -174,7 +181,9 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
                     ${durationClause}
                 ORDER BY task_work_log.created_at DESC`;
 
-    const result = await db.query(q, [projectId]);
+    // Pass all parameters
+    const queryParams = [projectId, ...minMaxParams];
+    const result = await db.query(q, queryParams);
 
     const formattedResult = await this.formatLog(result.rows);
 
@@ -421,7 +430,7 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       ORDER BY ${groupOrderBy}
     `;
 
-    // Build final params: teamId ($1), then filter params ($2+)
+    // Build final params: teamId ($1), searchParams ($2+), then filter params
     // Note: getGrouped query doesn't use LIMIT/OFFSET
     const finalParams = [teamId, ...filterParams];
     const result = await db.query(q, finalParams);

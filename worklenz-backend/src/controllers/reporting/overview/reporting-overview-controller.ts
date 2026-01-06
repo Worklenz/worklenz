@@ -146,7 +146,39 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
   public static async getProjectsByTeamOrMember(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teamId = req.params.team_id?.trim() || null;
     const teamMemberId = (req.query.member as string)?.trim() || null;
-    const teamMemberFilter = teamId === "undefined" ? `AND pm.team_member_id = $1` : teamMemberId ? `AND pm.team_member_id = $2` : "";
+    const includeArchived = req.query.archived === "true";
+    const userId = req.user?.id;
+
+    // Build params array first to determine userId parameter position
+    const params: any[] = [];
+    
+    if (teamId === "undefined") {
+      // When teamId is "undefined", teamMemberId is the first param (if exists)
+      if (teamMemberId) {
+        params.push(teamMemberId);
+      }
+    } else {
+      // When teamId is valid, it's the first param
+      params.push(teamId);
+      if (teamMemberId) {
+        params.push(teamMemberId);
+      }
+    }
+
+    // Add userId for archived clause if needed
+    const userIdParamIndex = params.length + 1;
+    if (!includeArchived && userId) {
+      params.push(userId);
+    }
+
+    // Build archived projects filter clause
+    const archivedClause = includeArchived || !userId
+      ? ""
+      : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $${userIdParamIndex})`;
+
+    const teamMemberFilter = teamId === "undefined" 
+      ? (teamMemberId ? `AND pm.team_member_id = $1` : "") 
+      : (teamMemberId ? `AND pm.team_member_id = $2` : "");
     const teamIdFilter = teamId === "undefined" ? "p.team_id IS NOT NULL" : `p.team_id = $1`;
 
     const q = `
@@ -157,10 +189,9 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
               p.status_id
         FROM projects p
             LEFT JOIN project_members pm ON pm.project_id = p.id
-        WHERE ${teamIdFilter} ${teamMemberFilter}
-        GROUP BY p.id, p.name;`;
-
-    const params = teamId === "undefined" ? [teamMemberId] : teamMemberId ? [teamId, teamMemberId] : [teamId];
+        WHERE ${teamIdFilter} ${teamMemberFilter} ${archivedClause}
+        GROUP BY p.id, p.name, p.color_code, p.team_id, p.status_id
+        ORDER BY p.name;`;
 
     const result = await db.query(q, params);
 
@@ -386,7 +417,8 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
     const teamId = req.params.team_id || null;
     const archived = req.query.archived === "true";
 
-    const archivedClause = await this.getArchivedProjectsClause(archived, req.user?.id as string, "projects.id");
+    const archivedClauseResult = await this.getArchivedProjectsClause(archived, req.user?.id as string, "projects.id", 1);
+    const archivedClause = archivedClauseResult.clause;
 
     const byStatus = await this.getProjectsByStatus(teamId, archivedClause);
     const byCategory = await this.getProjectsByCategory(teamId, archivedClause);
