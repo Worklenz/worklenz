@@ -19,14 +19,27 @@ export const durationDateFormat = (date: Date | null | string | undefined): stri
 
   const currentDate = new Date();
 
-  const diffInMilliseconds = currentDate.getTime() - givenDate.getTime();
+  // Normalize both dates to the start of their respective local days
+  const startOfGivenDate = new Date(
+    givenDate.getFullYear(),
+    givenDate.getMonth(),
+    givenDate.getDate()
+  );
+
+  const startOfCurrentDate = new Date(
+    currentDate.getFullYear(),
+    currentDate.getMonth(),
+    currentDate.getDate()
+  );
+
+  const diffInMilliseconds = startOfCurrentDate.getTime() - startOfGivenDate.getTime();
 
   const diffInDays = Math.floor(diffInMilliseconds / (1000 * 60 * 60 * 24));
   const diffInMonths =
-    currentDate.getMonth() -
-    givenDate.getMonth() +
-    12 * (currentDate.getFullYear() - givenDate.getFullYear());
-  const diffInYears = currentDate.getFullYear() - givenDate.getFullYear();
+    startOfCurrentDate.getMonth() -
+    startOfGivenDate.getMonth() +
+    12 * (startOfCurrentDate.getFullYear() - startOfGivenDate.getFullYear());
+  const diffInYears = startOfCurrentDate.getFullYear() - startOfGivenDate.getFullYear();
 
   if (diffInYears > 0) {
     return diffInYears === 1 ? '1 year ago' : `${diffInYears} years ago`;
