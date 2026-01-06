@@ -7,10 +7,18 @@ import {getLoggedInUserIdFromSocket, notifyProjectUpdates} from "../util";
 import {getTaskDetails, logPriorityChange} from "../../services/activity-logs/activity-logs.service";
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
 import { log_error } from "../../shared/utils";
+import {verifyTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
 
 export async function on_task_priority_change(_io: Server, socket: Socket, data?: string) {
   try {
     const body = JSON.parse(data as string);
+    
+    const hasAccess = await verifyTaskAccessSocket(socket, body.task_id);
+    if (!hasAccess) {
+      logUnauthorizedSocketAccess(socket, 'TASK_PRIORITY_CHANGE', 'task', body.task_id);
+      return;
+    }
+    
     const task_data = await getTaskDetails(body.task_id, "priority_id");
 
     const q = `UPDATE tasks SET priority_id = $2 WHERE id = $1;`;

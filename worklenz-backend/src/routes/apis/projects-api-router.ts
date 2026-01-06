@@ -8,6 +8,7 @@ import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-o
 import safeControllerFunction from "../../shared/safe-controller-function";
 import projectManagerValidator from "../../middlewares/validators/project-manager-validator";
 import projectMemberValidator from "../../middlewares/validators/project-member-validator";
+import verifyProjectAccess from "../../middlewares/verify-project-access";
 
 const projectsApiRouter = express.Router();
 
@@ -23,12 +24,12 @@ projectsApiRouter.get("/my-task-projects", safeControllerFunction(ProjectsContro
 projectsApiRouter.get("/my-projects", safeControllerFunction(ProjectsController.getMyProjects));
 projectsApiRouter.get("/all", safeControllerFunction(ProjectsController.getAllProjects));
 projectsApiRouter.get("/tasks", safeControllerFunction(ProjectsController.getAllTasks));
-projectsApiRouter.get("/members/:id", safeControllerFunction(ProjectsController.getMembersByProjectId));
-projectsApiRouter.get("/overview/:id", idParamValidator, safeControllerFunction(ProjectsController.getOverview));
-projectsApiRouter.get("/overview-members/:id", idParamValidator, safeControllerFunction(ProjectsController.getOverviewMembers));
-projectsApiRouter.get("/favorite/:id", idParamValidator, safeControllerFunction(ProjectsController.toggleFavorite));
-projectsApiRouter.get("/archive/:id", idParamValidator, safeControllerFunction(ProjectsController.toggleArchive));
-projectsApiRouter.get("/:id", idParamValidator, safeControllerFunction(ProjectsController.getById));
+projectsApiRouter.get("/members/:id", verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectsController.getMembersByProjectId));
+projectsApiRouter.get("/overview/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectsController.getOverview));
+projectsApiRouter.get("/overview-members/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectsController.getOverviewMembers));
+projectsApiRouter.get("/favorite/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectsController.toggleFavorite));
+projectsApiRouter.get("/archive/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectsController.toggleArchive));
+projectsApiRouter.get("/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectsController.getById));
 projectsApiRouter.put("/update-pinned-view", projectMemberValidator, safeControllerFunction(ProjectsController.updatePinnedView));
 projectsApiRouter.put("/:id", projectManagerValidator, idParamValidator, projectsBodyValidator, safeControllerFunction(ProjectsController.update));
 projectsApiRouter.delete("/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(ProjectsController.deleteById));
