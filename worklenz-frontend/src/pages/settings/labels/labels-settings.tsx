@@ -9,11 +9,11 @@ import {
   Tooltip,
   Typography,
 } from '@/shared/antd-imports';
-import { useEffect, useMemo, useState } from 'react';
+import { MouseEvent, useEffect, useMemo, useState } from 'react';
 
 import PinRouteToNavbarButton from '../../../components/PinRouteToNavbarButton';
 import { useTranslation } from 'react-i18next';
-import { DeleteOutlined, ExclamationCircleFilled, SearchOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, ExclamationCircleFilled, SearchOutlined } from '@ant-design/icons';
 import { ITaskLabel } from '@/types/label.type';
 import { labelsApiService } from '@/api/taskAttributes/labels/labels.api.service';
 import CustomColorLabel from '@components/task-list-common/labelsSelector/custom-color-label';
@@ -68,28 +68,46 @@ const LabelsSettings = () => {
   const columns: TableProps['columns'] = [
     {
       key: 'label',
-      title: t('labelColumn'),
+      title: t('labelColumn', 'Label'),
+      onCell: record => ({
+        onClick: () => handleEditClick(record.id!),
+      }),
       render: (record: ITaskLabel) => <CustomColorLabel label={record} />,
     },
     {
       key: 'associatedTask',
-      title: t('associatedTaskColumn'),
+      title: t('associatedTaskColumn', 'Associated Task Count'),
       render: (record: ITaskLabel) => <Typography.Text>{record.usage}</Typography.Text>,
     },
     {
       key: 'actionBtns',
-      width: 60,
+      width: 100,
       render: (record: ITaskLabel) => (
-        <div className="action-button opacity-0 transition-opacity duration-200">
-          <Popconfirm
-            title="Are you sure you want to delete this?"
-            icon={<ExclamationCircleFilled style={{ color: '#ff9800' }} />}
-            okText="Delete"
-            cancelText="Cancel"
-            onConfirm={() => deleteLabel(record.id!)}
-          >
-            <Button shape="default" icon={<DeleteOutlined />} size="small" />
-          </Popconfirm>
+        <div 
+          className="action-button opacity-0 transition-opacity duration-200"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Flex gap={4}>
+            <Tooltip title={t('editTooltip', 'Edit')}>
+              <Button
+                shape="default"
+                icon={<EditOutlined />}
+                size="small"
+                onClick={e => {
+                  e.stopPropagation();
+                  handleEditClick(record.id!);
+                }}
+              />
+            </Tooltip>
+            <Tooltip title={t('deleteTooltip', 'Delete')}>
+              <Button
+                shape="default"
+                icon={<DeleteOutlined />}
+                size="small"
+                onClick={(e) => handleDeleteClick(record, e)}
+              />
+            </Tooltip>
+          </Flex>
         </div>
       ),
     },
@@ -138,3 +156,11 @@ const LabelsSettings = () => {
 };
 
 export default LabelsSettings;
+function handleEditClick(arg0: any): void {
+  throw new Error('Function not implemented.');
+}
+
+function handleDeleteClick(record: ITaskLabel, e: MouseEvent<HTMLElement, MouseEvent>): void {
+  throw new Error('Function not implemented.');
+}
+
