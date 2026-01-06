@@ -320,7 +320,7 @@ const ProjectViewHeader = memo(() => {
         >
           <Tag
             key="category"
-            color={colors.vibrantOrange}
+            color={selectedProject.category_color || colors.vibrantOrange}  // ✅ FIXED: Now uses dynamic color
             style={{ borderRadius: 24, paddingInline: 8, margin: 0 }}
           >
             {selectedProject.category_name}
