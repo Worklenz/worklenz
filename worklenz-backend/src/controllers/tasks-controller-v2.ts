@@ -241,10 +241,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const isSubTasks = !!options.parent_task;
 
     // Map frontend field names to backend column names
+    // For status and priority, we need to sort by their actual sort order/value, not by UUID
     const fieldMapping: Record<string, string> = {
       'name': 't.name',
-      'status': 't.status_id',
-      'priority': 't.priority_id',
+      'status': '(SELECT sort_order FROM task_statuses WHERE id = t.status_id)',
+      'priority': '(SELECT value FROM task_priorities WHERE id = t.priority_id)',
       'start_date': 't.start_date',
       'end_date': 't.end_date',
       'completed_at': 't.completed_at',
