@@ -3,13 +3,13 @@ import {
   Card,
   Flex,
   Input,
-  Popconfirm,
+  Modal,
   Table,
   TableProps,
   Tooltip,
   Typography,
 } from '@/shared/antd-imports';
-import { MouseEvent, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import PinRouteToNavbarButton from '../../../components/PinRouteToNavbarButton';
 import { useTranslation } from 'react-i18next';
@@ -19,11 +19,20 @@ import { labelsApiService } from '@/api/taskAttributes/labels/labels.api.service
 import CustomColorLabel from '@components/task-list-common/labelsSelector/custom-color-label';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import logger from '@/utils/errorLogger';
+import LabelsDrawer from './labels-drawer';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_settings_labels_visit } from '@/shared/worklenz-analytics-events';
+import { alertService } from '@/services/alerts/alertService';
+import { useAppSelector } from '@/app/store';
 
 const LabelsSettings = () => {
   const { t } = useTranslation('settings/labels');
-  useDocumentTitle('Manage Labels');
+  const { trackMixpanelEvent } = useMixpanelTracking();
+  useDocumentTitle(t('pageTitle', 'Manage Labels'));
+  const themeMode = useAppSelector((state) => state.themeReducer.mode);
 
+  const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
+  const [showDrawer, setShowDrawer] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [labels, setLabels] = useState<ITaskLabel[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,18 +59,103 @@ const LabelsSettings = () => {
   }, []);
 
   useEffect(() => {
+    trackMixpanelEvent(evt_settings_labels_visit);
+  }, [trackMixpanelEvent]);
+
+  useEffect(() => {
     getLabels();
   }, [getLabels]);
 
-  const deleteLabel = async (id: string) => {
+  const deleteLabel = async (id: string, force: boolean = false) => {
     try {
-      const response = await labelsApiService.deleteById(id);
+      const response = await labelsApiService.deleteById(id, force);
       if (response.done) {
         getLabels();
+        const message = response.message || 'Label deleted successfully';
+        alertService.success('Success', message);
+      } else {
+        // Other error
+        const message = response.message || 'Failed to delete label';
+        if (message && !message.startsWith('$')) {
+          alertService.error('Delete Failed', message);
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to delete label:', error);
+      // Error message is typically handled by API interceptor, but handle edge cases
+      const errorMessage = error?.response?.data?.message || error?.message;
+      if (errorMessage && !errorMessage.startsWith('$')) {
+        alertService.error('Delete Failed', errorMessage);
+      }
     }
+  };
+
+  const handleDeleteClick = (record: ITaskLabel, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const usageCount = record.usage || 0;
+    const labelName = record.name || 'this label';
+    const isInUse = usageCount > 0;
+
+    const isDark = themeMode === 'dark';
+    const textColor = isDark ? '#d9d9d9' : '#262626';
+
+    const plural = usageCount > 1 ? 's' : '';
+    
+    Modal.confirm({
+      title: t('deleteConfirmTitle', 'Delete Label'),
+      icon: <ExclamationCircleFilled style={{ color: '#ff9800' }} />,
+      content: (
+        <div>
+          {isInUse ? (
+            <>
+              <Typography.Text style={{ color: textColor }}>
+                {t('labelInUseMessage', {
+                  labelName,
+                  count: usageCount,
+                  plural,
+                  defaultValue: `The label "${labelName}" is currently assigned to ${usageCount} task${plural}.`
+                })}
+              </Typography.Text>
+              <br />
+              <Typography.Text strong style={{ marginTop: 8, display: 'block', color: '#ff4d4f' }}>
+                {t('labelDeleteWarning', {
+                  count: usageCount,
+                  plural,
+                  defaultValue: `⚠️ Deleting this label will remove it from all ${usageCount} assigned task${plural}. This action cannot be undone.`
+                })}
+              </Typography.Text>
+            </>
+          ) : (
+            <Typography.Text style={{ color: textColor }}>
+              {t('deleteConfirmMessage', {
+                labelName,
+                defaultValue: `Are you sure you want to delete the label "${labelName}"? This action cannot be undone.`
+              })}
+            </Typography.Text>
+          )}
+        </div>
+      ),
+      okText: t('deleteButton', 'Delete'),
+      cancelText: t('cancelButton', 'Cancel'),
+      okType: 'danger',
+      centered: true,
+      width: 500,
+      onOk: async () => {
+        // Delete with force if label is in use
+        await deleteLabel(record.id!, isInUse);
+      },
+    });
+  };
+
+  const handleEditClick = (id: string) => {
+    setSelectedLabelId(id);
+    setShowDrawer(true);
+  };
+
+  const handleDrawerClose = () => {
+    setSelectedLabelId(null);
+    setShowDrawer(false);
+    getLabels();
   };
 
   // table columns
@@ -72,7 +166,9 @@ const LabelsSettings = () => {
       onCell: record => ({
         onClick: () => handleEditClick(record.id!),
       }),
-      render: (record: ITaskLabel) => <CustomColorLabel label={record} />,
+      render: (record: ITaskLabel) => (
+        <CustomColorLabel label={{ ...record, names: record.name ? [record.name] : [] }} />
+      ),
     },
     {
       key: 'associatedTask',
@@ -127,7 +223,10 @@ const LabelsSettings = () => {
               suffix={<SearchOutlined />}
             />
 
-            <Tooltip title={t('pinTooltip')} trigger={'hover'}>
+            <Tooltip
+              title={t('pinTooltip', 'Click to pin this into the main menu')}
+              trigger={'hover'}
+            >
               {/* this button pin this route to navbar  */}
               <PinRouteToNavbarButton name="labels" path="/worklenz/settings/labels" />
             </Tooltip>
@@ -137,13 +236,21 @@ const LabelsSettings = () => {
     >
       <Table
         locale={{
-          emptyText: <Typography.Text>{t('emptyText')}</Typography.Text>,
+          emptyText: (
+            <Typography.Text>
+              {t('emptyText', 'Labels can be created while updating or creating tasks.')}
+            </Typography.Text>
+          ),
         }}
         loading={loading}
         className="custom-two-colors-row-table"
         dataSource={filteredData}
         columns={columns}
         rowKey={record => record.id!}
+        onRow={record => ({
+          style: { cursor: 'pointer' },
+          onClick: () => handleEditClick(record.id!),
+        })}
         pagination={{
           showSizeChanger: true,
           defaultPageSize: 20,
@@ -151,16 +258,14 @@ const LabelsSettings = () => {
           size: 'small',
         }}
       />
+
+      <LabelsDrawer
+        drawerOpen={showDrawer}
+        labelId={selectedLabelId}
+        drawerClosed={handleDrawerClose}
+      />
     </Card>
   );
 };
 
 export default LabelsSettings;
-function handleEditClick(arg0: any): void {
-  throw new Error('Function not implemented.');
-}
-
-function handleDeleteClick(record: ITaskLabel, e: MouseEvent<HTMLElement, MouseEvent>): void {
-  throw new Error('Function not implemented.');
-}
-
