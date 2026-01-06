@@ -82,6 +82,21 @@ export const ingestImportJob = async (
   return data?.body as { job: ImportJob };
 };
 
+export const saveImportFields = async (
+  jobId: string,
+  fields: Array<{
+    source_field: string;
+    target_field: string;
+    required?: boolean;
+    include?: boolean;
+  }>
+) => {
+  const { data } = await apiClient.post(`/api/v1/imports/${jobId}/fields`, {
+    fields,
+  });
+  return data?.body as typeof fields;
+};
+
 export const commitImportJob = async (jobId: string) => {
   const { data } = await apiClient.post(`/api/v1/imports/${jobId}/commit`);
   return data?.body as ImportProgress;

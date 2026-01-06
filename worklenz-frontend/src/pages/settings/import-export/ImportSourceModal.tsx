@@ -9,7 +9,6 @@ import {
   Select,
   Input,
   Tooltip,
-  Card,
   message,
   theme,
   Space,
@@ -33,6 +32,7 @@ import {
   mondayValidate,
   updateImportTarget,
   startAsanaAuth,
+  saveImportFields,
 } from '@/api/imports';
 import type { ImportJob } from '@/api/imports';
 import { projectsApiService } from '@/api/projects/projects.api.service';
@@ -423,6 +423,18 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         csvText,
         sourceReference: { provider: lowerKey },
       });
+
+      const mappedFields = csvColumns
+        .filter(col => includeInImport[col] !== false && fieldMappings[col])
+        .map(col => ({
+          source_field: col,
+          target_field: fieldMappings[col],
+          include: includeInImport[col] !== false,
+        }));
+
+      if (mappedFields.length) {
+        await saveImportFields(activeJob.id, mappedFields);
+      }
 
       const commitProgress = await commitImportJob(activeJob.id);
       if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
@@ -832,7 +844,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                         <Select
                           value={row.jira}
                           style={{ width: '100%' }}
-                          dropdownStyle={{ background: '#0f1117', color: '#e5e7eb' }}
+                          styles={{ popup: { root: { background: '#0f1117', color: '#e5e7eb' } } }}
                           options={[
                             { value: row.jira, label: row.jira },
                             { value: 'Status', label: 'Status' },
@@ -915,7 +927,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                         <Select
                           value={row.jira}
                           style={{ width: '100%' }}
-                          dropdownStyle={{ background: '#0f1117', color: '#e5e7eb' }}
+                          styles={{ popup: { root: { background: '#0f1117', color: '#e5e7eb' } } }}
                           options={[{ value: row.jira, label: row.jira }]}
                         />
                         {row.required && (
@@ -1111,7 +1123,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   style={{ width: '100%', marginTop: 6 }}
                   value={spaceType}
                   onChange={setSpaceType}
-                  dropdownStyle={{ background: '#23272f', color: '#fff' }}
+                  styles={{ popup: { root: { background: '#23272f', color: '#fff' } } }}
                   optionLabelProp="label"
                 >
                   <Select.Option value="software" label="Software space">
@@ -1144,7 +1156,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 <Select
                   style={{ width: '100%', marginTop: 6 }}
                   defaultValue="scrum"
-                  dropdownStyle={{ background: '#23272f', color: '#fff' }}
+                  styles={{ popup: { root: { background: '#23272f', color: '#fff' } } }}
                   optionLabelProp="label"
                 >
                   <Select.Option value="scrum" label="Scrum">
@@ -1250,7 +1262,12 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               </a>
             </Typography.Paragraph>
             {/* Date and time format options (collapsible) */}
-            <Collapse ghost style={{ marginBottom: 16 }} bordered={false} expandIconPosition="left">
+            <Collapse
+              ghost
+              style={{ marginBottom: 16 }}
+              bordered={false}
+              expandIconPosition="start"
+            >
               <Collapse.Panel
                 header={
                   <span style={{ color: '#4096ff', fontSize: 15 }}>
@@ -1427,7 +1444,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 value={filter}
                 onChange={setFilter}
                 style={{ width: 120 }}
-                dropdownStyle={{ background: '#23272f', color: '#fff' }}
+                styles={{ popup: { root: { background: '#23272f', color: '#fff' } } }}
               >
                 <Select.Option value="all">Values: All</Select.Option>
                 <Select.Option value="mapped">Mapped</Select.Option>
@@ -1494,8 +1511,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                         color: '#fff',
                         border: '1px solid #333',
                       }}
-                      dropdownStyle={{ background: '#23272f', color: '#fff' }}
-                      dropdownRender={menu => (
+                      styles={{ popup: { root: { background: '#23272f', color: '#fff' } } }}
+                      popupRender={menu => (
                         <>
                           <div
                             style={{

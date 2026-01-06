@@ -1,6 +1,7 @@
 import db from "../config/db";
 import { v4 as uuidv4 } from "uuid";
 import { PoolClient } from "pg";
+import slugify from "slugify";
 
 export type ImportFlowType = "direct" | "csv";
 export type ImportStatus =
@@ -73,6 +74,89 @@ export interface StageTaskRow {
   attachments_planned?: boolean;
   raw?: unknown;
 }
+
+export interface FieldMappingRow {
+  source_field: string;
+  target_field: string;
+  required?: boolean;
+  include?: boolean;
+}
+
+export interface TaskFieldPatch {
+  description?: string | null;
+  status?: string | null;
+  start_at?: string | null;
+  due_at?: string | null;
+  assignee_source_id?: string | null;
+  priority_label?: string | null;
+}
+
+export interface CustomFieldValuePlan {
+  columnKey: string;
+  columnName: string;
+  value: unknown;
+}
+
+const STANDARD_TARGET_FIELDS = new Set<string>([
+  "description",
+  "status",
+  "startDate",
+  "dueDate",
+  "assignees",
+  "priority",
+]);
+
+const toColumnKey = (value: string) =>
+  slugify(value || "custom-column", { lower: true, strict: true }) ||
+  "custom-column";
+
+export const mapRawToTaskFields = (
+  raw: unknown,
+  mappings: FieldMappingRow[]
+): { patch: TaskFieldPatch; customValues: CustomFieldValuePlan[] } => {
+  const source =
+    raw && typeof raw === "object" && !Array.isArray(raw)
+      ? (raw as Record<string, unknown>)
+      : {};
+
+  const patch: TaskFieldPatch = {};
+  const customValues: CustomFieldValuePlan[] = [];
+
+  mappings.forEach((mapping) => {
+    if (mapping.include === false) return;
+    const value = source[mapping.source_field];
+    if (value === undefined || value === null || value === "") return;
+
+    switch (mapping.target_field) {
+      case "description":
+        patch.description = String(value);
+        break;
+      case "status":
+        patch.status = String(value);
+        break;
+      case "startDate":
+        patch.start_at = String(value);
+        break;
+      case "dueDate":
+        patch.due_at = String(value);
+        break;
+      case "assignees":
+        patch.assignee_source_id = String(value);
+        break;
+      case "priority":
+        patch.priority_label = String(value);
+        break;
+      default: {
+        const columnKey = toColumnKey(mapping.target_field);
+        const columnName = mapping.source_field || mapping.target_field;
+        customValues.push({ columnKey, columnName, value });
+        break;
+      }
+    }
+  });
+
+  return { patch, customValues };
+};
 
 class ImportsService {
   async createJob(input: CreateImportJobInput): Promise<ImportJob> {
@@ -442,22 +526,36 @@ class ImportsService {
         { rows: statusRows },
         { rows: priorityRows },
         { rows: userRows },
+        { rows: fieldRows },
+        { rows: customColumnRows },
+        { rows: taskListColumns },
       ] = await Promise.all([
         client.query(
           "SELECT * FROM import_stage_tasks WHERE job_id = $1 ORDER BY id",
           [jobId]
         ),
         client.query(
-          "SELECT id, name FROM task_statuses WHERE project_id = $1 ORDER BY position",
+          "SELECT id, name FROM task_statuses WHERE project_id = $1 ORDER BY sort_order",
           [job.target_project_id]
         ),
         client.query(
-          "SELECT id, name, value FROM task_priorities WHERE project_id = $1 ORDER BY value NULLS LAST",
-          [job.target_project_id]
+          "SELECT id, name, value FROM task_priorities ORDER BY value NULLS LAST"
         ),
         client.query(
           "SELECT source_user_id, source_email, target_user_id FROM import_user_mappings WHERE job_id = $1 AND (include IS NULL OR include = true)",
           [jobId]
+        ),
+        client.query(
+          "SELECT source_field, target_field, include FROM import_field_mappings WHERE job_id = $1",
+          [jobId]
+        ),
+        client.query(
+          "SELECT id, key FROM cc_custom_columns WHERE project_id = $1",
+          [job.target_project_id]
+        ),
+        client.query(
+          "SELECT id, key, pinned FROM project_task_list_cols WHERE project_id = $1",
+          [job.target_project_id]
         ),
       ]);
 
@@ -473,6 +571,12 @@ class ImportsService {
 
       const defaultPriorityId = priorityRows[0]?.id || null;
 
+      const priorityMap = new Map<string, string>();
+      priorityRows.forEach((row: any) => {
+        if (row.name)
+          priorityMap.set(row.name.toString().toLowerCase(), row.id);
+      });
+
       const assigneeMap = new Map<string, string>();
       userRows.forEach((row: any) => {
         if (row.source_user_id && row.target_user_id)
@@ -483,6 +587,131 @@ class ImportsService {
             row.target_user_id
           );
       });
+
+      const activeFieldMappings: FieldMappingRow[] = (fieldRows ||
+        []) as FieldMappingRow[];
+
+      const customColumnMap = new Map<string, { id: string; key: string }>();
+      customColumnRows.forEach((row: any) => {
+        if (row.key) customColumnMap.set(row.key, { id: row.id, key: row.key });
+      });
+
+      const customColumnPlans = new Map<
+        string,
+        { key: string; name: string }
+      >();
+      activeFieldMappings.forEach((mapping) => {
+        if (mapping.include === false) return;
+        if (STANDARD_TARGET_FIELDS.has(mapping.target_field)) return;
+        const key = toColumnKey(mapping.target_field);
+        if (!customColumnPlans.has(key)) {
+          customColumnPlans.set(key, {
+            key,
+            name: mapping.source_field || mapping.target_field,
+          });
+        }
+      });
+
+      const TASK_LIST_COLUMN_INFO: Record<
+        string,
+        { key: string; name: string; index: number }
+      > = {
+        key: { key: "KEY", name: "Key", index: 0 },
+        description: { key: "DESCRIPTION", name: "Description", index: 2 },
+        progress: { key: "PROGRESS", name: "Progress", index: 3 },
+        status: { key: "STATUS", name: "Status", index: 4 },
+        assignees: { key: "ASSIGNEES", name: "Members", index: 5 },
+        labels: { key: "LABELS", name: "Labels", index: 6 },
+        phase: { key: "PHASE", name: "Phase", index: 7 },
+        priority: { key: "PRIORITY", name: "Priority", index: 8 },
+        timeTracking: { key: "TIME_TRACKING", name: "Time Tracking", index: 9 },
+        estimation: { key: "ESTIMATION", name: "Estimation", index: 10 },
+        startDate: { key: "START_DATE", name: "Start Date", index: 11 },
+        dueDate: { key: "DUE_DATE", name: "Due Date", index: 12 },
+        completedDate: {
+          key: "COMPLETED_DATE",
+          name: "Completed Date",
+          index: 13,
+        },
+        createdDate: { key: "CREATED_DATE", name: "Created Date", index: 14 },
+        lastUpdated: { key: "LAST_UPDATED", name: "Last Updated", index: 15 },
+        reporter: { key: "REPORTER", name: "Reporter", index: 16 },
+      };
+
+      const taskListColumnMap = new Map<
+        string,
+        { id: string; pinned: boolean }
+      >();
+      taskListColumns.forEach((col: any) => {
+        if (col?.key)
+          taskListColumnMap.set(col.key, { id: col.id, pinned: !!col.pinned });
+      });
+
+      const ensureTaskListColumn = async (info: {
+        key: string;
+        name: string;
+        index: number;
+      }) => {
+        const existing = taskListColumnMap.get(info.key);
+        if (existing) {
+          if (!existing.pinned) {
+            await client.query(
+              "UPDATE project_task_list_cols SET pinned = TRUE WHERE id = $1",
+              [existing.id]
+            );
+            taskListColumnMap.set(info.key, { id: existing.id, pinned: true });
+          }
+          return;
+        }
+
+        const inserted = await client.query(
+          `INSERT INTO project_task_list_cols (project_id, name, key, index, pinned, custom_column, custom_column_obj)
+           VALUES ($1, $2, $3, $4, TRUE, FALSE, NULL)
+           RETURNING id`,
+          [job.target_project_id, info.name, info.key, info.index]
+        );
+        const newId = inserted.rows[0]?.id;
+        if (newId) taskListColumnMap.set(info.key, { id: newId, pinned: true });
+      };
+
+      for (const mapping of activeFieldMappings) {
+        if (mapping.include === false) continue;
+        const info = TASK_LIST_COLUMN_INFO[mapping.target_field];
+        if (info) {
+          await ensureTaskListColumn(info);
+        }
+      }
+
+      const ensureCustomColumn = async (key: string, name: string) => {
+        if (customColumnMap.has(key)) return customColumnMap.get(key)!;
+
+        const columnResult = await client.query(
+          `INSERT INTO cc_custom_columns (project_id, name, key, field_type, width, is_visible, is_custom_column)
+           VALUES ($1, $2, $3, $4, $5, $6, true)
+           ON CONFLICT (project_id, key) DO UPDATE SET name = EXCLUDED.name
+           RETURNING id;`,
+          [job.target_project_id, name, key, "text", 150, true]
+        );
+        const columnId = columnResult.rows[0]?.id;
+
+        if (columnId) {
+          await client.query(
+            `INSERT INTO cc_column_configurations (column_id, field_title, field_type)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (column_id) DO UPDATE SET field_title = EXCLUDED.field_title, field_type = EXCLUDED.field_type;`,
+            [columnId, name, "text"]
+          );
+          const column = { id: columnId, key };
+          customColumnMap.set(key, column);
+          return column;
+        }
+
+        return null;
+      };
+
+      for (const plan of customColumnPlans.values()) {
+        await ensureCustomColumn(plan.key, plan.name);
+      }
 
       const createdTasks: any[] = [];
       const sourceToId = new Map<string, string>();
@@ -495,6 +724,12 @@ class ImportsService {
         return statusMap.get(key) || defaultStatusId;
       };
 
+      const resolvePriorityId = (value?: string | null) => {
+        if (!value) return defaultPriorityId;
+        const key = value.toString().trim().toLowerCase();
+        return priorityMap.get(key) || defaultPriorityId;
+      };
+
       const resolveAssignees = (value?: string | null) => {
         if (!value) return [] as Array<{ user_id: string }>;
         const direct = assigneeMap.get(value.toString());
@@ -504,17 +739,23 @@ class ImportsService {
       };
 
       const createTask = async (task: any, parentId?: string | null) => {
+        const { patch, customValues } = mapRawToTaskFields(
+          task.raw,
+          activeFieldMappings
+        );
+        const taskWithMappings = { ...task, ...patch } as any;
+
         const payload: Record<string, unknown> = {
           name: task.title,
           project_id: job.target_project_id,
-          description: task.description,
-          start_date: task.start_at,
-          end_date: task.due_at,
+          description: taskWithMappings.description,
+          start_date: taskWithMappings.start_at,
+          end_date: taskWithMappings.due_at,
           reporter_id: job.created_by,
-          status_id: resolveStatusId(task.status),
-          priority_id: defaultPriorityId,
+          status_id: resolveStatusId(taskWithMappings.status),
+          priority_id: resolvePriorityId(taskWithMappings.priority_label),
           parent_task_id: parentId || null,
-          assignees: resolveAssignees(task.assignee_source_id),
+          assignees: resolveAssignees(taskWithMappings.assignee_source_id),
         };
 
         const result = await client.query("SELECT create_task($1) AS task;", [
@@ -525,6 +766,23 @@ class ImportsService {
           sourceToId.set(task.source_task_id, created.id);
         }
         createdTasks.push(created);
+
+        if (created?.id && customValues.length) {
+          for (const customValue of customValues) {
+            const column =
+              customColumnMap.get(customValue.columnKey) ||
+              (await ensureCustomColumn(
+                customValue.columnKey,
+                customValue.columnName
+              ));
+            if (!column) continue;
+            await client.query(
+              `INSERT INTO cc_column_values (task_id, column_id, text_value, created_at, updated_at)
+               VALUES ($1, $2, $3, NOW(), NOW())`,
+              [created.id, column.id, String(customValue.value)]
+            );
+          }
+        }
       };
 
       for (const task of roots) {
