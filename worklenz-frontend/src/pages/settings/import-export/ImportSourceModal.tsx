@@ -656,7 +656,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   'Your team’s data from Asana will be imported into this space. Check if you’re selecting the right Worklenz space, template, and space type as these options can’t be modified later. All fields are required.'
                 }
               </Typography.Paragraph>
-              <label>{'Jira space'}</label>
+              <label>{'Worklenz space'}</label>
               <Select
                 style={{ width: '100%', marginBottom: 16 }}
                 value={spaceType}
@@ -710,7 +710,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             {
               key: 'importMembers',
               title: 'Import all members from Asana project',
-              description: 'Brings collaborators into the Jira space',
+              description: 'Brings collaborators into the Worklenz space',
               iconBg: '#0f9d58',
               icon: '🧑‍🤝‍🧑',
               action: undefined,
@@ -1114,10 +1114,10 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               <div style={{ color: '#f87171', fontSize: 13, marginBottom: 20 }}>
                 All fields are required
               </div>
-              {/* Jira space select */}
+              {/* Worklenz space select */}
               <div style={{ marginBottom: 20 }}>
                 <Typography.Text style={{ color: '#fff', fontWeight: 500 }}>
-                  Jira space
+                  Worklenz space
                 </Typography.Text>
                 <Select
                   style={{ width: '100%', marginTop: 6 }}

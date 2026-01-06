@@ -98,13 +98,67 @@ export interface CustomFieldValuePlan {
 }
 
 const STANDARD_TARGET_FIELDS = new Set<string>([
+  "key",
   "description",
+  "progress",
   "status",
+  "assignees",
+  "labels",
+  "phase",
+  "priority",
+  "timeTracking",
+  "estimation",
   "startDate",
   "dueDate",
-  "assignees",
-  "priority",
+  "completedDate",
+  "createdDate",
+  "lastUpdated",
+  "reporter",
 ]);
+
+const TARGET_FIELD_ALIASES: Record<string, string> = {
+  key: "key",
+  description: "description",
+  progress: "progress",
+  status: "status",
+  assignee: "assignees",
+  assignees: "assignees",
+  member: "assignees",
+  members: "assignees",
+  label: "labels",
+  labels: "labels",
+  phase: "phase",
+  priority: "priority",
+  timetracking: "timeTracking",
+  estimation: "estimation",
+  estimate: "estimation",
+  startdate: "startDate",
+  start: "startDate",
+  startat: "startDate",
+  startatdate: "startDate",
+  duedate: "dueDate",
+  due: "dueDate",
+  dueat: "dueDate",
+  completeddate: "completedDate",
+  completed: "completedDate",
+  completedat: "completedDate",
+  createddate: "createdDate",
+  created: "createdDate",
+  createdat: "createdDate",
+  lastupdated: "lastUpdated",
+  updated: "lastUpdated",
+  updatedat: "lastUpdated",
+  reporter: "reporter",
+  owner: "reporter",
+};
+
+const normalizeTargetField = (value: string) => {
+  const normalized = slugify(value || "", {
+    lower: true,
+    strict: true,
+  }).replace(/-/g, "");
+  return TARGET_FIELD_ALIASES[normalized] || value;
+};
 
 const toColumnKey = (value: string) =>
   slugify(value || "custom-column", { lower: true, strict: true }) ||
@@ -127,7 +181,9 @@ export const mapRawToTaskFields = (
     const value = source[mapping.source_field];
     if (value === undefined || value === null || value === "") return;
 
-    switch (mapping.target_field) {
+    const targetField = normalizeTargetField(mapping.target_field);
+
+    switch (targetField) {
       case "description":
         patch.description = String(value);
         break;
@@ -147,8 +203,8 @@ export const mapRawToTaskFields = (
         patch.priority_label = String(value);
         break;
       default: {
-        const columnKey = toColumnKey(mapping.target_field);
-        const columnName = mapping.source_field || mapping.target_field;
+        const columnKey = toColumnKey(targetField);
+        const columnName = mapping.source_field || targetField;
         customValues.push({ columnKey, columnName, value });
         break;
       }
@@ -602,12 +658,13 @@ class ImportsService {
       >();
       activeFieldMappings.forEach((mapping) => {
         if (mapping.include === false) return;
-        if (STANDARD_TARGET_FIELDS.has(mapping.target_field)) return;
-        const key = toColumnKey(mapping.target_field);
+        const normalizedTarget = normalizeTargetField(mapping.target_field);
+        if (STANDARD_TARGET_FIELDS.has(normalizedTarget)) return;
+        const key = toColumnKey(normalizedTarget);
         if (!customColumnPlans.has(key)) {
           customColumnPlans.set(key, {
             key,
-            name: mapping.source_field || mapping.target_field,
+            name: mapping.source_field || normalizedTarget,
           });
         }
       });
@@ -676,7 +733,8 @@ class ImportsService {
 
       for (const mapping of activeFieldMappings) {
         if (mapping.include === false) continue;
-        const info = TASK_LIST_COLUMN_INFO[mapping.target_field];
+        const normalizedTarget = normalizeTargetField(mapping.target_field);
+        const info = TASK_LIST_COLUMN_INFO[normalizedTarget];
         if (info) {
           await ensureTaskListColumn(info);
         }
@@ -695,10 +753,14 @@ class ImportsService {
         const columnId = columnResult.rows[0]?.id;
 
         if (columnId) {
+          // cc_column_configurations does not enforce a unique constraint on column_id; replace-on-insert manually.
+          await client.query(
+            "DELETE FROM cc_column_configurations WHERE column_id = $1",
+            [columnId]
+          );
           await client.query(
             `INSERT INTO cc_column_configurations (column_id, field_title, field_type)
-             VALUES ($1, $2, $3)
-             ON CONFLICT (column_id) DO UPDATE SET field_title = EXCLUDED.field_title, field_type = EXCLUDED.field_type;`,
+             VALUES ($1, $2, $3)`,
             [columnId, name, "text"]
           );
           const column = { id: columnId, key };
@@ -751,6 +813,7 @@ class ImportsService {
           description: taskWithMappings.description,
           start_date: taskWithMappings.start_at,
           end_date: taskWithMappings.due_at,
+          total_minutes: 0,
           reporter_id: job.created_by,
           status_id: resolveStatusId(taskWithMappings.status),
           priority_id: resolvePriorityId(taskWithMappings.priority_label),
