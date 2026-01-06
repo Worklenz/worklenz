@@ -16,10 +16,10 @@ import bulkTasksDueDateValidator from "../../middlewares/validators/bulk-tasks-d
 import mapTasksToBulkUpdate from "../../middlewares/map-tasks-to-bulk-update";
 import homeTaskBodyValidator from "../../middlewares/validators/home-task-body-validator";
 import TaskListColumnsController from "../../controllers/task-list-columns-controller";
-import TasksControllerV2 from "../../controllers/tasks-controller-v2";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import taskCreateBodyValidator from "../../middlewares/validators/task-create-body--validator";
 import verifyTaskAccess, {verifyBulkTaskAccessMiddleware} from "../../middlewares/verify-task-access";
+import TasksControllerV2 from "../../controllers/tasks-controller-v2";
 
 const tasksApiRouter = express.Router();
 

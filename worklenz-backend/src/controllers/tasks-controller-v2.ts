@@ -52,14 +52,25 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   private static flatString(text: string) {
-    return (text || "")
+    if (!text) return "";
+    
+    // UUID validation regex - only accept valid UUIDs to prevent SQL injection
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    
+    const validValues = (text || "")
       .split(" ")
-      .map((s) => `'${s}'`)
-      .join(",");
+      .map((s) => s.trim())
+      .filter((s) => s !== "" && UUID_REGEX.test(s))
+      .map((s) => `'${s}'`);
+    
+    return validValues.join(",");
   }
 
   private static getFilterByStatusWhereClosure(text: string) {
-    return text ? `status_id IN (${this.flatString(text)})` : "";
+    if (!text) return "";
+    const statusIds = this.flatString(text);
+    if (!statusIds) return "1 = 0"; // No valid UUIDs - return false condition
+    return `status_id IN (${statusIds})`;
   }
 
   /**
@@ -71,6 +82,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
     if (!text) return "";
 
     const priorityIds = this.flatString(text);
+    if (!priorityIds) return "1 = 0"; // No valid UUIDs - return false condition
+    
     return `(
       priority_id IN (${priorityIds})
       OR EXISTS (
@@ -105,6 +118,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
     if (!text) return "";
 
     const labelIds = this.flatString(text);
+    if (!labelIds) return "1 = 0"; // No valid UUIDs - return false condition
+    
     return `(
       id IN (SELECT task_id FROM task_labels WHERE label_id IN (${labelIds}))
       OR EXISTS (
@@ -140,6 +155,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
     if (!text) return "";
 
     const memberIds = this.flatString(text);
+    if (!memberIds) return "1 = 0"; // No valid UUIDs - return false condition
+    
     return `(
       id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${memberIds}))
       OR EXISTS (
@@ -167,7 +184,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   private static getFilterByProjectsWhereClosure(text: string) {
-    return text ? `project_id IN (${this.flatString(text)})` : "";
+    if (!text) return "";
+    const projectIds = this.flatString(text);
+    if (!projectIds) return "1 = 0"; // No valid UUIDs - return false condition
+    return `project_id IN (${projectIds})`;
   }
 
   private static getFilterByAssignee(filterBy: string) {
@@ -210,6 +230,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   private static getQuery(userId: string, options: ParsedQs) {
+    // Validate userId is a valid UUID to prevent SQL injection
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const sanitizedUserId = UUID_REGEX.test(userId) ? userId : '00000000-0000-0000-0000-000000000000';
+    
     // Determine which sort column to use based on grouping
     const groupBy = options.group || "status";
     let defaultSortColumn = "sort_order";
@@ -268,24 +292,36 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     // Enhanced search query that includes subtasks
     // If a subtask matches the search, show the parent task too
-    let enhancedSearchQuery = searchQuery;
-    if (options.search && !isSubTasks) {
+    let enhancedSearchQuery = "";
+    if (options.search) {
       const searchTerm = options.search.toString().trim();
       if (searchTerm) {
-        // Build a search condition that checks both parent and subtasks
-        enhancedSearchQuery = `AND (
-          t.name ILIKE '%${searchTerm}%'
-          OR CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no) ILIKE '%${searchTerm}%'
-          OR EXISTS (
-            SELECT 1 FROM tasks subtask
-            WHERE subtask.parent_task_id = t.id
-            AND subtask.archived IS FALSE
-            AND (
-              subtask.name ILIKE '%${searchTerm}%'
-              OR CONCAT((SELECT key FROM projects WHERE id = subtask.project_id), '-', subtask.task_no) ILIKE '%${searchTerm}%'
+        // Sanitize search term to prevent SQL injection
+        // Escape single quotes by doubling them (PostgreSQL standard)
+        const sanitizedSearchTerm = searchTerm.replace(/'/g, "''");
+        
+        if (isSubTasks) {
+          // For subtasks, use a simpler search query
+          enhancedSearchQuery = `AND (
+            t.name ILIKE '%${sanitizedSearchTerm}%'
+            OR CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no::text) ILIKE '%${sanitizedSearchTerm}%'
+          )`;
+        } else {
+          // Build a search condition that checks both parent and subtasks
+          enhancedSearchQuery = `AND (
+            t.name ILIKE '%${sanitizedSearchTerm}%'
+            OR CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no::text) ILIKE '%${sanitizedSearchTerm}%'
+            OR EXISTS (
+              SELECT 1 FROM tasks subtask
+              WHERE subtask.parent_task_id = t.id
+              AND subtask.archived IS FALSE
+              AND (
+                subtask.name ILIKE '%${sanitizedSearchTerm}%'
+                OR CONCAT((SELECT key FROM projects WHERE id = subtask.project_id), '-', subtask.task_no::text) ILIKE '%${sanitizedSearchTerm}%'
+              )
             )
-          )
-        )`;
+          )`;
+        }
       }
     }
 
@@ -389,22 +425,30 @@ export default class TasksControllerV2 extends TasksControllerBase {
       }
       if (options.priorities) {
         const priorityIds = this.flatString(options.priorities as string);
-        descendantFilters.push(`descendant.priority_id IN (${priorityIds})`);
+        if (priorityIds) {
+          descendantFilters.push(`descendant.priority_id IN (${priorityIds})`);
+        }
       }
       if (options.labels) {
         const labelIds = this.flatString(options.labels as string);
-        descendantFilters.push(`descendant.id IN (SELECT task_id FROM task_labels WHERE label_id IN (${labelIds}))`);
+        if (labelIds) {
+          descendantFilters.push(`descendant.id IN (SELECT task_id FROM task_labels WHERE label_id IN (${labelIds}))`);
+        }
       }
       if (options.members) {
         const memberIds = this.flatString(options.members as string);
-        descendantFilters.push(`descendant.id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${memberIds}))`);
+        if (memberIds) {
+          descendantFilters.push(`descendant.id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${memberIds}))`);
+        }
       }
       if (options.search && !isSubTasks) {
         const searchTerm = options.search.toString().trim();
         if (searchTerm) {
+          // Sanitize search term to prevent SQL injection
+          const sanitizedSearchTerm = searchTerm.replace(/'/g, "''");
           descendantFilters.push(`(
-            descendant.name ILIKE '%${searchTerm}%'
-            OR CONCAT((SELECT key FROM projects WHERE id = descendant.project_id), '-', descendant.task_no) ILIKE '%${searchTerm}%'
+            descendant.name ILIKE '%${sanitizedSearchTerm}%'
+            OR CONCAT((SELECT key FROM projects WHERE id = descendant.project_id), '-', descendant.task_no::text) ILIKE '%${sanitizedSearchTerm}%'
           )`);
         }
       }
@@ -525,7 +569,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
              (SELECT start_time
               FROM task_timers
               WHERE task_id = t.id
-                AND user_id = '${userId}') AS timer_start_time,
+                AND user_id = '${sanitizedUserId}') AS timer_start_time,
 
              (SELECT color_code
               FROM sys_task_status_categories
@@ -1007,14 +1051,17 @@ export default class TasksControllerV2 extends TasksControllerBase {
     projectId: string,
     taskId: string
   ) {
+    // Use parameterized query to prevent SQL injection
+    // Cast $3 to text explicitly to avoid type inference issues with ILIKE
     const q = `SELECT id AS value ,
        name AS label,
        CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no) AS task_key
       FROM tasks t
-      WHERE t.name ILIKE '%${searchString}%'
+      WHERE t.name ILIKE $3::text
         AND t.project_id = $1 AND t.id != $2
       LIMIT 15;`;
-    const result = await db.query(q, [projectId, taskId]);
+    const searchPattern = `%${searchString}%`;
+    const result = await db.query(q, [projectId, taskId, searchPattern]);
 
     return result.rows;
   }
@@ -1618,10 +1665,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
             total > 0 ? +((doingCount / total) * 100).toFixed(0) : 0;
           group.done_progress =
             total > 0 ? +((doneCount / total) * 100).toFixed(0) : 0;
+        } else {
+          group.todo_progress = 0;
+          group.doing_progress = 0;
+          group.done_progress = 0;
         }
-        group.todo_progress = 0;
-        group.doing_progress = 0;
-        group.done_progress = 0;
       });
     }
 
