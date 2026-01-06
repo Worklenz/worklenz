@@ -112,6 +112,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     setCsvRows([]);
     setSpaceName(source.label ? `${source.label} import` : '');
     setSpaceType('software');
+    setSpaceTemplate('scrum');
     setIsImporting(false);
 
     let cancelled = false;
@@ -195,6 +196,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const [isImporting, setIsImporting] = React.useState<boolean>(false);
   const [spaceName, setSpaceName] = React.useState<string>('');
   const [spaceType, setSpaceType] = React.useState<string>('software');
+  const [spaceTemplate, setSpaceTemplate] = React.useState<string>('scrum');
   const [defaultProjectStatusId, setDefaultProjectStatusId] = React.useState<string | null>(null);
   const [worklenzStatuses, setWorklenzStatuses] = React.useState<IProjectStatus[]>([]);
   const worklenzFieldOptions = React.useMemo(
@@ -416,7 +418,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       await updateImportTarget(activeJob.id, {
         targetProjectId: projectId,
         targetSpaceType: spaceType,
-        targetTemplate: null,
+        targetTemplate: spaceTemplate,
       });
 
       await ingestImportJob(activeJob.id, {
@@ -1155,7 +1157,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 </Typography.Text>
                 <Select
                   style={{ width: '100%', marginTop: 6 }}
-                  defaultValue="scrum"
+                  value={spaceTemplate}
+                  onChange={setSpaceTemplate}
                   styles={{ popup: { root: { background: '#23272f', color: '#fff' } } }}
                   optionLabelProp="label"
                 >
