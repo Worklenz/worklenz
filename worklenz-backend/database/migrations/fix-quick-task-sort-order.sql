@@ -6,7 +6,7 @@
 CREATE OR REPLACE FUNCTION create_quick_task(_body json) RETURNS json
     LANGUAGE plpgsql
 AS
-$
+$$
 DECLARE
     _task_id     UUID;
     _parent_task UUID;
@@ -80,4 +80,4 @@ BEGIN
 
     RETURN get_single_task(_task_id);
 END;
-$;
+$$;
