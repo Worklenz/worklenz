@@ -275,6 +275,16 @@ export const fetchTasksV3 = createAsyncThunk(
       const tasks: Task[] = response.body.allTasks.map((task: any) => {
         const now = new Date().toISOString();
 
+        // Debug log to check if completedAt is in the API response
+        if (task.completedAt || task.completed_at) {
+          console.log('[DEBUG fetchTasksV3] Task with completed date:', {
+            id: task.id,
+            title: task.title,
+            completedAt: task.completedAt,
+            completed_at: task.completed_at,
+          });
+        }
+
         const transformedTask = {
           id: task.id,
           task_key: task.task_key || task.key || '',
@@ -440,6 +450,7 @@ export const duplicateTask = createAsyncThunk(
   'taskManagement/duplicateTask',
   async ({projectId, taskId, duplicateOptions}: {projectId: string, taskId: string, duplicateOptions: any },{ rejectWithValue }) => {
     try {
+      // console.log('Duplicate Task Thunk', projectId, taskId, duplicateOptions);
       const response = await duplicateTaskApiService.duplicate({task_id: taskId, project_id: projectId, options: duplicateOptions});
       return response;
     } catch (error) {
@@ -1318,20 +1329,6 @@ export const selectTasksByPhase = createSelector(
 
 // Add archived selector
 export const selectArchived = (state: RootState) => state.taskManagement.archived;
-
-// Memoized selector for active filters to prevent unnecessary re-renders
-export const selectActiveFilters = createSelector(
-  [
-    (state: RootState) => state.taskReducer?.taskAssignees || [],
-    (state: RootState) => state.taskReducer?.labels || [],
-    (state: RootState) => state.taskReducer?.priorities || [],
-  ],
-  (taskAssignees, labels, priorities) => ({
-    members: taskAssignees.filter((m: any) => m.selected).map((m: any) => m.id),
-    labels: labels.filter((l: any) => l.selected).map((l: any) => l.id),
-    priorities: priorities,
-  })
-);
 
 // Export the reducer as default
 export default taskManagementSlice.reducer;
