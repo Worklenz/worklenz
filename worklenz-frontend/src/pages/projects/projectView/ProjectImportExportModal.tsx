@@ -18,12 +18,14 @@ export const ProjectImportExportModal: React.FC<ProjectImportExportModalProps> =
       footer={null}
       width={800}
       title={null}
-      bodyStyle={{
-        padding: 0,
-        height: '80vh', // Strict height
-        overflow: 'hidden', // No scroll on modal itself
-        display: 'flex',
-        flexDirection: 'column',
+      styles={{
+        body: {
+          padding: 0,
+          height: '80vh', // Strict height
+          overflow: 'hidden', // No scroll on modal itself
+          display: 'flex',
+          flexDirection: 'column',
+        },
       }}
       destroyOnClose
     >

@@ -36,6 +36,7 @@ import {
 } from '@/api/imports';
 import type { ImportJob } from '@/api/imports';
 import { projectsApiService } from '@/api/projects/projects.api.service';
+import { IProjectStatus } from '@/types/project/projectStatus.types';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 
 interface ImportSourceModalProps {
@@ -108,6 +109,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     setAuthError(null);
     setShowCompletion(false);
     setCsvText('');
+    setCsvRows([]);
     setSpaceName(source.label ? `${source.label} import` : '');
     setSpaceType('software');
     setIsImporting(false);
@@ -172,6 +174,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   // State for CSV columns and mapping
   const [csvColumns, setCsvColumns] = React.useState<string[]>([]);
   const [csvText, setCsvText] = React.useState<string>('');
+  const [csvRows, setCsvRows] = React.useState<Record<string, any>[]>([]);
   const [fieldMappings, setFieldMappings] = React.useState<Record<string, string>>({});
   const [includeInImport, setIncludeInImport] = React.useState<Record<string, boolean>>({});
   // Delimiter for CSV parsing
@@ -193,6 +196,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const [spaceName, setSpaceName] = React.useState<string>('');
   const [spaceType, setSpaceType] = React.useState<string>('software');
   const [defaultProjectStatusId, setDefaultProjectStatusId] = React.useState<string | null>(null);
+  const [worklenzStatuses, setWorklenzStatuses] = React.useState<IProjectStatus[]>([]);
   const worklenzFieldOptions = React.useMemo(
     () => [
       { value: 'key', label: 'Key' },
@@ -216,6 +220,98 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     []
   );
 
+  const defaultWorkTypes = React.useMemo(
+    () => [
+      {
+        id: 'todo',
+        name: t('importStep.statusTodo', 'To Do'),
+        color_code: '#fbbf24',
+        sort_order: 0,
+      },
+      {
+        id: 'doing',
+        name: t('importStep.statusDoing', 'Doing'),
+        color_code: '#3b82f6',
+        sort_order: 1,
+      },
+      {
+        id: 'done',
+        name: t('importStep.statusDone', 'Done'),
+        color_code: '#22c55e',
+        sort_order: 2,
+      },
+    ],
+    [t]
+  );
+
+  const statusColumnKey = React.useMemo(
+    () => Object.entries(fieldMappings).find(([, target]) => target === 'status')?.[0],
+    [fieldMappings]
+  );
+
+  const statusValues = React.useMemo(() => {
+    if (!statusColumnKey) return [] as string[];
+    const values = new Set<string>();
+    csvRows.forEach(row => {
+      const raw = row?.[statusColumnKey];
+      if (typeof raw === 'string' && raw.trim()) values.add(raw.trim());
+    });
+    return Array.from(values);
+  }, [csvRows, statusColumnKey]);
+
+  const workTypeOptions = React.useMemo(() => {
+    const sourceStatuses = worklenzStatuses.length ? worklenzStatuses : defaultWorkTypes;
+    return sourceStatuses.map(status => ({
+      key: status.id || status.name || 'status',
+      label: status.name || t('importStep.statusFallback', 'Status'),
+      icon: (
+        <span
+          style={{
+            width: 10,
+            height: 10,
+            display: 'inline-block',
+            borderRadius: '50%',
+            background: status.color_code || '#64748b',
+          }}
+        />
+      ),
+      level: typeof status.sort_order === 'number' ? status.sort_order : 0,
+    }));
+  }, [defaultWorkTypes, t, worklenzStatuses]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const fetchStatuses = async () => {
+      try {
+        const resp = await projectsApiService.getProjectStatuses();
+        if (cancelled) return;
+        const statuses = resp?.body || [];
+        if (statuses.length) {
+          setWorklenzStatuses(statuses);
+          const defaultStatus = statuses.find(status => status.is_default) || statuses[0];
+          if (defaultStatus?.id) {
+            setDefaultProjectStatusId(id => id || defaultStatus.id || null);
+          }
+          return;
+        }
+      } catch (error) {
+        // ignore and fall back
+      }
+
+      if (!cancelled) {
+        setWorklenzStatuses(defaultWorkTypes);
+        const fallbackDefault = defaultWorkTypes[0]?.id;
+        if (fallbackDefault) setDefaultProjectStatusId(id => id || fallbackDefault);
+      }
+    };
+
+    fetchStatuses();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [defaultWorkTypes]);
+
   const navigationDisabled = authNeeded && !authCompleted;
 
   const ensureImportJob = React.useCallback(async () => {
@@ -231,17 +327,41 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const ensureDefaultProjectStatusId = React.useCallback(async (): Promise<string> => {
     if (defaultProjectStatusId) return defaultProjectStatusId;
 
-    const resp = await projectsApiService.getProjectStatuses();
-    const statuses = resp?.body || [];
-    const defaultStatus = statuses.find(status => status.is_default) || statuses[0];
+    const pickDefault = (statuses: IProjectStatus[]) =>
+      statuses.find(status => status.is_default) || statuses[0];
 
-    if (!defaultStatus?.id) {
-      throw new Error(t('importStep.projectStatusMissing', 'No project status available'));
+    if (worklenzStatuses.length) {
+      const defaultStatus = pickDefault(worklenzStatuses);
+      if (defaultStatus?.id) {
+        setDefaultProjectStatusId(defaultStatus.id);
+        return defaultStatus.id;
+      }
     }
 
-    setDefaultProjectStatusId(defaultStatus.id);
-    return defaultStatus.id;
-  }, [defaultProjectStatusId, t]);
+    try {
+      const resp = await projectsApiService.getProjectStatuses();
+      const statuses = resp?.body || [];
+      if (statuses.length) {
+        setWorklenzStatuses(statuses);
+        const defaultStatus = pickDefault(statuses);
+        if (defaultStatus?.id) {
+          setDefaultProjectStatusId(defaultStatus.id);
+          return defaultStatus.id;
+        }
+      }
+    } catch (error) {
+      // ignore and fall back to defaults below
+    }
+
+    const fallbackDefault = pickDefault(defaultWorkTypes);
+    if (fallbackDefault?.id) {
+      setWorklenzStatuses(defaultWorkTypes);
+      setDefaultProjectStatusId(fallbackDefault.id);
+      return fallbackDefault.id;
+    }
+
+    throw new Error(t('importStep.projectStatusMissing', 'No project status available'));
+  }, [defaultProjectStatusId, defaultWorkTypes, t, worklenzStatuses]);
 
   const handleBack = () => setStep(s => Math.max(0, s - 1));
   const handleNext = () => setStep(s => Math.min(totalSteps - 1, s + 1));
@@ -874,7 +994,10 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 reader.onload = e => {
                   const text = e.target?.result as string;
                   setCsvText(text || '');
-                  const parsed = Papa.parse<string[]>(text, { header: true });
+                  const parsed = Papa.parse<Record<string, any>>(text, {
+                    header: true,
+                    skipEmptyLines: true,
+                  });
                   if (parsed.meta.fields) {
                     setCsvColumns(parsed.meta.fields);
                     // Reset mappings and checkboxes
@@ -885,6 +1008,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                       )
                     );
                   }
+                  setCsvRows(
+                    Array.isArray(parsed.data) ? (parsed.data as Record<string, any>[]) : []
+                  );
                 };
                 reader.readAsText(file);
                 return false; // Prevent upload
@@ -1259,77 +1385,30 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         );
       case 3:
         // Map values to work types step
-        // Example values and work types (replace with real data as needed)
-        const csvValues = ['Bug', 'Story', 'Task'];
-        const workTypesList = [
-          {
-            key: 'bug',
-            label: 'Bug',
-            icon: <span style={{ color: '#ff4d4f' }}>🪲</span>,
-            level: 0,
-          },
-          {
-            key: 'task',
-            label: 'Task',
-            icon: <span style={{ color: '#4096ff' }}>☑️</span>,
-            level: 0,
-          },
-          {
-            key: 'story',
-            label: 'Story',
-            icon: <span style={{ color: '#22c55e' }}>📗</span>,
-            level: 0,
-          },
-          {
-            key: 'epic',
-            label: 'Epic',
-            icon: <span style={{ color: '#a855f7' }}>💎</span>,
-            level: 1,
-          },
-          {
-            key: 'subtask',
-            label: 'Sub-task',
-            icon: <span style={{ color: '#38bdf8' }}>📝</span>,
-            level: -1,
-          },
-          {
-            key: 'todo',
-            label: 'To Do',
-            icon: <span style={{ color: '#fbbf24' }}>📝</span>,
-            level: 0,
-          },
-          {
-            key: 'doing',
-            label: 'Doing',
-            icon: <span style={{ color: '#3b82f6' }}>🔄</span>,
-            level: 0,
-          },
-          {
-            key: 'done',
-            label: 'Done',
-            icon: <span style={{ color: '#22c55e' }}>✅</span>,
-            level: 0,
-          },
-        ];
-
-        // Filtered values
+        const csvValues = statusValues;
+        const workTypesList = workTypeOptions;
         const filteredValues = csvValues.filter(
           v =>
             v.toLowerCase().includes(searchValue.toLowerCase()) &&
             (filter === 'all' || (filter === 'mapped' ? workTypeMapping[v] : !workTypeMapping[v]))
         );
 
+        const emptyValuesMessage = statusColumnKey
+          ? t('importStep.noStatusValuesFound', 'No values found in the mapped Status column.')
+          : t('importStep.selectStatusColumnPrompt', 'Map a CSV column to Status to see values.');
+
         return (
           <div style={{ width: '100%' }}>
             <Typography.Title level={3} style={{ color: '#fff', marginBottom: 8 }}>
-              Map values to work types
+              {t('importStep.mapValues', 'Map values to work types')}
             </Typography.Title>
             <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 16 }}>
-              Build more structure into your space by mapping values within the Issue Type column to
-              Worklenz work types. You can also create new work types based on your space
-              permissions.{' '}
+              {t(
+                'importStep.mapValuesHelp',
+                'Build more structure into your space by mapping values in your Status column to Worklenz statuses.'
+              )}{' '}
               <a href="#" style={{ color: '#4096ff' }}>
-                Read about mapping work types
+                {t('importStep.mapValuesDocs', 'Read about mapping work types')}
               </a>
             </Typography.Paragraph>
             <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
@@ -1384,7 +1463,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               </span>
             </div>
             {filteredValues.length === 0 ? (
-              <div style={{ color: '#888', margin: '24px 0' }}>No values found.</div>
+              <div style={{ color: '#888', margin: '24px 0' }}>{emptyValuesMessage}</div>
             ) : (
               filteredValues.map(value => (
                 <div
@@ -1452,7 +1531,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                             {wt.icon}
                             <span style={{ color: '#fff' }}>{wt.label}</span>
                             <span style={{ color: '#b0b0b0', fontSize: 13, marginLeft: 8 }}>
-                              Level {wt.level}
+                              {t('importStep.statusLevel', 'Level')} {wt.level}
                             </span>
                           </span>
                         </Select.Option>
