@@ -3,7 +3,7 @@ import {
   Card,
   Flex,
   Input,
-  Modal,
+  Popconfirm,
   Table,
   TableProps,
   Tooltip,
@@ -23,13 +23,11 @@ import LabelsDrawer from './labels-drawer';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_settings_labels_visit } from '@/shared/worklenz-analytics-events';
 import { alertService } from '@/services/alerts/alertService';
-import { useAppSelector } from '@/app/store';
 
 const LabelsSettings = () => {
   const { t } = useTranslation('settings/labels');
   const { trackMixpanelEvent } = useMixpanelTracking();
   useDocumentTitle(t('pageTitle', 'Manage Labels'));
-  const themeMode = useAppSelector((state) => state.themeReducer.mode);
 
   const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -90,66 +88,17 @@ const LabelsSettings = () => {
     }
   };
 
-  const handleDeleteClick = (record: ITaskLabel, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const usageCount = record.usage || 0;
-    const labelName = record.name || 'this label';
-    const isInUse = usageCount > 0;
-
-    const isDark = themeMode === 'dark';
-    const textColor = isDark ? '#d9d9d9' : '#262626';
-
-    const plural = usageCount > 1 ? 's' : '';
-    
-    Modal.confirm({
-      title: t('deleteConfirmTitle', 'Delete Label'),
-      icon: <ExclamationCircleFilled style={{ color: '#ff9800' }} />,
-      content: (
-        <div>
-          {isInUse ? (
-            <>
-              <Typography.Text style={{ color: textColor }}>
-                {t('labelInUseMessage', {
-                  labelName,
-                  count: usageCount,
-                  plural,
-                  defaultValue: `The label "${labelName}" is currently assigned to ${usageCount} task${plural}.`
-                })}
-              </Typography.Text>
-              <br />
-              <Typography.Text strong style={{ marginTop: 8, display: 'block', color: '#ff4d4f' }}>
-                {t('labelDeleteWarning', {
-                  count: usageCount,
-                  plural,
-                  defaultValue: `⚠️ Deleting this label will remove it from all ${usageCount} assigned task${plural}. This action cannot be undone.`
-                })}
-              </Typography.Text>
-            </>
-          ) : (
-            <Typography.Text style={{ color: textColor }}>
-              {t('deleteConfirmMessage', {
-                labelName,
-                defaultValue: `Are you sure you want to delete the label "${labelName}"? This action cannot be undone.`
-              })}
-            </Typography.Text>
-          )}
-        </div>
-      ),
-      okText: t('deleteButton', 'Delete'),
-      cancelText: t('cancelButton', 'Cancel'),
-      okType: 'danger',
-      centered: true,
-      width: 500,
-      onOk: async () => {
-        // Delete with force if label is in use
-        await deleteLabel(record.id!, isInUse);
-      },
-    });
-  };
-
-  const handleEditClick = (id: string) => {
+  const handleEditClick = (id: string, e?: React.MouseEvent<HTMLElement>) => {
+    e?.stopPropagation();
     setSelectedLabelId(id);
     setShowDrawer(true);
+  };
+
+  const handleDeleteClick = async (record: ITaskLabel) => {
+    const usageCount = record.usage || 0;
+    const isInUse = usageCount > 0;
+    // Delete with force if label is in use
+    await deleteLabel(record.id!, isInUse);
   };
 
   const handleDrawerClose = () => {
@@ -178,93 +127,155 @@ const LabelsSettings = () => {
     {
       key: 'actionBtns',
       width: 100,
-      render: (record: ITaskLabel) => (
-        <div 
-          className="action-button opacity-0 transition-opacity duration-200"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Flex gap={4}>
-            <Tooltip title={t('editTooltip', 'Edit')}>
-              <Button
-                shape="default"
-                icon={<EditOutlined />}
-                size="small"
-                onClick={e => {
-                  e.stopPropagation();
-                  handleEditClick(record.id!);
+      render: (record: ITaskLabel) => {
+        const usageCount = record.usage || 0;
+        const labelName = record.name || 'this label';
+        const plural = usageCount > 1 ? 's' : '';
+        const isInUse = usageCount > 0;
+
+        return (
+          <div 
+            className="row-action-buttons"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Flex gap={4}>
+              <Tooltip title={t('editTooltip', 'Edit')}>
+                <Button
+                  shape="default"
+                  icon={<EditOutlined />}
+                  size="small"
+                  onClick={(e) => handleEditClick(record.id!, e)}
+                />
+              </Tooltip>
+              <Popconfirm
+                title={
+                  isInUse
+                    ? t('deleteConfirmTitle', 'Delete Label')
+                    : t('deleteConfirmTitle', 'Delete Label')
+                }
+                description={
+                  isInUse ? (
+                    <div style={{ maxWidth: 300 }}>
+                      <Typography.Text>
+                        {t('labelInUseMessage', {
+                          labelName,
+                          count: usageCount,
+                          plural,
+                          defaultValue: `The label "${labelName}" is currently assigned to ${usageCount} task${plural}.`
+                        })}
+                      </Typography.Text>
+                      <br />
+                      <Typography.Text strong style={{ marginTop: 8, display: 'block', color: '#ff4d4f' }}>
+                        {t('labelDeleteWarning', {
+                          count: usageCount,
+                          plural,
+                          defaultValue: `⚠️ Deleting this label will remove it from all ${usageCount} assigned task${plural}.`
+                        })}
+                      </Typography.Text>
+                    </div>
+                  ) : (
+                    t('deleteConfirmMessage', {
+                      labelName,
+                      defaultValue: `Are you sure you want to delete the label "${labelName}"?`
+                    })
+                  )
+                }
+                icon={<ExclamationCircleFilled style={{ color: '#ff9800' }} />}
+                okText={t('deleteButton', 'Delete')}
+                cancelText={t('cancelButton', 'Cancel')}
+                okType="danger"
+                onConfirm={(e) => {
+                  e?.stopPropagation();
+                  handleDeleteClick(record);
                 }}
-              />
-            </Tooltip>
-            <Tooltip title={t('deleteTooltip', 'Delete')}>
-              <Button
-                shape="default"
-                icon={<DeleteOutlined />}
-                size="small"
-                onClick={(e) => handleDeleteClick(record, e)}
-              />
-            </Tooltip>
-          </Flex>
-        </div>
-      ),
+                onCancel={(e) => e?.stopPropagation()}
+              >
+                <Tooltip title={t('deleteTooltip', 'Delete')}>
+                  <Button
+                    shape="default"
+                    icon={<DeleteOutlined />}
+                    size="small"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </Tooltip>
+              </Popconfirm>
+            </Flex>
+          </div>
+        );
+      },
     },
   ];
 
   return (
-    <Card
-      style={{ width: '100%' }}
-      title={
-        <Flex justify="flex-end">
-          <Flex gap={8} align="center" justify="flex-end" style={{ width: '100%', maxWidth: 400 }}>
-            <Input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder={t('search', { defaultValue: 'Search' })}
-              style={{ maxWidth: 232 }}
-              suffix={<SearchOutlined />}
-            />
+    <>
+      <style>
+        {`
+          .custom-two-colors-row-table .row-action-buttons {
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+          }
+          
+          .custom-two-colors-row-table .ant-table-tbody > tr:hover .row-action-buttons {
+            opacity: 1;
+          }
+        `}
+      </style>
+      <Card
+        style={{ width: '100%' }}
+        title={
+          <Flex justify="flex-end">
+            <Flex gap={8} align="center" justify="flex-end" style={{ width: '100%', maxWidth: 400 }}>
+              <Input
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder={t('search', { defaultValue: 'Search' })}
+                style={{ maxWidth: 232 }}
+                suffix={<SearchOutlined />}
+              />
 
-            <Tooltip
-              title={t('pinTooltip', 'Click to pin this into the main menu')}
-              trigger={'hover'}
-            >
-              {/* this button pin this route to navbar  */}
-              <PinRouteToNavbarButton name="labels" path="/worklenz/settings/labels" />
-            </Tooltip>
+              <Tooltip
+                title={t('pinTooltip', 'Click to pin this into the main menu')}
+                trigger={'hover'}
+              >
+                {/* this button pin this route to navbar  */}
+                <PinRouteToNavbarButton name="labels" path="/worklenz/settings/labels" />
+              </Tooltip>
+            </Flex>
           </Flex>
-        </Flex>
-      }
-    >
-      <Table
-        locale={{
-          emptyText: (
-            <Typography.Text>
-              {t('emptyText', 'Labels can be created while updating or creating tasks.')}
-            </Typography.Text>
-          ),
-        }}
-        loading={loading}
-        className="custom-two-colors-row-table"
-        dataSource={filteredData}
-        columns={columns}
-        rowKey={record => record.id!}
-        onRow={record => ({
-          style: { cursor: 'pointer' },
-          onClick: () => handleEditClick(record.id!),
-        })}
-        pagination={{
-          showSizeChanger: true,
-          defaultPageSize: 20,
-          pageSizeOptions: ['5', '10', '15', '20', '50', '100'],
-          size: 'small',
-        }}
-      />
+        }
+      >
+        <Table
+          locale={{
+            emptyText: (
+              <Typography.Text>
+                {t('emptyText', 'Labels can be created while updating or creating tasks.')}
+              </Typography.Text>
+            ),
+          }}
+          loading={loading}
+          className="custom-two-colors-row-table"
+          dataSource={filteredData}
+          columns={columns}
+          rowKey={record => record.id!}
+          onRow={record => ({
+            style: { cursor: 'pointer' },
+            onClick: () => handleEditClick(record.id!),
+          })}
+          pagination={{
+            showSizeChanger: true,
+            defaultPageSize: 20,
+            pageSizeOptions: ['5', '10', '15', '20', '50', '100'],
+            size: 'small',
+          }}
+        />
 
-      <LabelsDrawer
-        drawerOpen={showDrawer}
-        labelId={selectedLabelId}
-        drawerClosed={handleDrawerClose}
-      />
-    </Card>
+        <LabelsDrawer
+          drawerOpen={showDrawer}
+          labelId={selectedLabelId}
+          drawerClosed={handleDrawerClose}
+        />
+      </Card>
+    </>
   );
 };
 
