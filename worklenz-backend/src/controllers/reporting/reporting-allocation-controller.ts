@@ -1007,14 +1007,12 @@ export default class ReportingAllocationController extends ReportingControllerBa
   public static async getEstimatedVsActual(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const archived = req.query.archived === "true";
 
-    const teams = (req.body.teams || []) as string[]; // ids
-    // Use parameterized queries
-    const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teams, 1);
-
+    const teams = (req.body.teams || []) as string[];
     const projects = (req.body.projects || []) as string[];
-    // Use parameterized queries
-    const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, teamIdsParams.length + 1);
-    let paramOffset = teamIdsParams.length + projectIdsParams.length + 1;
+    
+    // Use parameterized queries - start from $1 since teams aren't used in the query
+    const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, 1);
+    let paramOffset = projectIdsParams.length + 1;
     
     const categories = (req.body.categories || []) as string[];
     const noCategory = req.body.selectNoCategory || req.body.noCategory || false;
@@ -1072,18 +1070,20 @@ export default class ReportingAllocationController extends ReportingControllerBa
             p.hours_per_day::INT,
             p.estimated_man_days::INT,
             p.estimated_working_days::INT,
-            (SELECT SUM(time_spent)) AS logged_time,
+            COALESCE(SUM(task_work_log.time_spent), 0) AS logged_time,
             (SELECT COALESCE(SUM(total_minutes), 0)
             FROM tasks
             WHERE project_id = p.id) AS estimated,
-            color_code
+            p.color_code
         FROM projects p
                 LEFT JOIN tasks ON tasks.project_id = p.id
                 LEFT JOIN task_work_log ON task_work_log.task_id = tasks.id
         WHERE p.id IN (${projectIdsClause}) ${durationClause} ${archivedClause} ${categoriesFilter} ${billableQuery}
-        GROUP BY p.id, p.name
+        GROUP BY p.id, p.name, p.end_date, p.hours_per_day, p.estimated_man_days, p.estimated_working_days, p.color_code
         ORDER BY logged_time DESC;`;
-    const result = await db.query(q, [...projectIdsParams, ...durationParams, ...archivedParams, ...categoryParams]);
+    
+    const queryParams = [...projectIdsParams, ...durationParams, ...archivedParams, ...categoryParams];
+    const result = await db.query(q, queryParams);
 
     const data = [];
 
