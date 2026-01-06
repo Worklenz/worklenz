@@ -100,8 +100,11 @@ export default class ClientsController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getClientRequests(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teamId = req.user?.team_id;
-    const {searchQuery, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "created_at");
+    const {searchQuery, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, ["r.req_no", "s.name", "c.name", "r.notes"]);
     const {status, client_id, service_id, assigned_to} = req.query;
+
+    // Ensure sortField is a valid column, default to created_at if it's an array
+    const safeSortField = Array.isArray(sortField) ? "r.created_at" : sortField;
 
     // Build filter conditions
     const conditions = [];
@@ -159,7 +162,7 @@ export default class ClientsController extends WorklenzControllerBase {
                     JOIN clients c ON r.client_id = c.id
                     LEFT JOIN users u ON r.assigned_to = u.id
                     WHERE r.organization_team_id = $1 ${searchQuery} ${whereClause}
-                    ORDER BY ${sortField} ${sortOrder}
+                    ORDER BY ${safeSortField} ${sortOrder}
                     LIMIT $2 OFFSET $3) t) AS data
       FROM client_portal_requests r
       JOIN client_portal_services s ON r.service_id = s.id

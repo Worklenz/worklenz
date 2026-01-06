@@ -19,14 +19,6 @@ export const authenticateClient = async (
   next: NextFunction
 ) => {
   try {
-    // Log request details for debugging
-    console.log(`[Client Auth] Request: ${req.method} ${req.path}`, {
-      origin: req.headers.origin,
-      referer: req.headers.referer,
-      hasToken: !!req.headers["x-client-token"],
-      userAgent: req.headers["user-agent"]
-    });
-
     // Additional security: Validate Origin/Referer header for state-changing operations
     // This provides defense-in-depth even though custom headers are CSRF-resistant
     // NOTE: Made lenient - only blocks if explicitly configured and origin doesn't match
@@ -63,22 +55,12 @@ export const authenticateClient = async (
           });
           
           if (!isAllowed) {
-            console.error(`[Client Auth] 403 - Invalid origin: ${origin} for ${req.method} ${req.path}`);
-            console.error(`[Client Auth] Allowed origins:`, allowedOrigins);
             return res.status(403).json(
               new ServerResponse(false, null, "Request origin not allowed")
             );
-          } else {
-            console.log(`[Client Auth] Origin validated: ${origin}`);
           }
         } catch (error) {
-          // Invalid origin format - log but don't block (defense-in-depth, not primary security)
-          console.warn(`[Client Auth] Invalid origin format: ${origin}`, error);
-        }
-      } else {
-        // No origin validation - log for debugging
-        if (isStateChanging) {
-          console.log(`[Client Auth] Skipping origin validation - origin: ${origin}, allowedOrigins: ${allowedOrigins.length}`);
+          // Invalid origin format - don't block (defense-in-depth, not primary security)
         }
       }
     }
@@ -87,7 +69,6 @@ export const authenticateClient = async (
     const clientToken = req.headers["x-client-token"] || req.query.clientToken;
 
     if (!clientToken) {
-      console.error(`[Client Auth] 401 - No token provided for ${req.method} ${req.path}`);
       return res.status(401).json(
         new ServerResponse(false, null, "Client token is required")
       );
@@ -97,13 +78,10 @@ export const authenticateClient = async (
     const tokenPayload = TokenService.verifyClientToken(clientToken as string);
     
     if (!tokenPayload) {
-      console.error(`[Client Auth] 401 - Invalid/expired token for ${req.method} ${req.path}`);
       return res.status(401).json(
         new ServerResponse(false, null, "Invalid or expired client token")
       );
     }
-
-    console.log(`[Client Auth] Token verified for clientId=${tokenPayload.clientId}, organizationId=${tokenPayload.organizationId}`);
 
     // Check if client is active and has portal access
     const clientCheckQuery = `
@@ -128,7 +106,6 @@ export const authenticateClient = async (
     
     // Block access if client is inactive
     if (clientData.client_status === 'inactive') {
-      console.error(`[Client Auth] 403 - Client ${tokenPayload.clientId} is inactive`);
       return res.status(403).json(
         new ServerResponse(false, null, "Client account is deactivated. Please contact your administrator.")
       );
@@ -136,7 +113,6 @@ export const authenticateClient = async (
 
     // Block access if portal access is explicitly disabled
     if (clientData.portal_access_active === false) {
-      console.error(`[Client Auth] 403 - Portal access disabled for client ${tokenPayload.clientId}`);
       return res.status(403).json(
         new ServerResponse(false, null, "Portal access is disabled for this client. Please contact your administrator.")
       );
@@ -164,7 +140,6 @@ export const authenticateClient = async (
       );
 
       if (!hasAccess) {
-        console.error(`[Client Auth] 403 - Organization access denied: clientUserId=${tokenPayload.clientUserId}, organizationId=${tokenPayload.organizationId}`);
         return res.status(403).json(
           new ServerResponse(false, null, "Access denied to this organization")
         );
@@ -182,12 +157,6 @@ export const authenticateClient = async (
     next();
   } catch (error) {
     console.error("[Client Auth] Authentication error:", error);
-    console.error("[Client Auth] Error details:", {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      path: req.path,
-      method: req.method
-    });
     return res.status(401).json(
       new ServerResponse(false, null, "Authentication failed")
     );

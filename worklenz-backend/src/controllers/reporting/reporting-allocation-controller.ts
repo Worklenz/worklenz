@@ -38,12 +38,18 @@ export default class ReportingAllocationController extends ReportingControllerBa
   private static async getTimeLoggedByProjects(projects: string[], users: string[], key: string, dateRange: string[], archived = false, user_id = "", billable: { billable: boolean; nonBillable: boolean }): Promise<any> {
     try {
       // Use SqlHelper.buildInClause for safe IN clauses
-      const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, 1);
-      const { clause: userIdsClause, params: userIdsParams } = SqlHelper.buildInClause(users, projectIdsParams.length + 1);
-      let paramOffset = projectIdsParams.length + userIdsParams.length + 1;
-
-      const { clause: durationClause, params: durationParams } = this.getDateRangeClause(key || DATE_RANGES.LAST_WEEK, dateRange, paramOffset);
-      paramOffset += durationParams.length;
+      // Start from $2 because $1 is used for 'archived' parameter in subqueries
+      const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, 2);
+      
+      // For getTotalTimeLogsByUser: duration comes after projectIds, then userIds
+      const { clause: durationClauseForUser, params: durationParamsForUser } = this.getDateRangeClause(key || DATE_RANGES.LAST_WEEK, dateRange, 2 + projectIdsParams.length);
+      const { clause: userIdsClauseForUser, params: userIdsParamsForUser } = SqlHelper.buildInClause(users, 2 + projectIdsParams.length + durationParamsForUser.length);
+      
+      // For getTotalTimeLogsByProject: duration comes after projectIds, then userIds
+      const { clause: durationClauseForProject, params: durationParamsForProject } = this.getDateRangeClause(key || DATE_RANGES.LAST_WEEK, dateRange, 2 + projectIdsParams.length);
+      const { clause: userIdsClauseForProject, params: userIdsParamsForProject } = SqlHelper.buildInClause(users, 2 + projectIdsParams.length + durationParamsForProject.length);
+      
+      let paramOffset = 2 + projectIdsParams.length + userIdsParamsForProject.length + durationParamsForProject.length;
 
       let archivedClause = "";
       let archivedParams: any[] = [];
@@ -54,8 +60,8 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
       const billableQuery = this.buildBillableQuery(billable);
 
-      const projectTimeLogs = await this.getTotalTimeLogsByProject(archived, durationClause, projectIdsClause, userIdsClause, archivedClause, billableQuery, projectIdsParams, userIdsParams, durationParams, archivedParams);
-      const userTimeLogs = await this.getTotalTimeLogsByUser(archived, durationClause, projectIdsClause, userIdsClause, billableQuery, projectIdsParams, userIdsParams, durationParams);
+      const projectTimeLogs = await this.getTotalTimeLogsByProject(archived, durationClauseForProject, projectIdsClause, userIdsClauseForProject, archivedClause, billableQuery, projectIdsParams, durationParamsForProject, userIdsParamsForProject, archivedParams);
+      const userTimeLogs = await this.getTotalTimeLogsByUser(archived, durationClauseForUser, projectIdsClause, userIdsClauseForUser, billableQuery, projectIdsParams, durationParamsForUser, userIdsParamsForUser);
 
       const format = (seconds: number) => {
         if (seconds === 0) return "-";
@@ -95,7 +101,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
     return [];
   }
 
-  private static async getTotalTimeLogsByProject(archived: boolean, durationClause: string, projectIdsClause: string, userIdsClause: string, archivedClause: string, billableQuery: string, projectIdsParams: any[], userIdsParams: any[], durationParams: any[], archivedParams: any[]) {
+  private static async getTotalTimeLogsByProject(archived: boolean, durationClause: string, projectIdsClause: string, userIdsClause: string, archivedClause: string, billableQuery: string, projectIdsParams: any[], durationParams: any[], userIdsParams: any[], archivedParams: any[]) {
     try {
       const q = `SELECT projects.name,
                projects.color_code,
@@ -136,7 +142,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
                 LEFT JOIN sys_project_statuses sps ON projects.status_id = sps.id
             WHERE projects.id IN (${projectIdsClause}) ${archivedClause};`;
 
-      const result = await db.query(q, [archived, ...projectIdsParams, ...userIdsParams, ...durationParams, ...archivedParams]);
+      const result = await db.query(q, [archived, ...projectIdsParams, ...durationParams, ...userIdsParams, ...archivedParams]);
       return result.rows;
     } catch (error) {
       log_error(error);
@@ -144,7 +150,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
     }
   }
 
-  private static async getTotalTimeLogsByUser(archived: boolean, durationClause: string, projectIdsClause: string, userIdsClause: string, billableQuery: string, projectIdsParams: any[], userIdsParams: any[], durationParams: any[]) {
+  private static async getTotalTimeLogsByUser(archived: boolean, durationClause: string, projectIdsClause: string, userIdsClause: string, billableQuery: string, projectIdsParams: any[], durationParams: any[], userIdsParams: any[]) {
     try {
       const q = `(SELECT id,
                     (SELECT COALESCE(SUM(time_spent), 0)
@@ -372,20 +378,20 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const archived = req.query.archived === "true";
 
     const teams = (req.body.teams || []) as string[]; // ids
-    // Use parameterized queries
-    const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teams, 1);
-
     const projects = (req.body.projects || []) as string[];
-    // Use parameterized queries
-    const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, teamIdsParams.length + 1);
-    let paramOffset = teamIdsParams.length + projectIdsParams.length + 1;
-
     const categories = (req.body.categories || []) as string[];
     const noCategory = req.body.noCategory || true;
     const billable = req.body.billable;
 
-    if (!teams.length || !projects.length)
-      return res.status(200).send(new ServerResponse(true, { users: [], projects: [] }));
+    // Early return if no teams or projects
+    if (!teams.length || !projects.length) {
+      return res.status(200).send(new ServerResponse(true, []));
+    }
+
+    // Use parameterized queries
+    // Note: teams are not used in the query, so we start project IDs at $1
+    const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, 1);
+    let paramOffset = projectIdsParams.length + 1;
 
     const { duration, date_range } = req.body;
 
@@ -397,22 +403,26 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
     const billableQuery = this.buildBillableQuery(billable);
 
-    // Prepare projects filter
+    // Prepare projects filter with UUID casting
     let projectsFilter = "";
     if (projects.length > 0) {
-      projectsFilter = `AND p.id IN (${projectIdsClause})`;
+      // Cast each parameter to UUID to help PostgreSQL determine the type
+      const castedProjectIdsClause = projectIdsClause.split(", ").map(param => `${param}::uuid`).join(", ");
+      projectsFilter = `p.id IN (${castedProjectIdsClause})`;
     } else {
       // If no projects are selected, don't show any data
-      projectsFilter = `AND 1=0`; // This will match no rows
+      projectsFilter = `1=0`; // This will match no rows
     }
 
-    // Prepare categories filter - updated logic
+    // Prepare categories filter - updated logic with UUID casting
     let categoriesFilter = "";
     let categoryParams: any[] = [];
     if (categories.length > 0 && noCategory) {
       // Both specific categories and "No Category" are selected
       const { clause: categoryIdsClause, params: catParams } = SqlHelper.buildInClause(categories, paramOffset);
-      categoriesFilter = `AND (p.category_id IS NULL OR p.category_id IN (${categoryIdsClause}))`;
+      // Cast each parameter to UUID
+      const castedCategoryIdsClause = categoryIdsClause.split(", ").map(param => `${param}::uuid`).join(", ");
+      categoriesFilter = `AND (p.category_id IS NULL OR p.category_id IN (${castedCategoryIdsClause}))`;
       categoryParams = catParams;
     } else if (categories.length === 0 && noCategory) {
       // Only "No Category" is selected
@@ -420,7 +430,9 @@ export default class ReportingAllocationController extends ReportingControllerBa
     } else if (categories.length > 0 && !noCategory) {
       // Only specific categories are selected
       const { clause: categoryIdsClause, params: catParams } = SqlHelper.buildInClause(categories, paramOffset);
-      categoriesFilter = `AND p.category_id IN (${categoryIdsClause})`;
+      // Cast each parameter to UUID
+      const castedCategoryIdsClause = categoryIdsClause.split(", ").map(param => `${param}::uuid`).join(", ");
+      categoriesFilter = `AND p.category_id IN (${castedCategoryIdsClause})`;
       categoryParams = catParams;
     } else {
       // categories.length === 0 && !noCategory - no categories selected, show nothing
@@ -430,16 +442,16 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const q = `
         SELECT p.id,
             p.name,
-            (SELECT SUM(time_spent)) AS logged_time,
-            SUM(total_minutes) AS estimated,
-            color_code
+            COALESCE(SUM(task_work_log.time_spent), 0) AS logged_time,
+            COALESCE(SUM(tasks.total_minutes), 0) AS estimated,
+            p.color_code
         FROM projects p
                 LEFT JOIN tasks ON tasks.project_id = p.id
                 LEFT JOIN task_work_log ON task_work_log.task_id = tasks.id
-        WHERE p.id IN (${projectIdsClause}) ${durationClause} ${archivedClause} ${categoriesFilter} ${billableQuery}
-        GROUP BY p.id, p.name
+        WHERE ${projectsFilter} ${durationClause} ${archivedClause} ${categoriesFilter} ${billableQuery}
+        GROUP BY p.id, p.name, p.color_code
         ORDER BY logged_time DESC;`;
-    const result = await db.query(q, []);
+    const result = await db.query(q, [...projectIdsParams, ...durationParams, ...archivedParams, ...categoryParams]);
 
     const utilization = (req.body.utilization || []) as string[];
 
@@ -468,9 +480,6 @@ export default class ReportingAllocationController extends ReportingControllerBa
     const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teams, 1);
 
     const projects = (req.body.projects || []) as string[];
-    // Use parameterized queries
-    const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, teamIdsParams.length + 1);
-
     const categories = (req.body.categories || []) as string[];
     const noCategory = req.body.noCategory || false;
     const billable = req.body.billable;
@@ -492,8 +501,10 @@ export default class ReportingAllocationController extends ReportingControllerBa
       let minDateQuery: string;
       let minDateParams: any[];
       if (projects.length > 0) {
-        minDateQuery = `SELECT MIN(COALESCE(start_date, created_at)) as min_date FROM projects WHERE id IN (${projectIdsClause})`;
-        minDateParams = projectIdsParams;
+        // Build a temporary clause just for this query
+        const { clause: tempProjectClause, params: tempProjectParams } = SqlHelper.buildInClause(projects, 1);
+        minDateQuery = `SELECT MIN(COALESCE(start_date, created_at)) as min_date FROM projects WHERE id IN (${tempProjectClause})`;
+        minDateParams = tempProjectParams;
       } else {
         minDateQuery = `SELECT MIN(COALESCE(start_date, created_at)) as min_date FROM projects WHERE team_id IN (${teamIdsClause})`;
         minDateParams = teamIdsParams;
@@ -698,37 +709,15 @@ export default class ReportingAllocationController extends ReportingControllerBa
       isNonWorkingPeriod = true;
     }
 
-    let archivedClause = "";
-    let archivedParams: any[] = [];
-    let paramOffsetForFilters = teamIdsParams.length + projectIdsParams.length + 1;
-    if (!archived) {
-      archivedClause = `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $${paramOffsetForFilters})`;
-      archivedParams = [req.user?.id];
-      paramOffsetForFilters += 1;
-    }
-
     const billableQuery = this.buildBillableQueryWithAlias(billable, 't');
     const members = (req.body.members || []) as string[];
     
-    // Prepare members filter
-    let membersFilter = "";
-    let memberParams: any[] = [];
-    if (members.length > 0) {
-      // Use parameterized query
-      const { clause: memberIdsClause, params: memParams } = SqlHelper.buildInClause(members, paramOffsetForFilters);
-      membersFilter = `AND tmiv.team_member_id IN (${memberIdsClause})`;
-      memberParams = memParams;
-      paramOffsetForFilters += memParams.length;
-    } else {
-      // If no members are selected, we should not show any data
-      // This is different from other filters where no selection means "show all"
-      // For members, no selection should mean "show none" to respect the UI filter state
-      membersFilter = `AND 1=0`; // This will match no rows
-    }
-    // Note: Members filter works differently - when no members are selected, show nothing
-
-    // Create custom duration clause for twl table alias
-    // Use parameterized queries for dates
+    // Build all filters in the order they appear in the query to ensure parameter positions match
+    // Query parameter order: teams (main WHERE), dates (subquery), projects (subquery), categories (subquery), archived (subquery), members (main WHERE)
+    
+    let paramOffsetForFilters = teamIdsParams.length + 1;
+    
+    // 1. Duration filter (appears first in subquery)
     let customDurationClause = "";
     let customDurationParams: any[] = [];
     if (date_range && date_range.length === 2) {
@@ -754,33 +743,52 @@ export default class ReportingAllocationController extends ReportingControllerBa
         customDurationClause = "AND twl.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'";
     }
 
-    // Prepare conditional filters for the subquery - only apply if selections are made
+    // 2. Projects filter (appears second in subquery) - Build clause NOW with correct offset
     let conditionalProjectsFilter = "";
     let conditionalProjectParams: any[] = [];
-    let conditionalCategoriesFilter = "";
-    let conditionalCategoryParams: any[] = [];
-
-    // Only apply project filter if projects are actually selected
     if (projects.length > 0) {
+      const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, paramOffsetForFilters);
       conditionalProjectsFilter = `AND p.id IN (${projectIdsClause})`;
       conditionalProjectParams = projectIdsParams;
+      paramOffsetForFilters += projectIdsParams.length;
     }
 
-    // Only apply category filter if categories are selected or noCategory is true
+    // 3. Categories filter (appears third in subquery)
+    let conditionalCategoriesFilter = "";
+    let conditionalCategoryParams: any[] = [];
     if (categories.length > 0 && noCategory) {
-      // Use parameterized query
       const { clause: categoryIdsClause, params: catParams } = SqlHelper.buildInClause(categories, paramOffsetForFilters);
       conditionalCategoriesFilter = `AND (p.category_id IS NULL OR p.category_id IN (${categoryIdsClause}))`;
       conditionalCategoryParams = catParams;
+      paramOffsetForFilters += catParams.length;
     } else if (categories.length === 0 && noCategory) {
       conditionalCategoriesFilter = `AND p.category_id IS NULL`;
     } else if (categories.length > 0 && !noCategory) {
-      // Use parameterized query
       const { clause: categoryIdsClause, params: catParams } = SqlHelper.buildInClause(categories, paramOffsetForFilters);
       conditionalCategoriesFilter = `AND p.category_id IN (${categoryIdsClause})`;
       conditionalCategoryParams = catParams;
+      paramOffsetForFilters += catParams.length;
     }
-    // If no categories and no noCategory, don't filter by category (show all)
+
+    // 4. Archived filter (appears fourth in subquery)
+    let archivedClause = "";
+    let archivedParams: any[] = [];
+    if (!archived) {
+      archivedClause = `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $${paramOffsetForFilters}::uuid)`;
+      archivedParams = [req.user?.id];
+      paramOffsetForFilters += 1;
+    }
+    
+    // 5. Members filter (appears in main WHERE clause after subquery)
+    let membersFilter = "";
+    let memberParams: any[] = [];
+    if (members.length > 0) {
+      const { clause: memberIdsClause, params: memParams } = SqlHelper.buildInClause(members, paramOffsetForFilters);
+      membersFilter = `AND tmiv.team_member_id IN (${memberIdsClause})`;
+      memberParams = memParams;
+    } else {
+      membersFilter = `AND 1=0`; // No members selected = show nothing
+    }
 
     // Check if all filters are unchecked (Clear All scenario) - return no data to avoid overwhelming UI
     const hasProjectFilter = projects.length > 0;
@@ -826,8 +834,14 @@ export default class ReportingAllocationController extends ReportingControllerBa
       GROUP BY tmiv.email, tmiv.name, tmiv.team_member_id, tmiv.user_id, tmiv.team_id
       ORDER BY logged_time DESC;`;
 
-    // Pass all parameters
-    const queryParams = [...teamIdsParams, ...conditionalProjectParams, ...conditionalCategoryParams, ...archivedParams, ...memberParams, ...customDurationParams];
+    // Pass all parameters in order matching the query:
+    // 1. teamIdsClause (main WHERE clause)
+    // 2. customDurationParams (subquery filter - appears first)
+    // 3. conditionalProjectParams (subquery filter - appears second)
+    // 4. conditionalCategoryParams (subquery filter - appears third)
+    // 5. archivedParams (subquery filter - appears fourth)
+    // 6. memberParams (main WHERE clause - appears last)
+    const queryParams = [...teamIdsParams, ...customDurationParams, ...conditionalProjectParams, ...conditionalCategoryParams, ...archivedParams, ...memberParams];
     const result = await db.query(q, queryParams);
     const utilization = (req.body.utilization || []) as string[];
 

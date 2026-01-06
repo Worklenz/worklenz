@@ -139,13 +139,22 @@ export default class AdminCenterController extends WorklenzControllerBase {
                                       STRING_AGG(DISTINCT CAST(user_id AS VARCHAR), ', ') AS user_id,
                                       STRING_AGG(DISTINCT name, ', ') AS name,
                                       STRING_AGG(DISTINCT avatar_url, ', ') AS avatar_url,
-                                      (SELECT twl.created_at
-                                        FROM task_work_log twl
-                                        WHERE twl.user_id IN (SELECT tmiv.user_id
-                                                              FROM team_member_info_view tmiv
-                                                              WHERE tmiv.email = outer_tmiv.email)
-                                        ORDER BY created_at DESC
-                                        LIMIT 1) AS last_logged
+                                      (SELECT GREATEST(
+                                        (SELECT twl.created_at
+                                          FROM task_work_log twl
+                                          WHERE twl.user_id IN (SELECT tmiv.user_id
+                                                                FROM team_member_info_view tmiv
+                                                                WHERE tmiv.email = outer_tmiv.email)
+                                          ORDER BY created_at DESC
+                                          LIMIT 1),
+                                        (SELECT tal.created_at
+                                          FROM task_activity_logs tal
+                                          WHERE tal.user_id IN (SELECT tmiv.user_id
+                                                                FROM team_member_info_view tmiv
+                                                                WHERE tmiv.email = outer_tmiv.email)
+                                          ORDER BY created_at DESC
+                                          LIMIT 1)
+                                      )) AS last_logged
                                 FROM team_member_info_view outer_tmiv
                                 WHERE outer_tmiv.team_id IN (SELECT id
                                                             FROM teams

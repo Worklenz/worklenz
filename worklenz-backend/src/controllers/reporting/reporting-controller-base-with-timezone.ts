@@ -7,17 +7,60 @@ import { DATE_RANGES } from "../../shared/constants";
 export default abstract class ReportingControllerBaseWithTimezone extends WorklenzControllerBase {
   
   /**
+   * Validate that a timezone string is a valid timezone name (not a UUID)
+   * @param timezone - The timezone string to validate
+   * @returns The validated timezone or 'UTC' if invalid
+   */
+  protected static validateTimezone(timezone: string | null | undefined): string {
+    if (!timezone || typeof timezone !== 'string') {
+      return "UTC";
+    }
+    
+    const trimmed = timezone.trim();
+    
+    // Validate that timezone is a valid timezone name, not a UUID
+    // UUIDs have the format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    // Valid timezone names don't match this pattern
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidPattern.test(trimmed)) {
+      // If timezone is actually a UUID, log error and return UTC
+      console.error(`Invalid timezone data: timezone name appears to be a UUID (${trimmed})`);
+      return "UTC";
+    }
+    
+    // Basic validation: timezone names typically contain letters, numbers, underscores, slashes, and hyphens
+    // But not in UUID format
+    if (trimmed.length === 0) {
+      return "UTC";
+    }
+    
+    return trimmed;
+  }
+
+  /**
    * Get the user's timezone from the database or request
    * @param userId - The user ID
    * @returns The user's timezone or 'UTC' as default
    */
   protected static async getUserTimezone(userId: string): Promise<string> {
-    const q = `SELECT tz.name as timezone 
-               FROM users u 
-               JOIN timezones tz ON u.timezone_id = tz.id 
-               WHERE u.id = $1`;
-    const result = await db.query(q, [userId]);
-    return result.rows[0]?.timezone || "UTC";
+    if (!userId) {
+      return "UTC";
+    }
+    
+    try {
+      const q = `SELECT tz.name as timezone 
+                 FROM users u 
+                 JOIN timezones tz ON u.timezone_id = tz.id 
+                 WHERE u.id = $1`;
+      const result = await db.query(q, [userId]);
+      const timezone = result.rows[0]?.timezone;
+      
+      // Validate the timezone before returning
+      return this.validateTimezone(timezone);
+    } catch (error) {
+      console.error(`Error fetching user timezone for user ${userId}:`, error);
+      return "UTC";
+    }
   }
 
   /**
