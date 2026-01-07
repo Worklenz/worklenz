@@ -252,9 +252,10 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         man_days: parseInt(values.man_days),
         hours_per_day: parseInt(values.hours_per_day),
         project_manager: selectedProjectManager,
-        use_manual_progress: Boolean(values.use_manual_progress),
-        use_weighted_progress: Boolean(values.use_weighted_progress),
-        use_time_progress: Boolean(values.use_time_progress),
+        // FIX: Ensure toggle values are properly passed, defaulting to false if undefined
+        use_manual_progress: values.use_manual_progress === true,
+        use_weighted_progress: values.use_weighted_progress === true,
+        use_time_progress: values.use_time_progress === true,
       };
 
       const action =
@@ -265,7 +266,8 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       const response = await action;
 
       if (response?.data?.done) {
-        form.resetFields();
+        // FIX: Don't reset form before closing drawer - let handleDrawerClose do it
+        // form.resetFields(); // REMOVE THIS LINE
         dispatch(toggleProjectDrawer());
         if (!editMode) {
           trackMixpanelEvent(evt_projects_create);
@@ -274,7 +276,8 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
           );
         }
         refetchProjects();
-        window.location.reload(); // Refresh the page
+        // Consider removing this reload if it causes issues
+        window.location.reload(); 
       } else {
         notification.error({ message: response?.data?.message });
         logger.error(
