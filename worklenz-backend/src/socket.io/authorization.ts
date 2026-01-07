@@ -79,9 +79,11 @@ export async function verifyPhaseAccessSocket(
   socket: Socket,
   phaseId: string
 ): Promise<boolean> {
+  const userId = getLoggedInUserIdFromSocket(socket);
   const teamId = socket.data?.team_id;
 
   if (!teamId || !phaseId) {
+    log_error(`Missing required data for phase access check: socket.id=${socket.id}, userId=${userId}, teamId=${teamId}, phaseId=${phaseId}`);
     return false;
   }
 
@@ -111,9 +113,11 @@ export async function verifyProjectTemplateAccessSocket(
   socket: Socket,
   templateId: string
 ): Promise<boolean> {
+  const userId = getLoggedInUserIdFromSocket(socket);
   const teamId = socket.data?.team_id;
 
   if (!teamId || !templateId) {
+    log_error(`Missing required data for project template access check: socket.id=${socket.id}, userId=${userId}, teamId=${teamId}, templateId=${templateId}`);
     return false;
   }
 

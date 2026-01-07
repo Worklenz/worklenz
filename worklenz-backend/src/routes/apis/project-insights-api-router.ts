@@ -14,7 +14,7 @@ projectInsightsApiRouter.get("/priority-overview/:id", idParamValidator, verifyP
 projectInsightsApiRouter.get("/deadline/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectInsightsController.getProjectDeadlineStats));
 
 projectInsightsApiRouter.get("/members/stats/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectInsightsController.getMemberInsightsByProjectId));
-projectInsightsApiRouter.post("/members/tasks", safeControllerFunction(ProjectInsightsController.getTasksByProjectMember));
+projectInsightsApiRouter.post("/members/tasks", verifyProjectAccess('body', 'project_id'), safeControllerFunction(ProjectInsightsController.getTasksByProjectMember));
 
 projectInsightsApiRouter.get("/overdue-tasks/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectInsightsController.getOverdueTasks));
 projectInsightsApiRouter.get("/early-tasks/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectInsightsController.getTasksFinishedEarly));

@@ -4,6 +4,8 @@ import idParamValidator from "../../../middlewares/validators/id-param-validator
 import safeControllerFunction from "../../../shared/safe-controller-function";
 import ScheduleControllerV2 from "../../../controllers/schedule/schedule-controller";
 import verifyProjectAccess from "../../../middlewares/verify-project-access";
+import teamOwnerOrAdminValidator from "../../../middlewares/validators/team-owner-or-admin-validator";
+import verifyMemberAllocationAccess from "../../../middlewares/verify-member-allocation-access";
 
 const scheduleApiRouter = express.Router();
 
@@ -18,7 +20,7 @@ scheduleApiRouter.get("/projects/:id", idParamValidator, verifyProjectAccess('pa
 scheduleApiRouter.get("/project-member/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ScheduleControllerV2.getSingleProjectMember));
 scheduleApiRouter.get("/refresh/project-indicator/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ScheduleControllerV2.getSingleProjectIndicator));
 scheduleApiRouter.get("/tasks-by-member/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(getList));
-scheduleApiRouter.get("/migrate/member-allocations", safeControllerFunction(ScheduleControllerV2.migrate));
-scheduleApiRouter.put("/bulk/delete-member-allocations", safeControllerFunction(ScheduleControllerV2.deleteMemberAllocations));
+scheduleApiRouter.get("/migrate/member-allocations", teamOwnerOrAdminValidator, safeControllerFunction(ScheduleControllerV2.migrate));
+scheduleApiRouter.put("/bulk/delete-member-allocations", verifyMemberAllocationAccess('body', 'ids'), safeControllerFunction(ScheduleControllerV2.deleteMemberAllocations));
 
 export default scheduleApiRouter;

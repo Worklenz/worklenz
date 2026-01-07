@@ -7,7 +7,7 @@ import verifyProjectAccess from "../../middlewares/verify-project-access";
 
 const projectCommentsApiRouter = express.Router();
 
-projectCommentsApiRouter.post("/", safeControllerFunction(ProjectCommentsController.create));
+projectCommentsApiRouter.post("/", verifyProjectAccess('body', 'project_id'), safeControllerFunction(ProjectCommentsController.create));
 projectCommentsApiRouter.get("/project-members/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectCommentsController.getMembers));
 projectCommentsApiRouter.get("/project-comments/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectCommentsController.getByProjectId));
 projectCommentsApiRouter.get("/comments-count/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectCommentsController.getCountByProjectId));
