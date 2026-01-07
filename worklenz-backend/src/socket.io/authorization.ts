@@ -14,10 +14,9 @@ export async function verifyTaskAccessSocket(
   taskId: string
 ): Promise<boolean> {
   const userId = getLoggedInUserIdFromSocket(socket);
-  const teamId = socket.data?.team_id;
 
-  if (!userId || !teamId || !taskId) {
-    log_error(`Missing required data for task access check: userId=${userId}, teamId=${teamId}, taskId=${taskId}`);
+  if (!userId || !taskId) {
+    log_error(`Missing required data for task access check: userId=${userId}, taskId=${taskId}`);
     return false;
   }
 
@@ -26,10 +25,11 @@ export async function verifyTaskAccessSocket(
       SELECT 1
       FROM tasks t
       INNER JOIN projects p ON t.project_id = p.id
-      WHERE t.id = $1 AND p.team_id = $2
+      INNER JOIN team_members tm ON p.team_id = tm.team_id
+      WHERE t.id = $1 AND tm.user_id = $2
       LIMIT 1;
     `;
-    const result = await db.query(q, [taskId, teamId]);
+    const result = await db.query(q, [taskId, userId]);
     return result.rowCount ? result.rowCount > 0 : false;
   } catch (error) {
     log_error(`Error verifying task access: ${error}`);
@@ -47,21 +47,22 @@ export async function verifyProjectAccessSocket(
   socket: Socket,
   projectId: string
 ): Promise<boolean> {
-  const teamId = socket.data?.team_id;
+  const userId = getLoggedInUserIdFromSocket(socket);
 
-  if (!teamId || !projectId) {
-    log_error(`Missing required data for project access check: teamId=${teamId}, projectId=${projectId}`);
+  if (!userId || !projectId) {
+    log_error(`Missing required data for project access check: userId=${userId}, projectId=${projectId}`);
     return false;
   }
 
   try {
     const q = `
       SELECT 1
-      FROM projects
-      WHERE id = $1 AND team_id = $2
+      FROM projects p
+      INNER JOIN team_members tm ON p.team_id = tm.team_id
+      WHERE p.id = $1 AND tm.user_id = $2
       LIMIT 1;
     `;
-    const result = await db.query(q, [projectId, teamId]);
+    const result = await db.query(q, [projectId, userId]);
     return result.rowCount ? result.rowCount > 0 : false;
   } catch (error) {
     log_error(`Error verifying project access: ${error}`);
@@ -80,10 +81,9 @@ export async function verifyPhaseAccessSocket(
   phaseId: string
 ): Promise<boolean> {
   const userId = getLoggedInUserIdFromSocket(socket);
-  const teamId = socket.data?.team_id;
 
-  if (!teamId || !phaseId) {
-    log_error(`Missing required data for phase access check: socket.id=${socket.id}, userId=${userId}, teamId=${teamId}, phaseId=${phaseId}`);
+  if (!userId || !phaseId) {
+    log_error(`Missing required data for phase access check: socket.id=${socket.id}, userId=${userId}, phaseId=${phaseId}`);
     return false;
   }
 
@@ -92,10 +92,11 @@ export async function verifyPhaseAccessSocket(
       SELECT 1
       FROM task_phases tp
       INNER JOIN projects p ON tp.project_id = p.id
-      WHERE tp.id = $1 AND p.team_id = $2
+      INNER JOIN team_members tm ON p.team_id = tm.team_id
+      WHERE tp.id = $1 AND tm.user_id = $2
       LIMIT 1;
     `;
-    const result = await db.query(q, [phaseId, teamId]);
+    const result = await db.query(q, [phaseId, userId]);
     return result.rowCount ? result.rowCount > 0 : false;
   } catch (error) {
     log_error(`Error verifying phase access: ${error}`);
@@ -114,21 +115,21 @@ export async function verifyProjectTemplateAccessSocket(
   templateId: string
 ): Promise<boolean> {
   const userId = getLoggedInUserIdFromSocket(socket);
-  const teamId = socket.data?.team_id;
 
-  if (!teamId || !templateId) {
-    log_error(`Missing required data for project template access check: socket.id=${socket.id}, userId=${userId}, teamId=${teamId}, templateId=${templateId}`);
+  if (!userId || !templateId) {
+    log_error(`Missing required data for project template access check: socket.id=${socket.id}, userId=${userId}, templateId=${templateId}`);
     return false;
   }
 
   try {
     const q = `
       SELECT 1
-      FROM project_templates
-      WHERE id = $1 AND team_id = $2
+      FROM project_templates pt
+      INNER JOIN team_members tm ON pt.team_id = tm.team_id
+      WHERE pt.id = $1 AND tm.user_id = $2
       LIMIT 1;
     `;
-    const result = await db.query(q, [templateId, teamId]);
+    const result = await db.query(q, [templateId, userId]);
     return result.rowCount ? result.rowCount > 0 : false;
   } catch (error) {
     log_error(`Error verifying project template access: ${error}`);
@@ -146,14 +147,12 @@ export function logUnauthorizedSocketAccess(
   resourceId: string
 ): void {
   const userId = getLoggedInUserIdFromSocket(socket);
-  const teamId = socket.data?.team_id;
   
   const logEntry = {
     timestamp: new Date().toISOString(),
     severity: "SECURITY_WARNING",
     type: "UNAUTHORIZED_SOCKET_ACCESS",
     userId,
-    teamId,
     socketId: socket.id,
     event,
     resourceType,
