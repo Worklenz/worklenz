@@ -98,7 +98,6 @@ const ClientsTable = () => {
       page: pagination.page,
       limit: pagination.limit,
       search: filters.search,
-      status: filters.status === 'all' ? undefined : filters.status,
       sortBy: filters.sortBy,
       sortOrder: filters.sortOrder,
     }),
@@ -603,6 +602,24 @@ const ClientsTable = () => {
     };
   };
 
+  // Apply client-side filtering by portal status so that the
+  // visible "Filter by status" dropdown matches the portal
+  // status badges shown in the table.
+  const filteredClientsByStatus = useMemo(() => {
+    if (!displayClients || displayClients.length === 0) {
+      return [];
+    }
+
+    if (!filters.status || filters.status === 'all') {
+      return displayClients;
+    }
+
+    return displayClients.filter(client => {
+      const portalStatus = getPortalStatus(client);
+      return portalStatus.status === filters.status;
+    });
+  }, [displayClients, filters.status]);
+
   // Handle bulk portal invitations
   const handleBulkInvite = async () => {
     if (selectedRowKeys.length === 0) {
@@ -866,16 +883,25 @@ const ClientsTable = () => {
           />
 
           <Select
-            placeholder={t('statusFilterPlaceholder', { defaultValue: 'Filter by status' })}
+            placeholder={t('portalStatusFilterPlaceholder', { defaultValue: 'Filter by status' })}
             allowClear
             style={{ width: 180 }}
             onChange={handleStatusFilter}
             value={filters.status}
           >
             <Option value="all">{t('statusAll', { defaultValue: 'All' })}</Option>
-            <Option value="active">{t('statusActive', { defaultValue: 'Active' })}</Option>
-            <Option value="inactive">{t('statusInactive', { defaultValue: 'Inactive' })}</Option>
-            <Option value="pending">{t('statusPending', { defaultValue: 'Pending' })}</Option>
+            <Option value="active">
+              {t('portalStatus.active', { defaultValue: 'Active' })}
+            </Option>
+            <Option value="invited">
+              {t('portalStatus.invited', { defaultValue: 'Invited' })}
+            </Option>
+            <Option value="not_invited">
+              {t('portalStatus.not_invited', { defaultValue: 'Not Invited' })}
+            </Option>
+            <Option value="expired">
+              {t('portalStatus.expired', { defaultValue: 'Expired' })}
+            </Option>
           </Select>
 
           <Button icon={<ReloadOutlined />} onClick={handleRefresh} loading={isFetching}>
@@ -903,10 +929,10 @@ const ClientsTable = () => {
       </Flex>
 
       {/* Table */}
-      {displayClients && displayClients.length > 0 ? (
+      {filteredClientsByStatus && filteredClientsByStatus.length > 0 ? (
         <Table
           columns={columns}
-          dataSource={displayClients}
+          dataSource={filteredClientsByStatus}
           rowKey="id"
           pagination={false} // We'll handle pagination manually
           onChange={handleTableChange}
