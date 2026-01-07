@@ -106,3 +106,13 @@ export const getImportProgress = async (jobId: string) => {
   const { data } = await apiClient.get(`/api/v1/imports/${jobId}/progress`);
   return data?.body as ImportProgress;
 };
+
+export const autoImportFields = async (jobId: string) => {
+  const { data } = await apiClient.post(`/api/v1/imports/${jobId}/fields/auto`);
+  return data?.body;
+};
+
+export const autoImportHierarchy = async (jobId: string) => {
+  const { data } = await apiClient.post(`/api/v1/imports/${jobId}/hierarchy/auto`);
+  return data?.body;
+};

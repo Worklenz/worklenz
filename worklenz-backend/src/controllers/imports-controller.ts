@@ -375,17 +375,109 @@ export default class ImportsController {
     });
     if (codeVerifier) body.append("code_verifier", codeVerifier);
 
-    const tokenResp = await axios.post(
-      "https://app.asana.com/-/oauth_token",
-      body.toString(),
-      {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    // If we already have an access_token for this job, treat callback as idempotent
+    const existingAccess = ref?.auth?.asana?.access_token;
+    if (existingAccess) {
+      const payload = {
+        authorized: true,
+        workspaces: (ref?.auth?.asana?.workspaces as any) || [],
+        projects: (ref?.auth?.asana?.projects as any) || [],
+      };
+      if (req.accepts("json") || (req.query as any)?.format === "json") {
+        return res.status(200).send(new ServerResponse(true, payload));
       }
-    );
+      return res.status(200).send(
+        `<html><body style="font-family: Arial, sans-serif; padding: 24px;">
+             <h2>Asana already connected</h2>
+             <p>This import job already has Asana credentials. You can close this window and return to Worklenz.</p>
+           </body></html>`
+      );
+    }
+
+    // Avoid concurrent exchanges: if another process is handling this job, return a friendly page
+    if (ref?.auth?.asana?.in_progress) {
+      if (req.accepts("json") || (req.query as any)?.format === "json") {
+        return res
+          .status(202)
+          .send(
+            new ServerResponse(true, { message: "authorization_in_progress" })
+          );
+      }
+      return res.status(200).send(
+        `<html><body style="font-family: Arial, sans-serif; padding: 24px;">
+             <h2>Authorization in progress</h2>
+             <p>The authorization is currently being processed. Please close this window and return to Worklenz — it will update automatically shortly.</p>
+           </body></html>`
+      );
+    }
+
+    // Mark in-progress to help avoid duplicate exchanges
+    await ImportsService.mergeSourceReference(job.id, {
+      auth: {
+        ...(ref?.auth || {}),
+        asana: {
+          ...(ref?.auth?.asana || {}),
+          in_progress: true,
+        },
+      },
+    });
+
+    let tokenResp: any;
+    try {
+      tokenResp = await axios.post(
+        "https://app.asana.com/-/oauth_token",
+        body.toString(),
+        {
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        }
+      );
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      // Common cause: authorization `code` was already used or expired
+      if (status === 400 && data?.error === "invalid_grant") {
+        if (req.accepts("json") || (req.query as any)?.format === "json") {
+          return res
+            .status(400)
+            .send(
+              new ServerResponse(false, {
+                message: "authorization_code_invalid_or_used",
+              })
+            );
+        }
+        return res.status(200).send(
+          `<html><body style="font-family: Arial, sans-serif; padding: 24px;">
+               <h2>Authorization failed</h2>
+               <p>The authorization code appears to be invalid or already used. Please close this window and retry the "Connect" flow from Worklenz (create a fresh import job and click Connect).</p>
+             </body></html>`
+        );
+      }
+      throw err;
+    }
 
     const { access_token, refresh_token, expires_in } = tokenResp.data || {};
     if (!access_token)
       throw createHttpError(400, "Failed to exchange Asana token");
+
+    // If we already have an access_token for this job, treat callback as idempotent
+    const existingAccess = ref?.auth?.asana?.access_token;
+    if (existingAccess) {
+      // Already authorized for this job — return success without re-exchanging
+      const payload = {
+        authorized: true,
+        workspaces: (ref?.auth?.asana?.workspaces as any) || [],
+        projects: (ref?.auth?.asana?.projects as any) || [],
+      };
+      if (req.accepts("json") || (req.query as any)?.format === "json") {
+        return res.status(200).send(new ServerResponse(true, payload));
+      }
+      return res.status(200).send(
+        `<html><body style="font-family: Arial, sans-serif; padding: 24px;">
+             <h2>Asana already connected</h2>
+             <p>This import job already has Asana credentials. You can close this window and return to Worklenz.</p>
+           </body></html>`
+      );
+    }
 
     const authHeader = { Authorization: `Bearer ${access_token}` };
     const workspacesResp = await axios.get(
@@ -440,6 +532,21 @@ export default class ImportsController {
         },
       },
     });
+
+    // Clear in_progress flag if present (merge above overwrites, but ensure removal)
+    try {
+      await ImportsService.mergeSourceReference(job.id, {
+        auth: {
+          ...(ref?.auth || {}),
+          asana: {
+            ...(ref?.auth?.asana || {}),
+            in_progress: false,
+          },
+        },
+      });
+    } catch (err) {
+      // ignore
+    }
 
     const payload = { authorized: true, workspaces, projects };
     if (req.accepts("json") || (req.query as any)?.format === "json") {

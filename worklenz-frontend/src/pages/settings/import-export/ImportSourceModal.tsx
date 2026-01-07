@@ -34,6 +34,8 @@ import {
   updateImportTarget,
   startAsanaAuth,
   saveImportFields,
+  autoImportFields,
+  autoImportHierarchy,
 } from '@/api/imports';
 import type { ImportJob } from '@/api/imports';
 import { projectsApiService } from '@/api/projects/projects.api.service';
@@ -152,15 +154,20 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const [importMembers, setImportMembers] = React.useState(true);
   const [importAttachments, setImportAttachments] = React.useState(true);
 
-  // Example field mapping data (should be dynamic in real app)
+  // Asana fields (replace placeholder list with the real Asana fields)
   const fieldMappingRows = [
-    { asana: 'Task name', jira: 'Summary', required: true, include: true },
-    { asana: 'Assignee', jira: 'Assignee', required: false, include: true },
-    { asana: 'Created by', jira: 'Reporter', required: false, include: true },
-    { asana: 'Description', jira: 'Description', required: false, include: true },
-    { asana: 'Due on', jira: 'Due date', required: false, include: true },
     { asana: 'Start date', jira: 'Start date', required: false, include: true },
-    { asana: 'Collaborators', jira: 'Watchers', required: false, include: true },
+    { asana: 'Due date', jira: 'Due date', required: false, include: true },
+    { asana: 'Assignee', jira: 'Assignee', required: false, include: true },
+    { asana: 'Created by', jira: 'Created by', required: false, include: true },
+    { asana: 'Created on', jira: 'Created on', required: false, include: true },
+    { asana: 'Last modified on', jira: 'Last modified on', required: false, include: true },
+    { asana: 'Completed on', jira: 'Completed on', required: false, include: true },
+    { asana: 'Likes', jira: 'Likes', required: false, include: true },
+    { asana: 'Alphabetical', jira: 'Alphabetical', required: false, include: true },
+    { asana: 'Priority', jira: 'Priority', required: false, include: true },
+    { asana: 'Task Progress', jira: 'Task Progress', required: false, include: true },
+    { asana: 'Project', jira: 'Project', required: false, include: true },
   ];
   // Example hierarchy mapping
   const hierarchyRows = [
@@ -195,6 +202,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
 
   // Importing state
   const [isImporting, setIsImporting] = React.useState<boolean>(false);
+  const [autoMappingRunning, setAutoMappingRunning] = React.useState(false);
   const [spaceName, setSpaceName] = React.useState<string>('');
   const [spaceType, setSpaceType] = React.useState<string>('software');
   const [spaceTemplate, setSpaceTemplate] = React.useState<string>('scrum');
@@ -483,7 +491,22 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             setAsanaWorkspaces(auth.workspaces || []);
             setAsanaProjects(auth.projects || []);
             if (auth.workspaces?.[0]?.id) setSelectedWorkspace(auth.workspaces[0].id);
-            if (auth.projects?.[0]?.id) setSelectedProject(auth.projects[0].id);
+            if (auth.projects?.[0]?.id) {
+              setSelectedProject(auth.projects[0].id);
+              // trigger auto-mapping now that we have a project
+              try {
+                setAutoMappingRunning(true);
+                await autoImportFields(job.id);
+                await autoImportHierarchy(job.id);
+                const refreshedAfterAuto = await getImportJob(job.id);
+                setJob(refreshedAfterAuto as ImportJob);
+                message.success(t('importStep.autoMapped', 'Fields and hierarchy auto-mapped'));
+              } catch (err) {
+                // swallow; user can trigger mapping manually later
+              } finally {
+                setAutoMappingRunning(false);
+              }
+            }
             setAuthCompleted(true);
             setAuthLoading(false);
             setAuthError(null);
@@ -633,7 +656,26 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                     style={{ width: '100%' }}
                     placeholder={t('importStep.projectPlaceholder', 'Select a project')}
                     value={selectedProject || undefined}
-                    onChange={v => setSelectedProject(v)}
+                    onChange={async v => {
+                      setSelectedProject(v);
+                      // trigger server-side auto-mapping for the job when a project is selected
+                      if (job?.id) {
+                        try {
+                          setAutoMappingRunning(true);
+                          await autoImportFields(job.id);
+                          await autoImportHierarchy(job.id);
+                          const refreshed = await getImportJob(job.id);
+                          setJob(refreshed as ImportJob);
+                          message.success(
+                            t('importStep.autoMapped', 'Fields and hierarchy auto-mapped')
+                          );
+                        } catch (err) {
+                          message.error(t('importStep.autoMapError', 'Auto-mapping failed'));
+                        } finally {
+                          setAutoMappingRunning(false);
+                        }
+                      }
+                    }}
                     options={projectOptions}
                     disabled={!authCompleted}
                   />
@@ -849,10 +891,21 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                           value={row.jira}
                           style={{ width: '100%' }}
                           styles={{ popup: { root: { background: '#0f1117', color: '#e5e7eb' } } }}
-                          options={[
-                            { value: row.jira, label: row.jira },
-                            { value: 'Status', label: 'Status' },
-                          ]}
+                          options={
+                            // Ensure option values are unique to avoid React duplicate key warnings
+                            (
+                              [
+                                { value: row.jira, label: row.jira },
+                                { value: 'Status', label: 'Status' },
+                              ] as Array<{
+                                value: string;
+                                label: string;
+                              }>
+                            ).reduce((acc: Array<{ value: string; label: string }>, cur) => {
+                              if (!acc.find(a => a.value === cur.value)) acc.push(cur);
+                              return acc;
+                            }, [])
+                          }
                         />
                         <Tooltip title="More info">
                           <InfoCircleOutlined style={{ color: '#9ca3af' }} />
@@ -907,7 +960,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   }}
                 >
                   <span style={{ paddingLeft: 6 }}>Asana field</span>
-                  <span>Jira field</span>
+                  <span>Worklenz field</span>
                   <span style={{ textAlign: 'center' }}>Include in import</span>
                 </div>
 
