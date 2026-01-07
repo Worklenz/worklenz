@@ -1412,19 +1412,12 @@ export default class ReportingMembersController extends ReportingControllerBaseW
   @HandleExceptions()
   public static async getTimelogsFlat(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { team_member_id, duration, date_range, billable, search } = req.body || {};
-    console.log('[DEBUG] getTimelogsFlat - team_member_id:', team_member_id);
-    console.log('[DEBUG] getTimelogsFlat - duration:', duration);
-    console.log('[DEBUG] getTimelogsFlat - date_range:', date_range);
-    console.log('[DEBUG] getTimelogsFlat - billable:', billable);
-    console.log('[DEBUG] getTimelogsFlat - search:', search);
 
     // Get the team_id from request user
     const teamId = req.user?.team_id;
-    console.log('[DEBUG] getTimelogsFlat - teamId:', teamId);
 
     // Get user timezone and date clauses
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
-    console.log('[DEBUG] getTimelogsFlat - userTimezone:', userTimezone);
     
     // Build params array with timezone first, then date range values
     const params: any[] = [userTimezone];
@@ -1453,11 +1446,8 @@ export default class ReportingMembersController extends ReportingControllerBaseW
         durationClause = `AND twl.created_at >= (CURRENT_DATE - INTERVAL '3 months')::TIMESTAMP`;
       }
     }
-    console.log('[DEBUG] getTimelogsFlat - durationClause:', durationClause);
-    console.log('[DEBUG] getTimelogsFlat - params after date range:', params);
 
     const billableQuery = this.buildBillableQuery(billable || { billable: true, nonBillable: true }, "t");
-    console.log('[DEBUG] getTimelogsFlat - billableQuery:', billableQuery);
 
     // Team filter - only show logs from current team if team_id is available
     let teamFilter = '';
@@ -1467,8 +1457,6 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       params.push(teamId);
       paramIndex++;
     }
-    console.log('[DEBUG] getTimelogsFlat - teamFilter:', teamFilter);
-    console.log('[DEBUG] getTimelogsFlat - paramIndex after team:', paramIndex);
 
     // Optional member filter
     const memberFilter = team_member_id ? `AND u.id = (SELECT user_id FROM team_members WHERE id = $${paramIndex})` : '';
@@ -1476,8 +1464,6 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       params.push(team_member_id);
       paramIndex++;
     }
-    console.log('[DEBUG] getTimelogsFlat - memberFilter:', memberFilter);
-    console.log('[DEBUG] getTimelogsFlat - paramIndex after member:', paramIndex);
 
     // Optional search filter (task, project, member, description)
     const searchFilter = search ? `AND (
@@ -1489,7 +1475,6 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     if (search) {
       params.push(`%${search}%`);
     }
-    console.log('[DEBUG] getTimelogsFlat - searchFilter:', searchFilter);
 
     const q = `
       SELECT
@@ -1510,11 +1495,6 @@ export default class ReportingMembersController extends ReportingControllerBaseW
         ${billableQuery}
         ${searchFilter}
       ORDER BY log_day DESC, user_name ASC`;
-
-    console.log('[DEBUG] getTimelogsFlat - Final Query:', q);
-    console.log('[DEBUG] getTimelogsFlat - Query Params:', params);
-    console.log('[DEBUG] getTimelogsFlat - Params Length:', params.length);
-    console.log('[DEBUG] getTimelogsFlat - Params Types:', params.map(p => typeof p));
 
     const rows = await db.query(q, params);
 
