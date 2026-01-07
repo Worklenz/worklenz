@@ -1,5 +1,5 @@
-import { Button, DatePicker, DatePickerProps, Flex, Select, Space } from '@/shared/antd-imports';
-import React, { useRef, useEffect } from 'react';
+import { Button, DatePicker, DatePickerProps, Flex, Select, Space, Radio } from '@/shared/antd-imports';
+import React, { useRef, useEffect, useState } from 'react';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_schedule_page_visit } from '@/shared/worklenz-analytics-events';
 import { SettingOutlined } from '@ant-design/icons';
@@ -11,11 +11,14 @@ import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import ScheduleDrawer from '@/features/schedule/ScheduleDrawer';
 import GranttChart from '@/components/schedule/grant-chart/GranttChart';
+import { TaskTimelineView } from '@/components/schedule/task-timeline';
 import ScheduleDataDebugger from '@/components/schedule/ScheduleDataDebugger';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { PickerType } from '@/types/schedule/schedule-v2.types';
 
 const { Option } = Select;
+
+type ScheduleViewMode = 'project' | 'task';
 
 const PickerWithType = ({
   type,
@@ -35,6 +38,9 @@ const Schedule: React.FC = () => {
   const granttChartRef = useRef<any>(null);
   const { date, type } = useAppSelector(state => state.scheduleReducer);
   const { trackMixpanelEvent } = useMixpanelTracking();
+  
+  // View mode state: 'project' for existing view, 'task' for new task timeline
+  const [viewMode, setViewMode] = useState<ScheduleViewMode>('project');
 
   useDocumentTitle('Schedule');
 
@@ -80,6 +86,21 @@ const Schedule: React.FC = () => {
             </Select>
             <PickerWithType date={date as Date} type={type} onChange={handleDateChange} />
           </Space>
+          
+          {/* View Mode Toggle */}
+          {/* <Radio.Group 
+            value={viewMode} 
+            onChange={e => setViewMode(e.target.value)}
+            buttonStyle="solid"
+            size="middle"
+          >
+            <Radio.Button value="project">
+              {t('projectView', { defaultValue: 'Project View' })}
+            </Radio.Button>
+            <Radio.Button value="task">
+              {t('taskView', { defaultValue: 'Task View' })}
+            </Radio.Button>
+          </Radio.Group> */}
         </Flex>
         <Button size="small" shape="circle" onClick={() => dispatch(toggleSettingsDrawer())}>
           <SettingOutlined />
@@ -87,7 +108,11 @@ const Schedule: React.FC = () => {
       </Flex>
 
       <Flex vertical gap={24}>
-        <GranttChart type={type} date={date} ref={granttChartRef} />
+        {viewMode === 'project' ? (
+          <GranttChart type={type} date={date} ref={granttChartRef} />
+        ) : (
+          <TaskTimelineView type={type} date={date as Date} />
+        )}
       </Flex>
 
       <ScheduleSettingsDrawer />

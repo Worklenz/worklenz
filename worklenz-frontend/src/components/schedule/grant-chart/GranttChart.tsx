@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   useFetchScheduleMembersQuery,
   useFetchScheduleDatesQuery,
+  useLazyFetchMemberProjectsQuery,
 } from '@/api/schedule/scheduleApi';
 import { themeWiseColor } from '../../../utils/themeWiseColor';
 import GranttMembersTable from './grantt-members-table';
@@ -16,7 +16,8 @@ import ProjectTimelineModal from '@/features/schedule/ProjectTimelineModal';
 
 const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date }, ref) => {
   const { t } = useTranslation();
-  const [expandedProject, setExpandedProject] = useState<string | null>(null);
+  const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null);
+  const [memberProjects, setMemberProjects] = useState<Record<string, any[]>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(undefined);
 
@@ -37,20 +38,52 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
     type,
   });
 
+  // Lazy query for fetching member projects
+  const [fetchMemberProjects, { isLoading: isProjectsLoading }] = useLazyFetchMemberProjectsQuery();
+
   const teamData = teamDataResponse?.body || [];
   const dateList = dateListResponse?.body;
   const loading = teamLoading || dateLoading;
   const dayCount = dateList?.date_data?.[0]?.days?.length || 0;
 
+  // Handle expanding/collapsing member projects
+  const handleToggleProject = async (memberId: string) => {
+    if (expandedMemberId === memberId) {
+      // Collapse
+      setExpandedMemberId(null);
+    } else {
+      // Expand and fetch projects if not already fetched
+      setExpandedMemberId(memberId);
+      if (!memberProjects[memberId]) {
+        try {
+          const result = await fetchMemberProjects({ id: memberId }).unwrap();
+          if (result?.body?.projects) {
+            setMemberProjects(prev => ({
+              ...prev,
+              [memberId]: result.body.projects || [],
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to fetch member projects:', error);
+        }
+      }
+    }
+  };
+
+  // Get projects for a member (from local state)
+  const getMemberProjects = (memberId: string) => {
+    return memberProjects[memberId] || [];
+  };
+
   // Log data for debugging
   console.log('Team Data:', teamData);
   console.log('Date List:', dateList);
+  console.log('Member Projects:', memberProjects);
+  console.log('Expanded Member:', expandedMemberId);
   console.log('Errors:', { teamError, dateError });
 
   // get theme details from theme reducer
   const themeMode = useAppSelector(state => state.themeReducer.mode);
-
-  const dispatch = useAppDispatch();
 
   // Auto-refresh data when date or type changes
   useEffect(() => {
@@ -141,8 +174,10 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
       >
         <GranttMembersTable
           members={teamData}
-          expandedProject={expandedProject}
-          setExpandedProject={setExpandedProject}
+          expandedMemberId={expandedMemberId}
+          onToggleProject={handleToggleProject}
+          getMemberProjects={getMemberProjects}
+          isProjectsLoading={isProjectsLoading}
           membersScrollRef={membersScrollRef}
           syncVerticalScroll={syncVerticalScroll}
         />
@@ -210,107 +245,116 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
           }}
         >
           {teamData && teamData.length > 0 ? (
-            teamData.map((member: any) => (
-              <div
-                key={member.id || member.team_member_id}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: `repeat(${dayCount}, ${CELL_WIDTH}px)`,
-                }}
-              >
-                {dateList?.date_data?.map((date: any) =>
-                  date.days.map((day: any) => (
-                    <div
-                      key={`${date.month}-${day.day}`}
-                      style={{
-                        background: day.isWeekend ? 'rgba(217, 217, 217, 0.4)' : '',
-                        color: day.isToday ? '#fff' : '',
-                        height: 90,
-                      }}
-                    >
-                      <DayAllocationCell
-                        workingHours={8}
-                        loggedHours={0}
-                        totalPerDayHours={0}
-                        isWeekend={day.isWeekend}
-                        capacity={100}
-                        availableHours={8}
-                        memberName={member.name}
-                        date={`${date.month.substring(0, 3)} ${day.day}`}
-                      />
-                    </div>
-                  ))
-                )}
-
-                {expandedProject === (member.id || member.team_member_id) && (
-                  <div>
-                    <Popover
-                      content={
-                        <ProjectTimelineModal
-                          memberId={member?.team_member_id}
-                          projectId={selectedProjectId}
-                          setIsModalOpen={setIsModalOpen}
-                        />
-                      }
-                      trigger={'click'}
-                      open={isModalOpen}
-                    ></Popover>
-                    {(member.projects || []).map((project: any) => (
-                      <div
-                        key={project.id}
-                        onClick={() => {
-                          if (!(project?.date_union?.start && project?.date_union?.end)) {
-                            setSelectedProjectId(project?.id);
-                            setIsModalOpen(true);
-                          }
-                        }}
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: `repeat(${filteredDayCount}, ${cellWidth}px)`,
-                          position: 'relative',
-                        }}
-                      >
-                        <Flex
-                          align="center"
+            teamData.map((member: any) => {
+              const memberId = member.team_member_id || member.id;
+              const isExpanded = expandedMemberId === memberId;
+              const projects = getMemberProjects(memberId);
+              
+              return (
+                <div key={memberId}>
+                  {/* Member row */}
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: `repeat(${dayCount}, ${CELL_WIDTH}px)`,
+                    }}
+                  >
+                    {dateList?.date_data?.map((date: any) =>
+                      date.days.map((day: any) => (
+                        <div
+                          key={`${date.month}-${day.day}`}
                           style={{
-                            position: 'absolute',
-                            left: 0,
-                            zIndex: 50,
-                            height: 65,
+                            background: day.isWeekend ? 'rgba(217, 217, 217, 0.4)' : '',
+                            color: day.isToday ? '#fff' : '',
+                            height: 90,
                           }}
                         >
-                          {project?.date_union?.start && project?.date_union?.end && (
-                            <ProjectTimelineBar
-                              defaultData={project?.default_values}
-                              project={project}
-                              indicatorWidth={project?.indicator_width}
-                              indicatorOffset={project?.indicator_offset}
-                            />
-                          )}
-                        </Flex>
-
-                        {dateList?.date_data?.map((date: any) =>
-                          date.days.map((day: any) => (
-                            <div
-                              key={`${date.month}-${day.day}`}
-                              style={{
-                                background: day.isWeekend ? 'rgba(217, 217, 217, 0.4)' : '',
-                                height: 65,
-                              }}
-                            >
-                              <div
-                                style={{ width: '100%', height: '100%' }}
-                                className={`rounded-xs outline-1 hover:outline-solid ${themeMode === 'dark' ? 'outline-white/10' : 'outline-black/10'}`}
-                              ></div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    ))}
+                          <DayAllocationCell
+                            workingHours={8}
+                            loggedHours={0}
+                            totalPerDayHours={0}
+                            isWeekend={day.isWeekend}
+                            capacity={100}
+                            availableHours={8}
+                            memberName={member.name}
+                            date={`${date.month.substring(0, 3)} ${day.day}`}
+                          />
+                        </div>
+                      ))
+                    )}
                   </div>
-                )}
-              </div>
-            ))
+
+                  {/* Expanded projects */}
+                  {isExpanded && projects.length > 0 && (
+                    <div>
+                      <Popover
+                        content={
+                          <ProjectTimelineModal
+                            memberId={memberId}
+                            projectId={selectedProjectId}
+                            setIsModalOpen={setIsModalOpen}
+                          />
+                        }
+                        trigger={'click'}
+                        open={isModalOpen}
+                      ></Popover>
+                      {projects.map((project: any) => (
+                        <div
+                          key={project.id}
+                          onClick={() => {
+                            if (!(project?.date_union?.start && project?.date_union?.end)) {
+                              setSelectedProjectId(project?.id);
+                              setIsModalOpen(true);
+                            }
+                          }}
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: `repeat(${dayCount}, ${CELL_WIDTH}px)`,
+                            position: 'relative',
+                          }}
+                        >
+                          <Flex
+                            align="center"
+                            style={{
+                              position: 'absolute',
+                              left: 0,
+                              zIndex: 50,
+                              height: 65,
+                            }}
+                          >
+                            {project?.date_union?.start && project?.date_union?.end && (
+                              <ProjectTimelineBar
+                                defaultData={project?.default_values}
+                                project={project}
+                                indicatorWidth={project?.indicator_width}
+                                indicatorOffset={project?.indicator_offset}
+                              />
+                            )}
+                          </Flex>
+
+                          {dateList?.date_data?.map((date: any) =>
+                            date.days.map((day: any) => (
+                              <div
+                                key={`${date.month}-${day.day}`}
+                                style={{
+                                  background: day.isWeekend ? 'rgba(217, 217, 217, 0.4)' : '',
+                                  height: 65,
+                                }}
+                              >
+                                <div
+                                  style={{ width: '100%', height: '100%' }}
+                                  className={`rounded-xs outline-1 hover:outline-solid ${themeMode === 'dark' ? 'outline-white/10' : 'outline-black/10'}`}
+                                ></div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
           ) : (
             <div
               style={{
