@@ -25,15 +25,15 @@ export default function verifyProjectAccess(
     const userId = req.user?.id;
     const projectId = req[location]?.[fieldName];
 
-    if (!teamId || !userId) {
-      return res.status(401).send(
-        new ServerResponse(false, null, "Authentication required")
-      );
-    }
-
     if (!projectId) {
       return res.status(400).send(
         new ServerResponse(false, null, "Project ID is required")
+      );
+    }
+
+    if (!teamId || !userId) {
+      return res.status(401).send(
+        new ServerResponse(false, null, "Authentication required")
       );
     }
 
