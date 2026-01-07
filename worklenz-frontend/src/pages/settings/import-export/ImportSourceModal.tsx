@@ -4,6 +4,7 @@ import {
   Button,
   Typography,
   Upload,
+  Card,
   Steps,
   Collapse,
   Select,
@@ -462,7 +463,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     setAuthError(null);
     try {
       const { authUrl } = await startAsanaAuth(job.id);
-      const popup = window.open(authUrl, 'asana-auth');
+      // open the Asana auth page in a new tab to avoid navigating away from the app
+      const popup = window.open(authUrl, '_blank', 'noopener,noreferrer');
       const started = Date.now();
       const poll = setInterval(async () => {
         if (Date.now() - started > 120000) {

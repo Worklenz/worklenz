@@ -428,6 +428,8 @@ export default class ImportsController {
       auth: {
         ...(ref?.auth || {}),
         asana: {
+          // Preserve previous auth metadata (state/code_verifier) to allow idempotent callbacks
+          ...(ref?.auth?.asana || {}),
           access_token,
           refresh_token: refresh_token || null,
           expires_at: expires_in
