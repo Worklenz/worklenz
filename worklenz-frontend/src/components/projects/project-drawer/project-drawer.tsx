@@ -163,44 +163,56 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         setLoading(false);
       }
     } else if (drawerVisible && !projectId) {
-      // Creating new project - explicitly set form values to defaults
+      // Creating new project - DON'T reset toggle values, only set non-toggle defaults
       setEditMode(false);
       setLoading(false);
       try {
+        // Get current toggle values before resetting
+        const currentManualProgress = form.getFieldValue('use_manual_progress');
+        const currentWeightedProgress = form.getFieldValue('use_weighted_progress');
+        const currentTimeProgress = form.getFieldValue('use_time_progress');
+        
         form.setFieldsValue({
           ...defaultFormValues,
+          // Preserve toggle values if they exist, otherwise use defaults
+          use_manual_progress: currentManualProgress ?? defaultFormValues.use_manual_progress,
+          use_weighted_progress: currentWeightedProgress ?? defaultFormValues.use_weighted_progress,
+          use_time_progress: currentTimeProgress ?? defaultFormValues.use_time_progress,
         });
         setSelectedProjectManager(null);
       } catch (error) {
         logger.error('Error initializing form for new project', error);
       }
     } else if (drawerVisible && projectId && !project && !projectLoading) {
-      // Project data failed to load or is empty
       console.warn('Project drawer is visible but no project data available');
       setLoading(false);
     } else if (drawerVisible && projectId) {
       console.log('Drawer visible, waiting for project data to load...');
     }
   }, [drawerVisible, projectId, project, projectLoading, form]);
-
-  // Additional effect to handle loading state when project data is being fetched
-  useEffect(() => {
-    if (drawerVisible && projectId && projectLoading) {
-      console.log('Project data is loading, maintaining loading state');
-      setLoading(true);
-    }
-  }, [drawerVisible, projectId, projectLoading]);
+    // Additional effect to handle loading state when project data is being fetched
+    useEffect(() => {
+      if (drawerVisible && projectId && projectLoading) {
+        console.log('Project data is loading, maintaining loading state');
+        setLoading(true);
+      }
+    }, [drawerVisible, projectId, projectLoading]);
 
   // Define resetForm function early to avoid declaration order issues
   const resetForm = useCallback(() => {
     setEditMode(false);
     form.resetFields();
-    // Reset to default values to ensure clean state
-    form.setFieldsValue({
+    // Reset to default values but DON'T override toggle states during creation
+    const resetValues = {
       ...defaultFormValues,
       start_date: null,
       end_date: null,
-    });
+      // Explicitly set toggles to false only on drawer close
+      use_manual_progress: false,
+      use_weighted_progress: false,
+      use_time_progress: false,
+    };
+    form.setFieldsValue(resetValues);
     setSelectedProjectManager(null);
   }, [form, defaultFormValues]);
 
@@ -381,14 +393,10 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   // Progress calculation method handlers
   const handleManualProgressChange = (checked: boolean) => {
     if (checked) {
+      // Only update OTHER toggles, let this one be controlled by the Switch
       form.setFieldsValue({
-        use_manual_progress: true,
         use_weighted_progress: false,
         use_time_progress: false,
-      });
-    } else {
-      form.setFieldsValue({
-        use_manual_progress: false,
       });
     }
   };
@@ -397,12 +405,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     if (checked) {
       form.setFieldsValue({
         use_manual_progress: false,
-        use_weighted_progress: true,
         use_time_progress: false,
-      });
-    } else {
-      form.setFieldsValue({
-        use_weighted_progress: false,
       });
     }
   };
@@ -412,11 +415,6 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       form.setFieldsValue({
         use_manual_progress: false,
         use_weighted_progress: false,
-        use_time_progress: true,
-      });
-    } else {
-      form.setFieldsValue({
-        use_time_progress: false,
       });
     }
   };
