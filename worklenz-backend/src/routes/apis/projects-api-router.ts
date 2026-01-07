@@ -24,7 +24,7 @@ projectsApiRouter.get("/my-task-projects", safeControllerFunction(ProjectsContro
 projectsApiRouter.get("/my-projects", safeControllerFunction(ProjectsController.getMyProjects));
 projectsApiRouter.get("/all", safeControllerFunction(ProjectsController.getAllProjects));
 projectsApiRouter.get("/tasks", safeControllerFunction(ProjectsController.getAllTasks));
-projectsApiRouter.get("/members/:id", verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectsController.getMembersByProjectId));
+projectsApiRouter.get("/members/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectsController.getMembersByProjectId));
 projectsApiRouter.get("/overview/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectsController.getOverview));
 projectsApiRouter.get("/overview-members/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectsController.getOverviewMembers));
 projectsApiRouter.get("/favorite/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectsController.toggleFavorite));

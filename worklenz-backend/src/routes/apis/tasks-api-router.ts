@@ -40,7 +40,7 @@ tasksApiRouter.get("/project/unselected-tasks/:id", idParamValidator, verifyProj
 tasksApiRouter.get("/team", safeControllerFunction(TasksController.getProjectTasksByTeam));
 tasksApiRouter.get("/info", safeControllerFunction(TasksController.getById));
 tasksApiRouter.post("/convert", safeControllerFunction(TasksControllerV2.convertToTask));
-tasksApiRouter.get("/kanban/:id", verifyProjectAccess('params', 'id'), safeControllerFunction(TasksController.getProjectTasksByStatus));
+tasksApiRouter.get("/kanban/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(TasksController.getProjectTasksByStatus));
 tasksApiRouter.get("/list/columns/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(TaskListColumnsController.getProjectTaskListColumns));
 tasksApiRouter.put("/list/columns/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(TaskListColumnsController.toggleColumn));
 
