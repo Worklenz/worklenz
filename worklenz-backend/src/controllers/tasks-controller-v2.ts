@@ -248,14 +248,14 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     // Map frontend field names to backend column names
     const fieldMapping: Record<string, string> = {
-      name: "t.name",
-      status: "t.status_id",
-      priority: "t.priority_id",
-      start_date: "t.start_date",
-      end_date: "t.end_date",
-      completed_at: "t.completed_at",
-      created_at: "t.created_at",
-      updated_at: "t.updated_at",
+      'name': 't.name',
+      'status': '(SELECT sort_order FROM task_statuses WHERE id = t.status_id)',
+      'priority': '(SELECT value FROM task_priorities WHERE id = t.priority_id)',
+      'start_date': 't.start_date',
+      'end_date': 't.end_date',
+      'completed_at': 't.completed_at',
+      'created_at': "t.created_at",
+      'updated_at': "t.updated_at",
     };
 
     // Apply field mapping if needed
