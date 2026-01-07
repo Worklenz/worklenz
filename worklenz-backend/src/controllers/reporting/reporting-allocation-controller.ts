@@ -474,18 +474,12 @@ export default class ReportingAllocationController extends ReportingControllerBa
   @HandleExceptions()
   public static async getMemberTimeSheets(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const archived = req.query.archived === "true";
-    console.log("=== ARCHIVED FILTER DEBUG ===");
-    console.log("req.query.archived:", req.query.archived);
-    console.log("archived (parsed):", archived);
 
     const teams = (req.body.teams || []) as string[]; // ids
     // Use parameterized queries
     const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teams, 1);
 
     const projects = (req.body.projects || []) as string[];
-    // Use parameterized queries
-    const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, teamIdsParams.length + 1);
-
     const categories = (req.body.categories || []) as string[];
     const noCategory = req.body.noCategory || false;
     const billable = req.body.billable;
@@ -507,8 +501,10 @@ export default class ReportingAllocationController extends ReportingControllerBa
       let minDateQuery: string;
       let minDateParams: any[];
       if (projects.length > 0) {
-        minDateQuery = `SELECT MIN(COALESCE(start_date, created_at)) as min_date FROM projects WHERE id IN (${projectIdsClause})`;
-        minDateParams = projectIdsParams;
+        // Build a temporary clause just for this query
+        const { clause: tempProjectClause, params: tempProjectParams } = SqlHelper.buildInClause(projects, 1);
+        minDateQuery = `SELECT MIN(COALESCE(start_date, created_at)) as min_date FROM projects WHERE id IN (${tempProjectClause})`;
+        minDateParams = tempProjectParams;
       } else {
         minDateQuery = `SELECT MIN(COALESCE(start_date, created_at)) as min_date FROM projects WHERE team_id IN (${teamIdsClause})`;
         minDateParams = teamIdsParams;
@@ -713,59 +709,15 @@ export default class ReportingAllocationController extends ReportingControllerBa
       isNonWorkingPeriod = true;
     }
 
-    let archivedClause = "";
-    let archivedParams: any[] = [];
-    let paramOffsetForFilters = teamIdsParams.length + projectIdsParams.length + 1;
-    if (!archived) {
-      archivedClause = `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $${paramOffsetForFilters})`;
-      archivedParams = [req.user?.id];
-      paramOffsetForFilters += 1;
-      console.log("Applying archived filter - excluding archived projects for user:", req.user?.id);
-    } else {
-      console.log("NOT applying archived filter - showing all projects including archived");
-    }
-    
-    // Debug: Check if there are any archived projects for this user
-    const archivedCheckQuery = `SELECT COUNT(*) as count FROM archived_projects WHERE user_id = $1`;
-    const archivedCheckResult = await db.query(archivedCheckQuery, [req.user?.id]);
-    console.log("Total archived projects for user:", archivedCheckResult.rows[0]?.count || 0);
-    
-    // Debug: Check if archived projects have time logs in selected teams
-    if (teams.length > 0) {
-      const archivedTimeLogsQuery = `
-        SELECT COUNT(DISTINCT twl.id) as log_count, COUNT(DISTINCT p.id) as project_count
-        FROM task_work_log twl
-        INNER JOIN tasks t ON t.id = twl.task_id
-        INNER JOIN projects p ON p.id = t.project_id
-        INNER JOIN archived_projects ap ON ap.project_id = p.id AND ap.user_id = $1
-        WHERE p.team_id IN (${teamIdsClause})
-      `;
-      const archivedTimeLogsResult = await db.query(archivedTimeLogsQuery, [req.user?.id, ...teamIdsParams]);
-      console.log("Archived projects in selected teams with time logs:", archivedTimeLogsResult.rows[0]);
-    }
-
     const billableQuery = this.buildBillableQueryWithAlias(billable, 't');
     const members = (req.body.members || []) as string[];
     
-    // Prepare members filter
-    let membersFilter = "";
-    let memberParams: any[] = [];
-    if (members.length > 0) {
-      // Use parameterized query
-      const { clause: memberIdsClause, params: memParams } = SqlHelper.buildInClause(members, paramOffsetForFilters);
-      membersFilter = `AND tmiv.team_member_id IN (${memberIdsClause})`;
-      memberParams = memParams;
-      paramOffsetForFilters += memParams.length;
-    } else {
-      // If no members are selected, we should not show any data
-      // This is different from other filters where no selection means "show all"
-      // For members, no selection should mean "show none" to respect the UI filter state
-      membersFilter = `AND 1=0`; // This will match no rows
-    }
-    // Note: Members filter works differently - when no members are selected, show nothing
-
-    // Create custom duration clause for twl table alias
-    // Use parameterized queries for dates
+    // Build all filters in the order they appear in the query to ensure parameter positions match
+    // Query parameter order: teams (main WHERE), dates (subquery), projects (subquery), categories (subquery), archived (subquery), members (main WHERE)
+    
+    let paramOffsetForFilters = teamIdsParams.length + 1;
+    
+    // 1. Duration filter (appears first in subquery)
     let customDurationClause = "";
     let customDurationParams: any[] = [];
     if (date_range && date_range.length === 2) {
@@ -791,33 +743,52 @@ export default class ReportingAllocationController extends ReportingControllerBa
         customDurationClause = "AND twl.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'";
     }
 
-    // Prepare conditional filters for the subquery - only apply if selections are made
+    // 2. Projects filter (appears second in subquery) - Build clause NOW with correct offset
     let conditionalProjectsFilter = "";
     let conditionalProjectParams: any[] = [];
-    let conditionalCategoriesFilter = "";
-    let conditionalCategoryParams: any[] = [];
-
-    // Only apply project filter if projects are actually selected
     if (projects.length > 0) {
+      const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, paramOffsetForFilters);
       conditionalProjectsFilter = `AND p.id IN (${projectIdsClause})`;
       conditionalProjectParams = projectIdsParams;
+      paramOffsetForFilters += projectIdsParams.length;
     }
 
-    // Only apply category filter if categories are selected or noCategory is true
+    // 3. Categories filter (appears third in subquery)
+    let conditionalCategoriesFilter = "";
+    let conditionalCategoryParams: any[] = [];
     if (categories.length > 0 && noCategory) {
-      // Use parameterized query
       const { clause: categoryIdsClause, params: catParams } = SqlHelper.buildInClause(categories, paramOffsetForFilters);
       conditionalCategoriesFilter = `AND (p.category_id IS NULL OR p.category_id IN (${categoryIdsClause}))`;
       conditionalCategoryParams = catParams;
+      paramOffsetForFilters += catParams.length;
     } else if (categories.length === 0 && noCategory) {
       conditionalCategoriesFilter = `AND p.category_id IS NULL`;
     } else if (categories.length > 0 && !noCategory) {
-      // Use parameterized query
       const { clause: categoryIdsClause, params: catParams } = SqlHelper.buildInClause(categories, paramOffsetForFilters);
       conditionalCategoriesFilter = `AND p.category_id IN (${categoryIdsClause})`;
       conditionalCategoryParams = catParams;
+      paramOffsetForFilters += catParams.length;
     }
-    // If no categories and no noCategory, don't filter by category (show all)
+
+    // 4. Archived filter (appears fourth in subquery)
+    let archivedClause = "";
+    let archivedParams: any[] = [];
+    if (!archived) {
+      archivedClause = `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $${paramOffsetForFilters}::uuid)`;
+      archivedParams = [req.user?.id];
+      paramOffsetForFilters += 1;
+    }
+    
+    // 5. Members filter (appears in main WHERE clause after subquery)
+    let membersFilter = "";
+    let memberParams: any[] = [];
+    if (members.length > 0) {
+      const { clause: memberIdsClause, params: memParams } = SqlHelper.buildInClause(members, paramOffsetForFilters);
+      membersFilter = `AND tmiv.team_member_id IN (${memberIdsClause})`;
+      memberParams = memParams;
+    } else {
+      membersFilter = `AND 1=0`; // No members selected = show nothing
+    }
 
     // Check if all filters are unchecked (Clear All scenario) - return no data to avoid overwhelming UI
     const hasProjectFilter = projects.length > 0;
@@ -863,9 +834,14 @@ export default class ReportingAllocationController extends ReportingControllerBa
       GROUP BY tmiv.email, tmiv.name, tmiv.team_member_id, tmiv.user_id, tmiv.team_id
       ORDER BY logged_time DESC;`;
 
-    // Pass all parameters in order: teams, projects, archived, members, dates, categories
-    // This matches the query placeholder order: $1-2 (teams), $3-25 (projects), $26 (archived), $27-46 (members), $47-48 (dates), $49-50 (categories)
-    const queryParams = [...teamIdsParams, ...conditionalProjectParams, ...archivedParams, ...memberParams, ...customDurationParams, ...conditionalCategoryParams];
+    // Pass all parameters in order matching the query:
+    // 1. teamIdsClause (main WHERE clause)
+    // 2. customDurationParams (subquery filter - appears first)
+    // 3. conditionalProjectParams (subquery filter - appears second)
+    // 4. conditionalCategoryParams (subquery filter - appears third)
+    // 5. archivedParams (subquery filter - appears fourth)
+    // 6. memberParams (main WHERE clause - appears last)
+    const queryParams = [...teamIdsParams, ...customDurationParams, ...conditionalProjectParams, ...conditionalCategoryParams, ...archivedParams, ...memberParams];
     const result = await db.query(q, queryParams);
     const utilization = (req.body.utilization || []) as string[];
 
@@ -1031,14 +1007,12 @@ export default class ReportingAllocationController extends ReportingControllerBa
   public static async getEstimatedVsActual(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const archived = req.query.archived === "true";
 
-    const teams = (req.body.teams || []) as string[]; // ids
-    // Use parameterized queries
-    const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teams, 1);
-
+    const teams = (req.body.teams || []) as string[];
     const projects = (req.body.projects || []) as string[];
-    // Use parameterized queries
-    const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, teamIdsParams.length + 1);
-    let paramOffset = teamIdsParams.length + projectIdsParams.length + 1;
+    
+    // Use parameterized queries - start from $1 since teams aren't used in the query
+    const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, 1);
+    let paramOffset = projectIdsParams.length + 1;
     
     const categories = (req.body.categories || []) as string[];
     const noCategory = req.body.selectNoCategory || req.body.noCategory || false;
@@ -1096,18 +1070,20 @@ export default class ReportingAllocationController extends ReportingControllerBa
             p.hours_per_day::INT,
             p.estimated_man_days::INT,
             p.estimated_working_days::INT,
-            (SELECT SUM(time_spent)) AS logged_time,
+            COALESCE(SUM(task_work_log.time_spent), 0) AS logged_time,
             (SELECT COALESCE(SUM(total_minutes), 0)
             FROM tasks
             WHERE project_id = p.id) AS estimated,
-            color_code
+            p.color_code
         FROM projects p
                 LEFT JOIN tasks ON tasks.project_id = p.id
                 LEFT JOIN task_work_log ON task_work_log.task_id = tasks.id
         WHERE p.id IN (${projectIdsClause}) ${durationClause} ${archivedClause} ${categoriesFilter} ${billableQuery}
-        GROUP BY p.id, p.name
+        GROUP BY p.id, p.name, p.end_date, p.hours_per_day, p.estimated_man_days, p.estimated_working_days, p.color_code
         ORDER BY logged_time DESC;`;
-    const result = await db.query(q, [...projectIdsParams, ...durationParams, ...archivedParams, ...categoryParams]);
+    
+    const queryParams = [...projectIdsParams, ...durationParams, ...archivedParams, ...categoryParams];
+    const result = await db.query(q, queryParams);
 
     const data = [];
 

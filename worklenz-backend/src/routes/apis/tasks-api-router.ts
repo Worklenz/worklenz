@@ -20,6 +20,7 @@ import safeControllerFunction from "../../shared/safe-controller-function";
 import taskCreateBodyValidator from "../../middlewares/validators/task-create-body--validator";
 import verifyTaskAccess, {verifyBulkTaskAccessMiddleware} from "../../middlewares/verify-task-access";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
+import verifyProjectAccess from "../../middlewares/verify-project-access";
 
 const tasksApiRouter = express.Router();
 
@@ -31,23 +32,23 @@ function getList(req: Request, res: Response) {
 }
 
 tasksApiRouter.post("/", taskCreateBodyValidator, safeControllerFunction(TasksController.create));
-tasksApiRouter.get("/project/:id", idParamValidator, safeControllerFunction(TasksController.getTasksByProject));
+tasksApiRouter.get("/project/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(TasksController.getTasksByProject));
 tasksApiRouter.get("/roadmap", ganttTasksQueryParamsValidator, safeControllerFunction(TasksController.getGanttTasksByProject));
 tasksApiRouter.get("/range", ganttTasksRangeParamsValidator, safeControllerFunction(TasksController.getTasksBetweenRange));
-tasksApiRouter.get("/project/selected-tasks/:id", idParamValidator, safeControllerFunction(TasksController.getSelectedTasksByProject));
-tasksApiRouter.get("/project/unselected-tasks/:id", idParamValidator, safeControllerFunction(TasksController.getUnselectedTasksByProject));
+tasksApiRouter.get("/project/selected-tasks/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(TasksController.getSelectedTasksByProject));
+tasksApiRouter.get("/project/unselected-tasks/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(TasksController.getUnselectedTasksByProject));
 tasksApiRouter.get("/team", safeControllerFunction(TasksController.getProjectTasksByTeam));
 tasksApiRouter.get("/info", safeControllerFunction(TasksController.getById));
 tasksApiRouter.post("/convert", safeControllerFunction(TasksControllerV2.convertToTask));
-tasksApiRouter.get("/kanban/:id", safeControllerFunction(TasksController.getProjectTasksByStatus));
-tasksApiRouter.get("/list/columns/:id", idParamValidator, safeControllerFunction(TaskListColumnsController.getProjectTaskListColumns));
-tasksApiRouter.put("/list/columns/:id", idParamValidator, safeControllerFunction(TaskListColumnsController.toggleColumn));
+tasksApiRouter.get("/kanban/:id", verifyProjectAccess('params', 'id'), safeControllerFunction(TasksController.getProjectTasksByStatus));
+tasksApiRouter.get("/list/columns/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(TaskListColumnsController.getProjectTaskListColumns));
+tasksApiRouter.put("/list/columns/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(TaskListColumnsController.toggleColumn));
 
-tasksApiRouter.get("/list/v2/:id", idParamValidator, safeControllerFunction(getList));
-tasksApiRouter.get("/list/v3/:id", idParamValidator, safeControllerFunction(TasksControllerV2.getTasksV3));
-tasksApiRouter.post("/refresh-progress/:id", idParamValidator, safeControllerFunction(TasksControllerV2.refreshTaskProgress));
-tasksApiRouter.get("/progress-status/:id", idParamValidator, safeControllerFunction(TasksControllerV2.getTaskProgressStatus));
-tasksApiRouter.get("/assignees/:id", idParamValidator, safeControllerFunction(TasksController.getProjectTaskAssignees));
+tasksApiRouter.get("/list/v2/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(getList));
+tasksApiRouter.get("/list/v3/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(TasksControllerV2.getTasksV3));
+tasksApiRouter.post("/refresh-progress/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(TasksControllerV2.refreshTaskProgress));
+tasksApiRouter.get("/progress-status/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(TasksControllerV2.getTaskProgressStatus));
+tasksApiRouter.get("/assignees/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(TasksController.getProjectTaskAssignees));
 
 tasksApiRouter.put("/bulk/status", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksStatusValidator, safeControllerFunction(TasksController.bulkChangeStatus));
 tasksApiRouter.put("/bulk/priority", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksPriorityValidator, safeControllerFunction(TasksController.bulkChangePriority));
@@ -66,7 +67,7 @@ tasksApiRouter.delete("/:id", verifyTaskAccess('params', 'id'), safeControllerFu
 tasksApiRouter.post("/quick-task", quickTaskBodyValidator, safeControllerFunction(TasksController.createQuickTask));
 tasksApiRouter.post("/home-task", homeTaskBodyValidator, safeControllerFunction(TasksController.createHomeTask));
 tasksApiRouter.post("/convert-to-subtask", safeControllerFunction(TasksControllerV2.convertToSubtask));
-tasksApiRouter.get("/subscribers/:id", safeControllerFunction(TasksControllerV2.getSubscribers));
+tasksApiRouter.get("/subscribers/:id", verifyTaskAccess('params', 'id'), safeControllerFunction(TasksControllerV2.getSubscribers));
 tasksApiRouter.get("/search", safeControllerFunction(TasksControllerV2.searchTasks));
 tasksApiRouter.get("/dependency-status", safeControllerFunction(TasksControllerV2.getTaskDependencyStatus));
 
