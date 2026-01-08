@@ -1555,9 +1555,33 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       dateRange = date_range.split(",");
     }
 
-    // Get user timezone and date clauses
+    // Get user timezone
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
-    const durationClause = this.getDateRangeClauseWithTimezone(duration as string || DATE_RANGES.LAST_WEEK, dateRange, userTimezone);
+    
+    // Build params array with timezone first, then date range values
+    const params: any[] = [userTimezone];
+    let paramIndex = 2;
+    
+    // Add date range parameters and build duration clause
+    let durationClause = '';
+    if (dateRange && dateRange.length === 2) {
+      const startDate = moment(dateRange[0]).format('YYYY-MM-DD HH:mm:ss');
+      const endDate = moment(dateRange[1]).add(1, 'day').format('YYYY-MM-DD HH:mm:ss');
+      durationClause = `AND twl.created_at >= $${paramIndex}::TIMESTAMP AND twl.created_at < $${paramIndex + 1}::TIMESTAMP`;
+      params.push(startDate, endDate);
+      paramIndex += 2;
+    } else {
+      // Use default duration logic if no date_range provided
+      if (!duration || duration === DATE_RANGES.LAST_WEEK) {
+        durationClause = `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 week')::TIMESTAMP`;
+      } else if (duration === DATE_RANGES.YESTERDAY) {
+        durationClause = `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 day')::TIMESTAMP AND twl.created_at < CURRENT_DATE::TIMESTAMP`;
+      } else if (duration === DATE_RANGES.LAST_MONTH) {
+        durationClause = `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 month')::TIMESTAMP`;
+      } else if (duration === DATE_RANGES.LAST_QUARTER) {
+        durationClause = `AND twl.created_at >= (CURRENT_DATE - INTERVAL '3 months')::TIMESTAMP`;
+      }
+    }
 
     // Parse billable filter
     let billableFilter = { billable: true, nonBillable: true };
@@ -1572,9 +1596,6 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
     // Team filter - only show logs from current team if team_id is available
     let teamFilter = '';
-    let paramIndex = 2;
-    const params: any[] = [userTimezone];
-
     if (teamId) {
       teamFilter = `AND p.team_id = $${paramIndex}`;
       params.push(teamId);

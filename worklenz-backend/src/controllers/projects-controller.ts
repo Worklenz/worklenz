@@ -15,6 +15,7 @@ import { SocketEvents } from "../socket.io/events";
 import { IO } from "../shared/io";
 import { getCurrentProjectsCount, getFreePlanSettings } from "../shared/paddle-utils";
 import { ActivityLoggingService } from "../services/activity-logging.service";
+import { isRestrictedFromProPlanFeatures } from "../middlewares/subscription-middleware";
 
 export default class ProjectsController extends WorklenzControllerBase {
 
@@ -73,6 +74,15 @@ export default class ProjectsController extends WorklenzControllerBase {
 
       if (parseInt(projectsCount) >= projectsLimit) {
         return res.status(200).send(new ServerResponse(false, [], `Sorry, the free plan cannot have more than ${projectsLimit} projects.`));
+      }
+    }
+
+    // Check if user is trying to set project health and if they're restricted
+    if (req.body.health_id) {
+      const isRestricted = await isRestrictedFromProPlanFeatures(req.user?.team_id);
+      
+      if (isRestricted) {
+        return res.status(200).send(new ServerResponse(false, null, "Project health is not available for Pro Plan and AppSumo users. Please upgrade to Business plan to access this feature."));
       }
     }
 
@@ -613,6 +623,15 @@ export default class ProjectsController extends WorklenzControllerBase {
 
     if (key.length > 5)
       return res.status(200).send(new ServerResponse(false, null, "The project key length cannot exceed 5 characters."));
+
+    // Check if user is trying to set project health and if they're restricted
+    if (req.body.health_id) {
+      const isRestricted = await isRestrictedFromProPlanFeatures(req.user?.team_id);
+      
+      if (isRestricted) {
+        return res.status(200).send(new ServerResponse(false, null, "Project health is not available for Pro Plan and AppSumo users. Please upgrade to Business plan to access this feature."));
+      }
+    }
 
     req.body.id = req.params.id;
     req.body.team_id = req.user?.team_id || null;

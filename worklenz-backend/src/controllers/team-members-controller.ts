@@ -1062,6 +1062,27 @@ export default class TeamMembersController extends WorklenzControllerBase {
       const result1 = await db.query(q1, [req.params?.id]);
       const [status] = result1.rows;
 
+      // Check if reactivating an inactive member would exceed AppSumo lifetime deal limit
+      if (!status.active) {
+        const currentCount = parseInt(subscriptionData.current_count) || 0;
+        
+        // Check AppSumo lifetime deal limit
+        if (
+          subscriptionData.is_ltd
+          && subscriptionData.ltd_users
+          && (currentCount + 1 > parseInt(subscriptionData.ltd_users))
+        ) {
+          return res.status(200).send(new ServerResponse(false, null, "Cannot exceed the maximum number of life time users."));
+        }
+
+        // Check trial user team member limit
+        if (subscriptionData.subscription_status === "trialing") {
+          if (currentCount + 1 > TRIAL_MEMBER_LIMIT) {
+            return res.status(200).send(new ServerResponse(false, null, `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`));
+          }
+        }
+      }
+
       if (status.active) {
         const updateQ1 = `UPDATE users
               SET active_team = (SELECT id FROM teams WHERE user_id = users.id ORDER BY created_at DESC LIMIT 1)

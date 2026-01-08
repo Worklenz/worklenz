@@ -4,7 +4,7 @@ import { CrownOutlined } from '@ant-design/icons';
 
 import { IProjectHealth } from '@/types/project/projectHealth.types';
 import { useAuthService } from '@/hooks/useAuth';
-import { isFreeUser } from '@/utils/subscription-utils';
+import { shouldRestrictProjectHealth } from '@/utils/subscription-utils';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
@@ -20,7 +20,7 @@ const ProjectHealthSection = ({ healths, form, t, disabled }: ProjectHealthSecti
   const { t: tCommon } = useTranslation('common');
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
-  const isFree = isFreeUser(currentSession);
+  const isRestricted = shouldRestrictProjectHealth(currentSession);
   const dispatch = useAppDispatch();
 
   const healthOptions = healths.map((status, index) => ({
@@ -34,7 +34,7 @@ const ProjectHealthSection = ({ healths, form, t, disabled }: ProjectHealthSecti
   }));
 
   const handleSelectClick = () => {
-    if (isFree) {
+    if (isRestricted) {
       dispatch(toggleUpgradeModal());
     }
   };
@@ -43,7 +43,7 @@ const ProjectHealthSection = ({ healths, form, t, disabled }: ProjectHealthSecti
     <Form.Item name="health_id" label={
       <Flex align="center" gap={4}>
         <span>{t('health')}</span>
-        {isFree && (
+        {isRestricted && (
           <Tooltip title={tCommon('upgrade-plan')} placement="top">
             <CrownOutlined 
               style={{ fontSize: '14px', color: '#faad14', cursor: 'pointer' }}
@@ -56,7 +56,7 @@ const ProjectHealthSection = ({ healths, form, t, disabled }: ProjectHealthSecti
       <Select
         options={healthOptions}
         onChange={value => form.setFieldValue('health_id', value)}
-        disabled={disabled}
+        disabled={disabled || isRestricted}
         onClick={handleSelectClick}
       />
     </Form.Item>
