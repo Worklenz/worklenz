@@ -78,7 +78,8 @@ export default class ProjectsController extends WorklenzControllerBase {
     }
 
     // Check if user is trying to set project health and if they're restricted
-    if (req.body.health_id) {
+    // Only validate if health_id is explicitly provided (not null, undefined, or empty string)
+    if (req.body.health_id && req.body.health_id !== null && req.body.health_id !== undefined && req.body.health_id !== '') {
       const isRestricted = await isRestrictedFromProPlanFeatures(req.user?.team_id);
       
       if (isRestricted) {
@@ -625,7 +626,8 @@ export default class ProjectsController extends WorklenzControllerBase {
       return res.status(200).send(new ServerResponse(false, null, "The project key length cannot exceed 5 characters."));
 
     // Check if user is trying to set project health and if they're restricted
-    if (req.body.health_id) {
+    // Only validate if health_id is explicitly provided (not null, undefined, or empty string)
+    if (req.body.health_id && req.body.health_id !== null && req.body.health_id !== undefined && req.body.health_id !== '') {
       const isRestricted = await isRestrictedFromProPlanFeatures(req.user?.team_id);
       
       if (isRestricted) {
