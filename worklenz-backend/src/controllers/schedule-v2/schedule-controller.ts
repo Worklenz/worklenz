@@ -1,34 +1,10 @@
 import db from "../../config/db";
-import { ParsedQs } from "qs";
 import HandleExceptions from "../../decorators/handle-exceptions";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
-import { TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA, UNMAPPED } from "../../shared/constants";
-import { getColor } from "../../shared/utils";
-import moment, { Moment } from "moment";
-import momentTime from "moment-timezone";
+import moment from "moment";
 import WorklenzControllerBase from "../worklenz-controller-base";
-
-interface IDateUnions {
-    date_union: {
-        start_date: string | null;
-        end_date: string | null;
-    },
-    logs_date_union: {
-        start_date: string | null;
-        end_date: string | null;
-    },
-    allocated_date_union: {
-        start_date: string | null;
-        end_date: string | null;
-    }
-}
-
-interface IDatesPair {
-    start_date: string | null,
-    end_date: string | null
-}
 
 export default class ScheduleControllerV2 extends WorklenzControllerBase {
 
@@ -277,16 +253,16 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
     @HandleExceptions()
     public static async getOrganizationMemberProjects(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
 
-        const { id } = req.params;
+        const { id } = req.params; // This is team_member_id from frontend
 
+        // The frontend passes team_member_id, so we need to query by team_member_id, not user_id
         const getDataq = `WITH project_dates AS (
                             SELECT
                                 pm.project_id,
                                 MIN(pm.allocated_from) AS start_date,
                                 MAX(pm.allocated_to) AS end_date,
-                                MAX(pm.seconds_per_day) / 3600 AS hours_per_day, -- Convert max seconds per day to hours per day
+                                MAX(pm.seconds_per_day) / 3600 AS hours_per_day,
                                 (
-                                    -- Calculate total working days between start and end dates
                                     SELECT COUNT(*) 
                                     FROM generate_series(MIN(pm.allocated_from), MAX(pm.allocated_to), '1 day'::interval) AS day
                                     JOIN public.organization_working_days owd ON owd.organization_id = t.organization_id
@@ -298,37 +274,31 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                                         (EXTRACT(ISODOW FROM day) = 5 AND owd.friday = true) OR
                                         (EXTRACT(ISODOW FROM day) = 6 AND owd.saturday = true) OR
                                         (EXTRACT(ISODOW FROM day) = 7 AND owd.sunday = true)
-                                ) * (MAX(pm.seconds_per_day) / 3600) AS total_hours -- Multiply by hours per day
+                                ) * (MAX(pm.seconds_per_day) / 3600) AS total_hours
                             FROM public.project_member_allocations pm
                             JOIN public.projects p ON pm.project_id = p.id
                             JOIN public.teams t ON p.team_id = t.id
+                            WHERE pm.team_member_id = $1
                             GROUP BY pm.project_id, t.organization_id
                         ),
                         projects_with_offsets AS (
                             SELECT
                                 p.name AS project_name,
                                 p.id AS project_id,
-                                COALESCE(pd.hours_per_day, 0) AS hours_per_day, -- Default to 8 if not available in project_member_allocations
-                                COALESCE(pd.total_hours, 0) AS total_hours,    -- Calculated total hours based on working days
+                                COALESCE(pd.hours_per_day, 0) AS hours_per_day,
+                                COALESCE(pd.total_hours, 0) AS total_hours,
                                 pd.start_date,
                                 pd.end_date,
                                 p.team_id,
-                                tm.user_id,
-                                -- Calculate indicator_offset dynamically: days difference from earliest project start date * 75px
                                 COALESCE(
                                     (DATE_PART('day', pd.start_date - MIN(pd.start_date) OVER ())) * 75,
                                     0
                                 ) AS indicator_offset,
-                                -- Calculate indicator_width as the number of days * 75 pixels per day
-                                COALESCE((DATE_PART('day', pd.end_date - pd.start_date) + 1) * 75, 75) AS indicator_width, -- Fallback to 75 if no dates exist
-                                75 AS min_width -- 75px minimum width for a 1-day project
+                                COALESCE((DATE_PART('day', pd.end_date - pd.start_date) + 1) * 75, 75) AS indicator_width,
+                                75 AS min_width
                             FROM public.projects p
-                            LEFT JOIN project_dates pd ON p.id = pd.project_id
-                            JOIN public.team_members tm ON tm.team_id = p.team_id
-                            JOIN public.teams t ON p.team_id = t.id
-                            WHERE tm.user_id = $2
-                            AND tm.team_id = $1
-                            ORDER BY pd.start_date, pd.end_date -- Order by start and end date
+                            JOIN project_dates pd ON p.id = pd.project_id
+                            ORDER BY pd.start_date, pd.end_date
                         )
                         SELECT jsonb_agg(jsonb_build_object(
                             'name', project_name,
@@ -341,7 +311,7 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                             ),
                             'indicator_offset', indicator_offset,
                             'indicator_width', indicator_width,
-                            'tasks', '[]'::jsonb, -- Empty tasks array for now,
+                            'tasks', '[]'::jsonb,
                             'default_values', jsonb_build_object(
                                 'allocated_from', start_date::DATE,
                                 'allocated_to', end_date::DATE,
@@ -351,9 +321,10 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                         )) AS projects
                         FROM projects_with_offsets;`;
 
-        const results = await db.query(getDataq, [req.user?.team_id, id]);
+        const results = await db.query(getDataq, [id]);
+        
         const [data] = results.rows;
-        return res.status(200).send(new ServerResponse(true, { projects: data.projects, id }));
+        return res.status(200).send(new ServerResponse(true, { projects: data?.projects || [], id }));
 
     }
 
