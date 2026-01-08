@@ -199,4 +199,31 @@ export const reportingExportApiService = {
     const queryString = '?' + queryParts.join('&');
     window.location.href = `${rootUrl}/timelogs-flat/export-csv${queryString}`;
   },
+
+  exportTimelogsFlatExcel(body: {
+    team_member_id?: string;
+    duration?: string;
+    date_range: string[];
+    billable: { billable: boolean; nonBillable: boolean };
+    search?: string;
+  }) {
+    // Build query string manually to avoid issues with undefined values
+    const queryParts: string[] = [];
+
+    queryParts.push(`date_range=${body.date_range.join(',')}`);
+    queryParts.push(`billable=${encodeURIComponent(JSON.stringify(body.billable))}`);
+
+    if (body.team_member_id) {
+      queryParts.push(`team_member_id=${body.team_member_id}`);
+    }
+    if (body.duration) {
+      queryParts.push(`duration=${body.duration}`);
+    }
+    if (body.search) {
+      queryParts.push(`search=${encodeURIComponent(body.search)}`);
+    }
+
+    const queryString = '?' + queryParts.join('&');
+    window.location.href = `${rootUrl}/timelogs-flat/export-excel${queryString}`;
+  },
 };
