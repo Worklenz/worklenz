@@ -1430,8 +1430,23 @@ export default class TeamMembersController extends WorklenzControllerBase {
           return res.status(200).send(new ServerResponse(false, null, "Unable to join team! Please check team subscription status."));
         }
 
-        // Check LTD user limits
-        if (incrementBy > 0 && subscriptionData.is_ltd && subscriptionData.current_count) {
+        // Check seat availability for active subscriptions (Business plans override LTD limits)
+        if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
+          const updatedCount = parseInt(subscriptionData.current_count) + incrementBy;
+          const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
+          const requiredSeats = updatedCount - effectiveUserLimit;
+          if (updatedCount > effectiveUserLimit) {
+            const obj = {
+              seats_enough: false,
+              required_count: requiredSeats,
+              current_seat_amount: effectiveUserLimit
+            };
+            return res.status(200).send(new ServerResponse(false, obj, `Insufficient seats available. The team needs ${requiredSeats} more seat${requiredSeats > 1 ? 's' : ''} to add you. Please ask the team owner to upgrade.`));
+          }
+        }
+
+        // Check LTD user limits - only applies if not on Business plan
+        if (incrementBy > 0 && subscriptionData.is_ltd && subscriptionData.current_count && subscriptionData.subscription_type !== 'ANNUAL_BUSINESS') {
           const currentCount = parseInt(subscriptionData.current_count) || 0;
           const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
           if (currentCount + incrementBy > ltdLimit) {
@@ -1444,20 +1459,6 @@ export default class TeamMembersController extends WorklenzControllerBase {
           const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
           if (currentTrialMembers + incrementBy > TRIAL_MEMBER_LIMIT) {
             return res.status(200).send(new ServerResponse(false, null, `Trial teams cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please ask the team owner to upgrade.`));
-          }
-        }
-
-        // Check seat availability for active subscriptions
-        if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
-          const updatedCount = parseInt(subscriptionData.current_count) + incrementBy;
-          const requiredSeats = updatedCount - subscriptionData.quantity;
-          if (updatedCount > subscriptionData.quantity) {
-            const obj = {
-              seats_enough: false,
-              required_count: requiredSeats,
-              current_seat_amount: subscriptionData.quantity
-            };
-            return res.status(200).send(new ServerResponse(false, obj, `Insufficient seats available. The team needs ${requiredSeats} more seat${requiredSeats > 1 ? 's' : ''} to add you. Please ask the team owner to upgrade.`));
           }
         }
       }
