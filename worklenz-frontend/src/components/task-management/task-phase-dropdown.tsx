@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSocket } from '@/socket/socketContext';
@@ -12,8 +12,9 @@ interface TaskPhaseDropdownProps {
   isDarkMode?: boolean;
 }
 
+// Fallback constants - should match CSS max-height/max-width
 const DROPDOWN_HEIGHT = 280; // Estimated max height including padding
-const DROPDOWN_WIDTH = 220; // Max width from your CSS
+const DROPDOWN_WIDTH = 220; // Max width from CSS: max-w-[220px]
 const VIEWPORT_PADDING = 8; // Minimal space from viewport edges
 
 const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
@@ -25,8 +26,13 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [placement, setPlacement] = useState<'bottom' | 'top'>('bottom');
+  const [dropdownDimensions, setDropdownDimensions] = useState({
+    width: DROPDOWN_WIDTH,
+    height: DROPDOWN_HEIGHT,
+  });
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const rafIdRef = useRef<number | null>(null);
 
   const { phaseList } = useAppSelector(state => state.phaseReducer);
 
@@ -34,6 +40,17 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
   const currentPhase = useMemo(() => {
     return phaseList.find(phase => phase.name === task.phase);
   }, [phaseList, task.phase]);
+
+  // Measure actual dropdown dimensions when it opens
+  useLayoutEffect(() => {
+    if (isOpen && dropdownRef.current) {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      setDropdownDimensions({
+        width: rect.width,
+        height: rect.height,
+      });
+    }
+  }, [isOpen]);
 
   // Handle phase change
   const handlePhaseChange = useCallback(
@@ -70,43 +87,91 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
 
-    // Calculate vertical position
+    // Use measured dimensions when available, fallback to constants
+    const { width: dropdownWidth, height: dropdownHeight } = dropdownDimensions;
+
+    // Calculate available space
     const spaceBelow = viewportHeight - rect.bottom;
     const spaceAbove = rect.top;
 
-    // Check if dropdown fits below the button
-    const shouldShowOnTop = spaceBelow < DROPDOWN_HEIGHT && spaceAbove > spaceBelow;
+    // Check if dropdown can fit in each direction
+    const canShowBelow = spaceBelow >= dropdownHeight;
+    const canShowAbove = spaceAbove >= dropdownHeight;
 
     let top = 0;
     let left = rect.left + window.scrollX;
+    let newPlacement: 'top' | 'bottom' = 'bottom';
 
-    if (shouldShowOnTop) {
-      // Position above the button
-      top = rect.top + window.scrollY - DROPDOWN_HEIGHT - 4;
-      setPlacement('top');
-    } else {
-      // Position below the button
+    // Determine optimal placement
+    if (canShowBelow) {
+      // Prefer below if there's enough space
       top = rect.bottom + window.scrollY + 4;
-      setPlacement('bottom');
+      newPlacement = 'bottom';
+    } else if (canShowAbove) {
+      // Use above if there's enough space
+      top = rect.top + window.scrollY - dropdownHeight - 4;
+      newPlacement = 'top';
+    } else {
+      // Not enough space in either direction, pick the side with more space
+      if (spaceBelow >= spaceAbove) {
+        // More space below, but need to clamp
+        top = rect.bottom + window.scrollY + 4;
+        newPlacement = 'bottom';
+      } else {
+        // More space above, but need to clamp
+        top = rect.top + window.scrollY - dropdownHeight - 4;
+        newPlacement = 'top';
+      }
     }
 
     // Adjust horizontal position to stay within viewport
-    if (left + DROPDOWN_WIDTH > viewportWidth + window.scrollX) {
+    if (left + dropdownWidth > viewportWidth + window.scrollX) {
       left = Math.max(
         VIEWPORT_PADDING + window.scrollX,
-        viewportWidth + window.scrollX - DROPDOWN_WIDTH - VIEWPORT_PADDING
+        viewportWidth + window.scrollX - dropdownWidth - VIEWPORT_PADDING
       );
     } else if (left < window.scrollX + VIEWPORT_PADDING) {
       left = window.scrollX + VIEWPORT_PADDING;
     }
 
-    // Ensure dropdown doesn't go above the viewport
-    if (shouldShowOnTop && top < window.scrollY + VIEWPORT_PADDING) {
-      top = window.scrollY + VIEWPORT_PADDING;
+    // Clamp vertical position to ensure dropdown stays within viewport
+    const maxTop = window.scrollY + viewportHeight - dropdownHeight - VIEWPORT_PADDING;
+    const minTop = window.scrollY + VIEWPORT_PADDING;
+
+    if (newPlacement === 'bottom') {
+      // Clamp when positioned below
+      top = Math.min(top, maxTop);
+    } else {
+      // Clamp when positioned above
+      top = Math.max(top, minTop);
     }
 
+    // Final check - if dropdown would still go out of bounds, force to opposite side
+    if (newPlacement === 'bottom' && top > maxTop) {
+      // Can't fit below, try above
+      top = Math.max(rect.top + window.scrollY - dropdownHeight - 4, minTop);
+      newPlacement = 'top';
+    } else if (newPlacement === 'top' && top < minTop) {
+      // Can't fit above, try below
+      top = Math.min(rect.bottom + window.scrollY + 4, maxTop);
+      newPlacement = 'bottom';
+    }
+
+    setPlacement(newPlacement);
     setDropdownPosition({ top, left });
-  }, []);
+  }, [dropdownDimensions]);
+
+  // Create a throttled version of calculateDropdownPosition using requestAnimationFrame
+  const throttledCalculatePosition = useCallback(() => {
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+    }
+
+    rafIdRef.current = requestAnimationFrame(() => {
+      calculateDropdownPosition();
+      rafIdRef.current = null;
+    });
+  }, [calculateDropdownPosition]);
 
   // Handle outside clicks and calculate position
   useEffect(() => {
@@ -120,25 +185,34 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
     };
 
     if (isOpen && buttonRef.current) {
-      calculateDropdownPosition();
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        calculateDropdownPosition();
+      });
+      
       document.addEventListener('mousedown', handleClickOutside);
 
-      // Recalculate on window resize or scroll
-      const handleResize = () => calculateDropdownPosition();
-      window.addEventListener('resize', handleResize);
-      window.addEventListener('scroll', handleResize, true);
+      // Recalculate on window resize or scroll using throttled version
+      window.addEventListener('resize', throttledCalculatePosition);
+      window.addEventListener('scroll', throttledCalculatePosition, true);
 
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
-        window.removeEventListener('resize', handleResize);
-        window.removeEventListener('scroll', handleResize, true);
+        window.removeEventListener('resize', throttledCalculatePosition);
+        window.removeEventListener('scroll', throttledCalculatePosition, true);
+        
+        // Cancel any pending animation frame
+        if (rafIdRef.current !== null) {
+          cancelAnimationFrame(rafIdRef.current);
+          rafIdRef.current = null;
+        }
       };
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, calculateDropdownPosition]);
+  }, [isOpen, calculateDropdownPosition, throttledCalculatePosition]);
 
   // Get phase color
   const getPhaseColor = useCallback((phase: any) => {
