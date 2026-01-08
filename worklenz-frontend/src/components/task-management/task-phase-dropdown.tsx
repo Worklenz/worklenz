@@ -12,6 +12,10 @@ interface TaskPhaseDropdownProps {
   isDarkMode?: boolean;
 }
 
+const DROPDOWN_HEIGHT = 280; // Estimated max height including padding
+const DROPDOWN_WIDTH = 220; // Max width from your CSS
+const VIEWPORT_PADDING = 8; // Minimal space from viewport edges
+
 const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
   task,
   projectId,
@@ -20,6 +24,7 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
   const { socket, connected } = useSocket();
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const [placement, setPlacement] = useState<'bottom' | 'top'>('bottom');
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -38,7 +43,7 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
       socket?.emit(SocketEvents.TASK_PHASE_CHANGE.toString(), {
         task_id: task.id,
         phase_id: phaseId,
-        parent_task: null, // Assuming top-level tasks for now
+        parent_task: null,
       });
       setIsOpen(false);
     },
@@ -57,11 +62,57 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
     setIsOpen(false);
   }, [task.id, connected, socket]);
 
-  // Calculate dropdown position and handle outside clicks
+  // Calculate dropdown position with viewport boundary detection
+  const calculateDropdownPosition = useCallback(() => {
+    if (!buttonRef.current) return;
+
+    const rect = buttonRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+
+    // Calculate vertical position
+    const spaceBelow = viewportHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    // Check if dropdown fits below the button
+    const shouldShowOnTop = spaceBelow < DROPDOWN_HEIGHT && spaceAbove > spaceBelow;
+
+    let top = 0;
+    let left = rect.left + window.scrollX;
+
+    if (shouldShowOnTop) {
+      // Position above the button
+      top = rect.top + window.scrollY - DROPDOWN_HEIGHT - 4;
+      setPlacement('top');
+    } else {
+      // Position below the button
+      top = rect.bottom + window.scrollY + 4;
+      setPlacement('bottom');
+    }
+
+    // Adjust horizontal position to stay within viewport
+    if (left + DROPDOWN_WIDTH > viewportWidth + window.scrollX) {
+      left = Math.max(
+        VIEWPORT_PADDING + window.scrollX,
+        viewportWidth + window.scrollX - DROPDOWN_WIDTH - VIEWPORT_PADDING
+      );
+    } else if (left < window.scrollX + VIEWPORT_PADDING) {
+      left = window.scrollX + VIEWPORT_PADDING;
+    }
+
+    // Ensure dropdown doesn't go above the viewport
+    if (shouldShowOnTop && top < window.scrollY + VIEWPORT_PADDING) {
+      top = window.scrollY + VIEWPORT_PADDING;
+    }
+
+    setDropdownPosition({ top, left });
+  }, []);
+
+  // Handle outside clicks and calculate position
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (buttonRef.current && buttonRef.current.contains(event.target as Node)) {
-        return; // Don't close if clicking the button
+        return;
       }
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
@@ -69,20 +120,25 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
     };
 
     if (isOpen && buttonRef.current) {
-      // Calculate position
-      const rect = buttonRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
-      });
-
+      calculateDropdownPosition();
       document.addEventListener('mousedown', handleClickOutside);
+
+      // Recalculate on window resize or scroll
+      const handleResize = () => calculateDropdownPosition();
+      window.addEventListener('resize', handleResize);
+      window.addEventListener('scroll', handleResize, true);
+
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        window.removeEventListener('resize', handleResize);
+        window.removeEventListener('scroll', handleResize, true);
+      };
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, calculateDropdownPosition]);
 
   // Get phase color
   const getPhaseColor = useCallback((phase: any) => {
@@ -100,7 +156,7 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
 
   return (
     <>
-      {/* Phase Button - Show "Select" when no phase */}
+      {/* Phase Button */}
       <button
         ref={buttonRef}
         onClick={e => {
@@ -154,6 +210,7 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
               top: dropdownPosition.top,
               left: dropdownPosition.left,
               zIndex: 9999,
+              transformOrigin: placement === 'top' ? 'center bottom' : 'center top',
               animation: 'fadeInScale 0.15s ease-out',
             }}
           >
@@ -182,12 +239,10 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
                   animation: 'slideInFromLeft 0.2s ease-out forwards',
                 }}
               >
-                {/* Clear Icon */}
                 <div className="flex items-center justify-center w-4 h-4">
                   <ClearOutlined className="w-3 h-3" />
                 </div>
 
-                {/* No Phase Color Indicator */}
                 <div
                   className={`w-3 h-3 rounded-full shadow-sm border-2 ${
                     isDarkMode ? 'border-gray-800/30' : 'border-white/20'
@@ -195,10 +250,8 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
                   style={{ backgroundColor: isDarkMode ? '#4b5563' : '#9ca3af' }}
                 />
 
-                {/* No Phase Text */}
                 <span className="flex-1 truncate">No Phase</span>
 
-                {/* Current Selection Badge */}
                 {!hasPhase && (
                   <div className="flex items-center gap-1">
                     <div
@@ -242,7 +295,6 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
                       animation: 'slideInFromLeft 0.2s ease-out forwards',
                     }}
                   >
-                    {/* Phase Color Indicator */}
                     <div
                       className={`w-3 h-3 rounded-full shadow-sm border-2 ${
                         isDarkMode ? 'border-gray-800/30' : 'border-white/20'
@@ -250,10 +302,8 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
                       style={{ backgroundColor: getPhaseColor(phase) }}
                     />
 
-                    {/* Phase Name */}
                     <span className="flex-1 truncate">{formatPhaseName(phase.name || '')}</span>
 
-                    {/* Current Phase Badge */}
                     {isSelected && (
                       <div className="flex items-center gap-1">
                         <div
