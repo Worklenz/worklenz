@@ -23,6 +23,18 @@ const createSchema: Schema = {
   additionalProperties: true,
 };
 
+const sourceSchema: Schema = {
+  type: "object",
+  properties: {
+    workspaceId: { type: ["string", "null"] },
+    projectId: { type: "string" },
+    projectName: { type: ["string", "null"] },
+    token: { type: ["string", "null"] },
+  },
+  required: ["projectId"],
+  additionalProperties: false,
+};
+
 const fieldsSchema: Schema = {
   type: "object",
   properties: {
@@ -189,4 +201,5 @@ export const validateAttachments = schemaValidator(attachmentsSchema);
 export const validateTasks = schemaValidator(tasksSchema);
 export const validateIngest = schemaValidator(ingestSchema);
 export const validateTarget = schemaValidator(targetSchema);
+export const validateSource = schemaValidator(sourceSchema);
 export { providerEnum };

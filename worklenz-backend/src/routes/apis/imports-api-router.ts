@@ -7,6 +7,7 @@ import {
   validateFields,
   validateHierarchy,
   validateIngest,
+  validateSource,
   validateTarget,
   validateTasks,
   validateUsers,
@@ -20,6 +21,11 @@ importsApiRouter.post(
   "/:jobId/target",
   validateTarget,
   ImportsController.setTarget
+);
+importsApiRouter.post(
+  "/:jobId/source",
+  validateSource,
+  ImportsController.setSource
 );
 importsApiRouter.get("/:jobId", ImportsController.get);
 importsApiRouter.post(

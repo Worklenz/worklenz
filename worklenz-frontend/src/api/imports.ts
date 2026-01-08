@@ -74,6 +74,19 @@ export const updateImportTarget = async (
   return data?.body as ImportJob;
 };
 
+export const updateImportSource = async (
+  jobId: string,
+  payload: {
+    workspaceId?: string | null;
+    projectId: string;
+    projectName?: string | null;
+    token?: string;
+  }
+) => {
+  const { data } = await apiClient.post(`/api/v1/imports/${jobId}/source`, payload);
+  return data?.body as ImportJob;
+};
+
 export const ingestImportJob = async (
   jobId: string,
   payload: { csvText?: string; sourceReference?: Record<string, unknown> }

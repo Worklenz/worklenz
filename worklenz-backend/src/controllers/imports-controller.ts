@@ -13,6 +13,7 @@ import ImportIngestionService from "../services/import-ingestion-service";
 import axios from "axios";
 import crypto from "crypto";
 import { nanoid } from "nanoid";
+import AsanaProvider from "../services/import-providers/asana-provider";
 
 const autoHierarchyTemplate = [
   { source_level: "Section", target_level: "Status", position: 1 },
@@ -66,6 +67,8 @@ const autoFieldTemplate = [
   },
 ];
 
+const asanaProvider = new AsanaProvider();
+
 const base64UrlEncode = (buffer: Buffer) =>
   buffer
     .toString("base64")
@@ -113,6 +116,53 @@ export default class ImportsController {
     }
   );
 
+  static setSource = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const userId = this.getUserId(req);
+      const job = await this.assertJob(req.params.jobId, userId);
+      const { workspaceId, projectId, projectName, token } = req.body || {};
+      if (!projectId)
+        throw createHttpError(
+          400,
+          "projectId is required for source selection"
+        );
+
+      const providerKey = (job.provider || "asana").toLowerCase();
+      const ref = (job.source_reference as any) || {};
+
+      const sourcePatch = {
+        source: {
+          ...(ref.source || {}),
+          [providerKey]: {
+            ...(ref.source?.[providerKey] || {}),
+            workspaceId: workspaceId || null,
+            projectId,
+            projectName: projectName || null,
+          },
+        },
+      } as Record<string, unknown>;
+
+      const authPatch = token
+        ? {
+            auth: {
+              ...(ref.auth || {}),
+              [providerKey]: {
+                ...(ref.auth?.[providerKey] || {}),
+                access_token: token,
+              },
+            },
+          }
+        : {};
+
+      await ImportsService.mergeSourceReference(job.id, {
+        ...sourcePatch,
+        ...authPatch,
+      });
+      const updated = await ImportsService.getJob(job.id);
+      return res.status(200).send(new ServerResponse(true, updated));
+    }
+  );
+
   static setTarget = safeControllerFunction(
     async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
       this.getUserId(req); // ensure authenticated
@@ -146,7 +196,22 @@ export default class ImportsController {
       const jobId = req.params.jobId;
       const job = await ImportsService.getJob(jobId);
       if (!job) throw createHttpError(404, "Import job not found");
-      const rows = autoHierarchyTemplate;
+      let rows = autoHierarchyTemplate;
+      if ((job.provider || "").toLowerCase() === "asana") {
+        try {
+          const auto = await asanaProvider.getAutoMappings(job, req.body);
+          if (auto.hierarchy?.length) rows = auto.hierarchy;
+        } catch (err) {
+          await ImportsService.appendLog(
+            job.id,
+            "warn",
+            "Asana auto hierarchy failed",
+            {
+              error: (err as any)?.message,
+            }
+          );
+        }
+      }
       await ImportsService.upsertHierarchy(jobId, rows);
       return res.status(200).send(new ServerResponse(true, rows));
     }
@@ -157,7 +222,22 @@ export default class ImportsController {
       const jobId = req.params.jobId;
       const job = await ImportsService.getJob(jobId);
       if (!job) throw createHttpError(404, "Import job not found");
-      const rows = autoFieldTemplate;
+      let rows = autoFieldTemplate;
+      if ((job.provider || "").toLowerCase() === "asana") {
+        try {
+          const auto = await asanaProvider.getAutoMappings(job, req.body);
+          if (auto.fields?.length) rows = auto.fields as any;
+        } catch (err) {
+          await ImportsService.appendLog(
+            job.id,
+            "warn",
+            "Asana auto fields failed",
+            {
+              error: (err as any)?.message,
+            }
+          );
+        }
+      }
       await ImportsService.upsertFields(jobId, rows);
       return res.status(200).send(new ServerResponse(true, rows));
     }
@@ -437,13 +517,11 @@ export default class ImportsController {
       // Common cause: authorization `code` was already used or expired
       if (status === 400 && data?.error === "invalid_grant") {
         if (req.accepts("json") || (req.query as any)?.format === "json") {
-          return res
-            .status(400)
-            .send(
-              new ServerResponse(false, {
-                message: "authorization_code_invalid_or_used",
-              })
-            );
+          return res.status(400).send(
+            new ServerResponse(false, {
+              message: "authorization_code_invalid_or_used",
+            })
+          );
         }
         return res.status(200).send(
           `<html><body style="font-family: Arial, sans-serif; padding: 24px;">
@@ -460,8 +538,8 @@ export default class ImportsController {
       throw createHttpError(400, "Failed to exchange Asana token");
 
     // If we already have an access_token for this job, treat callback as idempotent
-    const existingAccess = ref?.auth?.asana?.access_token;
-    if (existingAccess) {
+    const existingAccessAfterExchange = ref?.auth?.asana?.access_token;
+    if (existingAccessAfterExchange) {
       // Already authorized for this job — return success without re-exchanging
       const payload = {
         authorized: true,

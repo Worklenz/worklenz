@@ -36,6 +36,7 @@ import {
   saveImportFields,
   autoImportFields,
   autoImportHierarchy,
+  updateImportSource,
 } from '@/api/imports';
 import type { ImportJob } from '@/api/imports';
 import { projectsApiService } from '@/api/projects/projects.api.service';
@@ -117,6 +118,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     setSpaceType('software');
     setSpaceTemplate('scrum');
     setIsImporting(false);
+    setFieldMappingRows([]);
+    setHierarchyRows([]);
 
     let cancelled = false;
     const initJob = async () => {
@@ -154,28 +157,12 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const [importMembers, setImportMembers] = React.useState(true);
   const [importAttachments, setImportAttachments] = React.useState(true);
 
-  // Asana fields (replace placeholder list with the real Asana fields)
-  const fieldMappingRows = [
-    { asana: 'Start date', jira: 'Start date', required: false, include: true },
-    { asana: 'Due date', jira: 'Due date', required: false, include: true },
-    { asana: 'Assignee', jira: 'Assignee', required: false, include: true },
-    { asana: 'Created by', jira: 'Created by', required: false, include: true },
-    { asana: 'Created on', jira: 'Created on', required: false, include: true },
-    { asana: 'Last modified on', jira: 'Last modified on', required: false, include: true },
-    { asana: 'Completed on', jira: 'Completed on', required: false, include: true },
-    { asana: 'Likes', jira: 'Likes', required: false, include: true },
-    { asana: 'Alphabetical', jira: 'Alphabetical', required: false, include: true },
-    { asana: 'Priority', jira: 'Priority', required: false, include: true },
-    { asana: 'Task Progress', jira: 'Task Progress', required: false, include: true },
-    { asana: 'Project', jira: 'Project', required: false, include: true },
-  ];
-  // Example hierarchy mapping
-  const hierarchyRows = [
-    { asana: 'Section', jira: 'Status' },
-    { asana: 'Task', jira: 'Task' },
-    { asana: 'Subtask', jira: 'Subtask' },
-    { asana: 'Nested subtask', jira: 'Subtask' },
-  ];
+  const [fieldMappingRows, setFieldMappingRows] = React.useState<
+    Array<{ source_field: string; target_field: string; required?: boolean; include?: boolean }>
+  >([]);
+  const [hierarchyRows, setHierarchyRows] = React.useState<
+    Array<{ source_level: string; target_level: string; position?: number }>
+  >([]);
   const [csvSettingsOpen, setCsvSettingsOpen] = React.useState(false);
   const [configOpen, setConfigOpen] = React.useState(false);
   const [encoding, setEncoding] = React.useState('UTF-8');
@@ -290,6 +277,16 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     }));
   }, [defaultWorkTypes, t, worklenzStatuses]);
 
+  const mappedFieldCount = React.useMemo(
+    () => fieldMappingRows.filter(row => row.include !== false).length,
+    [fieldMappingRows]
+  );
+  const hierarchyCount = React.useMemo(() => hierarchyRows.length, [hierarchyRows]);
+  const hierarchyDisplayRows = React.useMemo(
+    () => [...hierarchyRows].sort((a, b) => (a.position || 0) - (b.position || 0)),
+    [hierarchyRows]
+  );
+
   React.useEffect(() => {
     let cancelled = false;
     const fetchStatuses = async () => {
@@ -374,6 +371,39 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     throw new Error(t('importStep.projectStatusMissing', 'No project status available'));
   }, [defaultProjectStatusId, defaultWorkTypes, t, worklenzStatuses]);
 
+  const persistAsanaSelection = React.useCallback(
+    async (projectId: string, workspaceId?: string, projectName?: string) => {
+      if (!job?.id) return;
+      await updateImportSource(job.id, {
+        projectId,
+        workspaceId: workspaceId || null,
+        projectName: projectName || null,
+      });
+    },
+    [job?.id]
+  );
+
+  const runAutoMapping = React.useCallback(
+    async (suppressToast?: boolean) => {
+      if (!job?.id) return;
+      try {
+        setAutoMappingRunning(true);
+        const fieldsResp = await autoImportFields(job.id);
+        if (Array.isArray(fieldsResp)) setFieldMappingRows(fieldsResp as any);
+        const hierarchyResp = await autoImportHierarchy(job.id);
+        if (Array.isArray(hierarchyResp)) setHierarchyRows(hierarchyResp as any);
+        if (!suppressToast)
+          message.success(t('importStep.autoMapped', 'Fields and hierarchy auto-mapped'));
+      } catch (err) {
+        if (!suppressToast)
+          message.error(t('importStep.autoMapError', 'Auto-mapping failed. Please try again.'));
+      } finally {
+        setAutoMappingRunning(false);
+      }
+    },
+    [job?.id, t]
+  );
+
   const handleBack = () => setStep(s => Math.max(0, s - 1));
   const handleNext = () => setStep(s => Math.min(totalSteps - 1, s + 1));
   const handleModalClose = () => {
@@ -381,7 +411,95 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     onClose();
   };
   const handleFinish = async () => {
-    if (integrationType !== 'csv') {
+    if (integrationType === 'direct') {
+      if (!spaceName.trim()) {
+        message.error(t('importStep.spaceNameRequired', 'Please enter a space name.'));
+        return;
+      }
+
+      if (lowerKey === 'asana') {
+        if (!selectedProject) {
+          message.error(t('importStep.projectPlaceholder', 'Select a project'));
+          return;
+        }
+        if (!job?.id) {
+          message.error(t('importStep.importError', 'Import failed. Please try again.'));
+          return;
+        }
+
+        setIsImporting(true);
+        try {
+          const statusId = await ensureDefaultProjectStatusId();
+          const projectPayload: IProjectViewModel = {
+            name: spaceName.trim(),
+            color_code: '#2563eb',
+            status_id: statusId,
+            category_id: null,
+            health_id: null,
+            notes: '',
+            working_days: 0,
+            man_days: 0,
+            hours_per_day: 0,
+            use_manual_progress: false,
+            use_weighted_progress: false,
+            use_time_progress: false,
+          };
+
+          const projectResp = await projectsApiService.createProject(projectPayload);
+          const projectId = projectResp?.body?.id;
+          if (!projectResp?.done || !projectId) {
+            throw new Error(
+              projectResp?.message || t('importStep.projectCreateError', 'Failed to create project')
+            );
+          }
+
+          await updateImportTarget(job.id, {
+            targetProjectId: projectId,
+            targetSpaceType: spaceType,
+            targetTemplate: spaceTemplate,
+          });
+
+          const projectName = asanaProjects.find(p => p.id === selectedProject)?.name;
+          await persistAsanaSelection(selectedProject, selectedWorkspace, projectName);
+
+          if (!fieldMappingRows.length || !hierarchyRows.length) {
+            await runAutoMapping(true);
+          }
+
+          if (fieldMappingRows.length) {
+            await saveImportFields(job.id, fieldMappingRows as any);
+          }
+
+          const asanaToken = (job as any)?.source_reference?.auth?.asana?.access_token;
+
+          await ingestImportJob(job.id, {
+            sourceReference: {
+              provider: lowerKey,
+              token: asanaToken,
+              projectId: selectedProject,
+              workspaceId: selectedWorkspace,
+              projectName,
+            },
+          });
+
+          const commitProgress = await commitImportJob(job.id);
+          if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
+
+          setShowCompletion(true);
+          message.success(
+            t('importStep.importStarted', 'Import started. We will notify once ready.')
+          );
+        } catch (err: any) {
+          message.error(
+            err?.message || t('importStep.importError', 'Import failed. Please try again.')
+          );
+        } finally {
+          setIsImporting(false);
+        }
+
+        return;
+      }
+
       setShowCompletion(true);
       return;
     }
@@ -492,20 +610,14 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             setAsanaProjects(auth.projects || []);
             if (auth.workspaces?.[0]?.id) setSelectedWorkspace(auth.workspaces[0].id);
             if (auth.projects?.[0]?.id) {
-              setSelectedProject(auth.projects[0].id);
-              // trigger auto-mapping now that we have a project
-              try {
-                setAutoMappingRunning(true);
-                await autoImportFields(job.id);
-                await autoImportHierarchy(job.id);
-                const refreshedAfterAuto = await getImportJob(job.id);
-                setJob(refreshedAfterAuto as ImportJob);
-                message.success(t('importStep.autoMapped', 'Fields and hierarchy auto-mapped'));
-              } catch (err) {
-                // swallow; user can trigger mapping manually later
-              } finally {
-                setAutoMappingRunning(false);
-              }
+              const firstProject = auth.projects[0];
+              setSelectedProject(firstProject.id);
+              await persistAsanaSelection(
+                firstProject.id,
+                auth.workspaces?.[0]?.id,
+                firstProject.name
+              );
+              await runAutoMapping(true);
             }
             setAuthCompleted(true);
             setAuthLoading(false);
@@ -658,22 +770,14 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                     value={selectedProject || undefined}
                     onChange={async v => {
                       setSelectedProject(v);
-                      // trigger server-side auto-mapping for the job when a project is selected
-                      if (job?.id) {
-                        try {
-                          setAutoMappingRunning(true);
-                          await autoImportFields(job.id);
-                          await autoImportHierarchy(job.id);
-                          const refreshed = await getImportJob(job.id);
-                          setJob(refreshed as ImportJob);
-                          message.success(
-                            t('importStep.autoMapped', 'Fields and hierarchy auto-mapped')
-                          );
-                        } catch (err) {
-                          message.error(t('importStep.autoMapError', 'Auto-mapping failed'));
-                        } finally {
-                          setAutoMappingRunning(false);
-                        }
+                      const projectName = asanaProjects.find(p => p.id === v)?.name;
+                      try {
+                        await persistAsanaSelection(v, selectedWorkspace, projectName);
+                        await runAutoMapping();
+                      } catch (err: any) {
+                        message.error(
+                          err?.message || t('importStep.autoMapError', 'Auto-mapping failed')
+                        );
                       }
                     }}
                     options={projectOptions}
@@ -738,7 +842,10 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             {
               key: 'hierarchy',
               title: 'Space hierarchy',
-              description: 'Sections from Asana are mapped to Status',
+              description:
+                hierarchyCount > 0
+                  ? `${hierarchyCount} hierarchy levels mapped`
+                  : 'Sections from Asana are mapped to Status',
               iconBg: '#1f6feb',
               icon: '📦',
               action: () => setReviewSubScreen('hierarchy'),
@@ -747,7 +854,10 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             {
               key: 'fieldMapping',
               title: 'Field mapping',
-              description: '9/9 imported fields are automatically mapped',
+              description:
+                fieldMappingRows.length > 0
+                  ? `${mappedFieldCount}/${fieldMappingRows.length} fields mapped`
+                  : 'Fields will auto-map from Asana',
               iconBg: '#6e56cf',
               icon: '📑',
               action: () => setReviewSubScreen('fieldMapping'),
@@ -872,9 +982,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                     </span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {hierarchyRows.map((row, idx) => (
+                    {hierarchyDisplayRows.map((row, idx) => (
                       <div
-                        key={row.asana}
+                        key={`${row.source_level}-${idx}`}
                         style={{
                           display: 'grid',
                           gridTemplateColumns: '1fr 36px 1.4fr 32px',
@@ -885,17 +995,17 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                           borderRadius: 8,
                         }}
                       >
-                        <div style={{ color: '#e5e7eb', fontWeight: 500 }}>{row.asana}</div>
+                        <div style={{ color: '#e5e7eb', fontWeight: 500 }}>{row.source_level}</div>
                         <RightOutlined style={{ color: '#9ca3af', fontSize: 12 }} />
                         <Select
-                          value={row.jira}
+                          value={row.target_level}
                           style={{ width: '100%' }}
                           styles={{ popup: { root: { background: '#0f1117', color: '#e5e7eb' } } }}
                           options={
                             // Ensure option values are unique to avoid React duplicate key warnings
                             (
                               [
-                                { value: row.jira, label: row.jira },
+                                { value: row.target_level, label: row.target_level },
                                 { value: 'Status', label: 'Status' },
                               ] as Array<{
                                 value: string;
@@ -905,6 +1015,15 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                               if (!acc.find(a => a.value === cur.value)) acc.push(cur);
                               return acc;
                             }, [])
+                          }
+                          onChange={value =>
+                            setHierarchyRows(rows =>
+                              rows.map((current, currentIdx) =>
+                                currentIdx === idx
+                                  ? { ...current, target_level: value as string }
+                                  : current
+                              )
+                            )
                           }
                         />
                         <Tooltip title="More info">
@@ -965,49 +1084,90 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {fieldMappingRows.map((row, idx) => (
-                    <div
-                      key={row.asana}
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1.4fr 1.6fr 140px',
-                        alignItems: 'center',
-                        gap: 12,
-                        padding: 12,
-                        background: idx % 2 === 0 ? '#0b0e13' : '#0e1116',
-                        borderRadius: 10,
-                        border: '1px solid #1e2633',
-                      }}
-                    >
-                      <span style={{ color: '#e5e7eb', paddingLeft: 6 }}>{row.asana}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <Select
-                          value={row.jira}
-                          style={{ width: '100%' }}
-                          styles={{ popup: { root: { background: '#0f1117', color: '#e5e7eb' } } }}
-                          options={[{ value: row.jira, label: row.jira }]}
-                        />
-                        {row.required && (
-                          <span
-                            style={{
-                              background: '#2d3748',
-                              color: '#cbd5e0',
-                              fontSize: 10,
-                              borderRadius: 6,
-                              padding: '2px 6px',
-                              letterSpacing: 0.4,
-                              textTransform: 'uppercase',
-                            }}
-                          >
-                            Required
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <Switch checked={row.include} />
-                      </div>
+                  {fieldMappingRows.length === 0 ? (
+                    <div style={{ color: '#9ca3af' }}>
+                      {t(
+                        'importStep.autoMapPlaceholder',
+                        'Auto-mapping will populate fields here.'
+                      )}
                     </div>
-                  ))}
+                  ) : (
+                    fieldMappingRows.map((row, idx) => {
+                      const options = [
+                        { value: row.target_field, label: row.target_field },
+                        ...worklenzFieldOptions,
+                      ].filter(
+                        (option, optionIdx, arr) =>
+                          arr.findIndex(a => a.value === option.value) === optionIdx
+                      );
+
+                      return (
+                        <div
+                          key={`${row.source_field}-${idx}`}
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1.4fr 1.6fr 140px',
+                            alignItems: 'center',
+                            gap: 12,
+                            padding: 12,
+                            background: idx % 2 === 0 ? '#0b0e13' : '#0e1116',
+                            borderRadius: 10,
+                            border: '1px solid #1e2633',
+                          }}
+                        >
+                          <span style={{ color: '#e5e7eb', paddingLeft: 6 }}>
+                            {row.source_field}
+                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <Select
+                              value={row.target_field}
+                              style={{ width: '100%' }}
+                              styles={{
+                                popup: { root: { background: '#0f1117', color: '#e5e7eb' } },
+                              }}
+                              options={options}
+                              onChange={value =>
+                                setFieldMappingRows(rows =>
+                                  rows.map((current, currentIdx) =>
+                                    currentIdx === idx
+                                      ? { ...current, target_field: value as string }
+                                      : current
+                                  )
+                                )
+                              }
+                            />
+                            {row.required && (
+                              <span
+                                style={{
+                                  background: '#2d3748',
+                                  color: '#cbd5e0',
+                                  fontSize: 10,
+                                  borderRadius: 6,
+                                  padding: '2px 6px',
+                                  letterSpacing: 0.4,
+                                  textTransform: 'uppercase',
+                                }}
+                              >
+                                Required
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ textAlign: 'center' }}>
+                            <Switch
+                              checked={row.include !== false}
+                              onChange={checked =>
+                                setFieldMappingRows(rows =>
+                                  rows.map((current, currentIdx) =>
+                                    currentIdx === idx ? { ...current, include: checked } : current
+                                  )
+                                )
+                              }
+                            />
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             </div>
