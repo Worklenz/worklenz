@@ -1663,6 +1663,156 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     return `${minutes}m`;
   }
 
+  @HandleExceptions()
+  public static async exportTimelogsFlatExcel(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<void> {
+    let { team_member_id, duration, date_range, billable, search } = req.query;
+
+    // Sanitize parameters - convert string "undefined" to actual undefined
+    if (team_member_id === 'undefined' || team_member_id === 'null') team_member_id = undefined;
+    if (duration === 'undefined' || duration === 'null') duration = undefined;
+    if (search === 'undefined' || search === 'null') search = undefined;
+
+    // Get the team_id from request user
+    const teamId = req.user?.team_id;
+
+    let dateRange: string[] = [];
+    if (typeof date_range === "string") {
+      dateRange = date_range.split(",");
+    }
+
+    // Get user timezone
+    const userTimezone = await this.getUserTimezone(req.user?.id as string);
+    
+    // Build params array with timezone first, then date range values
+    const params: any[] = [userTimezone];
+    let paramIndex = 2;
+    
+    // Add date range parameters and build duration clause
+    let durationClause = '';
+    if (dateRange && dateRange.length === 2) {
+      const startDate = moment(dateRange[0]).format('YYYY-MM-DD HH:mm:ss');
+      const endDate = moment(dateRange[1]).add(1, 'day').format('YYYY-MM-DD HH:mm:ss');
+      durationClause = `AND twl.created_at >= $${paramIndex}::TIMESTAMP AND twl.created_at < $${paramIndex + 1}::TIMESTAMP`;
+      params.push(startDate, endDate);
+      paramIndex += 2;
+    } else {
+      // Use default duration logic if no date_range provided
+      if (!duration || duration === DATE_RANGES.LAST_WEEK) {
+        durationClause = `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 week')::TIMESTAMP`;
+      } else if (duration === DATE_RANGES.YESTERDAY) {
+        durationClause = `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 day')::TIMESTAMP AND twl.created_at < CURRENT_DATE::TIMESTAMP`;
+      } else if (duration === DATE_RANGES.LAST_MONTH) {
+        durationClause = `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 month')::TIMESTAMP`;
+      } else if (duration === DATE_RANGES.LAST_QUARTER) {
+        durationClause = `AND twl.created_at >= (CURRENT_DATE - INTERVAL '3 months')::TIMESTAMP`;
+      }
+    }
+
+    // Parse billable filter
+    let billableFilter = { billable: true, nonBillable: true };
+    if (typeof billable === "string") {
+      try {
+        billableFilter = JSON.parse(billable);
+      } catch (e) {
+        // Use default
+      }
+    }
+    const billableQuery = this.buildBillableQuery(billableFilter, "t");
+
+    // Team filter - only show logs from current team if team_id is available
+    let teamFilter = '';
+    if (teamId) {
+      teamFilter = `AND p.team_id = $${paramIndex}`;
+      params.push(teamId);
+      paramIndex++;
+    }
+
+    // Optional member filter
+    const memberFilter = team_member_id ? `AND u.id = (SELECT user_id FROM team_members WHERE id = $${paramIndex})` : '';
+    if (team_member_id) {
+      params.push(team_member_id);
+      paramIndex++;
+    }
+
+    // Optional search filter
+    const searchFilter = search ? `AND (
+      LOWER(t.name) LIKE LOWER($${paramIndex}) OR
+      LOWER(p.name) LIKE LOWER($${paramIndex}) OR
+      LOWER(u.name) LIKE LOWER($${paramIndex}) OR
+      LOWER(COALESCE(twl.description, '')) LIKE LOWER($${paramIndex})
+    )` : '';
+    if (search) {
+      params.push(`%${search}%`);
+    }
+
+    const q = `
+      SELECT
+        (twl.created_at AT TIME ZONE 'UTC' AT TIME ZONE $1)::DATE AS log_day,
+        u.name AS user_name,
+        p.name AS project_name,
+        t.name AS task_name,
+        twl.time_spent,
+        twl.description
+      FROM task_work_log twl
+      JOIN tasks t ON t.id = twl.task_id
+      JOIN projects p ON p.id = t.project_id
+      JOIN users u ON u.id = twl.user_id
+      WHERE 1=1
+        ${teamFilter}
+        ${memberFilter}
+        ${durationClause}
+        ${billableQuery}
+        ${searchFilter}
+      ORDER BY log_day DESC, user_name ASC`;
+
+    const rows = await db.query(q, params);
+
+    // Create Excel workbook
+    const workbook = new Excel.Workbook();
+    const worksheet = workbook.addWorksheet('Time Logs');
+
+    // Add headers
+    worksheet.columns = [
+      { header: 'Date', key: 'date', width: 15 },
+      { header: 'Member', key: 'member', width: 20 },
+      { header: 'Project', key: 'project', width: 25 },
+      { header: 'Task', key: 'task', width: 30 },
+      { header: 'Description', key: 'description', width: 40 },
+      { header: 'Duration', key: 'duration', width: 15 }
+    ];
+
+    // Style the header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE6E6FA' }
+    };
+
+    // Add data rows
+    for (const row of rows.rows) {
+      worksheet.addRow({
+        date: moment(row.log_day).format('MMM DD, YYYY'),
+        member: row.user_name || '',
+        project: row.project_name || '',
+        task: row.task_name || '',
+        description: row.description || '',
+        duration: this.secondsToReadable(row.time_spent || 0)
+      });
+    }
+
+    // Set response headers for Excel
+    const exportDate = moment().format("MMM-DD-YYYY");
+    const fileName = `Time-Logs-${exportDate}.xlsx`;
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+    // Write Excel file to response
+    await workbook.xlsx.write(res);
+    res.end();
+  }
+
   private static updateTaskProperties(tasks: any[]) {
     for (const task of tasks) {
         task.project_color = getColor(task.project_name);

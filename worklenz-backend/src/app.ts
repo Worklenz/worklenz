@@ -254,7 +254,13 @@ app.use((req, res, next) => {
   }
     
   // Exclude the CSRF token endpoint itself (GET requests to fetch tokens)
-  if (req.path === "/csrf-token") {
+  // Check multiple path variations to ensure we catch all cases
+  if (
+    req.path === "/csrf-token" ||
+    originalUrl === "/csrf-token" ||
+    originalUrl.includes("/csrf-token") ||
+    path.includes("/csrf-token")
+  ) {
     return next();
   }
   
