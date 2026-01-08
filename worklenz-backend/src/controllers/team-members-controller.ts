@@ -125,13 +125,33 @@ export default class TeamMembersController extends WorklenzControllerBase {
     }));
 
     /**
+   * Checks subscription details and updates the user count if applicable.
+   * Sends a response if there is an issue with the subscription.
+   */
+    // Check Business plan limits first - Business plans override AppSumo lifetime limits
+    if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
+      const updatedCount = parseInt(subscriptionData.current_count) + incrementBy;
+      const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
+      const requiredSeats = updatedCount - effectiveUserLimit;
+      if (updatedCount > effectiveUserLimit) {
+        const obj = {
+          seats_enough: false,
+          required_count: requiredSeats,
+          current_seat_amount: effectiveUserLimit
+        };
+        return res.status(200).send(new ServerResponse(false, obj, "Insufficient seats available. Please upgrade your subscription to add more team members."));
+      }
+    }
+
+    /**
    * Checks various conditions to determine if the maximum number of lifetime users is exceeded.
-   * Sends a response if the limit is reached.
+   * Only applies to users who are still on AppSumo lifetime deals (not upgraded to Business plans)
    */
     if (
       incrementBy > 0
       && subscriptionData.is_ltd
       && subscriptionData.current_count
+      && subscriptionData.subscription_type !== 'ANNUAL_BUSINESS'
       && ((parseInt(subscriptionData.current_count) + req.body.emails.length) > parseInt(subscriptionData.ltd_users))) {
       return res.status(200).send(new ServerResponse(false, null, "Cannot exceed the maximum number of life time users."));
     }
@@ -139,6 +159,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
     if (
       subscriptionData.is_ltd
       && subscriptionData.current_count
+      && subscriptionData.subscription_type !== 'ANNUAL_BUSINESS'
       && ((parseInt(subscriptionData.current_count) + incrementBy) > parseInt(subscriptionData.ltd_users))) {
       return res.status(200).send(new ServerResponse(false, null, "Cannot exceed the maximum number of life time users."));
     }
@@ -151,32 +172,6 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
       if (currentTrialMembers + incrementBy > TRIAL_MEMBER_LIMIT) {
         return res.status(200).send(new ServerResponse(false, null, `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`));
-      }
-    }
-
-    /**
-   * Checks subscription details and updates the user count if applicable.
-   * Sends a response if there is an issue with the subscription.
-   */
-    // if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
-    //   const response = await updateUsers(subscriptionData.subscription_id, (subscriptionData.quantity + incrementBy));
-
-    //   if (!response.body.subscription_id) {
-    //     return res.status(200).send(new ServerResponse(false, null, response.message || "Please check your subscription."));
-    //   }
-    // }
-
-    if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
-      const updatedCount = parseInt(subscriptionData.current_count) + incrementBy;
-      const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
-      const requiredSeats = updatedCount - effectiveUserLimit;
-      if (updatedCount > effectiveUserLimit) {
-        const obj = {
-          seats_enough: false,
-          required_count: requiredSeats,
-          current_seat_amount: effectiveUserLimit
-        };
-        return res.status(200).send(new ServerResponse(false, obj, "Insufficient seats available. Please upgrade your subscription to add more team members."));
       }
     }
 
@@ -1062,14 +1057,29 @@ export default class TeamMembersController extends WorklenzControllerBase {
       const result1 = await db.query(q1, [req.params?.id]);
       const [status] = result1.rows;
 
-      // Check if reactivating an inactive member would exceed AppSumo lifetime deal limit
+      // Check if reactivating an inactive member would exceed limits
       if (!status.active) {
         const currentCount = parseInt(subscriptionData.current_count) || 0;
         
-        // Check AppSumo lifetime deal limit
+        // Check Business plan limits first - Business plans override AppSumo lifetime limits
+        if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
+          const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
+          if (currentCount + 1 > effectiveUserLimit) {
+            const requiredSeats = (currentCount + 1) - effectiveUserLimit;
+            const obj = {
+              seats_enough: false,
+              required_count: requiredSeats,
+              current_seat_amount: effectiveUserLimit
+            };
+            return res.status(200).send(new ServerResponse(false, obj, "Insufficient seats available. Please upgrade your subscription to reactivate this member."));
+          }
+        }
+        
+        // Check AppSumo lifetime deal limit - only applies if not on Business plan
         if (
           subscriptionData.is_ltd
           && subscriptionData.ltd_users
+          && subscriptionData.subscription_type !== 'ANNUAL_BUSINESS'
           && (currentCount + 1 > parseInt(subscriptionData.ltd_users))
         ) {
           return res.status(200).send(new ServerResponse(false, null, "Cannot exceed the maximum number of life time users."));
