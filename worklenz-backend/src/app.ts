@@ -109,6 +109,10 @@ app.use(
       "Authorization",
       "X-CSRF-Token",
       "x-client-token",
+      "Cache-Control",
+      "cache-control",
+      "Pragma",
+      "pragma",
     ],
     exposedHeaders: ["Set-Cookie", "X-CSRF-Token"],
   })
@@ -140,12 +144,14 @@ function isLoggedIn(req: Request, _res: Response, next: NextFunction) {
     req.path.includes("/client-portal/handle-organization-invite") ||
     req.path.startsWith("/invite/team/") ||
     req.path.startsWith("/invite/project/") ||
+    req.path.includes("/imports/auth/asana/callback") ||
     fullPath.includes("/client-portal/invitation/") ||
     fullPath.includes("/client-portal/auth/login") ||
     fullPath.includes("/client-portal/auth/refresh") ||
     fullPath.includes("/client-portal/handle-organization-invite") ||
     fullPath.startsWith("/invite/team/") ||
-    fullPath.startsWith("/invite/project/")
+    fullPath.startsWith("/invite/project/") ||
+    fullPath.includes("/imports/auth/asana/callback")
   ) {
     return next();
   }

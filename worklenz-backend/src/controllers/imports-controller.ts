@@ -607,24 +607,10 @@ export default class ImportsController {
             : null,
           workspaces,
           projects,
+          in_progress: false,
         },
       },
     });
-
-    // Clear in_progress flag if present (merge above overwrites, but ensure removal)
-    try {
-      await ImportsService.mergeSourceReference(job.id, {
-        auth: {
-          ...(ref?.auth || {}),
-          asana: {
-            ...(ref?.auth?.asana || {}),
-            in_progress: false,
-          },
-        },
-      });
-    } catch (err) {
-      // ignore
-    }
 
     const payload = { authorized: true, workspaces, projects };
     if (req.accepts("json") || (req.query as any)?.format === "json") {

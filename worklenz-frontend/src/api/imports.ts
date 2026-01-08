@@ -58,7 +58,13 @@ export const clickupWorkspaces = async (jobId: string, token: string) => {
 };
 
 export const getImportJob = async (jobId: string) => {
-  const { data } = await apiClient.get(`/api/v1/imports/${jobId}`);
+  const { data } = await apiClient.get(`/api/v1/imports/${jobId}`, {
+    params: { ts: Date.now() },
+    headers: {
+      'Cache-Control': 'no-cache',
+      Pragma: 'no-cache',
+    },
+  });
   return data?.body as ImportJob;
 };
 
