@@ -171,7 +171,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         const currentManualProgress = form.getFieldValue('use_manual_progress');
         const currentWeightedProgress = form.getFieldValue('use_weighted_progress');
         const currentTimeProgress = form.getFieldValue('use_time_progress');
-        
+
         form.setFieldsValue({
           ...defaultFormValues,
           // Preserve toggle values if they exist, otherwise use defaults
@@ -190,13 +190,13 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       console.log('Drawer visible, waiting for project data to load...');
     }
   }, [drawerVisible, projectId, project, projectLoading, form]);
-    // Additional effect to handle loading state when project data is being fetched
-    useEffect(() => {
-      if (drawerVisible && projectId && projectLoading) {
-        console.log('Project data is loading, maintaining loading state');
-        setLoading(true);
-      }
-    }, [drawerVisible, projectId, projectLoading]);
+  // Additional effect to handle loading state when project data is being fetched
+  useEffect(() => {
+    if (drawerVisible && projectId && projectLoading) {
+      console.log('Project data is loading, maintaining loading state');
+      setLoading(true);
+    }
+  }, [drawerVisible, projectId, projectLoading]);
 
   // Define resetForm function early to avoid declaration order issues
   const resetForm = useCallback(() => {
@@ -265,7 +265,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       const response = await action;
 
       if (response?.data?.done) {
-        form.resetFields();
+        // ✅ REMOVED form.resetFields() - drawer close handler will handle cleanup
         dispatch(toggleProjectDrawer());
         if (!editMode) {
           trackMixpanelEvent(evt_projects_create);
@@ -285,34 +285,6 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     } catch (error) {
       logger.error('Error saving project', error);
     }
-  };
-  const calculateWorkingDays = (
-    startDate: dayjs.Dayjs | null,
-    endDate: dayjs.Dayjs | null
-  ): number => {
-    if (
-      !startDate ||
-      !endDate ||
-      !startDate.isValid() ||
-      !endDate.isValid() ||
-      startDate.isAfter(endDate)
-    ) {
-      return 0;
-    }
-
-    let workingDays = 0;
-    let currentDate = startDate.clone().startOf('day');
-    const end = endDate.clone().startOf('day');
-
-    while (currentDate.isBefore(end) || currentDate.isSame(end)) {
-      const dayOfWeek = currentDate.day();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        workingDays++;
-      }
-      currentDate = currentDate.add(1, 'day');
-    }
-
-    return workingDays;
   };
 
   // Improved handleVisibilityChange to track drawer state without doing form operations
@@ -466,7 +438,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       {!isEditable && (
         <Alert message={t('noPermission')} type="warning" showIcon style={{ marginBottom: 16 }} />
       )}
-      <Skeleton active paragraph={{ rows: 12 }} loading={loading || projectLoading}>
+      <Skeleton active paragraph={{ rows: 12 }} loading={editMode && (loading || projectLoading)}>
         <Form
           form={form}
           layout="vertical"
@@ -520,7 +492,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
               <span>{t('projectManager')}</span>
               {isFree && (
                 <Tooltip title={tCommon('upgrade-plan')} placement="top">
-                  <CrownOutlined 
+                  <CrownOutlined
                     style={{ fontSize: '14px', color: '#faad14', cursor: 'pointer' }}
                     onClick={handleUpgradeClick}
                   />
@@ -720,3 +692,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
 };
 
 export default ProjectDrawer;
+function calculateWorkingDays(arg0: dayjs.Dayjs, arg1: dayjs.Dayjs) {
+  throw new Error('Function not implemented.');
+}
+
