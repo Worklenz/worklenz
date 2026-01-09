@@ -1,7 +1,7 @@
-import {PassportStatic} from "passport";
+import { PassportStatic } from "passport";
 
-import {deserialize} from "./deserialize";
-import {serialize} from "./serialize";
+import { deserialize } from "./deserialize";
+import { serialize } from "./serialize";
 
 import GoogleLogin from "./passport-strategies/passport-google";
 import GoogleMobileLogin from "./passport-strategies/passport-google-mobile";
@@ -15,8 +15,15 @@ import LocalSignup from "./passport-strategies/passport-local-signup";
 export default (passport: PassportStatic) => {
   passport.use("local-login", LocalLogin);
   passport.use("local-signup", LocalSignup);
-  passport.use(GoogleLogin);
-  passport.use("google-mobile", GoogleMobileLogin);
+
+  if (GoogleLogin) {
+    passport.use(GoogleLogin);
+  }
+
+  if (GoogleMobileLogin) {
+    passport.use("google-mobile", GoogleMobileLogin);
+  }
+
   passport.serializeUser(serialize);
   passport.deserializeUser(deserialize);
 };

@@ -3,6 +3,24 @@
 Thanks for your interest in contributing to Worklenz!
 
 We truly appreciate your willingness to invest your time and effort in helping us improve Worklenz.
+
+## Getting Started
+
+To get started with development:
+
+1. **Quick Setup with Docker (Recommended):**
+   ```bash
+   git clone https://github.com/Worklenz/worklenz.git
+   cd worklenz
+   ./quick-setup.sh
+   ```
+
+2. **Manual Development Setup:**
+   See [SETUP_THE_PROJECT.md](SETUP_THE_PROJECT.md) for detailed instructions on setting up the development environment.
+
+3. **Docker Management:**
+   Use `./manage.sh` for common operations like viewing logs, creating backups, and managing services.
+
 ## Code of Conduct
 
 We have adopted a Code of Conduct to ensure a welcoming and inclusive environment for everyone. Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md) when participating in this project.
