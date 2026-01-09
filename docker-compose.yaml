@@ -52,12 +52,24 @@ services:
         BACKUP_FILE=\"/backups/worklenz_backup_$$(date +%Y%m%d_%H%M%S).sql\"
         pg_dump > \"$$BACKUP_FILE\" 2>&1
         if [ $$? -eq 0 ]; then
-          echo \"Backup completed: $$BACKUP_FILE\"
+          echo \"Database dump completed: $$BACKUP_FILE\"
           gzip \"$$BACKUP_FILE\"
-          echo \"Cleaning up backups older than $$BACKUP_RETENTION_DAYS days...\"
-          find /backups -name 'worklenz_backup_*.sql.gz' -mtime +$$BACKUP_RETENTION_DAYS -delete
+          if [ $$? -eq 0 ]; then
+            echo \"Backup compression completed: $$BACKUP_FILE.gz\"
+            echo \"Cleaning up backups older than $$BACKUP_RETENTION_DAYS days...\"
+            find /backups -name 'worklenz_backup_*.sql.gz' -mtime +$$BACKUP_RETENTION_DAYS -delete
+            echo \"Cleanup completed successfully\"
+          else
+            echo \"ERROR: Backup compression failed for $$BACKUP_FILE\"
+            echo \"Removing incomplete uncompressed backup file...\"
+            rm -f \"$$BACKUP_FILE\"
+            echo \"Skipping cleanup due to backup failure\"
+          fi
         else
-          echo 'Backup failed'
+          echo 'ERROR: Database backup failed'
+          echo \"Removing failed backup file: $$BACKUP_FILE\"
+          rm -f \"$$BACKUP_FILE\"
+          echo \"Skipping cleanup due to backup failure\"
         fi
         echo 'Next backup in 24 hours...'
         sleep 86400
@@ -77,7 +89,7 @@ services:
     networks:
       - worklenz-backend
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ["CMD", "sh", "-c", "redis-cli -a ${REDIS_PASSWORD:-worklenz_redis_pass} ping"]
       interval: 10s
       timeout: 3s
       retries: 5

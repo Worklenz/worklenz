@@ -60,7 +60,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder --chown=worklenz:worklenz /app/build ./build
 
 # Copy release file from builder
-COPY --from=builder --chown=worklenz:worklenz /app/release ./release
+COPY --from=builder --chown=worklenz:worklenz /app/build/RELEASE_VERSION ./release
 
 # Copy email templates
 COPY --from=builder --chown=worklenz:worklenz /app/worklenz-email-templates ./worklenz-email-templates

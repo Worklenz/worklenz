@@ -107,4 +107,8 @@ async function handleMobileGoogleAuth(req: Request, done: any) {
   }
 }
 
-export default new CustomStrategy(handleMobileGoogleAuth);
+const googleMobileStrategy = process.env.GOOGLE_CLIENT_ID
+  ? new CustomStrategy(handleMobileGoogleAuth)
+  : null;
+
+export default googleMobileStrategy;

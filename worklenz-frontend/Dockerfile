@@ -46,7 +46,14 @@ WORKDIR /app
 COPY --from=builder --chown=worklenz:worklenz /app/build ./build
 
 # Create env-config.js placeholder
-RUN echo "window._env_ = {};" > /app/build/env-config.js && \
+RUN echo "window.VITE_API_URL = \"\";" > /app/build/env-config.js && \
+    echo "window.VITE_SOCKET_URL = \"\";" >> /app/build/env-config.js && \
+    echo "window.VITE_APP_TITLE = \"\";" >> /app/build/env-config.js && \
+    echo "window.VITE_APP_ENV = \"\";" >> /app/build/env-config.js && \
+    echo "window.VITE_ENABLE_RECAPTCHA = \"\";" >> /app/build/env-config.js && \
+    echo "window.VITE_RECAPTCHA_SITE_KEY = \"\";" >> /app/build/env-config.js && \
+    echo "window.VITE_ENABLE_GOOGLE_LOGIN = \"\";" >> /app/build/env-config.js && \
+    echo "window.VITE_ENABLE_SURVEY_MODAL = \"\";" >> /app/build/env-config.js && \
     chown worklenz:worklenz /app/build/env-config.js
 
 # Create runtime environment configuration script
