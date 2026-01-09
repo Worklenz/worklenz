@@ -95,11 +95,10 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   const [createProject, { isLoading: isCreatingProject }] = useCreateProjectMutation();
 
   // Memoized values
-  const defaultFormValues = useMemo(
-    () => ({
+  const defaultFormValues = useMemo(() => {
+    return {
       color_code: project?.color_code || projectColors[0],
       status_id: project?.status_id || projectStatuses.find(status => status.is_default)?.id,
-      health_id: project?.health_id || projectHealths.find(health => health.is_default)?.id,
       client_id: project?.client_id || null,
       client: project?.client_name || null,
       category_id: project?.category_id || null,
@@ -109,9 +108,9 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       use_manual_progress: project?.use_manual_progress || false,
       use_weighted_progress: project?.use_weighted_progress || false,
       use_time_progress: project?.use_time_progress || false,
-    }),
-    [project, projectStatuses, projectHealths]
-  );
+      health_id: project?.health_id || projectHealths.find(health => health.is_default)?.id,
+    };
+  }, [project, projectStatuses, projectHealths]);
 
   // Auth and permissions
   const isProjectManager = currentSession?.team_member_id == selectedProjectManager?.id;
@@ -144,7 +143,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       setEditMode(true);
 
       try {
-        form.setFieldsValue({
+        const formValues: any = {
           ...project,
           start_date: project.start_date ? dayjs(project.start_date) : null,
           end_date: project.end_date ? dayjs(project.end_date) : null,
@@ -152,7 +151,9 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
           use_manual_progress: project.use_manual_progress || false,
           use_weighted_progress: project.use_weighted_progress || false,
           use_time_progress: project.use_time_progress || false,
-        });
+        };
+
+        form.setFieldsValue(formValues);
 
         setSelectedProjectManager(project.project_manager || null);
         setLoading(false);
@@ -241,7 +242,6 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         color_code: values.color_code,
         status_id: values.status_id,
         category_id: values.category_id || null,
-        health_id: values.health_id,
         notes: values.notes,
         key: values.key,
         client_id: values.client_id,
@@ -255,6 +255,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         use_manual_progress: Boolean(values.use_manual_progress),
         use_weighted_progress: Boolean(values.use_weighted_progress),
         use_time_progress: Boolean(values.use_time_progress),
+        health_id: values.health_id,
       };
 
       const action =
