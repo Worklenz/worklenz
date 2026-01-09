@@ -89,6 +89,7 @@ export interface TaskFieldPatch {
   due_at?: string | null;
   assignee_source_id?: string | null;
   priority_label?: string | null;
+  completed_at?: string | null;
 }
 
 export interface CustomFieldValuePlan {
@@ -332,10 +333,19 @@ export const mapRawToTaskFields = (
         patch.due_at = String(value);
         break;
       case "assignees":
-        patch.assignee_source_id = String(value);
+        if (
+          typeof value === "string" &&
+          value.trim() &&
+          (value.includes("@") || !patch.assignee_source_id)
+        ) {
+          patch.assignee_source_id = String(value);
+        }
         break;
       case "priority":
         patch.priority_label = String(value);
+        break;
+      case "completedDate":
+        patch.completed_at = String(value);
         break;
       default: {
         const columnKey = toColumnKey(targetField);
@@ -726,7 +736,14 @@ class ImportsService {
           [jobId]
         ),
         client.query(
-          "SELECT id, name FROM task_statuses WHERE project_id = $1 ORDER BY sort_order",
+          `SELECT ts.id,
+                  ts.name,
+                  COALESCE(cat.is_done, FALSE) AS is_done,
+                  COALESCE(cat.is_todo, FALSE) AS is_todo
+             FROM task_statuses ts
+             LEFT JOIN sys_task_status_categories cat ON cat.id = ts.category_id
+             WHERE ts.project_id = $1
+             ORDER BY ts.sort_order`,
           [job.target_project_id]
         ),
         client.query(
@@ -756,11 +773,76 @@ class ImportsService {
       );
       const targetTeamId = projectRows[0]?.team_id || null;
 
+      const teamMemberEmailMap = new Map<string, string>();
+      const loadTeamMemberEmails = async () => {
+        if (!targetTeamId) return [] as any[];
+        const { rows } = await client.query(
+          `SELECT tm.id,
+                  LOWER(COALESCE(u.email, ei.email)) AS email
+             FROM team_members tm
+             LEFT JOIN users u ON u.id = tm.user_id
+             LEFT JOIN email_invitations ei ON ei.team_member_id = tm.id
+             WHERE tm.team_id = $1`,
+          [targetTeamId]
+        );
+        return rows as any[];
+      };
+      const hydrateTeamMemberEmails = (rows: any[]) => {
+        rows.forEach((row) => {
+          if (row?.email) {
+            teamMemberEmailMap.set(row.email, row.id);
+          }
+        });
+      };
+      if (targetTeamId) {
+        const initialMembers = await loadTeamMemberEmails();
+        hydrateTeamMemberEmails(initialMembers);
+      }
+
+      const ensureAssigneeTeamMembers = async () => {
+        if (!targetTeamId) return;
+        const pendingEmails = new Set<string>();
+        staged.forEach((task: StageTaskRow) => {
+          const candidate =
+            typeof task.assignee_source_id === "string"
+              ? task.assignee_source_id.trim()
+              : "";
+          if (!candidate || !candidate.includes("@")) return;
+          const normalized = candidate.toLowerCase();
+          if (!teamMemberEmailMap.has(normalized)) {
+            pendingEmails.add(normalized);
+          }
+        });
+        if (!pendingEmails.size) return;
+        await client.query("SELECT create_team_member($1) AS new_members;", [
+          JSON.stringify({
+            team_id: targetTeamId,
+            emails: Array.from(pendingEmails),
+          }),
+        ]);
+        teamMemberEmailMap.clear();
+        const refreshedMembers = await loadTeamMemberEmails();
+        hydrateTeamMemberEmails(refreshedMembers);
+      };
+
+      await ensureAssigneeTeamMembers();
+
       const statusMap = new Map<string, string>();
+      const doneStatusIds = new Set<string>();
+      let defaultDoneStatusId: string | null = null;
       statusRows.forEach((row: any) => {
-        if (row.name) statusMap.set(row.name.toString().toLowerCase(), row.id);
+        if (row.name) {
+          statusMap.set(row.name.toString().toLowerCase(), row.id);
+        }
+        if (row.is_done) {
+          doneStatusIds.add(row.id);
+          if (!defaultDoneStatusId) defaultDoneStatusId = row.id;
+        }
       });
-      const defaultStatusId = statusRows[0]?.id || null;
+      const defaultStatusId =
+        statusRows.find((row: any) => row.is_todo)?.id ||
+        statusRows[0]?.id ||
+        null;
 
       if (!defaultStatusId) {
         throw new Error("Target project has no statuses configured");
@@ -1128,10 +1210,38 @@ class ImportsService {
       const roots = staged.filter((task: any) => !task.parent_source_task_id);
       const deferred = staged.filter((task: any) => task.parent_source_task_id);
 
-      const resolveStatusId = (value?: string | null) => {
+      const lookupStatusId = (value?: string | null): string | null => {
         if (!value) return defaultStatusId;
         const key = value.toString().trim().toLowerCase();
-        return statusMap.get(key) || defaultStatusId;
+        const match = statusMap.get(key) || null;
+        return match || defaultStatusId;
+      };
+
+      const parseDateValue = (value?: string | null): Date | null => {
+        if (!value) return null;
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+      };
+
+      const finalizeTaskCompletion = async (
+        taskId: string,
+        statusId: string | null,
+        completedDate: Date | null
+      ) => {
+        const shouldMarkDone =
+          (statusId && doneStatusIds.has(statusId)) || !!completedDate;
+        if (!shouldMarkDone) return;
+        await client.query(
+          `UPDATE tasks
+             SET done = TRUE,
+                 completed_at = CASE
+                   WHEN $2 IS NOT NULL THEN $2
+                   WHEN completed_at IS NULL THEN NOW()
+                   ELSE completed_at
+                 END
+           WHERE id = $1`,
+          [taskId, completedDate ? completedDate.toISOString() : null]
+        );
       };
 
       const resolvePriorityId = (value?: string | null) => {
@@ -1142,9 +1252,13 @@ class ImportsService {
 
       const resolveAssignees = (value?: string | null) => {
         if (!value) return [] as string[];
-        const direct = assigneeMap.get(value.toString());
-        const email = assigneeMap.get(value.toString().toLowerCase());
-        const teamMemberId = direct || email;
+        const normalized = value.toString().trim();
+        if (!normalized) return [] as string[];
+        const lower = normalized.toLowerCase();
+        const direct = assigneeMap.get(normalized);
+        const emailMatch = assigneeMap.get(lower);
+        const teamMemberId =
+          direct || emailMatch || teamMemberEmailMap.get(lower);
         return teamMemberId ? [teamMemberId] : [];
       };
 
@@ -1154,6 +1268,15 @@ class ImportsService {
           activeFieldMappings
         );
         const taskWithMappings = { ...task, ...patch } as any;
+        let statusId = lookupStatusId(taskWithMappings.status);
+        const completedDate = parseDateValue(taskWithMappings.completed_at);
+        if (
+          completedDate &&
+          defaultDoneStatusId &&
+          (!statusId || !doneStatusIds.has(statusId))
+        ) {
+          statusId = defaultDoneStatusId;
+        }
 
         const payload: Record<string, unknown> = {
           name: task.title,
@@ -1164,7 +1287,7 @@ class ImportsService {
           end: taskWithMappings.due_at,
           total_minutes: 0,
           reporter_id: job.created_by,
-          status_id: resolveStatusId(taskWithMappings.status),
+          status_id: statusId,
           priority_id: resolvePriorityId(taskWithMappings.priority_label),
           parent_task_id: parentId || null,
           assignees: resolveAssignees(taskWithMappings.assignee_source_id),
@@ -1176,6 +1299,12 @@ class ImportsService {
         const created = result.rows[0]?.task || null;
         if (created?.id && task.source_task_id) {
           sourceToId.set(task.source_task_id, created.id);
+        }
+        if (created?.id) {
+          await finalizeTaskCompletion(created.id, statusId, completedDate);
+          if (completedDate && created) {
+            created.completed_at = completedDate.toISOString();
+          }
         }
         createdTasks.push(created);
 

@@ -96,6 +96,7 @@ const STANDARD_FIELD_CANDIDATES: Array<{
   { name: "Priority", target: "priority" },
   { name: "Likes", target: "likes" },
   { name: "Alphabetical", target: "alphabetical" },
+  { name: "Completed on", target: "completedDate" },
 ];
 
 const SECTION_FALLBACK = [

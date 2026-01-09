@@ -90,6 +90,12 @@ const autoFieldTemplate: FieldMappingRow[] = [
     required: false,
     include: true,
   },
+  {
+    source_field: "Completed on",
+    target_field: "completedDate",
+    required: false,
+    include: true,
+  },
 ];
 
 const asanaProvider = new AsanaProvider();
