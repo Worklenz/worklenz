@@ -111,11 +111,17 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       const sortField = String(sortBy || "name");
       const sortDirection = sortOrder === "desc" ? "DESC" : "ASC";
       // Validate sort field and ensure it's a valid column
-      const validSortFields = ["id", "name", "created_at", "updated_at"];
+      const validSortFields = ["id", "name", "created_at", "updated_at", "assigned_projects_count"];
       const safeSortField = validSortFields.includes(sortField)
         ? sortField
         : "name";
-      query += ` ORDER BY c.${safeSortField} ${sortDirection}`;
+      
+      // Handle special case for assigned_projects_count (it's an aggregated column)
+      const sortColumn = safeSortField === "assigned_projects_count" 
+        ? "assigned_projects_count" 
+        : `c.${safeSortField}`;
+      
+      query += ` ORDER BY ${sortColumn} ${sortDirection}`;
 
       // Get total count
       const countQuery = `

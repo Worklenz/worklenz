@@ -207,12 +207,17 @@ const ClientsTable = () => {
   const handleTableChange: TableProps<
     ClientPortalClient | TempClientPortalClientType
   >['onChange'] = (pagination, filters, sorter) => {
+    // Handle both array and single object cases for sorter
+    let sort;
     if (Array.isArray(sorter)) {
-      const sort = sorter[0];
-      if (sort?.field && sort?.order) {
-        dispatch(setSortBy(sort.field as string));
-        dispatch(setSortOrder(sort.order === 'ascend' ? 'asc' : 'desc'));
-      }
+      sort = sorter[0];
+    } else {
+      sort = sorter;
+    }
+    
+    if (sort?.field && sort?.order) {
+      dispatch(setSortBy(sort.field as string));
+      dispatch(setSortOrder(sort.order === 'ascend' ? 'asc' : 'desc'));
     }
   };
 
