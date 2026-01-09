@@ -97,6 +97,141 @@ export interface CustomFieldValuePlan {
   value: unknown;
 }
 
+type SupportedCustomFieldType =
+  | "people"
+  | "number"
+  | "date"
+  | "selection"
+  | "checkbox"
+  | "labels"
+  | "key"
+  | "formula";
+
+interface SelectionOptionPlan {
+  id: string;
+  name: string;
+  color: string;
+}
+
+interface ColumnPlanConfig {
+  fieldType: SupportedCustomFieldType;
+  numberType?: string | null;
+  decimals?: number | null;
+  selections?: SelectionOptionPlan[];
+  valueToSelectionId?: Map<string, string>;
+}
+
+interface CustomColumnPlan {
+  key: string;
+  name: string;
+  sourceField: string;
+  samples: Set<string>;
+}
+
+interface CustomColumnRef {
+  id: string;
+  key: string;
+  fieldType?: SupportedCustomFieldType;
+}
+
+const MAX_SELECTION_OPTIONS = 200;
+const SELECTION_COLORS = [
+  "#2563eb",
+  "#7c3aed",
+  "#14b8a6",
+  "#f97316",
+  "#f43f5e",
+  "#f59e0b",
+  "#0ea5e9",
+  "#10b981",
+];
+
+const sanitizeSampleValue = (value: unknown): string => {
+  if (value === null || value === undefined) return "";
+  return typeof value === "string" ? value.trim() : String(value);
+};
+
+const isNumericSample = (value: string): boolean => {
+  if (!value) return false;
+  return Number.isFinite(Number(value));
+};
+
+const countDecimalPlaces = (value: string): number => {
+  if (!value.includes(".")) return 0;
+  const decimals = value.split(".")[1] || "";
+  return Math.min(decimals.length, 6);
+};
+
+const isDateSample = (value: string): boolean => {
+  if (!value) return false;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed);
+};
+
+const isBooleanSample = (value: string): boolean => {
+  if (!value) return false;
+  const normalized = value.toLowerCase();
+  return ["true", "false", "yes", "no", "1", "0"].includes(normalized);
+};
+
+const coerceBooleanValue = (value: string): boolean | null => {
+  const normalized = value.toLowerCase();
+  if (["true", "yes", "1"].includes(normalized)) return true;
+  if (["false", "no", "0"].includes(normalized)) return false;
+  return null;
+};
+
+const buildSelectionOptions = (
+  plan: CustomColumnPlan,
+  values: string[]
+): { selections: SelectionOptionPlan[]; map: Map<string, string> } => {
+  const uniqueValues = Array.from(new Set(values)).slice(
+    0,
+    MAX_SELECTION_OPTIONS
+  );
+  const selections = uniqueValues.map((value, index) => {
+    const slug =
+      slugify(value, { lower: true, strict: true }).slice(0, 40) ||
+      `option-${index}`;
+    return {
+      id: `${plan.key}-${slug}-${index}`,
+      name: value,
+      color: SELECTION_COLORS[index % SELECTION_COLORS.length],
+    };
+  });
+  const map = new Map<string, string>();
+  selections.forEach((selection) => {
+    map.set(selection.name, selection.id);
+  });
+  return { selections, map };
+};
+
+const inferColumnConfig = (plan: CustomColumnPlan): ColumnPlanConfig => {
+  const values = Array.from(plan.samples).filter((value) => !!value);
+  if (values.length && values.every(isNumericSample)) {
+    const decimals = values.reduce(
+      (acc, value) => Math.max(acc, countDecimalPlaces(value)),
+      0
+    );
+    return { fieldType: "number", numberType: "formatted", decimals };
+  }
+
+  if (values.length && values.every(isDateSample)) {
+    return { fieldType: "date" };
+  }
+
+  if (values.length && values.every(isBooleanSample)) {
+    return { fieldType: "checkbox" };
+  }
+
+  const { selections, map } = buildSelectionOptions(plan, values);
+  return {
+    fieldType: "selection",
+    selections,
+    valueToSelectionId: map,
+  };
+};
+
 const STANDARD_TARGET_FIELDS = new Set<string>([
   "key",
   "description",
@@ -606,7 +741,7 @@ class ImportsService {
           [jobId]
         ),
         client.query(
-          "SELECT id, key FROM cc_custom_columns WHERE project_id = $1",
+          "SELECT id, key, field_type FROM cc_custom_columns WHERE project_id = $1",
           [job.target_project_id]
         ),
         client.query(
@@ -647,26 +782,52 @@ class ImportsService {
       const activeFieldMappings: FieldMappingRow[] = (fieldRows ||
         []) as FieldMappingRow[];
 
-      const customColumnMap = new Map<string, { id: string; key: string }>();
+      const customColumnMap = new Map<string, CustomColumnRef>();
       customColumnRows.forEach((row: any) => {
-        if (row.key) customColumnMap.set(row.key, { id: row.id, key: row.key });
+        if (row.key)
+          customColumnMap.set(row.key, {
+            id: row.id,
+            key: row.key,
+            fieldType: row.field_type || undefined,
+          });
       });
 
-      const customColumnPlans = new Map<
-        string,
-        { key: string; name: string }
-      >();
+      const customColumnPlans = new Map<string, CustomColumnPlan>();
       activeFieldMappings.forEach((mapping) => {
         if (mapping.include === false) return;
         const normalizedTarget = normalizeTargetField(mapping.target_field);
         if (STANDARD_TARGET_FIELDS.has(normalizedTarget)) return;
         const key = toColumnKey(normalizedTarget);
         if (!customColumnPlans.has(key)) {
+          const sourceField = mapping.source_field || normalizedTarget;
           customColumnPlans.set(key, {
             key,
-            name: mapping.source_field || normalizedTarget,
+            name: sourceField,
+            sourceField,
+            samples: new Set<string>(),
           });
         }
+      });
+
+      if (customColumnPlans.size) {
+        staged.forEach((task: StageTaskRow) => {
+          const rawSource =
+            task.raw && typeof task.raw === "object" && !Array.isArray(task.raw)
+              ? (task.raw as Record<string, unknown>)
+              : {};
+          customColumnPlans.forEach((plan) => {
+            const rawValue = rawSource?.[plan.sourceField];
+            const sanitized = sanitizeSampleValue(rawValue);
+            if (sanitized) {
+              plan.samples.add(sanitized);
+            }
+          });
+        });
+      }
+
+      const customColumnConfigs = new Map<string, ColumnPlanConfig>();
+      customColumnPlans.forEach((plan, key) => {
+        customColumnConfigs.set(key, inferColumnConfig(plan));
       });
 
       const TASK_LIST_COLUMN_INFO: Record<
@@ -740,39 +901,220 @@ class ImportsService {
         }
       }
 
-      const ensureCustomColumn = async (key: string, name: string) => {
-        if (customColumnMap.has(key)) return customColumnMap.get(key)!;
-
-        const columnResult = await client.query(
-          `INSERT INTO cc_custom_columns (project_id, name, key, field_type, width, is_visible, is_custom_column)
-           VALUES ($1, $2, $3, $4, $5, $6, true)
-           ON CONFLICT (project_id, key) DO UPDATE SET name = EXCLUDED.name
-           RETURNING id;`,
-          [job.target_project_id, name, key, "text", 150, true]
+      const configureColumnMetadata = async (
+        columnId: string,
+        plan: CustomColumnPlan,
+        config: ColumnPlanConfig
+      ) => {
+        await client.query(
+          "DELETE FROM cc_column_configurations WHERE column_id = $1",
+          [columnId]
         );
-        const columnId = columnResult.rows[0]?.id;
+        await client.query(
+          `INSERT INTO cc_column_configurations (
+             column_id,
+             field_title,
+             field_type,
+             number_type,
+             decimals,
+             label,
+             label_position,
+             preview_value,
+             expression,
+             first_numeric_column_key,
+             second_numeric_column_key
+           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+          [
+            columnId,
+            plan.name,
+            config.fieldType,
+            config.numberType || null,
+            config.decimals ?? null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+          ]
+        );
+        await client.query(
+          "DELETE FROM cc_selection_options WHERE column_id = $1",
+          [columnId]
+        );
+        await client.query(
+          "DELETE FROM cc_label_options WHERE column_id = $1",
+          [columnId]
+        );
+        if (config.fieldType === "selection" && config.selections?.length) {
+          for (const [order, selection] of config.selections.entries()) {
+            await client.query(
+              `INSERT INTO cc_selection_options (
+                 column_id,
+                 selection_id,
+                 selection_name,
+                 selection_color,
+                 selection_order
+               ) VALUES ($1,$2,$3,$4,$5)`,
+              [columnId, selection.id, selection.name, selection.color, order]
+            );
+          }
+        }
+      };
 
-        if (columnId) {
-          // cc_column_configurations does not enforce a unique constraint on column_id; replace-on-insert manually.
+      const ensureCustomColumn = async (
+        plan: CustomColumnPlan,
+        config: ColumnPlanConfig
+      ): Promise<CustomColumnRef | null> => {
+        const existing = customColumnMap.get(plan.key);
+        if (existing) {
           await client.query(
-            "DELETE FROM cc_column_configurations WHERE column_id = $1",
-            [columnId]
+            `UPDATE cc_custom_columns
+             SET name = $1,
+                 field_type = $2,
+                 updated_at = NOW()
+             WHERE id = $3`,
+            [plan.name, config.fieldType, existing.id]
           );
-          await client.query(
-            `INSERT INTO cc_column_configurations (column_id, field_title, field_type)
-             VALUES ($1, $2, $3)`,
-            [columnId, name, "text"]
-          );
-          const column = { id: columnId, key };
-          customColumnMap.set(key, column);
+          await configureColumnMetadata(existing.id, plan, config);
+          const column = {
+            id: existing.id,
+            key: plan.key,
+            fieldType: config.fieldType,
+          };
+          customColumnMap.set(plan.key, column);
           return column;
         }
 
-        return null;
+        const columnResult = await client.query(
+          `INSERT INTO cc_custom_columns (
+             project_id,
+             name,
+             key,
+             field_type,
+             width,
+             is_visible,
+             is_custom_column
+           ) VALUES ($1,$2,$3,$4,$5,$6,true)
+           RETURNING id;`,
+          [
+            job.target_project_id,
+            plan.name,
+            plan.key,
+            config.fieldType,
+            150,
+            true,
+          ]
+        );
+        const columnId = columnResult.rows[0]?.id;
+        if (!columnId) return null;
+
+        await configureColumnMetadata(columnId, plan, config);
+        const column = {
+          id: columnId,
+          key: plan.key,
+          fieldType: config.fieldType,
+        };
+        customColumnMap.set(plan.key, column);
+        return column;
+      };
+
+      const insertCustomColumnValue = async (
+        taskId: string,
+        column: CustomColumnRef,
+        customValue: CustomFieldValuePlan,
+        config?: ColumnPlanConfig
+      ) => {
+        const effectiveConfig = config || customColumnConfigs.get(column.key);
+        const fieldType = effectiveConfig?.fieldType || column.fieldType;
+        const normalizedValue = sanitizeSampleValue(customValue.value);
+
+        let textValue: string | null = null;
+        let numberValue: number | null = null;
+        let dateValue: Date | null = null;
+        let booleanValue: boolean | null = null;
+        let jsonValue: string | null = null;
+
+        switch (fieldType) {
+          case "number": {
+            if (!normalizedValue) break;
+            const numericValue = Number(normalizedValue);
+            if (!Number.isFinite(numericValue)) break;
+            numberValue = numericValue;
+            break;
+          }
+          case "date": {
+            if (!normalizedValue) break;
+            const parsed = new Date(normalizedValue);
+            if (Number.isNaN(parsed.getTime())) break;
+            dateValue = parsed;
+            break;
+          }
+          case "checkbox": {
+            if (!normalizedValue) break;
+            const coerced = coerceBooleanValue(normalizedValue);
+            if (coerced === null) break;
+            booleanValue = coerced;
+            break;
+          }
+          case "selection": {
+            if (!normalizedValue) break;
+            const selectionId =
+              effectiveConfig?.valueToSelectionId?.get(normalizedValue) ||
+              normalizedValue;
+            textValue = selectionId;
+            break;
+          }
+          case "people": {
+            if (!normalizedValue) break;
+            jsonValue = JSON.stringify([normalizedValue]);
+            break;
+          }
+          default: {
+            if (!normalizedValue) break;
+            textValue = normalizedValue;
+          }
+        }
+
+        if (
+          textValue === null &&
+          numberValue === null &&
+          dateValue === null &&
+          booleanValue === null &&
+          jsonValue === null
+        ) {
+          return;
+        }
+
+        await client.query(
+          `INSERT INTO cc_column_values (
+             task_id,
+             column_id,
+             text_value,
+             number_value,
+             date_value,
+             boolean_value,
+             json_value,
+             created_at,
+             updated_at
+           ) VALUES ($1,$2,$3,$4,$5,$6,$7,NOW(),NOW())`,
+          [
+            taskId,
+            column.id,
+            textValue,
+            numberValue,
+            dateValue,
+            booleanValue,
+            jsonValue,
+          ]
+        );
       };
 
       for (const plan of customColumnPlans.values()) {
-        await ensureCustomColumn(plan.key, plan.name);
+        const config =
+          customColumnConfigs.get(plan.key) || inferColumnConfig(plan);
+        customColumnConfigs.set(plan.key, config);
+        await ensureCustomColumn(plan, config);
       }
 
       const createdTasks: any[] = [];
@@ -832,17 +1174,38 @@ class ImportsService {
 
         if (created?.id && customValues.length) {
           for (const customValue of customValues) {
+            let plan = customColumnPlans.get(customValue.columnKey);
+            let config = customColumnConfigs.get(customValue.columnKey);
+
+            if (!plan) {
+              plan = {
+                key: customValue.columnKey,
+                name: customValue.columnName,
+                sourceField: customValue.columnName,
+                samples: new Set<string>([
+                  sanitizeSampleValue(customValue.value),
+                ]),
+              };
+              customColumnPlans.set(customValue.columnKey, plan);
+              config = inferColumnConfig(plan);
+              customColumnConfigs.set(customValue.columnKey, config);
+            }
+
+            if (!config && plan) {
+              config = inferColumnConfig(plan);
+              customColumnConfigs.set(plan.key, config);
+            }
+
             const column =
               customColumnMap.get(customValue.columnKey) ||
-              (await ensureCustomColumn(
-                customValue.columnKey,
-                customValue.columnName
-              ));
+              (plan && config ? await ensureCustomColumn(plan, config) : null);
             if (!column) continue;
-            await client.query(
-              `INSERT INTO cc_column_values (task_id, column_id, text_value, created_at, updated_at)
-               VALUES ($1, $2, $3, NOW(), NOW())`,
-              [created.id, column.id, String(customValue.value)]
+
+            await insertCustomColumnValue(
+              created.id,
+              column,
+              customValue,
+              config
             );
           }
         }

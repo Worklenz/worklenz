@@ -2,6 +2,7 @@ import { ImportJob } from "../imports-service";
 import {
   AttachmentPlanRow,
   StageTaskRow,
+  UserMappingRow,
   ValueMappingRow,
 } from "../imports-service";
 
@@ -20,6 +21,7 @@ export interface ProviderResult {
   values?: ValueMappingRow[];
   attachments?: AttachmentPlanRow[];
   tasks?: StageTaskRow[];
+  users?: UserMappingRow[];
   raw?: unknown;
 }
 

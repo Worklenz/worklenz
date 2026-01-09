@@ -2,6 +2,7 @@ import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import ImportsService, {
   AttachmentPlanRow,
+  FieldMappingRow,
   StageTaskRow,
   UserMappingRow,
   ValueMappingRow,
@@ -22,52 +23,109 @@ const autoHierarchyTemplate = [
   { source_level: "Nested subtask", target_level: "Subtask", position: 4 },
 ];
 
-const autoFieldTemplate = [
+const autoFieldTemplate: FieldMappingRow[] = [
   {
     source_field: "Task name",
-    target_field: "Summary",
+    target_field: "key",
     required: true,
     include: true,
   },
   {
-    source_field: "Assignee",
-    target_field: "Assignee",
-    required: false,
-    include: true,
-  },
-  {
-    source_field: "Created by",
-    target_field: "Reporter",
-    required: false,
-    include: true,
-  },
-  {
     source_field: "Description",
-    target_field: "Description",
+    target_field: "description",
     required: false,
     include: true,
   },
   {
-    source_field: "Due on",
-    target_field: "Due date",
+    source_field: "Assignee",
+    target_field: "assignees",
     required: false,
     include: true,
   },
   {
     source_field: "Start date",
-    target_field: "Start date",
+    target_field: "startDate",
     required: false,
     include: true,
   },
   {
-    source_field: "Collaborators",
-    target_field: "Watchers",
+    source_field: "Due date",
+    target_field: "dueDate",
+    required: false,
+    include: true,
+  },
+  {
+    source_field: "Section",
+    target_field: "status",
+    required: false,
+    include: true,
+  },
+  {
+    source_field: "Created by",
+    target_field: "reporter",
+    required: false,
+    include: true,
+  },
+  {
+    source_field: "Priority",
+    target_field: "priority",
+    required: false,
+    include: true,
+  },
+  {
+    source_field: "Status",
+    target_field: "status",
+    required: false,
+    include: true,
+  },
+  {
+    source_field: "Likes",
+    target_field: "Likes",
+    required: false,
+    include: true,
+  },
+  {
+    source_field: "Alphabetical",
+    target_field: "Alphabetical",
     required: false,
     include: true,
   },
 ];
 
 const asanaProvider = new AsanaProvider();
+
+const REQUIRED_TARGET_MAPPINGS: Array<{
+  target: string;
+  fallbackSource: string;
+}> = [
+  { target: "key", fallbackSource: "Task name" },
+  { target: "description", fallbackSource: "Description" },
+  { target: "assignees", fallbackSource: "Assignee" },
+  { target: "dueDate", fallbackSource: "Due date" },
+  { target: "startDate", fallbackSource: "Start date" },
+  { target: "status", fallbackSource: "Status" },
+  { target: "reporter", fallbackSource: "Created by" },
+];
+
+const ensureRequiredTargets = (rows: FieldMappingRow[]): FieldMappingRow[] => {
+  const presentTargets = new Set(
+    rows
+      .filter((row) => !!row.target_field)
+      .map((row) => row.target_field.toLowerCase())
+  );
+  REQUIRED_TARGET_MAPPINGS.forEach(({ target, fallbackSource }) => {
+    if (!presentTargets.has(target.toLowerCase())) {
+      rows.push({
+        source_field: fallbackSource,
+        target_field: target,
+        include: true,
+        required: target === "key",
+      });
+      presentTargets.add(target.toLowerCase());
+    }
+  });
+  return rows;
+};
 
 const base64UrlEncode = (buffer: Buffer) =>
   buffer
@@ -238,6 +296,20 @@ export default class ImportsController {
           );
         }
       }
+      rows = ensureRequiredTargets(rows);
+      await ImportsService.appendLog(
+        job.id,
+        "info",
+        "Auto field mappings result",
+        {
+          provider: job.provider,
+          total: rows.length,
+          preview: rows.slice(0, 20).map((row) => ({
+            source: row.source_field,
+            target: row.target_field,
+          })),
+        }
+      );
       await ImportsService.upsertFields(jobId, rows);
       return res.status(200).send(new ServerResponse(true, rows));
     }

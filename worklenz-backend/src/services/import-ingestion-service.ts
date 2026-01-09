@@ -33,6 +33,8 @@ class ImportIngestionService {
       await ImportsService.upsertAttachmentPlans(job.id, result.attachments);
     if (result.tasks?.length)
       await ImportsService.upsertStageTasks(job.id, result.tasks);
+    if (result.users?.length)
+      await ImportsService.upsertUserMappings(job.id, result.users);
     return result;
   }
 }

@@ -1,22 +1,41 @@
 import { ImportProvider, ProviderResult } from "./provider-types";
-import { ImportJob, StageTaskRow } from "../imports-service";
+import { ImportJob, StageTaskRow, UserMappingRow } from "../imports-service";
 import { getWithRetries } from "./http-utils";
+import db from "../../config/db";
 
 interface AsanaTask {
   gid: string;
   name: string;
   notes?: string;
   due_on?: string;
+  due_at?: string;
   start_on?: string;
   assignee?: {
     gid: string | null;
     name?: string | null;
     email?: string | null;
   };
+  created_by?: {
+    gid?: string | null;
+    name?: string | null;
+    email?: string | null;
+  } | null;
   created_at?: string;
   modified_at?: string;
   completed_at?: string;
+  completed?: boolean;
+  likes?: Array<{
+    user?: {
+      gid?: string | null;
+      name?: string | null;
+      email?: string | null;
+    } | null;
+  }>;
+  num_likes?: number | null;
   custom_fields?: Array<AsanaCustomFieldValue>;
+  memberships?: Array<{
+    section?: { gid?: string; name?: string | null } | null;
+  }>;
 }
 
 interface AsanaCustomFieldValue {
@@ -70,11 +89,13 @@ const STANDARD_FIELD_CANDIDATES: Array<{
   { name: "Task name", target: "key", required: true },
   { name: "Description", target: "description" },
   { name: "Assignee", target: "assignees" },
-  { name: "Due date", target: "dueDate" },
   { name: "Start date", target: "startDate" },
-  { name: "Created at", target: "createdDate" },
-  { name: "Modified at", target: "lastUpdated" },
-  { name: "Completed at", target: "completedDate" },
+  { name: "Due date", target: "dueDate" },
+  { name: "Section", target: "status" },
+  { name: "Created by", target: "reporter" },
+  { name: "Priority", target: "priority" },
+  { name: "Likes", target: "likes" },
+  { name: "Alphabetical", target: "alphabetical" },
 ];
 
 const SECTION_FALLBACK = [
@@ -185,6 +206,69 @@ export default class AsanaProvider implements ImportProvider {
     return rows;
   }
 
+  private pickPrimarySection(task: AsanaTask): string | null {
+    const membership = task.memberships?.find((entry) => entry.section?.name);
+    return membership?.section?.name || null;
+  }
+
+  private async findTeamUserIds(
+    job: ImportJob,
+    emails: string[]
+  ): Promise<Map<string, string>> {
+    if (!emails.length) return new Map();
+    const normalized = emails.map((email) => email.toLowerCase());
+    const { rows } = await db.query(
+      "SELECT active_team FROM users WHERE id = $1",
+      [job.created_by]
+    );
+    const activeTeam = rows[0]?.active_team || null;
+
+    if (activeTeam) {
+      const { rows: teamRows } = await db.query(
+        `SELECT LOWER(u.email) AS email, u.id
+         FROM team_members tm
+         INNER JOIN users u ON u.id = tm.user_id
+         WHERE tm.team_id = $2
+           AND LOWER(u.email) = ANY($1)`,
+        [normalized, activeTeam]
+      );
+      if (teamRows.length) {
+        return new Map(teamRows.map((row: any) => [row.email, row.id]));
+      }
+    }
+
+    const { rows: fallbackRows } = await db.query(
+      `SELECT LOWER(email) AS email, id
+       FROM users
+       WHERE LOWER(email) = ANY($1)`,
+      [normalized]
+    );
+    return new Map(fallbackRows.map((row: any) => [row.email, row.id]));
+  }
+
+  private async buildUserMappings(
+    job: ImportJob,
+    assignees: Map<
+      string,
+      { source_user_id?: string | null; source_email?: string | null }
+    >
+  ): Promise<UserMappingRow[]> {
+    if (!assignees.size) return [];
+    const emails = Array.from(assignees.keys());
+    const targetMap = await this.findTeamUserIds(job, emails);
+    return emails.map((email) => {
+      const record = assignees.get(email) || {};
+      const targetId = targetMap.get(email);
+      return {
+        source_user_id: record.source_user_id || null,
+        source_email: record.source_email || null,
+        target_user_id: targetId || null,
+        resolution: targetId ? "auto-matched" : "unresolved",
+        include: true,
+      } as UserMappingRow;
+    });
+  }
+
   private formatCustomFieldValue(
     setting: AsanaCustomFieldSetting,
     value?: AsanaCustomFieldValue
@@ -214,17 +298,31 @@ export default class AsanaProvider implements ImportProvider {
     customFields: AsanaCustomFieldSetting[],
     projectName?: string | null
   ): Record<string, unknown> {
+    const primarySection = this.pickPrimarySection(task);
+    const dueDisplay = task.due_at || task.due_on || "";
+    const createdBy = task.created_by?.email || task.created_by?.name || "";
+    const likesCount =
+      typeof task.num_likes === "number"
+        ? task.num_likes
+        : task.likes?.length ?? null;
+    const alphabeticalValue = task.name || "";
+    const statusLabel = primarySection || (task.completed ? "Completed" : "");
     const raw: Record<string, unknown> = {
       "Task name": task.name || "",
       Description: task.notes || "",
       Assignee: task.assignee?.email || task.assignee?.name || "",
       "Assignee name": task.assignee?.name || "",
       "Assignee gid": task.assignee?.gid || "",
-      "Due date": task.due_on || "",
       "Start date": task.start_on || "",
-      "Created at": task.created_at || "",
-      "Modified at": task.modified_at || "",
-      "Completed at": task.completed_at || "",
+      "Due date": dueDisplay,
+      "Created by": createdBy,
+      "Created on": task.created_at || "",
+      "Last modified on": task.modified_at || "",
+      "Completed on": task.completed_at || "",
+      Likes: likesCount !== null ? String(likesCount) : "",
+      Alphabetical: alphabeticalValue,
+      Priority: "",
+      Status: statusLabel || "",
       Project: projectName || "",
     };
 
@@ -239,6 +337,9 @@ export default class AsanaProvider implements ImportProvider {
       if (!name || !gid) return;
       const value = this.formatCustomFieldValue(setting, valueMap.get(gid));
       raw[name] = value ?? "";
+      if (name.toLowerCase() === "priority" && value !== undefined) {
+        raw["Priority"] = value ?? "";
+      }
     });
 
     return raw;
@@ -304,19 +405,31 @@ export default class AsanaProvider implements ImportProvider {
     );
     const fieldMappings = this.buildFieldMappings(customFieldSettings);
     const tasks: StageTaskRow[] = [];
+    const assigneeDirectory = new Map<
+      string,
+      { source_user_id?: string | null; source_email?: string | null }
+    >();
     let offset: string | undefined;
     const optFields = [
       "gid",
       "name",
       "notes",
       "due_on",
+      "due_at",
       "start_on",
       "assignee.gid",
       "assignee.name",
       "assignee.email",
+      "created_by.gid",
+      "created_by.name",
+      "created_by.email",
       "created_at",
       "modified_at",
       "completed_at",
+      "completed",
+      "likes.user.name",
+      "likes.user.email",
+      "num_likes",
       "custom_fields.gid",
       "custom_fields.name",
       "custom_fields.type",
@@ -324,6 +437,8 @@ export default class AsanaProvider implements ImportProvider {
       "custom_fields.number_value",
       "custom_fields.display_value",
       "custom_fields.enum_value.name",
+      "memberships.section.name",
+      "memberships.section.gid",
     ];
 
     do {
@@ -340,13 +455,27 @@ export default class AsanaProvider implements ImportProvider {
           customFieldSettings,
           options.projectName
         );
+        const primarySection = this.pickPrimarySection(t);
+        const normalizedEmail = t.assignee?.email?.toLowerCase();
+        if (normalizedEmail) {
+          if (!assigneeDirectory.has(normalizedEmail)) {
+            assigneeDirectory.set(normalizedEmail, {
+              source_user_id: t.assignee?.gid || null,
+              source_email: t.assignee?.email || null,
+            });
+          }
+        }
+        const resolvedStatus =
+          primarySection || (t.completed ? "Completed" : null);
         tasks.push({
           source_task_id: t.gid,
           title: t.name || "Untitled task",
           description: t.notes || null,
-          due_at: t.due_on || null,
+          due_at: t.due_at || t.due_on || null,
           start_at: t.start_on || null,
+          status: resolvedStatus || null,
           assignee_source_id: t.assignee?.email || t.assignee?.gid || null,
+          worktype: resolvedStatus || null,
           raw,
         });
       }
@@ -357,7 +486,8 @@ export default class AsanaProvider implements ImportProvider {
       options.token,
       options.projectId
     );
+    const users = await this.buildUserMappings(job, assigneeDirectory);
 
-    return { tasks, fields: fieldMappings, hierarchy };
+    return { tasks, fields: fieldMappings, hierarchy, users };
   }
 }
