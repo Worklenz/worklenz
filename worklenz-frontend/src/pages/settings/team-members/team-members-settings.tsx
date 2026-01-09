@@ -183,12 +183,22 @@ const TeamMembersSettings = () => {
 
   
   const handleTableChange = useCallback((newPagination: any, filters: any, sorter: any) => {
+    // Extract field - ensure it's always a single string, not an array
+    let field = 'name';
+    if (sorter.field) {
+      // If sorter.field is an array, take the first element, otherwise use it as-is
+      field = Array.isArray(sorter.field) ? sorter.field[0] : sorter.field;
+    }
+    
+    // Extract order - if no order specified, maintain current order or default to 'asc'
+    const order = sorter.order ? (sorter.order === 'ascend' ? 'asc' : 'desc') : prev.order;
+    
     setPagination(prev => ({
       ...prev,
       current: newPagination.current,
       pageSize: newPagination.pageSize,
-      field: sorter.field || 'name',
-      order: sorter.order === 'ascend' ? 'asc' : 'desc',
+      field: field,
+      order: order,
     }));
   }, []);
 
