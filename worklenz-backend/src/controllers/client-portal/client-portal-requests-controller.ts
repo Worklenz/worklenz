@@ -172,24 +172,24 @@ export default class ClientPortalRequestsController extends ClientPortalControll
         try {
           await client.query('BEGIN');
           
-          // Lock the sequence row and get/increment the number atomically
-          // First ensure the row exists
-          await client.query(
-            `INSERT INTO client_portal_request_sequences (organization_team_id, last_request_number)
-             VALUES ($1, 0)
-             ON CONFLICT (organization_team_id) DO NOTHING`,
+          // Use a single atomic operation to insert or update and get the next number
+          // This CTE ensures the operation is atomic and prevents race conditions
+          const seqResult = await client.query(
+            `WITH inserted AS (
+               INSERT INTO client_portal_request_sequences (organization_team_id, last_request_number)
+               VALUES ($1, 1)
+               ON CONFLICT (organization_team_id) DO UPDATE SET
+                 last_request_number = client_portal_request_sequences.last_request_number + 1,
+                 updated_at = NOW()
+               RETURNING last_request_number
+             )
+             SELECT last_request_number FROM inserted`,
             [organizationId]
           );
           
-          // Now lock and update the row
-          const seqResult = await client.query(
-            `UPDATE client_portal_request_sequences
-             SET last_request_number = last_request_number + 1,
-                 updated_at = NOW()
-             WHERE organization_team_id = $1
-             RETURNING last_request_number`,
-            [organizationId]
-          );
+          if (!seqResult.rows || seqResult.rows.length === 0) {
+            throw new Error('Failed to generate request sequence number');
+          }
           
           const nextNumber = seqResult.rows[0].last_request_number;
           reqNo = `REQ-${String(nextNumber).padStart(4, '0')}`;
