@@ -213,13 +213,15 @@ export default class TeamMembersController extends WorklenzControllerBase {
       }
     }
 
+    // team_id is $1, search params start at $2 (isMemberFilter=true puts search before team_id condition)
     const {
       searchQuery,
+      searchParams,
       sortField,
       sortOrder,
       size,
       offset
-    } = this.toPaginationOptions(req.query, ["u.name", "u.email"], true);
+    } = this.toPaginationOptions(req.query, ["u.name", "u.email"], true, 2);
 
     const paginate = req.query.all === "false" ? `LIMIT ${size} OFFSET ${offset}` : "";
 
@@ -263,7 +265,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
              LEFT JOIN users u ON team_members.user_id = u.id
       WHERE ${searchQuery} team_id = $1
     `;
-    const result = await db.query(q, [req.user?.team_id || null]);
+    const result = await db.query(q, [req.user?.team_id || null, ...searchParams]);
     const [members] = result.rows;
 
     members.data?.map((a: any) => {
