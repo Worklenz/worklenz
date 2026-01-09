@@ -30,6 +30,7 @@ export const BASE_COLUMNS = [
     width: '350px',
     isSticky: true,
     key: COLUMN_KEYS.NAME,
+    minWidth: '200px',
     maxWidth: '400px',
   },
   {
