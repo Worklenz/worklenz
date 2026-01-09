@@ -77,7 +77,8 @@ const EditClientDrawer = () => {
       }).unwrap();
 
       message.success(t('updateClientSuccessMessage') || 'Client updated successfully');
-      dispatch(toggleEditClientDrawer(null));
+      // Keep edit drawer open - don't close it automatically
+      // The details drawer will automatically refresh due to cache invalidation
     } catch (error: any) {
       message.error(
         error?.data?.message || t('updateClientErrorMessage') || 'Failed to update client'

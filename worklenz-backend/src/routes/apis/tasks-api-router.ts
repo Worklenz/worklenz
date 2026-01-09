@@ -12,12 +12,14 @@ import bulkTasksStatusValidator from "../../middlewares/validators/bulk-tasks-st
 import bulkTasksPriorityValidator from "../../middlewares/validators/bulk-tasks-priority-validators";
 import bulkTasksPhaseValidator from "../../middlewares/validators/bulk-tasks-phase-validators";
 import bulkTasksValidator from "../../middlewares/validators/bulk-tasks-validator";
+import bulkTasksDueDateValidator from "../../middlewares/validators/bulk-tasks-due-date-validator";
 import mapTasksToBulkUpdate from "../../middlewares/map-tasks-to-bulk-update";
 import homeTaskBodyValidator from "../../middlewares/validators/home-task-body-validator";
 import TaskListColumnsController from "../../controllers/task-list-columns-controller";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import taskCreateBodyValidator from "../../middlewares/validators/task-create-body--validator";
+import verifyTaskAccess, {verifyBulkTaskAccessMiddleware} from "../../middlewares/verify-task-access";
 
 const tasksApiRouter = express.Router();
 
@@ -47,19 +49,20 @@ tasksApiRouter.post("/refresh-progress/:id", idParamValidator, safeControllerFun
 tasksApiRouter.get("/progress-status/:id", idParamValidator, safeControllerFunction(TasksControllerV2.getTaskProgressStatus));
 tasksApiRouter.get("/assignees/:id", idParamValidator, safeControllerFunction(TasksController.getProjectTaskAssignees));
 
-tasksApiRouter.put("/bulk/status", mapTasksToBulkUpdate, bulkTasksStatusValidator, safeControllerFunction(TasksController.bulkChangeStatus));
-tasksApiRouter.put("/bulk/priority", mapTasksToBulkUpdate, bulkTasksPriorityValidator, safeControllerFunction(TasksController.bulkChangePriority));
-tasksApiRouter.put("/bulk/phase", mapTasksToBulkUpdate, bulkTasksPhaseValidator, safeControllerFunction(TasksController.bulkChangePhase));
+tasksApiRouter.put("/bulk/status", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksStatusValidator, safeControllerFunction(TasksController.bulkChangeStatus));
+tasksApiRouter.put("/bulk/priority", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksPriorityValidator, safeControllerFunction(TasksController.bulkChangePriority));
+tasksApiRouter.put("/bulk/phase", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksPhaseValidator, safeControllerFunction(TasksController.bulkChangePhase));
 
-tasksApiRouter.put("/bulk/delete", mapTasksToBulkUpdate, bulkTasksValidator, safeControllerFunction(TasksController.bulkDelete));
-tasksApiRouter.put("/bulk/archive", mapTasksToBulkUpdate, bulkTasksValidator, safeControllerFunction(TasksController.bulkArchive));
-tasksApiRouter.put("/bulk/assign-me", mapTasksToBulkUpdate, bulkTasksValidator, safeControllerFunction(TasksController.bulkAssignMe));
-tasksApiRouter.put("/bulk/label", mapTasksToBulkUpdate, bulkTasksValidator, safeControllerFunction(TasksController.bulkAssignLabel));
-tasksApiRouter.put("/bulk/members", mapTasksToBulkUpdate, bulkTasksValidator, safeControllerFunction(TasksController.bulkAssignMembers));
-tasksApiRouter.put("/duration/:id", safeControllerFunction(TasksController.updateDuration));
-tasksApiRouter.put("/status/:status_id/:task_id", kanbanStatusUpdateValidator, safeControllerFunction(TasksController.updateStatus));
-tasksApiRouter.put("/:id", idParamValidator, tasksBodyValidator, safeControllerFunction(TasksController.update));
-tasksApiRouter.delete("/:id", safeControllerFunction(TasksController.deleteById));
+tasksApiRouter.put("/bulk/delete", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksValidator, safeControllerFunction(TasksController.bulkDelete));
+tasksApiRouter.put("/bulk/archive", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksValidator, safeControllerFunction(TasksController.bulkArchive));
+tasksApiRouter.put("/bulk/assign-me", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksValidator, safeControllerFunction(TasksController.bulkAssignMe));
+tasksApiRouter.put("/bulk/label", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksValidator, safeControllerFunction(TasksController.bulkAssignLabel));
+tasksApiRouter.put("/bulk/members", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksValidator, safeControllerFunction(TasksController.bulkAssignMembers));
+tasksApiRouter.put("/bulk/due-date", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksDueDateValidator, safeControllerFunction(TasksController.bulkChangeDueDate));
+tasksApiRouter.put("/duration/:id", verifyTaskAccess('params', 'id'), safeControllerFunction(TasksController.updateDuration));
+tasksApiRouter.put("/status/:status_id/:task_id", kanbanStatusUpdateValidator, verifyTaskAccess('params', 'task_id'), safeControllerFunction(TasksController.updateStatus));
+tasksApiRouter.put("/:id", idParamValidator, tasksBodyValidator, verifyTaskAccess('params', 'id'), safeControllerFunction(TasksController.update));
+tasksApiRouter.delete("/:id", verifyTaskAccess('params', 'id'), safeControllerFunction(TasksController.deleteById));
 tasksApiRouter.post("/quick-task", quickTaskBodyValidator, safeControllerFunction(TasksController.createQuickTask));
 tasksApiRouter.post("/home-task", homeTaskBodyValidator, safeControllerFunction(TasksController.createHomeTask));
 tasksApiRouter.post("/convert-to-subtask", safeControllerFunction(TasksControllerV2.convertToSubtask));
@@ -67,9 +70,9 @@ tasksApiRouter.get("/subscribers/:id", safeControllerFunction(TasksControllerV2.
 tasksApiRouter.get("/search", safeControllerFunction(TasksControllerV2.searchTasks));
 tasksApiRouter.get("/dependency-status", safeControllerFunction(TasksControllerV2.getTaskDependencyStatus));
 
-tasksApiRouter.put("/labels/:id", idParamValidator, safeControllerFunction(TasksControllerV2.assignLabelsToTask));
+tasksApiRouter.put("/labels/:id", idParamValidator, verifyTaskAccess('params', 'id'), safeControllerFunction(TasksControllerV2.assignLabelsToTask));
 
 // Add custom column value update route
-tasksApiRouter.put("/:taskId/custom-column", TasksControllerV2.updateCustomColumnValue);
+tasksApiRouter.put("/:taskId/custom-column", verifyTaskAccess('params', 'taskId'), TasksControllerV2.updateCustomColumnValue);
 
 export default tasksApiRouter;

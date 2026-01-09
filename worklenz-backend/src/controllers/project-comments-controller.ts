@@ -5,7 +5,7 @@ import db from "../config/db";
 import {ServerResponse} from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-import {getColor, slugify} from "../shared/utils";
+import {getColor, slugify, sanitizeCommentContent} from "../shared/utils";
 import { HTML_TAG_REGEXP } from "../shared/constants";
 import { IProjectCommentEmailNotification } from "../interfaces/comment-email-notification";
 import { sendProjectComment } from "../shared/email-notifications";
@@ -65,9 +65,14 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
       const projectId = req.body.project_id;
       const teamId =  req.user?.team_id;
 
-      let commentContent = req.body.content;
+      // Sanitize content to prevent XSS attacks
+      let commentContent = sanitizeCommentContent(req.body.content || '');
+      
+      // Process mentions after sanitization to ensure safe HTML
       if (mentions.length > 0) {
           commentContent = await this.replaceContent(commentContent, mentions);
+          // Re-sanitize after mention processing to ensure no XSS was introduced
+          commentContent = sanitizeCommentContent(commentContent);
       }
 
       const body = {

@@ -38,6 +38,7 @@ export interface DashboardStats {
   totalInvoices: number;
   unpaidInvoices: number;
   unpaidAmount: number;
+  teamMembers: number;
 }
 
 export interface ClientService {
@@ -112,6 +113,48 @@ export interface ClientProject {
   client_name: string;
   total_tasks: number;
   completed_tasks: number;
+}
+
+export interface TaskAssignee {
+  id: string;
+  name: string;
+  email: string;
+  avatar_url?: string;
+}
+
+export interface TaskAttachment {
+  id: string;
+  name: string;
+  url: string;
+  size: number;
+  type: string;
+  created_at: string;
+}
+
+export interface TaskDetails {
+  id: string;
+  name: string;
+  description: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+  statusName: string;
+  statusColor: string;
+  priorityName: string | null;
+  priorityColor: string | null;
+  assignees: TaskAssignee[];
+  attachments: TaskAttachment[];
+}
+
+export interface TaskComment {
+  id: string;
+  comment: string;
+  sender_type: 'client' | 'team_member';
+  sender_id: string;
+  sender_name: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ClientInvoice {

@@ -27,7 +27,9 @@ import TimerButton from './timers/TimerButton';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { RootState } from '@/app/store';
+import { toggleUpgradeModal, fetchOrganizationDetails } from '@/features/admin-center/admin-center.slice';
 import { isTeamLeadRole } from '@/types/roles/role.types';
 import { ConnectionStatusIndicator } from '@/components/connection-status/ConnectionStatusIndicator';
 
@@ -49,6 +51,7 @@ const Navbar = () => {
   const { setIdentity, trackMixpanelEvent } = useMixpanelTracking();
   const [navRoutesList, setNavRoutesList] = useState<NavRoutesType[]>(navRoutes);
   const showUpgradeTypes = useMemo(() => [ISUBSCRIPTION_TYPE.TRIAL], []);
+  const organization = useAppSelector((state: RootState) => state.adminCenterReducer.organization);
 
   useEffect(() => {
     authApiService
@@ -64,6 +67,13 @@ const Navbar = () => {
         logger.error('Error during authorization', error);
       });
   }, [authService, setIdentity]);
+
+  // Fetch organization details for navbar logo if not already loaded
+  useEffect(() => {
+    if (currentSession && !organization && isOwnerOrAdmin) {
+      dispatch(fetchOrganizationDetails());
+    }
+  }, [currentSession, organization, isOwnerOrAdmin, dispatch]);
 
   useEffect(() => {
     const storedNavRoutesList: NavRoutesType[] = getJSONFromLocalStorage('navRoutes') || navRoutes;

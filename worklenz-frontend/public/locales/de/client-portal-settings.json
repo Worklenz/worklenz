@@ -12,6 +12,7 @@
   "contactEmailPlaceholder": "Kontakt-E-Mail eingeben",
   "contactPhoneLabel": "Kontakttelefon",
   "contactPhonePlaceholder": "Kontakttelefon eingeben",
+  "invalidPhoneNumberFormat": "Ungültiges Telefonnummernformat. Verwenden Sie das internationale Format (z.B. +1-234-567-8900)",
   "invoiceFooterLabel": "Rechnungsfußzeile",
   "invoiceFooterPlaceholder": "z.B. Vielen Dank für Ihr Vertrauen!",
   "currentLogoText": "Aktuelles Logo",

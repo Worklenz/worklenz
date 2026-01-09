@@ -68,6 +68,9 @@
   "addressLabel": "Dirección",
   "addressPlaceholder": "Ingresa la dirección (opcional)",
 
+  "contactPersonLabel": "Persona de Contacto",
+  "contactPersonPlaceholder": "Ingresa el nombre de la persona de contacto",
+
   "statusLabel": "Estado",
 
   "createClientSuccessMessage": "¡Cliente creado exitosamente! Comparte el enlace de invitación de la organización para darle acceso al portal.",
@@ -107,10 +110,8 @@
   "updatedAtLabel": "Actualizado",
 
   "statisticsTitle": "Estadísticas",
-  "totalProjectsLabel": "Total de Proyectos",
   "activeProjectsLabel": "Proyectos Activos",
   "completedProjectsLabel": "Proyectos Completados",
-  "totalTeamMembersLabel": "Miembros del Equipo",
   "activeTeamMembersLabel": "Miembros Activos del Equipo",
   "totalRequestsLabel": "Total de Solicitudes",
   "pendingRequestsLabel": "Solicitudes Pendientes",
@@ -124,7 +125,6 @@
   "noProjectsText": "No se encontraron proyectos",
   "viewProjectTooltip": "Ver Proyecto",
   "viewButton": "Ver",
-  "tasksCompletedText": "tareas completadas",
 
   "overviewTab": "Resumen",
   "teamTab": "Equipo",
@@ -132,7 +132,6 @@
 
   "inviteMemberButton": "Invitar Miembro",
   "editButton": "Editar",
-  "removeButton": "Eliminar",
 
   "assignedProjectsTitle": "Proyectos Asignados",
   "assignProjectButton": "Asignar Proyecto",
@@ -141,8 +140,6 @@
 
   "nameLabel": "Nombre",
   "companyLabel": "Empresa",
-  "phoneLabel": "Teléfono",
-  "addressLabel": "Dirección",
 
   "copyLinkLabel": "Copiar Enlace",
   "addTeamMembersLabel": "Agregar Miembros del Equipo",
@@ -193,7 +190,6 @@
   "removeTeamMemberSuccessMessage": "Miembro del equipo eliminado exitosamente",
   "removeTeamMemberErrorMessage": "Error al eliminar el miembro del equipo",
 
-  "assignProjectTitle": "Asignar Proyecto",
   "assignProjectDescription": "Selecciona proyectos para asignar a este cliente",
   "assignProjectSuccessMessage": "Proyectos asignados exitosamente",
   "assignProjectErrorMessage": "Error al asignar proyectos",
@@ -209,13 +205,10 @@
   "retryButton": "Reintentar",
 
   "errorLoadingClient": "Error al cargar datos del cliente",
-  "clientNameMinLength": "El nombre debe tener al menos 2 caracteres",
-  "phoneInvalid": "Por favor ingrese un número de teléfono válido",
 
   "teamManagementTitle": "Gestión de Equipo",
   "clientPortalLinkLabel": "Enlace del Portal del Cliente",
   "clientPortalLinkDescription": "Comparta este enlace con su cliente para darle acceso a su portal",
-  "linkCopiedMessage": "Enlace copiado al portapapeles",
   "noClientsTitle": "No se encontraron clientes",
   "noClientsDescription": "Aún no ha agregado ningún cliente. Agregue su primer cliente para comenzar a gestionar el acceso a su portal.",
   "noClientsMatchingFilters": "Ningún cliente coincide con los filtros actuales.",
@@ -227,20 +220,13 @@
   "selectProjectLabel": "Seleccionar Proyecto",
   "selectProjectPlaceholder": "Elige un proyecto para asignar",
   "assignButton": "Asignar Proyecto",
-  "assignedProjectsTitle": "Proyectos Asignados",
   "projectNameColumn": "Nombre del Proyecto",
-  "statusColumn": "Estado",
   "progressColumn": "Progreso",
   "tasksCompletedText": "tareas",
   "actionsColumn": "Acciones",
-  "viewProjectTooltip": "Ver Proyecto",
-  "viewButton": "Ver",
   "removeProjectConfirmationTitle": "Eliminar Proyecto",
   "removeProjectConfirmationDescription": "¿Estás seguro de que quieres eliminar este proyecto del cliente?",
-  "removeConfirmationOk": "Eliminar",
-  "removeConfirmationCancel": "Cancelar",
   "removeProjectTooltip": "Eliminar Proyecto",
-  "removeButton": "Eliminar",
   "noAssignedProjectsText": "No hay proyectos asignados a este cliente",
   "projectAssignedSuccessMessage": "Proyecto asignado exitosamente",
   "projectAssignedErrorMessage": "Error al asignar el proyecto",
@@ -275,7 +261,14 @@
   "deactivateClientSuccessMessage": "Cliente desactivado exitosamente",
   "deactivateClientErrorMessage": "Error al desactivar cliente",
   "deactivateTooltip": "Desactivar Cliente",
-  "deactivateSelected": "Desactivar Seleccionados",
+  "activateTooltip": "Activar Cliente",
+  "activateConfirmationTitle": "Activar Cliente",
+  "activateConfirmationDescription": "¿Estás seguro de que quieres activar este cliente? Recuperarán el acceso al portal.",
+  "activateConfirmationOk": "Activar",
+  "activateConfirmationCancel": "Cancelar",
+  "activateClientSuccessMessage": "Cliente activado exitosamente",
+  "activateClientErrorMessage": "Error al activar cliente",
+  "activateButton": "Activar Cliente",
   "selectClientsToDeactivate": "Por favor seleccione clientes para desactivar",
   "bulkDeactivateSuccessMessage": "Clientes seleccionados desactivados exitosamente",
   "bulkDeactivateErrorMessage": "Error al desactivar clientes seleccionados",

@@ -2,12 +2,13 @@ import { Card, Flex, Typography, Spin, Button } from '@/shared/antd-imports';
 import React, { ReactNode, useState } from 'react';
 import ChatList from '../chat-list';
 import ChatBox from './chat-box';
-import { useAppSelector } from '../../../../../hooks/useAppSelector';
-import { useGetOrganizationChatsQuery } from '../../../../../api/client-portal/client-portal-api';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useGetOrganizationChatsQuery, clientPortalApi } from '../../../../../api/client-portal/client-portal-api';
 import { useTranslation } from 'react-i18next';
 import { MessageOutlined, ReloadOutlined, InboxOutlined } from '@ant-design/icons';
-import NewChatModal from '../../../../../components/client-portal/NewChatModal';
-import { themeWiseColor } from '../../../../../utils/themeWiseColor';
+import NewChatModal from '@components/client-portal/NewChatModal';
+import { themeWiseColor } from '@utils/themeWiseColor';
 
 export type TempChatsType = {
   id: string;
@@ -23,12 +24,28 @@ export type TempChatsType = {
   lastMessageTime?: string;
   unreadCount?: number;
   participants?: string[];
+  clientId?: string;
 };
 
-const ChatBoxWrapper = () => {
+interface ChatBoxWrapperProps {
+  isNewChatModalOpen?: boolean;
+  setIsNewChatModalOpen?: (open: boolean) => void;
+}
+
+const ChatBoxWrapper = ({ 
+  isNewChatModalOpen: propIsNewChatModalOpen, 
+  setIsNewChatModalOpen: propSetIsNewChatModalOpen 
+}: ChatBoxWrapperProps = {}) => {
   const [openedChatId, setOpenedChatId] = useState<string | null>(null);
-  const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
+  const [internalIsNewChatModalOpen, setInternalIsNewChatModalOpen] = useState(false);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const dispatch = useAppDispatch();
+  
+  // Use prop if provided, otherwise use internal state
+  const isNewChatModalOpen = propIsNewChatModalOpen !== undefined 
+    ? propIsNewChatModalOpen 
+    : internalIsNewChatModalOpen;
+  const setIsNewChatModalOpen = propSetIsNewChatModalOpen || setInternalIsNewChatModalOpen;
 
   const { t } = useTranslation('client-portal-chats');
 
@@ -63,16 +80,32 @@ const ChatBoxWrapper = () => {
       }
 
       if (chatsArray.length > 0) {
-        return chatsArray.map((chat: any) => ({
-          id: chat.id || '',
-          name: chat.title || chat.participants?.join(', ') || 'Unknown',
-          chats_data: [],
-          status: (chat.unreadCount > 0 ? 'unread' : 'read') as 'read' | 'unread',
-          lastMessage: chat.lastMessage || '',
-          lastMessageTime: chat.lastMessageTime || '',
-          unreadCount: chat.unreadCount || 0,
-          participants: chat.participants || [],
-        }));
+        return chatsArray.map((chat: any) => {
+          // Extract clientId from chatId if not provided directly
+          let clientId = chat.clientId;
+          if (!clientId && chat.id && chat.id.includes('-')) {
+            const parts = chat.id.split('-');
+            if (parts.length >= 4) {
+              const dateParts = parts.slice(-3);
+              const dateStrTest = dateParts.join('-');
+              if (/^\d{4}-\d{2}-\d{2}$/.test(dateStrTest)) {
+                clientId = parts.slice(0, -3).join('-');
+              }
+            }
+          }
+          
+          return {
+            id: chat.id || '',
+            name: chat.clientName || chat.title || chat.participants?.join(', ') || 'Unknown',
+            chats_data: [],
+            status: (chat.unreadCount > 0 ? 'unread' : 'read') as 'read' | 'unread',
+            lastMessage: chat.lastMessage || '',
+            lastMessageTime: chat.lastMessageTime || chat.lastMessageAt || '',
+            unreadCount: chat.unreadCount || 0,
+            participants: chat.participants || [],
+            clientId: clientId || chat.clientId,
+          };
+        });
       }
       return localChatList || [];
     } catch (err) {
@@ -88,6 +121,8 @@ const ChatBoxWrapper = () => {
   const handleNewChatSuccess = (chatId: string) => {
     setOpenedChatId(chatId);
     setIsNewChatModalOpen(false);
+    // Invalidate cache and refetch chat list to show the new conversation
+    dispatch(clientPortalApi.util.invalidateTags(['Chats']));
     refetch();
   };
 

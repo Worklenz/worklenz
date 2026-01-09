@@ -117,33 +117,62 @@ export default class AuthController extends WorklenzControllerBase {
     // Normalize email to lowercase for case-insensitive comparison
     const normalizedEmail = email ? email.toLowerCase().trim() : null;
 
+    // Security: Always return the same generic message to prevent email enumeration
+    const GENERIC_SUCCESS_MESSAGE = "If an account with that email exists, a password reset link has been sent to your email.";
+
     const q = `SELECT id, email, google_id, apple_id, password FROM users WHERE LOWER(email) = $1;`;
     const result = await db.query(q, [normalizedEmail]);
 
-    if (!result.rowCount)
-      return res.status(200).send(new ServerResponse(false, null, "Account does not exists!"));
+    // If email doesn't exist, return generic message without revealing account status
+    if (!result.rowCount) {
+      return res.status(200).send(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
+    }
 
     const [data] = result.rows;
 
-    if (data?.google_id) {
-      return res.status(200).send(new ServerResponse(false, "oauth_user", "This account uses Google Sign-In. Please sign in with Google instead."));
+    // For OAuth-only accounts (Google/Apple), don't send reset email but still return generic message
+    // Log internally for monitoring purposes
+    if (data?.google_id || data?.apple_id) {
+      log_error(`Password reset attempted for OAuth account: ${normalizedEmail}`, null);
+      return res.status(200).send(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
     }
 
-    if (data?.apple_id) {
-      return res.status(200).send(new ServerResponse(false, "oauth_user", "This account uses Apple Sign-In. Please sign in with Apple instead."));
-    }
-
+    // Only send reset email if account exists and has a password
     if (data?.password) {
-      const userIdBase64 = Buffer.from(data.id, "utf8").toString("base64");
+      try {
+        const userIdBase64 = Buffer.from(data.id, "utf8").toString("base64");
 
-      const salt = bcrypt.genSaltSync(10);
-      const hashedUserData = bcrypt.hashSync(data.id + data.email + data.password, salt);
-      const hashedString = hashedUserData.toString().replace(/\//g, "-");
+        const salt = bcrypt.genSaltSync(10);
+        const hashedUserData = bcrypt.hashSync(data.id + data.email + data.password, salt);
+        const hashedString = hashedUserData.toString().replace(/\//g, "-");
 
-      sendResetEmail(email, userIdBase64, hashedString);
-      return res.status(200).send(new ServerResponse(true, null, "Password reset email has been sent to your email. Please check your email."));
+        // Invalidate all previous unused tokens for this user
+        await db.query(
+          `UPDATE password_reset_tokens 
+           SET is_used = TRUE 
+           WHERE user_id = $1 AND is_used = FALSE`,
+          [data.id]
+        );
+
+        // Store the new token in the database with 1 hour expiration
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 1);
+
+        await db.query(
+          `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+           VALUES ($1, $2, $3)`,
+          [data.id, hashedString, expiresAt]
+        );
+
+        sendResetEmail(email, userIdBase64, hashedString);
+      } catch (error) {
+        // Log error internally but don't expose to client
+        log_error(`Failed to send password reset email for: ${normalizedEmail}`, error);
+      }
     }
-    return res.status(200).send(new ServerResponse(false, null, "Email not found!"));
+
+    // Always return the same generic success message to prevent email enumeration
+    return res.status(200).send(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
   }
 
   @HandleExceptions({logWithError: "body"})
@@ -153,21 +182,67 @@ export default class AuthController extends WorklenzControllerBase {
 
     const userId = Buffer.from(user as string, "base64").toString("ascii");
 
+    // First, verify the token exists, is not used, and is not expired
+    const tokenCheck = await db.query(
+      `SELECT id, user_id, expires_at, is_used
+       FROM password_reset_tokens
+       WHERE token_hash = $1 AND is_used = FALSE AND expires_at > NOW()`,
+      [hashedString]
+    );
+
+    if (!tokenCheck.rowCount) {
+      return res.status(200).send(new ServerResponse(false, null, "Invalid or expired reset link. Please request a new password reset."));
+    }
+
+    const tokenData = tokenCheck.rows[0];
+
+    // Verify the user ID matches
+    if (tokenData.user_id !== userId) {
+      return res.status(200).send(new ServerResponse(false, null, "Invalid reset link. Please request a new password reset."));
+    }
+
+    // Get user data
     const q = `SELECT id, email, google_id, password FROM users WHERE id = $1;`;
     const result = await db.query(q, [userId || null]);
+    
+    if (!result.rowCount) {
+      return res.status(200).send(new ServerResponse(false, null, "User not found. Please request a new password reset."));
+    }
+
     const [data] = result.rows;
 
+    // Verify the token hash matches the current user data (for additional security)
     const salt = bcrypt.genSaltSync(10);
-
-    if (bcrypt.compareSync(data.id + data.email + data.password, hashedString)) {
-      const encryptedPassword = bcrypt.hashSync(password, salt);
-      const updatePasswordQ = `UPDATE users SET password = $1 WHERE id = $2;`;
-      await db.query(updatePasswordQ, [encryptedPassword, userId || null]);
-
-      sendResetSuccessEmail(data.email);
-      return res.status(200).send(new ServerResponse(true, null, "Password updated successfully"));
+    if (!bcrypt.compareSync(data.id + data.email + data.password, hashedString)) {
+      // Token doesn't match - mark as used to prevent further attempts
+      await db.query(
+        `UPDATE password_reset_tokens SET is_used = TRUE, used_at = NOW() WHERE id = $1`,
+        [tokenData.id]
+      );
+      return res.status(200).send(new ServerResponse(false, null, "Invalid reset link. Please request a new password reset."));
     }
-    return res.status(200).send(new ServerResponse(false, null, "Invalid Request. Please try again."));
+
+    // Update password
+    const encryptedPassword = bcrypt.hashSync(password, salt);
+    const updatePasswordQ = `UPDATE users SET password = $1 WHERE id = $2;`;
+    await db.query(updatePasswordQ, [encryptedPassword, userId || null]);
+
+    // Mark token as used
+    await db.query(
+      `UPDATE password_reset_tokens SET is_used = TRUE, used_at = NOW() WHERE id = $1`,
+      [tokenData.id]
+    );
+
+    // Invalidate all other unused tokens for this user (defense in depth)
+    await db.query(
+      `UPDATE password_reset_tokens 
+       SET is_used = TRUE 
+       WHERE user_id = $1 AND is_used = FALSE AND id != $2`,
+      [userId, tokenData.id]
+    );
+
+    sendResetSuccessEmail(data.email);
+    return res.status(200).send(new ServerResponse(true, null, "Password updated successfully"));
   }
 
   @HandleExceptions({logWithError: "body"})

@@ -123,8 +123,27 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
     );
 
     const renderColumn = useCallback(
-      (columnId: string, width: string) => {
-        const baseStyle = { width };
+      (columnId: string, width: string, index: number, isSticky?: boolean) => {
+        // Calculate left position for sticky columns
+        let leftPosition = 0;
+        if (isSticky) {
+          for (let i = 0; i < index; i++) {
+            const prevColumn = visibleColumns[i];
+            if (prevColumn.isSticky) {
+              leftPosition += parseInt(prevColumn.width.replace('px', ''));
+            }
+          }
+        }
+
+        const baseStyle = {
+          width,
+          ...(isSticky && {
+            position: 'sticky' as const,
+            left: leftPosition,
+            zIndex: 10,
+            backgroundColor: 'inherit',
+          }),
+        };
 
         switch (columnId) {
           case 'dragHandle':
@@ -184,13 +203,15 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
             );
         }
       },
-      [isAdding, taskName, handleAddTask, handleCancel, handleKeyDown, t]
+      [isAdding, taskName, handleAddTask, handleCancel, handleKeyDown, t, visibleColumns]
     );
 
     return (
       <div className="flex items-center min-w-max px-1 py-0.5 hover:bg-gray-50 dark:hover:bg-gray-800 min-h-[36px]">
         {visibleColumns.map((column, index) => (
-          <React.Fragment key={column.id}>{renderColumn(column.id, column.width)}</React.Fragment>
+          <React.Fragment key={column.id}>
+            {renderColumn(column.id, column.width, index, column.isSticky)}
+          </React.Fragment>
         ))}
       </div>
     );

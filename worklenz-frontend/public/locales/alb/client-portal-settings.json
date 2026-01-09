@@ -12,6 +12,7 @@
   "contactEmailPlaceholder": "Shkruani email-in e kontaktit",
   "contactPhoneLabel": "Telefoni i Kontaktit",
   "contactPhonePlaceholder": "Shkruani telefonin e kontaktit",
+  "invalidPhoneNumberFormat": "Formati i numrit të telefonit është i pavlefshëm. Përdorni formatin ndërkombëtar (p.sh., +1-234-567-8900)",
   "invoiceFooterLabel": "Mesazhi i Fundit të Faturës",
   "invoiceFooterPlaceholder": "p.sh., Faleminderit për biznesin tuaj!",
   "currentLogoText": "Logo aktual",

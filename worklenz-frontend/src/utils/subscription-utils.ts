@@ -187,3 +187,61 @@ export const getTrialExpirationMessage = (session: ILocalSession | null): string
 
   return null;
 };
+
+/**
+ * Checks if user should be restricted from setting project health
+ * Pro Plan users and AppSumo/Lifetime Deal users (who have Pro Plan features) are restricted
+ */
+export const shouldRestrictProjectHealth = (session: ILocalSession | null): boolean => {
+  if (!session) return true;
+
+  // Free users are restricted
+  if (session.subscription_type === ISUBSCRIPTION_TYPE.FREE) {
+    return true;
+  }
+
+  // AppSumo/Lifetime Deal users have Pro Plan features and should be restricted
+  if (session.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL) {
+    return true;
+  }
+
+  // Pro Plan users are restricted
+  if (session.subscription_type === ISUBSCRIPTION_TYPE.PADDLE) {
+    const planName = session.plan_name?.toLowerCase() || '';
+    if (planName.includes('pro')) {
+      return true;
+    }
+  }
+
+  // Business and Enterprise plans have access to project health
+  return false;
+};
+
+/**
+ * Checks if user should be restricted from using billable feature
+ * Pro Plan users and AppSumo/Lifetime Deal users (who have Pro Plan features) are restricted
+ */
+export const shouldRestrictBillableFeature = (session: ILocalSession | null): boolean => {
+  if (!session) return true;
+
+  // Free users are restricted
+  if (session.subscription_type === ISUBSCRIPTION_TYPE.FREE) {
+    return true;
+  }
+
+  // AppSumo/Lifetime Deal users have Pro Plan features and should be restricted
+  if (session.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL) {
+    return true;
+  }
+
+  // Pro Plan users are restricted
+  if (session.subscription_type === ISUBSCRIPTION_TYPE.PADDLE) {
+    const planName = session.plan_name?.toLowerCase() || '';
+    if (planName.includes('pro')) {
+      return true;
+    }
+  }
+
+  // Business and Enterprise plans have access to billable feature
+  return false;
+};

@@ -3,7 +3,6 @@ import {
   Card,
   Flex,
   Input,
-  Popconfirm,
   Table,
   TableProps,
   Tooltip,
@@ -12,6 +11,7 @@ import {
   ExclamationCircleFilled,
   SearchOutlined,
   EditOutlined,
+  Modal,
 } from '@/shared/antd-imports';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -25,11 +25,14 @@ import logger from '@/utils/errorLogger';
 import LabelsDrawer from './labels-drawer';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_settings_labels_visit } from '@/shared/worklenz-analytics-events';
+import { alertService } from '@/services/alerts/alertService';
+import { useAppSelector } from '@/app/store';
 
 const LabelsSettings = () => {
   const { t } = useTranslation('settings/labels');
   const { trackMixpanelEvent } = useMixpanelTracking();
   useDocumentTitle(t('pageTitle', 'Manage Labels'));
+  const themeMode = useAppSelector((state) => state.themeReducer.mode);
 
   const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -66,15 +69,86 @@ const LabelsSettings = () => {
     getLabels();
   }, [getLabels]);
 
-  const deleteLabel = async (id: string) => {
+  const deleteLabel = async (id: string, force: boolean = false) => {
     try {
-      const response = await labelsApiService.deleteById(id);
+      const response = await labelsApiService.deleteById(id, force);
       if (response.done) {
         getLabels();
+        const message = response.message || 'Label deleted successfully';
+        alertService.success('Success', message);
+      } else {
+        // Other error
+        const message = response.message || 'Failed to delete label';
+        if (message && !message.startsWith('$')) {
+          alertService.error('Delete Failed', message);
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to delete label:', error);
+      // Error message is typically handled by API interceptor, but handle edge cases
+      const errorMessage = error?.response?.data?.message || error?.message;
+      if (errorMessage && !errorMessage.startsWith('$')) {
+        alertService.error('Delete Failed', errorMessage);
+      }
     }
+  };
+
+  const handleDeleteClick = (record: ITaskLabel, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const usageCount = record.usage || 0;
+    const labelName = record.name || 'this label';
+    const isInUse = usageCount > 0;
+
+    const isDark = themeMode === 'dark';
+    const textColor = isDark ? '#d9d9d9' : '#262626';
+    const secondaryTextColor = isDark ? '#8c8c8c' : '#595959';
+
+    const plural = usageCount > 1 ? 's' : '';
+    
+    Modal.confirm({
+      title: t('deleteConfirmTitle', 'Delete Label'),
+      icon: <ExclamationCircleFilled style={{ color: '#ff9800' }} />,
+      content: (
+        <div>
+          {isInUse ? (
+            <>
+              <Typography.Text style={{ color: textColor }}>
+                {t('labelInUseMessage', {
+                  labelName,
+                  count: usageCount,
+                  plural,
+                  defaultValue: `The label "${labelName}" is currently assigned to ${usageCount} task${plural}.`
+                })}
+              </Typography.Text>
+              <br />
+              <Typography.Text strong style={{ marginTop: 8, display: 'block', color: '#ff4d4f' }}>
+                {t('labelDeleteWarning', {
+                  count: usageCount,
+                  plural,
+                  defaultValue: `⚠️ Deleting this label will remove it from all ${usageCount} assigned task${plural}. This action cannot be undone.`
+                })}
+              </Typography.Text>
+            </>
+          ) : (
+            <Typography.Text style={{ color: textColor }}>
+              {t('deleteConfirmMessage', {
+                labelName,
+                defaultValue: `Are you sure you want to delete the label "${labelName}"? This action cannot be undone.`
+              })}
+            </Typography.Text>
+          )}
+        </div>
+      ),
+      okText: t('deleteButton', 'Delete'),
+      cancelText: t('cancelButton', 'Cancel'),
+      okType: 'danger',
+      centered: true,
+      width: 500,
+      onOk: async () => {
+        // Delete with force if label is in use
+        await deleteLabel(record.id!, isInUse);
+      },
+    });
   };
 
   const handleEditClick = (id: string) => {
@@ -120,22 +194,14 @@ const LabelsSettings = () => {
                 }}
               />
             </Tooltip>
-            <Popconfirm
-              title={t('deleteConfirmTitle', 'Are you sure you want to delete this?')}
-              icon={<ExclamationCircleFilled style={{ color: '#ff9800' }} />}
-              okText={t('deleteButton', 'Delete')}
-              cancelText={t('cancelButton', 'Cancel')}
-              onConfirm={() => deleteLabel(record.id!)}
-            >
-              <Tooltip title={t('deleteTooltip', 'Delete')}>
-                <Button
-                  shape="default"
-                  icon={<DeleteOutlined />}
-                  size="small"
-                  onClick={e => e.stopPropagation()}
-                />
-              </Tooltip>
-            </Popconfirm>
+            <Tooltip title={t('deleteTooltip', 'Delete')}>
+              <Button
+                shape="default"
+                icon={<DeleteOutlined />}
+                size="small"
+                onClick={(e) => handleDeleteClick(record, e)}
+              />
+            </Tooltip>
           </Flex>
         </div>
       ),

@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '@/shared/constants';
-import { getCsrfToken, refreshCsrfToken } from '../api-client';
+import { getCsrfToken, ensureCsrfToken } from '../api-client';
 import config from '@/config/env';
 
 export interface ClientPortalDashboardData {
@@ -89,6 +89,7 @@ export interface ClientPortalInvoice {
 
 export interface ClientPortalInvoiceDetails extends ClientPortalInvoice {
   notes?: string;
+  paymentProofUrl?: string | null;
   request: {
     id: string;
     requestNumber: string;
@@ -122,6 +123,62 @@ export interface ClientPortalInvoiceDetails extends ClientPortalInvoice {
     addressLine2: string | null;
     invoiceFooterMessage: string | null;
   };
+}
+
+// Invoice mutation request/response interfaces
+export interface UpdateInvoiceRequest {
+  amount?: number;
+  currency?: string;
+  dueDate?: string;
+  notes?: string;
+  status?: string;
+}
+
+export interface UpdateInvoiceResponseBody {
+  id: string;
+  invoice_no: string;
+  amount: number;
+  currency: string;
+  status: string;
+  due_date: string | null;
+  sent_at: string | null;
+  paid_at: string | null;
+  updated_at: string;
+}
+
+export interface UpdateInvoiceResponse {
+  done: boolean;
+  body: UpdateInvoiceResponseBody;
+  message: string;
+  title: string | null;
+}
+
+export interface SendInvoiceResponseBody {
+  id: string;
+  invoice_no: string;
+  status: string;
+  sent_at: string;
+}
+
+export interface SendInvoiceResponse {
+  done: boolean;
+  body: SendInvoiceResponseBody;
+  message: string;
+  title: string | null;
+}
+
+export interface MarkInvoiceAsPaidResponseBody {
+  id: string;
+  invoice_no: string;
+  status: string;
+  paid_at: string;
+}
+
+export interface MarkInvoiceAsPaidResponse {
+  done: boolean;
+  body: MarkInvoiceAsPaidResponseBody;
+  message: string;
+  title: string | null;
 }
 
 export interface ClientPortalChat {
@@ -183,6 +240,7 @@ export interface ClientPortalClient {
   company_name?: string;
   phone?: string;
   address?: string;
+  contact_person?: string;
   assigned_projects_count: number;
   projects: ClientPortalProject[];
   team_members: ClientPortalTeamMember[];
@@ -224,6 +282,7 @@ export interface UpdateClientRequest {
   company_name?: string;
   phone?: string;
   address?: string;
+  contact_person?: string;
   status?: 'active' | 'inactive' | 'pending';
 }
 
@@ -321,14 +380,24 @@ export const clientPortalApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: `${config.apiUrl}${API_BASE_URL}`,
     prepareHeaders: async headers => {
-      // Get CSRF token, refresh if needed
+      // Always try to get CSRF token, refresh if needed
       let token = getCsrfToken();
+      
+      // If no token, try to refresh it with deduplication
       if (!token) {
-        token = await refreshCsrfToken();
+        try {
+          token = await ensureCsrfToken();
+        } catch (error) {
+          console.error('[CSRF] Failed to refresh CSRF token:', error);
+        }
       }
 
+      // Set token if available
       if (token) {
         headers.set('X-CSRF-Token', token);
+      } else {
+        // Log warning if no token available (backend will return proper error)
+        console.warn('[CSRF] No CSRF token available - request may fail');
       }
 
       headers.set('Content-Type', 'application/json');
@@ -592,12 +661,58 @@ export const clientPortalApi = createApi({
         currency?: string;
         dueDate?: string;
         notes?: string;
+        status?: string;
       }
     >({
       query: invoiceData => ({
         url: '/clients/portal/invoices',
         method: 'POST',
         body: invoiceData,
+      }),
+      invalidatesTags: ['Invoices', 'Dashboard'],
+    }),
+
+    updateInvoice: builder.mutation<UpdateInvoiceResponse, { id: string; data: UpdateInvoiceRequest }>({
+      query: ({ id, data }) => ({
+        url: `/clients/portal/invoices/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Invoices', id },
+        'Invoices',
+        'Dashboard',
+      ],
+    }),
+
+    sendInvoice: builder.mutation<SendInvoiceResponse, string>({
+      query: id => ({
+        url: `/clients/portal/invoices/${id}/send`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Invoices', id },
+        'Invoices',
+        'Dashboard',
+      ],
+    }),
+
+    markInvoiceAsPaid: builder.mutation<MarkInvoiceAsPaidResponse, string>({
+      query: id => ({
+        url: `/clients/portal/invoices/${id}/mark-paid`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Invoices', id },
+        'Invoices',
+        'Dashboard',
+      ],
+    }),
+
+    deleteInvoice: builder.mutation<void, string>({
+      query: id => ({
+        url: `/clients/portal/invoices/${id}`,
+        method: 'DELETE',
       }),
       invalidatesTags: ['Invoices', 'Dashboard'],
     }),
@@ -658,13 +773,24 @@ export const clientPortalApi = createApi({
 
     // Organization-side Client Portal Chats Management (for admin/organization users)
     getOrganizationChats: builder.query<
-      ClientPortalChat[],
+      ClientPortalChat[] | { chats: ClientPortalChat[]; total: number; page: number; limit: number },
       { clientId?: string; page?: number; limit?: number }
     >({
       query: ({ clientId, page, limit }) => ({
         url: '/clients/portal/chats',
         params: clientId ? { clientId, page, limit } : { page, limit },
       }),
+      transformResponse: (response: any) => {
+        // Handle ServerResponse wrapper
+        if (response && response.body) {
+          // If body has chats array, return it; otherwise return the whole body
+          if (response.body.chats && Array.isArray(response.body.chats)) {
+            return response.body;
+          }
+          return response.body;
+        }
+        return response;
+      },
       providesTags: ['Chats'],
     }),
 
@@ -691,6 +817,13 @@ export const clientPortalApi = createApi({
         method: 'POST',
         body: { ...chatData, clientId },
       }),
+      transformResponse: (response: any) => {
+        // Handle ServerResponse wrapper
+        if (response && response.body) {
+          return response.body;
+        }
+        return response;
+      },
       invalidatesTags: ['Chats'],
     }),
 
@@ -708,13 +841,20 @@ export const clientPortalApi = createApi({
     }),
 
     getOrganizationMessages: builder.query<
-      ClientPortalMessage[],
+      { messages: ClientPortalMessage[]; date: string; total: number; page: number; limit: number } | ClientPortalMessage[],
       { chatId: string; clientId: string }
     >({
       query: ({ chatId, clientId }) => ({
         url: `/clients/portal/chats/${chatId}/messages`,
         params: { clientId },
       }),
+      transformResponse: (response: any) => {
+        // Handle ServerResponse wrapper
+        if (response && response.body) {
+          return response.body;
+        }
+        return response;
+      },
       providesTags: (result, error, { chatId }) => [{ type: 'Chats', id: chatId }],
     }),
 
@@ -836,7 +976,13 @@ export const clientPortalApi = createApi({
         method: 'PUT',
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Client', id }, 'Clients'],
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Client', id },
+        { type: 'ClientStats', id },
+        { type: 'ClientProjects', id },
+        { type: 'ClientTeam', id },
+        'Clients'
+      ],
     }),
 
     deactivateClient: builder.mutation<void, string>({
@@ -1186,6 +1332,10 @@ export const {
   usePayInvoiceMutation,
   useDownloadInvoiceQuery,
   useCreateInvoiceMutation,
+  useUpdateInvoiceMutation,
+  useSendInvoiceMutation,
+  useMarkInvoiceAsPaidMutation,
+  useDeleteInvoiceMutation,
 
   // Chat
   useGetChatsQuery,

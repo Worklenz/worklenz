@@ -454,6 +454,33 @@ const FilterDropdown: React.FC<{
     }
   }, [isOpen]);
 
+  // Title for button tooltip - use i18next interpolation for pluralization and word-order
+  const buttonTitle = useMemo(() => {
+    // If grouped by a value, show the selected value (e.g. "Group by: Phase")
+    if (section.id === 'groupBy' && section.selectedValues[0]) {
+      const selectedOpt = section.options.find(o => o.value === section.selectedValues[0]);
+      if (selectedOpt?.label) {
+        return t('groupBySelected', {
+          label: section.label,
+          value: selectedOpt.label,
+          defaultValue: '{{label}}: {{value}}',
+        });
+      }
+      return section.label;
+    }
+
+    // For other multi-select filters, use an interpolated count string (handles pluralization/word order)
+    if (section.id !== 'groupBy' && section.selectedValues.length > 0) {
+      return t('selectedCount', {
+        count: section.selectedValues.length,
+        label: section.label,
+        defaultValue: '{{label}}: {{count}} selected',
+      });
+    }
+
+    return section.label;
+  }, [section, t]);
+
   const handleOptionToggle = useCallback(
     (optionValue: string) => {
       if (section.multiSelect) {
@@ -481,6 +508,8 @@ const FilterDropdown: React.FC<{
       {/* Trigger Button */}
       <button
         onClick={onToggle}
+        title={buttonTitle}
+        aria-label={buttonTitle}
         className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out
@@ -723,6 +752,8 @@ const SearchFilter: React.FC<{
       {!isExpanded && !value ? (
         <button
           onClick={handleToggle}
+          title={t('search', { defaultValue: 'Search' })}
+          aria-label={t('search', { defaultValue: 'Search' })}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
             themeClasses.containerBg === 'bg-gray-800'
               ? 'focus:ring-offset-gray-900'
@@ -804,6 +835,9 @@ const SortDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
   const currentSortField = useAppSelector(selectSortField);
   const currentSortOrder = useAppSelector(selectSortOrder);
 
+  // Get current grouping to filter sort options
+  const currentGrouping = useAppSelector(selectCurrentGrouping);
+
   const [open, setOpen] = React.useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -819,16 +853,28 @@ const SortDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
 
-  const sortFieldsList = [
-    { label: t('taskText', { defaultValue: 'Task' }), key: 'name' },
-    { label: t('statusText', { defaultValue: 'Status' }), key: 'status' },
-    { label: t('priorityText', { defaultValue: 'Priority' }), key: 'priority' },
-    { label: t('startDateText', { defaultValue: 'Start Date' }), key: 'start_date' },
-    { label: t('dueDateText', { defaultValue: 'Due Date' }), key: 'end_date' },
-    { label: t('completedDateText', { defaultValue: 'Completed Date' }), key: 'completed_at' },
-    { label: t('createdDateText', { defaultValue: 'Created Date' }), key: 'created_at' },
-    { label: t('lastUpdatedText', { defaultValue: 'Last Updated' }), key: 'updated_at' },
-  ];
+  // Filter sort fields based on current grouping
+  // Hide status sort when grouped by status, hide priority sort when grouped by priority
+  const sortFieldsList = useMemo(() => {
+    const allFields = [
+      { label: t('taskText', { defaultValue: 'Task' }), key: 'name' },
+      { label: t('statusText', { defaultValue: 'Status' }), key: 'status' },
+      { label: t('priorityText', { defaultValue: 'Priority' }), key: 'priority' },
+      { label: t('startDateText', { defaultValue: 'Start Date' }), key: 'start_date' },
+      { label: t('dueDateText', { defaultValue: 'Due Date' }), key: 'end_date' },
+      { label: t('completedDateText', { defaultValue: 'Completed Date' }), key: 'completed_at' },
+      { label: t('createdDateText', { defaultValue: 'Created Date' }), key: 'created_at' },
+      { label: t('lastUpdatedText', { defaultValue: 'Last Updated' }), key: 'updated_at' },
+    ];
+
+    return allFields.filter(field => {
+      // Hide status sort option when grouped by status
+      if (currentGrouping === 'status' && field.key === 'status') return false;
+      // Hide priority sort option when grouped by priority
+      if (currentGrouping === 'priority' && field.key === 'priority') return false;
+      return true;
+    });
+  }, [t, currentGrouping]);
 
   const handleSortFieldChange = (fieldKey: string) => {
     // If clicking the same field, toggle order, otherwise set new field with ASC
@@ -853,6 +899,16 @@ const SortDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
       dispatch(fetchTasksV3(projectId));
     }
   };
+
+  // Clear sort field if it matches the current grouping (since it's hidden from the list)
+  React.useEffect(() => {
+    if (
+      (currentGrouping === 'status' && currentSortField === 'status') ||
+      (currentGrouping === 'priority' && currentSortField === 'priority')
+    ) {
+      clearSort();
+    }
+  }, [currentGrouping]);
 
   const isActive = currentSortField !== '';
   const currentFieldLabel = sortFieldsList.find(f => f.key === currentSortField)?.label;
@@ -1060,11 +1116,23 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
     [sortedFields]
   );
 
+  // Title for fields button tooltip - use i18next interpolation for count
+  const fieldsTitle = useMemo(() => {
+    return visibleCount > 0
+      ? t('fieldsWithCount', {
+          count: visibleCount,
+          defaultValue: 'Fields: {{count}}',
+        })
+      : t('fieldsText', { defaultValue: 'Fields' });
+  }, [visibleCount, t]);
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Trigger Button - matching FilterDropdown style */}
       <button
         onClick={() => setOpen(!open)}
+        title={fieldsTitle}
+        aria-label={fieldsTitle}
         className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out

@@ -68,9 +68,10 @@ const ChatsPage: React.FC = () => {
       const response: ApiResponse<any> = await clientPortalAPI.getChats();
       if (response.done && response.body) {
         // Transform the chat data to include IDs and titles
-        const chatList: ChatListItem[] = (response.body.chats as ClientChat[]).map((chat, index) => ({
+        // Use the date as the chatId (format: YYYY-MM-DD)
+        const chatList: ChatListItem[] = (response.body.chats as ClientChat[]).map((chat) => ({
           ...chat,
-          id: `chat-${index}`,
+          id: chat.date, // Use date as chatId for API calls
           title: t('chats.chatTitle', { date: new Date(chat.date).toLocaleDateString() })
         }));
         setChats(chatList);
@@ -90,10 +91,11 @@ const ChatsPage: React.FC = () => {
     }
   };
 
-  const loadMessages = async (_chatId: string) => {
+  const loadMessages = async (chatId: string) => {
     try {
       setIsMessagesLoading(true);
-      const response: ApiResponse<any> = await clientPortalAPI.getMessages({
+      // chatId is the date in YYYY-MM-DD format
+      const response: ApiResponse<any> = await clientPortalAPI.getChatDetails(chatId, {
         page: 1,
         limit: 50
       });
@@ -111,11 +113,12 @@ const ChatsPage: React.FC = () => {
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !selectedChat) return;
 
     try {
       setIsSending(true);
-      const response: ApiResponse<any> = await clientPortalAPI.sendMessage({
+      // selectedChat is the date in YYYY-MM-DD format
+      const response: ApiResponse<any> = await clientPortalAPI.sendMessage(selectedChat, {
         message: newMessage.trim(),
         messageType: 'text'
       });
@@ -124,6 +127,8 @@ const ChatsPage: React.FC = () => {
         setMessages(prev => [...prev, response.body as ClientMessage]);
         setNewMessage('');
         message.success(t('chats.messageSentSuccess'));
+        // Reload messages to get updated list
+        await loadMessages(selectedChat);
       } else {
         message.error(t('chats.messageSendError'));
       }
@@ -147,10 +152,12 @@ const ChatsPage: React.FC = () => {
   };
 
   const handleFileUpload = async (file: File) => {
+    if (!selectedChat) return false;
+    
     try {
       const uploadResponse = await clientPortalAPI.uploadFile(file, 'chat');
       if (uploadResponse.done && uploadResponse.body) {
-        const messageResponse = await clientPortalAPI.sendMessage({
+        const messageResponse = await clientPortalAPI.sendMessage(selectedChat, {
           message: t('chats.sharedFile', { fileName: file.name }),
           messageType: 'file',
           fileUrl: uploadResponse.body.url
@@ -159,6 +166,8 @@ const ChatsPage: React.FC = () => {
         if (messageResponse.done && messageResponse.body) {
           setMessages(prev => [...prev, messageResponse.body as ClientMessage]);
           message.success(t('chats.fileUploadSuccess'));
+          // Reload messages to get updated list
+          await loadMessages(selectedChat);
         }
       }
     } catch (err) {
@@ -276,7 +285,7 @@ const ChatsPage: React.FC = () => {
         <Card 
           title={t('chats.conversations')} 
           style={{ width: 320, height: '100%' }}
-          bodyStyle={{ padding: 0, height: 'calc(100% - 57px)', overflow: 'auto' }}
+          styles={{ body: { padding: 0, height: 'calc(100% - 57px)', overflow: 'auto' } }}
           extra={
             <Button 
               type="text" 
@@ -331,11 +340,13 @@ const ChatsPage: React.FC = () => {
         <Card 
           title={selectedChat ? t('chats.chatMessages') : t('chats.selectConversation')}
           style={{ flex: 1, height: '100%' }}
-          bodyStyle={{ 
-            padding: 0, 
-            height: 'calc(100% - 57px)',
-            display: 'flex',
-            flexDirection: 'column'
+          styles={{ 
+            body: { 
+              padding: 0, 
+              height: 'calc(100% - 57px)',
+              display: 'flex',
+              flexDirection: 'column'
+            }
           }}
         >
           {selectedChat ? (

@@ -11,6 +11,7 @@ export interface IOrganization {
   country_code?: string;
   state_code?: string;
   auto_sync_holidays?: boolean;
+  logo_url?: string;
 }
 
 export interface IOrganizationAdmin {

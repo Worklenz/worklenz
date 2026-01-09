@@ -17,6 +17,7 @@ import {
   ClockCircleOutlined,
   DollarOutlined,
   RightOutlined,
+  TeamOutlined,
 } from "@/shared/antd-imports";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -127,6 +128,7 @@ const DashboardPage: React.FC = () => {
     totalInvoices: 0,
     unpaidInvoices: 0,
     unpaidAmount: 0,
+    teamMembers: 0,
   };
 
   return (
@@ -167,6 +169,18 @@ const DashboardPage: React.FC = () => {
             value={stats.inProgressRequests}
           />
         </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <StatCard
+            icon={<TeamOutlined />}
+            iconBg="#52c41a"
+            label={t('dashboard.teamMembers')}
+            value={stats.teamMembers}
+          />
+        </Col>
+      </Row>
+
+      {/* Secondary Stats Row */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={6}>
           <StatCard
             icon={<DollarOutlined />}

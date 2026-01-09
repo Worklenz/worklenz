@@ -167,6 +167,10 @@ const NotificationDrawer = () => {
           navigate(
             `${notification.url}${toQueryString({ task: notification.params?.task, tab: notification.params?.tab })}`
           );
+        } else if (notification.project){
+          navigate(
+            `${notification.url}`
+          )
         }
       } catch (error) {
         console.error('Error navigating to URL:', error);

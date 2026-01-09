@@ -7,14 +7,9 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { getColor } from "../shared/utils";
 import { WorklenzColorShades } from "../shared/constants";
+import { SqlHelper } from "../shared/sql-helpers";
 
 export default class ProjectCategoriesController extends WorklenzControllerBase {
-  private static flatString(text: string) {
-    return (text || "")
-      .split(",")
-      .map((s) => `'${s}'`)
-      .join(",");
-  }
 
   @HandleExceptions()
   public static async create(
@@ -27,11 +22,38 @@ export default class ProjectCategoriesController extends WorklenzControllerBase 
       RETURNING id, name, color_code;
     `;
     const name = req.body.name.trim();
+    
+    // Validate and use provided color_code, or fall back to generated color
+    let colorCode: string | null = null;
+    if (req.body.color_code) {
+      // Validate color - accept both base colors and all shade variations
+      const validColors = [
+        ...Object.keys(WorklenzColorShades),
+        ...Object.values(WorklenzColorShades).flat(),
+      ].map((c) => c.toLowerCase());
+      
+      const providedColor = req.body.color_code.trim().toLowerCase();
+      if (validColors.includes(providedColor)) {
+        // Find the original case color from the valid colors
+        const allColors = [
+          ...Object.keys(WorklenzColorShades),
+          ...Object.values(WorklenzColorShades).flat(),
+        ];
+        colorCode = allColors.find(c => c.toLowerCase() === providedColor) || providedColor;
+      } else {
+        // Invalid color provided, fall back to generated color
+        colorCode = name ? getColor(name) : null;
+      }
+    } else {
+      // No color provided, generate one
+      colorCode = name ? getColor(name) : null;
+    }
+    
     const result = await db.query(q, [
       name,
       req.user?.team_id,
       req.user?.id,
-      name ? getColor(name) : null,
+      colorCode,
     ]);
     const [data] = result.rows;
     return res.status(200).send(new ServerResponse(true, data));
@@ -76,13 +98,12 @@ export default class ProjectCategoriesController extends WorklenzControllerBase 
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
     const teams = await this.getTeamsByOrg(req.user?.team_id as string);
-    const teamIds = teams.map((team) => team.id).join(",");
+    const teamIds = teams.map((team) => team.id);
+    const { clause, params } = SqlHelper.buildInClause(teamIds, 1);
 
-    const q = `SELECT id, name, color_code FROM project_categories WHERE team_id IN (${this.flatString(
-      teamIds
-    )});`;
+    const q = `SELECT id, name, color_code FROM project_categories WHERE team_id IN (${clause})`;
 
-    const result = await db.query(q);
+    const result = await db.query(q, params);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 

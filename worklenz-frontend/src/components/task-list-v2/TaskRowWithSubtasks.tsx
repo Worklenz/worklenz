@@ -1,10 +1,13 @@
 import React, { memo, useState, useCallback, useRef, useEffect } from 'react';
+import { createSelector } from '@reduxjs/toolkit';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   selectTaskById,
   createSubtask,
   selectSubtaskLoading,
+  fetchSubTasks,
+  selectActiveFilters,
 } from '@/features/task-management/task-management.slice';
 import TaskRow from './TaskRow';
 import SubtaskLoadingSkeleton from './SubtaskLoadingSkeleton';
@@ -280,15 +283,12 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
     const dispatch = useAppDispatch();
 
     // Get active filters from Redux (tasks.slice - used by improved-task-filters)
-    const activeFilters = useAppSelector(state => ({
-      members: state.taskReducer?.taskAssignees?.filter((m: any) => m.selected).map((m: any) => m.id) || [],
-      labels: state.taskReducer?.labels?.filter((l: any) => l.selected).map((l: any) => l.id) || [],
-      priorities: state.taskReducer?.priorities || []
-    }));
+    // Using memoized selector to prevent unnecessary re-renders
+    const activeFilters = useAppSelector(selectActiveFilters);
 
     // Get all priorities to create ID-to-name mapping
     const allPriorities = useAppSelector(state => state.priorityReducer?.priorities || []);
-    
+
     // Create priority ID to name mapping
     const priorityIdToName = React.useMemo(() => {
       const map: Record<string, string> = {};
@@ -300,6 +300,13 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
       });
       return map;
     }, [allPriorities]);
+
+    // Auto-fetch subtasks when task has filtered children and is expanded
+    useEffect(() => {
+      if (task?.has_filtered_children && task?.show_sub_tasks && (!task.sub_tasks || task.sub_tasks.length === 0) && !isLoadingSubtasks) {
+        dispatch(fetchSubTasks({ taskId, projectId }));
+      }
+    }, [task?.has_filtered_children, task?.show_sub_tasks, task?.sub_tasks, isLoadingSubtasks, dispatch, taskId, projectId]);
 
     const handleSubtaskAdded = useCallback(() => {
       // After adding a subtask, the AddSubtaskRow will handle its own state reset
@@ -318,9 +325,9 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
       if (!task.sub_tasks || task.sub_tasks.length === 0) return [];
 
       // If no filters are active, show all subtasks
-      const hasActiveFilters = 
-        activeFilters.members.length > 0 || 
-        activeFilters.labels.length > 0 || 
+      const hasActiveFilters =
+        activeFilters.members.length > 0 ||
+        activeFilters.labels.length > 0 ||
         activeFilters.priorities.length > 0;
 
       if (!hasActiveFilters) {
@@ -328,39 +335,52 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
       }
 
       // Filter subtasks based on active filters
+      // A subtask should be shown if:
+      // 1. It directly matches the filter, OR
+      // 2. It has descendants (sub_tasks_count > 0) that might match the filter
+      //    (the backend already calculated this count considering the filters)
       return task.sub_tasks.filter((subtask: Task) => {
+        // If subtask has descendants with matching filters, always show it
+        // The backend's sub_tasks_count already accounts for filtered descendants
+        if (subtask.sub_tasks_count && subtask.sub_tasks_count > 0) {
+          return true;
+        }
+
+        // Check if subtask directly matches the filters
+        let matchesFilters = true;
+
         // Check member filter
         if (activeFilters.members.length > 0) {
           const hasMatchingMember = subtask.assignees?.some((a: any) => {
             // Assignees can be either strings (IDs) or objects with team_member_id/id
-            const assigneeId = typeof a === 'string' ? a : (a.team_member_id || a.id);
+            const assigneeId = typeof a === 'string' ? a : a.team_member_id || a.id;
             return activeFilters.members.includes(assigneeId);
           });
-          if (!hasMatchingMember) return false;
+          if (!hasMatchingMember) matchesFilters = false;
         }
 
         // Check label filter
-        if (activeFilters.labels.length > 0) {
+        if (matchesFilters && activeFilters.labels.length > 0) {
           const hasMatchingLabel = subtask.labels?.some((l: any) => 
             activeFilters.labels.includes(l.id)
           );
-          if (!hasMatchingLabel) return false;
+          if (!hasMatchingLabel) matchesFilters = false;
         }
 
         // Check priority filter
-        if (activeFilters.priorities.length > 0) {
+        if (matchesFilters && activeFilters.priorities.length > 0) {
           // Subtask has priority name (low/medium/high), but filter has priority IDs
           // Convert filter IDs to names and check if subtask priority matches
           const filterPriorityNames = activeFilters.priorities
             .map(id => priorityIdToName[id])
             .filter(Boolean);
-          
+
           if (!filterPriorityNames.includes(subtask.priority)) {
-            return false;
+            matchesFilters = false;
           }
         }
 
-        return true;
+        return matchesFilters;
       });
     }, [task.sub_tasks, activeFilters, priorityIdToName]);
 

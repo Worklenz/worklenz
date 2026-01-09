@@ -104,7 +104,7 @@ const TodoList = () => {
   ];
 
   return (
-    <Card style={{ width: '100%' }} bodyStyle={{ padding: 0 }}>
+    <Card style={{ width: '100%' }} styles={{ body: { padding: 0 } }}>
       <style>{`
         .todo-collapse .ant-collapse-header {
           display: flex !important;

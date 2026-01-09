@@ -26,6 +26,7 @@ export interface Task {
   sub_tasks?: Task[];
   sub_tasks_count?: number;
   show_sub_tasks?: boolean;
+  has_filtered_children?: boolean; // Flag to auto-expand when filtered descendants exist
   parent_task_id?: string;
   is_sub_task?: boolean; // Add this property
   progress?: number;

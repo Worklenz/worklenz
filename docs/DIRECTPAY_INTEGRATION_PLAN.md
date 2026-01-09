@@ -4,14 +4,75 @@
 
 ## Overview
 
-Implement DirectPay payment gateway for Sri Lankan users with automated recurring subscriptions, matching Paddle's functionality. Enable admin-controlled migration of existing custom plan users while preserving their custom pricing.
+Implement DirectPay payment gateway for Sri Lankan users in the **Worklenz License Manager backend** with automated subscription billing using wallet + card capture approach. This provides full control over billing cycles, payment retries, and custom pricing while matching Paddle's functionality. Enable admin-controlled migration of existing custom plan users while preserving their custom pricing.
+
+## Architecture Context
+
+The Worklenz system has **two separate backends** sharing the same PostgreSQL database:
+
+1. **Main Worklenz Backend** (`/worklenz-business/worklenz-backend`): Handles core application features (projects, tasks, teams, etc.)
+2. **License Manager Backend** (`/Worklenz License Manager/worklenz-license-manager-backend`): **Handles all billing and licensing operations**
+
+**DirectPay integration will be implemented entirely in the License Manager backend** alongside the existing Paddle integration, following the same architectural patterns.
 
 ## Requirements Summary
 
 - **Priority**: Full automation for new and existing users
 - **Migration Strategy**: Admin-controlled (manual, one-by-one migration)
 - **Pricing Model**: Fixed LKR pricing for new users, preserve custom rates for existing users
-- **DirectPay Capabilities**: Full recurring support with webhooks and subscription management APIs
+- **DirectPay Approach**: Wallet + card capture (manual billing) with automatic retry logic via cron jobs
+
+## DirectPay Integration Approach
+
+### **Recommended: Wallet + Card Capture (Manual Billing)**
+This is our PRIMARY approach for better control and flexibility:
+
+1. **Initial Card Setup**: User pays with `type: "CARD_ADD"` → DirectPay saves card in wallet
+2. **Scheduled Billing**: Our cron job (`node-cron`) triggers billing on the due date
+3. **Manual Charge**: Backend calls `POST /api/v3/cardPay` with stored `wallet_id` + `card_id`
+4. **Retry Logic**: If payment fails, our retry service handles 3 attempts (Day 1, 3, 7)
+5. **Subscription Extension**: On success, backend extends `end_date` and updates status
+
+**Why This Approach?**
+- ✅ Full control over billing timing and retry logic
+- ✅ Easier to implement custom business logic (proration, plan changes, custom pricing)
+- ✅ Better for admin-controlled migrations of existing users
+- ✅ Supports complex scenarios (manual extensions, custom rates)
+- ✅ Transparent failure handling with graceful degradation
+
+### Alternative: Automatic Recurring Subscriptions
+DirectPay also supports automatic recurring billing with `type: "RECURRING"`:
+1. **Initial Setup**: User pays with `type: "RECURRING"` → DirectPay saves card and schedules billing
+2. **Automatic Billing**: DirectPay automatically charges the card each billing cycle
+3. **Webhook Notifications**: DirectPay sends webhook on each successful/failed payment
+4. **Subscription Extension**: Our backend receives webhook and extends `end_date`
+
+**Trade-offs**: Less control, harder to implement custom retry logic and business rules.
+
+### Key APIs (Primary Flow)
+- **Add Card to Wallet**: `POST /api/v3/create-session` with `type: "CARD_ADD"`
+- **Charge Stored Card**: `POST /api/v3/cardPay` (our main billing endpoint)
+- **List Cards**: `POST /api/v3/listCard`
+- **Delete Card**: `POST /api/v3/deleteCard`
+- **Check Status**: `POST /api/v3/checkPaymentStatus`
+
+> **📄 Related Documentation**: See [DIRECTPAY_RETRY_AND_CANCELLATION.md](./DIRECTPAY_RETRY_AND_CANCELLATION.md) for comprehensive payment retry logic, cancellation features, cron job implementation, and failure handling strategies.
+
+### Environment Variables Required
+
+Add to `/Worklenz License Manager/worklenz-license-manager-backend/.env`:
+
+```bash
+# DirectPay Configuration
+DP_MERCHANT_ID=your_merchant_id_here
+DP_SECRET_KEY=your_secret_key_here
+DP_BASE_URL=https://test-gateway.directpay.lk  # or https://gateway.directpay.lk for production
+DP_STAGE=DEV  # DEV, UAT, or PROD
+
+# Frontend URL for DirectPay redirects
+FRONTEND_URL=https://app.worklenz.com  # or your frontend URL
+BACKEND_URL=https://licensing.worklenz.com  # License Manager backend URL
+```
 
 ---
 
@@ -180,19 +241,21 @@ SET preferred_payment_gateway_id = (SELECT id FROM licensing_payment_gateways WH
 WHERE is_lkr_billing = true;
 ```
 
-**Migration File**: Create `/worklenz-backend/database/migrations/20250118000000-add-directpay-subscription-support.sql` with all schema changes.
+**Migration File**: The License Manager uses the same database as the main backend. Database migrations should be added to the main backend repository: `/worklenz-backend/database/migrations/20250118000000-add-directpay-subscription-support.sql`
 
 ---
 
-## Phase 2: Backend Gateway Abstraction
+## Phase 2: Backend Gateway Abstraction (License Manager)
 
 ### Gateway Abstraction Layer Design
 
-Create a unified interface that abstracts payment gateway operations, making it easy to support multiple providers.
+Create a unified interface that abstracts payment gateway operations in the License Manager backend, making it easy to support multiple providers.
+
+> **📁 Location**: All Phase 2 files will be created in `/Worklenz License Manager/worklenz-license-manager-backend/src/`
 
 #### Base Payment Gateway Interface
 
-**File**: `/worklenz-backend/src/services/payment-gateways/base-payment-gateway.ts`
+**File**: `/worklenz-license-manager-backend/src/services/payment-gateways/base-payment-gateway.ts`
 
 ```typescript
 export interface ICheckoutParams {
@@ -238,7 +301,7 @@ export abstract class BasePaymentGateway {
 
 #### DirectPay Gateway Implementation
 
-**File**: `/worklenz-backend/src/services/payment-gateways/directpay-gateway.ts`
+**File**: `/worklenz-license-manager-backend/src/services/payment-gateways/directpay-gateway.ts`
 
 ```typescript
 import { BasePaymentGateway, ICheckoutParams, ICheckoutResponse } from './base-payment-gateway';
@@ -250,13 +313,18 @@ import moment from 'moment';
 import db from '../../config/db';
 
 export class DirectPayGateway extends BasePaymentGateway {
+  private readonly CREATE_SESSION_URL = '/api/v3/create-session';
+  private readonly CARD_PAY_URL = '/api/v3/cardPay';
+  private readonly LIST_CARDS_URL = '/api/v3/listCard';
+  private readonly DELETE_CARD_URL = '/api/v3/deleteCard';
+  private readonly CHECK_STATUS_URL = '/api/v3/checkPaymentStatus';
+
   constructor() {
     super({
-      apiKey: process.env.DP_API_KEY,
       merchantId: process.env.DP_MERCHANT_ID,
       secretKey: process.env.DP_SECRET_KEY,
-      baseUrl: process.env.DP_URL,
-      stage: process.env.DP_STAGE
+      baseUrl: process.env.DP_BASE_URL, // https://test-gateway.directpay.lk or https://gateway.directpay.lk
+      stage: process.env.DP_STAGE // DEV, UAT, PROD
     }, 'DirectPay');
   }
 
@@ -267,38 +335,86 @@ export class DirectPayGateway extends BasePaymentGateway {
     const user = userResult.rows[0];
 
     const uniqueTimestamp = moment().format('YYYYMMDDHHmmss');
-    const orderId = `WORKLENZ_${user.email}_${uniqueTimestamp}`;
+    const orderId = `WORKLENZ_${uniqueTimestamp}`;
 
-    // Build DirectPay recurring payment payload
+    // DirectPay wallet + card capture approach
+    // Use CARD_ADD to save card to wallet without immediate recurring
     const payload = {
       merchant_id: this.config.merchantId,
-      amount: params.amount,
-      type: 'RECURRING',
+      amount: params.amount.toString(),
+      source: 'worklenz-app',
+      type: 'CARD_ADD', // Add card to wallet - we'll charge manually via cron
       order_id: orderId,
       currency: params.currency,
-      return_url: `${process.env.FRONTEND_URL}/billing/payment-success`,
       response_url: `${process.env.BACKEND_URL}/api/billing/directpay-webhook`,
-      first_name: user.name,
+      return_url: `${process.env.FRONTEND_URL}/billing/payment-success`,
+      first_name: user.name.split(' ')[0],
+      last_name: user.name.split(' ').slice(1).join(' ') || user.name.split(' ')[0],
       email: user.email,
-      description: `Worklenz ${params.billingType === 'year' ? 'Annual' : 'Monthly'} Subscription`,
-      page_type: 'IN_APP',
-      start_date: moment().format('YYYY-MM-DD'),
-      do_initial_payment: 1,
-      interval: params.billingType === 'month' ? 1 : 12,
-      interval_type: 'MONTH'
+      phone: user.phone || '',
+      description: `Worklenz ${params.billingType === 'year' ? 'Annual' : 'Monthly'} Subscription - Initial Setup`,
+      logo: ''
     };
 
-    // Generate HMAC signature
-    const encodePayload = CryptoJS.enc.Base64.stringify(
-      CryptoJS.enc.Utf8.parse(JSON.stringify(payload))
-    );
-    const signature = CryptoJS.HmacSHA256(encodePayload, this.config.secretKey as string);
+    // Generate HMAC SHA-256 signature per DirectPay spec
+    const jsonEncoded = JSON.stringify(payload);
+    const base64Encoded = Buffer.from(jsonEncoded).toString('base64');
+    const signature = crypto
+      .createHmac('sha256', this.config.secretKey)
+      .update(base64Encoded)
+      .digest('hex');
 
     return {
-      signature: signature.toString(CryptoJS.enc.Hex),
-      dataString: encodePayload,
+      signature: `hmac ${signature}`,
+      dataString: base64Encoded,
       stage: this.config.stage
     };
+  }
+
+  /**
+   * Charge a stored card (manual billing approach)
+   * Called by cron job or retry service
+   */
+  async chargeStoredCard(params: {
+    walletId: string;
+    cardId: string;
+    orderId: string;
+    amount: number;
+    currency: string;
+    description?: string;
+  }): Promise<any> {
+    const payload = {
+      merchant_id: this.config.merchantId,
+      wallet_id: params.walletId,
+      card_id: params.cardId,
+      order_id: params.orderId,
+      currency: params.currency,
+      amount: params.amount.toString(),
+      description: params.description || 'Worklenz Subscription Payment'
+    };
+
+    // Generate signature
+    const jsonEncoded = JSON.stringify(payload);
+    const base64Encoded = Buffer.from(jsonEncoded).toString('base64');
+    const signature = crypto
+      .createHmac('sha256', this.config.secretKey)
+      .update(base64Encoded)
+      .digest('hex');
+
+    // Call DirectPay cardPay endpoint
+    const response = await fetch(`${this.config.baseUrl}${this.CARD_PAY_URL}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `hmac ${signature}`,
+        'Content-Type': 'text/plain'
+      },
+      body: base64Encoded
+    });
+
+    const responseData = await response.text();
+    const decodedResponse = JSON.parse(Buffer.from(responseData, 'base64').toString('utf-8'));
+
+    return decodedResponse;
   }
 
   async processWebhook(payload: any, signature?: string): Promise<any> {
@@ -308,72 +424,105 @@ export class DirectPayGateway extends BasePaymentGateway {
       return { isValid: false, error: 'Invalid signature' };
     }
 
-    // Process different event types
-    const eventType = payload.event_type || payload.status;
+    // DirectPay sends base64 encoded payload
+    const decodedPayload = JSON.parse(Buffer.from(payload, 'base64').toString('utf-8'));
 
-    switch (eventType) {
-      case 'PAYMENT_SUCCESS':
-        await this.handlePaymentSuccess(payload);
-        break;
-      case 'PAYMENT_FAILED':
-        await this.handlePaymentFailed(payload);
-        break;
-      case 'SUBSCRIPTION_CANCELLED':
-        await this.handleSubscriptionCancelled(payload);
-        break;
+    // Handle based on transaction status and payment_type
+    const status = decodedPayload.transaction?.status;
+    const paymentType = decodedPayload.payment_type || 'initial';
+
+    if (status === 'SUCCESS') {
+      await this.handlePaymentSuccess(decodedPayload, paymentType);
+    } else if (status === 'FAILED') {
+      await this.handlePaymentFailed(decodedPayload);
     }
 
-    return { isValid: true, payload };
+    return { isValid: true, payload: decodedPayload };
   }
 
-  private async handlePaymentSuccess(payload: any): Promise<void> {
-    // Find subscription by transaction reference
+  private async handlePaymentSuccess(payload: any, paymentType: string): Promise<void> {
+    const txnId = payload.transaction.id;
+    const walletId = payload.walletId;
+    const cardInfo = payload.card;
+
+    // Find subscription by order_id or wallet_id
     const subscriptionQuery = `
-      SELECT lcs.*, lp.user_id
-      FROM licensing_custom_subs lcs
-      JOIN licensing_lkr_payments lp ON lp.subscription_id = lcs.id
-      WHERE lp.transaction_id = $1
-      LIMIT 1
+      SELECT lcs.* FROM licensing_custom_subs lcs
+      LEFT JOIN licensing_directpay_cards ldc ON ldc.id = lcs.card_id
+      WHERE ldc.wallet_id = $1 OR lcs.id IN (
+        SELECT subscription_id FROM licensing_lkr_payments WHERE order_id = $2
+      )
+      ORDER BY lcs.created_at DESC LIMIT 1
     `;
-    const result = await db.query(subscriptionQuery, [payload.transaction_id]);
+    const result = await db.query(subscriptionQuery, [walletId, payload.order_id]);
     const subscription = result.rows[0];
 
-    // Calculate new end_date
-    const currentEndDate = moment(subscription.end_date);
-    const newEndDate = subscription.billing_type === 'month'
-      ? currentEndDate.add(1, 'month')
-      : currentEndDate.add(1, 'year');
+    if (!subscription) return;
 
-    // Update subscription
+    // For recurring payments, extend subscription
+    if (paymentType === 'recurring') {
+      const newEndDate = moment(subscription.end_date)
+        .add(subscription.billing_type === 'month' ? 1 : 12, 'months');
+
+      await db.query(`
+        UPDATE licensing_custom_subs
+        SET end_date = $1,
+            last_payment_date = CURRENT_DATE,
+            next_billing_date = $1,
+            status = 'active'
+        WHERE id = $2
+      `, [newEndDate.format('YYYY-MM-DD'), subscription.id]);
+    }
+
+    // Save payment record
     await db.query(`
-      UPDATE licensing_custom_subs
-      SET end_date = $1,
-          last_payment_date = CURRENT_DATE,
-          next_billing_date = $1,
-          status = 'active'
-      WHERE id = $2
-    `, [newEndDate.format('YYYY-MM-DD'), subscription.id]);
+      INSERT INTO licensing_lkr_payments
+      (user_id, subscription_id, amount, transaction_id, transaction_status, payment_type, billing_type)
+      VALUES ($1, $2, $3, $4, 'SUCCESS', $5, $6)
+    `, [subscription.user_id, subscription.id, payload.transaction.amount, txnId, paymentType, subscription.billing_type]);
 
-    // Log recurring payment
-    await this.logRecurringPayment(payload, subscription.id);
+    // Save card info if not already saved
+    if (cardInfo && cardInfo.id) {
+      await this.saveCardInfo(subscription.user_id, cardInfo, walletId);
+    }
   }
 
   private async handlePaymentFailed(payload: any): Promise<void> {
+    const walletId = payload.walletId;
+
     await db.query(`
-      UPDATE licensing_custom_subs
+      UPDATE licensing_custom_subs lcs
       SET status = 'past_due'
-      WHERE directpay_subscription_id = $1
-    `, [payload.subscription_id]);
+      FROM licensing_directpay_cards ldc
+      WHERE ldc.id = lcs.card_id AND ldc.wallet_id = $1
+    `, [walletId]);
   }
 
-  private validateWebhookSignature(payload: any, signature?: string): boolean {
+  private validateWebhookSignature(requestBody: string, signature?: string): boolean {
     if (!signature) return false;
 
-    const dataString = Object.values(payload).join('');
-    const computedSignature = CryptoJS.HmacSHA256(dataString, this.config.secretKey as string)
-      .toString(CryptoJS.enc.Hex);
+    const parts = signature.split(' ');
+    if (parts.length !== 2 || parts[0] !== 'hmac') return false;
 
-    return computedSignature === signature;
+    const receivedHash = parts[1];
+    const computedHash = crypto
+      .createHmac('sha256', this.config.secretKey)
+      .update(requestBody)
+      .digest('hex');
+
+    return receivedHash === computedHash;
+  }
+
+  private async saveCardInfo(userId: string, cardInfo: any, walletId: string): Promise<void> {
+    await db.query(`
+      INSERT INTO licensing_directpay_cards
+      (user_id, card_id, card_number_masked, card_brand, card_type,
+       expiry_month, expiry_year, wallet_id, is_default)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
+      ON CONFLICT (user_id, card_id) DO UPDATE
+      SET last_used_at = CURRENT_TIMESTAMP
+    `, [userId, cardInfo.id, cardInfo.number, cardInfo.brand, cardInfo.type,
+        cardInfo.expiry.month, cardInfo.expiry.year, walletId]);
   }
 
   async cancelSubscription(subscriptionId: string, userId: string): Promise<boolean> {
@@ -390,11 +539,14 @@ export class DirectPayGateway extends BasePaymentGateway {
 
 #### Paddle Gateway Implementation
 
-**File**: `/worklenz-backend/src/services/payment-gateways/paddle-gateway.ts`
+**File**: `/worklenz-license-manager-backend/src/services/payment-gateways/paddle-gateway.ts`
+
+> **Note**: The License Manager already has `paddle-controller.ts` and `paddle-sdk.ts`. This wrapper integrates them into the gateway abstraction pattern.
 
 ```typescript
 import { BasePaymentGateway } from './base-payment-gateway';
-import { generatePayLinkRequest, cancelSubscription as cancelPaddleSubscription } from '../../shared/paddle-requests';
+import PaddleController from '../../controllers/paddle-controller';
+import { PaddleSDK } from '../../controllers/paddle-sdk';
 
 export class PaddleGateway extends BasePaymentGateway {
   constructor() {
@@ -434,7 +586,7 @@ export class PaddleGateway extends BasePaymentGateway {
 
 #### Gateway Factory
 
-**File**: `/worklenz-backend/src/services/payment-gateways/gateway-factory.ts`
+**File**: `/worklenz-license-manager-backend/src/services/payment-gateways/gateway-factory.ts`
 
 ```typescript
 import { BasePaymentGateway } from './base-payment-gateway';
@@ -506,7 +658,9 @@ export class PaymentGatewayFactory {
 
 ### Subscription Management Service
 
-**File**: `/worklenz-backend/src/services/subscription-management-service.ts`
+**File**: `/worklenz-license-manager-backend/src/services/subscription-management-service.ts`
+
+> **Note**: This extends the existing `CustomSubsController` functionality with automated DirectPay billing.
 
 ```typescript
 import db from '../config/db';
@@ -655,15 +809,253 @@ export class SubscriptionManagementService {
 }
 ```
 
+### Billing Cycle Service (Cron Jobs)
+
+**File**: `/worklenz-license-manager-backend/src/services/billing-cycle-service.ts`
+
+Since we're using the wallet + card capture approach, we need a scheduled service to automatically charge cards on billing dates.
+
+```typescript
+import cron from 'node-cron';
+import db from '../config/db';
+import moment from 'moment';
+import { PaymentGatewayFactory } from './payment-gateways/gateway-factory';
+import { DirectPayGateway } from './payment-gateways/directpay-gateway';
+
+export class BillingCycleService {
+  /**
+   * Start all billing-related cron jobs
+   */
+  static start(): void {
+    console.log('Starting billing cycle cron jobs...');
+
+    // Daily billing cycle - Process subscriptions due for billing at 2 AM
+    cron.schedule('0 2 * * *', async () => {
+      console.log('Running daily billing cycle...');
+      await this.processBillingCycle();
+    });
+
+    console.log('Billing cron jobs started successfully');
+  }
+
+  /**
+   * Process all subscriptions due for billing today
+   */
+  static async processBillingCycle(): Promise<void> {
+    try {
+      // Find all active subscriptions due for billing today
+      const query = `
+        SELECT
+          lcs.id as subscription_id,
+          lcs.user_id,
+          lcs.billing_type,
+          lcs.rate,
+          lcs.currency,
+          ldc.wallet_id,
+          ldc.card_id,
+          u.email,
+          u.name
+        FROM licensing_custom_subs lcs
+        JOIN licensing_directpay_cards ldc ON ldc.id = lcs.card_id
+        JOIN users u ON u.id = lcs.user_id
+        WHERE lcs.status = 'active'
+          AND lcs.auto_renew = true
+          AND lcs.next_billing_date <= CURRENT_DATE
+          AND lcs.payment_gateway_id = (SELECT id FROM licensing_payment_gateways WHERE name = 'directpay')
+          AND ldc.is_active = true
+      `;
+
+      const result = await db.query(query);
+      const subscriptionsDue = result.rows;
+
+      console.log(`Found ${subscriptionsDue.length} subscriptions due for billing`);
+
+      for (const sub of subscriptionsDue) {
+        await this.processSubscriptionBilling(sub);
+
+        // Rate limiting - wait 500ms between billing attempts
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      console.log('Daily billing cycle completed');
+    } catch (error) {
+      console.error('Error in billing cycle:', error);
+    }
+  }
+
+  /**
+   * Process billing for a single subscription
+   */
+  private static async processSubscriptionBilling(subscription: any): Promise<void> {
+    const {
+      subscription_id,
+      user_id,
+      billing_type,
+      rate,
+      currency,
+      wallet_id,
+      card_id,
+      email,
+      name
+    } = subscription;
+
+    try {
+      const orderId = `BILLING_${subscription_id}_${moment().format('YYYYMMDDHHmmss')}`;
+
+      // Charge the stored card
+      const gateway = await PaymentGatewayFactory.getGateway('directpay') as DirectPayGateway;
+      const response = await gateway.chargeStoredCard({
+        walletId: wallet_id,
+        cardId: card_id,
+        orderId,
+        amount: parseFloat(rate),
+        currency,
+        description: `Worklenz ${billing_type === 'month' ? 'Monthly' : 'Annual'} Subscription`
+      });
+
+      if (response.transaction?.status === 'SUCCESS') {
+        await this.handleBillingSuccess(subscription_id, response, orderId);
+        console.log(`✓ Billing successful for subscription ${subscription_id}`);
+      } else {
+        await this.handleBillingFailure(subscription_id, response, orderId);
+        console.log(`✗ Billing failed for subscription ${subscription_id}`);
+      }
+    } catch (error) {
+      console.error(`Error billing subscription ${subscription_id}:`, error);
+      await this.handleBillingFailure(subscription_id, { error: error.message }, 'ERROR');
+    }
+  }
+
+  /**
+   * Handle successful billing
+   */
+  private static async handleBillingSuccess(
+    subscriptionId: string,
+    response: any,
+    orderId: string
+  ): Promise<void> {
+    const client = await db.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      // Get subscription details
+      const subQuery = `SELECT billing_type, user_id, rate FROM licensing_custom_subs WHERE id = $1`;
+      const subResult = await client.query(subQuery, [subscriptionId]);
+      const sub = subResult.rows[0];
+
+      // Calculate new end date
+      const newEndDate = moment()
+        .add(sub.billing_type === 'month' ? 1 : 12, 'months')
+        .format('YYYY-MM-DD');
+
+      // Extend subscription
+      await client.query(`
+        UPDATE licensing_custom_subs
+        SET end_date = $1,
+            next_billing_date = $1,
+            last_payment_date = CURRENT_DATE,
+            status = 'active',
+            retry_count = 0,
+            last_retry_at = NULL,
+            next_retry_date = NULL
+        WHERE id = $2
+      `, [newEndDate, subscriptionId]);
+
+      // Record payment
+      await client.query(`
+        INSERT INTO licensing_lkr_payments (
+          user_id, subscription_id, amount, transaction_id,
+          transaction_status, payment_type, billing_type, order_id
+        ) VALUES ($1, $2, $3, $4, 'SUCCESS', 'recurring', $5, $6)
+      `, [
+        sub.user_id,
+        subscriptionId,
+        sub.rate,
+        response.transaction.id,
+        sub.billing_type,
+        orderId
+      ]);
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Handle billing failure - initiate retry process
+   */
+  private static async handleBillingFailure(
+    subscriptionId: string,
+    response: any,
+    orderId: string
+  ): Promise<void> {
+    await db.query(`
+      UPDATE licensing_custom_subs
+      SET status = 'past_due',
+          retry_count = 0,
+          next_retry_date = CURRENT_DATE + INTERVAL '1 day'
+      WHERE id = $1
+    `, [subscriptionId]);
+
+    // Log failed payment attempt
+    await db.query(`
+      INSERT INTO licensing_payment_attempts (
+        subscription_id, attempt_number, status, failure_reason, order_id
+      ) VALUES ($1, 0, 'failed', $2, $3)
+    `, [
+      subscriptionId,
+      response.transaction?.failure_reason || response.error || 'Unknown error',
+      orderId
+    ]);
+  }
+}
+```
+
+**Usage**: Start cron jobs in the License Manager server startup:
+
+```typescript
+// In /worklenz-license-manager-backend/src/bin/www or after app initialization
+import { BillingCycleService } from '../services/billing-cycle-service';
+
+// After server starts (in bin/www)
+BillingCycleService.start();
+console.log('DirectPay billing cron jobs started');
+```
+
+> **⚠️ Important**: The retry logic is handled separately by `PaymentRetryService` (see [DIRECTPAY_RETRY_AND_CANCELLATION.md](./DIRECTPAY_RETRY_AND_CANCELLATION.md)). The billing cycle service only handles the initial billing attempt and marks subscriptions as `past_due` on failure.
+
 ---
 
-## Phase 3: Backend API Endpoints
+## Phase 3: Backend API Endpoints (License Manager)
 
-### Billing Controller Enhancements
+> **📁 Location**: All Phase 3 files will be in `/Worklenz License Manager/worklenz-license-manager-backend/src/`
 
-**File**: `/worklenz-backend/src/controllers/billing-controller.ts` (modify existing)
+### DirectPay Controller (New)
 
-Add the following methods to the existing `BillingController` class:
+Instead of modifying existing controllers, create a new dedicated **DirectPay Controller** following the same pattern as `paddle-controller.ts`.
+
+**File**: `/worklenz-license-manager-backend/src/controllers/directpay-controller.ts`
+
+```typescript
+import { IWorkLenzRequest } from "../interfaces/worklenz-request";
+import { IWorkLenzResponse } from "../interfaces/worklenz-response";
+import db from "../config/db";
+import { ServerResponse } from "../models/server-response";
+import WorklenzControllerBase from "./worklenz-controller-base";
+import HandleExceptions from "../decorators/handle-exceptions";
+import { log_error } from "../shared/utils";
+import { DirectPayGateway } from "../services/payment-gateways/directpay-gateway";
+import { SubscriptionManagementService } from "../services/subscription-management-service";
+
+export default class DirectPayController extends WorklenzControllerBase {
+```
+
+Add the following methods to the `DirectPayController` class:
 
 #### 1. Create Custom Subscription
 
@@ -967,23 +1359,44 @@ public static async manualExtendSubscription(req: IWorkLenzRequest, res: IWorkLe
 
 ### Route Definitions
 
-Add routes to `/worklenz-backend/src/routes/apis/billing-api-router.ts`:
+Create new DirectPay API router following the same pattern as `paddle-api-router.ts`.
+
+**File**: `/worklenz-license-manager-backend/src/routes/apis/directpay-api-router.ts`
 
 ```typescript
-router.post('/create-custom-subscription', BillingController.createCustomSubscription);
-router.post('/directpay-webhook', BillingController.handleDirectPayWebhook);
-router.get('/custom-plan-pricing', BillingController.getCustomPlanPricing);
-router.post('/cancel-custom-subscription', BillingController.cancelCustomSubscription);
-router.get('/saved-cards', BillingController.getSavedCards);
-router.delete('/saved-cards/:cardId', BillingController.deleteCard);
+import express from "express";
+import DirectPayController from "../../controllers/directpay-controller";
+
+const router = express.Router();
+
+// Public webhook endpoint (no auth)
+router.post('/webhook', DirectPayController.handleDirectPayWebhook);
+
+// Authenticated endpoints
+router.post('/create-subscription', DirectPayController.createCustomSubscription);
+router.get('/pricing', DirectPayController.getCustomPlanPricing);
+router.post('/cancel-subscription', DirectPayController.cancelSubscription);
+router.get('/saved-cards', DirectPayController.getSavedCards);
+router.delete('/saved-cards/:cardId', DirectPayController.deleteCard);
+
+// Admin-only endpoints
+router.post('/admin/switch-gateway', DirectPayController.switchPaymentGateway);
+router.get('/admin/subscriptions', DirectPayController.listCustomSubscriptions);
+router.post('/admin/extend-subscription', DirectPayController.manualExtendSubscription);
+
+export default router;
 ```
 
-Add admin routes to `/worklenz-backend/src/routes/apis/admin-center-api-router.ts`:
+**Register in main app**: Add to `/worklenz-license-manager-backend/src/app.ts`:
 
 ```typescript
-router.post('/billing/switch-gateway', AdminCenterController.switchPaymentGateway);
-router.get('/billing/custom-subscriptions', AdminCenterController.listCustomSubscriptions);
-router.post('/billing/manual-extend', AdminCenterController.manualExtendSubscription);
+import directpayApiRouter from "./routes/apis/directpay-api-router";
+
+// After paddle routes (around line 98)
+app.use("/directpay-secure", jwtValidator, directpayApiRouter);
+
+// Webhook route without auth (around line 114, similar to paddle-webhook)
+app.use("/directpay-webhook", directpayApiRouter);
 ```
 
 ---
@@ -1610,19 +2023,28 @@ describe('DirectPay Checkout Flow', () => {
 
 ### Production Deployment Steps
 
+> **Important**: DirectPay is implemented in the **License Manager backend**, not the main Worklenz backend.
+
 1. **Schedule Maintenance Window** (if needed for schema changes)
-2. **Database Migration**
+
+2. **Database Migration** (Main Backend)
    ```bash
    cd worklenz-backend
    npm run migrate:up -- 20250118000000-add-directpay-subscription-support.sql
    ```
-3. **Deploy Backend**
+
+3. **Deploy License Manager Backend** (PRIMARY)
    ```bash
+   cd "Worklenz License Manager/worklenz-license-manager-backend"
    git pull origin main
    npm install
    npm run build
-   pm2 restart worklenz-backend
+   pm2 restart worklenz-license-manager
+
+   # Verify cron jobs started
+   pm2 logs worklenz-license-manager | grep "billing cron"
    ```
+
 4. **Deploy Frontend**
    ```bash
    cd worklenz-frontend
@@ -1631,16 +2053,19 @@ describe('DirectPay Checkout Flow', () => {
    npm run build
    # Deploy build to CDN/hosting
    ```
+
 5. **Verify Deployment**
-   - Check health endpoints
+   - Check License Manager health endpoints
+   - Verify cron jobs are running (`BillingCycleService.start()`)
    - Test DirectPay checkout with sandbox account
+   - Verify webhook endpoint is accessible: `POST https://licensing.worklenz.com/directpay-webhook`
    - Monitor error logs for 30 minutes
 
 ### Admin-Controlled Migration Process
 
 #### Migration Script
 
-**File**: `/worklenz-backend/scripts/migrate-user-to-directpay.ts`
+**File**: `/worklenz-license-manager-backend/scripts/migrate-user-to-directpay.ts`
 
 ```typescript
 import db from '../src/config/db';
@@ -1829,20 +2254,23 @@ if (require.main === module) {
 
 ## Critical Files Summary
 
-### Backend (New Files)
+### Database Migrations (Main Backend)
 1. `/worklenz-backend/database/migrations/20250118000000-add-directpay-subscription-support.sql`
-2. `/worklenz-backend/src/services/payment-gateways/base-payment-gateway.ts`
-3. `/worklenz-backend/src/services/payment-gateways/paddle-gateway.ts`
-4. `/worklenz-backend/src/services/payment-gateways/directpay-gateway.ts`
-5. `/worklenz-backend/src/services/payment-gateways/gateway-factory.ts`
-6. `/worklenz-backend/src/services/subscription-management-service.ts`
-7. `/worklenz-backend/scripts/migrate-user-to-directpay.ts`
 
-### Backend (Modified Files)
-1. `/worklenz-backend/src/controllers/billing-controller.ts`
-2. `/worklenz-backend/src/controllers/admin-center-controller.ts`
-3. `/worklenz-backend/src/routes/apis/billing-api-router.ts`
-4. `/worklenz-backend/src/routes/apis/admin-center-api-router.ts`
+### License Manager Backend (New Files)
+1. `/worklenz-license-manager-backend/src/controllers/directpay-controller.ts` - Main DirectPay controller
+2. `/worklenz-license-manager-backend/src/services/payment-gateways/base-payment-gateway.ts` - Gateway abstraction
+3. `/worklenz-license-manager-backend/src/services/payment-gateways/paddle-gateway.ts` - Paddle wrapper
+4. `/worklenz-license-manager-backend/src/services/payment-gateways/directpay-gateway.ts` - DirectPay implementation
+5. `/worklenz-license-manager-backend/src/services/payment-gateways/gateway-factory.ts` - Gateway selector
+6. `/worklenz-license-manager-backend/src/services/subscription-management-service.ts` - Subscription logic
+7. `/worklenz-license-manager-backend/src/services/billing-cycle-service.ts` - Cron jobs for wallet + card capture
+8. `/worklenz-license-manager-backend/src/routes/apis/directpay-api-router.ts` - API routes
+9. `/worklenz-license-manager-backend/scripts/migrate-user-to-directpay.ts` - Migration script
+
+### License Manager Backend (Modified Files)
+1. `/worklenz-license-manager-backend/src/app.ts` - Register DirectPay routes and start cron jobs
+2. `/worklenz-license-manager-backend/src/bin/www` - Initialize BillingCycleService on startup
 
 ### Frontend (New Files)
 1. `/worklenz-frontend/src/components/admin-center/billing/saved-cards/SavedCards.tsx`
@@ -1856,7 +2284,23 @@ if (require.main === module) {
 
 ## Key Design Decisions Rationale
 
-### 1. Two-Tier Pricing Strategy
+### 1. Wallet + Card Capture Over Automatic Recurring
+
+**Decision**: Use `type: "CARD_ADD"` with manual billing via `POST /api/v3/cardPay` instead of DirectPay's automatic recurring (`type: "RECURRING"`).
+
+**Rationale**:
+- **Full Control**: We control exactly when charges occur, enabling custom billing logic
+- **Better Retry Logic**: Our 3-retry system with exponential backoff (Day 1, 3, 7) is more sophisticated than DirectPay's default retry
+- **Custom Pricing Support**: Easier to handle existing users with custom rates, proration, and plan changes
+- **Admin Flexibility**: Admins can manually extend subscriptions, pause billing, or adjust amounts mid-cycle
+- **Graceful Failure Handling**: We can implement custom dunning management and user notifications
+- **Complex Scenarios**: Supports manual migrations, custom business rules, and non-standard billing cycles
+- **Transparency**: Full audit trail via `licensing_payment_attempts` table
+- **Testing**: Easier to test billing logic in isolation without waiting for DirectPay's schedule
+
+**Trade-off Accepted**: Requires maintaining cron jobs and retry infrastructure, but provides significantly more control and flexibility.
+
+### 2. Two-Tier Pricing Strategy
 
 **Decision**: New users get fixed pricing from `licensing_custom_plan_pricing`, existing users keep custom rates in `licensing_custom_subs.rate`.
 
@@ -2045,37 +2489,131 @@ ORDER BY lcs.next_billing_date ASC;
 
 ## Appendix: DirectPay API Reference
 
-### Expected DirectPay Endpoints
+### DirectPay API Endpoints
 
-**Note**: These are based on common recurring payment gateway patterns. Verify with actual DirectPay API documentation.
+**Base URLs:**
+- Development: `https://test-gateway.directpay.lk/api/v3/`
+- Production: `https://gateway.directpay.lk/api/v3/`
 
-1. **Create Recurring Payment**: `POST /recurring-payment`
-2. **Cancel Subscription**: `POST /cancel-subscription`
-3. **Get Subscription Status**: `GET /subscription-status/:id`
-4. **List Cards**: `POST /list-cards`
-5. **Remove Card**: `POST /remove-card`
+**Endpoints:**
 
-### Expected Webhook Events
+1. **Create Payment Session** (for RECURRING or CARD_ADD)
+   - `POST /create-session`
+   - Returns: `{ signature, dataString, stage }` for SDK initialization
 
-1. **PAYMENT_SUCCESS**: Recurring payment succeeded
-2. **PAYMENT_FAILED**: Payment failed (card declined, insufficient funds)
-3. **SUBSCRIPTION_CANCELLED**: User or admin cancelled subscription
-4. **CARD_EXPIRED**: Saved card expired
-5. **CARD_UPDATED**: User updated payment method
+2. **Pay Using Stored Card**
+   - `POST /cardPay`
+   - Body: `{ merchant_id, wallet_id, card_id, order_id, currency, amount }`
+
+3. **List User's Cards**
+   - `POST /listCard`
+   - Body: `{ merchant_id, wallet_id }`
+
+4. **Delete Card**
+   - `POST /deleteCard`
+   - Body: `{ merchant_id, card_id }`
+
+5. **Check Transaction Status**
+   - `POST /checkPaymentStatus`
+   - Body: `{ merchant_id, order_id }`
+
+6. **Authorize Payment** (Reserve funds)
+   - `POST /cardAuthorize`
+   - Body: `{ merchant_id, wallet_id, card_id, order_id, currency, amount }`
+
+7. **Capture Payment** (Capture authorized funds)
+   - `POST /cardCapture`
+   - Body: `{ merchant_id, wallet_id, card_id, order_id, currency, amount, auth_transaction_id }`
+
+8. **Void Transaction**
+   - `POST /void-transaction`
+   - Body: `{ merchant_id, transaction_id, merchant_note }`
+
+9. **Refund Transaction**
+   - `POST /refund-transaction`
+   - Body: `{ merchant_id, transaction_id, amount, merchant_note }`
+
+### Payment Types
+
+1. **RECURRING**: Automatic recurring billing (DirectPay handles scheduling)
+2. **CARD_ADD**: Add card to wallet without initial payment
+3. **CARD_TOKEN_PAYMENT**: One-time payment with stored card (with 3DS check)
+4. **ONE_TIME**: Regular one-time payment
+
+### Webhook Response Structure
+
+DirectPay sends base64 encoded JSON to `response_url`:
+
+```json
+{
+  "status": 200,
+  "walletId": "102",
+  "card": {
+    "id": 367,
+    "number": "512345xxxxxx0008",
+    "brand": "MASTERCARD",
+    "type": "CREDIT",
+    "expiry": { "year": "25", "month": "12" }
+  },
+  "transaction": {
+    "id": 110812,
+    "status": "SUCCESS",
+    "amount": "122.22",
+    "currency": "LKR",
+    "channel": "MASTERCARD",
+    "dateTime": "2022-02-02 10:28:25"
+  },
+  "promotion": {
+    "apply": false,
+    "pay_type": "RECURRING"
+  }
+}
+```
 
 ### Signature Validation
 
-**HMAC-SHA256** using `DP_SECRET_KEY`:
+**For API Requests (sending to DirectPay):**
 ```typescript
-const dataString = Object.values(payload).join('');
-const signature = CryptoJS.HmacSHA256(dataString, SECRET_KEY).toString(CryptoJS.enc.Hex);
+// Step 1: JSON encode payload
+const jsonEncoded = JSON.stringify(payload);
+
+// Step 2: Base64 encode
+const base64Encoded = Buffer.from(jsonEncoded).toString('base64');
+
+// Step 3: Generate HMAC SHA-256
+const hash = crypto
+  .createHmac('sha256', SECRET_KEY)
+  .update(base64Encoded)
+  .digest('hex');
+
+// Step 4: Prepend "hmac "
+const signature = `hmac ${hash}`;
+
+// Step 5: Send in Authorization header
+headers: {
+  'Authorization': signature,
+  'Content-Type': 'text/plain'
+}
+// Body: base64Encoded string
 ```
 
-**RSA-SHA256** using private key for API requests:
+**For Webhook Validation (receiving from DirectPay):**
 ```typescript
-const sign = crypto.createSign('SHA256');
-sign.update(dataString);
-const signature = sign.sign(privateKey, 'base64');
+// DirectPay sends: Authorization header with "hmac <hash>"
+const signature = request.headers['authorization'];
+const requestBody = request.body; // base64 encoded string
+
+// Split signature
+const [prefix, receivedHash] = signature.split(' ');
+
+// Compute hash from request body
+const computedHash = crypto
+  .createHmac('sha256', SECRET_KEY)
+  .update(requestBody)
+  .digest('hex');
+
+// Validate
+const isValid = receivedHash === computedHash;
 ```
 
 ---

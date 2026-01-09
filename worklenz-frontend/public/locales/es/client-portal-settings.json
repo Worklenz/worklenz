@@ -12,6 +12,7 @@
   "contactEmailPlaceholder": "Ingrese email de contacto",
   "contactPhoneLabel": "Teléfono de Contacto",
   "contactPhonePlaceholder": "Ingrese teléfono de contacto",
+  "invalidPhoneNumberFormat": "Formato de número de teléfono inválido. Use formato internacional (ej., +1-234-567-8900)",
   "invoiceFooterLabel": "Mensaje de Pie de Factura",
   "invoiceFooterPlaceholder": "ej., ¡Gracias por su preferencia!",
   "currentLogoText": "Logo actual",
