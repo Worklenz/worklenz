@@ -750,6 +750,12 @@ class ImportsService {
         ),
       ]);
 
+      const { rows: projectRows } = await client.query(
+        "SELECT team_id FROM projects WHERE id = $1",
+        [job.target_project_id]
+      );
+      const targetTeamId = projectRows[0]?.team_id || null;
+
       const statusMap = new Map<string, string>();
       statusRows.forEach((row: any) => {
         if (row.name) statusMap.set(row.name.toString().toLowerCase(), row.id);
@@ -1135,11 +1141,11 @@ class ImportsService {
       };
 
       const resolveAssignees = (value?: string | null) => {
-        if (!value) return [] as Array<{ user_id: string }>;
+        if (!value) return [] as string[];
         const direct = assigneeMap.get(value.toString());
         const email = assigneeMap.get(value.toString().toLowerCase());
-        const userId = direct || email;
-        return userId ? [{ user_id: userId }] : [];
+        const teamMemberId = direct || email;
+        return teamMemberId ? [teamMemberId] : [];
       };
 
       const createTask = async (task: any, parentId?: string | null) => {
@@ -1152,9 +1158,10 @@ class ImportsService {
         const payload: Record<string, unknown> = {
           name: task.title,
           project_id: job.target_project_id,
+          team_id: targetTeamId,
           description: taskWithMappings.description,
-          start_date: taskWithMappings.start_at,
-          end_date: taskWithMappings.due_at,
+          start: taskWithMappings.start_at,
+          end: taskWithMappings.due_at,
           total_minutes: 0,
           reporter_id: job.created_by,
           status_id: resolveStatusId(taskWithMappings.status),

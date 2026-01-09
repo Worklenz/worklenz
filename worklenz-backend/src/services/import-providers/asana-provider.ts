@@ -221,29 +221,27 @@ export default class AsanaProvider implements ImportProvider {
       "SELECT active_team FROM users WHERE id = $1",
       [job.created_by]
     );
-    const activeTeam = rows[0]?.active_team || null;
+    let teamId = rows[0]?.active_team || null;
 
-    if (activeTeam) {
-      const { rows: teamRows } = await db.query(
-        `SELECT LOWER(u.email) AS email, u.id
+    if (!teamId && job.target_project_id) {
+      const { rows: projectRows } = await db.query(
+        "SELECT team_id FROM projects WHERE id = $1",
+        [job.target_project_id]
+      );
+      teamId = projectRows[0]?.team_id || null;
+    }
+
+    if (!teamId) return new Map();
+
+    const { rows: teamRows } = await db.query(
+      `SELECT LOWER(u.email) AS email, tm.id AS team_member_id
          FROM team_members tm
          INNER JOIN users u ON u.id = tm.user_id
          WHERE tm.team_id = $2
            AND LOWER(u.email) = ANY($1)`,
-        [normalized, activeTeam]
-      );
-      if (teamRows.length) {
-        return new Map(teamRows.map((row: any) => [row.email, row.id]));
-      }
-    }
-
-    const { rows: fallbackRows } = await db.query(
-      `SELECT LOWER(email) AS email, id
-       FROM users
-       WHERE LOWER(email) = ANY($1)`,
-      [normalized]
+      [normalized, teamId]
     );
-    return new Map(fallbackRows.map((row: any) => [row.email, row.id]));
+    return new Map(teamRows.map((row: any) => [row.email, row.team_member_id]));
   }
 
   private async buildUserMappings(
