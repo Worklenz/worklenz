@@ -56,7 +56,7 @@ import useIsProjectManager from '@/hooks/useIsProjectManager';
 import { useAuthService } from '@/hooks/useAuth';
 import { evt_projects_create } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { isFreeUser, shouldRestrictProjectHealth } from '@/utils/subscription-utils';
+import { isFreeUser } from '@/utils/subscription-utils';
 import { CrownOutlined } from '@ant-design/icons';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 
@@ -94,12 +94,9 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   const [updateProject, { isLoading: isUpdatingProject }] = useUpdateProjectMutation();
   const [createProject, { isLoading: isCreatingProject }] = useCreateProjectMutation();
 
-  // Check if user is restricted from using project health
-  const isHealthRestricted = shouldRestrictProjectHealth(currentSession);
-
   // Memoized values
   const defaultFormValues = useMemo(() => {
-    const baseValues = {
+    return {
       color_code: project?.color_code || projectColors[0],
       status_id: project?.status_id || projectStatuses.find(status => status.is_default)?.id,
       client_id: project?.client_id || null,
@@ -111,30 +108,9 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       use_manual_progress: project?.use_manual_progress || false,
       use_weighted_progress: project?.use_weighted_progress || false,
       use_time_progress: project?.use_time_progress || false,
+      health_id: project?.health_id || projectHealths.find(health => health.is_default)?.id,
     };
-
-    // Only include health_id if user is not restricted
-    // For existing projects, preserve the health_id (field will be disabled)
-    // For new projects, only set default if user is not restricted
-    if (!isHealthRestricted) {
-      return {
-        ...baseValues,
-        health_id: project?.health_id || projectHealths.find(health => health.is_default)?.id,
-      };
-    }
-
-    // For restricted users, only include health_id if editing an existing project that already has it
-    // (so it displays but remains disabled)
-    if (project?.health_id) {
-      return {
-        ...baseValues,
-        health_id: project.health_id,
-      };
-    }
-
-    // For restricted users creating new projects, don't include health_id at all
-    return baseValues;
-  }, [project, projectStatuses, projectHealths, isHealthRestricted]);
+  }, [project, projectStatuses, projectHealths]);
 
   // Auth and permissions
   const isProjectManager = currentSession?.team_member_id == selectedProjectManager?.id;
@@ -177,13 +153,6 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
           use_time_progress: project.use_time_progress || false,
         };
 
-        // For restricted users editing existing projects, keep health_id if it exists (field will be disabled)
-        // For restricted users creating new projects, don't include health_id
-        if (isHealthRestricted && !project.health_id) {
-          // Remove health_id if user is restricted and project doesn't have one
-          delete formValues.health_id;
-        }
-
         form.setFieldsValue(formValues);
 
         setSelectedProjectManager(project.project_manager || null);
@@ -213,7 +182,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     } else if (drawerVisible && projectId) {
       console.log('Drawer visible, waiting for project data to load...');
     }
-  }, [drawerVisible, projectId, project, projectLoading, form, isHealthRestricted]);
+  }, [drawerVisible, projectId, project, projectLoading, form]);
 
   // Additional effect to handle loading state when project data is being fetched
   useEffect(() => {
@@ -274,8 +243,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         use_manual_progress: Boolean(values.use_manual_progress),
         use_weighted_progress: Boolean(values.use_weighted_progress),
         use_time_progress: Boolean(values.use_time_progress),
-        // Only include health_id if user is not restricted and it's explicitly set
-        ...(!isHealthRestricted && values.health_id ? { health_id: values.health_id } : {}),
+        health_id: values.health_id,
       };
 
       const action =
