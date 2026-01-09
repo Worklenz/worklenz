@@ -198,9 +198,6 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    req.query.field = ["is_owner", "active", "u.name", "u.email"];
-    req.query.order = "descend";
-
     // Helper function to check for encoded components
     function containsEncodedComponents(x: string) {
       return decodeURI(x) !== decodeURIComponent(x);
@@ -213,14 +210,44 @@ export default class TeamMembersController extends WorklenzControllerBase {
       }
     }
 
+    // team_id is $1, search params start at $2 (isMemberFilter=true puts search before team_id condition)
     const {
       searchQuery,
+      searchParams,
       sortField,
       sortOrder,
       size,
       offset
-    } = this.toPaginationOptions(req.query, ["u.name", "u.email"], true);
+    } = this.toPaginationOptions(req.query, ["u.name", "u.email"], true, 2);
 
+    // Map frontend field names to actual sortable columns
+    // Since we're sorting inside the subquery, we need to use the actual column expressions
+    // not the aliases (PostgreSQL doesn't allow aliases in ORDER BY within the same SELECT)
+    const fieldMapping: Record<string, string> = {
+      name: "(SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id)",
+      email: "(SELECT email FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id)",
+      job_title: "(SELECT name FROM job_titles WHERE id = team_members.job_title_id)",
+      role_name: "(SELECT name FROM roles WHERE id = team_members.role_id)",
+      projects_count: "(SELECT COUNT(*) FROM project_members WHERE team_member_id = team_members.id)",
+      active: "active",
+      is_owner: "(CASE WHEN user_id = (SELECT user_id FROM teams WHERE id = $1) THEN TRUE ELSE FALSE END)",
+      "u.name": "(SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id)",
+      "u.email": "(SELECT email FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id)"
+    };
+
+    // Handle sortField - it could be a string or array
+    let mappedSortField = "(SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id)";
+    if (typeof sortField === "string") {
+      // Single field from user clicking a column header
+      mappedSortField = fieldMapping[sortField] || mappedSortField;
+    } else if (Array.isArray(sortField)) {
+      // Multiple fields - build ORDER BY clause with all fields
+      const mappedFields = sortField
+        .map(field => fieldMapping[field] || field)
+        .join(` ${sortOrder}, `);
+      mappedSortField = mappedFields;
+    }
+    
     const paginate = req.query.all === "false" ? `LIMIT ${size} OFFSET ${offset}` : "";
 
     const q = `
@@ -229,7 +256,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
               FROM (SELECT team_members.id,
                            (SELECT name
                             FROM team_member_info_view
-                            WHERE team_member_info_view.team_member_id = team_members.id),
+                            WHERE team_member_info_view.team_member_id = team_members.id) AS name,
                            u.avatar_url,
                            (u.socket_id IS NOT NULL) AS is_online,
                            (SELECT COUNT(*)
@@ -258,12 +285,12 @@ export default class TeamMembersController extends WorklenzControllerBase {
                     FROM team_members
                            LEFT JOIN users u ON team_members.user_id = u.id
                     WHERE ${searchQuery} team_id = $1
-                    ORDER BY ${sortField} ${sortOrder} ${paginate}) t) AS data
+                    ORDER BY ${mappedSortField} ${sortOrder} ${paginate}) t) AS data
       FROM team_members
              LEFT JOIN users u ON team_members.user_id = u.id
       WHERE ${searchQuery} team_id = $1
     `;
-    const result = await db.query(q, [req.user?.team_id || null]);
+    const result = await db.query(q, [req.user?.team_id || null, ...searchParams]);
     const [members] = result.rows;
 
     members.data?.map((a: any) => {

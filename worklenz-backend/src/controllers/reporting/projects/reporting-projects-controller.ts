@@ -14,14 +14,15 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
 
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { searchQuery, sortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, ["p.name"]);
+    // teamId is $1, size is $2, offset is $3, so search params start at $4
+    const { searchQuery, searchParams, sortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, ["p.name"], false, 4);
     const archived = req.query.archived === "true";
 
     const teamId = this.getCurrentTeamId(req);
 
-    // Note: teamId is $1, size is $2, offset is $3, then filter params start at $4
-    const filterParams: any[] = [];
-    let paramOffset = 4; // Start after teamId, size, offset
+    // Note: teamId is $1, size is $2, offset is $3, search params are $4+, then filter params continue after
+    const filterParams: any[] = [...searchParams];
+    let paramOffset = 4 + searchParams.length; // Start after teamId, size, offset, and search params
 
     let statusesClause = "";
     if (req.query.statuses) {
@@ -257,15 +258,16 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
 
   @HandleExceptions()
   public static async getGrouped(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { searchQuery, sortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, ["p.name"]);
+    // teamId is $1, so search params start at $2
+    const { searchQuery, searchParams, sortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, ["p.name"], false, 2);
     const archived = req.query.archived === "true";
     const groupBy = (req.query.group_by as string) || "category";
 
     const teamId = this.getCurrentTeamId(req);
 
-    // Note: teamId is $1, filter params start at $2 (no LIMIT/OFFSET in grouped query)
-    const filterParams: any[] = [];
-    let paramOffset = 2; // Start after teamId
+    // Note: teamId is $1, search params are $2+, filter params continue after (no LIMIT/OFFSET in grouped query)
+    const filterParams: any[] = [...searchParams];
+    let paramOffset = 2 + searchParams.length; // Start after teamId and search params
 
     let statusesClause = "";
     if (req.query.statuses) {
