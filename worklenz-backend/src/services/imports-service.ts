@@ -1223,6 +1223,31 @@ class ImportsService {
         return Number.isNaN(parsed.getTime()) ? null : parsed;
       };
 
+      const getRawCompletedValue = (raw: unknown): string | null => {
+        if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+        const source = raw as Record<string, unknown>;
+        const normalizedEntries = Object.entries(source).map(
+          ([key, value]) => ({
+            key: key.trim().toLowerCase(),
+            value,
+          })
+        );
+        const candidates = new Set([
+          "completed on",
+          "completed_on",
+          "completed date",
+          "completeddate",
+          "completed",
+        ]);
+        for (const entry of normalizedEntries) {
+          if (!candidates.has(entry.key)) continue;
+          if (typeof entry.value === "string" && entry.value.trim()) {
+            return entry.value;
+          }
+        }
+        return null;
+      };
+
       const finalizeTaskCompletion = async (
         taskId: string,
         statusId: string | null,
@@ -1269,7 +1294,12 @@ class ImportsService {
         );
         const taskWithMappings = { ...task, ...patch } as any;
         let statusId = lookupStatusId(taskWithMappings.status);
-        const completedDate = parseDateValue(taskWithMappings.completed_at);
+        const completedValue =
+          typeof taskWithMappings.completed_at === "string" &&
+          taskWithMappings.completed_at.trim()
+            ? taskWithMappings.completed_at
+            : getRawCompletedValue(task.raw);
+        const completedDate = parseDateValue(completedValue);
         if (
           completedDate &&
           defaultDoneStatusId &&
