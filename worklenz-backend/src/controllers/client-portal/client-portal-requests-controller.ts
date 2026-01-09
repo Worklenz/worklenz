@@ -6,6 +6,7 @@ import db from "../../config/db";
 import { IO } from "../../shared/io";
 import { getBaseUrl } from "../../cron_jobs/helpers";
 import { sendClientPortalNewRequestNotification } from "../../shared/email-notifications";
+import crypto from "crypto";
 
 export default class ClientPortalRequestsController extends ClientPortalControllerBase {
 
@@ -163,6 +164,7 @@ export default class ClientPortalRequestsController extends ClientPortalControll
       }
 
       // Generate request number at application level with transaction and row-level lock
+      // Request numbers are unique per service (format: REQ-0001, REQ-0002, etc.)
       let reqNo: string;
       let newRequest: any;
       const maxRetries = 5;
@@ -172,19 +174,24 @@ export default class ClientPortalRequestsController extends ClientPortalControll
         try {
           await client.query('BEGIN');
           
+          // Use PostgreSQL advisory lock to prevent concurrent access to sequence
+          // Lock ID is derived from service ID hash to ensure per-service locking
+          const lockId = parseInt(crypto.createHash('md5').update(serviceId).digest('hex').substring(0, 8), 16) % 2147483647;
+          await client.query('SELECT pg_advisory_xact_lock($1)', [lockId]);
+          
           // Use a single atomic operation to insert or update and get the next number
           // This CTE ensures the operation is atomic and prevents race conditions
           const seqResult = await client.query(
             `WITH inserted AS (
-               INSERT INTO client_portal_request_sequences (organization_team_id, last_request_number)
+               INSERT INTO client_portal_request_sequences (service_id, last_request_number)
                VALUES ($1, 1)
-               ON CONFLICT (organization_team_id) DO UPDATE SET
+               ON CONFLICT (service_id) DO UPDATE SET
                  last_request_number = client_portal_request_sequences.last_request_number + 1,
                  updated_at = NOW()
                RETURNING last_request_number
              )
              SELECT last_request_number FROM inserted`,
-            [organizationId]
+            [serviceId]
           );
           
           if (!seqResult.rows || seqResult.rows.length === 0) {
@@ -192,6 +199,7 @@ export default class ClientPortalRequestsController extends ClientPortalControll
           }
           
           const nextNumber = seqResult.rows[0].last_request_number;
+          // Simple format: REQ-0001, REQ-0002, etc. (unique per service)
           reqNo = `REQ-${String(nextNumber).padStart(4, '0')}`;
 
           // Create request with generated req_no in same transaction
