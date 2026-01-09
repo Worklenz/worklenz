@@ -28,6 +28,7 @@ import {
   useGetRequestsQuery,
 } from '@/api/client-portal/client-portal-api';
 import dayjs from 'dayjs';
+import { CURRENCY_OPTIONS } from '@/shared/currencies';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -240,12 +241,19 @@ const AddInvoiceDrawer: React.FC<AddInvoiceDrawerProps> = ({ open, onClose, onSu
               }
               rules={[{ required: true, message: t('currencyRequired', { ns: 'common' }) || 'Please select currency' }]}
             >
-              <Select placeholder={t('selectCurrency', { ns: 'client-portal-invoices' }) || 'Select currency'}>
-                <Option value="USD">USD ($)</Option>
-                <Option value="EUR">EUR (€)</Option>
-                <Option value="GBP">GBP (£)</Option>
-                <Option value="CAD">CAD (C$)</Option>
-                <Option value="AUD">AUD (A$)</Option>
+              <Select 
+                placeholder={t('selectCurrency', { ns: 'client-portal-invoices' }) || 'Select currency'}
+                showSearch
+                optionFilterProp="children"
+                filterOption={(input, option) =>
+                  (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                }
+              >
+                {CURRENCY_OPTIONS.map((currency) => (
+                  <Option key={currency.value} value={currency.value.toUpperCase()}>
+                    {currency.label}
+                  </Option>
+                ))}
               </Select>
             </Form.Item>
           </Col>
