@@ -68,15 +68,13 @@ const ProfileSettings = () => {
         trackMixpanelEvent(evt_settings_profile_picture_update);
         
         // Update session with the latest data from API response
-        if (res.body) {
-          const updatedUser = {
-            ...currentSession,
-            avatar_url: res.body.url,
-            updated_at: res.body.updated_at || new Date().toISOString()
-          };
-          setSession(updatedUser);
-          dispatch(setUser(updatedUser));
-        }
+        const updatedUser = {
+          ...currentSession,
+          avatar_url: res.body.url,
+          updated_at: res.body.updated_at || new Date().toISOString()
+        };
+        setSession(updatedUser);
+        dispatch(setUser(updatedUser));
       }
     } catch (e) {
       logger.error('Error uploading avatar', e);
@@ -155,15 +153,13 @@ const ProfileSettings = () => {
         dispatch(changeUserName(name));
         
         // Update session with the latest data from API response
-        if (res.body) {
-          const updatedUser = {
-            ...currentSession,
-            ...res.body,
-            updated_at: res.body.updated_at || new Date().toISOString()
-          };
-          setSession(updatedUser);
-          dispatch(setUser(updatedUser));
-        }
+        const updatedUser = {
+          ...currentSession,
+          ...res.body,
+          updated_at: res.body.updated_at || new Date().toISOString()
+        };
+        setSession(updatedUser);
+        dispatch(setUser(updatedUser));
       }
     } catch (error) {
       logger.error('Error changing name', error);
