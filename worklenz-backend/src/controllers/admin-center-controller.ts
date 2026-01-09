@@ -127,10 +127,11 @@ export default class AdminCenterController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    const { searchQuery, size, offset } = this.toPaginationOptions(req.query, [
+    // owner_id is $1, size is $2, offset is $3, so search params start at $4
+    const { searchQuery, searchParams, size, offset } = this.toPaginationOptions(req.query, [
       "outer_tmiv.name",
       "outer_tmiv.email",
-    ]);
+    ], false, 4);
 
     const q = `SELECT ROW_TO_JSON(rec) AS users
             FROM (SELECT COUNT(*) AS total,
@@ -167,7 +168,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
                               (SELECT id
                               FROM teams
                               WHERE teams.user_id = $1) ${searchQuery}) AS total) rec;`;
-    const result = await db.query(q, [req.user?.owner_id, size, offset]);
+    const result = await db.query(q, [req.user?.owner_id, size, offset, ...searchParams]);
     const [data] = result.rows;
 
     return res.status(200).send(new ServerResponse(true, data.users));
@@ -446,9 +447,10 @@ export default class AdminCenterController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    const { searchQuery, size, offset } = this.toPaginationOptions(req.query, [
+    // owner_id is $1, size is $2, offset is $3, team_id is $4, so search params start at $5
+    const { searchQuery, searchParams, size, offset } = this.toPaginationOptions(req.query, [
       "name",
-    ]);
+    ], false, 5);
 
     let size_changed = size;
 
@@ -505,6 +507,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
       size_changed,
       offset,
       req.user?.team_id,
+      ...searchParams,
     ]);
 
     const [obj] = result.rows;
@@ -1327,15 +1330,19 @@ export default class AdminCenterController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    const { searchQuery, size, offset } = this.toPaginationOptions(req.query, [
+    // For count query: owner_id is $1, search params start at $2
+    const countSearchOptions = this.toPaginationOptions(req.query, ["p.name"], false, 2);
+    
+    // For data query: owner_id is $1, offset is $2, size is $3, search params start at $4
+    const { searchQuery, searchParams, size, offset } = this.toPaginationOptions(req.query, [
       "p.name",
-    ]);
+    ], false, 4);
 
     const countQ = `SELECT COUNT(*) AS total
         FROM projects p
         JOIN teams t ON p.team_id = t.id
-        WHERE t.user_id = $1;`;
-    const countResult = await db.query(countQ, [req.user?.owner_id]);
+        WHERE t.user_id = $1 ${countSearchOptions.searchQuery};`;
+    const countResult = await db.query(countQ, [req.user?.owner_id, ...countSearchOptions.searchParams]);
 
     // Query to get the project data
     const dataQ = `SELECT p.id,
@@ -1354,7 +1361,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
         ORDER BY p.name
         OFFSET $2 LIMIT $3;`;
 
-    const result = await db.query(dataQ, [req.user?.owner_id, offset, size]);
+    const result = await db.query(dataQ, [req.user?.owner_id, offset, size, ...searchParams]);
 
     const response = {
       total: countResult.rows[0]?.total ?? 0,
