@@ -28,6 +28,8 @@ import { useCreateInvoiceMutation, useGetRequestDetailsQuery, useGetOrganization
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
 import './invoice-builder.css';
+import { CURRENCY_OPTIONS, DEFAULT_CURRENCY, getCurrencySymbol } from '@/shared/currencies';
+
 
 interface InvoiceLineItem {
   key: string;
@@ -87,7 +89,7 @@ const InvoiceBuilder = () => {
   const [discountValue, setDiscountValue] = useState<number>(0);
 
   // Currency state
-  const [currency, setCurrency] = useState<string>('USD');
+  const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
 
   // Loading state for tracking which button was clicked
   const [savingAs, setSavingAs] = useState<'draft' | 'sent' | null>(null);
@@ -110,13 +112,7 @@ const InvoiceBuilder = () => {
 
   // Currency symbol
   const currencySymbol = useMemo(() => {
-    const symbols: Record<string, string> = {
-      USD: '$',
-      EUR: '€',
-      GBP: '£',
-      LKR: 'Rs.',
-    };
-    return symbols[currency] || currency;
+    return getCurrencySymbol(currency);
   }, [currency]);
 
   // Format currency
@@ -389,15 +385,17 @@ const InvoiceBuilder = () => {
                   label={t('currencyLabel') || 'Currency'} 
                   style={{ marginBottom: 0 }}
                 >
+
                   <Select
                     value={currency}
                     onChange={setCurrency}
-                    options={[
-                      { value: 'USD', label: 'USD - US Dollar' },
-                      { value: 'EUR', label: 'EUR - Euro' },
-                      { value: 'GBP', label: 'GBP - British Pound' },
-                      { value: 'LKR', label: 'LKR - Sri Lankan Rupee' },
-                    ]}
+                    options={CURRENCY_OPTIONS}
+                    optionFilterProp="label"
+                    showSearch
+                    filterOption={(input, option) =>
+                      (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+                    }
+                    notFoundContent={t('noCurrenciesFound') || 'No currencies found'}
                   />
                 </Form.Item>
 
