@@ -918,12 +918,43 @@ const enhancedKanbanSlice = createSlice({
 
     addTaskToGroup: (state, action) => {
       const { sectionId, task } = action.payload;
-      const group = state.taskGroups.find(g => g.id === sectionId);
+      
+      // First try exact match
+      let group = state.taskGroups.find(g => g.id === sectionId);
+      
+      // If not found and this is for priority/phase grouping, try fallback logic
+      if (!group) {
+        const currentGrouping = state.groupBy;
+        
+        if (currentGrouping === IGroupBy.PRIORITY) {
+          // For priority grouping, try to find by priority_id or priority name
+          group = state.taskGroups.find(g => 
+            g.id === task.priority_id || 
+            g.name?.toLowerCase() === (task.priority || '').toLowerCase() ||
+            (sectionId === 'Unmapped' && g.name === 'Unmapped')
+          );
+        } else if (currentGrouping === IGroupBy.PHASE) {
+          // For phase grouping, try to find by phase_id or phase name
+          group = state.taskGroups.find(g => 
+            g.id === task.phase_id || 
+            g.name?.toLowerCase() === (task.phase_name || '').toLowerCase() ||
+            (sectionId === 'Unmapped' && g.name === 'Unmapped')
+          );
+        }
+        
+        // Last resort: if still not found and we have an unmapped group, use it
+        if (!group && sectionId === 'Unmapped') {
+          group = state.taskGroups.find(g => g.name === 'Unmapped');
+        }
+      }
+      
       if (group) {
-        group.tasks.push(task);
+        // Transform task to IProjectTask format if needed
+        const transformedTask = task.id ? task : transformV3TaskToProjectTask(task, task.project_id || '');
+        group.tasks.push(transformedTask);
         // Update cache
-        state.taskCache[task.id!] = task;
-        state.groupCache[sectionId] = group;
+        state.taskCache[transformedTask.id!] = transformedTask;
+        state.groupCache[group.id] = group;
       }
     },
 
