@@ -302,5 +302,13 @@
   "emailRequiredTitle": "Email Required",
   "emailRequiredMessage": "This client does not have an email address. An email is required to invite them to the portal.",
   "emailRequiredQuestion": "Would you like to add an email address and invite them again?",
+  "clientAlreadyExists": "Client already exists",
+  "invitationAlreadySent": "Invitation already sent",
+  "sendInvitationToExistingClient": "Send Invitation",
+  "sendInvitationSuccess": "Invitation sent successfully",
+  "sendInvitationError": "Failed to send invitation",
+  "clientAlreadyHasPortalAccess": "Client has already joined the portal",
+  "clientAlreadyHasPendingInvitation": "Invitation already sent. Please use the resend option if needed.",
+  "clientEmailRequired": "Client email is required for invitation",
   "addEmailButton": "Add Email & Invite"
 }

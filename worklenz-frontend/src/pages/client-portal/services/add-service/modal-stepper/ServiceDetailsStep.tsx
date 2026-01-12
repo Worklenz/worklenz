@@ -202,270 +202,277 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
 
       {/* Scrollable Content */}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 16 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          {/* Service Name Section */}
-          <Card 
-            title={
-              <Flex align="center" gap={8}>
-                <span>1. Service Name</span>
-                {service.name?.trim() && <CheckCircleOutlined style={{ color: token.colorSuccess }} />}
-              </Flex>
-            }
-            size="small"
-            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
-          >
-            <div style={{ marginBottom: 16 }}>
-              <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-                Choose a clear, descriptive name that clients will easily understand.
-              </Typography.Text>
-              <Input
-                placeholder="e.g., Website Design, Logo Creation, Marketing Strategy"
-                size="large"
-                value={service.name || ''}
-                onChange={e => setService({ ...service, name: e.target.value })}
-                status={service.name?.trim() ? '' : 'warning'}
-              />
-              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-                💡 Good examples: "Custom Logo Design", "SEO Audit & Strategy", "Social Media Management"
-              </Typography.Text>
-            </div>
-          </Card>
-
-          {/* Service Image Section */}
-          <Card 
-            title={
-              <Flex align="center" gap={8}>
-                <span>2. Service Image</span>
-                <Typography.Text type="secondary" style={{ fontWeight: 'normal', fontSize: 12 }}>
-                  (Optional)
-                </Typography.Text>
-                {imageUrl && <CheckCircleOutlined style={{ color: token.colorSuccess }} />}
-              </Flex>
-            }
-            size="small"
-            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
-          >
-            <div style={{ marginBottom: 16 }}>
-              <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-                Add a visual that represents your service. This helps clients understand what you offer.
-              </Typography.Text>
-              
-              <div style={{ 
-                border: `2px dashed ${token.colorBorder}`, 
-                borderRadius: token.borderRadius, 
-                padding: 24, 
-                textAlign: 'center',
-                backgroundColor: imageUrl ? 'transparent' : token.colorFillAlter,
-                transition: 'all 0.3s ease'
-              }}>
-                {imageUrl ? (
-                  <div style={{ position: 'relative', display: 'inline-block' }}>
-                    <img
-                      src={imageUrl}
-                      alt="Service preview"
-                      style={{
-                        maxWidth: '100%',
-                        maxHeight: 200,
-                        objectFit: 'cover',
-                        borderRadius: 8,
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                      }}
-                    />
-                    <Button
-                      type="primary"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={removeImage}
-                      style={{ position: 'absolute', top: 8, right: 8 }}
-                      size="small"
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                ) : (
-                  <div>
-                    <UploadOutlined style={{ fontSize: 32, color: token.colorTextTertiary, marginBottom: 16 }} />
-                    <div style={{ marginBottom: 16 }}>
-                      <Typography.Text style={{ display: 'block', marginBottom: 8 }}>
-                        Click to upload or drag and drop
-                      </Typography.Text>
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                        PNG, JPG up to 2MB • Recommended: 400x200px
-                      </Typography.Text>
-                    </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={e => {
-                        const file = e.target.files?.[0];
-                        if (file) handleImageUpload(file as RcFile);
-                      }}
-                      style={{ display: 'none' }}
-                    />
-                    <Button
-                      type="dashed"
-                      icon={<PlusOutlined />}
-                      onClick={() => fileInputRef.current?.click()}
-                      loading={uploading}
-                      size="large"
-                    >
-                      Choose Image
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </Card>
-
-          {/* Pricing and Category Section */}
-          <Card 
-            title={
-              <Flex align="center" gap={8}>
-                <span>3. Pricing & Category</span>
-                <Typography.Text type="secondary" style={{ fontWeight: 'normal', fontSize: 12 }}>
-                  (Optional)
-                </Typography.Text>
-              </Flex>
-            }
-            size="small"
-            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
-          >
-            <div style={{ marginBottom: 16 }}>
-              <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-                Set pricing information and categorize your service for better organization.
-              </Typography.Text>
-              
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
-                    Price
+        <Row gutter={[24, 24]}>
+          {/* Left Column - Form Inputs */}
+          <Col xs={24} lg={16}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              {/* Service Name Section */}
+              <Card 
+                title={
+                  <Flex align="center" gap={8}>
+                    <span>1. Service Name</span>
+                    {service.name?.trim() && <CheckCircleOutlined style={{ color: token.colorSuccess }} />}
+                  </Flex>
+                }
+                size="small"
+                style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+              >
+                <div style={{ marginBottom: 16 }}>
+                  <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+                    Choose a clear, descriptive name that clients will easily understand.
                   </Typography.Text>
-                  <InputNumber
-                    style={{ width: '100%' }}
-                    min={0}
-                    precision={2}
-                    placeholder="e.g., 99.99"
-                    value={service.price}
-                    onChange={value => setService({ ...service, price: value })}
+                  <Input
+                    placeholder="e.g., Website Design, Logo Creation, Marketing Strategy"
+                    size="large"
+                    value={service.name || ''}
+                    onChange={e => setService({ ...service, name: e.target.value })}
+                    status={service.name?.trim() ? '' : 'warning'}
                   />
-                </Col>
-                <Col span={12}>
-                  <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
-                    Currency
-                  </Typography.Text>
-                  <Select
-                    style={{ width: '100%' }}
-                    placeholder="Select currency"
-                    value={service.currency || 'usd'}
-                    onChange={value => setService({ ...service, currency: value })}
-                    options={CURRENCY_OPTIONS}
-                    showSearch
-                    filterOption={(input, option) =>
-                      (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                    }
-                  />
-                </Col>
-              </Row>
-              
-              <div style={{ marginTop: 16 }}>
-                <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
-                  Category
-                </Typography.Text>
-                <Input
-                  placeholder="e.g., Web Development, Design, Marketing"
-                  value={service.category || ''}
-                  onChange={e => setService({ ...service, category: e.target.value })}
-                />
-                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-                  💡 Categories help organize your services for clients
-                </Typography.Text>
-              </div>
-            </div>
-          </Card>
-
-          {/* Service Visibility Section */}
-          <Card 
-            title={
-              <Flex align="center" gap={8}>
-                <span>4. {t('serviceVisibility.title')}</span>
-              </Flex>
-            }
-            size="small"
-            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
-          >
-            <div style={{ marginBottom: 16 }}>
-              <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-                {t('serviceVisibility.description')}
-              </Typography.Text>
-              
-              <Flex align="center" gap={12}>
-                <Switch
-                  checked={service.is_public ?? true}
-                  onChange={checked => setService({ ...service, is_public: checked })}
-                />
-                <div>
-                  <Typography.Text strong>
-                    {service.is_public ?? true ? t('serviceVisibility.showToAll') : t('serviceVisibility.hiddenFromAll')}
-                  </Typography.Text>
-                  <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
-                    {service.is_public ?? true 
-                      ? t('serviceVisibility.showToAllDescription')
-                      : t('serviceVisibility.hiddenFromAllDescription')}
+                  <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+                    💡 Good examples: "Custom Logo Design", "SEO Audit & Strategy", "Social Media Management"
                   </Typography.Text>
                 </div>
-              </Flex>
-            </div>
-          </Card>
+              </Card>
 
-          {/* Service Description Section */}
-          <Card 
-            title={
-              <Flex align="center" gap={8}>
-                <span>5. Service Description</span>
-                {service.service_data?.description?.trim() && <CheckCircleOutlined style={{ color: token.colorSuccess }} />}
-              </Flex>
-            }
-            size="small"
-            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
-          >
-            <div style={{ marginBottom: 16 }}>
-              <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-                Describe your service in detail. Include what's included, your process, and what clients can expect.
-              </Typography.Text>
-              
-              <div style={{ 
-                border: service.service_data?.description?.trim() ? `1px solid ${token.colorBorder}` : `1px solid ${token.colorError}`,
-                borderRadius: token.borderRadius,
-                overflow: 'hidden'
-              }}>
-                <RichTextEditor
-                  value={service.service_data?.description || ''}
-                  onChange={handleDescriptionChange}
-                  placeholder="Describe your service in detail... Include what's included, your process, timeline, and what clients can expect."
-                  themeMode={getThemeMode()}
-                  height={200}
-                />
-              </div>
-              
-              <Alert
-                message="Writing a great description"
-                description={
-                  <div style={{ marginTop: 8 }}>
-                    <div>• Explain what's included in your service</div>
-                    <div>• Mention your typical process or approach</div>
-                    <div>• Include estimated timeline or deliverables</div>
-                    <div>• Highlight what makes your service unique</div>
-                  </div>
+              {/* Pricing and Category Section */}
+              <Card 
+                title={
+                  <Flex align="center" gap={8}>
+                    <span>3. Pricing & Category</span>
+                    <Typography.Text type="secondary" style={{ fontWeight: 'normal', fontSize: 12 }}>
+                      (Optional)
+                    </Typography.Text>
+                  </Flex>
                 }
-                type="info"
-                showIcon={false}
-                style={{ marginTop: 12 }}
-                banner
-              />
+                size="small"
+                style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+              >
+                <div style={{ marginBottom: 16 }}>
+                  <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+                    Set pricing information and categorize your service for better organization.
+                  </Typography.Text>
+                  
+                  <Row gutter={16}>
+                    <Col span={12}>
+                      <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
+                        Price
+                      </Typography.Text>
+                      <InputNumber
+                        style={{ width: '100%' }}
+                        min={0}
+                        precision={2}
+                        placeholder="e.g., 99.99"
+                        value={service.price}
+                        onChange={value => setService({ ...service, price: value })}
+                      />
+                    </Col>
+                    <Col span={12}>
+                      <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
+                        Currency
+                      </Typography.Text>
+                      <Select
+                        style={{ width: '100%' }}
+                        placeholder="Select currency"
+                        value={service.currency || 'usd'}
+                        onChange={value => setService({ ...service, currency: value })}
+                        options={CURRENCY_OPTIONS}
+                        showSearch
+                        filterOption={(input, option) =>
+                          (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                        }
+                      />
+                    </Col>
+                  </Row>
+                  
+                  <div style={{ marginTop: 16 }}>
+                    <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
+                      Category
+                    </Typography.Text>
+                    <Input
+                      placeholder="e.g., Web Development, Design, Marketing"
+                      value={service.category || ''}
+                      onChange={e => setService({ ...service, category: e.target.value })}
+                    />
+                    <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+                      💡 Categories help organize your services for clients
+                    </Typography.Text>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Service Visibility Section */}
+              <Card 
+                title={
+                  <Flex align="center" gap={8}>
+                    <span>4. {t('serviceVisibility.title')}</span>
+                  </Flex>
+                }
+                size="small"
+                style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+              >
+                <div style={{ marginBottom: 16 }}>
+                  <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+                    {t('serviceVisibility.description')}
+                  </Typography.Text>
+                  
+                  <Flex align="center" gap={12}>
+                    <Switch
+                      checked={service.is_public ?? true}
+                      onChange={checked => setService({ ...service, is_public: checked })}
+                    />
+                    <div>
+                      <Typography.Text strong>
+                        {service.is_public ?? true ? t('serviceVisibility.showToAll') : t('serviceVisibility.hiddenFromAll')}
+                      </Typography.Text>
+                      <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                        {service.is_public ?? true 
+                          ? t('serviceVisibility.showToAllDescription')
+                          : t('serviceVisibility.hiddenFromAllDescription')}
+                      </Typography.Text>
+                    </div>
+                  </Flex>
+                </div>
+              </Card>
+
+              {/* Service Description Section */}
+              <Card 
+                title={
+                  <Flex align="center" gap={8}>
+                    <span>5. Service Description</span>
+                    {service.service_data?.description?.trim() && <CheckCircleOutlined style={{ color: token.colorSuccess }} />}
+                  </Flex>
+                }
+                size="small"
+                style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+              >
+                <div style={{ marginBottom: 16 }}>
+                  <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+                    Describe your service in detail. Include what's included, your process, and what clients can expect.
+                  </Typography.Text>
+                  
+                  <div style={{ 
+                    border: service.service_data?.description?.trim() ? `1px solid ${token.colorBorder}` : `1px solid ${token.colorError}`,
+                    borderRadius: token.borderRadius,
+                    overflow: 'hidden'
+                  }}>
+                    <RichTextEditor
+                      value={service.service_data?.description || ''}
+                      onChange={handleDescriptionChange}
+                      placeholder="Describe your service in detail... Include what's included, your process, timeline, and what clients can expect."
+                      themeMode={getThemeMode()}
+                      height={200}
+                    />
+                  </div>
+                  
+                  <Alert
+                    message="Writing a great description"
+                    description={
+                      <div style={{ marginTop: 8 }}>
+                        <div>• Explain what's included in your service</div>
+                        <div>• Mention your typical process or approach</div>
+                        <div>• Include estimated timeline or deliverables</div>
+                        <div>• Highlight what makes your service unique</div>
+                      </div>
+                    }
+                    type="info"
+                    showIcon={false}
+                    style={{ marginTop: 12 }}
+                    banner
+                  />
+                </div>
+              </Card>
             </div>
-          </Card>
-        </div>
+          </Col>
+
+          {/* Right Column - Service Image */}
+          <Col xs={24} lg={8}>
+            <Card 
+              title={
+                <Flex align="center" gap={8}>
+                  <span>2. Service Image</span>
+                  <Typography.Text type="secondary" style={{ fontWeight: 'normal', fontSize: 12 }}>
+                    (Optional)
+                  </Typography.Text>
+                  {imageUrl && <CheckCircleOutlined style={{ color: token.colorSuccess }} />}
+                </Flex>
+              }
+              size="small"
+              style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+            >
+              <div style={{ marginBottom: 16 }}>
+                <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+                  Add a visual that represents your service. This helps clients understand what you offer.
+                </Typography.Text>
+                
+                <div style={{ 
+                  border: `2px dashed ${token.colorBorder}`, 
+                  borderRadius: token.borderRadius, 
+                  padding: 24, 
+                  textAlign: 'center',
+                  backgroundColor: imageUrl ? 'transparent' : token.colorFillAlter,
+                  transition: 'all 0.3s ease'
+                }}>
+                  {imageUrl ? (
+                    <div style={{ position: 'relative', display: 'inline-block' }}>
+                      <img
+                        src={imageUrl}
+                        alt="Service preview"
+                        style={{
+                          maxWidth: '100%',
+                          maxHeight: 300,
+                          objectFit: 'cover',
+                          borderRadius: 8,
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                        }}
+                      />
+                      <Button
+                        type="primary"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={removeImage}
+                        style={{ position: 'absolute', top: 8, right: 8 }}
+                        size="small"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <div>
+                      <UploadOutlined style={{ fontSize: 32, color: token.colorTextTertiary, marginBottom: 16 }} />
+                      <div style={{ marginBottom: 16 }}>
+                        <Typography.Text style={{ display: 'block', marginBottom: 8 }}>
+                          Click to upload or drag and drop
+                        </Typography.Text>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          PNG, JPG up to 2MB • Recommended: 400x200px
+                        </Typography.Text>
+                      </div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageUpload(file as RcFile);
+                        }}
+                        style={{ display: 'none' }}
+                      />
+                      <Button
+                        type="dashed"
+                        icon={<PlusOutlined />}
+                        onClick={() => fileInputRef.current?.click()}
+                        loading={uploading}
+                        size="large"
+                      >
+                        Choose Image
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          </Col>
+        </Row>
       </div>
 
       {/* Navigation Buttons - Fixed at bottom */}

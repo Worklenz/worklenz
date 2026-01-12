@@ -1168,12 +1168,12 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         const existingInvitation = pendingInviteCheck.rows[0];
         inviteToken = TokenService.generateInviteToken();
 
-        // Update only this specific invitation by ID with new token and expiry
+        // Update invitation with new token, expiry, and current client email/name
         await db.query(
           `UPDATE client_invitations
-           SET token = $1, expires_at = $2, updated_at = NOW()
-           WHERE id = $3`,
-          [inviteToken, new Date(expiresAt), existingInvitation.id]
+           SET token = $1, expires_at = $2, email = $3, name = $4, updated_at = NOW()
+           WHERE id = $5`,
+          [inviteToken, new Date(expiresAt), client.email, client.name, existingInvitation.id]
         );
       } else {
         inviteToken = TokenService.generateInviteToken();

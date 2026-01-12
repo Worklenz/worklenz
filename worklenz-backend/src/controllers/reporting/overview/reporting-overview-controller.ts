@@ -79,7 +79,8 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
 
   @HandleExceptions()
   public static async getProjects(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { searchQuery, sortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, ["p.name"]);
+    // teamId is $1, size is $2, offset is $3, so search params start at $4
+    const { searchQuery, searchParams, sortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, ["p.name"], false, 4);
     const archived = req.query.archived === "true";
 
     const teamId = req.query.team as string;
@@ -92,7 +93,7 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
     const projectFilterClause = await this.buildProjectFilterForTeamLead(req);
     const teamFilterClause = `p.team_id = $1 ${projectFilterClause}`;
 
-    const result = await ReportingControllerBase.getProjectsByTeam(teamId, size, offset, searchQuery, sortField, sortOrder, "", "", "", archivedClause, teamFilterClause, "");
+    const result = await ReportingControllerBase.getProjectsByTeam(teamId, size, offset, searchQuery, sortField, sortOrder, "", "", "", archivedClause, teamFilterClause, "", searchParams);
 
 
     for (const project of result.projects) {

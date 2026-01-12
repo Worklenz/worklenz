@@ -133,5 +133,8 @@
   "viewFullSize": "Vollständige Größe anzeigen",
   "viewPdf": "PDF anzeigen",
   "viewFile": "Datei anzeigen",
-  "download": "Herunterladen"
+  "download": "Herunterladen",
+  "existingInvoicesWarning": "⚠️ Diese Anfrage hat bereits Rechnungen:",
+  "multipleInvoicesAllowed": "Sie können zusätzliche Rechnungen für diese Anfrage erstellen (z.B. für Meilensteine oder zusätzliche Arbeiten).",
+  "noCurrenciesFound": "Keine Währungen gefunden"
 }

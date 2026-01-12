@@ -133,5 +133,8 @@
   "viewFullSize": "查看完整尺寸",
   "viewPdf": "查看PDF",
   "viewFile": "查看文件",
-  "download": "下载"
+  "download": "下载",
+  "existingInvoicesWarning": "⚠️ 此请求已有发票：",
+  "multipleInvoicesAllowed": "您可以为此请求创建额外发票（例如用于里程碑或额外工作）。",
+  "noCurrenciesFound": "未找到货币"
 }
