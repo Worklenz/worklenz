@@ -66,7 +66,14 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
     @HandleExceptions()
     public static async getDates(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
 
-        const { date, type } = req.params;
+        let { date, type } = req.params;
+        
+        // Handle date parameter - extract YYYY-MM-DD format to avoid timezone issues
+        // If date comes as ISO string (e.g., '2025-12-31T18:30:00.000Z'), extract just the date part
+        if (date.includes('T')) {
+            // For ISO strings, use moment to parse and format in local timezone
+            date = moment(date).format('YYYY-MM-DD');
+        }
 
         if (type === "week") {
             const getDataq = `WITH input_date AS (

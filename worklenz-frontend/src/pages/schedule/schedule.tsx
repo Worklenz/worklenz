@@ -64,7 +64,6 @@ const Schedule: React.FC = () => {
     const today = new Date();
     setDate(today);
     granttChartRef.current?.scrollToToday();
-    console.log('Today:', today);
   };
 
   return (

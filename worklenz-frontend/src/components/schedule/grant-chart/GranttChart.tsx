@@ -21,6 +21,14 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(undefined);
 
+  // Format date as YYYY-MM-DD in local timezone to avoid timezone conversion issues
+  const formattedDate = React.useMemo(() => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }, [date]);
+
   // RTK Query hooks with proper error handling
   const {
     data: teamDataResponse,
@@ -34,7 +42,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
     refetch: refetchDates,
     error: dateError,
   } = useFetchScheduleDatesQuery({
-    date: date.toISOString(),
+    date: formattedDate,
     type,
   });
 
@@ -75,22 +83,14 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
     return memberProjects[memberId] || [];
   };
 
-  // Log data for debugging
-  console.log('Team Data:', teamData);
-  console.log('Date List:', dateList);
-  console.log('Member Projects:', memberProjects);
-  console.log('Expanded Member:', expandedMemberId);
-  console.log('Errors:', { teamError, dateError });
-
   // get theme details from theme reducer
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   // Auto-refresh data when date or type changes
   useEffect(() => {
-    console.log('Refetching data for:', { date: date.toISOString(), type });
     refetchTeam();
     refetchDates();
-  }, [date, type, refetchTeam, refetchDates]);
+  }, [date, type, refetchTeam, refetchDates, formattedDate]);
 
   // function to scroll the timeline header and body together
 
