@@ -203,8 +203,8 @@ export const handleNewTaskReceived = (
       // For status grouping, use status field (which contains the status UUID)
       groupId = data.status;
     } else if (grouping === 'priority') {
-      // For priority grouping, use priority field (which contains the priority UUID)
-      groupId = data.priority;
+      // For priority grouping, use priority_id field (which contains the priority UUID)
+      groupId = data.priority_id || data.priority || 'Unmapped';
     } else if (grouping === 'phase') {
       // For phase grouping, use phase_id, or 'Unmapped' if no phase_id
       groupId = data.phase_id || 'Unmapped';
