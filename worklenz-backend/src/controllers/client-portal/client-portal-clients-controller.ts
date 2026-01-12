@@ -91,8 +91,14 @@ export default class ClientPortalClientsController extends ClientPortalControlle
 
       // Add status filter
       if (status) {
-        whereConditions.push(`c.status = $${queryParams.length + 1}`);
-        queryParams.push(String(status));
+        // Normalize status to lowercase and validate
+        const normalizedStatus = String(status).toLowerCase().trim();
+        // Only apply filter if status is one of the valid values
+        if (["active", "inactive", "pending"].includes(normalizedStatus)) {
+          // Use COALESCE to treat NULL status as 'active' (the default)
+          whereConditions.push(`LOWER(COALESCE(c.status, 'active')) = $${queryParams.length + 1}`);
+          queryParams.push(normalizedStatus);
+        }
       }
 
       if (whereConditions.length > 0) {
@@ -104,12 +110,18 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       // Add sorting
       const sortField = String(sortBy || "name");
       const sortDirection = sortOrder === "desc" ? "DESC" : "ASC";
-      // Validate sort field to prevent SQL injection and ensure it's a valid column
-      const validSortFields = ["id", "name", "created_at", "updated_at"];
+      // Validate sort field and ensure it's a valid column
+      const validSortFields = ["id", "name", "created_at", "updated_at", "assigned_projects_count"];
       const safeSortField = validSortFields.includes(sortField)
         ? sortField
         : "name";
-      query += ` ORDER BY c.${safeSortField} ${sortDirection}`;
+      
+      // Handle special case for assigned_projects_count (it's an aggregated column)
+      const sortColumn = safeSortField === "assigned_projects_count" 
+        ? "assigned_projects_count" 
+        : `c.${safeSortField}`;
+      
+      query += ` ORDER BY ${sortColumn} ${sortDirection}`;
 
       // Get total count
       const countQuery = `
@@ -133,6 +145,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       queryParams.push(Number(limit), offset);
 
       const result = await db.query(query, queryParams);
+      
       const clients = result.rows.map((row: any) => {
         // Determine portal status based on the data
         let portalStatus: { status: string; label: string; color: string };
@@ -347,8 +360,6 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         subject: `Welcome to your Client Portal - ${teamName}`,
         html: emailContent,
       });
-
-      console.log(`Client invitation email sent to ${client.email}`);
     } catch (error) {
       console.error("Error sending client invitation email:", error);
       throw error;
@@ -622,9 +633,15 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         paramIndex++;
       }
 
-      if (updateData.address) {
+      if (updateData.address !== undefined) {
         updateFields.push(`address = $${paramIndex}`);
-        updateValues.push(updateData.address);
+        updateValues.push(updateData.address || null);
+        paramIndex++;
+      }
+
+      if (updateData.contact_person !== undefined) {
+        updateFields.push(`contact_person = $${paramIndex}`);
+        updateValues.push(updateData.contact_person || null);
         paramIndex++;
       }
 
@@ -647,7 +664,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         UPDATE clients
         SET ${updateFields.join(", ")}
         WHERE id = $${paramIndex} AND team_id = $${paramIndex + 1}
-        RETURNING id, name, email, company_name, phone, address, status, created_at, updated_at
+        RETURNING id, name, email, company_name, phone, address, contact_person, status, created_at, updated_at
       `;
 
       const result = await db.query(query, updateValues);
@@ -669,7 +686,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         );
 
         // Update client_portal_access is_active based on status
-        const isActive = updateData.status === 'active';
+        const isActive = updateData.status === "active";
         await db.query(
           "UPDATE client_portal_access SET is_active = $1, updated_at = NOW() WHERE client_id = $2",
           [isActive, id]
@@ -714,7 +731,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       const client = clientCheck.rows[0];
 
       // If invite_slug is null or empty, remove it
-      if (!invite_slug || invite_slug.trim() === '') {
+      if (!invite_slug || invite_slug.trim() === "") {
         await db.query(
           "UPDATE clients SET invite_slug = NULL, updated_at = NOW() WHERE id = $1",
           [id]
@@ -1274,7 +1291,14 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       }
 
       const activities = [];
-      const dayFilter = `NOW() - INTERVAL '${Number(days)} days'`;
+      // Validate and use parameterized query for day filter
+      const daysNum = Number(days);
+      if (isNaN(daysNum) || daysNum < 0 || daysNum > 365) {
+        return res.status(400).json(new ServerResponse(false, null, "Invalid days parameter"));
+      }
+      // Calculate the date threshold in JavaScript
+      const thresholdDate = new Date();
+      thresholdDate.setDate(thresholdDate.getDate() - daysNum);
 
       // Get project activities
       if (!type || type === "project") {
@@ -1289,11 +1313,11 @@ export default class ClientPortalClientsController extends ClientPortalControlle
             'project' as category
           FROM projects p
           LEFT JOIN sys_project_statuses sps ON p.status_id = sps.id
-          WHERE p.client_id = $1 AND p.updated_at >= ${dayFilter}
+          WHERE p.client_id = $1 AND p.updated_at >= $2
           ORDER BY p.updated_at DESC
         `;
 
-        const projectResult = await db.query(projectActivitiesQuery, [id]);
+        const projectResult = await db.query(projectActivitiesQuery, [id, thresholdDate]);
         activities.push(...projectResult.rows);
       }
 
@@ -1309,11 +1333,11 @@ export default class ClientPortalClientsController extends ClientPortalControlle
             r.status,
             'request' as category
           FROM client_portal_requests r
-          WHERE r.client_id = $1 AND r.updated_at >= ${dayFilter}
+          WHERE r.client_id = $1 AND r.updated_at >= $2
           ORDER BY r.updated_at DESC
         `;
 
-        const requestResult = await db.query(requestActivitiesQuery, [id]);
+        const requestResult = await db.query(requestActivitiesQuery, [id, thresholdDate]);
         activities.push(...requestResult.rows);
       }
 
@@ -1333,11 +1357,11 @@ export default class ClientPortalClientsController extends ClientPortalControlle
             i.status,
             'invoice' as category
           FROM client_portal_invoices i
-          WHERE i.client_id = $1 AND i.created_at >= ${dayFilter}
+          WHERE i.client_id = $1 AND i.created_at >= $2
           ORDER BY COALESCE(i.sent_at, i.created_at) DESC
         `;
 
-        const invoiceResult = await db.query(invoiceActivitiesQuery, [id]);
+        const invoiceResult = await db.query(invoiceActivitiesQuery, [id, thresholdDate]);
         activities.push(...invoiceResult.rows);
       }
 
@@ -1357,12 +1381,12 @@ export default class ClientPortalClientsController extends ClientPortalControlle
             'chat' as category
           FROM client_portal_chat_messages m
           LEFT JOIN users u ON m.sender_type = 'team_member' AND m.sender_id = u.id
-          WHERE m.client_id = $1 AND m.created_at >= ${dayFilter}
+          WHERE m.client_id = $1 AND m.created_at >= $2
           ORDER BY m.created_at DESC
           LIMIT 50
         `;
 
-        const chatResult = await db.query(chatActivitiesQuery, [id]);
+        const chatResult = await db.query(chatActivitiesQuery, [id, thresholdDate]);
         activities.push(...chatResult.rows);
       }
 
@@ -1603,16 +1627,16 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       return `${diffInSeconds} seconds ago`;
     } else if (diffInSeconds < 3600) {
       const minutes = Math.floor(diffInSeconds / 60);
-      return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+      return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
     } else if (diffInSeconds < 86400) {
       const hours = Math.floor(diffInSeconds / 3600);
-      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+      return `${hours} hour${hours > 1 ? "s" : ""} ago`;
     } else if (diffInSeconds < 2592000) {
       const days = Math.floor(diffInSeconds / 86400);
-      return `${days} day${days > 1 ? 's' : ''} ago`;
-    } else {
+      return `${days} day${days > 1 ? "s" : ""} ago`;
+    } 
       const months = Math.floor(diffInSeconds / 2592000);
-      return `${months} month${months > 1 ? 's' : ''} ago`;
-    }
+      return `${months} month${months > 1 ? "s" : ""} ago`;
+    
   }
 }

@@ -64,3 +64,4 @@ export const getThemeConfig = (currentTheme: 'light' | 'dark'): ThemeConfig => (
   },
 });
 
+

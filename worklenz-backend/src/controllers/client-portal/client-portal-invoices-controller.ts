@@ -4,6 +4,7 @@ import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import db from "../../config/db";
+import SqlHelper from "../../shared/sql-helpers";
 
 export default class ClientPortalInvoicesController extends ClientPortalControllerBase {
 
@@ -270,7 +271,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
 
   static async createInvoice(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
-      const { requestId, amount, currency = "USD", dueDate, notes } = req.body;
+      const { requestId, amount, currency = "USD", dueDate, notes, status = "draft" } = req.body;
       const organizationId = req.user?.team_id;
       const createdBy = req.user?.id;
 
@@ -314,13 +315,15 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         .toUpperCase()}`;
 
       // Create invoice
+      // If status is 'sent', set sent_at timestamp
+      const sentAt = status === 'sent' ? new Date() : null;
       const insertQuery = `
         INSERT INTO client_portal_invoices (
           invoice_no, request_id, client_id, organization_team_id,
-          amount, currency, status, due_date, notes, created_by_user_id, created_at, updated_at
+          amount, currency, status, due_date, notes, created_by_user_id, sent_at, created_at, updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, 'draft', $7, $8, $9, NOW(), NOW())
-        RETURNING id, invoice_no, amount, currency, status, due_date, created_at
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+        RETURNING id, invoice_no, amount, currency, status, due_date, sent_at, created_at
       `;
 
       const result = await db.query(insertQuery, [
@@ -330,9 +333,11 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         organizationId,
         amount,
         currency,
+        status,
         dueDate || null,
         notes || null,
         createdBy,
+        sentAt,
       ]);
 
       const newInvoice = result.rows[0];
@@ -511,6 +516,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           i.created_at,
           i.updated_at,
           i.notes,
+          i.payment_proof_url,
           r.id as request_id,
           r.req_no as request_number,
           r.request_data,
@@ -575,6 +581,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         createdAt: invoice.created_at,
         updatedAt: invoice.updated_at,
         notes: invoice.notes,
+        paymentProofUrl: invoice.payment_proof_url || null,
         isOverdue:
           invoice.due_date &&
           new Date(invoice.due_date) < new Date() &&
@@ -667,15 +674,15 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           .json(new ServerResponse(false, null, "Invoice is already paid"));
       }
 
-      // Update invoice status to paid
+      // Update invoice status to paid, store payment proof URL, and save notes
       const updateQuery = `
         UPDATE client_portal_invoices
-        SET status = 'paid', paid_at = NOW(), updated_at = NOW()
+        SET status = 'paid', paid_at = NOW(), updated_at = NOW(), payment_proof_url = $2, notes = COALESCE($3, notes)
         WHERE id = $1
-        RETURNING id, invoice_no, amount, currency, status, paid_at, updated_at
+        RETURNING id, invoice_no, amount, currency, status, paid_at, updated_at, payment_proof_url, notes
       `;
 
-      const result = await db.query(updateQuery, [id]);
+      const result = await db.query(updateQuery, [id, transactionId || null, notes || null]);
       const updatedInvoice = result.rows[0];
 
       // Here you would typically integrate with a payment processor
@@ -699,6 +706,8 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
             status: updatedInvoice.status,
             paidAt: updatedInvoice.paid_at,
             updatedAt: updatedInvoice.updated_at,
+            paymentProofUrl: updatedInvoice.payment_proof_url,
+            notes: updatedInvoice.notes,
           },
           "Invoice paid successfully"
         )
@@ -712,44 +721,106 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
   }
 
   static async downloadInvoice(
-    req: AuthenticatedClientRequest,
+    req: AuthenticatedClientRequest | IWorkLenzRequest,
     res: IWorkLenzResponse
   ) {
     try {
       const { id } = req.params;
-      const { clientId } = req;
-      const { organizationId } = req;
-      const { format = "pdf" } = req.query;
+      
+      // Determine if this is a client request or admin request
+      const isClientRequest = 'clientId' in req && req.clientId;
+      const clientId = isClientRequest ? (req as AuthenticatedClientRequest).clientId : null;
+      const organizationId = isClientRequest 
+        ? (req as AuthenticatedClientRequest).organizationId 
+        : (req as IWorkLenzRequest).user?.team_id;
 
-      // Verify invoice exists and belongs to client
-      const invoiceQuery = `
-        SELECT
-          i.id,
-          i.invoice_no,
-          i.amount,
-          i.currency,
-          i.status,
-          i.due_date,
-          i.created_at,
-          c.name as client_name,
-          c.company_name,
-          c.email as client_email,
-          c.address as client_address,
-          r.req_no as request_number,
-          s.name as service_name,
-          s.description as service_description
-        FROM client_portal_invoices i
-        LEFT JOIN clients c ON i.client_id = c.id
-        LEFT JOIN client_portal_requests r ON i.request_id = r.id
-        LEFT JOIN client_portal_services s ON r.service_id = s.id
-        WHERE i.id = $1 AND i.client_id = $2 AND i.organization_team_id = $3
-      `;
+      if (!organizationId) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Organization ID is required"));
+      }
 
-      const result = await db.query(invoiceQuery, [
-        id,
-        clientId,
-        organizationId,
-      ]);
+      // Build query based on request type
+      let invoiceQuery: string;
+      let queryParams: any[];
+
+      if (isClientRequest && clientId) {
+        // Client-side: verify invoice belongs to client
+        invoiceQuery = `
+          SELECT
+            i.id,
+            i.invoice_no,
+            i.amount,
+            i.currency,
+            i.status,
+            i.due_date,
+            i.created_at,
+            i.notes,
+            c.id as client_id,
+            c.name as client_name,
+            c.company_name,
+            c.email as client_email,
+            c.phone as client_phone,
+            c.address as client_address,
+            r.req_no as request_number,
+            s.name as service_name,
+            s.description as service_description,
+            ot.name as organization_name,
+            ot.logo_url as organization_logo_url,
+            ot.primary_color as organization_primary_color,
+            ot.email as organization_email,
+            ot.phone as organization_phone,
+            ot.address_line_1 as organization_address_line_1,
+            ot.address_line_2 as organization_address_line_2,
+            ot.invoice_footer_message as organization_invoice_footer_message
+          FROM client_portal_invoices i
+          LEFT JOIN clients c ON i.client_id = c.id
+          LEFT JOIN client_portal_requests r ON i.request_id = r.id
+          LEFT JOIN client_portal_services s ON r.service_id = s.id
+          LEFT JOIN organization_teams ot ON i.organization_team_id = ot.id
+          WHERE i.id = $1 AND i.client_id = $2 AND i.organization_team_id = $3
+        `;
+        queryParams = [id, clientId, organizationId];
+      } else {
+        // Admin-side: verify invoice belongs to organization
+        invoiceQuery = `
+          SELECT
+            i.id,
+            i.invoice_no,
+            i.amount,
+            i.currency,
+            i.status,
+            i.due_date,
+            i.created_at,
+            i.notes,
+            c.id as client_id,
+            c.name as client_name,
+            c.company_name,
+            c.email as client_email,
+            c.phone as client_phone,
+            c.address as client_address,
+            r.req_no as request_number,
+            s.name as service_name,
+            s.description as service_description,
+            ot.name as organization_name,
+            ot.logo_url as organization_logo_url,
+            ot.primary_color as organization_primary_color,
+            ot.email as organization_email,
+            ot.phone as organization_phone,
+            ot.address_line_1 as organization_address_line_1,
+            ot.address_line_2 as organization_address_line_2,
+            ot.invoice_footer_message as organization_invoice_footer_message
+          FROM client_portal_invoices i
+          LEFT JOIN clients c ON i.client_id = c.id
+          LEFT JOIN client_portal_requests r ON i.request_id = r.id
+          LEFT JOIN client_portal_services s ON r.service_id = s.id
+          LEFT JOIN organization_teams ot ON i.organization_team_id = ot.id
+          WHERE i.id = $1 AND i.organization_team_id = $2
+        `;
+        queryParams = [id, organizationId];
+      }
+
+      const result = await db.query(invoiceQuery, queryParams);
 
       if (result.rows.length === 0) {
         return res
@@ -759,48 +830,426 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
 
       const invoice = result.rows[0];
 
-      // For now, return invoice data that could be used to generate a PDF
-      // In a full implementation, you would use a PDF generation library
+      // Check if due date has passed
+      const isOverdue = invoice.due_date && new Date(invoice.due_date) < new Date() && invoice.status !== 'paid';
+
+      // Prepare invoice data for template generator
       const invoiceData = {
-        id: invoice.id,
         invoiceNumber: invoice.invoice_no,
+        status: invoice.status,
+        createdAt: invoice.created_at,
+        dueDate: invoice.due_date,
         amount: parseFloat(invoice.amount || "0"),
         currency: invoice.currency,
-        status: invoice.status,
-        dueDate: invoice.due_date,
-        createdAt: invoice.created_at,
+        isOverdue,
         client: {
           name: invoice.client_name,
           companyName: invoice.company_name,
           email: invoice.client_email,
+          phone: invoice.client_phone,
           address: invoice.client_address,
         },
-        service: {
-          name: invoice.service_name,
-          description: invoice.service_description,
+        request: invoice.request_number ? {
+          requestNumber: invoice.request_number,
+          service: {
+            name: invoice.service_name,
+            description: invoice.service_description,
+          },
+        } : null,
+        notes: invoice.notes,
+        organization: {
+          name: invoice.organization_name,
+          logoUrl: invoice.organization_logo_url,
+          primaryColor: invoice.organization_primary_color,
+          email: invoice.organization_email,
+          phone: invoice.organization_phone,
+          addressLine1: invoice.organization_address_line_1,
+          addressLine2: invoice.organization_address_line_2,
+          invoiceFooterMessage: invoice.organization_invoice_footer_message,
         },
-        requestNumber: invoice.request_number,
       };
 
-      // TODO: Generate actual PDF/document using a library like puppeteer or jsPDF
-      // For now, return the data that would be used for PDF generation
-      return res.json(
-        new ServerResponse(
-          true,
-          {
-            downloadUrl: `/api/client-portal/invoices/${id}/download?format=${format}`,
-            format,
-            invoiceData,
-            message: "Invoice download link generated",
-          },
-          "Invoice download initiated"
-        )
-      );
+      // Generate PDF using puppeteer
+      const puppeteer = require('puppeteer');
+      const { InvoiceTemplateGenerator } = require('../../shared/invoice-template-generator');
+      
+      const html = InvoiceTemplateGenerator.generateInvoiceHTML(invoiceData);
+      
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      });
+      
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle0' });
+      
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: {
+          top: '20mm',
+          right: '20mm',
+          bottom: '20mm',
+          left: '20mm',
+        },
+      });
+      
+      await browser.close();
+
+      // Set response headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoice_no}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      return res.send(pdfBuffer);
     } catch (error) {
       console.error("Error downloading invoice:", error);
       return res
         .status(500)
         .json(new ServerResponse(false, null, "Failed to download invoice"));
+    }
+  }
+
+  static async updateInvoice(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const { id } = req.params;
+      const { amount, currency, dueDate, notes, status } = req.body;
+      const organizationId = req.user?.team_id;
+
+      // Verify invoice exists and belongs to organization
+      const checkQuery = `
+        SELECT id, status as current_status FROM client_portal_invoices
+        WHERE id = $1 AND organization_team_id = $2
+      `;
+      const checkResult = await db.query(checkQuery, [id, organizationId]);
+
+      if (checkResult.rows.length === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Invoice not found"));
+      }
+
+      const currentInvoice = checkResult.rows[0];
+      const currentStatus = currentInvoice.current_status;
+
+      // Define allowed status transitions
+      const allowedTransitions: Record<string, string[]> = {
+        draft: ["sent"],
+        sent: ["paid"],
+        paid: [], // Paid invoices cannot transition to other states
+      };
+
+      // Validate status transition if status is being updated
+      if (status && status !== currentStatus) {
+        const allowedNextStates = allowedTransitions[currentStatus] || [];
+        
+        if (!allowedNextStates.includes(status)) {
+          return res
+            .status(400)
+            .json(
+              new ServerResponse(
+                false,
+                null,
+                `Invalid status transition: cannot change from '${currentStatus}' to '${status}'. Use dedicated endpoints for status changes (sendInvoice, markInvoiceAsPaid).`
+              )
+            );
+        }
+      }
+
+      // Build SET clause for fields to update
+      const setFields: Record<string, any> = {};
+
+      if (amount !== undefined) {
+        setFields.amount = amount;
+      }
+
+      if (currency !== undefined) {
+        setFields.currency = currency;
+      }
+
+      if (dueDate !== undefined) {
+        setFields.due_date = dueDate;
+      }
+
+      if (notes !== undefined) {
+        setFields.notes = notes;
+      }
+
+      // Only include status in update if it's a valid transition
+      if (status && status !== currentStatus) {
+        setFields.status = status;
+      }
+
+      if (Object.keys(setFields).length === 0) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "No valid fields to update"));
+      }
+
+      // Build secure UPDATE query using SqlHelper for parameterized fields
+      const params: any[] = [];
+      let paramIndex = 1;
+
+      const setClauses = Object.entries(setFields).map(([field, value]) => {
+        params.push(value);
+        return `${field} = $${paramIndex++}`;
+      });
+
+      // Add timestamp updates based on status transition
+      if (status && status !== currentStatus) {
+        if (status === "sent" && currentStatus === "draft") {
+          setClauses.push("sent_at = NOW()");
+        } else if (status === "paid" && currentStatus === "sent") {
+          setClauses.push("paid_at = NOW()");
+        }
+      }
+
+      // Always update the updated_at timestamp
+      setClauses.push("updated_at = NOW()");
+
+      // Build WHERE clause using SqlHelper for security
+      const { where: whereClause, params: whereParams } = SqlHelper.buildWhereClause([
+        { field: "id", operator: "=", value: id },
+        { field: "organization_team_id", operator: "=", value: organizationId, conjunction: "AND" }
+      ], paramIndex);
+
+      params.push(...whereParams);
+
+      // Build final query
+      const updateQuery = `
+        UPDATE client_portal_invoices
+        SET ${setClauses.join(", ")}
+        WHERE ${whereClause}
+        RETURNING id, invoice_no, amount, currency, status, due_date, sent_at, paid_at, updated_at
+      `;
+
+      const result = await db.query(updateQuery, params);
+
+      if (result.rows.length === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Invoice not found"));
+      }
+
+      return res.json(
+        new ServerResponse(true, result.rows[0], "Invoice updated successfully")
+      );
+    } catch (error) {
+      console.error("Error updating invoice:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to update invoice"));
+    }
+  }
+
+  static async deleteInvoice(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const { id } = req.params;
+      const organizationId = req.user?.team_id;
+
+      // Verify invoice exists and belongs to organization
+      const checkQuery = `
+        SELECT id, status FROM client_portal_invoices
+        WHERE id = $1 AND organization_team_id = $2
+      `;
+      const checkResult = await db.query(checkQuery, [id, organizationId]);
+
+      if (checkResult.rows.length === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Invoice not found"));
+      }
+
+      // Prevent deletion of paid invoices
+      if (checkResult.rows[0].status === "paid") {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Cannot delete paid invoices"));
+      }
+
+      // Delete invoice
+      const deleteQuery = `
+        DELETE FROM client_portal_invoices
+        WHERE id = $1
+      `;
+      await db.query(deleteQuery, [id]);
+
+      return res.json(
+        new ServerResponse(true, null, "Invoice deleted successfully")
+      );
+    } catch (error) {
+      console.error("Error deleting invoice:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to delete invoice"));
+    }
+  }
+
+  static async sendInvoice(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const { id } = req.params;
+      const organizationId = req.user?.team_id;
+
+      if (!organizationId) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Organization ID is required"));
+      }
+
+      // Verify invoice exists and belongs to organization
+      const checkQuery = `
+        SELECT i.id, i.status, i.client_id, c.email as client_email, c.name as client_name
+        FROM client_portal_invoices i
+        LEFT JOIN clients c ON i.client_id = c.id
+        WHERE i.id = $1 AND i.organization_team_id = $2
+      `;
+      const checkResult = await db.query(checkQuery, [id, organizationId]);
+
+      if (checkResult.rows.length === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Invoice not found"));
+      }
+
+      const invoice = checkResult.rows[0];
+
+      // Update invoice status to 'sent' if it's 'draft', otherwise keep current status
+      // Set sent_at timestamp when sending
+      const updateQuery = `
+        UPDATE client_portal_invoices
+        SET
+          status = CASE WHEN status = 'draft' THEN 'sent' ELSE status END,
+          sent_at = CASE WHEN status = 'draft' THEN NOW() ELSE sent_at END,
+          updated_at = NOW()
+        WHERE id = $1
+        RETURNING id, invoice_no, status, sent_at
+      `;
+
+      const result = await db.query(updateQuery, [id]);
+
+      // Create notification for the client
+      if (invoice.client_id) {
+        await this.createNotification(
+          invoice.client_id,
+          organizationId,
+          "invoice_sent",
+          "Invoice Sent",
+          `Invoice ${result.rows[0].invoice_no} has been sent to you`,
+          id,
+          result.rows[0].invoice_no,
+          {
+            status: result.rows[0].status,
+            sentAt: result.rows[0].sent_at,
+          }
+        );
+      }
+
+      return res.json(
+        new ServerResponse(true, result.rows[0], "Invoice sent successfully")
+      );
+    } catch (error) {
+      console.error("Error sending invoice:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to send invoice"));
+    }
+  }
+
+  static async markInvoiceAsPaid(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const { id } = req.params;
+      const organizationId = req.user?.team_id;
+
+      if (!organizationId) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Organization ID is required"));
+      }
+
+      // Verify invoice exists and belongs to organization
+      const checkQuery = `
+        SELECT i.id, i.status, i.client_id, i.invoice_no
+        FROM client_portal_invoices i
+        WHERE i.id = $1 AND i.organization_team_id = $2
+      `;
+      const checkResult = await db.query(checkQuery, [id, organizationId]);
+
+      if (checkResult.rows.length === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Invoice not found"));
+      }
+
+      const invoice = checkResult.rows[0];
+
+      // Check if invoice is already paid
+      if (invoice.status === 'paid') {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Invoice is already paid"));
+      }
+
+      // Only allow marking as paid if invoice status is 'sent'
+      if (invoice.status !== 'sent') {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Only sent invoices can be marked as paid"));
+      }
+
+      // Update invoice status to 'paid' and set paid_at timestamp
+      const updateQuery = `
+        UPDATE client_portal_invoices
+        SET
+          status = 'paid',
+          paid_at = NOW(),
+          updated_at = NOW()
+        WHERE id = $1
+        RETURNING id, invoice_no, status, paid_at
+      `;
+
+      const result = await db.query(updateQuery, [id]);
+
+      // Create notification for the client
+      if (invoice.client_id) {
+        await this.createNotification(
+          invoice.client_id,
+          organizationId,
+          "invoice_paid",
+          "Invoice Paid",
+          `Invoice ${invoice.invoice_no} has been marked as paid`,
+          id,
+          invoice.invoice_no,
+          {
+            status: "paid",
+            paidAt: result.rows[0].paid_at,
+          }
+        );
+      }
+
+      return res.json(
+        new ServerResponse(
+          true,
+          result.rows[0],
+          "Invoice marked as paid successfully"
+        )
+      );
+    } catch (error) {
+      console.error("Error marking invoice as paid:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to mark invoice as paid"));
     }
   }
 

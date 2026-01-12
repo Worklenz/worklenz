@@ -124,6 +124,51 @@ export default class ClientPortalProjectsController extends ClientPortalControll
     }
   }
 
+  static async getProjectStatuses(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const query = `
+        SELECT 
+          id,
+          name,
+          color_code,
+          icon,
+          is_default,
+          sort_order
+        FROM sys_project_statuses
+        ORDER BY sort_order ASC, name ASC
+      `;
+      
+      const result = await db.query(query, []);
+      
+      const statuses = result.rows.map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        colorCode: row.color_code,
+        icon: row.icon,
+        isDefault: row.is_default,
+        sortOrder: row.sort_order,
+      }));
+
+      return res.json(
+        new ServerResponse(
+          true,
+          statuses,
+          "Project statuses retrieved successfully"
+        )
+      );
+    } catch (error) {
+      console.error("Error fetching project statuses:", error);
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(false, null, "Failed to retrieve project statuses")
+        );
+    }
+  }
+
   static async getProjectDetails(
     req: AuthenticatedClientRequest,
     res: IWorkLenzResponse

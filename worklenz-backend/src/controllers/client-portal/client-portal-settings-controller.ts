@@ -6,6 +6,7 @@ import { ServerResponse } from "../../models/server-response";
 import db from "../../config/db";
 import { uploadBase64, getClientPortalLogoKey, deleteObject } from "../../shared/storage";
 import { log_error } from "../../shared/utils";
+import { getClientPortalBaseUrl } from "../../cron_jobs/helpers";
 
 export default class ClientPortalSettingsController extends ClientPortalControllerBase {
 
@@ -310,6 +311,20 @@ export default class ClientPortalSettingsController extends ClientPortalControll
             "Failed to retrieve organization settings"
           )
         );
+    }
+  }
+
+  static async getClientPortalBaseUrl(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    try {
+      const baseUrl = getClientPortalBaseUrl();
+      return res.json(
+        new ServerResponse(true, { baseUrl }, null)
+      );
+    } catch (error) {
+      log_error(error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to retrieve base URL"));
     }
   }
 

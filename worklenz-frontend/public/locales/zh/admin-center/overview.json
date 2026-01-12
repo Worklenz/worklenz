@@ -88,5 +88,10 @@
   "logoFormatRecommendation": "推荐使用透明背景的PNG格式以获得最佳效果",
   "logoDeleteConfirm": "您确定要删除组织徽标吗？此操作无法撤销。",
   "logoUsage": "用于导航栏并同步到客户端门户",
+  "logoUpgradeToUpload": "升级到付费计划以上传自定义徽标。",
+  "logoUpgradeToChangeOrRemove": "升级到付费计划以更改或删除组织徽标。",
+  "availableOnPaidPlans": "在付费计划中可用",
+  "logoAltText": "组织徽标",
+  "logoSupportedFormats": "PNG, JPG, WEBP",
   "organizationProfile": "组织资料"
 }

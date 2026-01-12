@@ -27,7 +27,7 @@ export default abstract class WorklenzControllerBase {
     return data;
   }
 
-  protected static toPaginationOptions(queryParams: any, searchField: string | string[], isMemberFilter = false) {
+  protected static toPaginationOptions(queryParams: any, searchField: string | string[], isMemberFilter = false, paramOffset = 1) {
     // Pagination
     const size = +(queryParams.size || DEFAULT_PAGE_SIZE);
     const index = +(queryParams.index || 1);
@@ -37,16 +37,25 @@ export default abstract class WorklenzControllerBase {
     const search = (queryParams.search as string || "").trim();
 
     let searchQuery = "";
+    let searchParams: string[] = [];
 
     if (search) {
-      // Properly escape single quotes to prevent SQL syntax errors
-      const escapedSearch = search.replace(/'/g, "''");
-      
+      // Use parameterized queries instead of string interpolation
+      const searchPattern = `%${search}%`;
       let s = "";
+      let currentParam = paramOffset;
+      
       if (typeof searchField === "string") {
-        s = ` ${searchField} ILIKE '%${escapedSearch}%'`;
+        s = ` ${searchField} ILIKE $${currentParam}`;
+        searchParams.push(searchPattern);
       } else if (Array.isArray(searchField)) {
-        s = searchField.map(field => ` ${field} ILIKE '%${escapedSearch}%'`).join(" OR ");
+        const conditions = searchField.map(field => {
+          const param = `$${currentParam}`;
+          currentParam++;
+          searchParams.push(searchPattern);
+          return ` ${field} ILIKE ${param}`;
+        });
+        s = conditions.join(" OR ");
       }
 
       if (s) {
@@ -60,7 +69,7 @@ export default abstract class WorklenzControllerBase {
     const orderValue = (queryParams.order as string || "").toLowerCase();
     const sortOrder = (orderValue === "desc" || orderValue === "descend") ? "desc" : "asc";
 
-    return {searchQuery, sortField, sortOrder, size, offset, paging};
+    return {searchQuery, searchParams, sortField, sortOrder, size, offset, paging};
   }
 
 }

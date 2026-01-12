@@ -88,5 +88,10 @@
   "logoFormatRecommendation": "Se recomienda formato PNG con fondo transparente para mejores resultados",
   "logoDeleteConfirm": "¿Está seguro de que desea eliminar el logo de la organización? Esta acción no se puede deshacer.",
   "logoUsage": "Se usa en la barra de navegación y se sincroniza con el portal del cliente",
+  "logoUpgradeToUpload": "Actualice a un plan de pago para subir un logo personalizado.",
+  "logoUpgradeToChangeOrRemove": "Actualice a un plan de pago para cambiar o eliminar el logo de la organización.",
+  "availableOnPaidPlans": "Disponible en planes de pago",
+  "logoAltText": "Logo de la organización",
+  "logoSupportedFormats": "PNG, JPG, WEBP",
   "organizationProfile": "Perfil de la Organización"
 }

@@ -8,6 +8,7 @@ import {
   getTaskDetails,
   logDescriptionChange,
 } from "../../services/activity-logs/activity-logs.service";
+import {verifyTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
 
 export async function on_task_description_change(
   _io: Server,
@@ -16,6 +17,12 @@ export async function on_task_description_change(
 ) {
   try {
     const body = JSON.parse(data as string);
+    
+    const hasAccess = await verifyTaskAccessSocket(socket, body.task_id);
+    if (!hasAccess) {
+      logUnauthorizedSocketAccess(socket, 'TASK_DESCRIPTION_CHANGE', 'task', body.task_id);
+      return;
+    }
 
     const q = `UPDATE tasks
                SET description = $2

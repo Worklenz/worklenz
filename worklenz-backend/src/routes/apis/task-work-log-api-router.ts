@@ -9,7 +9,7 @@ import verifyTaskAccess, {verifyTaskAccessViaWorkLog} from "../../middlewares/ve
 
 const taskWorkLogApiRouter = express.Router();
 
-taskWorkLogApiRouter.post("/", taskTimeLogValidator, verifyTaskAccess('body', 'task_id'), safeControllerFunction(TaskWorklogController.create));
+taskWorkLogApiRouter.post("/", taskTimeLogValidator, verifyTaskAccess('body', 'id'), safeControllerFunction(TaskWorklogController.create));
 taskWorkLogApiRouter.get("/task/:id", idParamValidator, verifyTaskAccess('params', 'id'), safeControllerFunction(TaskWorklogController.getByTask));
 taskWorkLogApiRouter.get("/export/:id", idParamValidator, verifyTaskAccess('params', 'id'), safeControllerFunction(TaskWorklogController.exportLog));
 taskWorkLogApiRouter.put("/:id", taskTimeLogValidator, idParamValidator, verifyTaskAccessViaWorkLog('params', 'id'), safeControllerFunction(TaskWorklogController.update));

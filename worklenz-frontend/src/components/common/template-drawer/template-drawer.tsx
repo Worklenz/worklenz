@@ -444,7 +444,7 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
             type="card"
             items={tabs}
             onChange={handleTabChange}
-            destroyInactiveTabPane
+            destroyOnHidden
             style={{
               backgroundColor: token.colorBgContainer,
             }}

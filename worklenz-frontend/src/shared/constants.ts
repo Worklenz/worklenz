@@ -155,6 +155,7 @@ export const PriorityColorCodes: { [x: number]: string } = {
 
 export const API_BASE_URL = '/api/v1';
 export const AUTH_API_BASE_URL = '/secure';
+export const CLIENT_PORTAL_API_BASE_URL = '/api/client-portal';
 
 export const DEFAULT_TASK_NAME = 'Untitled Task';
 

@@ -194,6 +194,32 @@
     "client": "客户",
     "pressEnterToSend": "按 Enter 发送，Shift+Enter 换行"
   },
+  "chats": {
+    "title": "聊天",
+    "description": "与您的服务提供商沟通",
+    "conversations": "对话",
+    "chatTitle": "聊天 - {{date}}",
+    "chatMessages": "聊天消息",
+    "selectConversation": "选择对话",
+    "selectToStart": "选择对话开始聊天",
+    "noMessagesYet": "还没有消息。开始对话吧！",
+    "typeMessage": "输入您的消息...",
+    "send": "发送",
+    "retry": "重试",
+    "downloadFile": "下载文件",
+    "sharedFile": "分享了文件：{{fileName}}",
+    "messageSentSuccess": "消息发送成功",
+    "messageSendError": "发送消息失败",
+    "messageSendRetry": "发送消息失败。请重试。",
+    "fileUploadSuccess": "文件上传并发送成功",
+    "fileUploadError": "上传文件失败",
+    "noMessagesYetDescription": "还没有消息",
+    "errorLoading": "错误",
+    "errorLoadingMessages": "加载消息失败",
+    "errorLoadingMessagesRetry": "加载消息失败。请稍后再试。",
+    "errorLoadingChats": "加载聊天失败",
+    "errorLoadingChatsRetry": "加载聊天失败。请稍后再试。"
+  },
   "common": {
     "loading": "加载中...",
     "error": "错误",
@@ -238,6 +264,6 @@
     "network_error": "网络错误。请检查您的连接。",
     "server_error": "服务器错误。请稍后重试。",
     "worklenz_account_found_title": "发现 Worklenz 账户",
-    "worklenz_account_found_message": "该邮箱已注册 Worklenz 账户。请使用您的 Worklenz 密码注册客户门户。"
+    "worklenz_account_found_message": "该邮箱已注册 Worklenz 账户。请使用您现有的 Worklenz 账户密码注册客户门户。"
   }
 }

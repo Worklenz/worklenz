@@ -217,18 +217,19 @@ const ClientPortalSettings = () => {
             const response = await profileSettingsApiService.uploadClientPortalLogo(base64String);
 
             if (response.done && response.body?.logo_url) {
-              setCustomLogo(response.body.logo_url);
+              const logoUrlWithCacheBuster = `${response.body.logo_url}?t=${Date.now()}`;
+              setCustomLogo(logoUrlWithCacheBuster);
+              setIsLogoSynced(false);
             }
           } catch (error) {
             console.error('Logo upload error:', error);
-            return;
           } finally {
-            // Reset pending states
             resetPendingChanges();
             setSaving(false);
           }
         };
         reader.readAsDataURL(pendingLogoFile);
+        return;
       } else if (pendingLogoRemoval) {
         // Remove logo
         const response = await profileSettingsApiService.updateClientPortalSettings({
@@ -254,6 +255,7 @@ const ClientPortalSettings = () => {
           console.error('Failed to remove logo');
         }
         setSaving(false);
+        return;
       }
 
       // Save company details if changed
@@ -528,7 +530,7 @@ const ClientPortalSettings = () => {
 
                         {pendingLogoRemoval ? (
                           <Flex vertical gap={12} align="center">
-                            <ExclamationCircleOutlined style={{ fontSize: '48px', color: colors.danger }} />
+                            <ExclamationCircleOutlined style={{ fontSize: '48px', color: colors.red }} />
                             <Typography.Text strong>Logo will be removed</Typography.Text>
                             <Typography.Text type="secondary" style={{ fontSize: '12px', textAlign: 'center' }}>
                               {organizationLogo

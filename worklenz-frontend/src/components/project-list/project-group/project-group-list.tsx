@@ -405,7 +405,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
             }
           }}
           onClick={() => onProjectSelect(project.id || '')}
-          bodyStyle={{ padding: 0 }}
+          styles={{ body: { padding: 0 } }}
         >
           {/* Action buttons */}
           <div className="action-buttons" style={styles.actionButtons}>

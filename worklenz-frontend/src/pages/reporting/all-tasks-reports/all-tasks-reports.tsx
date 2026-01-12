@@ -7,9 +7,9 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { useAuthService } from '@/hooks/useAuth';
 import CustomPageHeader from '@/components/reporting/common/CustomPageHeader';
-import AllTasksReportsFilters from './all-tasks-reports-filters/all-tasks-reports-filters';
-import AllTasksReportsTable from './all-tasks-reports-table/all-tasks-reports-table';
-import AllTasksStatsCards from './all-tasks-stats-cards/all-tasks-stats-cards';
+import AllTasksReportsFilters from './components/all-tasks-reports-filters/all-tasks-reports-filters';
+import AllTasksReportsTable from './components/all-tasks-reports-table/all-tasks-reports-table';
+import AllTasksStatsCards from './components/all-tasks-stats-cards/all-tasks-stats-cards';
 import {
   fetchAllTasks,
   fetchAllTasksTeams,

@@ -162,35 +162,76 @@ export default class ClientPortalRequestsController extends ClientPortalControll
           );
       }
 
-      // Generate request number (sequential per organization)
-      const countResult = await db.query(
-        "SELECT COUNT(*) + 1 as next_num FROM client_portal_requests WHERE organization_team_id = $1",
-        [organizationId]
-      );
-      const nextNum = countResult.rows[0]?.next_num || 1;
-      const requestNumber = `REQ-${String(nextNum).padStart(4, '0')}`;
+      // Generate request number at application level with transaction and row-level lock
+      let reqNo: string;
+      let newRequest: any;
+      const maxRetries = 5;
+      
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        const client = await db.pool.connect();
+        try {
+          await client.query('BEGIN');
+          
+          // Lock the sequence row and get/increment the number atomically
+          // First ensure the row exists
+          await client.query(
+            `INSERT INTO client_portal_request_sequences (organization_team_id, last_request_number)
+             VALUES ($1, 0)
+             ON CONFLICT (organization_team_id) DO NOTHING`,
+            [organizationId]
+          );
+          
+          // Now lock and update the row
+          const seqResult = await client.query(
+            `UPDATE client_portal_request_sequences
+             SET last_request_number = last_request_number + 1,
+                 updated_at = NOW()
+             WHERE organization_team_id = $1
+             RETURNING last_request_number`,
+            [organizationId]
+          );
+          
+          const nextNumber = seqResult.rows[0].last_request_number;
+          reqNo = `REQ-${String(nextNumber).padStart(4, '0')}`;
 
-      // Create request
-      const query = `
-        INSERT INTO client_portal_requests (
-          req_no, service_id, client_id, organization_team_id,
-          status, request_data, notes, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-        RETURNING id, req_no, service_id, status, request_data, notes, created_at, updated_at
-      `;
+          // Create request with generated req_no in same transaction
+          const insertQuery = `
+            INSERT INTO client_portal_requests (
+              req_no, service_id, client_id, organization_team_id,
+              status, request_data, notes, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+            RETURNING id, req_no, service_id, status, request_data, notes, created_at, updated_at
+          `;
 
-      const values = [
-        requestNumber,
-        serviceId,
-        clientId,
-        organizationId,
-        "pending",
-        requestData ? JSON.stringify(requestData) : null,
-        notes || null,
-      ];
+          const insertValues = [
+            reqNo,
+            serviceId,
+            clientId,
+            organizationId,
+            "pending",
+            requestData ? JSON.stringify(requestData) : null,
+            notes || null,
+          ];
 
-      const result = await db.query(query, values);
-      const newRequest = result.rows[0];
+          const result = await client.query(insertQuery, insertValues);
+          newRequest = result.rows[0];
+          
+          await client.query('COMMIT');
+          client.release();
+          break; // Success, exit retry loop
+          
+        } catch (error: any) {
+          await client.query('ROLLBACK');
+          client.release();
+          
+          // If duplicate key error and not last attempt, retry
+          if (error.code === '23505' && attempt < maxRetries - 1) {
+            await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1))); // Exponential backoff
+            continue;
+          }
+          throw error; // Re-throw if not duplicate or last attempt
+        }
+      }
 
       // Get service name for response
       const service = serviceCheck.rows[0];

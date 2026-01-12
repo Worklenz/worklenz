@@ -6,7 +6,6 @@ import {
   createSubtask,
   selectSubtaskLoading,
   fetchSubTasks,
-  selectActiveFilters,
 } from '@/features/task-management/task-management.slice';
 import TaskRow from './TaskRow';
 import SubtaskLoadingSkeleton from './SubtaskLoadingSkeleton';
@@ -282,8 +281,11 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
     const dispatch = useAppDispatch();
 
     // Get active filters from Redux (tasks.slice - used by improved-task-filters)
-    // Using memoized selector to prevent unnecessary re-renders
-    const activeFilters = useAppSelector(selectActiveFilters);
+    const activeFilters = useAppSelector(state => ({
+      members: state.taskReducer?.taskAssignees?.filter((m: any) => m.selected).map((m: any) => m.id) || [],
+      labels: state.taskReducer?.labels?.filter((l: any) => l.selected).map((l: any) => l.id) || [],
+      priorities: state.taskReducer?.priorities || []
+    }));
 
     // Get all priorities to create ID-to-name mapping
     const allPriorities = useAppSelector(state => state.priorityReducer?.priorities || []);
@@ -336,9 +338,14 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
       // Filter subtasks based on active filters
       // A subtask should be shown if:
       // 1. It directly matches the filter, OR
-      // 2. It has descendants (sub_tasks_count > 0) that might match the filter
-      //    (the backend already calculated this count considering the filters)
+      // 2. It has descendants that match the filter (has_filtered_children is true)
+      // 3. It has descendants (sub_tasks_count > 0) that might match the filter
       return task.sub_tasks.filter((subtask: Task) => {
+        // If subtask has filtered descendants, always show it (backend calculated this)
+        if (subtask.has_filtered_children) {
+          return true;
+        }
+        
         // If subtask has descendants with matching filters, always show it
         // The backend's sub_tasks_count already accounts for filtered descendants
         if (subtask.sub_tasks_count && subtask.sub_tasks_count > 0) {

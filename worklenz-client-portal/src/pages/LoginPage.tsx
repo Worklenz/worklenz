@@ -148,8 +148,8 @@ const LoginPage: React.FC = () => {
               <Form.Item name="remember" valuePropName="checked" noStyle>
                 <Checkbox>{t("login.remember")}</Checkbox>
               </Form.Item>
-              <Link to="/forgot-password">
-                <Typography.Link>{t("login.forgot")}</Typography.Link>
+              <Link to="/forgot-password" className="ant-typography ant-typography-link">
+                {t("login.forgot")}
               </Link>
             </Flex>
           </Form.Item>

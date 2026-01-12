@@ -3,7 +3,6 @@ import {
   ConfigProvider,
   Flex,
   Skeleton,
-  Spin,
   Table,
   TableColumnsType,
   Typography,
@@ -14,8 +13,7 @@ import { simpleDateFormat } from '@/utils/simpleDateFormat';
 import { colors } from '@/styles/colors';
 import { toCamelCase } from '@/utils/toCamelCase';
 import ProjectCell from '@/components/reporting/table-cells/ProjectCell';
-import ProjectDaysLeftAndOverdueCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/project-days-left-and-overdue-cell/project-days-left-and-overdue-cell';
-import ProjectManagerCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/project-manager-cell/project-manager-cell';
+import ProjectManagerCell from '@/pages/reporting/projects-reports/components/projects-reports-table/table-cells/project-manager-cell/project-manager-cell';
 
 type ProjectReportsTableProps = {
   projectList: any[];

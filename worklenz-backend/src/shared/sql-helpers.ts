@@ -1,6 +1,6 @@
 /**
  * This module provides secure utilities for building SQL queries with proper
- * parameterization to prevent SQL injection vulnerabilities.
+ * parameterization for secure query building.
  * 
  * These helpers replace unsafe patterns like:
  * - Direct string interpolation: `SELECT * FROM users WHERE id = '${userId}'`
@@ -29,12 +29,12 @@ export class SqlHelper {
    * const query = `SELECT * FROM tasks WHERE id IN (${clause})`;
    * await db.query(query, params);
    */
-  static buildInClause(values: any[], paramOffset: number = 1): { clause: string; params: any[] } {
+  static buildInClause(values: any[], paramOffset = 1): { clause: string; params: any[] } {
     if (!values || values.length === 0) {
-      return { clause: '', params: [] };
+      return { clause: "", params: [] };
     }
 
-    const placeholders = values.map((_, index) => `$${paramOffset + index}`).join(', ');
+    const placeholders = values.map((_, index) => `$${paramOffset + index}`).join(", ");
     return {
       clause: placeholders,
       params: values,
@@ -56,12 +56,12 @@ export class SqlHelper {
       field: string;
       operator: string;
       value: any;
-      conjunction?: 'AND' | 'OR';
+      conjunction?: "AND" | "OR";
     }>,
-    paramOffset: number = 1
+    paramOffset = 1
   ): { where: string; params: any[] } {
     if (!conditions || conditions.length === 0) {
-      return { where: '', params: [] };
+      return { where: "", params: [] };
     }
 
     const params: any[] = [];
@@ -69,15 +69,15 @@ export class SqlHelper {
     let currentParam = paramOffset;
 
     conditions.forEach((condition, index) => {
-      const conjunction = index === 0 ? '' : ` ${condition.conjunction || 'AND'} `;
+      const conjunction = index === 0 ? "" : ` ${condition.conjunction || "AND"} `;
       
-      if (condition.operator.toUpperCase() === 'IN') {
+      if (condition.operator.toUpperCase() === "IN") {
         const values = Array.isArray(condition.value) ? condition.value : [condition.value];
         const { clause, params: inParams } = this.buildInClause(values, currentParam);
         clauses.push(`${conjunction}${condition.field} IN (${clause})`);
         params.push(...inParams);
         currentParam += inParams.length;
-      } else if (condition.operator.toUpperCase() === 'IS NULL' || condition.operator.toUpperCase() === 'IS NOT NULL') {
+      } else if (condition.operator.toUpperCase() === "IS NULL" || condition.operator.toUpperCase() === "IS NOT NULL") {
         clauses.push(`${conjunction}${condition.field} ${condition.operator}`);
       } else {
         clauses.push(`${conjunction}${condition.field} ${condition.operator} $${currentParam}`);
@@ -87,7 +87,7 @@ export class SqlHelper {
     });
 
     return {
-      where: clauses.join(''),
+      where: clauses.join(""),
       params,
     };
   }
@@ -98,7 +98,7 @@ export class SqlHelper {
   static buildLikeClause(
     field: string,
     searchTerm: string,
-    paramOffset: number = 1,
+    paramOffset = 1,
     options: {
       caseSensitive?: boolean;
       prefix?: boolean;
@@ -111,7 +111,7 @@ export class SqlHelper {
     if (prefix) pattern = `%${pattern}`;
     if (suffix) pattern = `${pattern}%`;
     
-    const operator = caseSensitive ? 'LIKE' : 'ILIKE';
+    const operator = caseSensitive ? "LIKE" : "ILIKE";
     
     return {
       clause: `${field} ${operator} $${paramOffset}`,
@@ -125,19 +125,19 @@ export class SqlHelper {
   static buildSearchClause(
     fields: string[],
     searchTerm: string,
-    paramOffset: number = 1,
-    caseSensitive: boolean = false
+    paramOffset = 1,
+    caseSensitive = false
   ): { clause: string; params: string[] } {
-    if (!searchTerm || searchTerm.trim() === '') {
-      return { clause: '', params: [] };
+    if (!searchTerm || searchTerm.trim() === "") {
+      return { clause: "", params: [] };
     }
 
-    const operator = caseSensitive ? 'LIKE' : 'ILIKE';
+    const operator = caseSensitive ? "LIKE" : "ILIKE";
     const pattern = `%${searchTerm}%`;
     const clauses = fields.map(field => `${field} ${operator} $${paramOffset}`);
     
     return {
-      clause: `(${clauses.join(' OR ')})`,
+      clause: `(${clauses.join(" OR ")})`,
       params: [pattern],
     };
   }
@@ -147,7 +147,7 @@ export class SqlHelper {
    */
   static buildOrderByClause(
     field: string,
-    order: 'ASC' | 'DESC' | 'asc' | 'desc',
+    order: "ASC" | "DESC" | "asc" | "desc",
     allowedFields: string[]
   ): string {
     if (!allowedFields.includes(field)) {
@@ -155,7 +155,7 @@ export class SqlHelper {
     }
 
     const normalizedOrder = order.toUpperCase();
-    if (normalizedOrder !== 'ASC' && normalizedOrder !== 'DESC') {
+    if (normalizedOrder !== "ASC" && normalizedOrder !== "DESC") {
       throw new Error(`Invalid sort order: ${order}`);
     }
 
@@ -168,7 +168,7 @@ export class SqlHelper {
   static buildPaginationClause(
     limit: number,
     offset: number,
-    paramOffset: number = 1
+    paramOffset = 1
   ): { clause: string; params: number[] } {
     const safeLimit = Math.max(1, Math.min(1000, parseInt(String(limit), 10) || 10));
     const safeOffset = Math.max(0, parseInt(String(offset), 10) || 0);
@@ -180,10 +180,10 @@ export class SqlHelper {
   }
 
   /**
-   * Escape identifier (table/column name) to prevent SQL injection
+   * Escape identifier (table/column name) for secure query building
    */
   static escapeIdentifier(identifier: string): string {
-    const cleaned = identifier.replace(/"/g, '');
+    const cleaned = identifier.replace(/"/g, "");
     
     if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(cleaned)) {
       throw new Error(`Invalid identifier: ${identifier}`);
@@ -198,13 +198,13 @@ export class SqlHelper {
   static buildUpdateQuery(options: {
     table: string;
     set: Record<string, any>;
-    where: Array<{ field: string; operator: string; value: any; conjunction?: 'AND' | 'OR' }>;
+    where: Array<{ field: string; operator: string; value: any; conjunction?: "AND" | "OR" }>;
   }): ParameterizedQuery {
     const { table, set, where } = options;
 
     const setEntries = Object.entries(set);
     if (setEntries.length === 0) {
-      throw new Error('UPDATE query must have at least one field to set');
+      throw new Error("UPDATE query must have at least one field to set");
     }
 
     const params: any[] = [];
@@ -215,7 +215,7 @@ export class SqlHelper {
       return `${field} = $${paramOffset++}`;
     });
 
-    let query = `UPDATE ${table} SET ${setClauses.join(', ')}`;
+    let query = `UPDATE ${table} SET ${setClauses.join(", ")}`;
 
     if (where.length > 0) {
       const { where: whereClause, params: whereParams } = this.buildWhereClause(where, paramOffset);
@@ -234,7 +234,7 @@ export class SqlHelper {
  * @deprecated This function is unsafe and will be removed in Phase 3
  */
 export function flatString(text: string): string {
-  console.warn('flatString() is deprecated and unsafe. Use SqlHelper.buildInClause() instead.');
+  console.warn("flatString() is deprecated and unsafe. Use SqlHelper.buildInClause() instead.");
   return (text || "")
     .split(" ")
     .map((s) => `'${s}'`)

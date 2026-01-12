@@ -12,6 +12,7 @@ import OrganizationLogo from '@/components/admin-center/overview/organization-lo
 import {
   fetchOrganizationDetails,
   fetchOrganizationAdmins,
+  fetchBillingInfo,
 } from '@/features/admin-center/admin-center.slice';
 import logger from '@/utils/errorLogger';
 import { tr } from 'date-fns/locale';
@@ -24,7 +25,7 @@ const Overview: React.FC = () => {
   const dispatch = useAppDispatch();
 
   const { trackMixpanelEvent } = useMixpanelTracking();
-  const { organization, organizationAdmins, loadingOrganizationAdmins } = useAppSelector(
+  const { organization, organizationAdmins, loadingOrganizationAdmins, billingInfo } = useAppSelector(
     (state: RootState) => state.adminCenterReducer
   );
 
@@ -47,10 +48,19 @@ const Overview: React.FC = () => {
     }
   };
 
+  const getBillingInfo = async () => {
+    try {
+      await dispatch(fetchBillingInfo()).unwrap();
+    } catch (error) {
+      logger.error('Error getting billing info', error);
+    }
+  };
+
   useEffect(() => {
     trackMixpanelEvent(evt_admin_center_overview_visit);
     getOrganizationDetails();
     getOrganizationAdmins();
+    getBillingInfo();
   }, [trackMixpanelEvent]);
 
   return (
@@ -62,8 +72,8 @@ const Overview: React.FC = () => {
         <Card
           style={{
             borderRadius: '8px',
-            boxShadow: themeMode === 'dark' 
-              ? '0 2px 8px rgba(0, 0, 0, 0.3)' 
+            boxShadow: themeMode === 'dark'
+              ? '0 2px 8px rgba(0, 0, 0, 0.3)'
               : '0 2px 8px rgba(0, 0, 0, 0.06)',
           }}
         >
@@ -78,6 +88,7 @@ const Overview: React.FC = () => {
                 organization={organization}
                 t={t}
                 refetch={getOrganizationDetails}
+                billingInfo={billingInfo}
               />
             </Col>
             <Col xs={24} sm={24} md={12} lg={8}>
@@ -103,8 +114,8 @@ const Overview: React.FC = () => {
         <Card
           style={{
             borderRadius: '8px',
-            boxShadow: themeMode === 'dark' 
-              ? '0 2px 8px rgba(0, 0, 0, 0.3)' 
+            boxShadow: themeMode === 'dark'
+              ? '0 2px 8px rgba(0, 0, 0, 0.3)'
               : '0 2px 8px rgba(0, 0, 0, 0.06)',
           }}
         >

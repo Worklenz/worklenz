@@ -146,7 +146,7 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
 
     return (
       <div
-        className="flex items-center justify-between group pl-1 border-r border-gray-200 dark:border-gray-700"
+        className="relative flex items-center group pl-1 border-r border-gray-200 dark:border-gray-700"
         style={{ width }}
       >
         {editTaskName ? (
@@ -180,7 +180,7 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
         ) : (
           /* Normal layout when not editing */
           <>
-            <div className="flex items-center flex-1 min-w-0">
+            <div className="flex items-center flex-1 min-w-0 pr-0 transition-[padding] duration-200 group-hover:pr-14">
               {/* Indentation for subtasks - reduced spacing for level 1 */}
               {isSubtask && <div className="w-2 flex-shrink-0" />}
 
@@ -318,7 +318,7 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
             </div>
 
             <button
-              className="opacity-0 group-hover:opacity-100 transition-all duration-200 ml-2 mr-2 px-3 py-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer rounded-md shadow-sm hover:shadow-md flex items-center gap-1 flex-shrink-0"
+              className="pointer-events-none group-hover:pointer-events-auto focus-visible:pointer-events-auto opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all duration-200 px-3 py-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer rounded-md shadow-sm hover:shadow-md flex items-center gap-1 absolute right-2 top-1/2 -translate-y-1/2"
               onClick={e => {
                 e.stopPropagation();
                 dispatch(setSelectedTaskId(task.id));

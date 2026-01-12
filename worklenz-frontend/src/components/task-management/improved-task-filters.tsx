@@ -17,6 +17,9 @@ import {
   SortAscendingOutlined,
   SortDescendingOutlined,
   SettingOutlined,
+  MenuOutlined,
+  Dropdown,
+  Button,
   Avatar,
 } from '@/shared/antd-imports';
 import { AvatarNamesMap } from '@/shared/constants';
@@ -454,6 +457,33 @@ const FilterDropdown: React.FC<{
     }
   }, [isOpen]);
 
+  // Title for button tooltip - use i18next interpolation for pluralization and word-order
+  const buttonTitle = useMemo(() => {
+    // If grouped by a value, show the selected value (e.g. "Group by: Phase")
+    if (section.id === 'groupBy' && section.selectedValues[0]) {
+      const selectedOpt = section.options.find(o => o.value === section.selectedValues[0]);
+      if (selectedOpt?.label) {
+        return t('groupBySelected', {
+          label: section.label,
+          value: selectedOpt.label,
+          defaultValue: '{{label}}: {{value}}',
+        });
+      }
+      return section.label;
+    }
+
+    // For other multi-select filters, use an interpolated count string (handles pluralization/word order)
+    if (section.id !== 'groupBy' && section.selectedValues.length > 0) {
+      return t('selectedCount', {
+        count: section.selectedValues.length,
+        label: section.label,
+        defaultValue: '{{label}}: {{count}} selected',
+      });
+    }
+
+    return section.label;
+  }, [section, t]);
+
   const handleOptionToggle = useCallback(
     (optionValue: string) => {
       if (section.multiSelect) {
@@ -481,6 +511,8 @@ const FilterDropdown: React.FC<{
       {/* Trigger Button */}
       <button
         onClick={onToggle}
+        title={buttonTitle}
+        aria-label={buttonTitle}
         className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out
@@ -723,6 +755,8 @@ const SearchFilter: React.FC<{
       {!isExpanded && !value ? (
         <button
           onClick={handleToggle}
+          title={t('search', { defaultValue: 'Search' })}
+          aria-label={t('search', { defaultValue: 'Search' })}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
             themeClasses.containerBg === 'bg-gray-800'
               ? 'focus:ring-offset-gray-900'
@@ -1085,11 +1119,23 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
     [sortedFields]
   );
 
+  // Title for fields button tooltip - use i18next interpolation for count
+  const fieldsTitle = useMemo(() => {
+    return visibleCount > 0
+      ? t('fieldsWithCount', {
+          count: visibleCount,
+          defaultValue: 'Fields: {{count}}',
+        })
+      : t('fieldsText', { defaultValue: 'Fields' });
+  }, [visibleCount, t]);
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Trigger Button - matching FilterDropdown style */}
       <button
         onClick={() => setOpen(!open)}
+        title={fieldsTitle}
+        aria-label={fieldsTitle}
         className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out
@@ -1233,6 +1279,22 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
   const [showManageStatusModal, setShowManageStatusModal] = useState(false);
   const [showManagePhaseModal, setShowManagePhaseModal] = useState(false);
 
+  // Responsive state for overflow behaviour
+  const [isMobile, setIsMobile] = useState(false);
+  const [showOverflowMenu, setShowOverflowMenu] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      setShowOverflowMenu(width < 1200);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Refs for debounced functions
   const debouncedFilterChangeRef = useRef<
     (((projectId: string) => void) & { cancel: () => void }) | null
@@ -1268,6 +1330,134 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
   const { projectId } = useAppSelector(state => state.projectReducer);
   const { projectView } = useTabSearchParam();
   const projectPhaseLabel = useAppSelector(state => state.projectReducer.project?.phase_label);
+
+  // Add these hooks at the top of the ImprovedTaskFilters component
+  const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
+  const isProjectManager = useIsProjectManager();
+  const canConfigure = isOwnerOrAdmin || isProjectManager;
+
+  // Simplified overflow menu - Group By with proper header
+  const currentGroupBySection = filterSectionsData.find(s => s.id === 'groupBy');
+  const currentGroupByValue = currentGroupBySection?.selectedValues[0] || 'status';
+
+  const overflowMenuItems = useMemo(() => {
+    const items: any[] = [
+      {
+        key: 'group-by-header',
+        type: 'group',
+        label: (
+          <span className="font-semibold">
+            {t('groupByText', { defaultValue: 'Group by' })}
+          </span>
+        ),
+        children: [
+          {
+            key: 'group-by-status',
+            label: (
+              <div className="flex items-center justify-between w-full">
+                <span>{t('statusText', { defaultValue: 'Status' })}</span>
+                {currentGroupByValue === 'status' && (
+                  <CheckOutlined className="text-blue-500 ml-2" />
+                )}
+              </div>
+            ),
+          },
+          {
+            key: 'group-by-priority',
+            label: (
+              <div className="flex items-center justify-between w-full">
+                <span>{t('priorityText', { defaultValue: 'Priority' })}</span>
+                {currentGroupByValue === 'priority' && (
+                  <CheckOutlined className="text-blue-500 ml-2" />
+                )}
+              </div>
+            ),
+          },
+          {
+            key: 'group-by-phase',
+            label: (
+              <div className="flex items-center justify-between w-full">
+                <span>{projectPhaseLabel || t('phaseText', { defaultValue: 'Phase' })}</span>
+                {currentGroupByValue === 'phase' && (
+                  <CheckOutlined className="text-blue-500 ml-2" />
+                )}
+              </div>
+            ),
+          },
+        ],
+      },
+    ];
+
+    // Add manage buttons based on current grouping
+    if (canConfigure) {
+      items.push({ type: 'divider' });
+      
+      if (currentGroupByValue === 'status') {
+        items.push({
+          key: 'manage-statuses',
+          icon: <SettingOutlined />,
+          label: t('manageStatuses', { defaultValue: 'Manage Statuses' }),
+        });
+      } else if (currentGroupByValue === 'phase') {
+        items.push({
+          key: 'manage-phases',
+          icon: <SettingOutlined />,
+          label: `${t('manage', { defaultValue: 'Manage' })} ${projectPhaseLabel || t('phasesText', { defaultValue: 'Phases' })}`,
+        });
+      }
+    }
+
+    return items;
+  }, [currentGroupByValue, projectPhaseLabel, t, canConfigure]);
+
+  const handleOverflowMenuClick = (info: any) => {
+    const key: string = info.key;
+
+    // Handle group by changes
+    if (key === 'group-by-status') {
+      if (position === 'board') {
+        dispatch(setKanbanGroupBy('status' as any));
+        if (projectId) dispatch(fetchEnhancedKanbanGroups(projectId));
+      } else {
+        dispatch(setCurrentGrouping('status'));
+        if (projectId) dispatch(fetchTasksV3(projectId));
+      }
+      return;
+    }
+
+    if (key === 'group-by-priority') {
+      if (position === 'board') {
+        dispatch(setKanbanGroupBy('priority' as any));
+        if (projectId) dispatch(fetchEnhancedKanbanGroups(projectId));
+      } else {
+        dispatch(setCurrentGrouping('priority'));
+        if (projectId) dispatch(fetchTasksV3(projectId));
+      }
+      return;
+    }
+
+    if (key === 'group-by-phase') {
+      if (position === 'board') {
+        dispatch(setKanbanGroupBy('phase' as any));
+        if (projectId) dispatch(fetchEnhancedKanbanGroups(projectId));
+      } else {
+        dispatch(setCurrentGrouping('phase'));
+        if (projectId) dispatch(fetchTasksV3(projectId));
+      }
+      return;
+    }
+
+    // Handle manage modals
+    if (key === 'manage-statuses') {
+      setShowManageStatusModal(true);
+      return;
+    }
+
+    if (key === 'manage-phases') {
+      setShowManagePhaseModal(true);
+      return;
+    }
+  };
 
   // Theme-aware class names - memoize to prevent unnecessary re-renders
   // Using greyish colors for both dark and light modes
@@ -1578,19 +1768,22 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
           {/* Filter Dropdowns - Only render when data is loaded */}
           {isDataLoaded ? (
             filterSectionsData.map(section => (
-              <FilterDropdown
-                key={section.id}
-                section={section}
-                onSelectionChange={handleSelectionChange}
-                isOpen={openDropdown === section.id}
-                onToggle={() => handleDropdownToggle(section.id)}
-                themeClasses={themeClasses}
-                isDarkMode={isDarkMode}
-                dispatch={dispatch}
-                onManageStatus={() => setShowManageStatusModal(true)}
-                onManagePhase={() => setShowManagePhaseModal(true)}
-                projectPhaseLabel={projectPhaseLabel}
-              />
+              // When the overflow menu is active (medium/smaller screens) hide the inline Group By control
+              section.id === 'groupBy' && showOverflowMenu ? null : (
+                <FilterDropdown
+                  key={section.id}
+                  section={section}
+                  onSelectionChange={handleSelectionChange}
+                  isOpen={openDropdown === section.id}
+                  onToggle={() => handleDropdownToggle(section.id)}
+                  themeClasses={themeClasses}
+                  isDarkMode={isDarkMode}
+                  dispatch={dispatch}
+                  onManageStatus={() => setShowManageStatusModal(true)}
+                  onManagePhase={() => setShowManagePhaseModal(true)}
+                  projectPhaseLabel={projectPhaseLabel}
+                />
+              )
             ))
           ) : (
             // Loading state
@@ -1600,6 +1793,33 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
               <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-gray-500"></div>
               <span>{t('loadingFilters', { defaultValue: 'Loading Filters' })}</span>
             </div>
+          )}
+
+          {/* Updated overflow menu button */}
+          {showOverflowMenu && (
+            <Dropdown
+              className="task-filters-overflow-menu"
+              menu={{ 
+                items: overflowMenuItems, 
+                onClick: handleOverflowMenuClick,
+              }}
+              trigger={['click']}
+              placement="bottomLeft"
+            >
+              <button
+                aria-label={t('more', { defaultValue: 'More' })}
+                className={`
+                  inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
+                  border transition-all duration-200 ease-in-out
+                  ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}
+                  hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
+                  ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
+                `}
+              >
+                <MenuOutlined className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t('more', { defaultValue: 'More' })}</span>
+              </button>
+            </Dropdown>
           )}
         </div>
 
@@ -1649,6 +1869,8 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
           {position === 'list' && (
             <FieldsDropdown themeClasses={themeClasses} isDarkMode={isDarkMode} />
           )}
+
+
         </div>
       </div>
 

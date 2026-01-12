@@ -88,5 +88,10 @@
   "logoFormatRecommendation": "Formati PNG me sfond transparent rekomandohet për rezultate më të mira",
   "logoDeleteConfirm": "A jeni i sigurt që dëshironi të hiqni logon e organizatës? Ky veprim nuk mund të zhbëhet.",
   "logoUsage": "Përdoret në shiritin e navigimit dhe sinkronizohet me portalin e klientit",
+  "logoUpgradeToUpload": "Përmirëso në një plan me pagesë për të ngarkuar një logo të personalizuar.",
+  "logoUpgradeToChangeOrRemove": "Përmirëso në një plan me pagesë për të ndryshuar ose hequr logon e organizatës.",
+  "availableOnPaidPlans": "I disponueshëm në planet me pagesë",
+  "logoAltText": "Logo e organizatës",
+  "logoSupportedFormats": "PNG, JPG, WEBP",
   "organizationProfile": "Profili i Organizatës"
 }

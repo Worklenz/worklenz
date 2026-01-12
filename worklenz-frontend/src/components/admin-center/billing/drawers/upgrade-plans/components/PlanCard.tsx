@@ -32,11 +32,13 @@ export const PlanCard: React.FC<PlanCardProps> = ({
       position: 'relative',
       overflow: 'visible',
     }}
-    bodyStyle={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-      padding: '12px',
+    styles={{
+      body: {
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        padding: '12px',
+      }
     }}
     onClick={() => onPlanSelect(planType)}
     hoverable

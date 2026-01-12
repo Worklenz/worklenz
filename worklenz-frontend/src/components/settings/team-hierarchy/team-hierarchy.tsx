@@ -157,7 +157,7 @@ const TeamHierarchy: React.FC = () => {
       <Card
         size="small"
         style={cardStyle}
-        bodyStyle={{ padding: '8px' }}
+        styles={{ body: { padding: '8px' } }}
       >
         <Flex align="center" gap={8}>
           <Avatar
@@ -230,7 +230,7 @@ const TeamHierarchy: React.FC = () => {
         size="small"
         style={cardStyle}
         headStyle={headStyle}
-        bodyStyle={{ padding: '8px' }}
+        styles={{ body: { padding: '8px' } }}
       >
         {group.teamLead && (
           <>
@@ -337,7 +337,7 @@ const TeamHierarchy: React.FC = () => {
         <Col xs={24} sm={8}>
           <Card
             size="small"
-            bodyStyle={{ padding: '8px' }}
+            styles={{ body: { padding: '8px' } }}
             style={{
               backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
               border: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`
@@ -354,7 +354,7 @@ const TeamHierarchy: React.FC = () => {
         <Col xs={24} sm={8}>
           <Card
             size="small"
-            bodyStyle={{ padding: '8px' }}
+            styles={{ body: { padding: '8px' } }}
             style={{
               backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
               border: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`
@@ -371,7 +371,7 @@ const TeamHierarchy: React.FC = () => {
         <Col xs={24} sm={8}>
           <Card
             size="small"
-            bodyStyle={{ padding: '8px' }}
+            styles={{ body: { padding: '8px' } }}
             style={{
               backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
               border: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`

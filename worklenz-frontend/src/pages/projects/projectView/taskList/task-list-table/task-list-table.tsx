@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import DatePicker from 'antd/es/date-picker';
 import Checkbox from 'antd/es/checkbox';
 import Tag from 'antd/es/tag';
@@ -94,6 +94,8 @@ import CustomColumnModal from './custom-columns/custom-column-modal/custom-colum
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { DragEndEvent } from '@/types/task-management.types';
+import { useColumnResize } from '@/hooks/useColumnResize';
+import '../../../project-view-1/taskList/taskListTable/column-resize.css';
 
 interface TaskListTableProps {
   taskList: IProjectTask[] | null;
@@ -1328,6 +1330,33 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
   const { project } = useAppSelector(state => state.projectReducer);
   const { selectedTaskIdsList, selectedTasks } = useAppSelector(state => state.bulkActionReducer);
 
+  // Initialize column widths from columnList
+  const initialWidths = useMemo(() => {
+    const widths: Record<string, number> = { selector: 56, customColumn: 150 };
+    columnList.forEach(col => {
+      if (col.key) {
+        widths[col.key] = col.key === 'TASK' ? 300 : 150;
+      }
+    });
+    return widths;
+  }, [columnList]);
+
+  // Column resize functionality
+  const { columnWidths, handleResizeStart } = useColumnResize({
+    initialWidths,
+    minWidth: 50,
+    maxWidth: 800,
+    storageKey: `worklenz.taskList.columnWidths.${project?.id || 'default'}`,
+  });
+
+  // Helper function to get column width
+  const getColumnWidth = useCallback(
+    (key: string): number => {
+      return columnWidths[key] || initialWidths[key] || 150;
+    },
+    [columnWidths, initialWidths]
+  );
+
   // Function to update custom column values
   const updateTaskCustomColumnValue = (taskId: string, columnKey: string, value: string) => {
     try {
@@ -1769,7 +1798,6 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
         sensors={sensors}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        onDragOver={handleDragOver} // Add this line
         autoScroll={false} // Disable auto-scroll animations
       >
         <SortableContext
@@ -1828,12 +1856,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                       >
                         <Flex align="center" gap={4}>
                           {column.key === 'PHASE' && (
-                            <Flex
-                              align="center"
-                              gap={4}
-                              justify="space-between"
-                              className="w-full min-w-[120px]"
-                            >
+                            <Flex className="w-full min-w-[120px]">
                               {project?.phase_label}
                               <ConfigPhaseButton />
                             </Flex>
@@ -1848,6 +1871,24 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                               t(`${column.key?.replace('_', '').toLowerCase()}Column`)
                             ))}
                         </Flex>
+
+                        {/* Column Resize Handle */}
+                        <div
+                          className="column-resize-handle"
+                          role="separator"
+                          aria-orientation="vertical"
+                          aria-label={`Resize ${column.name || column.key} column`}
+                          tabIndex={0}
+                          onMouseDown={e => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const th = e.currentTarget.closest('th');
+                            const measured = th ? th.getBoundingClientRect().width : undefined;
+                            // Delegate resize start to shared hook with the live measured width to avoid any jump/lag
+                            handleResizeStart(e, column.key || '', measured);
+                          }}
+                          title={`Drag to resize ${column.name || column.key}`}
+                        />
                       </th>
                     );
                   })}
@@ -1894,7 +1935,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                                         fontWeight: 500,
                                         background: '#f6f8fa',
                                       }}
-                                      onClick={() => setShowAddSubtaskFor(updatedTask.id)}
+                                      onClick={() => setShowAddSubtaskFor(updatedTask.id || null)}
                                     >
                                       + Add Sub Task
                                     </div>
@@ -1904,11 +1945,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                               {showAddSubtaskFor === updatedTask.id && (
                                 <tr key={`add-subtask-input-${updatedTask.id}`}>
                                   <td colSpan={visibleColumns.length + 1}>
-                                    <AddTaskListRow
-                                      groupId={tableId}
-                                      parentTask={updatedTask.id}
-                                      onCancel={() => setShowAddSubtaskFor(null)}
-                                    />
+                                    <AddTaskListRow groupId={tableId} parentTask={updatedTask.id} />
                                   </td>
                                 </tr>
                               )}

@@ -22,9 +22,9 @@ import { CSS } from '@dnd-kit/utilities';
 import { GanttTask, GanttViewMode } from '../../types/gantt-types';
 import { useSocket } from '../../../../../../socket/socketContext';
 import { SocketEvents } from '../../../../../../shared/socket-events';
-import { useAppDispatch } from '../../../../../../hooks/useAppDispatch';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { addTask } from '../../../../../../features/task-management/task-management.slice';
-import { useAuthService } from '../../../../../../hooks/useAuth';
+import { useAuthService } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 
 // Utility function to add alpha channel to hex color

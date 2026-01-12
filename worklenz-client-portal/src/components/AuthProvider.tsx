@@ -58,6 +58,22 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [dispatch, isAuthenticated]);
 
+  // Listen for client deactivation event
+  useEffect(() => {
+    const handleClientDeactivated = () => {
+      // Client has been deactivated, logout immediately
+      // Token is already cleared by the API interceptor
+      dispatch(logoutUser());
+      // Redirect to login page
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/auth/login') {
+        window.location.href = '/login';
+      }
+    };
+
+    window.addEventListener('client-deactivated', handleClientDeactivated);
+    return () => window.removeEventListener('client-deactivated', handleClientDeactivated);
+  }, [dispatch]);
+
   return <>{children}</>;
 };
 

@@ -10,6 +10,7 @@ import { getAssignees, ITaskAssignee, runAssignOrRemove } from "./on-quick-assig
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
 import db from "../../config/db";
 import { log_error } from "../../shared/utils";
+import {verifyTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
 
 interface TaskAssigneesChangeData {
   task_id: string;
@@ -31,6 +32,13 @@ export async function on_task_assignees_change(
     }
 
     const body: TaskAssigneesChangeData = JSON.parse(rawData);
+    
+    const hasAccess = await verifyTaskAccessSocket(socket, body.task_id);
+    if (!hasAccess) {
+      logUnauthorizedSocketAccess(socket, 'TASK_ASSIGNEES_CHANGE', 'task', body.task_id);
+      return;
+    }
+    
     const userId = getLoggedInUserIdFromSocket(socket);
     const newAssignees: string[] = body.team_member_id;
     const prevAssignees: ITaskAssignee[] = await getAssignees(body.task_id);

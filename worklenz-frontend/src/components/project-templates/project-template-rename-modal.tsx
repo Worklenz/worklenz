@@ -51,7 +51,7 @@ export const ProjectTemplateRenameModal: React.FC<ProjectTemplateRenameModalProp
       confirmLoading={loading}
       okText={t('okText')}
       cancelText={t('cancelText')}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form layout="vertical">
         <Form.Item

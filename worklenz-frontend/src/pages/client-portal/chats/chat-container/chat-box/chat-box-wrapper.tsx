@@ -2,12 +2,13 @@ import { Card, Flex, Typography, Spin, Button } from '@/shared/antd-imports';
 import React, { ReactNode, useState } from 'react';
 import ChatList from '../chat-list';
 import ChatBox from './chat-box';
-import { useAppSelector } from '../../../../../hooks/useAppSelector';
-import { useGetOrganizationChatsQuery } from '../../../../../api/client-portal/client-portal-api';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useGetOrganizationChatsQuery, clientPortalApi } from '../../../../../api/client-portal/client-portal-api';
 import { useTranslation } from 'react-i18next';
 import { MessageOutlined, ReloadOutlined, InboxOutlined } from '@ant-design/icons';
-import NewChatModal from '../../../../../components/client-portal/NewChatModal';
-import { themeWiseColor } from '../../../../../utils/themeWiseColor';
+import NewChatModal from '@components/client-portal/NewChatModal';
+import { themeWiseColor } from '@utils/themeWiseColor';
 
 export type TempChatsType = {
   id: string;
@@ -26,10 +27,25 @@ export type TempChatsType = {
   clientId?: string;
 };
 
-const ChatBoxWrapper = () => {
+interface ChatBoxWrapperProps {
+  isNewChatModalOpen?: boolean;
+  setIsNewChatModalOpen?: (open: boolean) => void;
+}
+
+const ChatBoxWrapper = ({ 
+  isNewChatModalOpen: propIsNewChatModalOpen, 
+  setIsNewChatModalOpen: propSetIsNewChatModalOpen 
+}: ChatBoxWrapperProps = {}) => {
   const [openedChatId, setOpenedChatId] = useState<string | null>(null);
-  const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
+  const [internalIsNewChatModalOpen, setInternalIsNewChatModalOpen] = useState(false);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const dispatch = useAppDispatch();
+  
+  // Use prop if provided, otherwise use internal state
+  const isNewChatModalOpen = propIsNewChatModalOpen !== undefined 
+    ? propIsNewChatModalOpen 
+    : internalIsNewChatModalOpen;
+  const setIsNewChatModalOpen = propSetIsNewChatModalOpen || setInternalIsNewChatModalOpen;
 
   const { t } = useTranslation('client-portal-chats');
 
@@ -105,6 +121,8 @@ const ChatBoxWrapper = () => {
   const handleNewChatSuccess = (chatId: string) => {
     setOpenedChatId(chatId);
     setIsNewChatModalOpen(false);
+    // Invalidate cache and refetch chat list to show the new conversation
+    dispatch(clientPortalApi.util.invalidateTags(['Chats']));
     refetch();
   };
 

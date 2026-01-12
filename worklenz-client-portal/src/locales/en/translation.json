@@ -134,7 +134,7 @@
     "network_error": "Network error. Please check your connection.",
     "server_error": "Server error. Please try again later.",
     "worklenz_account_found_title": "Worklenz Account Found",
-    "worklenz_account_found_message": "This email is already registered with a Worklenz account. Please use your Worklenz password to sign up for the client portal."
+    "worklenz_account_found_message": "This email is already registered with a Worklenz account. Please use your existing Worklenz account password to sign up for the client portal."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -288,6 +288,7 @@
     "title": "Chats",
     "description": "Communicate with your service providers",
     "conversations": "Conversations",
+    "chatTitle": "Chat - {{date}}",
     "chatMessages": "Chat Messages",
     "selectConversation": "Select a conversation",
     "selectToStart": "Select a conversation to start chatting",
