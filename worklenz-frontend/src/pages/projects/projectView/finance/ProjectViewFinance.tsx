@@ -501,6 +501,12 @@ const ProjectViewFinance = () => {
                   loading={currencyLoading}
                   disabled={!hasEditPermission || !hasBusinessAccess}
                   options={CURRENCY_OPTIONS}
+                  showSearch
+                  optionFilterProp="label"
+                  filterOption={(input, option) =>
+                    (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+                  }
+                  notFoundContent={t('noCurrenciesFound') || 'No currencies found'}
                   onChange={handleCurrencyChange}
                 />
               </Flex>

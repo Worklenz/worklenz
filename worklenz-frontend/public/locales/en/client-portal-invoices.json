@@ -133,5 +133,8 @@
   "viewFullSize": "View Full Size",
   "viewPdf": "View PDF",
   "viewFile": "View File",
-  "download": "Download"
+  "download": "Download",
+  "existingInvoicesWarning": "⚠️ This request already has invoices:",
+  "multipleInvoicesAllowed": "You can create additional invoices for this request (e.g., for milestones or additional work).",
+  "noCurrenciesFound": "No currencies found"
 }

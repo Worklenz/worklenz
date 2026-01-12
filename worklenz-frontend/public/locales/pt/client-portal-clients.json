@@ -244,5 +244,13 @@
   "emailRequiredTitle": "E-mail Obrigatório",
   "emailRequiredMessage": "Este cliente não possui um endereço de e-mail. Um e-mail é necessário para convidá-lo ao portal.",
   "emailRequiredQuestion": "Gostaria de adicionar um endereço de e-mail e convidá-lo novamente?",
+  "clientAlreadyExists": "Cliente já existe",
+  "invitationAlreadySent": "Convite já enviado",
+  "sendInvitationToExistingClient": "Enviar Convite",
+  "sendInvitationSuccess": "Convite enviado com sucesso",
+  "sendInvitationError": "Falha ao enviar convite",
+  "clientAlreadyHasPortalAccess": "Cliente já tem acesso ao portal",
+  "clientAlreadyHasPendingInvitation": "Convite já enviado. Por favor use a opção de reenviar.",
+  "clientEmailRequired": "E-mail do cliente é obrigatório para o convite",
   "addEmailButton": "Adicionar E-mail e Convidar"
 }

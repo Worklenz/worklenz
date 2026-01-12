@@ -198,5 +198,13 @@
   "emailRequiredTitle": "Email i Kërkuar",
   "emailRequiredMessage": "Ky klient nuk ka një adresë email. Një email kërkohet për ta ftuar në portal.",
   "emailRequiredQuestion": "Dëshironi të shtoni një adresë email dhe ta ftoni përsëri?",
+  "clientAlreadyExists": "Klienti ekziston tashmë",
+  "invitationAlreadySent": "Ftesa tashmë u dërgua",
+  "sendInvitationToExistingClient": "Dërgo Ftesë",
+  "sendInvitationSuccess": "Ftesa u dërgua me sukses",
+  "sendInvitationError": "Dështoi dërgimi i ftesës",
+  "clientAlreadyHasPortalAccess": "Klienti ka tashmë hyrje në portal",
+  "clientAlreadyHasPendingInvitation": "Ftesa tashmë u dërgua. Ju lutemi përdorni opsionin e ridërgimit.",
+  "clientEmailRequired": "Email i klientit kërkohet për ftesën",
   "addEmailButton": "Shto Email dhe Fto"
 }

@@ -1700,6 +1700,15 @@ export default class ClientsController extends WorklenzControllerBase {
     return ClientPortalAuthController.resendClientInvitation(req, res);
   }
 
+  @HandleExceptions()
+  public static async sendInvitationToExistingClient(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const modifiedReq = {
+      ...req,
+      user: req.user
+    } as any;
+    return ClientPortalClientsController.sendInvitationToExistingClient(modifiedReq, res as any);
+  }
+
   // Organization-side Client Portal Request Comments
 
   @HandleExceptions()
