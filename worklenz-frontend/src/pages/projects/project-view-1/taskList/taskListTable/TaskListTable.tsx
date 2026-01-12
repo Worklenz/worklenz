@@ -13,6 +13,7 @@ import { deselectAll } from '@features/projects/bulkActions/bulkActionSlice';
 import { useTranslation } from 'react-i18next';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { HolderOutlined } from '@/shared/antd-imports';
+import CompletedDateCell from './taskListTableCells/CompletedDateCell';
 
 const TaskListTable = ({
   taskList,
@@ -226,7 +227,7 @@ const TaskListTable = ({
 
       // completed date column
       case 'completedDate':
-        return <div></div>;
+        return <CompletedDateCell completedDate={task.completed_at || null} />;
 
       // created date column
       case 'createdDate':
