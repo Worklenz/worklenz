@@ -396,7 +396,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                   </svg>
                 </button>
 
-                {(isOwnerOrAdmin || isProjectManager) && name !== t('unmapped') && groupBy !== 'priority' && (
+                {(isOwnerOrAdmin || isProjectManager) && name !== t('unmapped') && groupBy !== IGroupBy.PRIORITY && (
                   <div className="relative" ref={dropdownRef}>
                     <button
                       type="button"

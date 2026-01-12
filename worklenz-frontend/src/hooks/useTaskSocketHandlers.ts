@@ -204,12 +204,6 @@ export const useTaskSocketHandlers = () => {
     (response: ITaskListStatusChangeResponse) => {
       if (!response) return;
 
-      console.log('[DEBUG] Task status change response:', {
-        taskId: response.id,
-        completed_at: response.completed_at,
-        statusCategory: response.statusCategory,
-      });
-
       if (response.completed_deps === false) {
         alertService.error(
           'Task is not completed',
@@ -261,24 +255,19 @@ export const useTaskSocketHandlers = () => {
             // If task doesn't exist in Redux, create minimal task object
             id: response.id,
             status: response.status_id || newStatusValue,
+            priority: '', // Add required priority field
             progress: typeof response.complete_ratio === 'number' ? response.complete_ratio : 0,
             complete_ratio: response.complete_ratio,
             completedAt: response.completed_at,
             completed_at: response.completed_at,
             updatedAt: new Date().toISOString(),
+            created_at: new Date().toISOString(), // Add required created_at field
+            updated_at: new Date().toISOString(), // Add required updated_at field
             title: '',
             name: '',
           } as Task);
 
       dispatch(updateTask(taskUpdate));
-
-      console.log('[DEBUG] Updated task in Redux:', {
-        taskId: response.id,
-        completedAt: response.completed_at,
-        completed_at: response.completed_at,
-        currentTaskBefore: currentTask?.completedAt,
-        taskExists: !!currentTask,
-      });
 
       // Handle group movement ONLY if grouping by status and task exists
       if (currentTask && groups && groups.length > 0 && currentGrouping === 'status') {
@@ -451,12 +440,12 @@ export const useTaskSocketHandlers = () => {
               })
             );
           } else if (!targetGroup && response.priority_id) {
-            console.log('🔧 Target priority group not found for priority:', newPriorityValue);
+            // Target priority group not found
           } else {
-            console.log('🔧 No group movement needed for priority change');
+            // No group movement needed for priority change
           }
         } else {
-          console.log('🔧 Not grouped by priority, skipping group movement');
+          // Not grouped by priority, skipping group movement
         }
       }
     },
@@ -603,17 +592,17 @@ export const useTaskSocketHandlers = () => {
                 })
               );
             } else if (!targetGroup && newPhaseValue) {
-              console.log('🔧 Target phase group not found for phase:', newPhaseValue);
+              // Target phase group not found
             } else {
-              console.log('🔧 No group movement needed for phase change');
+              // No group movement needed for phase change
             }
-          } else {
-            console.log('🔧 Not grouped by phase, skipping group movement');
           }
+        } else {
+          // Not grouped by phase, skipping group movement
         }
       }
     },
-    [dispatch, currentGroupingV3, projectId]
+    [dispatch, currentGroupingV3]
   );
 
   const handleStartDateChange = useCallback(
@@ -907,9 +896,6 @@ export const useTaskSocketHandlers = () => {
     (data: any[]) => {
       try {
         if (!Array.isArray(data) || data.length === 0) return;
-
-        // DEBUG: Log the data received from the backend
-        console.log('[TASK_SORT_ORDER_CHANGE] Received data:', data);
 
         // Get canonical lists from Redux
         const state = store.getState();
