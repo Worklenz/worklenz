@@ -848,7 +848,19 @@ export default class ImportsController {
     async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
       const userId = this.getUserId(req);
       const job = await this.assertJob(req.params.jobId, userId);
-      const token = (req.body?.token as string | undefined)?.trim();
+
+      // Extract and clean the token - remove any comment lines or extra whitespace
+      let token = (req.body?.token as string | undefined)?.trim() || "";
+      // Remove comment lines (lines starting with # or //)
+      token = token
+        .split("\n")
+        .filter(
+          (line) =>
+            !line.trim().startsWith("#") && !line.trim().startsWith("//")
+        )
+        .join("")
+        .trim();
+
       const email = (req.body?.email as string | undefined)?.trim();
       const domain = (req.body?.domain as string | undefined)?.trim();
 
@@ -870,7 +882,19 @@ export default class ImportsController {
         console.log("[JIRA DEBUG] baseUrl:", baseUrl);
         console.log("[JIRA DEBUG] email:", email);
         console.log("[JIRA DEBUG] token length:", token.length);
-
+        console.log(
+          "[JIRA DEBUG] token first 10 chars:",
+          token.substring(0, 10)
+        );
+        console.log(
+          "[JIRA DEBUG] token last 10 chars:",
+          token.substring(token.length - 10)
+        );
+        console.log("[JIRA DEBUG] auth string length:", authString.length);
+        console.log(
+          "[JIRA DEBUG] Authorization header:",
+          authHeader.Authorization.substring(0, 20) + "..."
+        );
         const response = await axios.get(`${baseUrl}/rest/api/3/myself`, {
           headers: authHeader,
         });
