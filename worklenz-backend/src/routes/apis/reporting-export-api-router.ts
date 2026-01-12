@@ -22,5 +22,6 @@ reportingExportApiRouter.get("/flat-tasks/export", teamOwnerOrAdminValidator, sa
 reportingExportApiRouter.get("/member-time-log-breakdown/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.exportTimeLogs));
 reportingExportApiRouter.get("/member-activity-log-breakdown/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.exportActivityLogs));
 reportingExportApiRouter.get("/timelogs-flat/export-csv", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.exportTimelogsFlatCSV));
+reportingExportApiRouter.get("/timelogs-flat/export-excel", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.exportTimelogsFlatExcel));
 
 export default reportingExportApiRouter;

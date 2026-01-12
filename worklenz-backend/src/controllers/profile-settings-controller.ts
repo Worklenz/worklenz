@@ -48,7 +48,7 @@ export default class ProfileSettingsController extends WorklenzControllerBase {
                SET name       = $2,
                    updated_at = CURRENT_TIMESTAMP
                WHERE id = $1
-               RETURNING id, name, email;`;
+               RETURNING id, name, email, updated_at;`;
     const result = await db.query(q, [req.user?.id, sanitizedName]);
     const [data] = result.rows;
     return res.status(200).send(new ServerResponse(true, data));

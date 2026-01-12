@@ -21,6 +21,7 @@ import TasksControllerBase from "./tasks-controller-base";
 import { insertToActivityLogs } from "../services/activity-logs/activity-logs.service";
 import { IActivityLog } from "../services/activity-logs/interfaces";
 import { getKey, getRootDir, uploadBase64 } from "../shared/s3";
+import { isRestrictedFromProPlanFeatures } from "../middlewares/subscription-middleware";
 
 export default class TasksController extends TasksControllerBase {
   private static notifyProjectUpdates(socketId: string, projectId: string) {
@@ -68,6 +69,15 @@ export default class TasksController extends TasksControllerBase {
   public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const userId = req.user?.id as string;
     const teamId = req.user?.team_id as string;
+
+    // Check if user is trying to set billable and if they're restricted
+    if (req.body.billable === true) {
+      const isRestricted = await isRestrictedFromProPlanFeatures(teamId);
+      
+      if (isRestricted) {
+        return res.status(200).send(new ServerResponse(false, null, "Billable feature is not available for Pro Plan and AppSumo users. Please upgrade to Business plan to access this feature."));
+      }
+    }
 
     if (req.body.attachments_raw) {
       req.body.attachments = await this.uploadAttachment(req.body.attachments_raw, teamId, userId);

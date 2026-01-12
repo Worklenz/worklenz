@@ -37,4 +37,7 @@ export interface ILocalSession extends IUserType {
   trial_days_remaining?: number;   // Days remaining in plan trial
   trial_plan_display_name?: string; // Display name of trial plan
   is_plan_trial?: boolean;         // Quick flag for plan trial status
+  // Timestamp fields
+  created_at?: string;
+  updated_at?: string;
 }

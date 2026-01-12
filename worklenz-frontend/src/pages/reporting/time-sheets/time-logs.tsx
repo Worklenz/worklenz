@@ -154,20 +154,17 @@ const TimeLogsPage: React.FC = () => {
   }, [selectedMemberId, reporting.dateRange?.[0], reporting.dateRange?.[1], billableFilter.billable, billableFilter.nonBillable, search]);
 
   const onExportExcel = () => {
-    if (!selectedMemberId || !reporting.dateRange || reporting.dateRange.length !== 2) return;
+    if (!reporting.dateRange || reporting.dateRange.length !== 2) return;
     const startDate = dayjs(reporting.dateRange[0]).format('YYYY-MM-DD');
     const endDate = dayjs(reporting.dateRange[1]).format('YYYY-MM-DD');
 
-    reportingExportApiService.exportMemberTimeLogs({
-      team_member_id: selectedMemberId,
-      team_id: team?.id || null,
-      duration: null,
+    reportingExportApiService.exportTimelogsFlatExcel({
+      team_member_id: selectedMemberId || undefined,
+      duration: undefined,
       date_range: [startDate, endDate],
-      member_name: members.find(m => m.id === selectedMemberId)?.name,
-      team_name: team?.name,
       billable: billableFilter,
-      archived: false,
-    } as any);
+      search: search || undefined,
+    });
   };
 
   const onExportCSV = () => {
@@ -197,7 +194,7 @@ const TimeLogsPage: React.FC = () => {
 
   const exportMenu = {
     items: [
-      { key: 'excel', label: t('Export Excel'), disabled: !selectedMemberId },
+      { key: 'excel', label: t('Export Excel') },
       { key: 'csv', label: t('Export CSV') },
     ],
     onClick: ({ key }: any) => {
