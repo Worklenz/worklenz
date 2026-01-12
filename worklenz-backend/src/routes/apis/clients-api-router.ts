@@ -1,6 +1,7 @@
 import express from "express";
 
 import ClientsController from "../../controllers/clients-controller";
+import ClientPortalInvoicesController from "../../controllers/client-portal/client-portal-invoices-controller";
 
 import clientsBodyValidator from "../../middlewares/validators/clients-body-validator";
 import idParamValidator from "../../middlewares/validators/id-param-validator";
@@ -61,6 +62,7 @@ clientsApiRouter.post("/portal/clients/:id/team/:memberId/resend-invitation", id
 // Organization-side Client Portal Invitation Management
 clientsApiRouter.post("/portal/generate-invitation-link", safeControllerFunction(ClientsController.generateClientInvitationLink));
 clientsApiRouter.post("/portal/clients/:id/resend-invitation", idParamValidator, safeControllerFunction(ClientsController.resendClientInvitation));
+clientsApiRouter.post("/portal/clients/:id/send-invitation", idParamValidator, safeControllerFunction(ClientsController.sendInvitationToExistingClient));
 
 // Organization-side Client Portal Analytics
 clientsApiRouter.get("/portal/clients/:id/stats", idParamValidator, safeControllerFunction(ClientsController.getPortalClientStats));
@@ -78,6 +80,7 @@ clientsApiRouter.get("/portal/projects/:id", idParamValidator, safeControllerFun
 // Organization-side Client Portal Invoices Management  
 clientsApiRouter.get("/portal/invoices", safeControllerFunction(ClientsController.getPortalInvoices));
 clientsApiRouter.post("/portal/invoices", safeControllerFunction(ClientsController.createPortalInvoice));
+clientsApiRouter.get("/portal/invoices/request/:requestId", safeControllerFunction(ClientPortalInvoicesController.getInvoicesByRequest));
 clientsApiRouter.get("/portal/invoices/:id", idParamValidator, safeControllerFunction(ClientsController.getPortalInvoiceById));
 clientsApiRouter.put("/portal/invoices/:id", idParamValidator, safeControllerFunction(ClientsController.updatePortalInvoice));
 clientsApiRouter.delete("/portal/invoices/:id", idParamValidator, safeControllerFunction(ClientsController.deletePortalInvoice));
