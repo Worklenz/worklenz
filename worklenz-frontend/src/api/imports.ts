@@ -57,6 +57,17 @@ export const clickupWorkspaces = async (jobId: string, token: string) => {
   };
 };
 
+export const jiraValidate = async (
+  jobId: string,
+  payload: { token: string; email: string; domain: string }
+) => {
+  const { data } = await apiClient.post(`/api/v1/imports/${jobId}/auth/jira/validate`, payload);
+  return data?.body as {
+    authorized: boolean;
+    projects: Array<{ key: string; name: string }>;
+  };
+};
+
 export const getImportJob = async (jobId: string) => {
   const { data } = await apiClient.get(`/api/v1/imports/${jobId}`, {
     params: { ts: Date.now() },

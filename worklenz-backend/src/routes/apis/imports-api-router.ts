@@ -82,6 +82,10 @@ importsApiRouter.post(
   "/:jobId/auth/clickup/workspaces",
   ImportsController.clickupWorkspaces
 );
+importsApiRouter.post(
+  "/:jobId/auth/jira/validate",
+  ImportsController.jiraValidate
+);
 importsApiRouter.get("/:jobId/progress", ImportsController.progress);
 importsApiRouter.get("/:jobId/logs", ImportsController.logs);
 importsApiRouter.post("/:jobId/commit", ImportsController.commit);

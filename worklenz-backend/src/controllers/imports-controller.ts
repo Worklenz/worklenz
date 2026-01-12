@@ -15,6 +15,7 @@ import axios from "axios";
 import crypto from "crypto";
 import { nanoid } from "nanoid";
 import AsanaProvider from "../services/import-providers/asana-provider";
+import JiraProvider from "../services/import-providers/jira-provider";
 
 const autoHierarchyTemplate = [
   { source_level: "Section", target_level: "Status", position: 1 },
@@ -85,12 +86,6 @@ const autoFieldTemplate: FieldMappingRow[] = [
     include: true,
   },
   {
-    source_field: "Alphabetical",
-    target_field: "Alphabetical",
-    required: false,
-    include: true,
-  },
-  {
     source_field: "Completed on",
     target_field: "completedDate",
     required: false,
@@ -99,6 +94,7 @@ const autoFieldTemplate: FieldMappingRow[] = [
 ];
 
 const asanaProvider = new AsanaProvider();
+const jiraProvider = new JiraProvider();
 
 const REQUIRED_TARGET_MAPPINGS: Array<{
   target: string;
@@ -261,7 +257,9 @@ export default class ImportsController {
       const job = await ImportsService.getJob(jobId);
       if (!job) throw createHttpError(404, "Import job not found");
       let rows = autoHierarchyTemplate;
-      if ((job.provider || "").toLowerCase() === "asana") {
+      const providerKey = (job.provider || "").toLowerCase();
+
+      if (providerKey === "asana") {
         try {
           const auto = await asanaProvider.getAutoMappings(job, req.body);
           if (auto.hierarchy?.length) rows = auto.hierarchy;
@@ -275,7 +273,22 @@ export default class ImportsController {
             }
           );
         }
+      } else if (providerKey === "jira") {
+        try {
+          const auto = await jiraProvider.getAutoMappings(job, req.body);
+          if (auto.hierarchy?.length) rows = auto.hierarchy;
+        } catch (err) {
+          await ImportsService.appendLog(
+            job.id,
+            "warn",
+            "JIRA auto hierarchy failed",
+            {
+              error: (err as any)?.message,
+            }
+          );
+        }
       }
+
       await ImportsService.upsertHierarchy(jobId, rows);
       return res.status(200).send(new ServerResponse(true, rows));
     }
@@ -287,7 +300,9 @@ export default class ImportsController {
       const job = await ImportsService.getJob(jobId);
       if (!job) throw createHttpError(404, "Import job not found");
       let rows = autoFieldTemplate;
-      if ((job.provider || "").toLowerCase() === "asana") {
+      const providerKey = (job.provider || "").toLowerCase();
+
+      if (providerKey === "asana") {
         try {
           const auto = await asanaProvider.getAutoMappings(job, req.body);
           if (auto.fields?.length) rows = auto.fields as any;
@@ -301,21 +316,23 @@ export default class ImportsController {
             }
           );
         }
-      }
-      rows = ensureRequiredTargets(rows);
-      await ImportsService.appendLog(
-        job.id,
-        "info",
-        "Auto field mappings result",
-        {
-          provider: job.provider,
-          total: rows.length,
-          preview: rows.slice(0, 20).map((row) => ({
-            source: row.source_field,
-            target: row.target_field,
-          })),
+      } else if (providerKey === "jira") {
+        try {
+          const auto = await jiraProvider.getAutoMappings(job, req.body);
+          if (auto.fields?.length) rows = auto.fields as any;
+        } catch (err) {
+          await ImportsService.appendLog(
+            job.id,
+            "warn",
+            "JIRA auto fields failed",
+            {
+              error: (err as any)?.message,
+            }
+          );
         }
-      );
+      }
+
+      rows = ensureRequiredTargets(rows);
       await ImportsService.upsertFields(jobId, rows);
       return res.status(200).send(new ServerResponse(true, rows));
     }
@@ -824,6 +841,102 @@ export default class ImportsController {
       return res
         .status(200)
         .send(new ServerResponse(true, { authorized: true, teams }));
+    }
+  );
+
+  static jiraValidate = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const userId = this.getUserId(req);
+      const job = await this.assertJob(req.params.jobId, userId);
+      const token = (req.body?.token as string | undefined)?.trim();
+      const email = (req.body?.email as string | undefined)?.trim();
+      const domain = (req.body?.domain as string | undefined)?.trim();
+
+      if (!token) throw createHttpError(400, "token is required");
+      if (!email) throw createHttpError(400, "email is required");
+      if (!domain) throw createHttpError(400, "domain is required");
+
+      // Remove protocol and trailing slashes from domain
+      const cleanDomain = domain.replace(/^https?:\/\//, "").replace(/\/$/, "");
+      const baseUrl = `https://${cleanDomain}`;
+
+      // Create Basic Auth header
+      const authString = Buffer.from(`${email}:${token}`).toString("base64");
+      const authHeader = { Authorization: `Basic ${authString}` };
+
+      // Validate credentials by fetching current user
+      try {
+        console.log("[JIRA DEBUG] Validating credentials...");
+        console.log("[JIRA DEBUG] baseUrl:", baseUrl);
+        console.log("[JIRA DEBUG] email:", email);
+        console.log("[JIRA DEBUG] token length:", token.length);
+
+        const response = await axios.get(`${baseUrl}/rest/api/3/myself`, {
+          headers: authHeader,
+        });
+
+        console.log("[JIRA DEBUG] Authentication successful");
+        console.log("[JIRA DEBUG] User:", response.data?.displayName);
+      } catch (err: any) {
+        console.error("[JIRA DEBUG] Authentication failed");
+        console.error("[JIRA DEBUG] Status:", err?.response?.status);
+        console.error("[JIRA DEBUG] Response data:", err?.response?.data);
+        console.error("[JIRA DEBUG] Error message:", err?.message);
+
+        const status = err?.response?.status;
+        if (status === 401 || status === 403) {
+          throw createHttpError(
+            401,
+            "Invalid JIRA credentials. Please check your email, API token, and domain."
+          );
+        }
+        throw createHttpError(
+          500,
+          `Failed to connect to JIRA: ${err?.message || "Unknown error"}`
+        );
+      }
+
+      // Fetch projects
+      let projects: Array<{ key: string; name: string }> = [];
+      try {
+        const projectsResp = await axios.get(
+          `${baseUrl}/rest/api/3/project/search`,
+          {
+            headers: authHeader,
+            params: { maxResults: 100 },
+          }
+        );
+        projects = (projectsResp.data?.values || []).map((p: any) => ({
+          key: p.key,
+          name: p.name,
+        }));
+      } catch (err) {
+        await ImportsService.appendLog(
+          job.id,
+          "warn",
+          "JIRA projects fetch failed",
+          {
+            error: (err as any)?.message,
+          }
+        );
+      }
+
+      // Store credentials in job
+      await ImportsService.mergeSourceReference(job.id, {
+        auth: {
+          ...(job.source_reference as any)?.auth,
+          jira: {
+            api_token: token,
+            email,
+            domain: cleanDomain,
+            projects,
+          },
+        },
+      });
+
+      return res
+        .status(200)
+        .send(new ServerResponse(true, { authorized: true, projects }));
     }
   );
 }

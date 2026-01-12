@@ -4,6 +4,7 @@ import AsanaProvider from "./import-providers/asana-provider";
 import MondayProvider from "./import-providers/monday-provider";
 import ClickUpProvider from "./import-providers/clickup-provider";
 import TrelloProvider from "./import-providers/trello-provider";
+import JiraProvider from "./import-providers/jira-provider";
 import CsvProvider from "./import-providers/csv-provider";
 import {
   ImportProvider,
@@ -15,6 +16,7 @@ const providers: Record<string, ImportProvider> = {
   monday: new MondayProvider(),
   clickup: new ClickUpProvider(),
   trello: new TrelloProvider(),
+  jira: new JiraProvider(),
   csv: new CsvProvider(),
 };
 

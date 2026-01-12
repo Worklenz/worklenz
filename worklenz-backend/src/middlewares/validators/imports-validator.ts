@@ -1,7 +1,7 @@
 import { Schema } from "jsonschema";
 import schemaValidator from "../schema-validator";
 
-const providerEnum = ["asana", "monday", "clickup", "trello", "csv"];
+const providerEnum = ["asana", "monday", "clickup", "trello", "jira", "csv"];
 
 const createSchema: Schema = {
   type: "object",

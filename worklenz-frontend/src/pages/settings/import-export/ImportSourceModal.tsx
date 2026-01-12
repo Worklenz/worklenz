@@ -30,6 +30,7 @@ import {
   getImportJob,
   commitImportJob,
   ingestImportJob,
+  jiraValidate,
   mondayValidate,
   updateImportTarget,
   startAsanaAuth,
@@ -62,12 +63,26 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
 
   // --- Dynamic import flow state ---
   // List of direct integration apps (use 4-step flow)
-  const directIntegrationApps = ['asana', 'monday', 'clickup', 'trello'];
-  const authGateApps = ['asana', 'monday', 'clickup'];
+  const directIntegrationApps = [
+    'asana',
+    'monday',
+    'clickup',
+    'trello',
+    'jira',
+    'jira-software',
+    'jira-business',
+  ];
+  const authGateApps = ['asana', 'monday', 'clickup', 'jira', 'jira-software', 'jira-business'];
   const lowerKey = source.key.toLowerCase();
+  const isJira =
+    lowerKey === 'jira' || lowerKey === 'jira-software' || lowerKey === 'jira-business';
   const integrationType = directIntegrationApps.includes(lowerKey) ? 'direct' : 'csv';
   const authNeeded = authGateApps.includes(lowerKey);
-  const providerForApi = directIntegrationApps.includes(lowerKey) ? lowerKey : 'csv';
+  const providerForApi = isJira
+    ? 'jira'
+    : directIntegrationApps.includes(lowerKey)
+      ? lowerKey
+      : 'csv';
 
   const [job, setJob] = React.useState<ImportJob | null>(null);
   const [authLoading, setAuthLoading] = React.useState(false);
@@ -94,6 +109,13 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const [selectedBoard, setSelectedBoard] = React.useState('');
   const [selectedClickupSpace, setSelectedClickupSpace] = React.useState('');
   const [selectedClickupList, setSelectedClickupList] = React.useState('');
+
+  // JIRA-specific state
+  const [jiraToken, setJiraToken] = React.useState('');
+  const [jiraEmail, setJiraEmail] = React.useState('');
+  const [jiraDomain, setJiraDomain] = React.useState('');
+  const [jiraProjects, setJiraProjects] = React.useState<Array<{ key: string; name: string }>>([]);
+  const [selectedJiraProject, setSelectedJiraProject] = React.useState('');
 
   React.useEffect(() => {
     setStep(0);
@@ -500,6 +522,93 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         return;
       }
 
+      if (isJira) {
+        if (!selectedJiraProject) {
+          message.error(t('importStep.jiraProjectRequired', 'Please select a JIRA project'));
+          return;
+        }
+        if (!job?.id) {
+          message.error(t('importStep.importError', 'Import failed. Please try again.'));
+          return;
+        }
+
+        setIsImporting(true);
+        try {
+          const statusId = await ensureDefaultProjectStatusId();
+          const projectPayload: IProjectViewModel = {
+            name: spaceName.trim(),
+            color_code: '#2563eb',
+            status_id: statusId,
+            category_id: null,
+            health_id: null,
+            notes: '',
+            working_days: 0,
+            man_days: 0,
+            hours_per_day: 0,
+            use_manual_progress: false,
+            use_weighted_progress: false,
+            use_time_progress: false,
+          };
+
+          const projectResp = await projectsApiService.createProject(projectPayload);
+          const projectId = projectResp?.body?.id;
+          if (!projectResp?.done || !projectId) {
+            throw new Error(
+              projectResp?.message || t('importStep.projectCreateError', 'Failed to create project')
+            );
+          }
+
+          await updateImportTarget(job.id, {
+            targetProjectId: projectId,
+            targetSpaceType: spaceType,
+            targetTemplate: spaceTemplate,
+          });
+
+          const projectName = jiraProjects.find(p => p.key === selectedJiraProject)?.name;
+          await updateImportSource(job.id, {
+            project_key: selectedJiraProject,
+            project_name: projectName,
+          });
+
+          if (!fieldMappingRows.length || !hierarchyRows.length) {
+            await runAutoMapping(true);
+          }
+
+          if (fieldMappingRows.length) {
+            await saveImportFields(job.id, fieldMappingRows as any);
+          }
+
+          const jiraAuth = (job as any)?.source_reference?.auth?.jira;
+
+          await ingestImportJob(job.id, {
+            sourceReference: {
+              provider: lowerKey,
+              token: jiraAuth?.api_token,
+              email: jiraAuth?.email,
+              domain: jiraAuth?.domain,
+              projectKey: selectedJiraProject,
+              projectName,
+            },
+          });
+
+          const commitProgress = await commitImportJob(job.id);
+          if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
+
+          setShowCompletion(true);
+          message.success(
+            t('importStep.importStarted', 'Import started. We will notify once ready.')
+          );
+        } catch (err: any) {
+          message.error(
+            err?.message || t('importStep.importError', 'Import failed. Please try again.')
+          );
+        } finally {
+          setIsImporting(false);
+        }
+
+        return;
+      }
+
       setShowCompletion(true);
       return;
     }
@@ -679,6 +788,29 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       setAuthLoading(false);
     }
   };
+
+  const handleJiraValidate = async () => {
+    if (!job || !jiraToken.trim() || !jiraEmail.trim() || !jiraDomain.trim()) return;
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      const resp = await jiraValidate(job.id, {
+        token: jiraToken.trim(),
+        email: jiraEmail.trim(),
+        domain: jiraDomain.trim(),
+      });
+      setJiraProjects(resp.projects || []);
+      setSelectedJiraProject(resp.projects?.[0]?.key || '');
+      setAuthCompleted(true);
+      setAuthError(null);
+      message.success(t('auth.success', 'Connected'));
+    } catch (err: any) {
+      setAuthError(err?.message || t('auth.error', 'Connection failed. Please try again.'));
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   // Example content for each step
   function renderStepContent() {
     if (integrationType === 'direct') {
@@ -695,13 +827,17 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                     label: `${team.name} • ${space.name}`,
                   }))
                 )
-              : [];
+              : isJira
+                ? jiraProjects.map(p => ({ value: p.key, label: p.name }))
+                : [];
         const projectOptions =
           lowerKey === 'asana'
             ? asanaProjects
                 .filter(p => !selectedWorkspace || p.workspaceId === selectedWorkspace)
                 .map(p => ({ value: p.id, label: p.name }))
-            : [];
+            : isJira
+              ? jiraProjects.map(p => ({ value: p.key, label: p.name }))
+              : [];
         const boardOptions =
           lowerKey === 'monday' ? mondayBoards.map(b => ({ value: b.id, label: b.name })) : [];
 
@@ -718,7 +854,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             </Typography.Paragraph>
             <div style={{ display: 'flex', gap: 48 }}>
               <div style={{ flex: 1, maxWidth: 400 }}>
-                {lowerKey !== 'monday' && (
+                {lowerKey !== 'monday' && lowerKey !== 'jira' && (
                   <>
                     <label>{t('importStep.workspaceLabel', 'Workspace *')}</label>
                     <Select
@@ -735,10 +871,29 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   </>
                 )}
 
+                {isJira && (
+                  <>
+                    <label style={{ display: 'block', marginBottom: 4 }}>
+                      {t('importStep.jiraDomain', 'Domain')}
+                    </label>
+                    <Typography.Text
+                      style={{
+                        display: 'block',
+                        marginBottom: 24,
+                        color: themeToken.colorTextSecondary,
+                      }}
+                    >
+                      {jiraDomain}
+                    </Typography.Text>
+                  </>
+                )}
+
                 <label>
                   {lowerKey === 'monday'
                     ? t('importStep.boardLabel', 'Board *')
-                    : t('importStep.projectLabel', 'List/Project *')}
+                    : isJira
+                      ? t('importStep.jiraProjectLabel', 'Project *')
+                      : t('importStep.projectLabel', 'List/Project *')}
                 </label>
                 {lowerKey === 'monday' ? (
                   <Select
@@ -761,6 +916,29 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                       .flatMap(space =>
                         space.lists.map(list => ({ value: list.id, label: list.name }))
                       )}
+                    disabled={!authCompleted}
+                  />
+                ) : isJira ? (
+                  <Select
+                    style={{ width: '100%' }}
+                    placeholder={t('importStep.jiraProjectPlaceholder', 'Select a project')}
+                    value={selectedJiraProject || undefined}
+                    onChange={async v => {
+                      setSelectedJiraProject(v);
+                      const projectName = jiraProjects.find(p => p.key === v)?.name;
+                      try {
+                        await updateImportSource(job!.id, {
+                          project_key: v,
+                          project_name: projectName,
+                        });
+                        await runAutoMapping();
+                      } catch (err: any) {
+                        message.error(
+                          err?.message || t('importStep.autoMapError', 'Auto-mapping failed')
+                        );
+                      }
+                    }}
+                    options={projectOptions}
                     disabled={!authCompleted}
                   />
                 ) : (
@@ -2227,6 +2405,73 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               onClick={handleClickupValidate}
             >
               {t('auth.clickupSubmit', 'Select workspace')}
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    if (isJira) {
+      return (
+        <div style={{ padding: 48, background: themeToken.colorBgLayout, height: '100%' }}>
+          <Typography.Title level={2} style={{ color: themeToken.colorText, marginBottom: 12 }}>
+            {t('auth.jiraTitle', 'Connect JIRA')}
+          </Typography.Title>
+          <Typography.Paragraph style={{ color: themeToken.colorTextSecondary, fontSize: 16 }}>
+            {t(
+              'auth.jiraBody',
+              "Enter your JIRA credentials to import projects and issues. You'll need an API token from your JIRA account."
+            )}
+          </Typography.Paragraph>
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ color: themeToken.colorText, display: 'block', marginBottom: 4 }}>
+              {t('auth.jiraEmail', 'Email')}
+            </label>
+            <Input
+              placeholder={t('auth.jiraEmailPlaceholder', 'your-email@company.com')}
+              value={jiraEmail}
+              onChange={e => setJiraEmail(e.target.value)}
+            />
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ color: themeToken.colorText, display: 'block', marginBottom: 4 }}>
+              {t('auth.jiraDomain', 'Domain')}
+            </label>
+            <Input
+              placeholder={t('auth.jiraDomainPlaceholder', 'yourcompany.atlassian.net')}
+              value={jiraDomain}
+              onChange={e => setJiraDomain(e.target.value)}
+            />
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ color: themeToken.colorText, display: 'block', marginBottom: 4 }}>
+              {t('auth.jiraToken', 'API Token')}
+            </label>
+            <Input.Password
+              placeholder={t('auth.jiraTokenPlaceholder', 'Paste your JIRA API token')}
+              value={jiraToken}
+              onChange={e => setJiraToken(e.target.value)}
+            />
+          </div>
+
+          {authError && (
+            <Typography.Text type="danger" style={{ display: 'block', marginBottom: 12 }}>
+              {authError}
+            </Typography.Text>
+          )}
+
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+            <Button onClick={onClose}>{t('common.cancel', 'Cancel')}</Button>
+            <Button
+              type="primary"
+              disabled={!jiraToken.trim() || !jiraEmail.trim() || !jiraDomain.trim()}
+              loading={authLoading}
+              onClick={handleJiraValidate}
+            >
+              {t('auth.jiraSubmit', 'Connect')}
             </Button>
           </div>
         </div>
