@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   Modal,
   Button,
@@ -824,7 +824,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               ? clickupTeams.flatMap(team =>
                   team.spaces.map(space => ({
                     value: space.id,
-                    label: `${team.name} • ${space.name}`,
+                    label: `${team.name} Ã¢â‚¬Â¢ ${space.name}`,
                   }))
                 )
               : isJira
@@ -849,7 +849,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             <Typography.Paragraph>
               {t(
                 'importStep.selectListHelp',
-                'Select the workspace and list/board you’d like to import data from. Required fields are marked with an asterisk.'
+                'Select the workspace and list/board youÃ¢â‚¬â„¢d like to import data from. Required fields are marked with an asterisk.'
               )}
             </Typography.Paragraph>
             <div style={{ display: 'flex', gap: 48 }}>
@@ -978,30 +978,34 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         return (
           <div style={{ display: 'flex', gap: 48 }}>
             <div style={{ flex: 1, maxWidth: 400 }}>
-              <Typography.Title level={3}>{'Set up a space in Worklenz'}</Typography.Title>
+              <Typography.Title level={3}>
+                {t('importStep.setupSpaceTitle', 'Set up a space in Worklenz')}
+              </Typography.Title>
               <Typography.Paragraph>
-                {
-                  'Your team’s data from Asana will be imported into this space. Check if you’re selecting the right Worklenz space, template, and space type as these options can’t be modified later. All fields are required.'
-                }
+                {t('importStep.setupSpaceDesc', {
+                  defaultValue:
+                    "Your team's data from {{source}} will be imported into this space. Check if you're selecting the right Worklenz space, template, and space type as these options can't be modified later. All fields are required.",
+                  source: source.label || 'your app',
+                })}
               </Typography.Paragraph>
-              <label>{'Worklenz space'}</label>
+              <label>{t('importStep.worklenzSpace', 'Worklenz space')}</label>
               <Select
                 style={{ width: '100%', marginBottom: 16 }}
                 value={spaceType}
                 onChange={setSpaceType}
                 options={[
-                  { value: 'business', label: 'Business space' },
-                  { value: 'software', label: 'Software space' },
+                  { value: 'business', label: t('importStep.businessSpace', 'Business space') },
+                  { value: 'software', label: t('importStep.softwareSpace', 'Software space') },
                 ]}
               />
-              <label>{'Space name'}</label>
+              <label>{t('importStep.spaceName', 'Space name')}</label>
               <Input
                 style={{ width: '100%', marginBottom: 8 }}
                 value={spaceName}
                 onChange={e => setSpaceName(e.target.value)}
               />
               <a href="#" style={{ color: '#4096ff', fontSize: 14 }}>
-                {'Show more'}
+                {t('importStep.showMore', 'Show more')}
               </a>
             </div>
             <div
@@ -1019,43 +1023,65 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
           const reviewCards = [
             {
               key: 'hierarchy',
-              title: 'Space hierarchy',
+              title: t('importStep.spaceHierarchy', 'Space hierarchy'),
               description:
                 hierarchyCount > 0
-                  ? `${hierarchyCount} hierarchy levels mapped`
-                  : 'Sections from Asana are mapped to Status',
+                  ? t('importStep.hierarchyLevelsMapped', {
+                      defaultValue: '{{count}} hierarchy levels mapped',
+                      count: hierarchyCount,
+                    })
+                  : t('importStep.sectionsMapped', {
+                      defaultValue: 'Sections from {{source}} are mapped to Status',
+                      source: source.label || 'source',
+                    }),
               iconBg: '#1f6feb',
-              icon: '📦',
+              icon: '4e6',
               action: () => setReviewSubScreen('hierarchy'),
               control: <RightOutlined style={{ color: '#9ca3af', fontSize: 16 }} />,
             },
             {
               key: 'fieldMapping',
-              title: 'Field mapping',
+              title: t('importStep.fieldMapping', 'Field mapping'),
               description:
                 fieldMappingRows.length > 0
-                  ? `${mappedFieldCount}/${fieldMappingRows.length} fields mapped`
-                  : 'Fields will auto-map from Asana',
+                  ? t('importStep.fieldsMapped', {
+                      defaultValue: '{{mapped}}/{{total}} fields mapped',
+                      mapped: mappedFieldCount,
+                      total: fieldMappingRows.length,
+                    })
+                  : t('importStep.fieldsAutoMap', {
+                      defaultValue: 'Fields will auto-map from {{source}}',
+                      source: source.label || 'source',
+                    }),
               iconBg: '#6e56cf',
-              icon: '📑',
+              icon: '4d1',
               action: () => setReviewSubScreen('fieldMapping'),
               control: <RightOutlined style={{ color: '#9ca3af', fontSize: 16 }} />,
             },
             {
               key: 'importMembers',
-              title: 'Import all members from Asana project',
-              description: 'Brings collaborators into the Worklenz space',
+              title: t('importStep.importMembers', {
+                defaultValue: 'Import all members from {{source}} project',
+                source: source.label || 'source',
+              }),
+              description: t(
+                'importStep.importMembersDesc',
+                'Brings collaborators into the Worklenz space'
+              ),
               iconBg: '#0f9d58',
-              icon: '🧑‍🤝‍🧑',
+              icon: '9d100d91d00d9d1',
               action: undefined,
               control: <Switch checked={importMembers} onChange={setImportMembers} />,
             },
             {
               key: 'importAttachments',
-              title: 'Import all attachments',
-              description: 'Pulls files and images from tasks',
+              title: t('importStep.importAttachments', 'Import all attachments'),
+              description: t(
+                'importStep.importAttachmentsDesc',
+                'Pulls files and images from tasks'
+              ),
               iconBg: '#f59e0b',
-              icon: '📎',
+              icon: '4ce',
               action: undefined,
               control: <Switch checked={importAttachments} onChange={setImportAttachments} />,
             },
@@ -1065,12 +1091,15 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <div style={{ width: '100%', maxWidth: 720 }}>
                 <Typography.Title level={3} style={{ marginBottom: 4 }}>
-                  {'Review details'}
+                  {t('importStep.reviewDetails', 'Review details')}
                 </Typography.Title>
                 <Typography.Paragraph style={{ marginBottom: 24 }}>
-                  {
-                    'We’ve mapped your project and you’re ready to import. Here’s how the Asana data will be imported into the Jira project. Learn more about the project setup'
-                  }
+                  {t('importStep.reviewIntro', {
+                    defaultValue:
+                      "We've mapped your project and you're ready to import. Here's how the {{source}} data will be imported into the {{target}} project. Learn more about the project setup",
+                    source: source.label || 'source',
+                    target: 'Worklenz',
+                  })}
                 </Typography.Paragraph>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {reviewCards.map(card => (
@@ -1140,7 +1169,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 </Typography.Title>
                 <Typography.Paragraph style={{ marginBottom: 20 }}>
                   {
-                    "Here’s how we've mapped your Asana data to Worklenz. More about project hierarchy in Worklenz"
+                    "HereÃ¢â‚¬â„¢s how we've mapped your Asana data to Worklenz. More about project hierarchy in Worklenz"
                   }
                 </Typography.Paragraph>
 
@@ -1153,7 +1182,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
-                    <span style={{ color: '#ea4335', fontSize: 16, fontWeight: 600 }}>Asana</span>
+                    <span style={{ color: '#ea4335', fontSize: 16, fontWeight: 600 }}>
+                      {source.label}
+                    </span>
                     <RightOutlined style={{ color: '#9ca3af' }} />
                     <span style={{ color: '#60a5fa', fontSize: 16, fontWeight: 600 }}>
                       Worklenz
@@ -1254,9 +1285,16 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                     marginBottom: 8,
                   }}
                 >
-                  <span style={{ paddingLeft: 6 }}>Asana field</span>
-                  <span>Worklenz field</span>
-                  <span style={{ textAlign: 'center' }}>Include in import</span>
+                  <span style={{ paddingLeft: 6 }}>
+                    {t('importStep.sourceField', {
+                      defaultValue: '{{source}} field',
+                      source: source.label || 'Source',
+                    })}
+                  </span>
+                  <span>{t('importStep.worklenzField', 'Worklenz field')}</span>
+                  <span style={{ textAlign: 'center' }}>
+                    {t('importStep.includeInImport', 'Include in import')}
+                  </span>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1324,7 +1362,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                                   textTransform: 'uppercase',
                                 }}
                               >
-                                Required
+                                {t('importStep.required', 'Required')}
                               </span>
                             )}
                           </div>
@@ -1500,9 +1538,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 Set up a space in Worklenz
               </Typography.Title>
               <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 16 }}>
-                Your team’s data from <b>{source?.label || 'your app'}</b> will be imported into
-                this space. Check if you’re selecting the right Worklenz space, template, and space
-                type as these options can’t be modified later.
+                Your teamÃ¢â‚¬â„¢s data from <b>{source?.label || 'your app'}</b> will be imported into
+                this space. Check if youÃ¢â‚¬â„¢re selecting the right Worklenz space, template, and space
+                type as these options canÃ¢â‚¬â„¢t be modified later.
               </Typography.Paragraph>
               <div style={{ color: '#f87171', fontSize: 13, marginBottom: 20 }}>
                 All fields are required
@@ -1555,13 +1593,13 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 >
                   <Select.Option value="scrum" label="Scrum">
                     <span role="img" aria-label="Scrum" style={{ marginRight: 8 }}>
-                      🏉
+                      Ã°Å¸Ââ€°
                     </span>
                     Scrum
                   </Select.Option>
                   <Select.Option value="kanban" label="Kanban">
                     <span role="img" aria-label="Kanban" style={{ marginRight: 8 }}>
-                      🗂️
+                      Ã°Å¸â€”â€šÃ¯Â¸Â
                     </span>
                     Kanban
                   </Select.Option>
@@ -1644,7 +1682,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               Map space fields
             </Typography.Title>
             <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 16 }}>
-              We’ve automatically mapped a few columns from the CSV file to <b>Worklenz fields</b>.
+              WeÃ¢â‚¬â„¢ve automatically mapped a few columns from the CSV file to <b>Worklenz fields</b>.
               Verify and{' '}
               <a href="#" style={{ color: '#4096ff' }}>
                 map any remaining columns
@@ -1857,7 +1895,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             >
               <span style={{ flex: 2, paddingLeft: 8 }}>
                 <span role="img" aria-label="values" style={{ marginRight: 8 }}>
-                  📦
+                  Ã°Å¸â€œÂ¦
                 </span>
                 Values in the selected column
               </span>
@@ -1868,7 +1906,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   aria-label="work types"
                   style={{ marginRight: 8, color: '#4096ff' }}
                 >
-                  🏷️
+                  Ã°Å¸ÂÂ·Ã¯Â¸Â
                 </span>
                 Worklenz work types
               </span>
@@ -1998,7 +2036,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-                  <span style={{ fontSize: 20, marginRight: 10, color: '#60a5fa' }}>ℹ️</span>
+                  <span style={{ fontSize: 20, marginRight: 10, color: '#60a5fa' }}>Ã¢â€žÂ¹Ã¯Â¸Â</span>
                   <span style={{ fontWeight: 600, fontSize: 18 }}>
                     There are no users in the CSV file
                   </span>
@@ -2050,7 +2088,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 </div>
                 <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 20 }}>
                   Enter a valid email address next to the user information to add a user to the
-                  space. Users without a corresponding email address won’t be imported.
+                  space. Users without a corresponding email address wonÃ¢â‚¬â„¢t be imported.
                 </Typography.Paragraph>
                 {/* Table header */}
                 <div
@@ -2064,11 +2102,11 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   }}
                 >
                   <span style={{ flex: 2, paddingLeft: 8 }}>
-                    <span style={{ marginRight: 8 }}>📄</span>Users in CSV ({userRows.length})
+                    <span style={{ marginRight: 8 }}>Ã°Å¸â€œâ€ž</span>Users in CSV ({userRows.length})
                   </span>
                   <span style={{ width: 40 }}></span>
                   <span style={{ flex: 3 }}>
-                    <span style={{ marginRight: 8 }}>🛫</span>Users moving to Worklenz (0)
+                    <span style={{ marginRight: 8 }}>Ã°Å¸â€ºÂ«</span>Users moving to Worklenz (0)
                   </span>
                 </div>
                 {/* User mapping rows */}
@@ -2126,7 +2164,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               Review space details
             </Typography.Title>
             <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 24 }}>
-              We’re ready to import your team’s data. Here’s a summary of what’s being imported into
+              WeÃ¢â‚¬â„¢re ready to import your teamÃ¢â‚¬â„¢s data. HereÃ¢â‚¬â„¢s a summary of whatÃ¢â‚¬â„¢s being imported into
               Worklenz.
               <br />
               Confirm the details before starting the import.
@@ -2289,7 +2327,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
           <Typography.Paragraph style={{ color: themeToken.colorTextSecondary, fontSize: 16 }}>
             {t(
               'auth.asanaBody',
-              'We’ll open Asana’s consent screen to grant access to your projects and tasks.'
+              'WeÃ¢â‚¬â„¢ll open AsanaÃ¢â‚¬â„¢s consent screen to grant access to your projects and tasks.'
             )}
           </Typography.Paragraph>
           {authError && (
@@ -2354,7 +2392,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
           <Typography.Paragraph style={{ color: themeToken.colorTextSecondary, fontSize: 16 }}>
             {t(
               'auth.clickupBody',
-              'Choose the ClickUp workspace to connect. We’ll request access to read your spaces, folders, lists, and tasks for import.'
+              'Choose the ClickUp workspace to connect. WeÃ¢â‚¬â„¢ll request access to read your spaces, folders, lists, and tasks for import.'
             )}
           </Typography.Paragraph>
           <Input.Password
@@ -2374,7 +2412,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             onChange={v => setSelectedClickupSpace(v)}
             style={{ width: 320, marginBottom: 16 }}
             options={clickupTeams.flatMap(team =>
-              team.spaces.map(space => ({ value: space.id, label: `${team.name} • ${space.name}` }))
+              team.spaces.map(space => ({ value: space.id, label: `${team.name} Ã¢â‚¬Â¢ ${space.name}` }))
             )}
           />
           <Select
@@ -2386,7 +2424,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               .flatMap(team => team.spaces)
               .filter(space => !selectedClickupSpace || space.id === selectedClickupSpace)
               .flatMap(space =>
-                space.lists.map(list => ({ value: list.id, label: `${space.name} • ${list.name}` }))
+                space.lists.map(list => ({ value: list.id, label: `${space.name} Ã¢â‚¬Â¢ ${list.name}` }))
               )}
           />
           {authError && (
