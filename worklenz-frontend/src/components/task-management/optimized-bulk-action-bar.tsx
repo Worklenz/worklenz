@@ -181,7 +181,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     onBulkSetDueDate,
   }) => {
     const { t } = useTranslation(['tasks/task-table-bulk-actions', 'task-management']);
-  const { t: tCommon } = useTranslation('common');
+    const { t: tCommon } = useTranslation('common');
     const dispatch = useDispatch();
     const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
 
@@ -192,6 +192,9 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     const labelsList = useAppSelector(state => state.taskLabelsReducer.labels);
     const members = useAppSelector(state => state.teamMembersReducer.teamMembers);
     const tasks = useAppSelector(state => state.taskManagement.entities);
+    
+    // Add archived selector as requested
+    const archived = useAppSelector(state => state.taskManagement.archived);
 
     // Performance state management
     const [isVisible, setIsVisible] = useState(false);
@@ -872,7 +875,16 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           </Tooltip>
 
           {/* Archive */}
-          <Tooltip title={isFree ? tCommon('upgrade-plan') : t('ARCHIVE')} placement="top">
+          <Tooltip 
+            title={
+              isFree && !archived 
+                ? tCommon('upgrade-plan') 
+                : archived 
+                  ? t('Unarchive') 
+                  : t('Archive')
+            } 
+            placement="top"
+          >
             <Button
               icon={<InboxOutlined />}
               style={{

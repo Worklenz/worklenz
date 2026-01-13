@@ -21,7 +21,7 @@ const taskAttachmentsApiService = {
 
   createAvatarAttachment: async (
     body: IAvatarAttachment
-  ): Promise<IServerResponse<{ url: string }>> => {
+  ): Promise<IServerResponse<{ url: string; updated_at?: string }>> => {
     const response = await apiClient.post(`${rootUrl}/avatar`, body);
     return response.data;
   },

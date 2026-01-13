@@ -254,7 +254,14 @@ app.use((req, res, next) => {
   }
     
   // Exclude the CSRF token endpoint itself (GET requests to fetch tokens)
-  if (req.path === "/csrf-token") {
+  // Use strict matching to only exempt the actual token endpoint, not routes containing the substring
+  if (
+    req.path === "/csrf-token" ||
+    originalUrl === "/csrf-token" ||
+    originalUrl.startsWith("/csrf-token/") ||
+    path === "/csrf-token" ||
+    path.startsWith("/csrf-token/")
+  ) {
     return next();
   }
   

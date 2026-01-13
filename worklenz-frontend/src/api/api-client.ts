@@ -118,12 +118,26 @@ apiClient.interceptors.request.use(
         if (!csrfToken) {
           // If initialization is in progress, wait for it
           if (tokenInitializationPromise) {
-            await tokenInitializationPromise;
+            const token = await tokenInitializationPromise;
+            // Verify we got a token after waiting
+            if (!token && !csrfToken) {
+              console.warn('[CSRF] Token refresh returned null, attempting to refresh again');
+              tokenInitializationPromise = refreshCsrfToken();
+              const refreshedToken = await tokenInitializationPromise;
+              tokenInitializationPromise = null;
+              if (!refreshedToken) {
+                console.error('[CSRF] Failed to obtain CSRF token after retry');
+              }
+            }
           } else {
             // Otherwise, refresh now
             tokenInitializationPromise = refreshCsrfToken();
-            await tokenInitializationPromise;
+            const token = await tokenInitializationPromise;
             tokenInitializationPromise = null;
+            // Verify we got a token
+            if (!token) {
+              console.error('[CSRF] Failed to obtain CSRF token - request may fail');
+            }
           }
         }
       }
@@ -135,6 +149,9 @@ apiClient.interceptors.request.use(
       if (tokenToUse) {
         config.headers = config.headers || {};
         config.headers['X-CSRF-Token'] = tokenToUse;
+      } else if (!isRetry) {
+        // Log warning if we don't have a token (backend will return proper error)
+        console.warn('[CSRF] No CSRF token available for request:', config.method, config.url);
       }
     }
 
@@ -206,17 +223,26 @@ apiClient.interceptors.response.use(
     const errorResponse = error.response;
 
     // Handle CSRF token errors
-    if (
+    // Check for CSRF errors in multiple ways to ensure we catch them
+    const isCsrfError = 
       errorResponse?.status === 403 &&
-      ((typeof errorResponse.data === 'object' &&
-        errorResponse.data !== null &&
-        'message' in errorResponse.data &&
-        typeof errorResponse.data.message === 'string' &&
-        (errorResponse.data.message.toLowerCase().includes('csrf') ||
-          errorResponse.data.message.toLowerCase().includes('invalid') ||
-          errorResponse.data.message === 'Invalid CSRF token')) ||
-        (error as any).code === 'EBADCSRFTOKEN')
-    ) {
+      (
+        // Check error code
+        (error as any).code === 'EBADCSRFTOKEN' ||
+        // Check response message
+        (typeof errorResponse.data === 'object' &&
+          errorResponse.data !== null &&
+          'message' in errorResponse.data &&
+          typeof errorResponse.data.message === 'string' &&
+          (errorResponse.data.message.toLowerCase().includes('csrf') ||
+            errorResponse.data.message.toLowerCase().includes('invalid csrf') ||
+            errorResponse.data.message === 'Invalid CSRF token')) ||
+        // Check error message in response body (alternative format)
+        (typeof errorResponse.data === 'string' &&
+          errorResponse.data.toLowerCase().includes('csrf'))
+      );
+    
+    if (isCsrfError) {
       // Check if this is already a retry
       const retryCount = (error.config as any)?._retryCount || 0;
       

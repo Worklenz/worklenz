@@ -133,7 +133,7 @@ const CategoriesSettings = () => {
       key: 'actionBtns',
       width: 80,
       render: (record: IProjectCategoryViewModel) => (
-        <div className="row-action-buttons">
+        <div className="row-action-buttons" onClick={(e) => e.stopPropagation()}>
           {/* Edit Button */}
           <Tooltip title={t('editCategory', 'Edit')}>
             <Button
