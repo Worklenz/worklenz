@@ -26,6 +26,7 @@ import { setSession } from '@/utils/session-helper';
 import { authApiService } from '@/api/auth/auth.api.service';
 import { setUser } from '@/features/user/userSlice';
 import { BillingFrequency } from '../upgrade-plans/types';
+import { billingApiService } from '@/api/admin-center/billing.api.service';
 import { ILocalPlans } from '@/shared/constants';
 
 const UpgradePlansLKR: React.FC = () => {
@@ -39,23 +40,35 @@ const UpgradePlansLKR: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<ILocalPlans[keyof ILocalPlans]>(ILocalPlans.ANNUAL);
   const [switchingToFreePlan, setSwitchingToFreePlan] = useState(false);
 
-  const currentSession = useAuthService().getCurrentSession();
-  const annualSavingsPercent = 20;
+  const [lkrPricingLoading, setLkrPricingLoading] = useState<boolean>(true);
+  const [lkrPricingError, setLkrPricingError] = useState<string | null>(null);
+  const [freePrice, setFreePrice] = useState<number>(0);
+  const [businessMonthlyPrice, setBusinessMonthlyPrice] = useState<number>(0);
+  const [businessAnnualPrice, setBusinessAnnualPrice] = useState<number>(0);
 
-  // Pricing data
+  const currentSession = useAuthService().getCurrentSession();
+  const annualSavingsPercent =
+    businessMonthlyPrice > 0 && businessAnnualPrice > 0
+      ? Math.round(
+          (1 - businessAnnualPrice / (businessMonthlyPrice * 12)) * 100,
+        )
+      : 0;
+
+  // Pricing data (populated from backend)
   const plans = {
     free: {
       title: t('freePlan'),
-      price: 0,
+      price: freePrice,
       subtitle: t('freeSubtitle'),
       users: t('freeUsers'),
       features: ['freeText01', 'freeText02', 'freeText03'],
       tag: selectedPlan === ILocalPlans.FREE ? t('currentPlan') : undefined,
     },
     startup: {
-      title: t('startup'),
-      priceMonthly: 549, // Monthly price in LKR
-      priceAnnual: 4990, // Annual price in LKR (with discount)
+      // Local business plan
+      title: t('business'),
+      priceMonthly: businessMonthlyPrice,
+      priceAnnual: businessAnnualPrice,
       subtitle: t('startupSubtitle'),
       users: t('startupUsers'),
       features: [
@@ -145,6 +158,31 @@ const UpgradePlansLKR: React.FC = () => {
     }
   };
 
+  React.useEffect(() => {
+    const loadLkrPricing = async () => {
+      try {
+        setLkrPricingLoading(true);
+        setLkrPricingError(null);
+        const response = await billingApiService.getLkrPricing();
+        if (response.done && response.body) {
+          const { free, business } = response.body;
+          setFreePrice(free?.price ?? 0);
+          setBusinessMonthlyPrice(business?.price ?? 0);
+          setBusinessAnnualPrice(business?.discountedPrice ?? 0);
+        } else {
+          setLkrPricingError('Failed to load pricing');
+        }
+      } catch (error) {
+        logger.error('Failed to load LKR pricing', error);
+        setLkrPricingError('Failed to load pricing');
+      } finally {
+        setLkrPricingLoading(false);
+      }
+    };
+
+    loadLkrPricing();
+  }, []);
+
   const renderFeature = (text: string) => (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
       <CheckCircleFilled style={cardStyles.checkIcon} />
@@ -160,6 +198,18 @@ const UpgradePlansLKR: React.FC = () => {
   return (
     <div className="upgrade-plans" style={{ padding: '2rem 1rem', textAlign: 'center' }}>
       <Typography.Title level={2}>{t('modalTitle')}</Typography.Title>
+
+      {lkrPricingLoading && (
+        <Typography.Paragraph style={{ marginBottom: '1rem' }}>
+          {t('loadingPricing', { defaultValue: 'Loading pricing...' })}
+        </Typography.Paragraph>
+      )}
+
+      {lkrPricingError && (
+        <Typography.Paragraph type="danger" style={{ marginBottom: '1rem' }}>
+          {t('pricingError', { defaultValue: lkrPricingError })}
+        </Typography.Paragraph>
+      )}
 
       {/* Billing Frequency Toggle */}
       <Space align="center" size="middle" style={{ marginBottom: '2rem' }}>

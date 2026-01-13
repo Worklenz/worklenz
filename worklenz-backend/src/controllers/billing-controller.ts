@@ -391,4 +391,48 @@ VALUES ($1, $2, $3);`;
     }));
   }
 
+  /**
+   * Get LKR (local) pricing for Free and Business plans.
+   * This is a simplified, DB-driven endpoint used by the LKR upgrade modal.
+   *
+   * It expects that licensing_plan_tiers contains two active tiers:
+   * - tier_name = 'free_lkr'     (local free plan)
+   * - tier_name = 'business_lkr' (local business plan)
+   *
+   * For the business plan:
+   * - monthly_base_price     => price
+   * - annual_base_price      => discountedPrice
+   */
+  @HandleExceptions()
+  public static async getLkrPricing(_req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const q = `
+      SELECT
+        tier_name,
+        display_name,
+        monthly_base_price,
+        annual_base_price
+      FROM licensing_plan_tiers
+      WHERE is_active = TRUE
+        AND tier_name IN ('free_lkr', 'business_lkr')
+    `;
+
+    const result = await db.query(q);
+    const rows = result.rows || [];
+
+    const freeRow = rows.find(r => r.tier_name === "free_lkr");
+    const businessRow = rows.find(r => r.tier_name === "business_lkr");
+
+    const payload = {
+      free: {
+        price: freeRow ? Number(freeRow.monthly_base_price || 0) : 0,
+      },
+      business: {
+        price: businessRow ? Number(businessRow.monthly_base_price || 0) : 0,
+        discountedPrice: businessRow ? Number(businessRow.annual_base_price || 0) : 0,
+      },
+    };
+
+    return res.status(200).send(new ServerResponse(true, payload));
+  }
+
 }
