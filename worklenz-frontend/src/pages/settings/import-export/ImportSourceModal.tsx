@@ -21,6 +21,10 @@ import {
   SearchOutlined,
   ArrowLeftOutlined,
   ArrowRightOutlined,
+  ApartmentOutlined,    
+  TableOutlined,          
+  TeamOutlined,           
+  PaperClipOutlined,
 } from '@ant-design/icons';
 import Papa from 'papaparse';
 import { useTranslation } from 'react-i18next';
