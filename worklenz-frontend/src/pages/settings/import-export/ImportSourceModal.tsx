@@ -1024,6 +1024,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       if (step === 2) {
         // Step 3: Review details (main or sub-screens)
         if (reviewSubScreen === 'main') {
+          /*
           const reviewCards = [
             {
               key: 'hierarchy',
@@ -1086,6 +1087,74 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               ),
               iconBg: '#f59e0b',
               icon: '4ce',
+              action: undefined,
+              control: <Switch checked={importAttachments} onChange={setImportAttachments} />,
+            },
+          ];
+          */
+
+                    const reviewCards = [
+            {
+              key: 'hierarchy',
+              title: t('importStep.spaceHierarchy', 'Space hierarchy'),
+              description:
+                hierarchyCount > 0
+                  ? t('importStep.hierarchyLevelsMapped', {
+                      defaultValue: '{{count}} hierarchy levels mapped',
+                      count: hierarchyCount,
+                    })
+                  : t('importStep.sectionsMapped', {
+                      defaultValue: 'Sections from {{source}} are mapped to Status',
+                      source: source.label || 'source',
+                    }),
+              iconBg: '#1f6feb',
+              icon: <ApartmentOutlined style={{ color: '#fff' }} />,
+              action: () => setReviewSubScreen('hierarchy'),
+              control: <RightOutlined style={{ color: '#9ca3af', fontSize: 16 }} />,
+            },
+            {
+              key: 'fieldMapping',
+              title: t('importStep.fieldMapping', 'Field mapping'),
+              description:
+                fieldMappingRows.length > 0
+                  ? t('importStep.fieldsMapped', {
+                      defaultValue: '{{mapped}}/{{total}} fields mapped',
+                      mapped: mappedFieldCount,
+                      total: fieldMappingRows.length,
+                    })
+                  : t('importStep.fieldsAutoMap', {
+                      defaultValue: 'Fields will auto-map from {{source}}',
+                      source: source.label || 'source',
+                    }),
+              iconBg: '#6e56cf',
+              icon: <TableOutlined style={{ color: '#fff' }} />,
+              action: () => setReviewSubScreen('fieldMapping'),
+              control: <RightOutlined style={{ color: '#9ca3af', fontSize: 16 }} />,
+            },
+            {
+              key: 'importMembers',
+              title: t('importStep.importMembers', {
+                defaultValue: 'Import all members from {{source}} project',
+                source: source.label || 'source',
+              }),
+              description: t(
+                'importStep.importMembersDesc',
+                'Brings collaborators into the Worklenz space'
+              ),
+              iconBg: '#0f9d58',
+              icon: <TeamOutlined style={{ color: '#fff' }} />,
+              action: undefined,
+              control: <Switch checked={importMembers} onChange={setImportMembers} />,
+            },
+            {
+              key: 'importAttachments',
+              title: t('importStep.importAttachments', 'Import all attachments'),
+              description: t(
+                'importStep.importAttachmentsDesc',
+                'Pulls files and images from tasks'
+              ),
+              iconBg: '#f59e0b',
+              icon: <PaperClipOutlined style={{ color: '#fff' }} />,
               action: undefined,
               control: <Switch checked={importAttachments} onChange={setImportAttachments} />,
             },
