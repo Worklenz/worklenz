@@ -5,6 +5,7 @@ import safeControllerFunction from "../../../shared/safe-controller-function";
 import ScheduleControllerV2 from "../../../controllers/schedule-v2/schedule-controller";
 import TaskTimelineController from "../../../controllers/schedule-v2/task-timeline-controller";
 import TimeOffController from "../../../controllers/schedule-v2/time-off-controller";
+import CapacityController from "../../../controllers/schedule-v2/capacity-controller";
 
 const scheduleApiRouter = express.Router();
 
@@ -17,6 +18,18 @@ scheduleApiRouter.get("/dates/:date/:type", safeControllerFunction(ScheduleContr
 scheduleApiRouter.get("/members", safeControllerFunction(ScheduleControllerV2.getOrganizationMembers));
 scheduleApiRouter.get("/members/projects/:id", safeControllerFunction(ScheduleControllerV2.getOrganizationMemberProjects));
 scheduleApiRouter.post("/schedule", safeControllerFunction(ScheduleControllerV2.createSchedule));
+
+// ============================================
+// Capacity Management Endpoints (NEW)
+// ============================================
+// Get daily capacity for all members
+scheduleApiRouter.get("/capacity/daily", safeControllerFunction(CapacityController.getDailyCapacity));
+
+// Get capacity summary (aggregated)
+scheduleApiRouter.get("/capacity/summary", safeControllerFunction(CapacityController.getCapacitySummary));
+
+// Get capacity conflicts (over-allocations)
+scheduleApiRouter.get("/capacity/conflicts", safeControllerFunction(CapacityController.getCapacityConflicts));
 
 // ============================================
 // Task Timeline Endpoints (Task View)

@@ -192,6 +192,7 @@ export const scheduleApi = createApi({
     'Conflicts',
     'TaskTimeline',
     'TimeOff',
+    'Capacity',
   ],
   endpoints: builder => ({
     // Settings endpoints
@@ -428,6 +429,32 @@ export const scheduleApi = createApi({
       // This would be used with WebSocket integration
       keepUnusedDataFor: 0, // Don't cache subscription data
     }),
+
+    // ============================================
+    // Capacity Management Endpoints (NEW)
+    // ============================================
+    fetchDailyCapacity: builder.query<IServerResponse<any[]>, { startDate: string; endDate: string; teamMemberId?: string }>({
+      query: ({ startDate, endDate, teamMemberId }) => {
+        const params = new URLSearchParams();
+        params.append('startDate', startDate);
+        params.append('endDate', endDate);
+        if (teamMemberId) params.append('teamMemberId', teamMemberId);
+        return `/capacity/daily?${params.toString()}`;
+      },
+      providesTags: ['Capacity'],
+    }),
+
+    fetchCapacitySummary: builder.query<IServerResponse<any>, { startDate: string; endDate: string }>({
+      query: ({ startDate, endDate }) => 
+        `/capacity/summary?startDate=${startDate}&endDate=${endDate}`,
+      providesTags: ['Capacity'],
+    }),
+
+    fetchCapacityConflicts: builder.query<IServerResponse<any[]>, { startDate: string; endDate: string }>({
+      query: ({ startDate, endDate }) => 
+        `/capacity/conflicts?startDate=${startDate}&endDate=${endDate}`,
+      providesTags: ['Capacity'],
+    }),
   }),
 });
 
@@ -481,6 +508,12 @@ export const {
 
   // Real-time hooks
   useSubscribeToWorkloadUpdatesQuery,
+
+  // Capacity Management hooks (NEW)
+  useFetchDailyCapacityQuery,
+  useLazyFetchDailyCapacityQuery,
+  useFetchCapacitySummaryQuery,
+  useFetchCapacityConflictsQuery,
 } = scheduleApi;
 
 // Export the reducer

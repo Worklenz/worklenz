@@ -5,6 +5,7 @@ import {
   useFetchScheduleMembersQuery,
   useFetchScheduleDatesQuery,
   useLazyFetchMemberProjectsQuery,
+  useFetchDailyCapacityQuery,
 } from '@/api/schedule/scheduleApi';
 import { themeWiseColor } from '../../../utils/themeWiseColor';
 import GranttMembersTable from './grantt-members-table';
@@ -13,6 +14,7 @@ import { Flex, Popover } from '@/shared/antd-imports';
 import DayAllocationCell from './day-allocation-cell';
 import ProjectTimelineBar from './project-timeline-bar';
 import ProjectTimelineModal from '@/features/schedule/ProjectTimelineModal';
+import CapacityConflictsAlert from './CapacityConflictsAlert';
 
 const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date }, ref) => {
   const { t } = useTranslation();
@@ -28,6 +30,20 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }, [date]);
+
+  // Calculate end date based on view type
+  const calculateEndDate = React.useMemo(() => {
+    const start = new Date(date);
+    if (type === 'week') {
+      start.setDate(start.getDate() + 14); // 2 weeks
+    } else {
+      start.setMonth(start.getMonth() + 1); // 1 month
+    }
+    const year = start.getFullYear();
+    const month = String(start.getMonth() + 1).padStart(2, '0');
+    const day = String(start.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }, [date, type]);
 
   // RTK Query hooks with proper error handling
   const {
@@ -46,6 +62,16 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
     type,
   });
 
+  // Fetch capacity data
+  const {
+    data: capacityResponse,
+    isLoading: capacityLoading,
+    refetch: refetchCapacity,
+  } = useFetchDailyCapacityQuery({
+    startDate: formattedDate,
+    endDate: calculateEndDate,
+  });
+
   // Lazy query for fetching member projects
   const [fetchMemberProjects, { isLoading: isProjectsLoading }] = useLazyFetchMemberProjectsQuery();
 
@@ -53,6 +79,15 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
   const dateList = dateListResponse?.body;
   const loading = teamLoading || dateLoading;
   const dayCount = dateList?.date_data?.[0]?.days?.length || 0;
+
+  // Helper function to get capacity for specific date/member
+  const capacityData = capacityResponse?.body || [];
+  
+  const getCapacityForDate = (memberId: string, dateStr: string) => {
+    const memberCapacity = capacityData.find((m: any) => m.team_member_id === memberId);
+    if (!memberCapacity) return null;
+    return memberCapacity.daily_capacity.find((d: any) => d.date === dateStr) || null;
+  };
 
   // Handle expanding/collapsing member projects
   const handleToggleProject = async (memberId: string) => {
@@ -90,7 +125,8 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
   useEffect(() => {
     refetchTeam();
     refetchDates();
-  }, [date, type, refetchTeam, refetchDates, formattedDate]);
+    refetchCapacity();
+  }, [date, type, refetchTeam, refetchDates, refetchCapacity, formattedDate]);
 
   // function to scroll the timeline header and body together
 
@@ -154,17 +190,24 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
   }));
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '375px 1fr',
-        overflow: 'hidden',
-        height: 'calc(100vh - 206px)',
-        border: themeMode === 'dark' ? '1px solid #303030' : '1px solid #e5e7eb',
-        borderRadius: '4px',
-        backgroundColor: themeMode === 'dark' ? '#141414' : '',
-      }}
-    >
+    <>
+      {/* Capacity Conflicts Alert */}
+      <CapacityConflictsAlert
+        startDate={formattedDate}
+        endDate={calculateEndDate}
+      />
+      
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '375px 1fr',
+          overflow: 'hidden',
+          height: 'calc(100vh - 206px)',
+          border: themeMode === 'dark' ? '1px solid #303030' : '1px solid #e5e7eb',
+          borderRadius: '4px',
+          backgroundColor: themeMode === 'dark' ? '#141414' : '',
+        }}
+      >
       {/* teams table */}
       <div
         style={{
@@ -270,14 +313,18 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                           }}
                         >
                           <DayAllocationCell
+                            capacityData={getCapacityForDate(
+                              memberId,
+                              `${date.year}-${String(date.month).padStart(2, '0')}-${String(day.day).padStart(2, '0')}`
+                            )}
+                            memberName={member.name}
+                            date={`${date.month.substring(0, 3)} ${day.day}`}
                             workingHours={8}
                             loggedHours={0}
                             totalPerDayHours={0}
                             isWeekend={day.isWeekend}
                             capacity={100}
                             availableHours={8}
-                            memberName={member.name}
-                            date={`${date.month.substring(0, 3)} ${day.day}`}
                           />
                         </div>
                       ))
@@ -372,6 +419,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
         </Flex>
       </div>
     </div>
+    </>
   );
 });
 
