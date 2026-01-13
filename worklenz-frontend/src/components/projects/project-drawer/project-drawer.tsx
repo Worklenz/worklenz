@@ -59,6 +59,7 @@ import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { isFreeUser } from '@/utils/subscription-utils';
 import { CrownOutlined } from '@ant-design/icons';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { ensureCsrfToken } from '@/api/api-client';
 
 const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   const dispatch = useAppDispatch();
@@ -174,6 +175,11 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         form.setFieldsValue(defaultFormValues);
       }
       setSelectedProjectManager(null);
+      
+      // Pre-ensure CSRF token is available for new project creation
+      ensureCsrfToken().catch(error => {
+        console.warn('[CSRF] Failed to pre-ensure token for project creation:', error);
+      });
     } else if (drawerVisible && projectId && !project && !projectLoading) {
       console.warn('Project drawer is visible but no project data available');
       setLoading(false);
@@ -218,6 +224,17 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
 
   const handleFormSubmit = async (values: any) => {
     try {
+      // Ensure CSRF token is available before making the request
+      const csrfToken = await ensureCsrfToken();
+      
+      if (!csrfToken) {
+        notification.error({ 
+          message: tCommon('error'), 
+          description: 'Security token validation failed. Please try again.' 
+        });
+        return;
+      }
+
       const projectModel: IProjectViewModel = {
         name: values.name,
         color_code: values.color_code,
