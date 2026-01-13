@@ -928,8 +928,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                       const projectName = jiraProjects.find(p => p.key === v)?.name;
                       try {
                         await updateImportSource(job!.id, {
-                          project_key: v,
-                          project_name: projectName,
+                          projectId: v,
+                          projectName: projectName,
                         });
                         await runAutoMapping();
                       } catch (err: any) {
@@ -1237,9 +1237,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   {'Field mapping'}
                 </Typography.Title>
                 <Typography.Paragraph style={{ marginBottom: 20 }}>
-                  {
-                    "We've automatically mapped your Asana data into system and custom fields in Worklenz. You can customize some fields that have other compatible field types. More about field mapping"
-                  }
+                  {`We've automatically mapped your ${source.label || 'source'} data into system and custom fields in Worklenz. You can customize some fields that have other compatible field types. More about field mapping`}
                 </Typography.Paragraph>
 
                 <div style={{ marginBottom: 16, maxWidth: 340 }}>
