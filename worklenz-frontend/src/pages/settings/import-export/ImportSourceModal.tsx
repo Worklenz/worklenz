@@ -570,8 +570,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
 
           const projectName = jiraProjects.find(p => p.key === selectedJiraProject)?.name;
           await updateImportSource(job.id, {
-            project_key: selectedJiraProject,
-            project_name: projectName,
+            projectKey: selectedJiraProject,
+            projectId: selectedJiraProject,
+            projectName,
           });
 
           if (!fieldMappingRows.length || !hierarchyRows.length) {
@@ -932,6 +933,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                       const projectName = jiraProjects.find(p => p.key === v)?.name;
                       try {
                         await updateImportSource(job!.id, {
+                          projectKey: v,
                           projectId: v,
                           projectName: projectName,
                         });

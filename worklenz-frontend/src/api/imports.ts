@@ -95,7 +95,8 @@ export const updateImportSource = async (
   jobId: string,
   payload: {
     workspaceId?: string | null;
-    projectId: string;
+    projectId?: string;
+    projectKey?: string; 
     projectName?: string | null;
     token?: string;
   }

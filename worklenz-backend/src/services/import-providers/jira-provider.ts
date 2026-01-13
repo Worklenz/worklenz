@@ -148,7 +148,7 @@ export default class JiraProvider implements ImportProvider {
     const email = payloadRef.email || auth.email;
     const domain = payloadRef.domain || auth.domain || sourceSelection.domain;
     const projectKey =
-      payloadRef.projectKey || sourceSelection.projectKey || ref.projectKey;
+      payloadRef.projectKey || sourceSelection.projectKey || sourceSelection.projectId || ref.projectKey;
     const projectName =
       payloadRef.projectName || sourceSelection.projectName || ref.projectName;
 

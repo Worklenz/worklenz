@@ -180,8 +180,19 @@ export default class ImportsController {
     async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
       const userId = this.getUserId(req);
       const job = await this.assertJob(req.params.jobId, userId);
-      const { workspaceId, projectId, projectName, token } = req.body || {};
-      if (!projectId)
+      const { workspaceId, projectId, projectKey, projectName, token } = req.body || {};
+
+      // DEBUG: Log what we received
+     console.log("[setSource DEBUG] Received payload:", {
+      workspaceId,
+      projectId,
+      projectKey,
+      projectName,
+      hasToken: !!token
+     });
+     console.log("[setSource DEBUG] Provider:", job.provider);
+
+      if (!projectId && !projectKey)
         throw createHttpError(
           400,
           "projectId is required for source selection"
@@ -190,13 +201,17 @@ export default class ImportsController {
       const providerKey = (job.provider || "asana").toLowerCase();
       const ref = (job.source_reference as any) || {};
 
+      const resolvedProjectId = projectId || projectKey;
+      const resolvedProjectKey = projectKey || projectId;
+
       const sourcePatch = {
         source: {
           ...(ref.source || {}),
           [providerKey]: {
             ...(ref.source?.[providerKey] || {}),
             workspaceId: workspaceId || null,
-            projectId,
+            projectId: resolvedProjectId,
+            projectKey: resolvedProjectKey,
             projectName: projectName || null,
           },
         },

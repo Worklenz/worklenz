@@ -27,11 +27,12 @@ const sourceSchema: Schema = {
   type: "object",
   properties: {
     workspaceId: { type: ["string", "null"] },
-    projectId: { type: "string" },
+    projectId: { type: ["string", "null"] },
+    projectKey: { type: ["string", "null"] },
     projectName: { type: ["string", "null"] },
     token: { type: ["string", "null"] },
   },
-  required: ["projectId"],
+  required: [],
   additionalProperties: false,
 };
 
