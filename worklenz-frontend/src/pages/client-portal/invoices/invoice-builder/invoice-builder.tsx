@@ -16,6 +16,7 @@ import {
   Space,
   message,
   theme,
+  Tag,
 } from '@/shared/antd-imports';
 import {
   ArrowLeftOutlined,
@@ -24,10 +25,12 @@ import {
   SaveOutlined,
   SendOutlined,
 } from '@ant-design/icons';
-import { useCreateInvoiceMutation, useGetRequestDetailsQuery, useGetOrganizationRequestsQuery } from '../../../../api/client-portal/client-portal-api';
+import { useCreateInvoiceMutation, useGetRequestDetailsQuery, useGetOrganizationRequestsQuery, useGetInvoicesByRequestQuery } from '../../../../api/client-portal/client-portal-api';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
 import './invoice-builder.css';
+import { CURRENCY_OPTIONS, DEFAULT_CURRENCY, getCurrencySymbol } from '@/shared/currencies';
+
 
 interface InvoiceLineItem {
   key: string;
@@ -58,6 +61,13 @@ const InvoiceBuilder = () => {
   // Selected request state (for when no requestId in URL)
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(requestId);
 
+  // Fetch existing invoices for the selected request
+  const finalRequestId = requestId || selectedRequestId;
+  const { data: existingInvoicesData } = useGetInvoicesByRequestQuery(finalRequestId || '', {
+    skip: !finalRequestId,
+  });
+  const existingInvoices = existingInvoicesData?.body?.invoices || [];
+
   // Fetch requests for selection (only when no requestId provided)
   const { data: requestsData, isLoading: isLoadingRequests } = useGetOrganizationRequestsQuery(
     { limit: 100 },
@@ -81,13 +91,62 @@ const InvoiceBuilder = () => {
     { key: generateKey(), description: '', quantity: 1, rate: 0, amount: 0 },
   ]);
 
+  // Update line item
+  const updateLineItem = (key: string, field: keyof InvoiceLineItem, value: any) => {
+    setLineItems(lineItems.map(item => {
+      if (item.key === key) {
+        const updated = { ...item, [field]: value };
+        // Recalculate amount
+        if (field === 'quantity' || field === 'rate') {
+          updated.amount = updated.quantity * updated.rate;
+        }
+        return updated;
+      }
+      return item;
+    }));
+  };
+
+  // Handle request selection change
+  const handleRequestChange = (newRequestId: string) => {
+    setSelectedRequestId(newRequestId);
+    
+    // If we have request data, auto-populate the first line item with service info
+    if (newRequestId) {
+      const selectedRequest = requestsData?.body?.data?.find((req: any) => req.id === newRequestId);
+      if (selectedRequest && lineItems.length > 0) {
+        const serviceDescription = selectedRequest.service_name || 
+                                selectedRequest.request_data?.title || 
+                                selectedRequest.service_description || 
+                                '';
+        
+        // Update the first line item with the service description
+        updateLineItem(lineItems[0].key, 'description', serviceDescription);
+      }
+    }
+  };
+
+  // Auto-populate service description when request data loads (for URL requestId case)
+  React.useEffect(() => {
+    if (request && lineItems.length > 0) {
+      const serviceDescription = request.service_name || 
+                              request.request_data?.title || 
+                              request.service_description || 
+                              '';
+      
+      // Only update if the first line item is empty
+      if (!lineItems[0].description) {
+        updateLineItem(lineItems[0].key, 'description', serviceDescription);
+      }
+    }
+  }, [request, lineItems]);
+
   // Tax and discount state
   const [taxRate, setTaxRate] = useState<number>(0);
   const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
   const [discountValue, setDiscountValue] = useState<number>(0);
 
   // Currency state
-  const [currency, setCurrency] = useState<string>('USD');
+  const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY);
 
   // Loading state for tracking which button was clicked
   const [savingAs, setSavingAs] = useState<'draft' | 'sent' | null>(null);
@@ -110,13 +169,7 @@ const InvoiceBuilder = () => {
 
   // Currency symbol
   const currencySymbol = useMemo(() => {
-    const symbols: Record<string, string> = {
-      USD: '$',
-      EUR: '€',
-      GBP: '£',
-      LKR: 'Rs.',
-    };
-    return symbols[currency] || currency;
+    return getCurrencySymbol(currency);
   }, [currency]);
 
   // Format currency
@@ -136,21 +189,6 @@ const InvoiceBuilder = () => {
   const removeLineItem = (key: string) => {
     if (lineItems.length === 1) return;
     setLineItems(lineItems.filter(item => item.key !== key));
-  };
-
-  // Update line item
-  const updateLineItem = (key: string, field: keyof InvoiceLineItem, value: any) => {
-    setLineItems(lineItems.map(item => {
-      if (item.key === key) {
-        const updated = { ...item, [field]: value };
-        // Recalculate amount
-        if (field === 'quantity' || field === 'rate') {
-          updated.amount = updated.quantity * updated.rate;
-        }
-        return updated;
-      }
-      return item;
-    }));
   };
 
   // Line items table columns
@@ -319,7 +357,7 @@ const InvoiceBuilder = () => {
                   loading={isLoadingRequests}
                   options={requestOptions}
                   value={selectedRequestId}
-                  onChange={setSelectedRequestId}
+                  onChange={handleRequestChange}
                   filterOption={(input, option) =>
                     (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
                   }
@@ -328,6 +366,39 @@ const InvoiceBuilder = () => {
                 <Typography.Text type="secondary" style={{ fontSize: 12, marginTop: 8, display: 'block' }}>
                   {t('selectRequestHelp') || 'Only accepted, in-progress, and completed requests can be invoiced'}
                 </Typography.Text>
+                
+                {/* Show existing invoices warning when request is selected */}
+                {selectedRequestId && existingInvoices.length > 0 && (
+                  <Flex vertical gap={8} style={{ marginTop: 12 }}>
+                    <Divider style={{ margin: '8px 0' }} />
+                    <Flex align="center" gap={8}>
+                      <Typography.Text type="warning" strong style={{ fontSize: 12 }}>
+                        {t('existingInvoicesWarning') || '⚠️ This request already has invoices:'}
+                      </Typography.Text>
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        ({existingInvoices.length} {existingInvoices.length === 1 ? 'invoice' : 'invoices'})
+                      </Typography.Text>
+                    </Flex>
+                    <Flex vertical gap={4} style={{ maxHeight: 120, overflowY: 'auto' }}>
+                      {existingInvoices.map((invoice: any) => (
+                        <Flex key={invoice.id} justify="space-between" align="center" style={{ padding: '4px 8px', background: token.colorFillTertiary, borderRadius: 4 }}>
+                          <Flex align="center" gap={8}>
+                            <Typography.Text style={{ fontSize: 12 }}>{invoice.invoiceNo}</Typography.Text>
+                            <Tag color={invoice.status === 'paid' ? 'success' : invoice.status === 'sent' ? 'processing' : 'default'} style={{ fontSize: 11 }}>
+                              {invoice.status}
+                            </Tag>
+                          </Flex>
+                          <Typography.Text style={{ fontSize: 12 }}>
+                            {getCurrencySymbol(invoice.currency)}{invoice.amount.toFixed(2)}
+                          </Typography.Text>
+                        </Flex>
+                      ))}
+                    </Flex>
+                    <Typography.Text type="secondary" style={{ fontSize: 11, fontStyle: 'italic' }}>
+                      {t('multipleInvoicesAllowed') || 'You can create additional invoices for this request (e.g., for milestones or additional work).'}
+                    </Typography.Text>
+                  </Flex>
+                )}
               </Card>
             )}
 
@@ -345,6 +416,39 @@ const InvoiceBuilder = () => {
                     </Flex>
                     <Typography.Text>{request.client_name}</Typography.Text>
                   </Flex>
+                  
+                  {/* Show existing invoices warning */}
+                  {existingInvoices.length > 0 && (
+                    <Flex vertical gap={8} style={{ marginTop: 12 }}>
+                      <Divider style={{ margin: '8px 0' }} />
+                      <Flex align="center" gap={8}>
+                        <Typography.Text type="warning" strong>
+                          {t('existingInvoicesWarning') || '⚠️ This request already has invoices:'}
+                        </Typography.Text>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          ({existingInvoices.length} {existingInvoices.length === 1 ? 'invoice' : 'invoices'})
+                        </Typography.Text>
+                      </Flex>
+                      <Flex vertical gap={4} style={{ maxHeight: 120, overflowY: 'auto' }}>
+                        {existingInvoices.map((invoice: any) => (
+                          <Flex key={invoice.id} justify="space-between" align="center" style={{ padding: '4px 8px', background: token.colorFillTertiary, borderRadius: 4 }}>
+                            <Flex align="center" gap={8}>
+                              <Typography.Text style={{ fontSize: 12 }}>{invoice.invoiceNo}</Typography.Text>
+                              <Tag color={invoice.status === 'paid' ? 'success' : invoice.status === 'sent' ? 'processing' : 'default'} style={{ fontSize: 11 }}>
+                                {invoice.status}
+                              </Tag>
+                            </Flex>
+                            <Typography.Text style={{ fontSize: 12 }}>
+                              {getCurrencySymbol(invoice.currency)}{invoice.amount.toFixed(2)}
+                            </Typography.Text>
+                          </Flex>
+                        ))}
+                      </Flex>
+                      <Typography.Text type="secondary" style={{ fontSize: 11, fontStyle: 'italic' }}>
+                        {t('multipleInvoicesAllowed') || 'You can create additional invoices for this request (e.g., for milestones or additional work).'}
+                      </Typography.Text>
+                    </Flex>
+                  )}
                 </Flex>
               </Card>
             )}
@@ -389,15 +493,17 @@ const InvoiceBuilder = () => {
                   label={t('currencyLabel') || 'Currency'} 
                   style={{ marginBottom: 0 }}
                 >
+
                   <Select
                     value={currency}
                     onChange={setCurrency}
-                    options={[
-                      { value: 'USD', label: 'USD - US Dollar' },
-                      { value: 'EUR', label: 'EUR - Euro' },
-                      { value: 'GBP', label: 'GBP - British Pound' },
-                      { value: 'LKR', label: 'LKR - Sri Lankan Rupee' },
-                    ]}
+                    options={CURRENCY_OPTIONS}
+                    optionFilterProp="label"
+                    showSearch
+                    filterOption={(input, option) =>
+                      (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+                    }
+                    notFoundContent={t('noCurrenciesFound') || 'No currencies found'}
                   />
                 </Form.Item>
 

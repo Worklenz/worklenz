@@ -1,4 +1,5 @@
 import { COLUMN_KEYS } from '@/features/tasks/tasks.slice';
+import { min } from 'lodash';
 
 export type ColumnStyle = {
   width: string;
@@ -30,6 +31,7 @@ export const BASE_COLUMNS = [
     width: '350px',
     isSticky: true,
     key: COLUMN_KEYS.NAME,
+    minWidth: '200px',
     maxWidth: '400px',
   },
   {

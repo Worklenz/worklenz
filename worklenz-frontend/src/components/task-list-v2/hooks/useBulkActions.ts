@@ -36,7 +36,9 @@ export const useBulkActions = () => {
   const dispatch = useAppDispatch();
   const { projectId } = useParams();
   const { trackMixpanelEvent } = useMixpanelTracking();
-  const archived = useAppSelector(state => state.taskReducer.archived);
+  
+  // FIX: Get archived state from taskManagement slice instead of taskReducer
+  const archived = useAppSelector(state => state.taskManagement.archived);
 
   // Loading states for individual actions
   const [loadingStates, setLoadingStates] = useState({
@@ -274,10 +276,13 @@ export const useBulkActions = () => {
           project_id: projectId,
         };
 
+        // Pass archived state to API - when archived=true, it will unarchive
         const res = await taskListBulkActionsApiService.archiveTasks(body, archived);
         if (res.done) {
           trackMixpanelEvent(evt_project_task_list_bulk_archive);
           dispatch(clearSelection());
+          // Don't refetch tasks immediately - they'll disappear from current view
+          // Tasks will appear in correct list when user switches archive filter
           refetchTasks();
         }
       } catch (error) {

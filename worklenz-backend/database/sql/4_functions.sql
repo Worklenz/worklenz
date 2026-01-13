@@ -657,13 +657,15 @@ BEGIN
     -- insert project
     INSERT INTO projects (name, key, notes, color_code, team_id, client_id, owner_id, status_id, health_id, start_date,
                           end_date,
-                          folder_id, category_id, estimated_working_days, estimated_man_days, hours_per_day)
+                          folder_id, category_id, estimated_working_days, estimated_man_days, hours_per_day,
+                          use_manual_progress, use_weighted_progress, use_time_progress)
     VALUES (_project_name, (_body ->> 'key')::TEXT, (_body ->> 'notes')::TEXT, (_body ->> 'color_code')::TEXT, _team_id,
             _client_id,
             _user_id, (_body ->> 'status_id')::UUID, (_body ->> 'health_id')::UUID,
             (_body ->> 'start_date')::TIMESTAMPTZ,
             (_body ->> 'end_date')::TIMESTAMPTZ, (_body ->> 'folder_id')::UUID, (_body ->> 'category_id')::UUID,
-            (_body ->> 'working_days')::INTEGER, (_body ->> 'man_days')::INTEGER, (_body ->> 'hours_per_day')::INTEGER)
+            (_body ->> 'working_days')::INTEGER, (_body ->> 'man_days')::INTEGER, (_body ->> 'hours_per_day')::INTEGER,
+            (_body ->> 'use_manual_progress')::BOOLEAN, (_body ->> 'use_weighted_progress')::BOOLEAN, (_body ->> 'use_time_progress')::BOOLEAN)
     RETURNING id INTO _project_id;
 
     -- log record

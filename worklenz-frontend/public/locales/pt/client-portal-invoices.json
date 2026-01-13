@@ -133,5 +133,8 @@
   "viewFullSize": "Ver em Tamanho Real",
   "viewPdf": "Ver PDF",
   "viewFile": "Ver Arquivo",
-  "download": "Baixar"
+  "download": "Baixar",
+  "existingInvoicesWarning": "⚠️ Esta solicitação já possui faturas:",
+  "multipleInvoicesAllowed": "Você pode criar faturas adicionais para esta solicitação (ex. para marcos ou trabalho adicional).",
+  "noCurrenciesFound": "Nenhuma moeda encontrada"
 }

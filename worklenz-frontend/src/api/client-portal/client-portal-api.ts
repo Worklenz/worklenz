@@ -619,6 +619,24 @@ export const clientPortalApi = createApi({
       providesTags: (result, error, id) => [{ type: 'Invoices', id }],
     }),
 
+    getInvoicesByRequest: builder.query<
+      {
+        done: boolean;
+        body: {
+          invoices: ClientPortalInvoice[];
+          count: number;
+        };
+        message: string;
+      },
+      string
+    >({
+      query: requestId => `/clients/portal/invoices/request/${requestId}`,
+      providesTags: (result, error, requestId) => [
+        { type: 'Invoices', id: 'LIST' },
+        { type: 'Requests', id: requestId },
+      ],
+    }),
+
     payInvoice: builder.mutation<any, { id: string; paymentData: any }>({
       query: ({ id, paymentData }) => ({
         url: `/clients/portal/invoices/${id}/pay`,
@@ -669,7 +687,11 @@ export const clientPortalApi = createApi({
         method: 'POST',
         body: invoiceData,
       }),
-      invalidatesTags: ['Invoices', 'Dashboard'],
+      invalidatesTags: (result, error, invoiceData) => [
+        'Invoices',
+        'Dashboard',
+        { type: 'Requests', id: invoiceData.requestId },
+      ],
     }),
 
     updateInvoice: builder.mutation<UpdateInvoiceResponse, { id: string; data: UpdateInvoiceRequest }>({
@@ -1329,6 +1351,7 @@ export const {
   // Invoices
   useGetInvoicesQuery,
   useGetInvoiceDetailsQuery,
+  useGetInvoicesByRequestQuery,
   usePayInvoiceMutation,
   useDownloadInvoiceQuery,
   useCreateInvoiceMutation,

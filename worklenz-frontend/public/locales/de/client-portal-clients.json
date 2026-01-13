@@ -292,8 +292,6 @@
   "emailRequiredTitle": "E-Mail erforderlich",
   "emailRequiredMessage": "Dieser Kunde hat keine E-Mail-Adresse. Eine E-Mail ist erforderlich, um ihn zum Portal einzuladen.",
   "emailRequiredQuestion": "Möchten Sie eine E-Mail-Adresse hinzufügen und ihn erneut einladen?",
-  "addEmailButton": "E-Mail hinzufügen & einladen",
-
   "assignProjectTitle": "Neues Projekt zuweisen",
   "assignButton": "Projekt zuweisen",
   "tasksCompletedText": "Aufgaben",
@@ -302,5 +300,14 @@
   "removeConfirmationOk": "Entfernen",
   "removeConfirmationCancel": "Abbrechen",
   "removeProjectTooltip": "Projekt entfernen",
-  "removeButton": "Entfernen"
+  "removeButton": "Entfernen",
+  "clientAlreadyExists": "Kunde existiert bereits",
+  "invitationAlreadySent": "Einladung bereits gesendet",
+  "sendInvitationToExistingClient": "Einladung senden",
+  "sendInvitationSuccess": "Einladung erfolgreich gesendet",
+  "sendInvitationError": "Einladung konnte nicht gesendet werden",
+  "clientAlreadyHasPortalAccess": "Kunde hat bereits Portal-Zugang",
+  "clientAlreadyHasPendingInvitation": "Einladung bereits gesendet. Bitte verwenden Sie die Option \"Erneut senden\".",
+  "clientEmailRequired": "Client-E-Mail ist für Einladung erforderlich",
+  "addEmailButton": "E-Mail hinzufügen & einladen"
 }

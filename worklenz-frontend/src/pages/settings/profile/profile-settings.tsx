@@ -66,11 +66,15 @@ const ProfileSettings = () => {
       });
       if (res.done) {
         trackMixpanelEvent(evt_settings_profile_picture_update);
-        const authorizeResponse = await authApiService.verify();
-        if (authorizeResponse.authenticated) {
-          setSession(authorizeResponse.user);
-          dispatch(setUser(authorizeResponse.user));
-        }
+        
+        // Update session with the latest data from API response
+        const updatedUser = {
+          ...currentSession,
+          avatar_url: res.body.url,
+          updated_at: res.body.updated_at || new Date().toISOString()
+        };
+        setSession(updatedUser);
+        dispatch(setUser(updatedUser));
       }
     } catch (e) {
       logger.error('Error uploading avatar', e);
@@ -147,12 +151,15 @@ const ProfileSettings = () => {
       if (res.done) {
         trackMixpanelEvent(evt_settings_profile_name_change, { newName: name });
         dispatch(changeUserName(name));
-        // Refresh user session to get updated data
-        const authorizeResponse = await authApiService.verify();
-        if (authorizeResponse.authenticated) {
-          setSession(authorizeResponse.user);
-          dispatch(setUser(authorizeResponse.user));
-        }
+        
+        // Update session with the latest data from API response
+        const updatedUser = {
+          ...currentSession,
+          ...res.body,
+          updated_at: res.body.updated_at || new Date().toISOString()
+        };
+        setSession(updatedUser);
+        dispatch(setUser(updatedUser));
       }
     } catch (error) {
       logger.error('Error changing name', error);

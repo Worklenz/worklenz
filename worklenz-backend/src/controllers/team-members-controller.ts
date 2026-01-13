@@ -125,13 +125,33 @@ export default class TeamMembersController extends WorklenzControllerBase {
     }));
 
     /**
+   * Checks subscription details and updates the user count if applicable.
+   * Sends a response if there is an issue with the subscription.
+   */
+    // Check Business plan limits first - Business plans override AppSumo lifetime limits
+    if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
+      const updatedCount = parseInt(subscriptionData.current_count) + incrementBy;
+      const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
+      const requiredSeats = updatedCount - effectiveUserLimit;
+      if (updatedCount > effectiveUserLimit) {
+        const obj = {
+          seats_enough: false,
+          required_count: requiredSeats,
+          current_seat_amount: effectiveUserLimit
+        };
+        return res.status(200).send(new ServerResponse(false, obj, "Insufficient seats available. Please upgrade your subscription to add more team members."));
+      }
+    }
+
+    /**
    * Checks various conditions to determine if the maximum number of lifetime users is exceeded.
-   * Sends a response if the limit is reached.
+   * Only applies to users who are still on AppSumo lifetime deals (not upgraded to Business plans)
    */
     if (
       incrementBy > 0
       && subscriptionData.is_ltd
       && subscriptionData.current_count
+      && subscriptionData.subscription_type !== 'ANNUAL_BUSINESS'
       && ((parseInt(subscriptionData.current_count) + req.body.emails.length) > parseInt(subscriptionData.ltd_users))) {
       return res.status(200).send(new ServerResponse(false, null, "Cannot exceed the maximum number of life time users."));
     }
@@ -139,6 +159,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
     if (
       subscriptionData.is_ltd
       && subscriptionData.current_count
+      && subscriptionData.subscription_type !== 'ANNUAL_BUSINESS'
       && ((parseInt(subscriptionData.current_count) + incrementBy) > parseInt(subscriptionData.ltd_users))) {
       return res.status(200).send(new ServerResponse(false, null, "Cannot exceed the maximum number of life time users."));
     }
@@ -151,32 +172,6 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
       if (currentTrialMembers + incrementBy > TRIAL_MEMBER_LIMIT) {
         return res.status(200).send(new ServerResponse(false, null, `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`));
-      }
-    }
-
-    /**
-   * Checks subscription details and updates the user count if applicable.
-   * Sends a response if there is an issue with the subscription.
-   */
-    // if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
-    //   const response = await updateUsers(subscriptionData.subscription_id, (subscriptionData.quantity + incrementBy));
-
-    //   if (!response.body.subscription_id) {
-    //     return res.status(200).send(new ServerResponse(false, null, response.message || "Please check your subscription."));
-    //   }
-    // }
-
-    if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
-      const updatedCount = parseInt(subscriptionData.current_count) + incrementBy;
-      const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
-      const requiredSeats = updatedCount - effectiveUserLimit;
-      if (updatedCount > effectiveUserLimit) {
-        const obj = {
-          seats_enough: false,
-          required_count: requiredSeats,
-          current_seat_amount: effectiveUserLimit
-        };
-        return res.status(200).send(new ServerResponse(false, obj, "Insufficient seats available. Please upgrade your subscription to add more team members."));
       }
     }
 
@@ -198,9 +193,6 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    req.query.field = ["is_owner", "active", "u.name", "u.email"];
-    req.query.order = "descend";
-
     // Helper function to check for encoded components
     function containsEncodedComponents(x: string) {
       return decodeURI(x) !== decodeURIComponent(x);
@@ -213,14 +205,44 @@ export default class TeamMembersController extends WorklenzControllerBase {
       }
     }
 
+    // team_id is $1, search params start at $2 (isMemberFilter=true puts search before team_id condition)
     const {
       searchQuery,
+      searchParams,
       sortField,
       sortOrder,
       size,
       offset
-    } = this.toPaginationOptions(req.query, ["u.name", "u.email"], true);
+    } = this.toPaginationOptions(req.query, ["u.name", "u.email"], true, 2);
 
+    // Map frontend field names to actual sortable columns
+    // Since we're sorting inside the subquery, we need to use the actual column expressions
+    // not the aliases (PostgreSQL doesn't allow aliases in ORDER BY within the same SELECT)
+    const fieldMapping: Record<string, string> = {
+      name: "(SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id)",
+      email: "(SELECT email FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id)",
+      job_title: "(SELECT name FROM job_titles WHERE id = team_members.job_title_id)",
+      role_name: "(SELECT name FROM roles WHERE id = team_members.role_id)",
+      projects_count: "(SELECT COUNT(*) FROM project_members WHERE team_member_id = team_members.id)",
+      active: "active",
+      is_owner: "(CASE WHEN user_id = (SELECT user_id FROM teams WHERE id = $1) THEN TRUE ELSE FALSE END)",
+      "u.name": "(SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id)",
+      "u.email": "(SELECT email FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id)"
+    };
+
+    // Handle sortField - it could be a string or array
+    let mappedSortField = "(SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id)";
+    if (typeof sortField === "string") {
+      // Single field from user clicking a column header
+      mappedSortField = fieldMapping[sortField] || mappedSortField;
+    } else if (Array.isArray(sortField)) {
+      // Multiple fields - build ORDER BY clause with all fields
+      const mappedFields = sortField
+        .map(field => fieldMapping[field] || field)
+        .join(` ${sortOrder}, `);
+      mappedSortField = mappedFields;
+    }
+    
     const paginate = req.query.all === "false" ? `LIMIT ${size} OFFSET ${offset}` : "";
 
     const q = `
@@ -229,7 +251,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
               FROM (SELECT team_members.id,
                            (SELECT name
                             FROM team_member_info_view
-                            WHERE team_member_info_view.team_member_id = team_members.id),
+                            WHERE team_member_info_view.team_member_id = team_members.id) AS name,
                            u.avatar_url,
                            (u.socket_id IS NOT NULL) AS is_online,
                            (SELECT COUNT(*)
@@ -258,12 +280,12 @@ export default class TeamMembersController extends WorklenzControllerBase {
                     FROM team_members
                            LEFT JOIN users u ON team_members.user_id = u.id
                     WHERE ${searchQuery} team_id = $1
-                    ORDER BY ${sortField} ${sortOrder} ${paginate}) t) AS data
+                    ORDER BY ${mappedSortField} ${sortOrder} ${paginate}) t) AS data
       FROM team_members
              LEFT JOIN users u ON team_members.user_id = u.id
       WHERE ${searchQuery} team_id = $1
     `;
-    const result = await db.query(q, [req.user?.team_id || null]);
+    const result = await db.query(q, [req.user?.team_id || null, ...searchParams]);
     const [members] = result.rows;
 
     members.data?.map((a: any) => {
@@ -1062,14 +1084,29 @@ export default class TeamMembersController extends WorklenzControllerBase {
       const result1 = await db.query(q1, [req.params?.id]);
       const [status] = result1.rows;
 
-      // Check if reactivating an inactive member would exceed AppSumo lifetime deal limit
+      // Check if reactivating an inactive member would exceed limits
       if (!status.active) {
         const currentCount = parseInt(subscriptionData.current_count) || 0;
         
-        // Check AppSumo lifetime deal limit
+        // Check Business plan limits first - Business plans override AppSumo lifetime limits
+        if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
+          const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
+          if (currentCount + 1 > effectiveUserLimit) {
+            const requiredSeats = (currentCount + 1) - effectiveUserLimit;
+            const obj = {
+              seats_enough: false,
+              required_count: requiredSeats,
+              current_seat_amount: effectiveUserLimit
+            };
+            return res.status(200).send(new ServerResponse(false, obj, "Insufficient seats available. Please upgrade your subscription to reactivate this member."));
+          }
+        }
+        
+        // Check AppSumo lifetime deal limit - only applies if not on Business plan
         if (
           subscriptionData.is_ltd
           && subscriptionData.ltd_users
+          && subscriptionData.subscription_type !== 'ANNUAL_BUSINESS'
           && (currentCount + 1 > parseInt(subscriptionData.ltd_users))
         ) {
           return res.status(200).send(new ServerResponse(false, null, "Cannot exceed the maximum number of life time users."));
@@ -1420,8 +1457,23 @@ export default class TeamMembersController extends WorklenzControllerBase {
           return res.status(200).send(new ServerResponse(false, null, "Unable to join team! Please check team subscription status."));
         }
 
-        // Check LTD user limits
-        if (incrementBy > 0 && subscriptionData.is_ltd && subscriptionData.current_count) {
+        // Check seat availability for active subscriptions (Business plans override LTD limits)
+        if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
+          const updatedCount = parseInt(subscriptionData.current_count) + incrementBy;
+          const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
+          const requiredSeats = updatedCount - effectiveUserLimit;
+          if (updatedCount > effectiveUserLimit) {
+            const obj = {
+              seats_enough: false,
+              required_count: requiredSeats,
+              current_seat_amount: effectiveUserLimit
+            };
+            return res.status(200).send(new ServerResponse(false, obj, `Insufficient seats available. The team needs ${requiredSeats} more seat${requiredSeats > 1 ? 's' : ''} to add you. Please ask the team owner to upgrade.`));
+          }
+        }
+
+        // Check LTD user limits - only applies if not on Business plan
+        if (incrementBy > 0 && subscriptionData.is_ltd && subscriptionData.current_count && subscriptionData.subscription_type !== 'ANNUAL_BUSINESS') {
           const currentCount = parseInt(subscriptionData.current_count) || 0;
           const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
           if (currentCount + incrementBy > ltdLimit) {
@@ -1434,20 +1486,6 @@ export default class TeamMembersController extends WorklenzControllerBase {
           const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
           if (currentTrialMembers + incrementBy > TRIAL_MEMBER_LIMIT) {
             return res.status(200).send(new ServerResponse(false, null, `Trial teams cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please ask the team owner to upgrade.`));
-          }
-        }
-
-        // Check seat availability for active subscriptions
-        if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
-          const updatedCount = parseInt(subscriptionData.current_count) + incrementBy;
-          const requiredSeats = updatedCount - subscriptionData.quantity;
-          if (updatedCount > subscriptionData.quantity) {
-            const obj = {
-              seats_enough: false,
-              required_count: requiredSeats,
-              current_seat_amount: subscriptionData.quantity
-            };
-            return res.status(200).send(new ServerResponse(false, obj, `Insufficient seats available. The team needs ${requiredSeats} more seat${requiredSeats > 1 ? 's' : ''} to add you. Please ask the team owner to upgrade.`));
           }
         }
       }

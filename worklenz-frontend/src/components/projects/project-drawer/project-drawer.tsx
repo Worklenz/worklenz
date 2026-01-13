@@ -56,7 +56,7 @@ import useIsProjectManager from '@/hooks/useIsProjectManager';
 import { useAuthService } from '@/hooks/useAuth';
 import { evt_projects_create } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { isFreeUser, shouldRestrictProjectHealth } from '@/utils/subscription-utils';
+import { isFreeUser } from '@/utils/subscription-utils';
 import { CrownOutlined } from '@ant-design/icons';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 
@@ -94,12 +94,9 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   const [updateProject, { isLoading: isUpdatingProject }] = useUpdateProjectMutation();
   const [createProject, { isLoading: isCreatingProject }] = useCreateProjectMutation();
 
-  // Check if user is restricted from using project health
-  const isHealthRestricted = shouldRestrictProjectHealth(currentSession);
-
   // Memoized values
   const defaultFormValues = useMemo(() => {
-    const baseValues = {
+    return {
       color_code: project?.color_code || projectColors[0],
       status_id: project?.status_id || projectStatuses.find(status => status.is_default)?.id,
       client_id: project?.client_id || null,
@@ -111,30 +108,9 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       use_manual_progress: project?.use_manual_progress || false,
       use_weighted_progress: project?.use_weighted_progress || false,
       use_time_progress: project?.use_time_progress || false,
+      health_id: project?.health_id || projectHealths.find(health => health.is_default)?.id,
     };
-
-    // Only include health_id if user is not restricted
-    // For existing projects, preserve the health_id (field will be disabled)
-    // For new projects, only set default if user is not restricted
-    if (!isHealthRestricted) {
-      return {
-        ...baseValues,
-        health_id: project?.health_id || projectHealths.find(health => health.is_default)?.id,
-      };
-    }
-
-    // For restricted users, only include health_id if editing an existing project that already has it
-    // (so it displays but remains disabled)
-    if (project?.health_id) {
-      return {
-        ...baseValues,
-        health_id: project.health_id,
-      };
-    }
-
-    // For restricted users creating new projects, don't include health_id at all
-    return baseValues;
-  }, [project, projectStatuses, projectHealths, isHealthRestricted]);
+  }, [project, projectStatuses, projectHealths]);
 
   // Auth and permissions
   const isProjectManager = currentSession?.team_member_id == selectedProjectManager?.id;
@@ -177,13 +153,6 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
           use_time_progress: project.use_time_progress || false,
         };
 
-        // For restricted users editing existing projects, keep health_id if it exists (field will be disabled)
-        // For restricted users creating new projects, don't include health_id
-        if (isHealthRestricted && !project.health_id) {
-          // Remove health_id if user is restricted and project doesn't have one
-          delete formValues.health_id;
-        }
-
         form.setFieldsValue(formValues);
 
         setSelectedProjectManager(project.project_manager || null);
@@ -195,25 +164,23 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         setLoading(false);
       }
     } else if (drawerVisible && !projectId) {
-      // Creating new project - explicitly set form values to defaults
+      // Creating new project - preserve form state, don't reset
       setEditMode(false);
       setLoading(false);
-      try {
-        form.setFieldsValue({
-          ...defaultFormValues,
-        });
-        setSelectedProjectManager(null);
-      } catch (error) {
-        logger.error('Error initializing form for new project', error);
+      
+      // Only set defaults if form is completely empty
+      const currentValues = form.getFieldsValue();
+      if (!currentValues.color_code) {
+        form.setFieldsValue(defaultFormValues);
       }
+      setSelectedProjectManager(null);
     } else if (drawerVisible && projectId && !project && !projectLoading) {
-      // Project data failed to load or is empty
       console.warn('Project drawer is visible but no project data available');
       setLoading(false);
     } else if (drawerVisible && projectId) {
       console.log('Drawer visible, waiting for project data to load...');
     }
-  }, [drawerVisible, projectId, project, projectLoading, form, isHealthRestricted]);
+  }, [drawerVisible, projectId, project, projectLoading, form]);
 
   // Additional effect to handle loading state when project data is being fetched
   useEffect(() => {
@@ -223,16 +190,11 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     }
   }, [drawerVisible, projectId, projectLoading]);
 
-  // Define resetForm function early to avoid declaration order issues
+  // Define resetForm function - only reset when drawer is actually closing
   const resetForm = useCallback(() => {
     setEditMode(false);
     form.resetFields();
-    // Reset to default values to ensure clean state
-    form.setFieldsValue({
-      ...defaultFormValues,
-      start_date: null,
-      end_date: null,
-    });
+    form.setFieldsValue(defaultFormValues);
     setSelectedProjectManager(null);
   }, [form, defaultFormValues]);
 
@@ -271,11 +233,11 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         man_days: parseInt(values.man_days),
         hours_per_day: parseInt(values.hours_per_day),
         project_manager: selectedProjectManager,
+        // FIX: Explicitly use the form values, ensuring boolean conversion
         use_manual_progress: Boolean(values.use_manual_progress),
         use_weighted_progress: Boolean(values.use_weighted_progress),
         use_time_progress: Boolean(values.use_time_progress),
-        // Only include health_id if user is not restricted and it's explicitly set
-        ...(!isHealthRestricted && values.health_id ? { health_id: values.health_id } : {}),
+        health_id: values.health_id,
       };
 
       const action =
@@ -286,16 +248,23 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       const response = await action;
 
       if (response?.data?.done) {
-        form.resetFields();
-        dispatch(toggleProjectDrawer());
+        // FIX: Don't close drawer or reset form here - let navigation handle it
+        // The window.location.reload() will handle the cleanup
         if (!editMode) {
           trackMixpanelEvent(evt_projects_create);
+          // Navigate first, then reload - this ensures toggle states are preserved
           navigate(
             `/worklenz/projects/${response.data.body.id}?tab=tasks-list&pinned_tab=tasks-list`
           );
+          // Use setTimeout to ensure navigation completes before reload
+          setTimeout(() => {
+            window.location.reload();
+          }, 100);
+        } else {
+          dispatch(toggleProjectDrawer());
+          refetchProjects();
+          window.location.reload();
         }
-        refetchProjects();
-        window.location.reload(); // Refresh the page
       } else {
         notification.error({ message: response?.data?.message });
         logger.error(
@@ -307,6 +276,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       logger.error('Error saving project', error);
     }
   };
+
   const calculateWorkingDays = (
     startDate: dayjs.Dayjs | null,
     endDate: dayjs.Dayjs | null
@@ -336,23 +306,18 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     return workingDays;
   };
 
-  // Improved handleVisibilityChange to track drawer state without doing form operations
   const handleVisibilityChange = useCallback(
     (visible: boolean) => {
       console.log('Drawer visibility changed:', visible, 'Project ID:', projectId);
       setDrawerVisible(visible);
 
+      // Only reset form when drawer is closing
       if (!visible) {
         resetForm();
-      } else if (visible && !projectId) {
-        // Creating new project - reset form immediately
-        console.log('Opening drawer for new project');
-        setEditMode(false);
-        setLoading(false);
       } else if (visible && projectId) {
-        // Editing existing project - loading state will be handled by useEffect
-        console.log('Opening drawer for existing project:', projectId);
         setLoading(true);
+      } else if (visible && !projectId) {
+        setLoading(false);
       }
     },
     [projectId, resetForm]
@@ -380,7 +345,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         dispatch(toggleProjectDrawer());
         navigate('/worklenz/projects');
         refetchProjects();
-        window.location.reload(); // Refresh the page
+        window.location.reload();
       } else {
         notification.error({ message: res?.data?.message });
         logger.error('Error deleting project', res?.data?.message);
@@ -411,7 +376,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     setIsFormValid(isValid);
   };
 
-  // Progress calculation method handlers
+  // FIX: Improved progress calculation method handlers that properly update form state
   const handleManualProgressChange = (checked: boolean) => {
     if (checked) {
       form.setFieldsValue({
@@ -456,7 +421,6 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
 
   return (
     <Drawer
-      // loading={loading}
       title={
         <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>
           {projectId ? t('editProject') : t('createProject')}

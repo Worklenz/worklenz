@@ -505,6 +505,7 @@ export default class ClientsController extends WorklenzControllerBase {
       price,
       currency,
       category,
+      service_key,
       // Image upload fields
       imageData,
       imageName,
@@ -514,6 +515,51 @@ export default class ClientsController extends WorklenzControllerBase {
 
     if (!name) {
       return res.status(400).send(new ServerResponse(false, null, "Service name is required"));
+    }
+
+    // Validate and process service_key
+    let finalServiceKey: string | null = null;
+    if (service_key) {
+      // Validate format: 2-6 uppercase alphanumeric characters
+      const keyRegex = /^[A-Z0-9]{2,6}$/;
+      if (!keyRegex.test(service_key)) {
+        return res.status(400).send(new ServerResponse(false, null, "Service key must be 2-6 uppercase alphanumeric characters (A-Z, 0-9)"));
+      }
+      finalServiceKey = service_key.toUpperCase();
+      
+      // Check if service_key already exists for this organization
+      const keyCheck = await db.query(
+        `SELECT id FROM client_portal_services WHERE organization_team_id = $1 AND service_key = $2`,
+        [teamId, finalServiceKey]
+      );
+      if (keyCheck.rows.length > 0) {
+        return res.status(400).send(new ServerResponse(false, null, `Service key "${finalServiceKey}" is already in use. Please choose a different key.`));
+      }
+    } else {
+      // Auto-generate service_key from name if not provided
+      const cleanName = name.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      if (cleanName.length >= 2) {
+        const baseKey = cleanName.substring(0, Math.min(6, cleanName.length));
+        // Ensure uniqueness by appending number if needed
+        let counter = 1;
+        let uniqueKey = baseKey;
+        while (true) {
+          const keyCheck = await db.query(
+            `SELECT id FROM client_portal_services WHERE organization_team_id = $1 AND service_key = $2`,
+            [teamId, uniqueKey]
+          );
+          if (keyCheck.rows.length === 0) {
+            finalServiceKey = uniqueKey;
+            break;
+          }
+          // If key exists, try appending a number (max 6 chars total)
+          const baseKeyLength = Math.max(0, 6 - String(counter).length);
+          const baseKeyPart = baseKey.substring(0, baseKeyLength);
+          uniqueKey = baseKeyPart + counter;
+          counter++;
+          if (counter > 999) break; // Safety limit
+        }
+      }
     }
 
     let finalServiceData = { ...service_data };
@@ -566,10 +612,10 @@ export default class ClientsController extends WorklenzControllerBase {
     const q = `
       INSERT INTO client_portal_services (
         name, description, service_data, is_public, allowed_client_ids, 
-        price, currency, category,
+        price, currency, category, service_key,
         team_id, organization_team_id, created_by, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'active')
-      RETURNING id, name, description, status, is_public, created_at, service_data, price, currency, category
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'active')
+      RETURNING id, name, description, status, is_public, created_at, service_data, price, currency, category, service_key
     `;
 
     const values = [
@@ -581,6 +627,7 @@ export default class ClientsController extends WorklenzControllerBase {
       price || null,
       currency || null,
       category || null,
+      finalServiceKey,
       teamId,
       teamId,
       userId
@@ -606,6 +653,7 @@ export default class ClientsController extends WorklenzControllerBase {
       price,
       currency,
       category,
+      service_key,
       // Image upload fields
       imageData,
       imageName,
@@ -614,11 +662,35 @@ export default class ClientsController extends WorklenzControllerBase {
 
 
     // First check if service exists and belongs to team
-    const checkQuery = `SELECT id, service_data FROM client_portal_services WHERE id = $1 AND organization_team_id = $2`;
+    const checkQuery = `SELECT id, service_data, service_key FROM client_portal_services WHERE id = $1 AND organization_team_id = $2`;
     const checkResult = await db.query(checkQuery, [serviceId, teamId]);
     
     if (checkResult.rows.length === 0) {
       return res.status(404).send(new ServerResponse(false, null, "Service not found"));
+    }
+
+    // Validate and process service_key if provided
+    if (service_key !== undefined) {
+      if (service_key === null || service_key === '') {
+        // Allow clearing the service_key
+        // No validation needed
+      } else {
+        // Validate format: 2-6 uppercase alphanumeric characters
+        const keyRegex = /^[A-Z0-9]{2,6}$/;
+        const upperKey = service_key.toUpperCase();
+        if (!keyRegex.test(upperKey)) {
+          return res.status(400).send(new ServerResponse(false, null, "Service key must be 2-6 uppercase alphanumeric characters (A-Z, 0-9)"));
+        }
+        
+        // Check if service_key already exists for this organization (excluding current service)
+        const keyCheck = await db.query(
+          `SELECT id FROM client_portal_services WHERE organization_team_id = $1 AND service_key = $2 AND id != $3`,
+          [teamId, upperKey, serviceId]
+        );
+        if (keyCheck.rows.length > 0) {
+          return res.status(400).send(new ServerResponse(false, null, `Service key "${upperKey}" is already in use. Please choose a different key.`));
+        }
+      }
     }
 
     let finalServiceData = service_data ? { ...service_data } : undefined;
@@ -750,6 +822,12 @@ export default class ClientsController extends WorklenzControllerBase {
       paramIndex++;
     }
 
+    if (service_key !== undefined) {
+      updateFields.push(`service_key = $${paramIndex}`);
+      updateValues.push(service_key ? service_key.toUpperCase() : null);
+      paramIndex++;
+    }
+
     if (updateFields.length === 1) {
       return res.status(400).send(new ServerResponse(false, null, "No valid fields to update"));
     }
@@ -758,7 +836,7 @@ export default class ClientsController extends WorklenzControllerBase {
       UPDATE client_portal_services 
       SET ${updateFields.join(", ")}
       WHERE id = $1 AND organization_team_id = $2
-      RETURNING id, name, description, status, is_public, updated_at, service_data, price, currency, category
+      RETURNING id, name, description, status, is_public, updated_at, service_data, price, currency, category, service_key
     `;
 
     const result = await db.query(q, updateValues);
@@ -1620,6 +1698,15 @@ export default class ClientsController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async resendClientInvitation(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     return ClientPortalAuthController.resendClientInvitation(req, res);
+  }
+
+  @HandleExceptions()
+  public static async sendInvitationToExistingClient(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const modifiedReq = {
+      ...req,
+      user: req.user
+    } as any;
+    return ClientPortalClientsController.sendInvitationToExistingClient(modifiedReq, res as any);
   }
 
   // Organization-side Client Portal Request Comments

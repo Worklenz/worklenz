@@ -74,9 +74,11 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   private static async getMembers(
     teamId: string, searchQuery = "",
+    searchParams: string[] = [],
     size: number | null = null,
     offset: number | null = null,
     teamsClause = "",
+    teamIdsParams: string[] = [],
     key = DATE_RANGES.LAST_WEEK,
     dateRange: string[] = [],
     includeArchived: boolean,
@@ -89,11 +91,12 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`;
 
     // Use parameterized queries
-    // Note: $1 is used for teamId, so parameter offsets start from 2
-    const assignClauseResult = this.memberAssignDurationFilter(key, dateRange, 2);
+    // Note: $1 is teamId, searchParams use $2+, so other parameters start after searchParams
+    let paramOffset = 2 + searchParams.length;
+    const assignClauseResult = this.memberAssignDurationFilter(key, dateRange, paramOffset);
     const assignClause = assignClauseResult.clause;
     const assignParams = assignClauseResult.params;
-    let paramOffset = 2 + assignParams.length;
+    paramOffset += assignParams.length;
     
     const completedDurationResult = this.completedDurationFilter(key, dateRange, paramOffset);
     const completedDurationClasue = completedDurationResult.clause;
@@ -237,8 +240,8 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                   FROM team_member_info_view tmiv
                   WHERE tmiv.team_id = $1 ${teamsClause} ${memberFilterClause}
                   ${searchQuery}`;
-    // Pass all parameters
-    const queryParams = [teamId, ...assignParams, ...completedParams, ...overdueParams, ...activityLogParams, ...timeLogParams, ...projectParams];
+    // Pass all parameters - searchParams come after teamId, then teamIdsParams, then other filter params
+    const queryParams = [teamId, ...searchParams, ...teamIdsParams, ...assignParams, ...completedParams, ...overdueParams, ...activityLogParams, ...timeLogParams, ...projectParams];
     const result = await db.query(q, queryParams);
     const [data] = result.rows;
 
@@ -526,7 +529,8 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   @HandleExceptions()
   public static async getReportingMembers(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { searchQuery, size, offset } = this.toPaginationOptions(req.query, ["name"]);
+    // teamId is $1, so search params start at $2
+    const { searchQuery, searchParams, size, offset } = this.toPaginationOptions(req.query, ["tmiv.name"], false, 2);
     const { duration, date_range } = req.query;
     const archived = req.query.archived === "true";
 
@@ -536,14 +540,17 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     }
 
     let teamsClause = "";
+    let teamIdsParams: string[] = [];
     if (req.query.teams) {
       const teamIds = (req.query.teams as string).split(" ").filter(id => id.trim());
-      const { clause } = SqlHelper.buildInClause(teamIds, 1);
+      // Parameters will be added after searchParams, so offset = 2 + searchParams.length
+      const { clause } = SqlHelper.buildInClause(teamIds, 2 + searchParams.length);
       teamsClause = `AND tmiv.team_id IN (${clause})`;
+      teamIdsParams = teamIds;
     }
 
     const teamId = this.getCurrentTeamId(req);
-    const result = await this.getMembers(teamId as string, searchQuery, size, offset, teamsClause, duration as string, dateRange, archived, req.user?.id as string, req);
+    const result = await this.getMembers(teamId as string, searchQuery, searchParams, size, offset, teamsClause, teamIdsParams, duration as string, dateRange, archived, req.user?.id as string, req);
     const body = {
       total: result.total,
       members: result.members,
@@ -575,7 +582,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
     const teamId = this.getCurrentTeamId(req);
     const teamName = (req.query.team_name as string)?.trim() || null;
-    const result = await this.getMembers(teamId as string, "", null, null, "", duration as string, dateRange, archived, req.user?.id as string, req);
+    const result = await this.getMembers(teamId as string, "", [], null, null, "", [], duration as string, dateRange, archived, req.user?.id as string, req);
 
     let start = "-";
     let end = "-";
@@ -894,7 +901,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
   }
 
 
-  public static async getMemberProjectsData(teamId: string, teamMemberId: string, searchQuery: string, archived: boolean, userId: string, req?: any) {
+  public static async getMemberProjectsData(teamId: string, teamMemberId: string, searchQuery: string, searchParams: string[] = [], archived: boolean, userId: string, req?: any) {
 
     const teamClause = teamId
       ? `team_member_id = '${teamMemberId as string}'`
@@ -952,7 +959,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                       LEFT JOIN projects p ON p.id = pm.project_id
               WHERE ${teamClause} ${searchQuery} ${archivedClause} ${projectFilterClause}
               ORDER BY name;`;
-    const result = await db.query(q, []);
+    const result = await db.query(q, searchParams);
 
     for (const project of result.rows) {
       project.time_logged = formatDuration(moment.duration(project.time_logged, "seconds"));
@@ -964,11 +971,12 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   @HandleExceptions()
   public static async getMemberProjects(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { searchQuery } = this.toPaginationOptions(req.query, ["p.name"]);
+    // No other parameters before search params, so they start at $1
+    const { searchQuery, searchParams } = this.toPaginationOptions(req.query, ["p.name"], false, 1);
     const { teamMemberId, teamId } = req.query;
     const archived = req.query.archived === "true";
 
-    const result = await this.getMemberProjectsData(teamId as string, teamMemberId as string, searchQuery, archived, req.user?.id as string, req);
+    const result = await this.getMemberProjectsData(teamId as string, teamMemberId as string, searchQuery, searchParams, archived, req.user?.id as string, req);
 
     return res.status(200).send(new ServerResponse(true, result));
   }
@@ -1412,19 +1420,12 @@ export default class ReportingMembersController extends ReportingControllerBaseW
   @HandleExceptions()
   public static async getTimelogsFlat(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { team_member_id, duration, date_range, billable, search } = req.body || {};
-    console.log('[DEBUG] getTimelogsFlat - team_member_id:', team_member_id);
-    console.log('[DEBUG] getTimelogsFlat - duration:', duration);
-    console.log('[DEBUG] getTimelogsFlat - date_range:', date_range);
-    console.log('[DEBUG] getTimelogsFlat - billable:', billable);
-    console.log('[DEBUG] getTimelogsFlat - search:', search);
 
     // Get the team_id from request user
     const teamId = req.user?.team_id;
-    console.log('[DEBUG] getTimelogsFlat - teamId:', teamId);
 
     // Get user timezone and date clauses
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
-    console.log('[DEBUG] getTimelogsFlat - userTimezone:', userTimezone);
     
     // Build params array with timezone first, then date range values
     const params: any[] = [userTimezone];
@@ -1453,11 +1454,8 @@ export default class ReportingMembersController extends ReportingControllerBaseW
         durationClause = `AND twl.created_at >= (CURRENT_DATE - INTERVAL '3 months')::TIMESTAMP`;
       }
     }
-    console.log('[DEBUG] getTimelogsFlat - durationClause:', durationClause);
-    console.log('[DEBUG] getTimelogsFlat - params after date range:', params);
 
     const billableQuery = this.buildBillableQuery(billable || { billable: true, nonBillable: true }, "t");
-    console.log('[DEBUG] getTimelogsFlat - billableQuery:', billableQuery);
 
     // Team filter - only show logs from current team if team_id is available
     let teamFilter = '';
@@ -1467,8 +1465,6 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       params.push(teamId);
       paramIndex++;
     }
-    console.log('[DEBUG] getTimelogsFlat - teamFilter:', teamFilter);
-    console.log('[DEBUG] getTimelogsFlat - paramIndex after team:', paramIndex);
 
     // Optional member filter
     const memberFilter = team_member_id ? `AND u.id = (SELECT user_id FROM team_members WHERE id = $${paramIndex})` : '';
@@ -1476,8 +1472,6 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       params.push(team_member_id);
       paramIndex++;
     }
-    console.log('[DEBUG] getTimelogsFlat - memberFilter:', memberFilter);
-    console.log('[DEBUG] getTimelogsFlat - paramIndex after member:', paramIndex);
 
     // Optional search filter (task, project, member, description)
     const searchFilter = search ? `AND (
@@ -1489,7 +1483,6 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     if (search) {
       params.push(`%${search}%`);
     }
-    console.log('[DEBUG] getTimelogsFlat - searchFilter:', searchFilter);
 
     const q = `
       SELECT
@@ -1510,11 +1503,6 @@ export default class ReportingMembersController extends ReportingControllerBaseW
         ${billableQuery}
         ${searchFilter}
       ORDER BY log_day DESC, user_name ASC`;
-
-    console.log('[DEBUG] getTimelogsFlat - Final Query:', q);
-    console.log('[DEBUG] getTimelogsFlat - Query Params:', params);
-    console.log('[DEBUG] getTimelogsFlat - Params Length:', params.length);
-    console.log('[DEBUG] getTimelogsFlat - Params Types:', params.map(p => typeof p));
 
     const rows = await db.query(q, params);
 
@@ -1542,11 +1530,71 @@ export default class ReportingMembersController extends ReportingControllerBaseW
   public static async exportTimelogsFlatCSV(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<void> {
     let { team_member_id, duration, date_range, billable, search } = req.query;
 
-    // Sanitize parameters - convert string "undefined" to actual undefined
-    if (team_member_id === 'undefined' || team_member_id === 'null') team_member_id = undefined;
-    if (duration === 'undefined' || duration === 'null') duration = undefined;
-    if (search === 'undefined' || search === 'null') search = undefined;
+    // Convert query parameters to strings or undefined
+    const teamMemberIdStr = this.convertQueryParam(team_member_id);
+    const durationStr = this.convertQueryParam(duration);
+    const dateRangeStr = this.convertQueryParam(date_range);
+    const billableStr = this.convertQueryParam(billable);
+    const searchStr = this.convertQueryParam(search);
 
+    // Get data using shared helper method
+    const rows = await this.getTimelogsFlatData(req, teamMemberIdStr, durationStr, dateRangeStr, billableStr, searchStr);
+
+    // Prepare CSV data
+    const exportDate = moment().format("MMM-DD-YYYY");
+    const fileName = `Time-Logs-${exportDate}`;
+
+    // Build CSV content
+    const csvRows: string[] = [];
+
+    // Add headers
+    csvRows.push("Date,Member,Project,Task,Description,Duration");
+
+    // Add data rows
+    for (const row of rows.rows) {
+      const date = row.log_day || "";
+      const member = (row.user_name || "").replace(/"/g, '""'); // Escape quotes
+      const project = (row.project_name || "").replace(/"/g, '""');
+      const task = (row.task_name || "").replace(/"/g, '""');
+      const description = (row.description || "").replace(/"/g, '""');
+      const duration = this.secondsToReadable(row.time_spent || 0);
+
+      csvRows.push(`"${date}","${member}","${project}","${task}","${description}","${duration}"`);
+    }
+
+    const csvContent = csvRows.join("\n");
+
+    // Set response headers for CSV
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}.csv"`);
+
+    // Add BOM for better Excel compatibility
+    res.write('\uFEFF' + csvContent);
+    res.end();
+  }
+
+  private static secondsToReadable(totalSeconds: number): string {
+    const sec = Math.max(0, Math.floor(totalSeconds || 0));
+    const hours = Math.floor(sec / 3600);
+    const minutes = Math.floor((sec % 3600) / 60);
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  }
+
+  /**
+   * Helper function to convert query parameters to strings or undefined
+   */
+  private static convertQueryParam(param: any): string | undefined {
+    if (Array.isArray(param)) {
+      return param[0] ? String(param[0]) : undefined;
+    }
+    return param ? String(param) : undefined;
+  }
+
+  /**
+   * Shared helper method to fetch timelogs data for both CSV and Excel exports
+   */
+  private static async getTimelogsFlatData(req: IWorkLenzRequest, team_member_id?: string, duration?: string, date_range?: string, billable?: string, search?: string): Promise<any> {
     // Get the team_id from request user
     const teamId = req.user?.team_id;
 
@@ -1640,47 +1688,67 @@ export default class ReportingMembersController extends ReportingControllerBaseW
         ${searchFilter}
       ORDER BY log_day DESC, user_name ASC`;
 
-    const rows = await db.query(q, params);
+    return await db.query(q, params);
+  }
 
-    // Prepare CSV data
-    const exportDate = moment().format("MMM-DD-YYYY");
-    const fileName = `Time-Logs-${exportDate}`;
+  @HandleExceptions()
+  public static async exportTimelogsFlatExcel(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<void> {
+    let { team_member_id, duration, date_range, billable, search } = req.query;
 
-    // Build CSV content
-    const csvRows: string[] = [];
+    // Convert query parameters to strings or undefined
+    const teamMemberIdStr = this.convertQueryParam(team_member_id);
+    const durationStr = this.convertQueryParam(duration);
+    const dateRangeStr = this.convertQueryParam(date_range);
+    const billableStr = this.convertQueryParam(billable);
+    const searchStr = this.convertQueryParam(search);
+
+    // Get data using shared helper method
+    const rows = await this.getTimelogsFlatData(req, teamMemberIdStr, durationStr, dateRangeStr, billableStr, searchStr);
+
+    // Create Excel workbook
+    const workbook = new Excel.Workbook();
+    const worksheet = workbook.addWorksheet('Time Logs');
 
     // Add headers
-    csvRows.push("Date,Member,Project,Task,Description,Duration");
+    worksheet.columns = [
+      { header: 'Date', key: 'date', width: 15 },
+      { header: 'Member', key: 'member', width: 20 },
+      { header: 'Project', key: 'project', width: 25 },
+      { header: 'Task', key: 'task', width: 30 },
+      { header: 'Description', key: 'description', width: 40 },
+      { header: 'Duration', key: 'duration', width: 15 }
+    ];
+
+    // Style the header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE6E6FA' }
+    };
 
     // Add data rows
     for (const row of rows.rows) {
-      const date = row.log_day || "";
-      const member = (row.user_name || "").replace(/"/g, '""'); // Escape quotes
-      const project = (row.project_name || "").replace(/"/g, '""');
-      const task = (row.task_name || "").replace(/"/g, '""');
-      const description = (row.description || "").replace(/"/g, '""');
-      const duration = this.secondsToReadable(row.time_spent || 0);
-
-      csvRows.push(`"${date}","${member}","${project}","${task}","${description}","${duration}"`);
+      worksheet.addRow({
+        date: moment(row.log_day).format('MMM DD, YYYY'),
+        member: row.user_name || '',
+        project: row.project_name || '',
+        task: row.task_name || '',
+        description: row.description || '',
+        duration: this.secondsToReadable(row.time_spent || 0)
+      });
     }
 
-    const csvContent = csvRows.join("\n");
+    // Set response headers for Excel
+    const exportDate = moment().format("MMM-DD-YYYY");
+    const fileName = `Time-Logs-${exportDate}.xlsx`;
 
-    // Set response headers for CSV
-    res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}.csv"`);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
 
-    // Add BOM for better Excel compatibility
-    res.write('\uFEFF' + csvContent);
+    // Write Excel file to response
+    await workbook.xlsx.write(res);
     res.end();
-  }
-
-  private static secondsToReadable(totalSeconds: number): string {
-    const sec = Math.max(0, Math.floor(totalSeconds || 0));
-    const hours = Math.floor(sec / 3600);
-    const minutes = Math.floor((sec % 3600) / 60);
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
   }
 
   private static updateTaskProperties(tasks: any[]) {
@@ -1792,7 +1860,7 @@ public static async getSingleMemberProjects(req: IWorkLenzRequest, res: IWorkLen
     const teamName = (req.query.team_name as string)?.trim() || "";
     const archived = req.query.archived === "true";
 
-    const result = await this.getMemberProjectsData(teamId as string, teamMemberId as string, "", archived, req.user?.id as string, req);
+    const result = await this.getMemberProjectsData(teamId as string, teamMemberId as string, "", [], archived, req.user?.id as string, req);
 
     // excel file
     const exportDate = moment().format("MMM-DD-YYYY");

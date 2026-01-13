@@ -129,6 +129,79 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
     }
   }
 
+  static async getInvoicesByRequest(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const { requestId } = req.params;
+      const organizationId = req.user?.team_id;
+
+      if (!organizationId) {
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Unauthorized"));
+      }
+
+      if (!requestId) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Request ID is required"));
+      }
+
+      // Get all invoices for this request
+      const query = `
+        SELECT
+          i.id,
+          i.invoice_no,
+          i.amount,
+          i.currency,
+          i.status,
+          i.due_date,
+          i.sent_at,
+          i.paid_at,
+          i.created_at,
+          i.updated_at,
+          r.req_no as request_number,
+          s.name as service_name,
+          c.name as client_name
+        FROM client_portal_invoices i
+        LEFT JOIN client_portal_requests r ON i.request_id = r.id
+        LEFT JOIN client_portal_services s ON r.service_id = s.id
+        LEFT JOIN clients c ON i.client_id = c.id
+        WHERE i.request_id = $1 AND i.organization_team_id = $2
+        ORDER BY i.created_at DESC
+      `;
+
+      const result = await db.query(query, [requestId, organizationId]);
+
+      const invoices = result.rows.map((invoice: any) => ({
+        id: invoice.id,
+        invoiceNo: invoice.invoice_no,
+        amount: parseFloat(invoice.amount),
+        currency: invoice.currency,
+        status: invoice.status,
+        dueDate: invoice.due_date,
+        sentAt: invoice.sent_at,
+        paidAt: invoice.paid_at,
+        createdAt: invoice.created_at,
+        updatedAt: invoice.updated_at,
+        requestNumber: invoice.request_number,
+        serviceName: invoice.service_name,
+        clientName: invoice.client_name,
+      }));
+
+      return res.json(
+        new ServerResponse(true, { invoices, count: invoices.length }, "Invoices retrieved successfully")
+      );
+    } catch (error) {
+      console.error("Error fetching invoices by request:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to retrieve invoices"));
+    }
+  }
+
   static async getOrganizationInvoices(
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
