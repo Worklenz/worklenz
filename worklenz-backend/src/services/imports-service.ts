@@ -1396,7 +1396,13 @@ class ImportsService {
       }
 
       if (deferred.length) {
-        throw new Error("Failed to resolve parent tasks for all staged items");
+        const unresolved = deferred.length;
+        await this.appendLog(jobId, "warning", "Unresolved parent tasks", {
+          unresolved,
+        });
+        for (const task of deferred) {
+          await createTask(task, null);
+        }
       }
 
       const progress = await this.progress(jobId);

@@ -97,6 +97,16 @@ interface FieldMappingRow {
   include?: boolean;
 }
 
+interface JiraField {
+  id: string;
+  name: string;
+  schema?: any;
+  scope?: {
+    type?: string;
+    project?: { id?: string; key?: string };
+  };
+}
+
 // JIRA standard field mappings to Worklenz
 const STANDARD_FIELD_CANDIDATES: Array<{
   name: string;
@@ -148,7 +158,10 @@ export default class JiraProvider implements ImportProvider {
     const email = payloadRef.email || auth.email;
     const domain = payloadRef.domain || auth.domain || sourceSelection.domain;
     const projectKey =
-      payloadRef.projectKey || sourceSelection.projectKey || sourceSelection.projectId || ref.projectKey;
+      payloadRef.projectKey ||
+      sourceSelection.projectKey ||
+      sourceSelection.projectId ||
+      ref.projectKey;
     const projectName =
       payloadRef.projectName || sourceSelection.projectName || ref.projectName;
 
@@ -191,28 +204,44 @@ export default class JiraProvider implements ImportProvider {
   private async fetchJiraFields(
     domain: string,
     email: string,
-    token: string
-  ): Promise<Array<{ id: string; name: string; schema?: any }>> {
+    token: string,
+    projectKey: string
+  ): Promise<JiraField[]> {
     try {
-      const resp = await getWithRetries<
-        Array<{ id: string; name: string; schema?: any }>
-      >({
-        method: "GET",
-        url: `https://${domain}/rest/api/3/field`,
-        headers: {
-          Authorization: this.buildAuthHeader(email, token),
-          Accept: "application/json",
-        },
+      const [project, fields] = await Promise.all([
+        getWithRetries<{ id?: string }>({
+          method: "GET",
+          url: `https://${domain}/rest/api/3/project/${projectKey}`,
+          headers: {
+            Authorization: this.buildAuthHeader(email, token),
+            Accept: "application/json",
+          },
+        }),
+        getWithRetries<JiraField[]>({
+          method: "GET",
+          url: `https://${domain}/rest/api/3/field`,
+          headers: {
+            Authorization: this.buildAuthHeader(email, token),
+            Accept: "application/json",
+          },
+        }),
+      ]);
+
+      const projectId = project?.id;
+      const allFields = fields || [];
+      if (!projectId) return allFields;
+
+      return allFields.filter((field) => {
+        const scopeProjectId = field.scope?.project?.id;
+        if (!scopeProjectId) return true; // keep global/unscoped fields
+        return scopeProjectId === projectId;
       });
-      return resp || [];
     } catch (err) {
       return [];
     }
   }
 
-  private buildFieldMappings(
-    jiraFields: Array<{ id: string; name: string; schema?: any }>
-  ): FieldMappingRow[] {
+  private buildFieldMappings(jiraFields: JiraField[]): FieldMappingRow[] {
     const rows: FieldMappingRow[] = STANDARD_FIELD_CANDIDATES.map(
       ({ name, target, required }) => ({
         source_field: name,
@@ -438,7 +467,12 @@ export default class JiraProvider implements ImportProvider {
   ): Promise<ProviderResult> {
     const { token, email, domain, projectKey, projectName } =
       this.resolveOptions(job, payload);
-    const jiraFields = await this.fetchJiraFields(domain, email, token);
+    const jiraFields = await this.fetchJiraFields(
+      domain,
+      email,
+      token,
+      projectKey
+    );
     const fields = this.buildFieldMappings(jiraFields);
     const hierarchy = await this.buildHierarchy(
       domain,
@@ -467,7 +501,8 @@ export default class JiraProvider implements ImportProvider {
     const jiraFields = await this.fetchJiraFields(
       options.domain,
       options.email,
-      options.token
+      options.token,
+      options.projectKey
     );
     const fieldMappings = this.buildFieldMappings(jiraFields);
     const tasks: StageTaskRow[] = [];
@@ -484,7 +519,8 @@ export default class JiraProvider implements ImportProvider {
     do {
       const response = await getWithRetries<JiraSearchResponse>({
         method: "GET",
-        url: `https://${options.domain}/rest/api/3/search`,
+        //url: `https://${options.domain}/rest/api/3/search`,
+        url: `https://${options.domain}/rest/api/3/search/jql`,
         params: {
           jql: `project = ${options.projectKey} ORDER BY created DESC`,
           startAt,
