@@ -14,4 +14,11 @@ billingApiRouter.get("/contact-us", BillingController.contactUs);
 billingApiRouter.get("/pricing-plans", BillingController.getPricingPlans);
 billingApiRouter.get("/lkr-pricing", BillingController.getLkrPricing);
 
+// DirectPay Tokenization APIs
+billingApiRouter.post("/directpay/create-card-session", BillingController.createCardAddSession);
+billingApiRouter.get("/directpay/list-cards", BillingController.listCards);
+billingApiRouter.post("/directpay/delete-card", BillingController.deleteCard);
+billingApiRouter.post("/directpay/pay-with-card", BillingController.payWithCard);
+billingApiRouter.post("/directpay-card-response", BillingController.handleCardAddResponse);
+
 export default billingApiRouter;

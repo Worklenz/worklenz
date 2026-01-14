@@ -392,45 +392,309 @@ VALUES ($1, $2, $3);`;
   }
 
   /**
-   * Get LKR (local) pricing for Free and Business plans.
+   * Get LKR pricing for Sri Lankan users
+   * 
    * This is a simplified, DB-driven endpoint used by the LKR upgrade modal.
    *
-   * It expects that licensing_plan_tiers contains two active tiers:
-   * - tier_name = 'free_lkr'     (local free plan)
-   * - tier_name = 'business_lkr' (local business plan)
+   * It expects that licensing_custom_plan_pricing contains LKR pricing tiers:
+   * - tier_name = 'pro' (for reference, though we use business tier)
+   * - tier_name = 'business' (main business plan for LKR users)
+   * - currency = 'LKR'
    *
    * For the business plan:
    * - monthly_base_price     => price
    * - annual_base_price      => discountedPrice
+   * 
+   * Free plan is the same for both local and non-local users (always 0).
+   */
+  /**
+   * Create DirectPay card add session for tokenization
+   * Uses /api/v3/create-session with type: CARD_ADD
    */
   @HandleExceptions()
+  public static async createCardAddSession(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { amount, doInitialPayment } = req.body;
+    const email = req.user?.email;
+    const name = req.user?.name;
+    const phone = req.user?.phone || req.user?.mobile || null;
+
+    if (!email || !name) {
+      return res.status(400).send(new ServerResponse(false, null, "User email and name are required"));
+    }
+
+    const { DP_MERCHANT_ID, DP_SECRET_KEY, DP_STAGE, FRONTEND_URL } = process.env;
+    const uniqueTimestamp = moment().format("YYYYMMDDHHmmss");
+    const orderId = `WORKLENZ_CARD_${email}_${uniqueTimestamp}`;
+
+    // Split name into first_name and last_name
+    const nameParts = name.trim().split(" ");
+    const firstName = nameParts[0] || name;
+    const lastName = nameParts.slice(1).join(" ") || null;
+
+    const requestPayload = {
+      merchant_id: DP_MERCHANT_ID,
+      amount: amount ? String(amount) : "10.00", // Default amount for card add
+      type: "CARD_ADD",
+      order_id: orderId,
+      currency: "LKR",
+      response_url: `${process.env.BACKEND_URL || ""}/api/billing/directpay-card-response`,
+      return_url: `${FRONTEND_URL || ""}/worklenz/admin-center/billing?card_added=true`,
+      first_name: firstName,
+      last_name: lastName,
+      phone: phone || null,
+      email: email,
+      description: `Card Add - ${name} (${email})`,
+      logo: "https://app.worklenz.com/assets/icons/icon-96x96.png",
+      do_initial_payment: doInitialPayment ? "1" : "0", // 0 = Disable, 1 = Enable
+    };
+
+    // Base64 encode the JSON payload
+    const jsonEncodedPayload = JSON.stringify(requestPayload);
+    const base64EncodedPayload = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(jsonEncodedPayload));
+
+    // Generate HMAC SHA256 signature
+    const generatedHash = CryptoJS.HmacSHA256(base64EncodedPayload, DP_SECRET_KEY as string);
+    const signature = `hmac ${generatedHash.toString(CryptoJS.enc.Hex)}`;
+
+    // Determine API URL based on stage
+    const apiUrl = DP_STAGE === "PROD" 
+      ? "https://gateway.directpay.lk/api/v3/create-session"
+      : "https://test-gateway.directpay.lk/api/v3/create-session";
+
+    try {
+      // Call DirectPay API
+      const response = await axios.post(apiUrl, base64EncodedPayload, {
+        headers: {
+          "Content-Type": "text/plain",
+          "Authorization": signature,
+        },
+        timeout: 30000,
+      });
+
+      return res.status(200).send(new ServerResponse(true, {
+        sessionData: response.data,
+        stage: DP_STAGE,
+      }));
+    } catch (error: any) {
+      log_error(error);
+      return res.status(500).send(new ServerResponse(false, null, 
+        error?.response?.data?.message || "Failed to create card add session"));
+    }
+  }
+
+  /**
+   * List cards for a user's wallet
+   * Uses /api/v3/listCard
+   */
+  @HandleExceptions()
+  public static async listCards(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { wallet_id } = req.query;
+
+    if (!wallet_id) {
+      return res.status(400).send(new ServerResponse(false, null, "wallet_id is required"));
+    }
+
+    const { DP_MERCHANT_ID, DP_SECRET_KEY, DP_STAGE } = process.env;
+
+    const requestPayload = {
+      merchant_id: DP_MERCHANT_ID,
+      wallet_id: String(wallet_id),
+    };
+
+    const base64EncodedPayload = CryptoJS.enc.Base64.stringify(
+      CryptoJS.enc.Utf8.parse(JSON.stringify(requestPayload))
+    );
+
+    const generatedHash = CryptoJS.HmacSHA256(base64EncodedPayload, DP_SECRET_KEY as string);
+    const signature = `hmac ${generatedHash.toString(CryptoJS.enc.Hex)}`;
+
+    const apiUrl = DP_STAGE === "PROD"
+      ? "https://gateway.directpay.lk/api/v3/listCard"
+      : "https://test-gateway.directpay.lk/api/v3/listCard";
+
+    try {
+      const response = await axios.post(apiUrl, base64EncodedPayload, {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": signature,
+        },
+        timeout: 30000,
+      });
+
+      return res.status(200).send(new ServerResponse(true, response.data));
+    } catch (error: any) {
+      log_error(error);
+      return res.status(500).send(new ServerResponse(false, null,
+        error?.response?.data?.message || "Failed to list cards"));
+    }
+  }
+
+  /**
+   * Delete a card
+   * Uses /api/v3/deleteCard
+   */
+  @HandleExceptions()
+  public static async deleteCard(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { card_id } = req.body;
+
+    if (!card_id) {
+      return res.status(400).send(new ServerResponse(false, null, "card_id is required"));
+    }
+
+    const { DP_MERCHANT_ID, DP_SECRET_KEY, DP_STAGE } = process.env;
+
+    const requestPayload = {
+      merchant_id: DP_MERCHANT_ID,
+      card_id: String(card_id),
+    };
+
+    const base64EncodedPayload = CryptoJS.enc.Base64.stringify(
+      CryptoJS.enc.Utf8.parse(JSON.stringify(requestPayload))
+    );
+
+    const generatedHash = CryptoJS.HmacSHA256(base64EncodedPayload, DP_SECRET_KEY as string);
+    const signature = `hmac ${generatedHash.toString(CryptoJS.enc.Hex)}`;
+
+    const apiUrl = DP_STAGE === "PROD"
+      ? "https://gateway.directpay.lk/api/v3/deleteCard"
+      : "https://test-gateway.directpay.lk/api/v3/deleteCard";
+
+    try {
+      const response = await axios.post(apiUrl, base64EncodedPayload, {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": signature,
+        },
+        timeout: 30000,
+      });
+
+      return res.status(200).send(new ServerResponse(true, response.data));
+    } catch (error: any) {
+      log_error(error);
+      return res.status(500).send(new ServerResponse(false, null,
+        error?.response?.data?.message || "Failed to delete card"));
+    }
+  }
+
+  /**
+   * Pay using a stored card
+   * Uses /api/v3/cardPay
+   */
+  @HandleExceptions()
+  public static async payWithCard(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { wallet_id, card_id, order_id, amount, currency } = req.body;
+
+    if (!wallet_id || !card_id || !order_id || !amount) {
+      return res.status(400).send(new ServerResponse(false, null, 
+        "wallet_id, card_id, order_id, and amount are required"));
+    }
+
+    const { DP_MERCHANT_ID, DP_SECRET_KEY, DP_STAGE } = process.env;
+
+    const requestPayload = {
+      merchant_id: DP_MERCHANT_ID,
+      wallet_id: String(wallet_id),
+      card_id: String(card_id),
+      order_id: String(order_id),
+      currency: currency || "LKR",
+      amount: String(amount),
+    };
+
+    const base64EncodedPayload = CryptoJS.enc.Base64.stringify(
+      CryptoJS.enc.Utf8.parse(JSON.stringify(requestPayload))
+    );
+
+    const generatedHash = CryptoJS.HmacSHA256(base64EncodedPayload, DP_SECRET_KEY as string);
+    const signature = `hmac ${generatedHash.toString(CryptoJS.enc.Hex)}`;
+
+    const apiUrl = DP_STAGE === "PROD"
+      ? "https://gateway.directpay.lk/api/v3/cardPay"
+      : "https://test-gateway.directpay.lk/api/v3/cardPay";
+
+    try {
+      const response = await axios.post(apiUrl, base64EncodedPayload, {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": signature,
+        },
+        timeout: 30000,
+      });
+
+      return res.status(200).send(new ServerResponse(true, response.data));
+    } catch (error: any) {
+      log_error(error);
+      return res.status(500).send(new ServerResponse(false, null,
+        error?.response?.data?.message || "Failed to process payment"));
+    }
+  }
+
+  /**
+   * Handle DirectPay card add response (webhook)
+   * Called by DirectPay after card is added
+   */
+  @HandleExceptions()
+  public static async handleCardAddResponse(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const responseData = req.body;
+
+    // Extract wallet and card information
+    const { walletId, card } = responseData;
+
+    if (!walletId || !card) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid response data"));
+    }
+
+    // TODO: Store walletId and card details in database
+    // - Store in licensing_directpay_cards table
+    // - Link to user/organization
+    // - Store cardId, walletId, masked card number, brand, type, expiry
+
+    log_error("Card add response received", { walletId, card });
+
+    return res.status(200).send(new ServerResponse(true, { message: "Card add response received" }));
+  }
+
+  @HandleExceptions()
   public static async getLkrPricing(_req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // Query the licensing_custom_plan_pricing table for LKR pricing
     const q = `
       SELECT
         tier_name,
         display_name,
         monthly_base_price,
-        annual_base_price
-      FROM licensing_plan_tiers
+        annual_base_price,
+        included_users,
+        max_users,
+        monthly_per_user_price,
+        annual_per_user_price,
+        currency
+      FROM licensing_custom_plan_pricing
       WHERE is_active = TRUE
-        AND tier_name IN ('free_lkr', 'business_lkr')
+        AND currency = 'LKR'
+        AND tier_name IN ('pro', 'business')
+      ORDER BY tier_level ASC
     `;
 
     const result = await db.query(q);
     const rows = result.rows || [];
 
-    const freeRow = rows.find(r => r.tier_name === "free_lkr");
-    const businessRow = rows.find(r => r.tier_name === "business_lkr");
+    const proRow = rows.find(r => r.tier_name === "pro");
+    const businessRow = rows.find(r => r.tier_name === "business");
 
+    // Free plan is the same for both local and non-local users
     const payload = {
       free: {
-        price: freeRow ? Number(freeRow.monthly_base_price || 0) : 0,
+        price: 0, // Free plan is always 0
       },
       business: {
-        price: businessRow ? Number(businessRow.monthly_base_price || 0) : 0,
-        discountedPrice: businessRow ? Number(businessRow.annual_base_price || 0) : 0,
+        price: businessRow ? Number(businessRow.monthly_base_price || 0) : 4990, // Fallback: LKR 4,990/month
+        discountedPrice: businessRow ? Number(businessRow.annual_base_price || 0) : 49900, // Fallback: LKR 49,900/year
       },
     };
+
+    // Log warning if using fallback pricing
+    if (!businessRow) {
+      console.warn('⚠️  LKR business pricing not found in licensing_custom_plan_pricing table. Using fallback pricing.');
+    }
 
     return res.status(200).send(new ServerResponse(true, payload));
   }

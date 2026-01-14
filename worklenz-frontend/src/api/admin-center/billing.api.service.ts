@@ -146,4 +146,184 @@ export const billingApiService = {
     >(`${rootUrl}/lkr-pricing`);
     return response.data;
   },
+
+  /**
+   * Get DirectPay checkout data for LKR payments.
+   * @param seatCount Number of seats for the subscription
+   */
+  async getDirectPayCheckout(seatCount: number): Promise<
+    IServerResponse<{
+      signature: string;
+      dataString: string;
+      stage: string;
+    }>
+  > {
+    const q = toQueryString({ seatCount });
+    const response = await apiClient.get<
+      IServerResponse<{
+        signature: string;
+        dataString: string;
+        stage: string;
+      }>
+    >(`${rootUrl}/get-direct-pay-data${q}`);
+    return response.data;
+  },
+
+  /**
+   * Create DirectPay card add session for tokenization
+   * @param amount Optional amount for initial payment (default: 10.00)
+   * @param doInitialPayment Whether to collect payment during card add (default: false)
+   */
+  async createCardAddSession(
+    amount?: number,
+    doInitialPayment?: boolean
+  ): Promise<
+    IServerResponse<{
+      sessionData: any;
+      stage: string;
+    }>
+  > {
+    const response = await apiClient.post<
+      IServerResponse<{
+        sessionData: any;
+        stage: string;
+      }>
+    >(`${rootUrl}/directpay/create-card-session`, {
+      amount,
+      doInitialPayment,
+    });
+    return response.data;
+  },
+
+  /**
+   * List saved cards for a wallet
+   * @param walletId Wallet ID from DirectPay
+   */
+  async listCards(walletId: string): Promise<
+    IServerResponse<{
+      status: number;
+      data: {
+        wallet_id: number;
+        card_list: Array<{
+          card_id: number;
+          mask: string;
+          brand: string;
+          type: string;
+          issuer: string;
+          expiry: string;
+          created_at: string;
+        }>;
+      };
+    }>
+  > {
+    const q = toQueryString({ wallet_id: walletId });
+    const response = await apiClient.get<
+      IServerResponse<{
+        status: number;
+        data: {
+          wallet_id: number;
+          card_list: Array<{
+            card_id: number;
+            mask: string;
+            brand: string;
+            type: string;
+            issuer: string;
+            expiry: string;
+            created_at: string;
+          }>;
+        };
+      }>
+    >(`${rootUrl}/directpay/list-cards${q}`);
+    return response.data;
+  },
+
+  /**
+   * Delete a saved card
+   * @param cardId Card ID from DirectPay
+   */
+  async deleteCard(cardId: string): Promise<
+    IServerResponse<{
+      status: number;
+      data: {
+        card_id: number;
+      };
+    }>
+  > {
+    const response = await apiClient.post<
+      IServerResponse<{
+        status: number;
+        data: {
+          card_id: number;
+        };
+      }>
+    >(`${rootUrl}/directpay/delete-card`, {
+      card_id: cardId,
+    });
+    return response.data;
+  },
+
+  /**
+   * Pay using a stored card
+   * @param walletId Wallet ID from DirectPay
+   * @param cardId Card ID from DirectPay
+   * @param orderId Unique order reference
+   * @param amount Payment amount
+   * @param currency Currency code (default: LKR)
+   */
+  async payWithCard(
+    walletId: string,
+    cardId: string,
+    orderId: string,
+    amount: number,
+    currency: string = 'LKR'
+  ): Promise<
+    IServerResponse<{
+      status: number;
+      data: {
+        transaction: {
+          status: string;
+          message: string;
+          id: number;
+          description: string;
+          channel: string;
+          dateTime: string;
+          amount: number;
+          promotion_amount?: string;
+        };
+        card: {
+          number: string;
+        };
+        promotion: any;
+      };
+    }>
+  > {
+    const response = await apiClient.post<
+      IServerResponse<{
+        status: number;
+        data: {
+          transaction: {
+            status: string;
+            message: string;
+            id: number;
+            description: string;
+            channel: string;
+            dateTime: string;
+            amount: number;
+            promotion_amount?: string;
+          };
+          card: {
+            number: string;
+          };
+          promotion: any;
+        };
+      }>
+    >(`${rootUrl}/directpay/pay-with-card`, {
+      wallet_id: walletId,
+      card_id: cardId,
+      order_id: orderId,
+      amount: String(amount),
+      currency,
+    });
+    return response.data;
+  },
 };
