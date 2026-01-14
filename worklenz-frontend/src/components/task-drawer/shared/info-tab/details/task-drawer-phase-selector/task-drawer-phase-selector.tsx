@@ -1,10 +1,10 @@
 import { useSocket } from '@/socket/socketContext';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
 import { Select } from '@/shared/antd-imports';
-
-import { Form } from '@/shared/antd-imports';
 import { SocketEvents } from '@/shared/socket-events';
 import { ITaskViewModel } from '@/types/tasks/task.types';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useEffect, useState } from 'react';
 
 interface TaskDrawerPhaseSelectorProps {
   phases: ITaskPhase[];
@@ -12,7 +12,16 @@ interface TaskDrawerPhaseSelectorProps {
 }
 
 const TaskDrawerPhaseSelector = ({ phases, task }: TaskDrawerPhaseSelectorProps) => {
-  const { socket, connected } = useSocket();
+  const { socket } = useSocket();
+  const dispatch = useAppDispatch();
+  
+  // Use controlled state for the selected phase
+  const [selectedPhase, setSelectedPhase] = useState<string | undefined>(task?.phase_id);
+
+  // Sync local state when task.phase_id changes from external updates
+  useEffect(() => {
+    setSelectedPhase(task?.phase_id);
+  }, [task?.phase_id]);
 
   const phaseMenuItems = phases?.map(phase => ({
     key: phase.id,
@@ -20,7 +29,10 @@ const TaskDrawerPhaseSelector = ({ phases, task }: TaskDrawerPhaseSelectorProps)
     label: phase.name,
   }));
 
-  const handlePhaseChange = (value: string) => {
+  const handlePhaseChange = (value: string | null) => {
+    // Update local state immediately for UI responsiveness
+    setSelectedPhase(value || undefined);
+    
     socket?.emit(SocketEvents.TASK_PHASE_CHANGE.toString(), {
       task_id: task.id,
       phase_id: value,
@@ -29,19 +41,19 @@ const TaskDrawerPhaseSelector = ({ phases, task }: TaskDrawerPhaseSelectorProps)
   };
 
   return (
-    <Form.Item name="phase" label="Phase">
+    <div style={{ marginBottom: 16 }}>
+      <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+        Phase
+      </label>
       <Select
         allowClear
         placeholder="Select Phase"
+        value={selectedPhase}
         options={phaseMenuItems}
-        styles={{
-          root: {
-            width: 'fit-content',
-          },
-        }}
+        style={{ width: '100%' }}
         onChange={handlePhaseChange}
       />
-    </Form.Item>
+    </div>
   );
 };
 
