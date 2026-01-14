@@ -90,6 +90,8 @@ export interface TaskFieldPatch {
   assignee_source_id?: string | null;
   priority_label?: string | null;
   completed_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface CustomFieldValuePlan {
@@ -331,6 +333,12 @@ export const mapRawToTaskFields = (
         break;
       case "dueDate":
         patch.due_at = String(value);
+        break;
+      case "createdDate":
+        patch.created_at = String(value);
+        break;
+      case "lastUpdated":
+        patch.updated_at = String(value);
         break;
       case "assignees":
         if (
@@ -1327,6 +1335,32 @@ class ImportsService {
           JSON.stringify(payload),
         ]);
         const created = result.rows[0]?.task || null;
+        if (
+          created?.id &&
+          (taskWithMappings.created_at || taskWithMappings.updated_at)
+        ) {
+          const createdAt = taskWithMappings.created_at
+            ? new Date(taskWithMappings.created_at)
+            : null;
+          const updatedAt = taskWithMappings.updated_at
+            ? new Date(taskWithMappings.updated_at)
+            : null;
+          await client.query(
+            `UPDATE tasks
+               SET created_at = COALESCE($2, created_at),
+                   updated_at = COALESCE($3, updated_at)
+             WHERE id = $1`,
+            [
+              created.id,
+              createdAt && !isNaN(createdAt.valueOf())
+                ? createdAt.toISOString()
+                : null,
+              updatedAt && !isNaN(updatedAt.valueOf())
+                ? updatedAt.toISOString()
+                : null,
+            ]
+          );
+        }
         if (created?.id && task.source_task_id) {
           sourceToId.set(task.source_task_id, created.id);
         }

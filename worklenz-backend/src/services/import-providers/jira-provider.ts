@@ -362,7 +362,8 @@ export default class JiraProvider implements ImportProvider {
 
   private buildRawTask(
     issue: JiraIssue,
-    projectName?: string | null
+    projectName?: string | null,
+    fieldNameById?: Map<string, string>
   ): Record<string, unknown> {
     const fields = issue.fields;
     const raw: Record<string, unknown> = {
@@ -404,12 +405,20 @@ export default class JiraProvider implements ImportProvider {
 
     // Add custom fields
     Object.keys(fields).forEach((key) => {
-      if (key.startsWith("customfield_")) {
-        const value = fields[key];
-        if (value !== null && value !== undefined) {
-          raw[key] =
-            typeof value === "object" ? JSON.stringify(value) : String(value);
-        }
+      if (!key.startsWith("customfield_")) return;
+      const value = fields[key];
+      if (value === null || value === undefined) return;
+
+      const normalized =
+        typeof value === "object" ? JSON.stringify(value) : String(value);
+
+      // Keep the raw custom field id
+      raw[key] = normalized;
+
+      // Also expose by display name so field mappings that use names work
+      const name = fieldNameById?.get(key);
+      if (name) {
+        raw[name] = normalized;
       }
     });
 
@@ -537,7 +546,11 @@ export default class JiraProvider implements ImportProvider {
       const issues = response.issues || [];
 
       for (const issue of issues) {
-        const raw = this.buildRawTask(issue, options.projectName);
+        const raw = this.buildRawTask(
+          issue,
+          options.projectName,
+          new Map(jiraFields.map((f) => [f.id, f.name]))
+        );
         const fields = issue.fields;
 
         // Track assignees
