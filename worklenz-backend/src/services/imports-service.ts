@@ -306,10 +306,27 @@ export const mapRawToTaskFields = (
   raw: unknown,
   mappings: FieldMappingRow[]
 ): { patch: TaskFieldPatch; customValues: CustomFieldValuePlan[] } => {
+  // DEBUG: Log mapping and raw input
+  // eslint-disable-next-line no-console
+  console.log("[mapRawToTaskFields] === START ===");
+  // eslint-disable-next-line no-console
+  console.log("[mapRawToTaskFields] Number of mappings:", mappings.length);
+  // eslint-disable-next-line no-console
+  console.log(
+    "[mapRawToTaskFields] Created field mapping:",
+    mappings.find(
+      (m) => m.source_field === "Created" || m.target_field === "createdDate"
+    )
+  );
   const source =
     raw && typeof raw === "object" && !Array.isArray(raw)
       ? (raw as Record<string, unknown>)
       : {};
+  // eslint-disable-next-line no-console
+  console.log(
+    "[mapRawToTaskFields] Raw 'Created' value:",
+    (source as any)?.Created
+  );
 
   const patch: TaskFieldPatch = {};
   const customValues: CustomFieldValuePlan[] = [];
@@ -335,6 +352,13 @@ export const mapRawToTaskFields = (
         patch.due_at = String(value);
         break;
       case "createdDate":
+        // eslint-disable-next-line no-console
+        console.log(
+          "[mapRawToTaskFields] ✓ Mapping createdDate - source_field:",
+          mapping.source_field,
+          "value:",
+          value
+        );
         patch.created_at = String(value);
         break;
       case "lastUpdated":
@@ -363,6 +387,13 @@ export const mapRawToTaskFields = (
       }
     }
   });
+  // DEBUG: Log patch output
+  // eslint-disable-next-line no-console
+  console.log("[mapRawToTaskFields] FINAL patch.created_at:", patch.created_at);
+  // eslint-disable-next-line no-console
+  console.log("[mapRawToTaskFields] FINAL patch:", patch);
+  // eslint-disable-next-line no-console
+  console.log("[mapRawToTaskFields] === END ===");
 
   return { patch, customValues };
 };
@@ -1301,6 +1332,18 @@ class ImportsService {
           activeFieldMappings
         );
         const taskWithMappings = { ...task, ...patch } as any;
+        // eslint-disable-next-line no-console
+        console.log("[createTask] Task title:", task.title);
+        // eslint-disable-next-line no-console
+        console.log(
+          "[createTask] taskWithMappings.created_at:",
+          taskWithMappings.created_at
+        );
+        // eslint-disable-next-line no-console
+        console.log(
+          "[createTask] taskWithMappings.updated_at:",
+          taskWithMappings.updated_at
+        );
         let statusId = lookupStatusId(taskWithMappings.status);
         const completedValue =
           typeof taskWithMappings.completed_at === "string" &&
@@ -1335,6 +1378,13 @@ class ImportsService {
           JSON.stringify(payload),
         ]);
         const created = result.rows[0]?.task || null;
+        // eslint-disable-next-line no-console
+        console.log("[createTask] Task created with ID:", created?.id);
+        // eslint-disable-next-line no-console
+        console.log(
+          "[createTask] Initial created.created_at from DB:",
+          created?.created_at
+        );
         if (
           created?.id &&
           (taskWithMappings.created_at || taskWithMappings.updated_at)
@@ -1345,11 +1395,19 @@ class ImportsService {
           const updatedAt = taskWithMappings.updated_at
             ? new Date(taskWithMappings.updated_at)
             : null;
-          await client.query(
+          // eslint-disable-next-line no-console
+          console.log(
+            "[createTask] About to UPDATE - createdAt:",
+            createdAt?.toISOString(),
+            "updatedAt:",
+            updatedAt?.toISOString()
+          );
+          const updateResult = await client.query(
             `UPDATE tasks
                SET created_at = COALESCE($2, created_at),
                    updated_at = COALESCE($3, updated_at)
-             WHERE id = $1`,
+             WHERE id = $1
+             RETURNING created_at, updated_at`,
             [
               created.id,
               createdAt && !isNaN(createdAt.valueOf())
@@ -1359,6 +1417,19 @@ class ImportsService {
                 ? updatedAt.toISOString()
                 : null,
             ]
+          );
+          // eslint-disable-next-line no-console
+          console.log(
+            "[createTask] UPDATE complete - new values:",
+            updateResult.rows[0]
+          );
+        } else {
+          // eslint-disable-next-line no-console
+          console.log(
+            "[createTask] Skipping timestamp update - created?.id:",
+            created?.id,
+            "has timestamps:",
+            !!(taskWithMappings.created_at || taskWithMappings.updated_at)
           );
         }
         if (created?.id && task.source_task_id) {

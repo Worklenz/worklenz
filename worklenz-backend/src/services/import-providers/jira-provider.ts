@@ -121,7 +121,7 @@ const STANDARD_FIELD_CANDIDATES: Array<{
   { name: "Status", target: "status" },
   { name: "Reporter", target: "reporter" },
   { name: "Priority", target: "priority" },
-  { name: "Created", target: "createdDate" },
+  { name: "Created", target: "createdDate", required: true },
   { name: "Updated", target: "lastUpdated" },
   { name: "Resolved", target: "completedDate" },
   { name: "Labels", target: "labels" },
