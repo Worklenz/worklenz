@@ -259,14 +259,18 @@ export const fetchSubTasks = createAsyncThunk(
 export const fetchTaskListColumns = createAsyncThunk(
   'tasks/fetTaskListColumns',
   async (projectId: string, { dispatch }) => {
-    const [standardColumns, customColumns] = await Promise.all([
+    const [standardColumns, customColumnsAction] = await Promise.all([
       tasksApiService.fetchTaskListColumns(projectId),
       dispatch(fetchCustomColumns(projectId)),
     ]);
 
+    // Extract the actual payload from the dispatched action
+    // Use unwrap() or check if payload exists
+    const customColumns = customColumnsAction.payload || [];
+
     return {
       standard: standardColumns.body,
-      custom: customColumns.payload,
+      custom: Array.isArray(customColumns) ? customColumns : [],
     };
   }
 );
@@ -630,6 +634,7 @@ const taskSlice = createSlice({
         assignees: ITeamMemberViewModel[];
       }>
     ) => {
+      if (!action.payload) return;
       const { groupId, taskId, assignees } = action.payload;
       const group = state.taskGroups.find(group => group.id === groupId);
       if (!group) return;
@@ -1117,11 +1122,14 @@ const taskSlice = createSlice({
           index: 1,
           pinned: true,
         });
-        // Process custom columns
-        const customColumns = (action.payload as { custom: any[] }).custom.map((col: any) => ({
-          ...col,
-          isCustom: true,
-        }));
+        // Process custom columns with safety check
+        const customPayload = action.payload.custom;
+        const customColumns = Array.isArray(customPayload)
+          ? customPayload.map((col: any) => ({
+              ...col,
+              isCustom: true,
+            }))
+          : [];
 
         // Merge columns
         state.columns = [...standardColumns, ...customColumns];
