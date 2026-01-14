@@ -387,6 +387,41 @@ export const mapRawToTaskFields = (
       }
     }
   });
+
+  // Fallbacks: if mapping was missing but raw still carries common date fields
+  if (!patch.created_at) {
+    const rawCreated =
+      (source as any)?.Created ??
+      (source as any)?.created ??
+      (source as any)?.created_at ??
+      (source as any)?.createdDate;
+    if (rawCreated) {
+      patch.created_at = String(rawCreated);
+      // eslint-disable-next-line no-console
+      console.log(
+        "[mapRawToTaskFields] Fallback applied for created_at from raw",
+        rawCreated
+      );
+    }
+  }
+
+  if (!patch.updated_at) {
+    const rawUpdated =
+      (source as any)?.Updated ??
+      (source as any)?.updated ??
+      (source as any)?.updated_at ??
+      (source as any)?.updatedDate ??
+      (source as any)?.lastUpdated;
+    if (rawUpdated) {
+      patch.updated_at = String(rawUpdated);
+      // eslint-disable-next-line no-console
+      console.log(
+        "[mapRawToTaskFields] Fallback applied for updated_at from raw",
+        rawUpdated
+      );
+    }
+  }
+
   // DEBUG: Log patch output
   // eslint-disable-next-line no-console
   console.log("[mapRawToTaskFields] FINAL patch.created_at:", patch.created_at);
@@ -1152,6 +1187,14 @@ class ImportsService {
         customValue: CustomFieldValuePlan,
         config?: ColumnPlanConfig
       ) => {
+        if (!column?.id) {
+          // eslint-disable-next-line no-console
+          console.log(
+            "[createTask] Skipping custom column insert - missing column id for",
+            column?.key
+          );
+          return;
+        }
         const effectiveConfig = config || customColumnConfigs.get(column.key);
         const fieldType = effectiveConfig?.fieldType || column.fieldType;
         const normalizedValue = sanitizeSampleValue(customValue.value);
@@ -1224,7 +1267,15 @@ class ImportsService {
              json_value,
              created_at,
              updated_at
-           ) VALUES ($1,$2,$3,$4,$5,$6,$7,NOW(),NOW())`,
+           ) VALUES ($1,$2,$3,$4,$5,$6,$7,NOW(),NOW())
+           ON CONFLICT (task_id, column_id)
+           DO UPDATE SET
+             text_value = EXCLUDED.text_value,
+             number_value = EXCLUDED.number_value,
+             date_value = EXCLUDED.date_value,
+             boolean_value = EXCLUDED.boolean_value,
+             json_value = EXCLUDED.json_value,
+             updated_at = NOW();`,
           [
             taskId,
             column.id,
@@ -1298,13 +1349,9 @@ class ImportsService {
         await client.query(
           `UPDATE tasks
              SET done = TRUE,
-                 completed_at = CASE
-                   WHEN $2 IS NOT NULL THEN $2
-                   WHEN completed_at IS NULL THEN NOW()
-                   ELSE completed_at
-                 END
+                 completed_at = COALESCE($2::timestamptz, completed_at, NOW())
            WHERE id = $1`,
-          [taskId, completedDate ? completedDate.toISOString() : null]
+          [taskId, completedDate || null]
         );
       };
 
@@ -1377,7 +1424,21 @@ class ImportsService {
         const result = await client.query("SELECT create_task($1) AS task;", [
           JSON.stringify(payload),
         ]);
-        const created = result.rows[0]?.task || null;
+        const createdRow = result.rows?.[0] || null;
+        // eslint-disable-next-line no-console
+        console.log("[createTask] raw create_task row:", createdRow);
+        const createdTask =
+          (createdRow as any)?.task ||
+          (createdRow as any)?.create_task ||
+          createdRow ||
+          null;
+        // Some drivers return { task: { task: {...}, priorities: [...] } }
+        // Normalize to the inner task object so we can read the id.
+        const created =
+          (createdTask as any)?.task?.task ||
+          (createdTask as any)?.task ||
+          createdTask ||
+          null;
         // eslint-disable-next-line no-console
         console.log("[createTask] Task created with ID:", created?.id);
         // eslint-disable-next-line no-console
@@ -1404,18 +1465,14 @@ class ImportsService {
           );
           const updateResult = await client.query(
             `UPDATE tasks
-               SET created_at = COALESCE($2, created_at),
-                   updated_at = COALESCE($3, updated_at)
+               SET created_at = COALESCE($2::timestamptz, created_at),
+                   updated_at = COALESCE($3::timestamptz, updated_at)
              WHERE id = $1
              RETURNING created_at, updated_at`,
             [
               created.id,
-              createdAt && !isNaN(createdAt.valueOf())
-                ? createdAt.toISOString()
-                : null,
-              updatedAt && !isNaN(updatedAt.valueOf())
-                ? updatedAt.toISOString()
-                : null,
+              createdAt && !isNaN(createdAt.valueOf()) ? createdAt : null,
+              updatedAt && !isNaN(updatedAt.valueOf()) ? updatedAt : null,
             ]
           );
           // eslint-disable-next-line no-console
