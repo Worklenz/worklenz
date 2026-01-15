@@ -163,13 +163,19 @@ const CustomMentionsInput = ({
   // Get cursor position that respects mention boundaries
   const getCursorPosition = () => {
     const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return 0;
-    
-    const range = selection.getRangeAt(0);
-    const preCaretRange = range.cloneRange();
-    preCaretRange.selectNodeContents(editableRef.current!);
-    preCaretRange.setEnd(range.endContainer, range.endOffset);
-    
+    if (!selection || selection.rangeCount === 0 || !editableRef.current) return 0;
+
+    let range;
+    try {
+      range = selection.getRangeAt(0);
+      const preCaretRange = range.cloneRange();
+      preCaretRange.selectNodeContents(editableRef.current!);
+      preCaretRange.setEnd(range.endContainer, range.endOffset);
+    } catch (e) {
+      // Selection might be in an invalid state
+      return 0;
+    }
+
     // Walk through nodes to count text length
     let length = 0;
     const walker = document.createTreeWalker(
@@ -187,7 +193,7 @@ const CustomMentionsInput = ({
         }
       }
     );
-    
+
     let currentNode: Node | null;
     while ((currentNode = walker.nextNode())) {
       if (currentNode === range.endContainer) {
@@ -205,7 +211,7 @@ const CustomMentionsInput = ({
         length += currentNode.textContent?.length || 0;
       }
     }
-    
+
     return length;
   };
 
@@ -270,8 +276,13 @@ const CustomMentionsInput = ({
     }
     
     newRange.collapse(true);
-    selection.removeAllRanges();
-    selection.addRange(newRange);
+    try {
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+    } catch (e) {
+      // Ignore errors from selection manipulation
+      console.debug('Selection update failed:', e);
+    }
   };
 
   // Handle input changes
@@ -347,8 +358,13 @@ const CustomMentionsInput = ({
         range.insertNode(textNode);
         range.setStartAfter(textNode);
         range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
+        try {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } catch (e) {
+          // Ignore errors from selection manipulation
+          console.debug('Selection update failed:', e);
+        }
         
         // Trigger input update
         setTimeout(() => {
@@ -476,6 +492,14 @@ const CustomMentionsInput = ({
   const restoreCursorPosition = (offset: number) => {
     const selection = window.getSelection();
     if (!selection || !editableRef.current) return;
+
+    // Guard against invalid selection state
+    try {
+      selection.removeAllRanges();
+    } catch (e) {
+      // Selection might be in an invalid state, skip restoration
+      return;
+    }
     
     const newRange = document.createRange();
     let currentPos = 0;
@@ -529,23 +553,28 @@ const CustomMentionsInput = ({
     };
     
     walkNodes(editableRef.current);
-    
-    if (found) {
-      selection.removeAllRanges();
-      selection.addRange(newRange);
-    } else {
-      // Place cursor at end
-      const lastNode = editableRef.current.lastChild;
-      if (lastNode) {
-        if (lastNode.nodeType === Node.TEXT_NODE) {
-          newRange.setStart(lastNode, lastNode.textContent?.length || 0);
-        } else {
-          newRange.setStartAfter(lastNode);
-        }
-        newRange.collapse(true);
+
+    try {
+      if (found) {
         selection.removeAllRanges();
         selection.addRange(newRange);
+      } else {
+        // Place cursor at end
+        const lastNode = editableRef.current.lastChild;
+        if (lastNode) {
+          if (lastNode.nodeType === Node.TEXT_NODE) {
+            newRange.setStart(lastNode, lastNode.textContent?.length || 0);
+          } else {
+            newRange.setStartAfter(lastNode);
+          }
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        }
       }
+    } catch (e) {
+      // Ignore errors from selection manipulation - browser may be in invalid state
+      console.debug('Selection restoration failed:', e);
     }
   };
 

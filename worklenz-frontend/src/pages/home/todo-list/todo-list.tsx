@@ -53,7 +53,7 @@ const TodoList = () => {
     };
 
     const res = await createPersonalTask(newTodo);
-    if (res.data) {
+    if (res.data?.done) {
       refetch();
     }
 
@@ -64,7 +64,7 @@ const TodoList = () => {
   const handleCompleteTodo = async (id: string | undefined) => {
     if (!id) return;
     const res = await markPersonalTaskAsDone(id);
-    if (res.data) {
+    if (res.data?.done) {
       refetch();
     }
   };

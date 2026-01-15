@@ -587,6 +587,7 @@ const boardSlice = createSlice({
         names: ITeamMemberViewModel[];
       }>
     ) => {
+      if (!action.payload) return;
       const { groupId, taskId, assignees, names } = action.payload;
 
       // Find the task in the specified group
@@ -733,6 +734,7 @@ const boardSlice = createSlice({
       }
     },
     updateTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
+      if (!action.payload) return;
       const { id, priority_id, color_code, color_code_dark } = action.payload;
 
       // Find the task in any group

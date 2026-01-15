@@ -209,9 +209,10 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
     }
   };
 
-  const updateDaysOfWeek = () => {
+  const updateDaysOfWeek = (data?: ITaskRecurringSchedule) => {
+    const daysData = data?.days_of_week || scheduleData.days_of_week;
     for (let i = 0; i < daysOfWeek.length; i++) {
-      daysOfWeek[i].checked = scheduleData.days_of_week?.includes(daysOfWeek[i].value) ?? false;
+      daysOfWeek[i].checked = daysData?.includes(daysOfWeek[i].value) ?? false;
     }
   };
 
@@ -228,14 +229,14 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
           const selected = repeatOptions.find(e => e.value == res.body.schedule_type);
           if (selected) {
             setRepeatOption(selected);
-            setSelectedMonthlyDate(scheduleData.date_of_month || 1);
-            setSelectedMonthlyDay(scheduleData.day_of_month || 0);
-            setSelectedMonthlyWeek(scheduleData.week_of_month || 0);
-            setIntervalDays(scheduleData.interval_days || 1);
-            setIntervalWeeks(scheduleData.interval_weeks || 1);
-            setIntervalMonths(scheduleData.interval_months || 1);
-            setMonthlyOption(selectedMonthlyDate ? 'date' : 'day');
-            updateDaysOfWeek();
+            setSelectedMonthlyDate(res.body.date_of_month || 1);
+            setSelectedMonthlyDay(res.body.day_of_month || 0);
+            setSelectedMonthlyWeek(res.body.week_of_month || 0);
+            setIntervalDays(res.body.interval_days || 1);
+            setIntervalWeeks(res.body.interval_weeks || 1);
+            setIntervalMonths(res.body.interval_months || 1);
+            setMonthlyOption(res.body.date_of_month ? 'date' : 'day');
+            updateDaysOfWeek(res.body);
           }
         }
       }
