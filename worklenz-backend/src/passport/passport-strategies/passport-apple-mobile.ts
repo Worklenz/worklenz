@@ -68,7 +68,7 @@ async function getAppleSigningKey(kid: string): Promise<string> {
  */
 async function handleAppleMobileAuth(req: Request, done: any) {
   try {
-    const { idToken } = req.body;
+    const { idToken, isSignUp, team_name, timezone } = req.body;
 
     // Validate ID token presence
     if (!idToken) {
@@ -154,6 +154,16 @@ async function handleAppleMobileAuth(req: Request, done: any) {
     if (userResult.rowCount) {
       const user = userResult.rows[0];
 
+      // If this is a sign-up request but user already exists
+      if (isSignUp) {
+        return done(null, false, {
+          message: email 
+            ? `An account with email ${email} already exists. Please sign in instead.`
+            : "An account with this Apple ID already exists. Please sign in instead.",
+          [ERROR_KEY]: "USER_ALREADY_EXISTS"
+        });
+      }
+
       // Check for Google account conflict
       if (user.google_id !== null && user.apple_id === null) {
         return done(null, false, {
@@ -188,39 +198,76 @@ async function handleAppleMobileAuth(req: Request, done: any) {
       return done(null, user, { message: "User successfully logged in" });
     }
 
-    // New user - registration not allowed from mobile
-    return done(null, false, {
-      message: "Please create your account using the web application first, then you can sign in with Apple on mobile.",
-      [ERROR_KEY]: "MOBILE_REGISTRATION_DISABLED"
-    });
+    // New user flow
+    if (!isSignUp) {
+      // User doesn't exist but trying to sign in
+      return done(null, false, {
+        message: "No account found with this Apple ID. Please sign up first.",
+        [ERROR_KEY]: "USER_NOT_FOUND"
+      });
+    }
 
-    // // New user - registration flow
-    // // Email is required for new user registration
-    // if (!email) {
-    //   return done(null, false, {
-    //     message: "Email is required for new user registration. Please sign in with Apple again and provide your email."
-    //   });
-    // }
+    // Sign-up flow - validate required fields
+    if (!email) {
+      return done(null, false, {
+        message: "Email is required for registration. Please sign in with Apple again and provide your email.",
+        [ERROR_KEY]: "EMAIL_REQUIRED"
+      });
+    }
 
-    // // Prepare user data for registration
-    // const appleUserData = {
-    //   id: appleId,
-    //   displayName: "Apple User", // Apple doesn't provide name on subsequent logins
-    //   email: email,
-    //   timezone: req.body.timezone || "UTC"
-    // };
+    if (!team_name || !team_name.trim()) {
+      return done(null, false, {
+        message: "Team name is required for registration",
+        [ERROR_KEY]: "TEAM_NAME_REQUIRED"
+      });
+    }
 
-    // // Register new user via database function
-    // const registerResult = await db.query(
-    //   "SELECT register_apple_user($1) AS user;",
-    //   [JSON.stringify(appleUserData)]
-    // );
+    // Prepare user data for registration
+    const appleUserData = {
+      id: appleId,
+      displayName: "Apple User", // Apple doesn't provide name on subsequent logins
+      email: email,
+      team_name: team_name.trim(),
+      timezone: timezone || "UTC"
+    };
 
-    // const { user } = registerResult.rows[0];
+    try {
+      // Register new user via database function
+      const registerResult = await db.query(
+        "SELECT register_apple_user($1) AS user;",
+        [JSON.stringify(appleUserData)]
+      );
 
-    // return done(null, user, {
-    //   message: "User successfully registered and logged in"
-    // });
+      const { user } = registerResult.rows[0];
+
+      return done(null, user, {
+        message: "User successfully registered and logged in"
+      });
+    } catch (error: any) {
+      log_error("Apple user registration error:", error);
+
+      // Handle specific database errors
+      if (error.message?.includes("EMAIL_EXISTS_ERROR")) {
+        return done(null, false, {
+          message: `An account with email ${email} already exists.`,
+          [ERROR_KEY]: "EMAIL_EXISTS"
+        });
+      }
+
+      if (error.message?.includes("TEAM_NAME_EXISTS_ERROR")) {
+        const [, teamName] = error.message.split(":");
+        return done(null, false, {
+          message: `Team name "${teamName}" already exists. Please choose a different team name.`,
+          [ERROR_KEY]: "TEAM_NAME_EXISTS"
+        });
+      }
+
+      // Generic error
+      return done(null, false, {
+        message: "Registration failed. Please try again.",
+        [ERROR_KEY]: "REGISTRATION_FAILED"
+      });
+    }
 
   } catch (error: any) {
     log_error("Apple mobile authentication error:", error);

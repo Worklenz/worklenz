@@ -276,27 +276,37 @@ export default class AuthController extends WorklenzControllerBase {
 
     passport.authenticate("google-mobile", mobileOptions, (err: any, user: any, info: any) => {
       if (err) {
+        log_error("Google mobile authentication error:", err);
         return res.status(500).send({
           done: false,
           message: "Authentication failed",
-          body: null
+          body: null,
+          errorCode: "AUTHENTICATION_ERROR"
         });
       }
       
       if (!user) {
-        return res.status(400).send({
+        // Extract error code if present
+        const errorCode = info?.ERROR_KEY || "AUTHENTICATION_FAILED";
+        const statusCode = errorCode === "USER_NOT_FOUND" ? 404 : 400;
+        
+        return res.status(statusCode).send({
           done: false,
           message: info?.message || "Authentication failed",
-          body: null
+          body: null,
+          errorCode
         });
       }
+      
       // Log the user in (create session)
       req.login(user, (loginErr) => {
         if (loginErr) {
+          log_error("Google login session creation error:", loginErr);
           return res.status(500).send({
             done: false,
             message: "Session creation failed",
-            body: null
+            body: null,
+            errorCode: "SESSION_CREATION_FAILED"
           });
         }
         
@@ -306,10 +316,12 @@ export default class AuthController extends WorklenzControllerBase {
         // Ensure session is saved and cookie is set
         req.session.save((saveErr) => {
           if (saveErr) {
+            log_error("Google login session save error:", saveErr);
             return res.status(500).send({
               done: false,
               message: "Session save failed",
-              body: null
+              body: null,
+              errorCode: "SESSION_SAVE_FAILED"
             });
           }
           
@@ -322,7 +334,7 @@ export default class AuthController extends WorklenzControllerBase {
           
           return res.status(200).send({
             done: true,
-            message: "Login successful",
+            message: info?.message || "Login successful",
             user,
             authenticated: true,
             sessionId: req.sessionID,
@@ -330,7 +342,7 @@ export default class AuthController extends WorklenzControllerBase {
             newSessionId: req.sessionID
           });
         });
-      }); // Close login callback
+      });
     })(req, res, next);
   }
 
@@ -353,16 +365,22 @@ export default class AuthController extends WorklenzControllerBase {
         return res.status(500).send({
           done: false,
           message: "Authentication failed",
-          body: null
+          body: null,
+          errorCode: "AUTHENTICATION_ERROR"
         });
       }
 
       // Handle authentication failure (invalid token, user not found, etc.)
       if (!user) {
-        return res.status(400).send({
+        // Extract error code if present
+        const errorCode = info?.ERROR_KEY || "AUTHENTICATION_FAILED";
+        const statusCode = errorCode === "USER_NOT_FOUND" ? 404 : 400;
+        
+        return res.status(statusCode).send({
           done: false,
           message: info?.message || "Apple authentication failed",
-          body: null
+          body: null,
+          errorCode
         });
       }
 
@@ -373,7 +391,8 @@ export default class AuthController extends WorklenzControllerBase {
           return res.status(500).send({
             done: false,
             message: "Session creation failed",
-            body: null
+            body: null,
+            errorCode: "SESSION_CREATION_FAILED"
           });
         }
 
@@ -387,7 +406,8 @@ export default class AuthController extends WorklenzControllerBase {
             return res.status(500).send({
               done: false,
               message: "Session save failed",
-              body: null
+              body: null,
+              errorCode: "SESSION_SAVE_FAILED"
             });
           }
 
