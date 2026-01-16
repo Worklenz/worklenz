@@ -6,6 +6,7 @@ import db from "../../config/db";
 import { IO } from "../../shared/io";
 import { getBaseUrl } from "../../cron_jobs/helpers";
 import { sendClientPortalNewRequestNotification } from "../../shared/email-notifications";
+import crypto from "crypto";
 
 export default class ClientPortalRequestsController extends ClientPortalControllerBase {
 
@@ -142,9 +143,9 @@ export default class ClientPortalRequestsController extends ClientPortalControll
           .json(new ServerResponse(false, null, "Service ID is required"));
       }
 
-      // Verify service exists and client has access
+      // Verify service exists and client has access, and get service_key
       const serviceCheck = await db.query(
-        `SELECT id, name FROM client_portal_services
+        `SELECT id, name, service_key FROM client_portal_services
          WHERE id = $1 AND organization_team_id = $2
          AND (is_public = true OR $3 = ANY(allowed_client_ids))`,
         [serviceId, organizationId, clientId]
@@ -162,7 +163,11 @@ export default class ClientPortalRequestsController extends ClientPortalControll
           );
       }
 
+      const service = serviceCheck.rows[0];
+      const serviceKey = service.service_key || 'SVC'; // Default fallback if key is missing
+
       // Generate request number at application level with transaction and row-level lock
+      // Request numbers are unique per service (format: REQ-{SERVICE_KEY}-0001, REQ-{SERVICE_KEY}-0002, etc.)
       let reqNo: string;
       let newRequest: any;
       const maxRetries = 5;
@@ -172,27 +177,33 @@ export default class ClientPortalRequestsController extends ClientPortalControll
         try {
           await client.query('BEGIN');
           
-          // Lock the sequence row and get/increment the number atomically
-          // First ensure the row exists
-          await client.query(
-            `INSERT INTO client_portal_request_sequences (organization_team_id, last_request_number)
-             VALUES ($1, 0)
-             ON CONFLICT (organization_team_id) DO NOTHING`,
-            [organizationId]
+          // Use PostgreSQL advisory lock to prevent concurrent access to sequence
+          // Lock ID is derived from service ID hash to ensure per-service locking
+          const lockId = parseInt(crypto.createHash('md5').update(serviceId).digest('hex').substring(0, 8), 16) % 2147483647;
+          await client.query('SELECT pg_advisory_xact_lock($1)', [lockId]);
+          
+          // Use a single atomic operation to insert or update and get the next number
+          // This CTE ensures the operation is atomic and prevents race conditions
+          const seqResult = await client.query(
+            `WITH inserted AS (
+               INSERT INTO client_portal_request_sequences (service_id, last_request_number)
+               VALUES ($1, 1)
+               ON CONFLICT (service_id) DO UPDATE SET
+                 last_request_number = client_portal_request_sequences.last_request_number + 1,
+                 updated_at = NOW()
+               RETURNING last_request_number
+             )
+             SELECT last_request_number FROM inserted`,
+            [serviceId]
           );
           
-          // Now lock and update the row
-          const seqResult = await client.query(
-            `UPDATE client_portal_request_sequences
-             SET last_request_number = last_request_number + 1,
-                 updated_at = NOW()
-             WHERE organization_team_id = $1
-             RETURNING last_request_number`,
-            [organizationId]
-          );
+          if (!seqResult.rows || seqResult.rows.length === 0) {
+            throw new Error('Failed to generate request sequence number');
+          }
           
           const nextNumber = seqResult.rows[0].last_request_number;
-          reqNo = `REQ-${String(nextNumber).padStart(4, '0')}`;
+          // Format: REQ-{SERVICE_KEY}-0001, REQ-{SERVICE_KEY}-0002, etc. (unique per service)
+          reqNo = `REQ-${serviceKey}-${String(nextNumber).padStart(4, '0')}`;
 
           // Create request with generated req_no in same transaction
           const insertQuery = `
@@ -233,8 +244,7 @@ export default class ClientPortalRequestsController extends ClientPortalControll
         }
       }
 
-      // Get service name for response
-      const service = serviceCheck.rows[0];
+      // Service already retrieved above, reuse it
 
       // Send email notification to team admins
       try {

@@ -286,5 +286,13 @@
   "emailRequiredTitle": "Correo Electrónico Requerido",
   "emailRequiredMessage": "Este cliente no tiene una dirección de correo electrónico. Se requiere un correo electrónico para invitarlo al portal.",
   "emailRequiredQuestion": "¿Le gustaría agregar una dirección de correo electrónico e invitarlo nuevamente?",
+  "clientAlreadyExists": "El cliente ya existe",
+  "invitationAlreadySent": "Invitación ya enviada",
+  "sendInvitationToExistingClient": "Enviar Invitación",
+  "sendInvitationSuccess": "Invitación enviada exitosamente",
+  "sendInvitationError": "Error al enviar invitación",
+  "clientAlreadyHasPortalAccess": "El cliente ya tiene acceso al portal",
+  "clientAlreadyHasPendingInvitation": "Invitación ya enviada. Por favor use la opción de reenviar.",
+  "clientEmailRequired": "El correo electrónico del cliente es requerido para la invitación",
   "addEmailButton": "Agregar Correo e Invitar"
 }

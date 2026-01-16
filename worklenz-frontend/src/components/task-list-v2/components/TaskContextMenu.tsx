@@ -1,3 +1,5 @@
+//C:\Users\CNNCOMPUTERS\Desktop\Office\worklenz-business\worklenz-frontend\src\components\task-list-v2\components\TaskContextMenu.tsx
+
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -70,7 +72,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   const priorityList = useAppSelector(state => state.priorityReducer.priorities);
   const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
   const currentGrouping = useAppSelector(state => state.grouping.currentGrouping);
-  const archived = useAppSelector(state => state.taskReducer.archived);
+  const archived = useAppSelector(state => state.taskManagement.archived);
 
   const [updatingAssignToMe, setUpdatingAssignToMe] = useState(false);
 
@@ -160,7 +162,8 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   ]);
 
   const handleArchive = useCallback(async () => {
-    if (isFree) {
+    // Only show upgrade modal when archiving (not unarchiving) and user is free
+    if (isFree && !archived) {
       dispatch(toggleUpgradeModal());
       onClose();
       return;
@@ -169,28 +172,39 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     if (!projectId || !task.id) return;
 
     try {
+      // Pass the archived state to the API
+      // When archived=true (viewing archived tasks), this will UNARCHIVE
+      // When archived=false (viewing normal tasks), this will ARCHIVE
       const res = await taskListBulkActionsApiService.archiveTasks(
         {
           tasks: [task.id],
           project_id: projectId,
         },
-        false
+        archived // This is the key fix - pass current archived view state
       );
 
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_context_menu_archive);
+        
+        // Remove task from current view (whether archived or normal)
         dispatch(deleteTask(task.id));
         dispatch(deselectAll());
+        
+        // Note: We DON'T call fetchTasksV3 here because:
+        // - If archiving: task is moved to archived list, not needed in current view
+        // - If unarchiving: task is moved to normal list, but we're still viewing archived
+        // The task will appear in the correct list when user switches views
+        
         if (task.parent_task_id) {
           socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.parent_task_id);
         }
       }
     } catch (error) {
-      logger.error('Error archiving task:', error);
+      logger.error('Error archiving/unarchiving task:', error);
     } finally {
       onClose();
     }
-  }, [projectId, task.id, task.parent_task_id, dispatch, socket, onClose, trackMixpanelEvent, isFree]);
+  }, [projectId, task.id, task.parent_task_id, dispatch, socket, onClose, trackMixpanelEvent, isFree, archived]);
 
   const handleDelete = useCallback(async () => {
     if (!projectId || !task.id) return;
@@ -384,7 +398,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     }finally {
       onClose();
     }
-  }, [projectId, task.id, onClose, t]);
+  }, [projectId, task.id, dispatch, onClose]);
 
   const menuItems = useMemo(() => {
     const items = [
@@ -410,7 +424,6 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
           <button
             onClick={handleDuplicateTask}
             className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
-            // disabled={updatingAssignToMe}
           >
             <CopyOutlined className="text-gray-500 dark:text-gray-400" />
             <span>{t('contextMenu.duplicateTask')}</span>
@@ -487,7 +500,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
             <div className="flex items-center gap-2">
               <InboxOutlined className="text-gray-500 dark:text-gray-400" />
               <span>{archived ? t('contextMenu.unarchive') : t('contextMenu.archive')}</span>
-              {isFree && <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />}
+              {isFree && !archived && <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />}
             </div>
           </button>
         ),

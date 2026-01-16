@@ -74,9 +74,11 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   private static async getMembers(
     teamId: string, searchQuery = "",
+    searchParams: string[] = [],
     size: number | null = null,
     offset: number | null = null,
     teamsClause = "",
+    teamIdsParams: string[] = [],
     key = DATE_RANGES.LAST_WEEK,
     dateRange: string[] = [],
     includeArchived: boolean,
@@ -89,11 +91,12 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`;
 
     // Use parameterized queries
-    // Note: $1 is used for teamId, so parameter offsets start from 2
-    const assignClauseResult = this.memberAssignDurationFilter(key, dateRange, 2);
+    // Note: $1 is teamId, searchParams use $2+, so other parameters start after searchParams
+    let paramOffset = 2 + searchParams.length;
+    const assignClauseResult = this.memberAssignDurationFilter(key, dateRange, paramOffset);
     const assignClause = assignClauseResult.clause;
     const assignParams = assignClauseResult.params;
-    let paramOffset = 2 + assignParams.length;
+    paramOffset += assignParams.length;
     
     const completedDurationResult = this.completedDurationFilter(key, dateRange, paramOffset);
     const completedDurationClasue = completedDurationResult.clause;
@@ -237,8 +240,8 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                   FROM team_member_info_view tmiv
                   WHERE tmiv.team_id = $1 ${teamsClause} ${memberFilterClause}
                   ${searchQuery}`;
-    // Pass all parameters
-    const queryParams = [teamId, ...assignParams, ...completedParams, ...overdueParams, ...activityLogParams, ...timeLogParams, ...projectParams];
+    // Pass all parameters - searchParams come after teamId, then teamIdsParams, then other filter params
+    const queryParams = [teamId, ...searchParams, ...teamIdsParams, ...assignParams, ...completedParams, ...overdueParams, ...activityLogParams, ...timeLogParams, ...projectParams];
     const result = await db.query(q, queryParams);
     const [data] = result.rows;
 
@@ -526,7 +529,8 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   @HandleExceptions()
   public static async getReportingMembers(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { searchQuery, size, offset } = this.toPaginationOptions(req.query, ["name"]);
+    // teamId is $1, so search params start at $2
+    const { searchQuery, searchParams, size, offset } = this.toPaginationOptions(req.query, ["tmiv.name"], false, 2);
     const { duration, date_range } = req.query;
     const archived = req.query.archived === "true";
 
@@ -536,14 +540,17 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     }
 
     let teamsClause = "";
+    let teamIdsParams: string[] = [];
     if (req.query.teams) {
       const teamIds = (req.query.teams as string).split(" ").filter(id => id.trim());
-      const { clause } = SqlHelper.buildInClause(teamIds, 1);
+      // Parameters will be added after searchParams, so offset = 2 + searchParams.length
+      const { clause } = SqlHelper.buildInClause(teamIds, 2 + searchParams.length);
       teamsClause = `AND tmiv.team_id IN (${clause})`;
+      teamIdsParams = teamIds;
     }
 
     const teamId = this.getCurrentTeamId(req);
-    const result = await this.getMembers(teamId as string, searchQuery, size, offset, teamsClause, duration as string, dateRange, archived, req.user?.id as string, req);
+    const result = await this.getMembers(teamId as string, searchQuery, searchParams, size, offset, teamsClause, teamIdsParams, duration as string, dateRange, archived, req.user?.id as string, req);
     const body = {
       total: result.total,
       members: result.members,
@@ -575,7 +582,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
     const teamId = this.getCurrentTeamId(req);
     const teamName = (req.query.team_name as string)?.trim() || null;
-    const result = await this.getMembers(teamId as string, "", null, null, "", duration as string, dateRange, archived, req.user?.id as string, req);
+    const result = await this.getMembers(teamId as string, "", [], null, null, "", [], duration as string, dateRange, archived, req.user?.id as string, req);
 
     let start = "-";
     let end = "-";
@@ -894,7 +901,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
   }
 
 
-  public static async getMemberProjectsData(teamId: string, teamMemberId: string, searchQuery: string, archived: boolean, userId: string, req?: any) {
+  public static async getMemberProjectsData(teamId: string, teamMemberId: string, searchQuery: string, searchParams: string[] = [], archived: boolean, userId: string, req?: any) {
 
     const teamClause = teamId
       ? `team_member_id = '${teamMemberId as string}'`
@@ -952,7 +959,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                       LEFT JOIN projects p ON p.id = pm.project_id
               WHERE ${teamClause} ${searchQuery} ${archivedClause} ${projectFilterClause}
               ORDER BY name;`;
-    const result = await db.query(q, []);
+    const result = await db.query(q, searchParams);
 
     for (const project of result.rows) {
       project.time_logged = formatDuration(moment.duration(project.time_logged, "seconds"));
@@ -964,11 +971,12 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   @HandleExceptions()
   public static async getMemberProjects(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { searchQuery } = this.toPaginationOptions(req.query, ["p.name"]);
+    // No other parameters before search params, so they start at $1
+    const { searchQuery, searchParams } = this.toPaginationOptions(req.query, ["p.name"], false, 1);
     const { teamMemberId, teamId } = req.query;
     const archived = req.query.archived === "true";
 
-    const result = await this.getMemberProjectsData(teamId as string, teamMemberId as string, searchQuery, archived, req.user?.id as string, req);
+    const result = await this.getMemberProjectsData(teamId as string, teamMemberId as string, searchQuery, searchParams, archived, req.user?.id as string, req);
 
     return res.status(200).send(new ServerResponse(true, result));
   }
@@ -1852,7 +1860,7 @@ public static async getSingleMemberProjects(req: IWorkLenzRequest, res: IWorkLen
     const teamName = (req.query.team_name as string)?.trim() || "";
     const archived = req.query.archived === "true";
 
-    const result = await this.getMemberProjectsData(teamId as string, teamMemberId as string, "", archived, req.user?.id as string, req);
+    const result = await this.getMemberProjectsData(teamId as string, teamMemberId as string, "", [], archived, req.user?.id as string, req);
 
     // excel file
     const exportDate = moment().format("MMM-DD-YYYY");

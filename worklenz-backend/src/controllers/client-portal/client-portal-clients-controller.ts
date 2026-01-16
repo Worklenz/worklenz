@@ -237,6 +237,58 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           .json(new ServerResponse(false, null, "Client name is required"));
       }
 
+      // Check if client with same email already exists in this team
+      if (clientData.email) {
+        const existingClientQuery = `
+          SELECT id, name, email, company_name, phone, address, contact_person, status, created_at, updated_at
+          FROM clients 
+          WHERE LOWER(email) = LOWER($1) AND team_id = $2
+        `;
+        const existingClientResult = await db.query(existingClientQuery, [clientData.email, teamId]);
+        
+        if (existingClientResult.rows.length > 0) {
+          const existingClient = existingClientResult.rows[0];
+          
+          // Check if invitation has already been sent for this client
+          const existingInvitationQuery = `
+            SELECT id, created_at 
+            FROM client_invitations 
+            WHERE client_id = $1 AND status = 'pending' AND expires_at > NOW()
+            ORDER BY created_at DESC 
+            LIMIT 1
+          `;
+          const existingInvitationResult = await db.query(existingInvitationQuery, [existingClient.id]);
+          
+          const invitationStatus = existingInvitationResult.rows.length > 0 
+            ? "Invitation already sent" 
+            : "Client already exists";
+          
+          return res.json(
+            new ServerResponse(
+              true,
+              {
+                id: existingClient.id,
+                name: existingClient.name,
+                email: existingClient.email,
+                company_name: existingClient.company_name,
+                phone: existingClient.phone,
+                address: existingClient.address,
+                contact_person: existingClient.contact_person,
+                status: existingClient.status,
+                created_at: existingClient.created_at,
+                updated_at: existingClient.updated_at,
+                assigned_projects_count: 0,
+                team_members: [],
+                existing: true,
+                invitationStatus,
+                invitationAlreadySent: existingInvitationResult.rows.length > 0
+              },
+              invitationStatus
+            )
+          );
+        }
+      }
+
       // Insert new client
       const query = `
         INSERT INTO clients (
@@ -297,6 +349,8 @@ export default class ClientPortalClientsController extends ClientPortalControlle
             updated_at: newClient.updated_at,
             assigned_projects_count: 0,
             team_members: [],
+            existing: false,
+            invitationSent: !!newClient.email
           },
           "Client created successfully"
         )
@@ -363,6 +417,107 @@ export default class ClientPortalClientsController extends ClientPortalControlle
     } catch (error) {
       console.error("Error sending client invitation email:", error);
       throw error;
+    }
+  }
+
+  static async sendInvitationToExistingClient(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const { id: clientId } = req.params;
+      const userId = (req.user as any)?.id;
+      const teamId = (req.user as any)?.team_id;
+
+      if (!clientId) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Client ID is required"));
+      }
+
+      // Get client information
+      const clientQuery = `
+        SELECT id, name, email, company_name, phone
+        FROM clients 
+        WHERE id = $1 AND team_id = $2
+      `;
+      const clientResult = await db.query(clientQuery, [clientId, teamId]);
+
+      if (!clientResult.rows.length) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
+      }
+
+      const client = clientResult.rows[0];
+
+      if (!client.email) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Client email is required for invitation"));
+      }
+
+      // Check if client already has an active portal user
+      const activeUserCheck = await db.query(
+        `SELECT id FROM client_users WHERE client_id = $1 AND status = 'active'`,
+        [clientId]
+      );
+
+      if (activeUserCheck.rows.length > 0) {
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Client has already joined the portal"
+            )
+          );
+      }
+
+      // Check if there's already a pending invitation
+      const pendingInviteCheck = await db.query(
+        `SELECT id, created_at FROM client_invitations
+         WHERE client_id = $1 AND status = 'pending' AND expires_at > NOW()
+         ORDER BY created_at DESC LIMIT 1`,
+        [clientId]
+      );
+
+      if (pendingInviteCheck.rows.length > 0) {
+        return res
+          .status(400)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Invitation already sent. Please use the resend option if needed."
+            )
+          );
+      }
+
+      // Send invitation email
+      await ClientPortalClientsController.sendClientInvitationEmail(
+        client,
+        teamId,
+        userId
+      );
+
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            clientId: client.id,
+            email: client.email,
+            invitationSent: true
+          },
+          "Invitation sent successfully"
+        )
+      );
+    } catch (error) {
+      console.error("Error sending invitation to existing client:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to send invitation"));
     }
   }
 
