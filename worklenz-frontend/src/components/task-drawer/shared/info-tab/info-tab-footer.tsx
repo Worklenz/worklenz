@@ -839,7 +839,7 @@ const InfoTabFooter = () => {
     if (!selectedTaskId || !projectId) return;
 
     if (!isCommentValid()) {
-      message.error(t('taskInfoTab.comments.addCommentError'));
+      message.error(t('taskInfoTab.comments.addCommentError', { defaultValue: 'Please add a comment or attachment' }));
       return;
     }
 
@@ -883,7 +883,7 @@ const InfoTabFooter = () => {
     const files = Array.from(event.target.files);
 
     if (selectedFiles.length + files.length > MAXIMUM_FILE_COUNT) {
-      message.error(t('taskInfoTab.comments.maxFilesError', { count: MAXIMUM_FILE_COUNT }));
+      message.error(t('taskInfoTab.comments.maxFilesError', { count: MAXIMUM_FILE_COUNT, defaultValue: 'Maximum {count} files allowed' }));
       return;
     }
 
@@ -913,7 +913,7 @@ const InfoTabFooter = () => {
       }
     } catch (error) {
       console.error('Failed to process files:', error);
-      message.error(t('taskInfoTab.comments.processFilesError'));
+      message.error(t('taskInfoTab.comments.processFilesError', { defaultValue: 'Failed to process files' }));
     } finally {
       setUploading(false);
 
@@ -971,7 +971,7 @@ const InfoTabFooter = () => {
           }}
         >
           <CustomMentionsInput
-            placeholder={t('taskInfoTab.comments.addCommentPlaceholder')}
+            placeholder={t('taskInfoTab.comments.addCommentPlaceholder', { defaultValue: 'Add a comment...' })}
             options={mentionsOptions}
             value={commentValue}
             onClick={() => setIsCommentBoxExpand(true)}
@@ -1006,7 +1006,7 @@ const InfoTabFooter = () => {
           {selectedFiles.length > 0 && (
             <Flex vertical gap={8} style={{ marginTop: 12 }}>
               <Typography.Title level={5} style={{ margin: 0 }}>
-                {t('taskInfoTab.comments.selectedFiles', { count: MAXIMUM_FILE_COUNT })}
+                {t('taskInfoTab.comments.selectedFiles', { count: MAXIMUM_FILE_COUNT, defaultValue: 'Selected Files ({count} max)' })}
               </Typography.Title>
               <Flex
                 vertical
@@ -1062,7 +1062,7 @@ const InfoTabFooter = () => {
                     icon={<PlusOutlined />}
                     disabled={selectedFiles.length >= MAXIMUM_FILE_COUNT || uploading}
                   >
-                    {t('taskInfoTab.comments.addMoreFiles')}
+                    {t('taskInfoTab.comments.addMoreFiles', { defaultValue: 'Add More Files' })}
                   </Button>
                 </Flex>
               </Flex>
@@ -1072,7 +1072,7 @@ const InfoTabFooter = () => {
           <Form.Item name={'comment'} style={{ marginBlock: 12 }}>
             <div style={{ position: 'relative' }}>
               <CustomMentionsInput
-                placeholder={t('taskInfoTab.comments.addCommentPlaceholder')}
+                placeholder={t('taskInfoTab.comments.addCommentPlaceholder', { defaultValue: 'Add a comment...' })}
                 options={mentionsOptions}
                 autoFocus
                 value={commentValue}
@@ -1119,8 +1119,8 @@ const InfoTabFooter = () => {
               <Tooltip
                 title={
                   selectedFiles.length >= MAXIMUM_FILE_COUNT
-                    ? t('taskInfoTab.comments.maxFilesError', { count: MAXIMUM_FILE_COUNT })
-                    : t('taskInfoTab.comments.attachFiles')
+                    ? t('taskInfoTab.comments.maxFilesError', { count: MAXIMUM_FILE_COUNT, defaultValue: 'Maximum {count} files allowed' })
+                    : t('taskInfoTab.comments.attachFiles', { defaultValue: 'Attach Files' })
                 }
               >
                 <Button
@@ -1131,14 +1131,14 @@ const InfoTabFooter = () => {
               </Tooltip>
 
               <Space>
-                <Button onClick={handleCancel}>{t('taskInfoTab.comments.cancel')}</Button>
+                <Button onClick={handleCancel}>{t('taskInfoTab.comments.cancel', { defaultValue: 'Cancel' })}</Button>
                 <Button
                   type="primary"
                   disabled={!isCommentValid()}
                   onClick={handleSubmit}
                   loading={uploading}
                 >
-                  {t('taskInfoTab.comments.commentButton')}
+                  {t('taskInfoTab.comments.commentButton', { defaultValue: 'Comment' })}
                 </Button>
               </Space>
             </Flex>
@@ -1150,6 +1150,7 @@ const InfoTabFooter = () => {
         <Tooltip title={createdFromNow !== 'N/A' ? `Created ${createdFromNow}` : 'N/A'}>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {t('taskInfoTab.comments.createdBy', {
+              defaultValue: 'Created {time} by {user}',
               time: createdFromNow,
               user: taskFormViewModel?.task?.reporter || '',
             })}
@@ -1158,6 +1159,7 @@ const InfoTabFooter = () => {
         <Tooltip title={updatedFromNow !== 'N/A' ? `Updated ${updatedFromNow}` : 'N/A'}>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {t('taskInfoTab.comments.updatedTime', {
+              defaultValue: 'Updated {time}',
               time: updatedFromNow,
             })}
           </Typography.Text>
