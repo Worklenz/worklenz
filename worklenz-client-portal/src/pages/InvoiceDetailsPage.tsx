@@ -17,6 +17,8 @@ import {
   UploadOutlined,
   PrinterOutlined,
   DownloadOutlined,
+  EyeOutlined,
+  EditOutlined,
 } from "@/shared/antd-imports";
 import { useNavigate, useParams } from "react-router-dom";
 import clientPortalAPI from "@/services/api";
@@ -38,6 +40,7 @@ const InvoiceDetailsPage: React.FC = () => {
   const [paymentProofFile, setPaymentProofFile] = useState<UploadFile[]>([]);
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isPaymentProofModalVisible, setIsPaymentProofModalVisible] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -45,7 +48,24 @@ const InvoiceDetailsPage: React.FC = () => {
     }
   }, [id]);
 
+  // ESC key handler for closing payment proof overlay
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isPaymentProofModalVisible) {
+        setIsPaymentProofModalVisible(false);
+      }
+    };
+
+    if (isPaymentProofModalVisible) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [isPaymentProofModalVisible]);
+
   const fetchInvoiceDetails = async () => {
+    console.log('Fetching invoice details for ID:', id);
     try {
       setIsLoading(true);
       setError(null);
@@ -54,6 +74,7 @@ const InvoiceDetailsPage: React.FC = () => {
       if (response.done) {
         const data = response.body as InvoiceDetails;
         setInvoice(data);
+        console.log(data)
       } else {
         setError("Failed to load invoice details");
       }
@@ -444,6 +465,29 @@ const InvoiceDetailsPage: React.FC = () => {
             </Col>
           </Row>
 
+          {/* Payment Proof Section */}
+          {invoice.status.toLowerCase() === "paid" && invoice.paymentProofUrl && (
+            <Row gutter={32} style={{ marginBottom: 24 }}>
+              <Col span={24}>
+                <Text type="secondary">Payment Proof</Text>
+                <div style={{ marginTop: 8 }}>
+                  <Flex gap={12} align="center">
+                    <Button
+                      icon={<EyeOutlined />}
+                      onClick={() => setIsPaymentProofModalVisible(true)}
+                      type="default"
+                    >
+                      View Payment Proof
+                    </Button>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      Click image to enter full-screen mode
+                    </Text>
+                  </Flex>
+                </div>
+              </Col>
+            </Row>
+          )}
+
           {/* Service/Request Info */}
           {invoice.request && (
             <Row gutter={32} style={{ marginBottom: 24 }}>
@@ -460,6 +504,7 @@ const InvoiceDetailsPage: React.FC = () => {
           )}
 
           {/* Action Buttons */}
+          {console.log('Invoice Status Debug:', invoice.status, 'Lowercase:', invoice.status?.toLowerCase(), 'Is Paid:', invoice.status?.toLowerCase() === "paid")}
           <Flex gap={12} wrap="wrap">
             {invoice.status.toLowerCase() === "sent" && (
               <Button
@@ -468,6 +513,14 @@ const InvoiceDetailsPage: React.FC = () => {
                 onClick={() => setIsPaymentModalVisible(true)}
               >
                 Submit Payment Proof
+              </Button>
+            )}
+            {invoice.status.toLowerCase() !== "paid" && (
+              <Button
+                icon={<EditOutlined />}
+                onClick={() => navigate(`/invoices/${id}/edit`)}
+              >
+                Edit Invoice
               </Button>
             )}
             <Button 
@@ -483,6 +536,110 @@ const InvoiceDetailsPage: React.FC = () => {
           </Flex>
         </Card>
       </div>
+
+      {/* Payment Proof Full-Screen Overlay */}
+      {isPaymentProofModalVisible && invoice.paymentProofUrl && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.95)',
+            zIndex: 99999,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            boxSizing: 'border-box'
+          }}
+          onClick={() => setIsPaymentProofModalVisible(false)}
+        >
+          {/* Header */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              padding: '20px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: 'linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Text style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
+              Payment Proof
+            </Text>
+            <Button
+              onClick={() => setIsPaymentProofModalVisible(false)}
+              style={{ 
+                background: 'rgba(255, 255, 255, 0.1)', 
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+                color: 'white'
+              }}
+            >
+              Close
+            </Button>
+          </div>
+
+          {/* Image Container */}
+          <div
+            style={{
+              maxWidth: '100%',
+              maxHeight: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'zoom-in'
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              // Toggle zoom
+              const img = e.currentTarget.querySelector('img');
+              if (img) {
+                const isZoomed = img.style.transform === 'scale(2)';
+                img.style.transform = isZoomed ? 'scale(1)' : 'scale(2)';
+                img.style.cursor = isZoomed ? 'zoom-in' : 'zoom-out';
+              }
+            }}
+          >
+            <img
+              src={invoice.paymentProofUrl}
+              alt="Payment Proof"
+              style={{
+                maxWidth: '90vw',
+                maxHeight: '80vh',
+                objectFit: 'contain',
+                transform: 'scale(1)',
+                transition: 'transform 0.3s ease',
+                cursor: 'zoom-in',
+                borderRadius: '8px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+              }}
+            />
+          </div>
+
+          {/* Instructions */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 20,
+              left: 0,
+              right: 0,
+              textAlign: 'center',
+              color: 'rgba(255, 255, 255, 0.7)',
+              fontSize: '14px'
+            }}
+          >
+            Click image to zoom • Click anywhere to close • Press ESC to exit
+          </div>
+        </div>
+      )}
 
       {/* Payment Proof Modal */}
       <Modal

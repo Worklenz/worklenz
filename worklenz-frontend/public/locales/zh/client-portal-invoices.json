@@ -136,5 +136,10 @@
   "download": "下载",
   "existingInvoicesWarning": "⚠️ 此请求已有发票：",
   "multipleInvoicesAllowed": "您可以为此请求创建额外发票（例如用于里程碑或额外工作）。",
-  "noCurrenciesFound": "未找到货币"
+  "noCurrenciesFound": "未找到货币",
+  "editInvoiceTitle": "编辑发票",
+  "updateInvoice": "更新发票",
+  "updateInvoiceSuccessMessage": "发票更新成功",
+  "updateInvoiceErrorMessage": "更新发票失败",
+  "cannotEditPaidInvoice": "已付款发票无法编辑"
 }

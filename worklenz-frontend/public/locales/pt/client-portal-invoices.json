@@ -136,5 +136,10 @@
   "download": "Baixar",
   "existingInvoicesWarning": "⚠️ Esta solicitação já possui faturas:",
   "multipleInvoicesAllowed": "Você pode criar faturas adicionais para esta solicitação (ex. para marcos ou trabalho adicional).",
-  "noCurrenciesFound": "Nenhuma moeda encontrada"
+  "noCurrenciesFound": "Nenhuma moeda encontrada",
+  "editInvoiceTitle": "Editar Fatura",
+  "updateInvoice": "Atualizar Fatura",
+  "updateInvoiceSuccessMessage": "Fatura atualizada com sucesso",
+  "updateInvoiceErrorMessage": "Falha ao atualizar fatura",
+  "cannotEditPaidInvoice": "Faturas pagas não podem ser editadas"
 }
