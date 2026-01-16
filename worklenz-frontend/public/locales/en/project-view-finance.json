@@ -121,6 +121,7 @@
     "projectBudget": "Project Budget",
     "projectBudgetTooltip": "Total budget allocated for this project",
     "currency": "Currency",
+    "currencyPlaceholder": "Select currency",
     "costCalculationMethod": "Cost Calculation Method",
     "calculationMethod": "Calculation Method",
     "workingHoursPerDay": "Working Hours per Day",

@@ -115,6 +115,7 @@
     "projectBudget": "Orçamento do Projeto",
     "projectBudgetTooltip": "Orçamento total alocado para este projeto",
     "currency": "Moeda",
+    "currencyPlaceholder": "Selecione a moeda",
     "costCalculationMethod": "Método de Cálculo de Custo",
     "calculationMethod": "Método de Cálculo",
     "workingHoursPerDay": "Horas de Trabalho por Dia",
