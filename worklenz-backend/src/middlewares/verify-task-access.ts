@@ -320,7 +320,7 @@ export function verifyTaskAccessViaWorkLog(
 /**
  * Middleware to verify task access via dependency ID
  * This is useful for endpoints that operate on dependencies but need to verify task access
- * 
+ *
  * @param location - Where to find the dependency ID ('params', 'body', or 'query')
  * @param fieldName - The name of the field containing the dependency ID
  */
@@ -331,7 +331,7 @@ export function verifyTaskAccessViaDependency(
   return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
     const userId = req.user?.id;
     const teamId = req.user?.team_id;
-    
+
     const dependencyId = req[location]?.[fieldName];
 
     if (!dependencyId) {
@@ -356,13 +356,13 @@ export function verifyTaskAccessViaDependency(
         WHERE td.id = $1 AND p.team_id = $2
         LIMIT 1;
       `;
-      
+
       const result = await db.query(q, [dependencyId, teamId]);
-      
+
       if (result.rowCount && result.rowCount > 0) {
         return next();
       }
-      
+
       return res.status(403).send(
         new ServerResponse(false, null, "You do not have permission to access this dependency")
       );
@@ -370,6 +370,63 @@ export function verifyTaskAccessViaDependency(
       log_error(error);
       return res.status(500).send(
         new ServerResponse(false, null, "An error occurred while verifying dependency access")
+      );
+    }
+  };
+}
+
+/**
+ * Middleware to verify task access via recurring schedule ID
+ * This is useful for endpoints that operate on recurring schedules but need to verify task access
+ *
+ * @param location - Where to find the schedule ID ('params', 'body', or 'query')
+ * @param fieldName - The name of the field containing the schedule ID
+ */
+export function verifyTaskAccessViaSchedule(
+  location: 'params' | 'body' | 'query' = 'params',
+  fieldName: string = 'id'
+) {
+  return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
+    const userId = req.user?.id;
+    const teamId = req.user?.team_id;
+
+    const scheduleId = req[location]?.[fieldName];
+
+    if (!scheduleId) {
+      return res.status(400).send(
+        new ServerResponse(false, null, "Schedule ID is required")
+      );
+    }
+
+    if (!userId || !teamId) {
+      return res.status(401).send(
+        new ServerResponse(false, null, "Authentication required")
+      );
+    }
+
+    try {
+      // Verify that the schedule belongs to a task in a project in the user's team
+      const q = `
+        SELECT 1
+        FROM tasks t
+        INNER JOIN projects p ON t.project_id = p.id
+        WHERE t.schedule_id = $1 AND p.team_id = $2
+        LIMIT 1;
+      `;
+
+      const result = await db.query(q, [scheduleId, teamId]);
+
+      if (result.rowCount && result.rowCount > 0) {
+        return next();
+      }
+
+      return res.status(403).send(
+        new ServerResponse(false, null, "You do not have permission to access this schedule")
+      );
+    } catch (error) {
+      log_error(error);
+      return res.status(500).send(
+        new ServerResponse(false, null, "An error occurred while verifying schedule access")
       );
     }
   };

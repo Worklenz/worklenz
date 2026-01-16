@@ -47,6 +47,40 @@
   "yes": "Yes",
   "no": "No",
   "alreadyImportedRateCardMessage": "A rate card has already been imported. Clear all imported rate cards to add a new one.",
+
+  "noCurrenciesFound": "Nuk u gjetën monedha",
+  "unknownProject": "Projekt i Panjohur",
+
+  "messages": {
+    "projectIdNotFound": "ID e projektit nuk u gjet",
+    "financeDataExportedSuccessfully": "Të dhënat financiare u eksportuan me sukses",
+    "failedToExportFinanceData": "Dështoi eksportimi i të dhënave financiare",
+    "noPermissionToChangeCurrency": "Nuk keni leje për të ndryshuar monedhën e projektit",
+    "projectCurrencyUpdatedSuccessfully": "Monedha e projektit u përditësua me sukses",
+    "failedToUpdateProjectCurrency": "Dështoi përditësimi i monedhës së projektit",
+    "noPermissionToChangeBudget": "Nuk keni leje për të ndryshuar buxhetin e projektit",
+    "pleaseEnterValidBudgetAmount": "Ju lutemi shkruani një shumë të vlefshme buxheti",
+    "projectBudgetUpdatedSuccessfully": "Buxheti i projektit u përditësua me sukses",
+    "failedToUpdateProjectBudget": "Dështoi përditësimi i buxhetit të projektit"
+  },
+
+  "alerts": {
+    "businessPlanRequired": {
+      "message": "Kërkohet Plan Biznesi",
+      "description": "Karakteristikat financiare të projektit janë të disponueshme vetëm në planet Business dhe Enterprise. Përmirësoni planin tuaj për të hyrë në këto karakteristika."
+    },
+    "limitedAccess": {
+      "message": "Akses i Kufizuar",
+      "financeDescription": "Mund të shihni të dhëna financiare por nuk mund të redaktoni kostot fikse. Vetëm menaxherët e projektit, administratorët e ekipit dhe pronarët e ekipit mund të bëjnë ndryshime.",
+      "ratecardDescription": "Mund të shihni të dhëna të kartës së tarifave por nuk mund të redaktoni tarifat ose të menaxhoni caktimet e anëtarëve. Vetëm menaxherët e projektit, administratorët e ekipit dhe pronarët e ekipit mund të bëjnë ndryshime."
+    }
+  },
+
+  "tooltips": {
+    "availableOnlyOnBusinessPlan": "I disponueshëm vetëm në planin Business",
+    "budgetCalculationSettings": "Cilësimet e Buxhetit dhe Llogaritjes"
+  },
+
   "budgetOverviewTooltips": {
     "manualBudget": "Manual project budget amount set by project manager",
     "totalActualCost": "Total actual cost including fixed costs",

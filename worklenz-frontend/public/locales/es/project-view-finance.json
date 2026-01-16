@@ -47,6 +47,40 @@
   "yes": "Yes",
   "no": "No",
   "alreadyImportedRateCardMessage": "A rate card has already been imported. Clear all imported rate cards to add a new one.",
+
+  "noCurrenciesFound": "No se encontraron monedas",
+  "unknownProject": "Proyecto Desconocido",
+
+  "messages": {
+    "projectIdNotFound": "ID de proyecto no encontrado",
+    "financeDataExportedSuccessfully": "Datos financieros exportados exitosamente",
+    "failedToExportFinanceData": "Error al exportar datos financieros",
+    "noPermissionToChangeCurrency": "No tiene permiso para cambiar la moneda del proyecto",
+    "projectCurrencyUpdatedSuccessfully": "Moneda del proyecto actualizada exitosamente",
+    "failedToUpdateProjectCurrency": "Error al actualizar la moneda del proyecto",
+    "noPermissionToChangeBudget": "No tiene permiso para cambiar el presupuesto del proyecto",
+    "pleaseEnterValidBudgetAmount": "Por favor ingrese un monto de presupuesto válido",
+    "projectBudgetUpdatedSuccessfully": "Presupuesto del proyecto actualizado exitosamente",
+    "failedToUpdateProjectBudget": "Error al actualizar el presupuesto del proyecto"
+  },
+
+  "alerts": {
+    "businessPlanRequired": {
+      "message": "Plan de Negocios Requerido",
+      "description": "Las funciones financieras del proyecto están disponibles solo en los planes Business y Enterprise. Actualice su plan para acceder a estas funciones."
+    },
+    "limitedAccess": {
+      "message": "Acceso Limitado",
+      "financeDescription": "Puede ver datos financieros pero no puede editar costos fijos. Solo los gerentes de proyecto, administradores de equipo y propietarios de equipo pueden realizar cambios.",
+      "ratecardDescription": "Puede ver datos de la tabla de precios pero no puede editar tarifas o gestionar asignaciones de miembros. Solo los gerentes de proyecto, administradores de equipo y propietarios de equipo pueden realizar cambios."
+    }
+  },
+
+  "tooltips": {
+    "availableOnlyOnBusinessPlan": "Disponible solo en el plan Business",
+    "budgetCalculationSettings": "Configuración de Presupuesto y Cálculo"
+  },
+
   "budgetOverviewTooltips": {
     "manualBudget": "Manual project budget amount set by project manager",
     "totalActualCost": "Total actual cost including fixed costs",
