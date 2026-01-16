@@ -16,6 +16,7 @@ import { authApiService } from '@/api/auth/auth.api.service';
 import { setUser } from '@/features/user/userSlice';
 import { billingApiService } from '@/api/admin-center/billing.api.service';
 import { ILocalPlans } from '@/shared/constants';
+import { loadDirectPaySDK, initializeDirectPaySDK, openDirectPayPopup } from './direct-pay-helper';
 
 const UpgradePlansLKR: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -197,9 +198,9 @@ const UpgradePlansLKR: React.FC = () => {
       setDirectPayLoading(true);
       setDirectPayError(null);
 
-      // Calculate amount based on selected plan (monthly price)
-      const amount = selectedPlan === ILocalPlans.ANNUAL 
-        ? businessAnnualPrice 
+      // Calculate amount based on selected plan
+      const amount = selectedPlan === ILocalPlans.ANNUAL
+        ? businessAnnualPrice
         : businessMonthlyPrice;
 
       if (!amount || amount <= 0) {
@@ -207,7 +208,6 @@ const UpgradePlansLKR: React.FC = () => {
       }
 
       // Create card add session with initial payment enabled
-      // This will add the card AND collect payment in one flow
       const response = await billingApiService.createCardAddSession(amount, true);
 
       if (!response.done || !response.body) {
@@ -216,167 +216,58 @@ const UpgradePlansLKR: React.FC = () => {
 
       const { sessionData, stage } = response.body;
 
-      // DirectPay session response contains a URL or data for SDK
-      // Based on the PDF, we need to use the SDK or redirect to the session URL
-      // For now, we'll check if sessionData has a URL or use the SDK approach
-      
-      // If sessionData contains a redirect URL, use it
-      // Otherwise, we'll need to use the DirectPay SDK
-      let checkoutUrl: string;
-      
-      if (sessionData?.redirect_url || sessionData?.url) {
-        checkoutUrl = sessionData.redirect_url || sessionData.url;
-      } else if (sessionData?.session_id) {
-        // Use session ID to construct URL
-        const baseUrl = stage === 'PROD' || stage === 'prod'
-          ? 'https://gateway.directpay.lk'
-          : 'https://test-gateway.directpay.lk';
-        checkoutUrl = `${baseUrl}/payment/session/${sessionData.session_id}`;
-      } else {
-        // Fallback: try to use the SDK approach
-        // Load DirectPay SDK and initialize
-        await loadDirectPaySDK(sessionData, stage);
-        setDirectPayLoading(false);
-        return;
+      if (!sessionData) {
+        throw new Error('Invalid session data received from server');
       }
 
-      // Open DirectPay checkout in a popup window
-      const width = 600;
-      const height = 700;
-      const left = (window.screen.width - width) / 2;
-      const top = (window.screen.height - height) / 2;
+      // Define callbacks for DirectPay
+      const callbacks = {
+        onSuccess: (response: any) => {
+          setDirectPayLoading(false);
+          message.success('Payment processed successfully!');
 
-      const checkoutWindow = window.open(
-        checkoutUrl,
-        'DirectPayCheckout',
-        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
-      );
-
-      if (!checkoutWindow) {
-        throw new Error('Popup blocked. Please allow popups for this site.');
-      }
-
-      // Listen for messages from DirectPay checkout window
-      const handleMessage = (event: MessageEvent) => {
-        // Verify origin for security
-        if (!event.origin.includes('directpay.lk') && !event.origin.includes('test-gateway.directpay.lk')) {
-          return;
-        }
-
-        if (event.data) {
-          // Handle card add response
-          if (event.data.card && event.data.walletId) {
-            checkoutWindow?.close();
-            window.removeEventListener('message', handleMessage);
-            
-            if (event.data.status === 200 && event.data.card.status === 'SUCCESS') {
-              message.success('Card added and payment processed successfully!');
-              // Refresh billing info and close modal
-              dispatch(fetchBillingInfo());
-              setTimeout(() => {
-                dispatch(toggleUpgradeModal());
-                // Refresh user session
-                authApiService.verify().then((authResponse) => {
-                  if (authResponse.authenticated) {
-                    setSession(authResponse.user);
-                    dispatch(setUser(authResponse.user));
-                  }
-                });
-              }, 2000);
-            } else {
-              setDirectPayError('Card add or payment failed. Please try again.');
-              message.error('Card add or payment failed. Please try again.');
-            }
-          } else if (event.data.status) {
-            // Handle transaction response
-            checkoutWindow?.close();
-            window.removeEventListener('message', handleMessage);
-
-            if (event.data.status === 'SUCCESS' || event.data.status === 200) {
-              message.success('Payment processed successfully!');
-              dispatch(fetchBillingInfo());
-              setTimeout(() => {
-                dispatch(toggleUpgradeModal());
-                authApiService.verify().then((authResponse) => {
-                  if (authResponse.authenticated) {
-                    setSession(authResponse.user);
-                    dispatch(setUser(authResponse.user));
-                  }
-                });
-              }, 2000);
-            } else if (event.data.status === 'FAILED') {
-              setDirectPayError(event.data.message || 'Payment failed. Please try again.');
-              message.error('Payment failed. Please try again.');
-            } else if (event.data.status === 'CANCELLED') {
-              message.info('Payment was cancelled.');
-            }
-          }
-        }
+          // Refresh billing info and close modal
+          dispatch(fetchBillingInfo());
+          setTimeout(() => {
+            dispatch(toggleUpgradeModal());
+            // Refresh user session
+            authApiService.verify().then((authResponse) => {
+              if (authResponse.authenticated) {
+                setSession(authResponse.user);
+                dispatch(setUser(authResponse.user));
+              }
+            });
+          }, 2000);
+        },
+        onError: (error: any) => {
+          setDirectPayLoading(false);
+          const errorMsg = error?.message || 'Payment failed. Please try again.';
+          setDirectPayError(errorMsg);
+          message.error(errorMsg);
+        },
+        onCancel: () => {
+          setDirectPayLoading(false);
+          message.info('Payment was cancelled.');
+        },
       };
 
-      window.addEventListener('message', handleMessage);
-
-      // Check if window was closed manually
-      const checkClosed = setInterval(() => {
-        if (checkoutWindow.closed) {
-          clearInterval(checkClosed);
-          window.removeEventListener('message', handleMessage);
-          setDirectPayLoading(false);
-        }
-      }, 1000);
-
-      setDirectPayLoading(false);
+      // Try to load and use DirectPay SDK first
+      try {
+        await loadDirectPaySDK();
+        initializeDirectPaySDK({ sessionData, stage }, callbacks);
+        setDirectPayLoading(false);
+      } catch (sdkError) {
+        // SDK approach failed, try popup fallback
+        logger.warn('DirectPay SDK failed, using popup fallback', sdkError);
+        openDirectPayPopup({ sessionData, stage }, callbacks);
+        setDirectPayLoading(false);
+      }
     } catch (error: any) {
       setDirectPayLoading(false);
       const errorMessage = error?.message || 'Failed to initialize DirectPay checkout';
       setDirectPayError(errorMessage);
       message.error(errorMessage);
       logger.error('Error initializing DirectPay checkout', error);
-    }
-  };
-
-  // Helper function to load DirectPay SDK if needed
-  const loadDirectPaySDK = async (sessionData: any, stage: string) => {
-    return new Promise<void>((resolve, reject) => {
-      // Check if SDK is already loaded
-      if ((window as any).DirectPay) {
-        initializeDirectPaySDK(sessionData, stage);
-        resolve();
-        return;
-      }
-
-      // Load the SDK
-      const script = document.createElement('script');
-      script.src = 'https://cdn.directpay.lk/dev/v1/directpayCardPayment.js?v=1';
-      script.type = 'text/javascript';
-      script.async = true;
-
-      script.onload = () => {
-        initializeDirectPaySDK(sessionData, stage);
-        resolve();
-      };
-
-      script.onerror = () => {
-        reject(new Error('Failed to load DirectPay SDK'));
-      };
-
-      document.head.appendChild(script);
-    });
-  };
-
-  // Initialize DirectPay SDK with session data
-  const initializeDirectPaySDK = (sessionData: any, stage: string) => {
-    try {
-      // This would use the DirectPay SDK to open the card add UI
-      // The exact implementation depends on the SDK API
-      // For now, we'll log and show an error
-      logger.error('DirectPay SDK initialization not fully implemented', { sessionData, stage });
-      setDirectPayError('SDK initialization required. Please contact support.');
-      message.error('Payment initialization failed. Please try again or contact support.');
-    } catch (error) {
-      logger.error('Error initializing DirectPay SDK', error);
-      setDirectPayError('Failed to initialize payment SDK');
-      message.error('Failed to initialize payment SDK');
     }
   };
 

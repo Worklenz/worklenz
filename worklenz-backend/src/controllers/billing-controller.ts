@@ -416,7 +416,9 @@ VALUES ($1, $2, $3);`;
     const { amount, doInitialPayment } = req.body;
     const email = req.user?.email;
     const name = req.user?.name;
-    const phone = req.user?.phone || req.user?.mobile || null;
+    // Phone number is optional and not available in IPassportSession
+    // Can be queried from database if needed in the future
+    const phone = null;
 
     if (!email || !name) {
       return res.status(400).send(new ServerResponse(false, null, "User email and name are required"));
