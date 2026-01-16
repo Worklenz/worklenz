@@ -475,6 +475,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           i.paid_at,
           i.created_at,
           i.updated_at,
+          i.payment_proof_url,
           r.id as request_id,
           r.req_no as request_number,
           r.request_data,
@@ -515,6 +516,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         paidAt: invoice.paid_at,
         createdAt: invoice.created_at,
         updatedAt: invoice.updated_at,
+        paymentProofUrl: invoice.payment_proof_url || null,
         isOverdue:
           invoice.due_date &&
           new Date(invoice.due_date) < new Date() &&

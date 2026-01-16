@@ -291,6 +291,7 @@ export interface InvoiceDetails {
   paidAt?: string;
   createdAt: string;
   updatedAt: string;
+  paymentProofUrl?: string | null;
   isOverdue: boolean;
   request?: {
     id: string;
