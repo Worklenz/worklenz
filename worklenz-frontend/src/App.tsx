@@ -14,6 +14,7 @@ import router from './app/routes';
 
 // Hooks & Utils
 import { useAppSelector } from './hooks/useAppSelector';
+import { useSentryIntegration } from './hooks/useSentryIntegration';
 import { initMixpanel } from './utils/mixpanelInit';
 import { initializeCsrfToken } from './api/api-client';
 import CacheCleanup from './utils/cache-cleanup';
@@ -50,6 +51,9 @@ import { registerSW } from './utils/serviceWorkerRegistration';
 const App: React.FC = memo(() => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const language = useAppSelector(state => state.localesReducer.lng);
+
+  // Initialize Sentry integration for user context tracking
+  useSentryIntegration();
 
   // Memoize mixpanel initialization to prevent re-initialization
   const mixpanelToken = useMemo(() => import.meta.env.VITE_MIXPANEL_TOKEN as string, []);
