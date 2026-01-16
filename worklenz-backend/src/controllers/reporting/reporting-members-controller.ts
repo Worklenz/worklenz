@@ -692,13 +692,38 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
     // Get user timezone for proper date filtering
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
-    const durationClause = this.getDateRangeClauseWithTimezone(duration as string || DATE_RANGES.LAST_WEEK, dateRange, userTimezone);
-    const minMaxDateClauseResult = this.getMinMaxDates(duration as string || DATE_RANGES.LAST_WEEK, dateRange, "task_work_log", 1);
+    // $1 => team_id, $2 => team_member_id, so date params start at $3
+    const durationClauseResult = this.getDateRangeClauseWithTimezoneParams(
+      (duration as string) || DATE_RANGES.LAST_WEEK,
+      dateRange,
+      userTimezone,
+      3
+    );
+    const durationClause = durationClauseResult.clause;
+    const durationParams = durationClauseResult.params;
+
+    const minMaxDateClauseResult = this.getMinMaxDates(
+      (duration as string) || DATE_RANGES.LAST_WEEK,
+      dateRange,
+      "task_work_log",
+      3 + durationParams.length
+    );
     const minMaxDateClause = minMaxDateClauseResult.clause;
+    const minMaxParams = minMaxDateClauseResult.params;
     const memberName = (req.query.member_name as string)?.trim() || null;
 
-    // Note: getDateRangeClauseWithTimezone returns string, minMaxDateClause is already a string
-    const logGroups = await this.memberTimeLogsData(durationClause, minMaxDateClause, team_id as string, team_member_id as string, includeArchived, req.user?.id as string);
+    const queryParams = [...durationParams, ...minMaxParams];
+
+    const logGroups = await this.memberTimeLogsData(
+      durationClause,
+      minMaxDateClause,
+      team_id as string,
+      team_member_id as string,
+      includeArchived,
+      req.user?.id as string,
+      "",
+      queryParams
+    );
 
     let start = "-";
     let end = "-";
@@ -789,11 +814,22 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     }
 
     // Use parameterized queries
-    const durationClauseResult = ReportingMembersController.getDateRangeClauseMembers(duration as string || DATE_RANGES.LAST_WEEK, dateRange, "tal", 1);
+    // $1 => team_id, $2 => team_member_id, so date params start at $3
+    const durationClauseResult = ReportingMembersController.getDateRangeClauseMembers(
+      duration as string || DATE_RANGES.LAST_WEEK,
+      dateRange,
+      "tal",
+      3
+    );
     const durationClause = durationClauseResult.clause;
     const durationParams = durationClauseResult.params;
     
-    const minMaxDateClauseResult = this.getMinMaxDates(duration as string || DATE_RANGES.LAST_WEEK, dateRange, "task_activity_logs", 1 + durationParams.length);
+    const minMaxDateClauseResult = this.getMinMaxDates(
+      duration as string || DATE_RANGES.LAST_WEEK,
+      dateRange,
+      "task_activity_logs",
+      3 + durationParams.length
+    );
     const minMaxDateClause = minMaxDateClauseResult.clause;
     const minMaxParams = minMaxDateClauseResult.params;
     
@@ -1014,11 +1050,22 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     const { team_member_id, team_id, duration, date_range, archived } = req.body;
 
     // Use parameterized queries
-    const durationClauseResult = ReportingMembersController.getDateRangeClauseMembers(duration || DATE_RANGES.LAST_WEEK, date_range, "tal", 1);
+    // $1 => team_id, $2 => team_member_id, so date params start at $3
+    const durationClauseResult = ReportingMembersController.getDateRangeClauseMembers(
+      duration || DATE_RANGES.LAST_WEEK,
+      date_range,
+      "tal",
+      3
+    );
     const durationClause = durationClauseResult.clause;
     const durationParams = durationClauseResult.params;
     
-    const minMaxDateClauseResult = this.getMinMaxDates(duration || DATE_RANGES.LAST_WEEK, date_range, "task_activity_logs", 1 + durationParams.length);
+    const minMaxDateClauseResult = this.getMinMaxDates(
+      duration || DATE_RANGES.LAST_WEEK,
+      date_range,
+      "task_activity_logs",
+      3 + durationParams.length
+    );
     const minMaxDateClause = minMaxDateClauseResult.clause;
     const minMaxParams = minMaxDateClauseResult.params;
 
@@ -1098,7 +1145,16 @@ export default class ReportingMembersController extends ReportingControllerBaseW
   }
 
 
-  private static async memberTimeLogsData(durationClause: string, minMaxDateClause: string, team_id: string, team_member_id: string, includeArchived: boolean, userId: string, billableQuery = "") {
+  private static async memberTimeLogsData(
+    durationClause: string,
+    minMaxDateClause: string,
+    team_id: string,
+    team_member_id: string,
+    includeArchived: boolean,
+    userId: string,
+    billableQuery = "",
+    params: any[] = []
+  ) {
 
     const archivedClause = includeArchived
     ? ""
@@ -1128,7 +1184,8 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                 AND tmiv.team_member_id = $2
       `;
 
-    const result = await db.query(q, [team_id, team_member_id]);
+    const queryParams = [team_id, team_member_id, ...params];
+    const result = await db.query(q, queryParams);
 
     let logGroups: any[] = [];
 
@@ -1281,14 +1338,38 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
     // Get user timezone for proper date filtering
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
-    // Note: getDateRangeClauseWithTimezone still returns string (needs refactoring)
-    const durationClause = this.getDateRangeClauseWithTimezone(duration || DATE_RANGES.LAST_WEEK, date_range, userTimezone);
-    const minMaxDateClauseResult = this.getMinMaxDates(duration || DATE_RANGES.LAST_WEEK, date_range, "task_work_log", 1);
+    // $1 => team_id, $2 => team_member_id, so date params start at $3
+    const durationClauseResult = this.getDateRangeClauseWithTimezoneParams(
+      duration || DATE_RANGES.LAST_WEEK,
+      date_range,
+      userTimezone,
+      3
+    );
+    const durationClause = durationClauseResult.clause;
+    const durationParams = durationClauseResult.params;
+
+    const minMaxDateClauseResult = this.getMinMaxDates(
+      duration || DATE_RANGES.LAST_WEEK,
+      date_range,
+      "task_work_log",
+      3 + durationParams.length
+    );
     const minMaxDateClause = minMaxDateClauseResult.clause;
+    const minMaxParams = minMaxDateClauseResult.params;
 
     const billableQuery = this.buildBillableQuery(billable);
+    const queryParams = [...durationParams, ...minMaxParams];
 
-    const logGroups = await this.memberTimeLogsData(durationClause, minMaxDateClause, team_id, team_member_id, archived, req.user?.id as string, billableQuery);
+    const logGroups = await this.memberTimeLogsData(
+      durationClause,
+      minMaxDateClause,
+      team_id,
+      team_member_id,
+      archived,
+      req.user?.id as string,
+      billableQuery,
+      queryParams
+    );
 
     return res.status(200).send(new ServerResponse(true, logGroups));
   }

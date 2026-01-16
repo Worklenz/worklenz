@@ -12,11 +12,16 @@ import { ConfigProvider } from '@/shared/antd-imports';
 import { getInitialTheme } from './utils/get-initial-theme';
 import { initializePerformanceMonitoring } from './utils/enhanced-performance-monitoring';
 import { getThemeConfig } from './config/theme.config';
+import { initSentry } from './config/sentry';
+import SentryErrorBoundary from '@/components/common/SentryErrorBoundary';
 
 const initialTheme = getInitialTheme();
 
 // Apply CSS variables and initial theme
 applyCssVariables();
+
+// Initialize Sentry for error tracking
+initSentry();
 
 // Initialize enhanced performance monitoring
 initializePerformanceMonitoring();
@@ -27,13 +32,15 @@ document.documentElement.classList.add(initialTheme);
 document.documentElement.style.colorScheme = initialTheme;
 
 root.render(
-  <ConfigProvider theme={getThemeConfig(initialTheme)}>
-    <Provider store={store}>
-      <React.StrictMode>
-        <App />
-      </React.StrictMode>
-    </Provider>
-  </ConfigProvider>
+  <SentryErrorBoundary>
+    <ConfigProvider theme={getThemeConfig(initialTheme as 'light' | 'dark')}>
+      <Provider store={store}>
+        <React.StrictMode>
+          <App />
+        </React.StrictMode>
+      </Provider>
+    </ConfigProvider>
+  </SentryErrorBoundary>
 );
 
 reportWebVitals();

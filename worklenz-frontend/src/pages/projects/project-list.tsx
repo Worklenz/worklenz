@@ -26,7 +26,7 @@ import {
 } from '@/shared/antd-imports';
 import type { FilterValue, SorterResult } from 'antd/es/table/interface';
 
-import ProjectDrawer from '@/components/projects/project-drawer/project-drawer';
+import { ProjectDrawer } from '@/components/projects/project-drawer/project-drawer';
 import CreateProjectButton from '@/components/projects/project-create-button/project-create-button';
 import { ColumnsType } from 'antd/es/table';
 import { ColumnFilterItem } from 'antd/es/table/interface';

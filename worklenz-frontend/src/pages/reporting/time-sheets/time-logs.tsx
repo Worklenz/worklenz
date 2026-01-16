@@ -105,7 +105,7 @@ const TimeLogsPage: React.FC = () => {
               member: (l as any).user_name,
               project: l.project_name,
               task: l.task_name,
-              description: undefined,
+              description: l.description || '',
               duration: l.time_spent_string,
             }))
           );
@@ -132,7 +132,7 @@ const TimeLogsPage: React.FC = () => {
               member: (l as any).user_name,
               project: l.project_name,
               task: l.task_name,
-              description: undefined,
+              description: l.description || '',
               duration: l.time_spent_string,
             }))
           );

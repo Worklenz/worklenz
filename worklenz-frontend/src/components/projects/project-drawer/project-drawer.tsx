@@ -17,6 +17,7 @@ import {
   Switch,
   Tooltip,
   Typography,
+  theme,
 } from '@/shared/antd-imports';
 import dayjs from 'dayjs';
 
@@ -61,7 +62,7 @@ import { CrownOutlined } from '@ant-design/icons';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { ensureCsrfToken } from '@/api/api-client';
 
-const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
+export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { trackMixpanelEvent } = useMixpanelTracking();
@@ -70,6 +71,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState<boolean>(true);
   const currentSession = useAuthService().getCurrentSession();
+  const { token } = theme.useToken();
 
   // State
   const [editMode, setEditMode] = useState<boolean>(false);
@@ -112,6 +114,53 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       health_id: project?.health_id || projectHealths.find(health => health.is_default)?.id,
     };
   }, [project, projectStatuses, projectHealths]);
+
+  /**
+   * Calculate working days between two dates (excluding weekends)
+   * @param startDate - Start date (dayjs object, string, or null)
+   * @param endDate - End date (dayjs object, string, or null)
+   * @returns Number of working days (Monday-Friday) between the dates, inclusive
+   */
+  const calculateWorkingDays = useCallback((
+    startDate: dayjs.Dayjs | string | null | undefined,
+    endDate: dayjs.Dayjs | string | null | undefined
+  ): number => {
+    // Handle null/undefined inputs
+    if (!startDate || !endDate) {
+      return 0;
+    }
+
+    // Convert to dayjs if needed
+    const start = dayjs.isDayjs(startDate) ? startDate : dayjs(startDate);
+    const end = dayjs.isDayjs(endDate) ? endDate : dayjs(endDate);
+
+    // Validate dates
+    if (!start.isValid() || !end.isValid()) {
+      return 0;
+    }
+
+    // Return 0 if start date is after end date
+    if (start.isAfter(end)) {
+      return 0;
+    }
+
+    // Calculate working days (Monday = 1, Sunday = 0, Saturday = 6)
+    let workingDays = 0;
+    let currentDate = start.clone().startOf('day');
+    const endDateNormalized = end.clone().startOf('day');
+
+    // Iterate through each day from start to end (inclusive)
+    while (currentDate.isBefore(endDateNormalized) || currentDate.isSame(endDateNormalized)) {
+      const dayOfWeek = currentDate.day(); // 0 = Sunday, 6 = Saturday
+      // Count only weekdays (Monday through Friday)
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        workingDays++;
+      }
+      currentDate = currentDate.add(1, 'day');
+    }
+
+    return workingDays;
+  }, []);
 
   // Auth and permissions
   const isProjectManager = currentSession?.team_member_id == selectedProjectManager?.id;
@@ -156,6 +205,16 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
 
         form.setFieldsValue(formValues);
 
+        // Calculate working days if both dates are present
+        if (formValues.start_date && formValues.end_date) {
+          try {
+            const days = calculateWorkingDays(formValues.start_date, formValues.end_date);
+            form.setFieldsValue({ working_days: days });
+          } catch (error) {
+            logger.error('Error calculating working days when loading project', error);
+          }
+        }
+
         setSelectedProjectManager(project.project_manager || null);
         setLoading(false);
         console.log('Form populated successfully with project data');
@@ -168,25 +227,12 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       // Creating new project - preserve form state, don't reset
       setEditMode(false);
       setLoading(false);
-      try {
-        // Get current toggle values before resetting
-        const currentManualProgress = form.getFieldValue('use_manual_progress');
-        const currentWeightedProgress = form.getFieldValue('use_weighted_progress');
-        const currentTimeProgress = form.getFieldValue('use_time_progress');
-
-        // Only set defaults if form is completely empty
-        const currentValues = form.getFieldsValue();
-        if (!currentValues.color_code) {
-          form.setFieldsValue({
-            ...defaultFormValues,
-            // Preserve toggle values if they exist, otherwise use defaults
-            use_manual_progress: currentManualProgress ?? defaultFormValues.use_manual_progress,
-            use_weighted_progress: currentWeightedProgress ?? defaultFormValues.use_weighted_progress,
-            use_time_progress: currentTimeProgress ?? defaultFormValues.use_time_progress,
-          });
-        }
-      } catch (error) {
-        logger.error('Error initializing form for new project', error);
+      
+      // Only set defaults if form is completely empty and not touched
+      const currentValues = form.getFieldsValue();
+      const isFormPristine = !form.isFieldsTouched(true);
+      if (isFormPristine && !currentValues.color_code) {
+        form.setFieldsValue(defaultFormValues);
       }
       setSelectedProjectManager(null);
       
@@ -200,7 +246,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     } else if (drawerVisible && projectId) {
       console.log('Drawer visible, waiting for project data to load...');
     }
-  }, [drawerVisible, projectId, project, projectLoading, form]);
+  }, [drawerVisible, projectId, project, projectLoading, form, calculateWorkingDays, defaultFormValues]);
 
   // Additional effect to handle loading state when project data is being fetched
   useEffect(() => {
@@ -218,18 +264,23 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     setSelectedProjectManager(null);
   }, [form, defaultFormValues]);
 
-  useEffect(() => {
+  // Helper function to recalculate working days from current form values
+  const recalculateWorkingDays = useCallback(() => {
     const startDate = form.getFieldValue('start_date');
     const endDate = form.getFieldValue('end_date');
 
     if (startDate && endDate) {
-      const days = calculateWorkingDays(
-        dayjs.isDayjs(startDate) ? startDate : dayjs(startDate),
-        dayjs.isDayjs(endDate) ? endDate : dayjs(endDate)
-      );
-      form.setFieldsValue({ working_days: days });
+      try {
+        const days = calculateWorkingDays(startDate, endDate);
+        form.setFieldsValue({ working_days: days });
+      } catch (error) {
+        logger.error('Error recalculating working days', error);
+      }
+    } else if (!startDate || !endDate) {
+      // Clear working days if either date is missing
+      form.setFieldsValue({ working_days: 0 });
     }
-  }, [form]);
+  }, [form, calculateWorkingDays]);
 
   // Handlers
   const handleUpgradeClick = useCallback(() => {
@@ -305,35 +356,6 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     } catch (error) {
       logger.error('Error saving project', error);
     }
-  };
-
-  const calculateWorkingDays = (
-    startDate: dayjs.Dayjs | null,
-    endDate: dayjs.Dayjs | null
-  ): number => {
-    if (
-      !startDate ||
-      !endDate ||
-      !startDate.isValid() ||
-      !endDate.isValid() ||
-      startDate.isAfter(endDate)
-    ) {
-      return 0;
-    }
-
-    let workingDays = 0;
-    let currentDate = startDate.clone().startOf('day');
-    const end = endDate.clone().startOf('day');
-
-    while (currentDate.isBefore(end) || currentDate.isSame(end)) {
-      const dayOfWeek = currentDate.day();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        workingDays++;
-      }
-      currentDate = currentDate.add(1, 'day');
-    }
-
-    return workingDays;
   };
 
   const handleVisibilityChange = useCallback(
@@ -549,9 +571,12 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
               <span>{t('projectManager')}</span>
               {isFree && (
                 <Tooltip title={tCommon('upgrade-plan')} placement="top">
-                  <CrownOutlined
-                    style={{ fontSize: '14px', color: '#faad14', cursor: 'pointer' }}
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<CrownOutlined style={{ fontSize: '14px', color: token.colorWarning }} />}
                     onClick={handleUpgradeClick}
+                    aria-label={tCommon('upgrade-plan')}
                   />
                 </Tooltip>
               )}
@@ -571,10 +596,17 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
                   disabledDate={disabledStartDate}
                   disabled={!isProjectManager && !isOwnerorAdmin}
                   onChange={date => {
-                    const endDate = form.getFieldValue('end_date');
-                    if (date && endDate) {
-                      const days = calculateWorkingDays(date, endDate);
-                      form.setFieldsValue({ working_days: days });
+                    try {
+                      const endDate = form.getFieldValue('end_date');
+                      if (date && endDate) {
+                        const days = calculateWorkingDays(date, endDate);
+                        form.setFieldsValue({ working_days: days });
+                      } else if (!date) {
+                        // Clear working days if start date is cleared
+                        form.setFieldsValue({ working_days: 0 });
+                      }
+                    } catch (error) {
+                      logger.error('Error calculating working days on start date change', error);
                     }
                   }}
                 />
@@ -584,10 +616,17 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
                   disabledDate={disabledEndDate}
                   disabled={!isProjectManager && !isOwnerorAdmin}
                   onChange={date => {
-                    const startDate = form.getFieldValue('start_date');
-                    if (startDate && date) {
-                      const days = calculateWorkingDays(startDate, date);
-                      form.setFieldsValue({ working_days: days });
+                    try {
+                      const startDate = form.getFieldValue('start_date');
+                      if (startDate && date) {
+                        const days = calculateWorkingDays(startDate, date);
+                        form.setFieldsValue({ working_days: days });
+                      } else if (!date) {
+                        // Clear working days if end date is cleared
+                        form.setFieldsValue({ working_days: 0 });
+                      }
+                    } catch (error) {
+                      logger.error('Error calculating working days on end date change', error);
                     }
                   }}
                 />
@@ -747,5 +786,4 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     </Drawer>
   );
 };
-
 export default ProjectDrawer;
