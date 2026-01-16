@@ -115,6 +115,7 @@
     "projectBudget": "项目预算",
     "projectBudgetTooltip": "为此项目分配的总预算",
     "currency": "货币",
+    "currencyPlaceholder": "选择货币",
     "costCalculationMethod": "成本计算方法",
     "calculationMethod": "计算方法",
     "workingHoursPerDay": "每日工作工时",
