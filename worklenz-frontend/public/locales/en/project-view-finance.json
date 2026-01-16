@@ -51,6 +51,39 @@
   "no": "No",
   "alreadyImportedRateCardMessage": "A rate card has already been imported. Clear all imported rate cards to add a new one.",
 
+  "noCurrenciesFound": "No currencies found",
+  "unknownProject": "Unknown Project",
+
+  "messages": {
+    "projectIdNotFound": "Project ID not found",
+    "financeDataExportedSuccessfully": "Finance data exported successfully",
+    "failedToExportFinanceData": "Failed to export finance data",
+    "noPermissionToChangeCurrency": "You do not have permission to change the project currency",
+    "projectCurrencyUpdatedSuccessfully": "Project currency updated successfully",
+    "failedToUpdateProjectCurrency": "Failed to update project currency",
+    "noPermissionToChangeBudget": "You do not have permission to change the project budget",
+    "pleaseEnterValidBudgetAmount": "Please enter a valid budget amount",
+    "projectBudgetUpdatedSuccessfully": "Project budget updated successfully",
+    "failedToUpdateProjectBudget": "Failed to update project budget"
+  },
+
+  "alerts": {
+    "businessPlanRequired": {
+      "message": "Business Plan Required",
+      "description": "Project finance features are available only on Business and Enterprise plans. Upgrade your plan to access these features."
+    },
+    "limitedAccess": {
+      "message": "Limited Access",
+      "financeDescription": "You can view finance data but cannot edit fixed costs. Only project managers, team admins, and team owners can make changes.",
+      "ratecardDescription": "You can view rate card data but cannot edit rates or manage member assignments. Only project managers, team admins, and team owners can make changes."
+    }
+  },
+
+  "tooltips": {
+    "availableOnlyOnBusinessPlan": "Available only on Business plan",
+    "budgetCalculationSettings": "Budget & Calculation Settings"
+  },
+
   "budgetOverviewTooltips": {
     "manualBudget": "Manual project budget amount set by project manager",
     "totalActualCost": "Total actual cost including fixed costs",
