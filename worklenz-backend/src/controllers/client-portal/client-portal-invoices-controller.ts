@@ -475,6 +475,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           i.paid_at,
           i.created_at,
           i.updated_at,
+          i.payment_proof_url,
           r.id as request_id,
           r.req_no as request_number,
           r.request_data,
@@ -515,6 +516,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         paidAt: invoice.paid_at,
         createdAt: invoice.created_at,
         updatedAt: invoice.updated_at,
+        paymentProofUrl: invoice.payment_proof_url || null,
         isOverdue:
           invoice.due_date &&
           new Date(invoice.due_date) < new Date() &&
@@ -984,20 +986,47 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
   }
 
   static async updateInvoice(
-    req: IWorkLenzRequest,
+    req: AuthenticatedClientRequest | IWorkLenzRequest,
     res: IWorkLenzResponse
   ) {
     try {
       const { id } = req.params;
-      const { amount, currency, dueDate, notes, status } = req.body;
-      const organizationId = req.user?.team_id;
+      const { amount, currency, dueDate, notes } = req.body;
+      
+      // Determine if this is a client request or admin request
+      const isClientRequest = 'clientId' in req && req.clientId;
+      const clientId = isClientRequest ? (req as AuthenticatedClientRequest).clientId : null;
+      const organizationId = isClientRequest 
+        ? (req as AuthenticatedClientRequest).organizationId 
+        : (req as IWorkLenzRequest).user?.team_id;
 
-      // Verify invoice exists and belongs to organization
-      const checkQuery = `
-        SELECT id, status as current_status FROM client_portal_invoices
-        WHERE id = $1 AND organization_team_id = $2
-      `;
-      const checkResult = await db.query(checkQuery, [id, organizationId]);
+      if (!organizationId) {
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Unauthorized"));
+      }
+
+      // Build query based on request type
+      let checkQuery: string;
+      let queryParams: any[];
+
+      if (isClientRequest && clientId) {
+        // Client-side: verify invoice belongs to client and check if paid
+        checkQuery = `
+          SELECT id, status as current_status FROM client_portal_invoices
+          WHERE id = $1 AND client_id = $2 AND organization_team_id = $3
+        `;
+        queryParams = [id, clientId, organizationId];
+      } else {
+        // Admin-side: verify invoice belongs to organization
+        checkQuery = `
+          SELECT id, status as current_status FROM client_portal_invoices
+          WHERE id = $1 AND organization_team_id = $2
+        `;
+        queryParams = [id, organizationId];
+      }
+
+      const checkResult = await db.query(checkQuery, queryParams);
 
       if (checkResult.rows.length === 0) {
         return res
@@ -1008,28 +1037,11 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
       const currentInvoice = checkResult.rows[0];
       const currentStatus = currentInvoice.current_status;
 
-      // Define allowed status transitions
-      const allowedTransitions: Record<string, string[]> = {
-        draft: ["sent"],
-        sent: ["paid"],
-        paid: [], // Paid invoices cannot transition to other states
-      };
-
-      // Validate status transition if status is being updated
-      if (status && status !== currentStatus) {
-        const allowedNextStates = allowedTransitions[currentStatus] || [];
-        
-        if (!allowedNextStates.includes(status)) {
-          return res
-            .status(400)
-            .json(
-              new ServerResponse(
-                false,
-                null,
-                `Invalid status transition: cannot change from '${currentStatus}' to '${status}'. Use dedicated endpoints for status changes (sendInvoice, markInvoiceAsPaid).`
-              )
-            );
-        }
+      // Prevent editing paid invoices
+      if (currentStatus === "paid") {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Paid invoices cannot be edited"));
       }
 
       // Build SET clause for fields to update
@@ -1051,11 +1063,6 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         setFields.notes = notes;
       }
 
-      // Only include status in update if it's a valid transition
-      if (status && status !== currentStatus) {
-        setFields.status = status;
-      }
-
       if (Object.keys(setFields).length === 0) {
         return res
           .status(400)
@@ -1071,31 +1078,29 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         return `${field} = $${paramIndex++}`;
       });
 
-      // Add timestamp updates based on status transition
-      if (status && status !== currentStatus) {
-        if (status === "sent" && currentStatus === "draft") {
-          setClauses.push("sent_at = NOW()");
-        } else if (status === "paid" && currentStatus === "sent") {
-          setClauses.push("paid_at = NOW()");
-        }
-      }
-
-      // Always update the updated_at timestamp
-      setClauses.push("updated_at = NOW()");
-
       // Build WHERE clause using SqlHelper for security
       const { where: whereClause, params: whereParams } = SqlHelper.buildWhereClause([
         { field: "id", operator: "=", value: id },
         { field: "organization_team_id", operator: "=", value: organizationId, conjunction: "AND" }
       ], paramIndex);
 
-      params.push(...whereParams);
+      // Add client_id filter for client requests
+      if (isClientRequest && clientId) {
+        whereParams.push(clientId);
+        const finalWhereClause = `${whereClause} AND client_id = $${whereParams.length + 2}`;
+        params.push(...whereParams, clientId);
+      } else {
+        params.push(...whereParams);
+      }
+
+      // Always update the updated_at timestamp
+      setClauses.push("updated_at = NOW()");
 
       // Build final query
       const updateQuery = `
         UPDATE client_portal_invoices
         SET ${setClauses.join(", ")}
-        WHERE ${whereClause}
+        WHERE ${isClientRequest && clientId ? `${whereClause} AND client_id = $${params.length + 1}` : whereClause}
         RETURNING id, invoice_no, amount, currency, status, due_date, sent_at, paid_at, updated_at
       `;
 

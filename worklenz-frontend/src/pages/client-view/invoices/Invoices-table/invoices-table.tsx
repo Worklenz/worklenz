@@ -81,8 +81,8 @@ const InvoicesTable = () => {
     {
       key: 'order_no',
       title: t('invoiceNoColumn'),
-      render: record => (
-        <Typography.Text strong style={{ color: colors.skyBlue }}>
+      render: (record) => (
+        <Typography.Text key={`invoice-${record.id}`} strong style={{ color: colors.skyBlue }}>
           {record.invoice_no}
         </Typography.Text>
       ),
@@ -93,7 +93,7 @@ const InvoicesTable = () => {
     {
       key: 'service',
       title: t('serviceColumn'),
-      render: record => <Typography.Text>{record.service}</Typography.Text>,
+      render: (record) => <Typography.Text key={`service-${record.id}`}>{record.service}</Typography.Text>,
       onCell: () => ({
         style: { minWidth: 250 },
       }),
@@ -101,16 +101,16 @@ const InvoicesTable = () => {
     {
       key: 'status',
       title: t('statusColumn'),
-      render: record => (
-        <Tag color={getStatusColor(record.status)}>{getStatusText(record.status)}</Tag>
+      render: (record) => (
+        <Tag key={`status-${record.id}`} color={getStatusColor(record.status)}>{getStatusText(record.status)}</Tag>
       ),
       width: 120,
     },
     {
       key: 'issued_time',
       title: t('issuedTimeColumn'),
-      render: record => (
-        <Typography.Text>{new Date(record.issued_time).toLocaleDateString()}</Typography.Text>
+      render: (record) => (
+        <Typography.Text key={`date-${record.id}`}>{new Date(record.issued_time).toLocaleDateString()}</Typography.Text>
       ),
       width: 150,
     },
@@ -121,6 +121,7 @@ const InvoicesTable = () => {
       <Table
         columns={columns}
         dataSource={invoicesList}
+        rowKey={(record) => record.id}
         pagination={{
           size: 'small',
         }}

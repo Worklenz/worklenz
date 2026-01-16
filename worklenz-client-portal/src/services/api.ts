@@ -392,6 +392,13 @@ class ClientPortalAPI {
     return this.request(`/invoices/${id}`);
   }
 
+  async updateInvoice(id: string, updateData: { amount?: number; currency?: string; dueDate?: string; notes?: string }) {
+    return this.request(`/invoices/${id}`, {
+      method: 'PUT',
+      data: updateData,
+    });
+  }
+
   async payInvoice(id: string, paymentData: { paymentMethod?: string; transactionId?: string; notes?: string }) {
     return this.request(`/invoices/${id}/pay`, {
       method: 'POST',
