@@ -34,15 +34,39 @@ import { DeleteOutlined } from '@/shared/antd-imports';
 
 const MAX_COMMENT_LENGTH = 2000;
 
-// Compile RegExp once for linkify
-const urlRegex = /((https?:\/\/|www\.)[\w\-._~:/?#[\]@!$&'()*+,;=%]+)/gi;
+// Helper function to check if content already has processed mentions
+const hasProcessedMentions = (content: string): boolean => {
+  return content.includes('<span class="mentions">');
+};
 
-function linkify(text: string): string {
-  return text.replace(urlRegex, url => {
-    const href = url.startsWith('http') ? url : `https://${url}`;
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>`;
-  });
-}
+// Helper function to process mentions in content
+const processMentions = (content: string) => {
+  if (!content) return '';
+
+  // Check if content already contains mentions spans
+  if (hasProcessedMentions(content)) {
+    return content;
+  }
+
+  // Match @mentions with multiple words (e.g., @saman navoda, @john doe)
+  // This regex matches @ followed by word characters and spaces
+  return content.replace(/@([\w]+(?:\s+[\w]+)*)/g, '<span class="mentions">@$1</span>');
+};
+
+// Helper function to process content
+const processContent = (content: string) => {
+  if (!content) return '';
+  
+  // First, sanitize to prevent XSS
+  let sanitized = sanitizeCommentContent(content);
+  
+  // Then process mentions if not already processed
+  if (!hasProcessedMentions(sanitized)) {
+    sanitized = processMentions(sanitized);
+  }
+  
+  return sanitized;
+};
 
 const ProjectViewUpdates = () => {
   const { projectId } = useParams();
@@ -89,7 +113,12 @@ const ProjectViewUpdates = () => {
       setIsLoadingComments(true);
       const res = await projectCommentsApiService.getByProjectId(projectId);
       if (res.done) {
-        setComments(res.body);
+        // Process mentions in all fetched comments
+        const processedComments = res.body.map((comment: IProjectUpdateCommentViewModel) => ({
+          ...comment,
+          content: comment.content ? processContent(comment.content) : '',
+        }));
+        setComments(processedComments);
       }
     } catch (error) {
       console.error('Failed to fetch comments:', error);
@@ -118,8 +147,8 @@ const ProjectViewUpdates = () => {
 
       const res = await projectCommentsApiService.createProjectComment(body);
       if (res.done) {
-        // Security: Sanitize content for optimistic update to prevent XSS
-        const sanitizedContent = sanitizeCommentContent(commentValue.trim());
+        // Process the content for the new comment to ensure mentions are highlighted
+        const processedContent = processContent(commentValue.trim());
         
         setComments(prev => [
           ...prev,
@@ -127,7 +156,7 @@ const ProjectViewUpdates = () => {
             ...(res.body as IProjectUpdateCommentViewModel),
             created_by: getUserSession()?.name || '',
             created_at: new Date().toISOString(),
-            content: sanitizedContent,
+            content: processedContent,
             mentions: (res.body as IProjectUpdateCommentViewModel).mentions ?? [
               undefined,
               undefined,
@@ -142,7 +171,7 @@ const ProjectViewUpdates = () => {
       setIsSubmitting(false);
       setCommentValue('');
     }
-  }, [projectId, characterLength, commentValue, selectedMembers, getComments]);
+  }, [projectId, characterLength, commentValue, selectedMembers]);
 
   useEffect(() => {
     void getMembers();
@@ -154,6 +183,7 @@ const ProjectViewUpdates = () => {
     setCharacterLength(0);
     setIsCommentBoxExpand(false);
     setSelectedMembers([]);
+    setCommentValue('');
   }, [form]);
 
   const mentionsOptions = useMemo(
@@ -247,9 +277,7 @@ const ProjectViewUpdates = () => {
 
   const renderComment = useCallback(
     (comment: IProjectUpdateCommentViewModel) => {
-      // Security: Sanitize comment content to prevent XSS and open redirects
-      // Do NOT linkify - the backend already sanitized content to remove links
-      const sanitizedContent = sanitizeCommentContent(comment.content || '');
+      // Content is already processed in getComments, so just use it directly
       const timeDifference = calculateTimeDifference(comment.created_at || '');
       const themeClass = theme === 'dark' ? 'dark' : 'light';
 
@@ -279,7 +307,7 @@ const ProjectViewUpdates = () => {
                 >
                   <div
                     className={`mentions-${themeClass}`}
-                    dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+                    dangerouslySetInnerHTML={{ __html: comment.content || '' }}
                     onClick={handleCommentLinkClick}
                   />
                 </Typography.Paragraph>
@@ -289,7 +317,7 @@ const ProjectViewUpdates = () => {
         </Dropdown>
       );
     },
-    [theme, configProviderTheme, handleDeleteComment, handleCommentLinkClick]
+    [theme, handleDeleteComment, handleCommentLinkClick, getCommentMenu]
   );
 
   const commentsList = useMemo(() => comments.map(renderComment), [comments, renderComment]);
@@ -319,6 +347,7 @@ const ProjectViewUpdates = () => {
               const optionLabel = (option as any)?.label || '';
               return optionLabel.toLowerCase().includes(input.toLowerCase());
             }}
+            className="updates-mentions-input"
             style={{
               minHeight: isCommentBoxExpand ? 180 : 60,
               paddingBlockEnd: 24,

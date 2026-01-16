@@ -1,19 +1,81 @@
+/* Mentions styling in posted comments - Light mode */
 .mentions-light .mentions {
-  background-color: #e9e2e2;
+  background-color: #f0f2f5;
+  color: #1890ff;
   font-weight: 500;
   border-radius: 4px;
   padding: 2px 4px;
+  margin: 0 1px;
+  border: 1px solid #e6e6e6;
 }
 
+/* Mentions styling in posted comments - Dark mode */
 .mentions-dark .mentions {
-  background-color: #2c2c2c;
+  background-color: #2a3a4a;
+  color: #40a9ff;
   font-weight: 500;
   border-radius: 4px;
   padding: 2px 4px;
+  margin: 0 1px;
+  border: 1px solid #2a4a6d;
 }
 
+/* Tooltip mentions - no background */
 .tooltip-comment .mentions {
   background-color: transparent;
   font-weight: 500;
   padding: 0;
+}
+
+/* Hover effect for mentions - Light mode */
+.mentions-light .mentions:hover {
+  background-color: #e6f7ff;
+  border-color: #1890ff;
+  cursor: pointer;
+}
+
+/* Hover effect for mentions - Dark mode */
+.mentions-dark .mentions:hover {
+  background-color: #1e3a5f;
+  border-color: #40a9ff;
+  cursor: pointer;
+}
+
+/* Mentions input field styling */
+.updates-mentions-input .ant-mentions-dropdown-menu-item {
+  padding: 8px 12px;
+}
+
+/* Style for @ prefix in input */
+.updates-mentions-input .ant-mentions-prefix {
+  color: #1890ff;
+  font-weight: 500;
+}
+
+/* Highlight selected mention in dropdown */
+.ant-mentions-dropdown-menu-item-active {
+  background-color: #e6f7ff;
+}
+
+/* Dark mode for dropdown */
+.ant-mentions-dropdown-menu-item-active.dark {
+  background-color: #1e3a5f;
+}
+
+/* Style the mention text while typing */
+.updates-mentions-input .ant-mentions-measure {
+  color: #1890ff;
+}
+
+/* Ensure mentions are inline and don't break layout */
+.mentions-light .mentions,
+.mentions-dark .mentions {
+  display: inline;
+  white-space: nowrap;
+}
+
+/* Add smooth transition for hover effects */
+.mentions-light .mentions,
+.mentions-dark .mentions {
+  transition: all 0.2s ease;
 }
