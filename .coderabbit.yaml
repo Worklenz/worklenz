@@ -12,7 +12,7 @@ reviews:
     base_branches:
       - development
       - main
-      - master
+      - uat
 
   # Paths to exclude from reviews
   path_filters:
