@@ -168,11 +168,25 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       // Creating new project - preserve form state, don't reset
       setEditMode(false);
       setLoading(false);
-      
-      // Only set defaults if form is completely empty
-      const currentValues = form.getFieldsValue();
-      if (!currentValues.color_code) {
-        form.setFieldsValue(defaultFormValues);
+      try {
+        // Get current toggle values before resetting
+        const currentManualProgress = form.getFieldValue('use_manual_progress');
+        const currentWeightedProgress = form.getFieldValue('use_weighted_progress');
+        const currentTimeProgress = form.getFieldValue('use_time_progress');
+
+        // Only set defaults if form is completely empty
+        const currentValues = form.getFieldsValue();
+        if (!currentValues.color_code) {
+          form.setFieldsValue({
+            ...defaultFormValues,
+            // Preserve toggle values if they exist, otherwise use defaults
+            use_manual_progress: currentManualProgress ?? defaultFormValues.use_manual_progress,
+            use_weighted_progress: currentWeightedProgress ?? defaultFormValues.use_weighted_progress,
+            use_time_progress: currentTimeProgress ?? defaultFormValues.use_time_progress,
+          });
+        }
+      } catch (error) {
+        logger.error('Error initializing form for new project', error);
       }
       setSelectedProjectManager(null);
       
@@ -265,8 +279,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       const response = await action;
 
       if (response?.data?.done) {
-        // FIX: Don't close drawer or reset form here - let navigation handle it
-        // The window.location.reload() will handle the cleanup
+        // ✅ REMOVED form.resetFields() - drawer close handler will handle cleanup
         if (!editMode) {
           trackMixpanelEvent(evt_projects_create);
           // Navigate first, then reload - this ensures toggle states are preserved
@@ -482,7 +495,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       {!isEditable && (
         <Alert message={t('noPermission')} type="warning" showIcon style={{ marginBottom: 16 }} />
       )}
-      <Skeleton active paragraph={{ rows: 12 }} loading={loading || projectLoading}>
+      <Skeleton active paragraph={{ rows: 12 }} loading={editMode && (loading || projectLoading)}>
         <Form
           form={form}
           layout="vertical"
@@ -536,7 +549,7 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
               <span>{t('projectManager')}</span>
               {isFree && (
                 <Tooltip title={tCommon('upgrade-plan')} placement="top">
-                  <CrownOutlined 
+                  <CrownOutlined
                     style={{ fontSize: '14px', color: '#faad14', cursor: 'pointer' }}
                     onClick={handleUpgradeClick}
                   />
