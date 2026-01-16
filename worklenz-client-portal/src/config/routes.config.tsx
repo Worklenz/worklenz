@@ -20,6 +20,7 @@ import ProjectsPage from '@/pages/ProjectsPage';
 import ProjectDetailsPage from '@/pages/ProjectDetailsPage';
 import InvoicesPage from '@/pages/InvoicesPage';
 import InvoiceDetailsPage from '@/pages/InvoiceDetailsPage';
+import EditInvoicePage from '@/pages/EditInvoicePage';
 import ChatsPage from '@/pages/ChatsPage';
 import ChatDetailsPage from '@/pages/ChatDetailsPage';
 import SettingsPage from '@/pages/SettingsPage';
@@ -82,6 +83,7 @@ export const AppRoutes: React.FC = () => (
       <Route path="projects/:id" element={<ProjectDetailsPage />} />
       <Route path="invoices" element={<InvoicesPage />} />
       <Route path="invoices/:id" element={<InvoiceDetailsPage />} />
+      <Route path="invoices/:id/edit" element={<EditInvoicePage />} />
       <Route path="chats" element={<ChatsPage />} />
       <Route path="chats/:id" element={<ChatDetailsPage />} />
       <Route path="settings" element={<SettingsPage />} />

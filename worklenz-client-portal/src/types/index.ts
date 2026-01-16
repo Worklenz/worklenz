@@ -292,6 +292,7 @@ export interface InvoiceDetails {
   createdAt: string;
   updatedAt: string;
   paymentProofUrl?: string | null;
+  notes?: string | null;
   isOverdue: boolean;
   request?: {
     id: string;

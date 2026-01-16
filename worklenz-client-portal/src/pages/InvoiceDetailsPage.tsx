@@ -18,6 +18,7 @@ import {
   PrinterOutlined,
   DownloadOutlined,
   EyeOutlined,
+  EditOutlined,
 } from "@/shared/antd-imports";
 import { useNavigate, useParams } from "react-router-dom";
 import clientPortalAPI from "@/services/api";
@@ -64,6 +65,7 @@ const InvoiceDetailsPage: React.FC = () => {
   }, [isPaymentProofModalVisible]);
 
   const fetchInvoiceDetails = async () => {
+    console.log('Fetching invoice details for ID:', id);
     try {
       setIsLoading(true);
       setError(null);
@@ -72,6 +74,7 @@ const InvoiceDetailsPage: React.FC = () => {
       if (response.done) {
         const data = response.body as InvoiceDetails;
         setInvoice(data);
+        console.log(data)
       } else {
         setError("Failed to load invoice details");
       }
@@ -501,6 +504,7 @@ const InvoiceDetailsPage: React.FC = () => {
           )}
 
           {/* Action Buttons */}
+          {console.log('Invoice Status Debug:', invoice.status, 'Lowercase:', invoice.status?.toLowerCase(), 'Is Paid:', invoice.status?.toLowerCase() === "paid")}
           <Flex gap={12} wrap="wrap">
             {invoice.status.toLowerCase() === "sent" && (
               <Button
@@ -509,6 +513,14 @@ const InvoiceDetailsPage: React.FC = () => {
                 onClick={() => setIsPaymentModalVisible(true)}
               >
                 Submit Payment Proof
+              </Button>
+            )}
+            {invoice.status.toLowerCase() !== "paid" && (
+              <Button
+                icon={<EditOutlined />}
+                onClick={() => navigate(`/invoices/${id}/edit`)}
+              >
+                Edit Invoice
               </Button>
             )}
             <Button 

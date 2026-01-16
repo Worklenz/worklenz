@@ -90,15 +90,15 @@ const ClientPortalInvoiceDetails: React.FC = () => {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'paid':
-        return t('statusPaid');
+        return t('statusPaid', { defaultValue: 'Paid' });
       case 'sent':
-        return t('statusSent');
+        return t('statusSent', { defaultValue: 'Sent' });
       case 'draft':
-        return t('statusDraft');
+        return t('statusDraft', { defaultValue: 'Draft' });
       case 'overdue':
-        return t('statusOverdue');
+        return t('statusOverdue', { defaultValue: 'Overdue' });
       case 'cancelled':
-        return t('statusCancelled');
+        return t('statusCancelled', { defaultValue: 'Cancelled' });
       default:
         return status;
     }
@@ -126,25 +126,25 @@ const ClientPortalInvoiceDetails: React.FC = () => {
   const handleSendInvoice = async () => {
     try {
       await sendInvoice(invoiceId!).unwrap();
-      message.success(t('sendInvoice') + ' ' + t('createInvoiceSuccessMessage'));
+      message.success(t('sendInvoice', { defaultValue: 'Send Invoice' }) + ' ' + t('createInvoiceSuccessMessage', { defaultValue: 'Invoice sent successfully' }));
     } catch (error) {
-      message.error(t('createInvoiceErrorMessage'));
+      message.error(t('createInvoiceErrorMessage', { defaultValue: 'Failed to send invoice' }));
     }
   };
 
   // Handle mark as paid
   const handleMarkAsPaid = async () => {
     Modal.confirm({
-      title: t('markAsPaid.title'),
-      content: t('markAsPaid.confirm'),
-      okText: t('markAsPaid.okText'),
-      cancelText: t('markAsPaid.cancelText'),
+      title: t('markAsPaid.title', { defaultValue: 'Mark as Paid' }),
+      content: t('markAsPaid.confirm', { defaultValue: 'Are you sure you want to mark this invoice as paid?' }),
+      okText: t('markAsPaid.okText', { defaultValue: 'Mark as Paid' }),
+      cancelText: t('markAsPaid.cancelText', { defaultValue: 'Cancel' }),
       onOk: async () => {
         try {
           await markAsPaid(invoiceId!).unwrap();
-          message.success(t('markAsPaid.success'));
+          message.success(t('markAsPaid.success', { defaultValue: 'Invoice marked as paid successfully' }));
         } catch (error) {
-          message.error(t('markAsPaid.failure'));
+          message.error(t('markAsPaid.failure', { defaultValue: 'Failed to mark invoice as paid' }));
         }
       },
     });
@@ -163,18 +163,18 @@ const ClientPortalInvoiceDetails: React.FC = () => {
   // Handle delete invoice
   const handleDeleteInvoice = () => {
     Modal.confirm({
-      title: t('deleteInvoice'),
-      content: t('deleteConfirmationTitle'),
-      okText: t('deleteConfirmationOk'),
-      cancelText: t('deleteConfirmationCancel'),
+      title: t('deleteInvoice', { defaultValue: 'Delete Invoice' }),
+      content: t('deleteConfirmationTitle', { defaultValue: 'Are you sure you want to delete this invoice?' }),
+      okText: t('deleteConfirmationOk', { defaultValue: 'Delete' }),
+      cancelText: t('deleteConfirmationCancel', { defaultValue: 'Cancel' }),
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
           await deleteInvoice(invoiceId!).unwrap();
-          message.success(t('deleteInvoice.success'));
+          message.success(t('deleteInvoice.success', { defaultValue: 'Invoice deleted successfully' }));
           navigate('/worklenz/client-portal/invoices');
         } catch (error) {
-          message.error(t('deleteInvoice.failure'));
+          message.error(t('deleteInvoice.failure', { defaultValue: 'Failed to delete invoice' }));
         }
       },
     });
@@ -184,7 +184,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
   if (isLoading) {
     return (
       <Flex justify="center" align="center" style={{ minHeight: '60vh' }}>
-        <Spin size="large" tip={t('loadingInvoice')} />
+        <Spin size="large" tip={t('loadingInvoice', { defaultValue: 'Loading invoice...' })} />
       </Flex>
     );
   }
@@ -195,11 +195,11 @@ const ClientPortalInvoiceDetails: React.FC = () => {
       <Flex justify="center" align="center" style={{ minHeight: '60vh' }}>
         <Result
           status="error"
-          title={t('errorLoadingInvoice')}
-          subTitle={t('errorLoadingInvoiceDescription')}
+          title={t('errorLoadingInvoice', { defaultValue: 'Error Loading Invoice' })}
+          subTitle={t('errorLoadingInvoiceDescription', { defaultValue: 'Unable to load invoice details. Please try again.' })}
           extra={
             <Button type="primary" onClick={() => navigate(-1)}>
-              {t('backToInvoices')}
+              {t('backToInvoices', { defaultValue: 'Back to Invoices' })}
             </Button>
           }
         />
@@ -233,14 +233,14 @@ const ClientPortalInvoiceDetails: React.FC = () => {
               </Tag>
             </Flex>
             <Text type="secondary">
-              {t('createdAt')}: {formatDate(invoice.createdAt)}
+              {t('createdAt', { defaultValue: 'Created at' })}: {formatDate(invoice.createdAt)}
             </Text>
           </div>
         </Flex>
 
         <Space>
           <Button icon={<EyeOutlined />} onClick={() => setPreviewOpen(true)}>
-            {t('previewInvoice')}
+            {t('previewInvoice', { defaultValue: 'Preview Invoice' })}
           </Button>
           {invoice.status === 'draft' && (
             <Button 
@@ -249,7 +249,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
               onClick={handleSendInvoice}
               loading={isSending}
             >
-              {t('sendInvoice')}
+              {t('sendInvoice', { defaultValue: 'Send Invoice' })}
             </Button>
           )}
           {invoice.status === 'sent' && (
@@ -258,29 +258,33 @@ const ClientPortalInvoiceDetails: React.FC = () => {
               onClick={handleMarkAsPaid}
               loading={isMarkingPaid}
             >
-              {t('markAsPaid')}
+              {t('markAsPaid', { defaultValue: 'Mark as Paid' })}
             </Button>
           )}
-          <Tooltip title={t('downloadInvoice')}>
-            <Button 
-              icon={<DownloadOutlined />} 
+          <Tooltip title={t('downloadInvoice', { defaultValue: 'Download Invoice' })}>
+            <Button
+              icon={<DownloadOutlined />}
               onClick={handleDownloadInvoice}
             />
           </Tooltip>
-          <Tooltip title={t('editInvoice')}>
-            <Button 
-              icon={<EditOutlined />} 
-              onClick={handleEditInvoice}
-            />
-          </Tooltip>
-          <Tooltip title={t('deleteInvoice')}>
-            <Button 
-              icon={<DeleteOutlined />} 
-              danger 
-              onClick={handleDeleteInvoice}
-              loading={isDeleting}
-            />
-          </Tooltip>
+          {invoice.status !== 'paid' && (
+            <Tooltip title={t('editInvoice', { defaultValue: 'Edit Invoice' })}>
+              <Button
+                icon={<EditOutlined />}
+                onClick={handleEditInvoice}
+              />
+            </Tooltip>
+          )}
+          {invoice.status !== 'paid' && (
+            <Tooltip title={t('deleteInvoice', { defaultValue: 'Delete Invoice' })}>
+              <Button
+                icon={<DeleteOutlined />}
+                danger
+                onClick={handleDeleteInvoice}
+                loading={isDeleting}
+              />
+            </Tooltip>
+          )}
         </Space>
       </Flex>
 
@@ -291,14 +295,14 @@ const ClientPortalInvoiceDetails: React.FC = () => {
             {/* Invoice Amount Header */}
             <Flex justify="space-between" align="flex-start" style={{ marginBottom: 24 }}>
               <div>
-                <Text type="secondary">{t('invoiceOf')}</Text>
+                <Text type="secondary">{t('invoiceOf', { defaultValue: 'Invoice of' })}</Text>
                 <Title level={2} style={{ margin: 0, color: '#52c41a' }}>
                   {formatCurrency(invoice.amount, invoice.currency)}
                 </Title>
               </div>
               {invoice.isOverdue && (
                 <Tag color="error" icon={<ExclamationCircleOutlined />}>
-                  {t('statusOverdue')}
+                  {t('statusOverdue', { defaultValue: 'Overdue' })}
                 </Tag>
               )}
             </Flex>
@@ -307,31 +311,31 @@ const ClientPortalInvoiceDetails: React.FC = () => {
 
             {/* Invoice Details */}
             <Descriptions
-              title={t('invoiceDetails')}
+              title={t('invoiceDetails', { defaultValue: 'Invoice Details' })}
               bordered
               column={{ xs: 1, sm: 2 }}
               size="small"
             >
-              <Descriptions.Item label={t('invoiceNoColumn')}>
+              <Descriptions.Item label={t('invoiceNoColumn', { defaultValue: 'Invoice #' })}>
                 <Text strong>{invoice.invoiceNumber}</Text>
               </Descriptions.Item>
-              <Descriptions.Item label={t('statusColumn')}>
+              <Descriptions.Item label={t('statusColumn', { defaultValue: 'Status' })}>
                 <Tag icon={statusConfig.icon} color={statusConfig.color as any}>
                   {getStatusText(invoice.status)}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label={t('invoiceDate')}>
+              <Descriptions.Item label={t('invoiceDate', { defaultValue: 'Invoice Date' })}>
                 {formatDate(invoice.createdAt)}
               </Descriptions.Item>
-              <Descriptions.Item label={t('dueDateLabel')}>
+              <Descriptions.Item label={t('dueDateLabel', { defaultValue: 'Due Date' })}>
                 <Text type={invoice.isOverdue ? 'danger' : undefined}>
                   {formatDate(invoice.dueDate)}
                 </Text>
               </Descriptions.Item>
-              <Descriptions.Item label={t('amountLabel')}>
+              <Descriptions.Item label={t('amountLabel', { defaultValue: 'Amount' })}>
                 <Text strong>{formatCurrency(invoice.amount, invoice.currency)}</Text>
               </Descriptions.Item>
-              <Descriptions.Item label={t('currencyLabel')}>
+              <Descriptions.Item label={t('currencyLabel', { defaultValue: 'Currency' })}>
                 {invoice.currency}
               </Descriptions.Item>
             </Descriptions>
@@ -340,21 +344,21 @@ const ClientPortalInvoiceDetails: React.FC = () => {
 
             {/* Client Details */}
             <Descriptions
-              title={t('clientDetails')}
+              title={t('clientDetails', { defaultValue: 'Client Details' })}
               bordered
               column={{ xs: 1, sm: 2 }}
               size="small"
             >
-              <Descriptions.Item label={t('clientLabel')}>
+              <Descriptions.Item label={t('clientLabel', { defaultValue: 'Client' })}>
                 <Flex align="center" gap={8}>
                   <Avatar icon={<UserOutlined />} size="small" />
                   <Text strong>{invoice.client?.name || '-'}</Text>
                 </Flex>
               </Descriptions.Item>
-              <Descriptions.Item label={t('companyName')}>
+              <Descriptions.Item label={t('companyName', { defaultValue: 'Company Name' })}>
                 {invoice.client?.companyName || '-'}
               </Descriptions.Item>
-              <Descriptions.Item label={t('email')} span={2}>
+              <Descriptions.Item label={t('email', { defaultValue: 'Email' })} span={2}>
                 {invoice.client?.email || '-'}
               </Descriptions.Item>
             </Descriptions>
@@ -364,22 +368,22 @@ const ClientPortalInvoiceDetails: React.FC = () => {
               <>
                 <Divider />
                 <Descriptions
-                  title={t('requestDetails')}
+                  title={t('requestDetails', { defaultValue: 'Request Details' })}
                   bordered
                   column={{ xs: 1, sm: 2 }}
                   size="small"
                 >
-                  <Descriptions.Item label={t('requestNumber')}>
+                  <Descriptions.Item label={t('requestNumber', { defaultValue: 'Request #' })}>
                     <Text strong>{invoice.request.requestNumber}</Text>
                   </Descriptions.Item>
-                  <Descriptions.Item label={t('serviceName')}>
+                  <Descriptions.Item label={t('serviceName', { defaultValue: 'Service Name' })}>
                     {invoice.request.service?.name || '-'}
                   </Descriptions.Item>
                 </Descriptions>
                 {invoice.request.service?.description && (
                   <div style={{ marginTop: 16 }}>
                     <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                      {t('serviceDescription')}
+                      {t('serviceDescription', { defaultValue: 'Service Description' })}
                     </Text>
                     <Card size="small" style={{ backgroundColor: 'var(--ant-color-bg-layout)' }}>
                       <div 
@@ -403,7 +407,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
                 <Divider />
                 <div>
                   <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                    {t('notes')}
+                    {t('notes', { defaultValue: 'Notes' })}
                   </Text>
                   <Card size="small" style={{ backgroundColor: '#fafafa' }}>
                     <Text>{invoice.notes}</Text>
@@ -417,23 +421,23 @@ const ClientPortalInvoiceDetails: React.FC = () => {
         {/* Sidebar */}
         <Col xs={24} lg={8}>
           {/* Payment Status Card */}
-          <Card title={t('paymentDetails')} style={{ marginBottom: 24 }}>
+          <Card title={t('paymentDetails', { defaultValue: 'Payment Details' })} style={{ marginBottom: 24 }}>
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
               <Flex justify="space-between">
-                <Text type="secondary">{t('sentAt')}</Text>
+                <Text type="secondary">{t('sentAt', { defaultValue: 'Sent At' })}</Text>
                 <Text>
-                  {invoice.sentAt ? formatDate(invoice.sentAt) : t('notSentYet')}
+                  {invoice.sentAt ? formatDate(invoice.sentAt) : t('notSentYet', { defaultValue: 'Not sent yet' })}
                 </Text>
               </Flex>
               <Flex justify="space-between">
-                <Text type="secondary">{t('paidAt')}</Text>
+                <Text type="secondary">{t('paidAt', { defaultValue: 'Paid At' })}</Text>
                 <Text>
-                  {invoice.paidAt ? formatDate(invoice.paidAt) : t('notPaidYet')}
+                  {invoice.paidAt ? formatDate(invoice.paidAt) : t('notPaidYet', { defaultValue: 'Not paid yet' })}
                 </Text>
               </Flex>
               <Divider style={{ margin: '12px 0' }} />
               <Flex justify="space-between">
-                <Text type="secondary">{t('updatedAt')}</Text>
+                <Text type="secondary">{t('updatedAt', { defaultValue: 'Updated At' })}</Text>
                 <Text>{formatDate(invoice.updatedAt)}</Text>
               </Flex>
             </Space>
@@ -445,7 +449,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
               title={
                 <Flex align="center" gap={8}>
                   <FileImageOutlined />
-                  <Text strong>{t('paymentProof')}</Text>
+                  <Text strong>{t('paymentProof', { defaultValue: 'Payment Proof' })}</Text>
                 </Flex>
               }
               style={{ marginBottom: 24 }}
@@ -481,7 +485,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
                             onClick={() => setPaymentProofPreviewOpen(true)}
                             style={{ marginTop: 8 }}
                           >
-                            {t('viewFullSize')}
+                            {t('viewFullSize', { defaultValue: 'View Full Size' })}
                           </Button>
                         </div>
                       );
@@ -494,7 +498,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
                             icon={<EyeOutlined />}
                             onClick={() => window.open(invoice.paymentProofUrl!, '_blank')}
                           >
-                            {t('viewPdf')}
+                            {t('viewPdf', { defaultValue: 'View PDF' })}
                           </Button>
                           <Button
                             icon={<DownloadOutlined />}
@@ -505,7 +509,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
                               link.click();
                             }}
                           >
-                            {t('download')}
+                            {t('download', { defaultValue: 'Download' })}
                           </Button>
                         </Flex>
                       );
@@ -518,7 +522,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
                             icon={<EyeOutlined />}
                             onClick={() => window.open(invoice.paymentProofUrl!, '_blank')}
                           >
-                            {t('viewFile')}
+                            {t('viewFile', { defaultValue: 'View File' })}
                           </Button>
                           <Button
                             icon={<DownloadOutlined />}
@@ -529,7 +533,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
                               link.click();
                             }}
                           >
-                            {t('download')}
+                            {t('download', { defaultValue: 'Download' })}
                           </Button>
                         </Flex>
                       );
@@ -542,7 +546,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
 
           {/* Created By Card */}
           {invoice.createdBy && (
-            <Card title={t('createdBy')}>
+            <Card title={t('createdBy', { defaultValue: 'Created By' })}>
               <Flex align="center" gap={12}>
                 <Avatar icon={<UserOutlined />} />
                 <Text strong>{invoice.createdBy.name}</Text>
