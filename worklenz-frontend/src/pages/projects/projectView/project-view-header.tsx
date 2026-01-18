@@ -17,7 +17,6 @@ import {
   SyncOutlined,
   UsergroupAddOutlined,
 } from '@/shared/antd-imports';
-import ProjectImportExportModal from './ProjectImportExportModal';
 import { PageHeader } from '@ant-design/pro-components';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -72,7 +71,6 @@ import { isFreeUser } from '@/utils/subscription-utils';
 import { ProjectIntegrationsButton } from '@/components/projects/integrations/ProjectIntegrationsButton';
 
 const ProjectViewHeader = memo(() => {
-  const [importExportOpen, setImportExportOpen] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation('project-view/project-view-header');
   const dispatch = useAppDispatch();
@@ -419,20 +417,6 @@ const ProjectViewHeader = memo(() => {
       </Tooltip>
     );
 
-    // Import/Export button (right of Settings)
-    actions.push(
-      <Tooltip
-        key="import-export"
-        title={t('importExportTooltip', { defaultValue: 'Import and Export' })}
-      >
-        <Button
-          shape="circle"
-          icon={<ImportOutlined />}
-          onClick={() => setImportExportOpen(true)}
-        />
-      </Tooltip>
-    );
-
     // Integrations button (owner/admin/team lead/project manager only)
     if (isOwnerOrAdmin || isProjectManager) {
       actions.push(
@@ -590,10 +574,6 @@ const ProjectViewHeader = memo(() => {
         title={pageHeaderTitle}
         style={pageHeaderStyle}
         extra={headerActions}
-      />
-      <ProjectImportExportModal
-        open={importExportOpen}
-        onClose={() => setImportExportOpen(false)}
       />
       {createPortal(<ProjectDrawer onClose={() => {}} />, document.body, 'project-drawer')}
       {createPortal(<ImportTaskTemplate />, document.body, 'import-task-template')}
