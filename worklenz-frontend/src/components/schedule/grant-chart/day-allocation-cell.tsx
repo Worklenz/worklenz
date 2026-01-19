@@ -26,41 +26,27 @@ type DayAllocationCellProps = {
   capacityData?: DailyCapacityData | null;
   memberName?: string;
   date?: string;
-  // Legacy props for backward compatibility
-  totalPerDayHours?: number;
-  loggedHours?: number;
-  workingHours?: number;
   isWeekend?: boolean;
-  capacity?: number;
-  availableHours?: number;
 };
 
 const DayAllocationCell = ({
   capacityData,
   memberName,
   date,
-  // Legacy props
-  totalPerDayHours = 0,
-  loggedHours = 0,
-  workingHours = 8,
   isWeekend = false,
 }: DayAllocationCellProps) => {
   const dispatch = useAppDispatch();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
-  // Use capacity data if available, otherwise fall back to legacy props
+  // Use capacity data if available, otherwise show empty/unavailable state
   const effectiveData = capacityData || {
-    working_hours: isWeekend ? 0 : workingHours,
-    allocated_hours: isWeekend ? 0 : totalPerDayHours,
-    available_hours: isWeekend ? 0 : workingHours - totalPerDayHours,
-    utilization_percent: isWeekend ? 0 : (totalPerDayHours / workingHours) * 100,
+    working_hours: 0,
+    allocated_hours: 0,
+    available_hours: 0,
+    utilization_percent: 0,
     is_time_off: false,
     is_weekend: isWeekend,
-    status: isWeekend ? 'unavailable' as const : 
-            totalPerDayHours === 0 ? 'available' as const :
-            (totalPerDayHours / workingHours) <= 0.75 ? 'normal' as const :
-            (totalPerDayHours / workingHours) < 1 ? 'fully-allocated' as const :
-            'overallocated' as const,
+    status: 'unavailable' as const,
     projects: [],
   };
 
@@ -189,7 +175,7 @@ const DayAllocationCell = ({
                   100
                 )}%)`
               : colors.bg,
-            justifyContent: loggedHours > 0 ? 'flex-end' : 'center',
+            justifyContent: 'center',
             display: 'flex',
             alignItems: 'center',
             height: '100%',
@@ -255,28 +241,6 @@ const DayAllocationCell = ({
                 {effectiveData.allocated_hours.toFixed(1)}/{effectiveData.working_hours}h
               </span>
             </>
-          )}
-
-          {/* Logged hours (legacy) */}
-          {loggedHours > 0 && (
-            <span
-              style={{
-                height: `${Math.min((loggedHours * 100) / effectiveData.working_hours, 100)}%`,
-                backgroundColor: 'rgba(34, 197, 94, 0.9)',
-                width: '100%',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                borderBottomLeftRadius: '3px',
-                borderBottomRightRadius: '3px',
-                fontSize: '11px',
-                fontWeight: 'bold',
-                color: 'white',
-                position: 'relative',
-              }}
-            >
-              {loggedHours}h
-            </span>
           )}
 
           {/* Status indicator dot */}

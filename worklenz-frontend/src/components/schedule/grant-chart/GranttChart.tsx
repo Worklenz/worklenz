@@ -86,7 +86,8 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
   const getCapacityForDate = (memberId: string, dateStr: string) => {
     const memberCapacity = capacityData.find((m: any) => m.team_member_id === memberId);
     if (!memberCapacity) return null;
-    return memberCapacity.daily_capacity.find((d: any) => d.date === dateStr) || null;
+    const dayCapacity = memberCapacity.daily_capacity.find((d: any) => d.date === dateStr);
+    return dayCapacity || null;
   };
 
   // Handle expanding/collapsing member projects
@@ -302,32 +303,44 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                       gridTemplateColumns: `repeat(${dayCount}, ${CELL_WIDTH}px)`,
                     }}
                   >
-                    {dateList?.date_data?.map((date: any) =>
-                      date.days.map((day: any) => (
-                        <div
-                          key={`${date.month}-${day.day}`}
-                          style={{
-                            background: day.isWeekend ? 'rgba(217, 217, 217, 0.4)' : '',
-                            color: day.isToday ? '#fff' : '',
-                            height: 90,
-                          }}
-                        >
-                          <DayAllocationCell
-                            capacityData={getCapacityForDate(
-                              memberId,
-                              `${date.year}-${String(date.month).padStart(2, '0')}-${String(day.day).padStart(2, '0')}`
-                            )}
-                            memberName={member.name}
-                            date={`${date.month.substring(0, 3)} ${day.day}`}
-                            workingHours={8}
-                            loggedHours={0}
-                            totalPerDayHours={0}
-                            isWeekend={day.isWeekend}
-                            capacity={100}
-                            availableHours={8}
-                          />
-                        </div>
-                      ))
+                    {dateList?.date_data?.map((dateObj: any, dateIndex: number) =>
+                      dateObj.days.map((day: any, dayIndex: number) => {
+                        // Extract year and month from chart_start or calculate from month string
+                        // Month format is "Mon YYYY" (e.g., "Jan 2025")
+                        const monthParts = dateObj.month.split(' ');
+                        const monthName = monthParts[0]; // "Jan"
+                        const year = monthParts[1]; // "2025"
+                        
+                        // Convert month name to number
+                        const monthMap: Record<string, string> = {
+                          'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+                          'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+                          'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+                        };
+                        const monthNumber = monthMap[monthName] || '01';
+                        
+                        // Format date as YYYY-MM-DD to match capacity data
+                        const formattedDateStr = `${year}-${monthNumber}-${String(day.day).padStart(2, '0')}`;
+                        const dayCapacity = getCapacityForDate(memberId, formattedDateStr);
+                        
+                        return (
+                          <div
+                            key={`${dateObj.month}-${day.day}-${dayIndex}`}
+                            style={{
+                              background: day.isWeekend ? 'rgba(217, 217, 217, 0.4)' : '',
+                              color: day.isToday ? '#fff' : '',
+                              height: 90,
+                            }}
+                          >
+                            <DayAllocationCell
+                              capacityData={dayCapacity}
+                              memberName={member.name}
+                              date={`${monthName} ${day.day}`}
+                              isWeekend={day.isWeekend}
+                            />
+                          </div>
+                        );
+                      })
                     )}
                   </div>
 

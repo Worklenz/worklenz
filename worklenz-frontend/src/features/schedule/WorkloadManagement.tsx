@@ -482,7 +482,7 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
           </Space>
         </TabPane>
 
-        <TabPane tab={t('balancing') || 'Load Balancing'} key="balancing">
+        {/* <TabPane tab={t('balancing') || 'Load Balancing'} key="balancing">
           <Space direction="vertical" style={{ width: '100%' }}>
             <Card>
               <Title level={5}>{t('autoBalancing') || 'Automatic Load Balancing'}</Title>
@@ -526,7 +526,7 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
               </Form>
             </Card>
           </Space>
-        </TabPane>
+        </TabPane> */}
       </Tabs>
     </div>
   );

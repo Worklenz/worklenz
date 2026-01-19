@@ -41,38 +41,38 @@ const ScheduleDrawer = () => {
         />
       ),
     },
-    {
-      key: '3',
-      label: t('timeTracking') || 'Time Tracking',
-      children: (
-        <div style={{ padding: '20px', textAlign: 'center' }}>
-          <h3>{t('timeTrackingFeature') || 'Time Tracking Feature'}</h3>
-          <p style={{ color: '#666', marginTop: '16px' }}>
-            {t('timeTrackingDesc') ||
-              'Track time spent on tasks and projects. View detailed reports and analytics.'}
-          </p>
-          <p style={{ color: '#999', fontSize: '12px', marginTop: '20px' }}>
-            {t('comingSoon') || 'Coming soon...'}
-          </p>
-        </div>
-      ),
-    },
-    {
-      key: '4',
-      label: t('capacity') || 'Capacity Planning',
-      children: (
-        <div style={{ padding: '20px', textAlign: 'center' }}>
-          <h3>{t('capacityPlanning') || 'Capacity Planning'}</h3>
-          <p style={{ color: '#666', marginTop: '16px' }}>
-            {t('capacityPlanningDesc') ||
-              'Plan resource capacity for upcoming projects and identify potential bottlenecks.'}
-          </p>
-          <p style={{ color: '#999', fontSize: '12px', marginTop: '20px' }}>
-            {t('comingSoon') || 'Coming soon...'}
-          </p>
-        </div>
-      ),
-    },
+    // {
+    //   key: '3',
+    //   label: t('timeTracking') || 'Time Tracking',
+    //   children: (
+    //     <div style={{ padding: '20px', textAlign: 'center' }}>
+    //       <h3>{t('timeTrackingFeature') || 'Time Tracking Feature'}</h3>
+    //       <p style={{ color: '#666', marginTop: '16px' }}>
+    //         {t('timeTrackingDesc') ||
+    //           'Track time spent on tasks and projects. View detailed reports and analytics.'}
+    //       </p>
+    //       <p style={{ color: '#999', fontSize: '12px', marginTop: '20px' }}>
+    //         {t('comingSoon') || 'Coming soon...'}
+    //       </p>
+    //     </div>
+    //   ),
+    // },
+    // {
+    //   key: '4',
+    //   label: t('capacity') || 'Capacity Planning',
+    //   children: (
+    //     <div style={{ padding: '20px', textAlign: 'center' }}>
+    //       <h3>{t('capacityPlanning') || 'Capacity Planning'}</h3>
+    //       <p style={{ color: '#666', marginTop: '16px' }}>
+    //         {t('capacityPlanningDesc') ||
+    //           'Plan resource capacity for upcoming projects and identify potential bottlenecks.'}
+    //       </p>
+    //       <p style={{ color: '#999', fontSize: '12px', marginTop: '20px' }}>
+    //         {t('comingSoon') || 'Coming soon...'}
+    //       </p>
+    //     </div>
+    //   ),
+    // },
   ];
 
   return (
