@@ -1,9 +1,8 @@
 import { Avatar, Drawer, Tabs, TabsProps } from '@/shared/antd-imports';
-import React, { useState } from 'react';
+import React from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { toggleScheduleDrawer } from './scheduleSlice';
-import { avatarNamesMap } from '../../shared/constants';
+import { toggleScheduleDrawer } from './scheduleSliceRTK';
 import WithStartAndEndDates from '../../components/schedule-old/tabs/withStartAndEndDates/WithStartAndEndDates';
 import WorkloadManagement from './WorkloadManagement';
 import { useTranslation } from 'react-i18next';
@@ -11,10 +10,18 @@ import { useFetchScheduleMembersQuery } from '@/api/schedule/scheduleApi';
 import CustomAvatar from '@/components/CustomAvatar';
 
 const ScheduleDrawer = () => {
-  const isScheduleDrawerOpen = useAppSelector(state => state.scheduleReducer.isScheduleDrawerOpen);
-  const selectedMemberId = useAppSelector(state => state.schedule?.selectedMemberId); // RTK slice
+  const isScheduleDrawerOpen = useAppSelector(state => state.schedule?.isScheduleDrawerOpen);
+  const selectedMemberId = useAppSelector(state => state.schedule?.selectedMemberId);
+  const selectedDate = useAppSelector(state => state.schedule?.selectedDate);
   const dispatch = useAppDispatch();
   const { t } = useTranslation('schedule');
+
+  // Debug selected state
+  React.useEffect(() => {
+    if (isScheduleDrawerOpen) {
+      console.log('📂 Drawer opened with:', { selectedMemberId, selectedDate });
+    }
+  }, [isScheduleDrawerOpen, selectedMemberId, selectedDate]);
 
   // Fetch team members data
   const { data: teamDataResponse, isLoading: teamLoading } = useFetchScheduleMembersQuery();
@@ -81,7 +88,7 @@ const ScheduleDrawer = () => {
       title={
         selectedMember ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <CustomAvatar avatarName={selectedMember.name} size={32} />
+            <CustomAvatar avatarName={selectedMember.name || ''} size={32} />
             <span>{selectedMember.name}</span>
             {teamLoading && <span style={{ fontSize: '12px', color: '#999' }}> (Loading...)</span>}
           </div>
@@ -97,7 +104,7 @@ const ScheduleDrawer = () => {
       onClose={() => dispatch(toggleScheduleDrawer())}
       open={isScheduleDrawerOpen}
     >
-      <Tabs defaultActiveKey="2" type="card" items={items} />
+      <Tabs defaultActiveKey="1" type="card" items={items} />
     </Drawer>
   );
 };

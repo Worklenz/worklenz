@@ -72,6 +72,18 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
     endDate: calculateEndDate,
   });
 
+  // Debug capacity response
+  React.useEffect(() => {
+    if (capacityResponse) {
+      console.log('📊 Capacity Response:', {
+        success: capacityResponse.done,
+        memberCount: capacityResponse.body?.length,
+        firstMember: capacityResponse.body?.[0],
+        sampleCapacity: capacityResponse.body?.[0]?.daily_capacity?.slice(0, 2)
+      });
+    }
+  }, [capacityResponse]);
+
   // Lazy query for fetching member projects
   const [fetchMemberProjects, { isLoading: isProjectsLoading }] = useLazyFetchMemberProjectsQuery();
 
@@ -84,9 +96,34 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
   const capacityData = capacityResponse?.body || [];
   
   const getCapacityForDate = (memberId: string, dateStr: string) => {
+    // Debug logging
+    console.log('🔍 Looking for capacity:', { 
+      memberId, 
+      dateStr, 
+      totalMembers: capacityData.length,
+      availableMemberIds: capacityData.map((m: any) => m.team_member_id)
+    });
+    
     const memberCapacity = capacityData.find((m: any) => m.team_member_id === memberId);
-    if (!memberCapacity) return null;
+    if (!memberCapacity) {
+      console.warn('⚠️ No capacity found for member:', memberId);
+      return null;
+    }
+    
+    console.log('✅ Found member capacity:', {
+      memberId,
+      dailyCapacityCount: memberCapacity.daily_capacity?.length,
+      sampleDates: memberCapacity.daily_capacity?.slice(0, 3).map((d: any) => d.date)
+    });
+    
     const dayCapacity = memberCapacity.daily_capacity.find((d: any) => d.date === dateStr);
+    
+    if (!dayCapacity) {
+      console.warn('⚠️ No capacity found for date:', { memberId, dateStr });
+    } else {
+      console.log('✅ Found day capacity:', { dateStr, status: dayCapacity.status, allocated: dayCapacity.allocated_hours });
+    }
+    
     return dayCapacity || null;
   };
 
@@ -290,7 +327,17 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
         >
           {teamData && teamData.length > 0 ? (
             teamData.map((member: any) => {
-              const memberId = member.team_member_id || member.id;
+              // Standardize on team_member_id since that's what backend returns
+              const memberId = member.team_member_id;
+              
+              // Debug member ID
+              console.log('👤 Processing member:', {
+                name: member.name,
+                team_member_id: member.team_member_id,
+                id: member.id,
+                usingId: memberId
+              });
+              
               const isExpanded = expandedMemberId === memberId;
               const projects = getMemberProjects(memberId);
               
@@ -321,6 +368,19 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                         
                         // Format date as YYYY-MM-DD to match capacity data
                         const formattedDateStr = `${year}-${monthNumber}-${String(day.day).padStart(2, '0')}`;
+                        
+                        // Debug date formatting
+                        if (dayIndex === 0 && dateIndex === 0) {
+                          console.log('📅 Date formatting sample:', {
+                            monthName,
+                            year,
+                            monthNumber,
+                            dayNumber: day.day,
+                            formattedDateStr,
+                            rawMonth: dateObj.month
+                          });
+                        }
+                        
                         const dayCapacity = getCapacityForDate(memberId, formattedDateStr);
                         
                         return (
@@ -335,7 +395,8 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                             <DayAllocationCell
                               capacityData={dayCapacity}
                               memberName={member.name}
-                              date={`${monthName} ${day.day}`}
+                              memberId={memberId}
+                              date={formattedDateStr}
                               isWeekend={day.isWeekend}
                             />
                           </div>

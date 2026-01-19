@@ -45,6 +45,7 @@ interface ScheduleState {
 
   // Resource Management State
   selectedMemberId: string | null;
+  selectedDate: string | null;
   workloadData: WorkloadData[];
 
   // Filters and Search
@@ -80,6 +81,7 @@ const initialState: ScheduleState = {
   type: 'month',
   date: new Date(),
   selectedMemberId: null,
+  selectedDate: null,
   workloadData: [],
   searchTerm: '',
   selectedProjects: [],
@@ -153,6 +155,10 @@ const scheduleSlice = createSlice({
 
     setSelectedMember: (state, action: PayloadAction<string | null>) => {
       state.selectedMemberId = action.payload;
+    },
+
+    setSelectedDate: (state, action: PayloadAction<string | null>) => {
+      state.selectedDate = action.payload;
     },
 
     // Filter Actions
@@ -284,6 +290,7 @@ export const {
   setDate,
   setType,
   setSelectedMember,
+  setSelectedDate,
 
   // Filter Actions
   setSearchTerm,
@@ -318,6 +325,8 @@ export const selectWorkloadData = (state: { schedule: ScheduleState }) =>
   state.schedule.workloadData;
 export const selectSelectedMemberId = (state: { schedule: ScheduleState }) =>
   state.schedule.selectedMemberId;
+export const selectSelectedDate = (state: { schedule: ScheduleState }) =>
+  state.schedule.selectedDate;
 export const selectFilters = (state: { schedule: ScheduleState }) => ({
   searchTerm: state.schedule.searchTerm,
   selectedProjects: state.schedule.selectedProjects,

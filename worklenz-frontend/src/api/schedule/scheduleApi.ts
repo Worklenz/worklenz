@@ -455,6 +455,13 @@ export const scheduleApi = createApi({
         `/capacity/conflicts?startDate=${startDate}&endDate=${endDate}`,
       providesTags: ['Capacity'],
     }),
+
+    // Member Schedule Summary
+    fetchMemberScheduleSummary: builder.query<IServerResponse<any>, { memberId: string; startDate: string; endDate: string }>({
+      query: ({ memberId, startDate, endDate }) => 
+        `/members/${memberId}/summary?startDate=${startDate}&endDate=${endDate}`,
+      providesTags: ['Members'],
+    }),
   }),
 });
 
@@ -514,6 +521,10 @@ export const {
   useLazyFetchDailyCapacityQuery,
   useFetchCapacitySummaryQuery,
   useFetchCapacityConflictsQuery,
+  
+  // Member Schedule Summary hooks
+  useFetchMemberScheduleSummaryQuery,
+  useLazyFetchMemberScheduleSummaryQuery,
 } = scheduleApi;
 
 // Export the reducer

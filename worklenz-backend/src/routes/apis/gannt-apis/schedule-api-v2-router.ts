@@ -17,6 +17,7 @@ scheduleApiRouter.put("/settings", safeControllerFunction(ScheduleControllerV2.u
 scheduleApiRouter.get("/dates/:date/:type", safeControllerFunction(ScheduleControllerV2.getDates));
 scheduleApiRouter.get("/members", safeControllerFunction(ScheduleControllerV2.getOrganizationMembers));
 scheduleApiRouter.get("/members/projects/:id", safeControllerFunction(ScheduleControllerV2.getOrganizationMemberProjects));
+scheduleApiRouter.get("/members/:memberId/summary", safeControllerFunction(ScheduleControllerV2.getMemberScheduleSummary));
 scheduleApiRouter.post("/schedule", safeControllerFunction(ScheduleControllerV2.createSchedule));
 
 // ============================================

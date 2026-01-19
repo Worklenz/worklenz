@@ -262,71 +262,105 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
 
         const { id } = req.params; // This is team_member_id from frontend
 
-        // The frontend passes team_member_id, so we need to query by team_member_id, not user_id
-        const getDataq = `WITH project_dates AS (
-                            SELECT
-                                pm.project_id,
-                                MIN(pm.allocated_from) AS start_date,
-                                MAX(pm.allocated_to) AS end_date,
-                                MAX(pm.seconds_per_day) / 3600 AS hours_per_day,
-                                (
-                                    SELECT COUNT(*) 
-                                    FROM generate_series(MIN(pm.allocated_from), MAX(pm.allocated_to), '1 day'::interval) AS day
-                                    JOIN public.organization_working_days owd ON owd.organization_id = t.organization_id
-                                    WHERE 
-                                        (EXTRACT(ISODOW FROM day) = 1 AND owd.monday = true) OR
-                                        (EXTRACT(ISODOW FROM day) = 2 AND owd.tuesday = true) OR
-                                        (EXTRACT(ISODOW FROM day) = 3 AND owd.wednesday = true) OR
-                                        (EXTRACT(ISODOW FROM day) = 4 AND owd.thursday = true) OR
-                                        (EXTRACT(ISODOW FROM day) = 5 AND owd.friday = true) OR
-                                        (EXTRACT(ISODOW FROM day) = 6 AND owd.saturday = true) OR
-                                        (EXTRACT(ISODOW FROM day) = 7 AND owd.sunday = true)
-                                ) * (MAX(pm.seconds_per_day) / 3600) AS total_hours
-                            FROM public.project_member_allocations pm
-                            JOIN public.projects p ON pm.project_id = p.id
-                            JOIN public.teams t ON p.team_id = t.id
-                            WHERE pm.team_member_id = $1
-                            GROUP BY pm.project_id, t.organization_id
-                        ),
-                        projects_with_offsets AS (
-                            SELECT
-                                p.name AS project_name,
-                                p.id AS project_id,
-                                COALESCE(pd.hours_per_day, 0) AS hours_per_day,
-                                COALESCE(pd.total_hours, 0) AS total_hours,
-                                pd.start_date,
-                                pd.end_date,
-                                p.team_id,
-                                COALESCE(
-                                    (DATE_PART('day', pd.start_date - MIN(pd.start_date) OVER ())) * 75,
-                                    0
-                                ) AS indicator_offset,
-                                COALESCE((DATE_PART('day', pd.end_date - pd.start_date) + 1) * 75, 75) AS indicator_width,
-                                75 AS min_width
-                            FROM public.projects p
-                            JOIN project_dates pd ON p.id = pd.project_id
-                            ORDER BY pd.start_date, pd.end_date
-                        )
-                        SELECT jsonb_agg(jsonb_build_object(
-                            'name', project_name,
-                            'id', project_id,
-                            'hours_per_day', hours_per_day,
-                            'total_hours', total_hours,
-                            'date_union', jsonb_build_object(
-                                'start', start_date::DATE,
-                                'end', end_date::DATE
-                            ),
-                            'indicator_offset', indicator_offset,
-                            'indicator_width', indicator_width,
-                            'tasks', '[]'::jsonb,
-                            'default_values', jsonb_build_object(
-                                'allocated_from', start_date::DATE,
-                                'allocated_to', end_date::DATE,
-                                'seconds_per_day', hours_per_day,
-                                'total_seconds', total_hours
-                            )
-                        )) AS projects
-                        FROM projects_with_offsets;`;
+        // Updated query to include projects from both allocations AND task assignments
+        const getDataq = `
+            WITH member_projects AS (
+                -- Get projects from project_member_allocations
+                SELECT DISTINCT
+                    pm.project_id,
+                    MIN(pm.allocated_from) AS start_date,
+                    MAX(pm.allocated_to) AS end_date,
+                    MAX(pm.seconds_per_day) / 3600 AS hours_per_day,
+                    t.organization_id
+                FROM public.project_member_allocations pm
+                JOIN public.projects p ON pm.project_id = p.id
+                JOIN public.teams t ON p.team_id = t.id
+                WHERE pm.team_member_id = $1
+                GROUP BY pm.project_id, t.organization_id
+                
+                UNION
+                
+                -- Get projects from task assignments (where member has assigned tasks)
+                SELECT DISTINCT
+                    t.project_id,
+                    MIN(t.start_date) AS start_date,
+                    MAX(t.end_date) AS end_date,
+                    0 AS hours_per_day, -- No allocation hours for task-only assignments
+                    te.organization_id
+                FROM tasks t
+                JOIN tasks_assignees ta ON t.id = ta.task_id
+                JOIN project_members pm ON ta.project_member_id = pm.id
+                JOIN projects p ON t.project_id = p.id
+                JOIN teams te ON p.team_id = te.id
+                WHERE pm.team_member_id = $1
+                    AND t.start_date IS NOT NULL
+                    AND t.end_date IS NOT NULL
+                GROUP BY t.project_id, te.organization_id
+            ),
+            project_dates AS (
+                SELECT
+                    mp.project_id,
+                    MIN(mp.start_date) AS start_date,
+                    MAX(mp.end_date) AS end_date,
+                    MAX(mp.hours_per_day) AS hours_per_day,
+                    mp.organization_id,
+                    (
+                        SELECT COUNT(*) 
+                        FROM generate_series(MIN(mp.start_date), MAX(mp.end_date), '1 day'::interval) AS day
+                        JOIN public.organization_working_days owd ON owd.organization_id = mp.organization_id
+                        WHERE 
+                            (EXTRACT(ISODOW FROM day) = 1 AND owd.monday = true) OR
+                            (EXTRACT(ISODOW FROM day) = 2 AND owd.tuesday = true) OR
+                            (EXTRACT(ISODOW FROM day) = 3 AND owd.wednesday = true) OR
+                            (EXTRACT(ISODOW FROM day) = 4 AND owd.thursday = true) OR
+                            (EXTRACT(ISODOW FROM day) = 5 AND owd.friday = true) OR
+                            (EXTRACT(ISODOW FROM day) = 6 AND owd.saturday = true) OR
+                            (EXTRACT(ISODOW FROM day) = 7 AND owd.sunday = true)
+                    ) * MAX(mp.hours_per_day) AS total_hours
+                FROM member_projects mp
+                WHERE mp.start_date IS NOT NULL AND mp.end_date IS NOT NULL
+                GROUP BY mp.project_id, mp.organization_id
+            ),
+            projects_with_offsets AS (
+                SELECT
+                    p.name AS project_name,
+                    p.id AS project_id,
+                    COALESCE(pd.hours_per_day, 0) AS hours_per_day,
+                    COALESCE(pd.total_hours, 0) AS total_hours,
+                    pd.start_date,
+                    pd.end_date,
+                    p.team_id,
+                    COALESCE(
+                        (DATE_PART('day', pd.start_date - MIN(pd.start_date) OVER ())) * 75,
+                        0
+                    ) AS indicator_offset,
+                    COALESCE((DATE_PART('day', pd.end_date - pd.start_date) + 1) * 75, 75) AS indicator_width,
+                    75 AS min_width
+                FROM public.projects p
+                JOIN project_dates pd ON p.id = pd.project_id
+                ORDER BY pd.start_date, pd.end_date
+            )
+            SELECT jsonb_agg(jsonb_build_object(
+                'name', project_name,
+                'id', project_id,
+                'hours_per_day', hours_per_day,
+                'total_hours', total_hours,
+                'date_union', jsonb_build_object(
+                    'start', start_date::DATE,
+                    'end', end_date::DATE
+                ),
+                'indicator_offset', indicator_offset,
+                'indicator_width', indicator_width,
+                'tasks', '[]'::jsonb,
+                'default_values', jsonb_build_object(
+                    'allocated_from', start_date::DATE,
+                    'allocated_to', end_date::DATE,
+                    'seconds_per_day', hours_per_day,
+                    'total_seconds', total_hours
+                )
+            )) AS projects
+            FROM projects_with_offsets;
+        `;
 
         const results = await db.query(getDataq, [id]);
         
@@ -376,5 +410,91 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
         const results = await db.query(getDataq, [project_id, team_member_id, allocated_from, allocated_to, Number(seconds_per_day) * 60 * 60]);
         return res.status(200).send(new ServerResponse(true, null, "Allocated successfully!"));
 
+    }
+
+    @HandleExceptions()
+    public static async getMemberScheduleSummary(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+        const { memberId } = req.params;
+        const { startDate, endDate } = req.query as { startDate?: string; endDate?: string };
+
+        if (!memberId || !startDate || !endDate) {
+            return res.status(400).send(new ServerResponse(false, null, "memberId, startDate, and endDate are required"));
+        }
+
+        // Get organization ID
+        const orgQuery = `SELECT id FROM organizations WHERE user_id = $1 LIMIT 1`;
+        const orgResult = await db.query(orgQuery, [req.user?.owner_id]);
+        
+        if (orgResult.rows.length === 0) {
+            return res.status(404).send(new ServerResponse(false, null, "Organization not found"));
+        }
+
+        const organizationId = orgResult.rows[0].id;
+
+        // Query to get allocated hours and logged hours for the member
+        const summaryQuery = `
+            WITH date_range AS (
+                SELECT 
+                    $1::DATE AS start_date,
+                    $2::DATE AS end_date,
+                    $3::UUID AS team_member_id,
+                    $4::UUID AS organization_id
+            ),
+            -- Get allocated hours from project allocations
+            allocated_hours AS (
+                SELECT 
+                    COALESCE(SUM(
+                        (pma.seconds_per_day / 3600.0) * 
+                        (DATE_PART('day', 
+                            LEAST(pma.allocated_to, dr.end_date) - 
+                            GREATEST(pma.allocated_from, dr.start_date)
+                        ) + 1)
+                    ), 0) AS total_allocated
+                FROM date_range dr
+                LEFT JOIN project_member_allocations pma 
+                    ON pma.team_member_id = dr.team_member_id
+                    AND pma.allocated_from <= dr.end_date
+                    AND pma.allocated_to >= dr.start_date
+            ),
+            -- Get logged hours from task work logs
+            logged_hours AS (
+                SELECT 
+                    COALESCE(SUM(twl.time_spent / 3600.0), 0) AS total_logged,
+                    COALESCE(SUM(CASE WHEN t.billable = true THEN twl.time_spent / 3600.0 ELSE 0 END), 0) AS logged_billable,
+                    COALESCE(SUM(CASE WHEN t.billable = false OR t.billable IS NULL THEN twl.time_spent / 3600.0 ELSE 0 END), 0) AS logged_non_billable
+                FROM date_range dr
+                LEFT JOIN team_members tm ON tm.id = dr.team_member_id
+                LEFT JOIN task_work_log twl ON twl.user_id = tm.user_id
+                    AND twl.created_at::DATE BETWEEN dr.start_date AND dr.end_date
+                LEFT JOIN tasks t ON t.id = twl.task_id
+                LEFT JOIN projects p ON p.id = t.project_id
+                LEFT JOIN teams te ON te.id = p.team_id
+                WHERE te.organization_id = dr.organization_id OR te.organization_id IS NULL
+            )
+            SELECT 
+                ah.total_allocated AS allocated_hours,
+                lh.total_logged AS total_logged,
+                lh.logged_billable,
+                lh.logged_non_billable
+            FROM allocated_hours ah, logged_hours lh;
+        `;
+
+        const result = await db.query(summaryQuery, [startDate, endDate, memberId, organizationId]);
+        
+        const summary = result.rows[0] || {
+            allocated_hours: 0,
+            total_logged: 0,
+            logged_billable: 0,
+            logged_non_billable: 0
+        };
+
+        return res.status(200).send(new ServerResponse(true, {
+            startDate,
+            endDate,
+            allocatedHours: parseFloat(summary.allocated_hours) || 0,
+            totalLogged: parseFloat(summary.total_logged) || 0,
+            loggedBillable: parseFloat(summary.logged_billable) || 0,
+            loggedNonBillable: parseFloat(summary.logged_non_billable) || 0
+        }));
     }
 }

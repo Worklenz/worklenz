@@ -2,7 +2,7 @@ import React from 'react';
 import { Tooltip } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { toggleScheduleDrawer } from '../../../features/schedule/scheduleSlice';
+import { toggleScheduleDrawer, setSelectedMember, setSelectedDate } from '../../../features/schedule/scheduleSliceRTK';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 
 interface DailyCapacityData {
@@ -25,6 +25,7 @@ interface DailyCapacityData {
 type DayAllocationCellProps = {
   capacityData?: DailyCapacityData | null;
   memberName?: string;
+  memberId?: string;
   date?: string;
   isWeekend?: boolean;
 };
@@ -32,11 +33,22 @@ type DayAllocationCellProps = {
 const DayAllocationCell = ({
   capacityData,
   memberName,
+  memberId,
   date,
   isWeekend = false,
 }: DayAllocationCellProps) => {
   const dispatch = useAppDispatch();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+
+  const handleClick = () => {
+    if (isInteractive && memberId) {
+      console.log('🖱️ Cell clicked:', { memberId, date });
+      // Set selected member and date before opening drawer
+      dispatch(setSelectedMember(memberId));
+      dispatch(setSelectedDate(date || null));
+      dispatch(toggleScheduleDrawer());
+    }
+  };
 
   // Use capacity data if available, otherwise show empty/unavailable state
   const effectiveData = capacityData || {
@@ -187,7 +199,7 @@ const DayAllocationCell = ({
             overflow: 'hidden',
             transition: 'all 0.2s',
           }}
-          onClick={isInteractive ? () => dispatch(toggleScheduleDrawer()) : undefined}
+          onClick={handleClick}
           className={isInteractive ? 'hover:opacity-80' : ''}
         >
           {/* Over-allocation warning stripe */}

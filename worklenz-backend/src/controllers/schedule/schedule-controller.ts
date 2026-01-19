@@ -131,39 +131,57 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
 
 
   private static async getFirstLastDates(teamId: string, userId: string) {
-    const q = `SELECT MIN(LEAST(allocated_from, allocated_to)) AS start_date,
-                      MAX(GREATEST(allocated_from, allocated_to)) AS end_date,
-                      (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
-                      FROM (SELECT MIN(min_date) AS start_date, MAX(max_date) AS end_date
-                            FROM (SELECT MIN(start_date) AS min_date, MAX(start_date) AS max_date
-                                  FROM tasks
-                                  WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1)
-                                    AND project_id NOT IN
-                                        (SELECT project_id
-                                          FROM archived_projects
-                                          WHERE user_id = $2)
-                                    AND tasks.archived IS FALSE
-                                  UNION
-                                  SELECT MIN(end_date) AS min_date, MAX(end_date) AS max_date
-                                  FROM tasks
-                                  WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1)
-                                    AND project_id NOT IN
-                                        (SELECT project_id
-                                          FROM archived_projects
-                                          WHERE user_id = $2)
-                                    AND tasks.archived IS FALSE) AS dates) rec) AS date_union,
-                      (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
-                      FROM (SELECT MIN(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS start_date,
-                                    MAX(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS end_date
-                            FROM task_work_log twl
-                                      INNER JOIN tasks t ON twl.task_id = t.id AND t.archived IS FALSE
-                            WHERE t.project_id IN (SELECT id FROM projects WHERE team_id = $1)
-                              AND project_id NOT IN
-                                  (SELECT project_id
-                                    FROM archived_projects
-                                    WHERE user_id = $2)) rec) AS logs_date_union
-                  FROM project_member_allocations
-                  WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1)`;
+    const q = `WITH all_member_dates AS (
+                    -- Get dates from project_member_allocations
+                    SELECT allocated_from AS date_value, allocated_to AS date_value_2
+                    FROM project_member_allocations
+                    WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1)
+                    
+                    UNION
+                    
+                    -- Get dates from task assignments
+                    SELECT t.start_date AS date_value, t.end_date AS date_value_2
+                    FROM tasks t
+                    INNER JOIN tasks_assignees ta ON t.id = ta.task_id
+                    INNER JOIN project_members pm ON ta.project_member_id = pm.id
+                    WHERE t.project_id IN (SELECT id FROM projects WHERE team_id = $1)
+                      AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE user_id = $2)
+                      AND t.archived IS FALSE
+                      AND t.start_date IS NOT NULL
+                      AND t.end_date IS NOT NULL
+                  )
+                  SELECT MIN(LEAST(date_value, date_value_2)) AS start_date,
+                        MAX(GREATEST(date_value, date_value_2)) AS end_date,
+                        (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
+                        FROM (SELECT MIN(min_date) AS start_date, MAX(max_date) AS end_date
+                              FROM (SELECT MIN(start_date) AS min_date, MAX(start_date) AS max_date
+                                    FROM tasks
+                                    WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1)
+                                      AND project_id NOT IN
+                                          (SELECT project_id
+                                            FROM archived_projects
+                                            WHERE user_id = $2)
+                                      AND tasks.archived IS FALSE
+                                    UNION
+                                    SELECT MIN(end_date) AS min_date, MAX(end_date) AS max_date
+                                    FROM tasks
+                                    WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1)
+                                      AND project_id NOT IN
+                                          (SELECT project_id
+                                            FROM archived_projects
+                                            WHERE user_id = $2)
+                                      AND tasks.archived IS FALSE) AS dates) rec) AS date_union,
+                        (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
+                        FROM (SELECT MIN(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS start_date,
+                                      MAX(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS end_date
+                              FROM task_work_log twl
+                                        INNER JOIN tasks t ON twl.task_id = t.id AND t.archived IS FALSE
+                              WHERE t.project_id IN (SELECT id FROM projects WHERE team_id = $1)
+                                AND project_id NOT IN
+                                    (SELECT project_id
+                                      FROM archived_projects
+                                      WHERE user_id = $2)) rec) AS logs_date_union
+                    FROM all_member_dates`;
 
     const res = await db.query(q, [teamId, userId]);
     return res.rows[0];
@@ -350,13 +368,29 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
 
                       (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
                       FROM (SELECT MIN(min_date) AS start_date, MAX(max_date) AS end_date
-                            FROM (SELECT MIN(allocated_from) AS min_date, MAX(allocated_from) AS max_date
+                            FROM (
+                                  -- Dates from project_member_allocations
+                                  SELECT MIN(allocated_from) AS min_date, MAX(allocated_from) AS max_date
                                   FROM project_member_allocations
                                   WHERE project_id = p.id
                                   UNION
                                   SELECT MIN(allocated_to) AS min_date, MAX(allocated_to) AS max_date
                                   FROM project_member_allocations
-                                  WHERE project_id = p.id) AS dates) rec) AS date_union,
+                                  WHERE project_id = p.id
+                                  UNION
+                                  -- Dates from task assignments
+                                  SELECT MIN(t.start_date) AS min_date, MAX(t.start_date) AS max_date
+                                  FROM tasks t
+                                  WHERE t.project_id = p.id
+                                    AND t.archived IS FALSE
+                                    AND t.start_date IS NOT NULL
+                                  UNION
+                                  SELECT MIN(t.end_date) AS min_date, MAX(t.end_date) AS max_date
+                                  FROM tasks t
+                                  WHERE t.project_id = p.id
+                                    AND t.archived IS FALSE
+                                    AND t.end_date IS NOT NULL
+                                ) AS dates) rec) AS date_union,
 
                       (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                       FROM (SELECT pm.id AS project_member_id,
@@ -459,13 +493,29 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
                       allocated_to,
                       (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
                       FROM (SELECT MIN(min_date) AS start_date, MAX(max_date) AS end_date
-                            FROM (SELECT MIN(allocated_from) AS min_date, MAX(allocated_from) AS max_date
+                            FROM (
+                                  -- Dates from project_member_allocations
+                                  SELECT MIN(allocated_from) AS min_date, MAX(allocated_from) AS max_date
                                   FROM project_member_allocations
                                   WHERE project_id = $1
                                   UNION
                                   SELECT MIN(allocated_to) AS min_date, MAX(allocated_to) AS max_date
                                   FROM project_member_allocations
-                                  WHERE project_id = $1) AS dates) rec) AS date_union
+                                  WHERE project_id = $1
+                                  UNION
+                                  -- Dates from task assignments
+                                  SELECT MIN(t.start_date) AS min_date, MAX(t.start_date) AS max_date
+                                  FROM tasks t
+                                  WHERE t.project_id = $1
+                                    AND t.archived IS FALSE
+                                    AND t.start_date IS NOT NULL
+                                  UNION
+                                  SELECT MIN(t.end_date) AS min_date, MAX(t.end_date) AS max_date
+                                  FROM tasks t
+                                  WHERE t.project_id = $1
+                                    AND t.archived IS FALSE
+                                    AND t.end_date IS NOT NULL
+                                ) AS dates) rec) AS date_union
                FROM project_member_allocations
                WHERE team_member_id = $2
                      AND project_id = $1`;
@@ -503,13 +553,29 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
                         allocated_to,
                         (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
                         FROM (SELECT MIN(min_date) AS start_date, MAX(max_date) AS end_date
-                              FROM (SELECT MIN(allocated_from) AS min_date, MAX(allocated_from) AS max_date
+                              FROM (
+                                    -- Dates from project_member_allocations
+                                    SELECT MIN(allocated_from) AS min_date, MAX(allocated_from) AS max_date
                                     FROM project_member_allocations
                                     WHERE project_id = $1
                                     UNION
                                     SELECT MIN(allocated_to) AS min_date, MAX(allocated_to) AS max_date
                                     FROM project_member_allocations
-                                    WHERE project_id = $1) AS dates) rec) AS date_union
+                                    WHERE project_id = $1
+                                    UNION
+                                    -- Dates from task assignments
+                                    SELECT MIN(t.start_date) AS min_date, MAX(t.start_date) AS max_date
+                                    FROM tasks t
+                                    WHERE t.project_id = $1
+                                      AND t.archived IS FALSE
+                                      AND t.start_date IS NOT NULL
+                                    UNION
+                                    SELECT MIN(t.end_date) AS min_date, MAX(t.end_date) AS max_date
+                                    FROM tasks t
+                                    WHERE t.project_id = $1
+                                      AND t.archived IS FALSE
+                                      AND t.end_date IS NOT NULL
+                                  ) AS dates) rec) AS date_union
                   FROM project_member_allocations
                   WHERE project_id = $1`;
 
@@ -551,13 +617,29 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
                       allocated_to,
                       (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
                       FROM (SELECT MIN(min_date) AS start_date, MAX(max_date) AS end_date
-                            FROM (SELECT MIN(allocated_from) AS min_date, MAX(allocated_from) AS max_date
+                            FROM (
+                                  -- Dates from project_member_allocations
+                                  SELECT MIN(allocated_from) AS min_date, MAX(allocated_from) AS max_date
                                   FROM project_member_allocations
                                   WHERE project_id = $1
                                   UNION
                                   SELECT MIN(allocated_to) AS min_date, MAX(allocated_to) AS max_date
                                   FROM project_member_allocations
-                                  WHERE project_id = $1) AS dates) rec) AS date_union
+                                  WHERE project_id = $1
+                                  UNION
+                                  -- Dates from task assignments
+                                  SELECT MIN(t.start_date) AS min_date, MAX(t.start_date) AS max_date
+                                  FROM tasks t
+                                  WHERE t.project_id = $1
+                                    AND t.archived IS FALSE
+                                    AND t.start_date IS NOT NULL
+                                  UNION
+                                  SELECT MIN(t.end_date) AS min_date, MAX(t.end_date) AS max_date
+                                  FROM tasks t
+                                  WHERE t.project_id = $1
+                                    AND t.archived IS FALSE
+                                    AND t.end_date IS NOT NULL
+                                ) AS dates) rec) AS date_union
                FROM project_member_allocations
                WHERE team_member_id = $2
                      AND project_id = $1`;
