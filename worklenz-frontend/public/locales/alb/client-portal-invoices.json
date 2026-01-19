@@ -136,5 +136,10 @@
   "download": "Shkarko",
   "existingInvoicesWarning": "⚠️ Kjo kërkesë ka faturat tashmë:",
   "multipleInvoicesAllowed": "Ju mund të krijoni fatura shtesë për këtë kërkesë (p.sh. për milstone ose punë shtesë).",
-  "noCurrenciesFound": "Nuk u gjetën monedha"
+  "noCurrenciesFound": "Asnjë monedhë nuk u gjet",
+  "editInvoiceTitle": "Edito Faturën",
+  "updateInvoice": "Përditëso Faturën",
+  "updateInvoiceSuccessMessage": "Fatura u përditësua me sukses",
+  "updateInvoiceErrorMessage": "Dështoi përditësimi i faturës",
+  "cannotEditPaidInvoice": "Faturat e paguara nuk mund të editohen"
 }

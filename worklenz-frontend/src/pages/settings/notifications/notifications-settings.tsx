@@ -39,18 +39,27 @@ const NotificationsSettings = () => {
     try {
       const res = await profileSettingsApiService.updateNotificationSettings(settings);
       if (res.done) {
-        fetchNotificationsSettings();
+        // ✅ FIX: Use response body instead of refetching
+        // This prevents unnecessary re-render and flickering
+        setNotificationsSettings(res.body || settings);
       }
     } catch (error) {
       logger.error('Error updating notifications settings', error);
+      // ❌ On error, refetch to revert to server state
+      await fetchNotificationsSettings();
     } finally {
       setIsLoading(false);
     }
   };
 
   const toggleNotificationSetting = async (key: keyof INotificationSettings) => {
+    // ✅ FIX: Optimistic update - update UI immediately
     const newSettings = { ...notificationsSettings, [key]: !notificationsSettings[key] };
+    setNotificationsSettings(newSettings);
+    
+    // Then sync with server in the background
     await updateNotificationSettings(newSettings);
+    
     if (key === 'popup_notifications_enabled') {
       askPushPermission();
     }
@@ -82,7 +91,7 @@ const NotificationsSettings = () => {
         <Flex gap={8} align="center">
           <Checkbox
             disabled={isLoading}
-            checked={notificationsSettings.email_notifications_enabled}
+            checked={!!notificationsSettings.email_notifications_enabled}
             onChange={() => toggleNotificationSetting('email_notifications_enabled')}
           >
             <Typography.Title level={4} style={{ marginBlockEnd: 0 }}>
@@ -101,10 +110,8 @@ const NotificationsSettings = () => {
         <Flex gap={8} align="center">
           <Checkbox
             disabled={isLoading}
-            checked={notificationsSettings.daily_digest_enabled}
-            onChange={() => {
-              toggleNotificationSetting('daily_digest_enabled');
-            }}
+            checked={!!notificationsSettings.daily_digest_enabled}
+            onChange={() => toggleNotificationSetting('daily_digest_enabled')}
           >
             <Typography.Title level={4} style={{ marginBlockEnd: 0 }}>
               {t('dailyDigestTitle')}
@@ -122,10 +129,8 @@ const NotificationsSettings = () => {
         <Flex gap={8} align="center">
           <Checkbox
             disabled={isLoading}
-            checked={notificationsSettings.popup_notifications_enabled}
-            onChange={() => {
-              toggleNotificationSetting('popup_notifications_enabled');
-            }}
+            checked={!!notificationsSettings.popup_notifications_enabled}
+            onChange={() => toggleNotificationSetting('popup_notifications_enabled')}
           >
             <Typography.Title level={4} style={{ marginBlockEnd: 0 }}>
               {t('popupTitle')}
@@ -143,10 +148,8 @@ const NotificationsSettings = () => {
         <Flex gap={8} align="center">
           <Checkbox
             disabled={isLoading}
-            checked={notificationsSettings.show_unread_items_count}
-            onChange={() => {
-              toggleNotificationSetting('show_unread_items_count');
-            }}
+            checked={!!notificationsSettings.show_unread_items_count}
+            onChange={() => toggleNotificationSetting('show_unread_items_count')}
           >
             <Typography.Title level={4} style={{ marginBlockEnd: 0 }}>
               {t('unreadItemsTitle')}

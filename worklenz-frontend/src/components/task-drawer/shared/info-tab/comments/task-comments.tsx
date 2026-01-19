@@ -48,7 +48,7 @@ const hasProcessedMentions = (content: string): boolean => {
   return content.includes('<span class="mentions">');
 };
 
-// Helper function to process mentions in content
+// Enhanced mention processing function
 const processMentions = (content: string) => {
   if (!content) return '';
 
@@ -57,24 +57,27 @@ const processMentions = (content: string) => {
     return content; // Already processed, return as is
   }
 
-  // Replace @mentions with styled spans
-  return content.replace(/@(\w+)/g, '<span class="mentions">@$1</span>');
+  // Match @mentions with multiple words (e.g., @saman navoda, @john doe)
+  // This regex matches @ followed by word characters and spaces, stopping at punctuation or end of word boundary
+  // Pattern explanation: @ followed by one or more groups of (word characters followed by optional space)
+  return content.replace(/@([\w]+(?:\s+[\w]+)*)/g, '<span class="mentions">@$1</span>');
 };
 
-// Helper function to process mentions in content
+// Helper function to process content
 // Security: Do NOT linkify URLs to prevent open redirect attacks
 const processContent = (content: string) => {
   if (!content) return '';
   
-  // Process mentions (if not already processed)
-  let processed = content;
-  if (!hasProcessedMentions(processed)) {
-    processed = processMentions(processed);
+  // First, sanitize to prevent XSS (this should preserve mentions if they're already there)
+  let sanitized = sanitizeCommentContent(content);
+  
+  // Then process mentions if not already processed
+  // Note: sanitizeCommentContent might strip the mention spans, so we need to re-process
+  if (!hasProcessedMentions(sanitized)) {
+    sanitized = processMentions(sanitized);
   }
   
-  // Sanitize the final HTML to prevent XSS and open redirects
-  // This will strip any <a> tags that might have been injected
-  return sanitizeCommentContent(processed);
+  return sanitized;
 };
 
 const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
@@ -103,9 +106,10 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
             return dayjs(a.created_at).isBefore(dayjs(b.created_at)) ? -1 : 1;
           });
 
-          // Process content (mentions and links)
+          // Process content for each comment
           sortedComments.forEach(comment => {
             if (comment.content) {
+              // Always process the content to ensure mentions are highlighted
               comment.content = processContent(comment.content);
             }
           });
@@ -350,16 +354,6 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
                           </span>
                         </Tooltip>
                       </span>,
-                      //   canDelete(item.user_id) && (
-                      //     <span
-                      //       key="edit"
-                      //       onClick={() => editComment(item)}
-                      //       style={actionStyle}
-                      //     >
-                      //       <EditOutlined />
-                      //       <span style={{ marginLeft: 4 }}>Edit</span>
-                      //     </span>
-                      //   ),
                       canDelete(item.user_id) && (
                         <Popconfirm
                           key="delete"

@@ -224,6 +224,7 @@ export const InvoicesTable = () => {
         scroll={{
           x: 'max-content',
         }}
+        rowKey={(record) => record.id}
         onRow={record => ({
           onClick: () => navigate(`/worklenz/client-portal/invoices/${record.id}`),
           style: { cursor: 'pointer' },

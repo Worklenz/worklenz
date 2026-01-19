@@ -136,5 +136,10 @@
   "download": "Herunterladen",
   "existingInvoicesWarning": "⚠️ Diese Anfrage hat bereits Rechnungen:",
   "multipleInvoicesAllowed": "Sie können zusätzliche Rechnungen für diese Anfrage erstellen (z.B. für Meilensteine oder zusätzliche Arbeiten).",
-  "noCurrenciesFound": "Keine Währungen gefunden"
+  "noCurrenciesFound": "Keine Währungen gefunden",
+  "editInvoiceTitle": "Rechnung bearbeiten",
+  "updateInvoice": "Rechnung aktualisieren",
+  "updateInvoiceSuccessMessage": "Rechnung erfolgreich aktualisiert",
+  "updateInvoiceErrorMessage": "Fehler beim Aktualisieren der Rechnung",
+  "cannotEditPaidInvoice": "Bezahlte Rechnungen können nicht bearbeitet werden"
 }
