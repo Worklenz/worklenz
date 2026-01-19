@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+ import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector, useDispatch } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
@@ -1287,7 +1287,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
     const handleResize = () => {
       const width = window.innerWidth;
       setIsMobile(width < 768);
-      setShowOverflowMenu(width < 1200);
+      setShowOverflowMenu(width < 1024);  // ✅ Changed from 1200 to 1024
     };
 
     handleResize();
@@ -1796,6 +1796,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
           )}
 
           {/* Updated overflow menu button */}
+          {/* More/Overflow Menu - Always visible when overflow is active */}
           {showOverflowMenu && (
             <Dropdown
               className="task-filters-overflow-menu"
@@ -1810,14 +1811,14 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
                 aria-label={t('more', { defaultValue: 'More' })}
                 className={`
                   inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
-                  border transition-all duration-200 ease-in-out
+                  border transition-all duration-200 ease-in-out flex-shrink-0
                   ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}
                   hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
                   ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
                 `}
               >
                 <MenuOutlined className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{t('more', { defaultValue: 'More' })}</span>
+                <span>{t('more', { defaultValue: 'More' })}</span>
               </button>
             </Dropdown>
           )}

@@ -316,24 +316,25 @@ export default class TeamMembersController extends WorklenzControllerBase {
   public static async getById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const q = `
       SELECT id,
-             created_at,
-             updated_at,
-             (SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id),
-             (SELECT avatar_url FROM users WHERE id = team_members.user_id),
-             EXISTS(SELECT email
+            created_at,
+            updated_at,
+            (SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id) AS name,
+            (SELECT avatar_url FROM users WHERE id = team_members.user_id) AS avatar_url,
+            EXISTS(SELECT email
                     FROM email_invitations
                     WHERE team_member_id = team_members.id
                       AND email_invitations.team_id = team_members.team_id) AS pending_invitation,
-             (SELECT name FROM job_titles WHERE id = team_members.job_title_id) AS job_title,
-             COALESCE(
-               (SELECT email FROM users WHERE id = team_members.user_id),
-               (SELECT email
+            (SELECT name FROM job_titles WHERE id = team_members.job_title_id) AS job_title,
+            (SELECT name FROM roles WHERE id = team_members.role_id) AS role_name,
+            COALESCE(
+              (SELECT email FROM users WHERE id = team_members.user_id),
+              (SELECT email
                 FROM email_invitations
                 WHERE email_invitations.team_member_id = team_members.id
                   AND email_invitations.team_id = team_members.team_id
                 LIMIT 1)
-               ) AS email,
-             EXISTS(SELECT id FROM roles WHERE id = team_members.role_id AND admin_role IS TRUE) AS is_admin
+              ) AS email,
+            EXISTS(SELECT id FROM roles WHERE id = team_members.role_id AND admin_role IS TRUE) AS is_admin
       FROM team_members
       WHERE id = $1
         AND team_id = $2;

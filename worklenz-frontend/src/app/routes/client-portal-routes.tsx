@@ -95,6 +95,14 @@ const clientPortalRoutes: RouteObject[] = [
         ),
       },
       {
+        path: 'invoices/:invoiceId/edit',
+        element: (
+          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+            <InvoiceBuilder />
+          </Suspense>
+        ),
+      },
+      {
         path: 'invoices/:invoiceId',
         element: (
           <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>

@@ -330,8 +330,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       const response = await action;
 
       if (response?.data?.done) {
-        // FIX: Don't close drawer or reset form here - let navigation handle it
-        // The window.location.reload() will handle the cleanup
+        // ✅ REMOVED form.resetFields() - drawer close handler will handle cleanup
         if (!editMode) {
           trackMixpanelEvent(evt_projects_create);
           // Navigate first, then reload - this ensures toggle states are preserved
@@ -518,7 +517,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       {!isEditable && (
         <Alert message={t('noPermission')} type="warning" showIcon style={{ marginBottom: 16 }} />
       )}
-      <Skeleton active paragraph={{ rows: 12 }} loading={loading || projectLoading}>
+      <Skeleton active paragraph={{ rows: 12 }} loading={editMode && (loading || projectLoading)}>
         <Form
           form={form}
           layout="vertical"
@@ -787,3 +786,4 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     </Drawer>
   );
 };
+export default ProjectDrawer;

@@ -45,6 +45,8 @@ export {
   Collapse,
   Tabs,
   Skeleton,
+  InputNumber,
+  DatePicker,
 } from "antd/es";
 
 // Types
@@ -104,4 +106,5 @@ export {
   LoadingOutlined,
   CommentOutlined,
   FlagOutlined,
+  EditOutlined,
 } from "@ant-design/icons";

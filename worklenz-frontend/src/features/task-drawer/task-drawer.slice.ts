@@ -102,6 +102,12 @@ const taskDrawerSlice = createSlice({
         state.taskFormViewModel.task.priority_id = priority_id;
       }
     },
+    setTaskPhase: (state, action: PayloadAction<{ phase_id: string | null; id: string }>) => {
+      const { phase_id, id: taskId } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        state.taskFormViewModel.task.phase_id = phase_id;
+      }
+    },
     setTaskLabels: (state, action: PayloadAction<ILabelsChangeResponse>) => {
       if (!action.payload) return;
       const { all_labels, id: taskId } = action.payload;
@@ -200,6 +206,7 @@ export const {
   setTaskEndDate,
   setTaskAssignee,
   setTaskPriority,
+  setTaskPhase,
   setTaskLabels,
   setTaskSubscribers,
   setTimeLogEditing,

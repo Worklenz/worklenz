@@ -46,7 +46,7 @@ BEGIN
     --insert organization data
     INSERT INTO organizations (user_id, organization_name, contact_number, contact_number_secondary, trial_in_progress,
                                trial_expire_date, subscription_status, license_type_id)
-    VALUES (_user_id, TRIM((_body ->> 'team_name')::TEXT), NULL, NULL, TRUE, CURRENT_DATE + INTERVAL '9999 days',
+    VALUES (_user_id, COALESCE(TRIM((_body ->> 'team_name')::TEXT), _trimmed_name), NULL, NULL, TRUE, CURRENT_DATE + INTERVAL '9999 days',
             'active', (SELECT id FROM sys_license_types WHERE key = 'SELF_HOSTED'))
     RETURNING id INTO _organization_id;
 
@@ -102,7 +102,7 @@ BEGIN
         BEGIN
             -- Call the start_plan_trial function to activate the trial
             SELECT start_plan_trial(_user_id, _organization_id, _business_plan_id) INTO _trial_id;
-            
+
             -- Log successful trial activation (optional, for debugging)
             RAISE NOTICE 'Business plan trial automatically started for user % with trial_id %', _user_id, _trial_id;
         EXCEPTION
@@ -158,7 +158,7 @@ BEGIN
     RETURNING id INTO _organization_id;
 
     INSERT INTO teams (name, user_id, organization_id)
-    VALUES (_name, _user_id, _organization_id)
+    VALUES (COALESCE(TRIM((_body ->> 'team_name')::TEXT), _name), _user_id, _organization_id)
     RETURNING id INTO _team_id;
 
     -- insert default roles
@@ -206,7 +206,7 @@ BEGIN
         BEGIN
             -- Call the start_plan_trial function to activate the trial
             SELECT start_plan_trial(_user_id, _organization_id, _business_plan_id) INTO _trial_id;
-            
+
             -- Log successful trial activation (optional, for debugging)
             RAISE NOTICE 'Business plan trial automatically started for Google user % with trial_id %', _user_id, _trial_id;
         EXCEPTION
@@ -292,19 +292,19 @@ BEGIN
 
     -- Insert default team
     INSERT INTO teams (name, user_id, organization_id)
-    VALUES (_name, _user_id, _organization_id)
+    VALUES (COALESCE(TRIM((_body ->> 'team_name')::TEXT), _name), _user_id, _organization_id)
     RETURNING id INTO _team_id;
 
     -- Insert default roles
     INSERT INTO roles (name, team_id, default_role) 
     VALUES ('Member', _team_id, TRUE);
-    
+
     INSERT INTO roles (name, team_id, admin_role) 
     VALUES ('Admin', _team_id, TRUE);
-    
+
     INSERT INTO roles (name, team_id, admin_role) 
     VALUES ('Team Lead', _team_id, TRUE);
-    
+
     INSERT INTO roles (name, team_id, owner) 
     VALUES ('Owner', _team_id, TRUE) 
     RETURNING id INTO _role_id;
@@ -355,7 +355,7 @@ BEGIN
         BEGIN
             -- Call the start_plan_trial function to activate the trial
             SELECT start_plan_trial(_user_id, _organization_id, _business_plan_id) INTO _trial_id;
-            
+
             -- Log successful trial activation (optional, for debugging)
             RAISE NOTICE 'Business plan trial automatically started for Apple user % with trial_id %', _user_id, _trial_id;
         EXCEPTION
@@ -379,3 +379,4 @@ $$;
 
 -- Add comment to document the change
 COMMENT ON FUNCTION register_apple_user IS 'Registers a new Apple Sign-In OAuth user and automatically starts a 14-day Business plan trial';
+ 
