@@ -37,10 +37,12 @@ import {
   fetchBoardSubTasks,
   deleteTask as deleteKanbanTask,
   updateEnhancedKanbanSubtask,
+  fetchEnhancedKanbanGroups,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import TaskProgressCircle from './TaskProgressCircle';
-import { Button, Modal, DeleteOutlined } from '@/shared/antd-imports';
+import { Button, Modal, DeleteOutlined, InboxOutlined } from '@/shared/antd-imports';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
+import { taskListBulkActionsApiService } from '@/api/tasks/task-list-bulk-actions.api.service';
 
 // Simple Portal component
 const Portal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -79,6 +81,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
     const { socket } = useSocket();
     const themeMode = useSelector((state: RootState) => state.themeReducer.mode);
     const { projectId } = useSelector((state: RootState) => state.projectReducer);
+    const archived = useSelector((state: RootState) => state.enhancedKanbanReducer.archived);
     const background = themeWiseColor('#fff', '#1e1e1e', themeMode);
     const color = themeWiseColor('#181818', '#fff', themeMode);
     const dispatch = useAppDispatch();
@@ -295,6 +298,47 @@ const TaskCard: React.FC<TaskCardProps> = memo(
       });
     };
 
+    // Archive/Unarchive logic
+    const handleArchiveTask = async (task: IProjectTask | null) => {
+      if (!task || !task.id || !projectId) return;
+      
+      try {
+        const body = {
+          tasks: [task.id],
+          project_id: projectId,
+        };
+
+        // Pass archived state to API - when archived=true, it will unarchive
+        const res = await taskListBulkActionsApiService.archiveTasks(body, archived);
+        if (res.done) {
+          // Remove task from current view
+          if (task.is_sub_task) {
+            dispatch(
+              updateEnhancedKanbanSubtask({
+                sectionId: '',
+                subtask: {
+                  id: task.id,
+                  parent_task_id: task.parent_task_id || '',
+                  manual_progress: false,
+                },
+                mode: 'delete',
+              })
+            );
+          } else {
+            dispatch(deleteKanbanTask(task.id));
+          }
+          
+          // Refresh the board to show updated tasks
+          dispatch(fetchEnhancedKanbanGroups(projectId));
+        }
+      } catch (error) {
+        logger.error('Error archiving task:', error);
+      } finally {
+        setContextMenu({ visible: false, x: 0, y: 0 });
+        setSelectedTask(null);
+      }
+    };
+
     // Calendar rendering helpers
     const year = calendarMonth.getFullYear();
     const month = calendarMonth.getMonth();
@@ -319,39 +363,63 @@ const TaskCard: React.FC<TaskCardProps> = memo(
 
     return (
       <>
-        {/* Context menu for delete */}
-        {contextMenu.visible && (
-          <div
-            ref={contextMenuRef}
-            style={{
-              position: 'fixed',
-              top: contextMenu.y,
-              left: contextMenu.x,
-              zIndex: 9999,
-              background: themeWiseColor('#fff', '#1e1e1e', themeMode),
-              borderRadius: 8,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-              padding: 0,
-              minWidth: 120,
-              transition: 'translateY(0)',
-            }}
-          >
-            <Button
-              type="text"
-              icon={<DeleteOutlined style={{ color: '#ef4444', fontSize: 16 }} />}
+        {/* Context menu for archive and delete */}
+        {contextMenu.visible &&
+          createPortal(
+            <div
+              ref={contextMenuRef}
               style={{
-                color: '#ef4444',
-                width: '100%',
-                textAlign: 'left',
-                padding: '8px 16px',
-                fontWeight: 500,
+                position: 'fixed',
+                top: contextMenu.y,
+                left: contextMenu.x,
+                zIndex: 99999,
+                background: themeWiseColor('#fff', '#1e1e1e', themeMode),
+                borderRadius: 8,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                padding: 0,
+                transition: 'translateY(0)',
               }}
-              onClick={() => handleDeleteTask(selectedTask || null)}
             >
-              {t('delete')}
-            </Button>
-          </div>
-        )}
+              <Button
+                type="text"
+                icon={<InboxOutlined style={{ color: '#6b7280', fontSize: 16 }} />}
+                style={{
+                  color: '#6b7280',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '8px 16px',
+                  fontWeight: 500,
+                  borderBottom: `1px solid ${themeWiseColor('#f3f4f6', '#374151', themeMode)}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  whiteSpace: 'nowrap',
+                }}
+                onClick={() => handleArchiveTask(selectedTask || null)}
+              >
+                {archived ? t('unarchive', 'Unarchive') : t('archive', 'Archive')}
+              </Button>
+              <Button
+                type="text"
+                icon={<DeleteOutlined style={{ color: '#ef4444', fontSize: 16 }} />}
+                style={{
+                  color: '#ef4444',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '8px 16px',
+                  fontWeight: 500,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  whiteSpace: 'nowrap',
+                }}
+                onClick={() => handleDeleteTask(selectedTask || null)}
+              >
+                {t('delete')}
+              </Button>
+            </div>,
+            document.body
+          )}
         <div
           className="enhanced-kanban-task-card"
           style={{ background, color, display: 'block', position: 'relative' }}
