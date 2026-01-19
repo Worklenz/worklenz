@@ -191,7 +191,7 @@ const TeamMembersSettings = () => {
     }
     
     // Extract order - if no order specified, maintain current order or default to 'asc'
-    const order = sorter.order ? (sorter.order === 'ascend' ? 'asc' : 'desc') : prev.order;
+    const order = sorter.order ? (sorter.order === 'ascend' ? 'asc' : 'desc') : pagination.order;
     
     setPagination(prev => ({
       ...prev,
@@ -200,7 +200,7 @@ const TeamMembersSettings = () => {
       field: field,
       order: order,
     }));
-  }, []);
+  }, [pagination]);
 
   useEffect(() => {
     if (socket) {
