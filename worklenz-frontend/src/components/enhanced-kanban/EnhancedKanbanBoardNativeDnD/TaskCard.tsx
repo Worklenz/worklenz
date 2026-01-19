@@ -38,9 +38,10 @@ import {
   deleteTask as deleteKanbanTask,
   updateEnhancedKanbanSubtask,
   fetchEnhancedKanbanGroups,
+  updateEnhancedKanbanTaskAssignees,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import TaskProgressCircle from './TaskProgressCircle';
-import { Button, Modal, DeleteOutlined, InboxOutlined } from '@/shared/antd-imports';
+import { Button, Modal, DeleteOutlined, InboxOutlined, UserAddOutlined } from '@/shared/antd-imports';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import { taskListBulkActionsApiService } from '@/api/tasks/task-list-bulk-actions.api.service';
 
@@ -311,7 +312,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
         // Pass archived state to API - when archived=true, it will unarchive
         const res = await taskListBulkActionsApiService.archiveTasks(body, archived);
         if (res.done) {
-          // Remove task from current view
+          // Remove task from current view (it will appear in the other view when user toggles filter)
           if (task.is_sub_task) {
             dispatch(
               updateEnhancedKanbanSubtask({
@@ -328,11 +329,34 @@ const TaskCard: React.FC<TaskCardProps> = memo(
             dispatch(deleteKanbanTask(task.id));
           }
           
-          // Refresh the board to show updated tasks
-          dispatch(fetchEnhancedKanbanGroups(projectId));
+          // No need to refetch - task is just removed from current view
+          // It will appear when user toggles the "Show Archived" filter
         }
       } catch (error) {
         logger.error('Error archiving task:', error);
+      } finally {
+        setContextMenu({ visible: false, x: 0, y: 0 });
+        setSelectedTask(null);
+      }
+    };
+
+    // Assign to me logic
+    const handleAssignToMe = async (task: IProjectTask | null) => {
+      if (!task || !task.id || !projectId) return;
+      
+      try {
+        const body = {
+          tasks: [task.id],
+          project_id: projectId,
+        };
+
+        const res = await taskListBulkActionsApiService.assignToMe(body);
+        if (res.done && res.body) {
+          // Update the task locally with the new assignees from the API response
+          dispatch(updateEnhancedKanbanTaskAssignees(res.body));
+        }
+      } catch (error) {
+        logger.error('Error assigning to me:', error);
       } finally {
         setContextMenu({ visible: false, x: 0, y: 0 });
         setSelectedTask(null);
@@ -380,6 +404,25 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                 transition: 'translateY(0)',
               }}
             >
+              <Button
+                type="text"
+                icon={<UserAddOutlined style={{ color: '#3b82f6', fontSize: 16 }} />}
+                style={{
+                  color: '#3b82f6',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '8px 16px',
+                  fontWeight: 500,
+                  borderBottom: `1px solid ${themeWiseColor('#f3f4f6', '#374151', themeMode)}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  whiteSpace: 'nowrap',
+                }}
+                onClick={() => handleAssignToMe(selectedTask || null)}
+              >
+                {t('assignToMe', 'Assign to me')}
+              </Button>
               <Button
                 type="text"
                 icon={<InboxOutlined style={{ color: '#6b7280', fontSize: 16 }} />}
