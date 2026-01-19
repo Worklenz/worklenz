@@ -569,6 +569,7 @@ const enhancedKanbanSlice = createSlice({
 
     // Status updates
     updateTaskStatus: (state, action: PayloadAction<ITaskListStatusChangeResponse>) => {
+      if (!action.payload) return;
       const { id: task_id, status_id } = action.payload;
 
       // Update in all groups
@@ -588,6 +589,7 @@ const enhancedKanbanSlice = createSlice({
       state,
       action: PayloadAction<ITaskListStatusChangeResponse>
     ) => {
+      if (!action.payload) return;
       const {
         id: task_id,
         status_id,
@@ -646,6 +648,7 @@ const enhancedKanbanSlice = createSlice({
       state,
       action: PayloadAction<ITaskListPriorityChangeResponse>
     ) => {
+      if (!action.payload) return;
       const { id, priority_id, color_code, color_code_dark } = action.payload;
       // Find the task in any group
       const taskInfo = findTaskInAllGroups(state.taskGroups, id);
@@ -679,6 +682,7 @@ const enhancedKanbanSlice = createSlice({
       state,
       action: PayloadAction<ITaskAssigneesUpdateResponse>
     ) => {
+      if (!action.payload) return;
       const { id, assignees, names } = action.payload;
 
       // Find the task in any group
@@ -765,6 +769,7 @@ const enhancedKanbanSlice = createSlice({
     },
 
     updateTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
+      if (!action.payload) return;
       const { id: task_id, priority_id } = action.payload;
 
       // Update in all groups

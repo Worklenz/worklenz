@@ -59,7 +59,7 @@ import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { getGroupIdByGroupedColumn } from '@/services/task-list/taskList.service';
 import logger from '@/utils/errorLogger';
 import ImportTaskTemplate from '@/components/task-templates/import-task-template';
-import ProjectDrawer from '@/components/projects/project-drawer/project-drawer';
+import { ProjectDrawer } from '@/components/projects/project-drawer/project-drawer';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 import useTabSearchParam from '@/hooks/useTabSearchParam';

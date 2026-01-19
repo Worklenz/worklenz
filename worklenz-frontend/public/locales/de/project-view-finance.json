@@ -47,6 +47,40 @@
   "yes": "Yes",
   "no": "No",
   "alreadyImportedRateCardMessage": "A rate card has already been imported. Clear all imported rate cards to add a new one.",
+
+  "noCurrenciesFound": "Keine Währungen gefunden",
+  "unknownProject": "Unbekanntes Projekt",
+
+  "messages": {
+    "projectIdNotFound": "Projekt-ID nicht gefunden",
+    "financeDataExportedSuccessfully": "Finanzdaten erfolgreich exportiert",
+    "failedToExportFinanceData": "Export der Finanzdaten fehlgeschlagen",
+    "noPermissionToChangeCurrency": "Sie haben keine Berechtigung, die Projektwährung zu ändern",
+    "projectCurrencyUpdatedSuccessfully": "Projektwährung erfolgreich aktualisiert",
+    "failedToUpdateProjectCurrency": "Aktualisierung der Projektwährung fehlgeschlagen",
+    "noPermissionToChangeBudget": "Sie haben keine Berechtigung, das Projektbudget zu ändern",
+    "pleaseEnterValidBudgetAmount": "Bitte geben Sie einen gültigen Budgetbetrag ein",
+    "projectBudgetUpdatedSuccessfully": "Projektbudget erfolgreich aktualisiert",
+    "failedToUpdateProjectBudget": "Aktualisierung des Projektbudgets fehlgeschlagen"
+  },
+
+  "alerts": {
+    "businessPlanRequired": {
+      "message": "Business-Plan erforderlich",
+      "description": "Projektfinanzierungsfunktionen sind nur in Business- und Enterprise-Plänen verfügbar. Aktualisieren Sie Ihren Plan, um auf diese Funktionen zuzugreifen."
+    },
+    "limitedAccess": {
+      "message": "Eingeschränkter Zugriff",
+      "financeDescription": "Sie können Finanzdaten anzeigen, aber keine Fixkosten bearbeiten. Nur Projektmanager, Team-Administratoren und Team-Besitzer können Änderungen vornehmen.",
+      "ratecardDescription": "Sie können Tarifkartendaten anzeigen, aber keine Tarife bearbeiten oder Mitgliedszuweisungen verwalten. Nur Projektmanager, Team-Administratoren und Team-Besitzer können Änderungen vornehmen."
+    }
+  },
+
+  "tooltips": {
+    "availableOnlyOnBusinessPlan": "Nur im Business-Plan verfügbar",
+    "budgetCalculationSettings": "Budget- und Berechnungseinstellungen"
+  },
+
   "budgetOverviewTooltips": {
     "manualBudget": "Manual project budget amount set by project manager",
     "totalActualCost": "Total actual cost including fixed costs",
@@ -81,6 +115,7 @@
     "projectBudget": "Project Budget",
     "projectBudgetTooltip": "Total budget allocated for this project",
     "currency": "Currency",
+    "currencyPlaceholder": "Select currency",
     "costCalculationMethod": "Cost Calculation Method",
     "calculationMethod": "Calculation Method",
     "workingHoursPerDay": "Working Hours per Day",

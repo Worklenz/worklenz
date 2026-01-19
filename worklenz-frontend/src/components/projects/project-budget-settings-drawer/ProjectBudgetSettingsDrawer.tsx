@@ -96,7 +96,7 @@ const ProjectBudgetSettingsDrawer: React.FC<ProjectBudgetSettingsDrawerProps> = 
         dispatch(updateProjectFinanceCurrency(values.currency));
       }
 
-      message.success('Project settings updated successfully');
+      message.success(t('budgetSettingsDrawer.budgetSettingsUpdated', { defaultValue: 'Project settings updated successfully' }));
       setHasChanges(false);
 
       // Reload project finances after save
@@ -115,7 +115,7 @@ const ProjectBudgetSettingsDrawer: React.FC<ProjectBudgetSettingsDrawerProps> = 
       onClose();
     } catch (error) {
       console.error('Failed to update project settings:', error);
-      message.error('Failed to update project settings');
+      message.error(t('budgetSettingsDrawer.budgetSettingsUpdateFailed', { defaultValue: 'Failed to update project settings' }));
     } finally {
       setLoading(false);
     }
@@ -130,12 +130,16 @@ const ProjectBudgetSettingsDrawer: React.FC<ProjectBudgetSettingsDrawerProps> = 
     onClose();
   };
 
+  const filterOption = (input: string, option: any) => {
+    return option.label.toLowerCase().includes(input.toLowerCase());
+  };
+
   return (
     <Drawer
       title={
         <Space>
           <SettingOutlined />
-          <span>Project Budget Settings</span>
+          <span>{t('budgetSettingsDrawer.title', { defaultValue: 'Project Budget Settings' })}</span>
         </Space>
       }
       width={480}
@@ -144,7 +148,7 @@ const ProjectBudgetSettingsDrawer: React.FC<ProjectBudgetSettingsDrawerProps> = 
       footer={
         <Space style={{ float: 'right' }}>
           <Button icon={<CloseOutlined />} onClick={handleCancel}>
-            Cancel
+            {t('budgetSettingsDrawer.cancel', { defaultValue: 'Cancel' })}
           </Button>
           <Button
             type="primary"
@@ -153,7 +157,7 @@ const ProjectBudgetSettingsDrawer: React.FC<ProjectBudgetSettingsDrawerProps> = 
             disabled={!hasChanges}
             onClick={handleSave}
           >
-            Save Changes
+            {t('budgetSettingsDrawer.saveChanges', { defaultValue: 'Save Changes' })}
           </Button>
         </Space>
       }
@@ -169,7 +173,7 @@ const ProjectBudgetSettingsDrawer: React.FC<ProjectBudgetSettingsDrawerProps> = 
           title={
             <Space>
               <DollarOutlined />
-              <span>Budget Configuration</span>
+              <span>{t('budgetSettingsDrawer.budgetConfiguration', { defaultValue: 'Budget Configuration' })}</span>
             </Space>
           }
           size="small"
@@ -181,8 +185,8 @@ const ProjectBudgetSettingsDrawer: React.FC<ProjectBudgetSettingsDrawerProps> = 
                 name="budget"
                 label={
                   <Space>
-                    <span>Project Budget</span>
-                    <Tooltip title="Total budget allocated for this project">
+                    <span>{t('budgetSettingsDrawer.projectBudget', { defaultValue: 'Project Budget' })}</span>
+                    <Tooltip title={t('budgetSettingsDrawer.projectBudgetTooltip', { defaultValue: 'Total budget allocated for this project' })}>
                       <InfoCircleOutlined style={{ color: '#666' }} />
                     </Tooltip>
                   </Space>
@@ -192,13 +196,19 @@ const ProjectBudgetSettingsDrawer: React.FC<ProjectBudgetSettingsDrawerProps> = 
                   style={{ width: '100%' }}
                   min={0}
                   precision={2}
-                  placeholder="Enter budget amount"
+                  placeholder={t('budgetModal.placeholder', { defaultValue: 'Enter budget amount' })}
                 />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="currency" label="Currency">
-                <Select options={CURRENCY_OPTIONS} placeholder="Select currency" />
+              <Form.Item name="currency" label={t('currencyText', { defaultValue: 'Currency' })}>
+                <Select
+                  options={CURRENCY_OPTIONS}
+                  showSearch
+                  allowClear
+                  filterOption={filterOption}
+                  placeholder={t('budgetSettingsDrawer.currencyPlaceholder', { defaultValue: 'Select currency' })}
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -209,7 +219,7 @@ const ProjectBudgetSettingsDrawer: React.FC<ProjectBudgetSettingsDrawerProps> = 
           title={
             <Space>
               <CalculatorOutlined />
-              <span>Cost Calculation Method</span>
+              <span>{t('budgetSettingsDrawer.costCalculationMethod', { defaultValue: 'Cost Calculation Method' })}</span>
             </Space>
           }
           size="small"
@@ -217,25 +227,23 @@ const ProjectBudgetSettingsDrawer: React.FC<ProjectBudgetSettingsDrawerProps> = 
         >
           <Space direction="vertical" style={{ width: '100%' }}>
             <div>
-              <Text strong>Current Method: </Text>
+              <Text strong>{t('budgetSettingsDrawer.calculationMethod', { defaultValue: 'Calculation Method: ' })}</Text>
               <Text>
                 {financeProject?.calculation_method === 'man_days'
-                  ? `Man Days (${financeProject?.hours_per_day || 8}h/day)`
-                  : 'Hourly Rates'}
+                  ? t('manDaysText', { defaultValue: 'Man Days ({hours}h/day)', hours: financeProject?.hours_per_day || 8 })
+                  : t('hourlyRatesText', { defaultValue: 'Hourly Rates' })}
               </Text>
             </div>
 
             <Alert
-              message="Organization-wide Setting"
+              message={t('budgetSettingsDrawer.title', { defaultValue: 'Organization-wide Setting' })}
               description={
                 <Space direction="vertical" size="small">
                   <Text>
-                    The calculation method is now configured at the organization level and applies
-                    to all projects.
+                    {t('budgetSettingsDrawer.hourlyCalculationInfo', { defaultValue: 'The calculation method is now configured at the organization level and applies to all projects.' })}
                   </Text>
                   <Text>
-                    To change this setting, please visit the{' '}
-                    <strong>Admin Center → Overview</strong> page.
+                    {t('budgetSettingsDrawer.manDaysCalculationInfo', { defaultValue: 'To change this setting, please visit the {page} page', page: 'Admin Center → Overview' })}
                   </Text>
                 </Space>
               }
@@ -246,17 +254,16 @@ const ProjectBudgetSettingsDrawer: React.FC<ProjectBudgetSettingsDrawerProps> = 
         </Card>
 
         {/* Information Section */}
-        <Card title="Important Notes" size="small" type="inner">
+        <Card title={t('budgetSettingsDrawer.importantNotes', { defaultValue: 'Important Notes' })} size="small" type="inner">
           <Space direction="vertical" size="small">
             <Text type="secondary">
-              • Changing the calculation method will affect how costs are calculated for all tasks
-              in this project
+              {t('budgetSettingsDrawer.calculationMethodChangeNote', { defaultValue: '• Changing the calculation method will affect how costs are calculated for all tasks in this project' })}
             </Text>
             <Text type="secondary">
-              • Changes take effect immediately and will recalculate all project totals
+              {t('budgetSettingsDrawer.immediateEffectNote', { defaultValue: '• Changes take effect immediately and will recalculate all project totals' })}
             </Text>
             <Text type="secondary">
-              • Budget settings apply to the entire project and all its tasks
+              {t('budgetSettingsDrawer.projectWideNote', { defaultValue: '• Budget settings apply to the entire project and all its tasks' })}
             </Text>
           </Space>
         </Card>
