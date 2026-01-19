@@ -1257,8 +1257,8 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
 
   // Get archived state from the appropriate slice based on position
   const taskManagementArchived = useAppSelector(selectArchived);
-  const taskReducerArchived = useAppSelector(state => state.taskReducer.archived);
-  const showArchived = position === 'list' ? taskManagementArchived : taskReducerArchived;
+  const enhancedKanbanArchived = useAppSelector(state => state.enhancedKanbanReducer.archived);
+  const showArchived = position === 'list' ? taskManagementArchived : enhancedKanbanArchived;
 
   // Use the filter data loader hook
   const { refreshFilterData } = useFilterDataLoader();
@@ -1849,22 +1849,20 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
             </div>
           )}
 
-          {/* Show Archived Toggle (for list view) */}
-          {position === 'list' && (
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showArchived}
-                onChange={toggleArchived}
-                className={`w-3.5 h-3.5 text-gray-600 rounded focus:ring-gray-500 transition-colors duration-150 ${
-                  isDarkMode
-                    ? 'border-[#303030] bg-[#141414] focus:ring-offset-gray-800'
-                    : 'border-gray-300 bg-white focus:ring-offset-white'
-                }`}
-              />
-              <span className={`text-xs ${themeClasses.optionText}`}>{t('showArchivedText', { defaultValue: 'Show Archived' })}</span>
-            </label>
-          )}
+          {/* Show Archived Toggle (for both list and board views) */}
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={toggleArchived}
+              className={`w-3.5 h-3.5 text-gray-600 rounded focus:ring-gray-500 transition-colors duration-150 ${
+                isDarkMode
+                  ? 'border-[#303030] bg-[#141414] focus:ring-offset-gray-800'
+                  : 'border-gray-300 bg-white focus:ring-offset-white'
+              }`}
+            />
+            <span className={`text-xs ${themeClasses.optionText}`}>{t('showArchivedText', { defaultValue: 'Show Archived' })}</span>
+          </label>
 
           {/* Show Fields Button (for list view) */}
           {position === 'list' && (
