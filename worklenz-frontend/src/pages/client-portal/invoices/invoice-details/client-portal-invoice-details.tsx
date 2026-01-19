@@ -32,8 +32,6 @@ import {
   ClockCircleOutlined,
   SendOutlined,
   DownloadOutlined,
-  EditOutlined,
-  DeleteOutlined,
   ExclamationCircleOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
@@ -42,7 +40,6 @@ import {
   useGetInvoiceDetailsQuery,
   useSendInvoiceMutation,
   useMarkInvoiceAsPaidMutation,
-  useDeleteInvoiceMutation,
 } from '@/api/client-portal/client-portal-api';
 import InvoicePreviewModal from './invoice-preview-modal';
 
@@ -58,7 +55,6 @@ const ClientPortalInvoiceDetails: React.FC = () => {
   // Mutations
   const [sendInvoice, { isLoading: isSending }] = useSendInvoiceMutation();
   const [markAsPaid, { isLoading: isMarkingPaid }] = useMarkInvoiceAsPaidMutation();
-  const [deleteInvoice, { isLoading: isDeleting }] = useDeleteInvoiceMutation();
 
   const {
     data,
@@ -155,31 +151,6 @@ const ClientPortalInvoiceDetails: React.FC = () => {
     window.open(`/api/v1/clients/portal/invoices/${invoiceId}/download`, '_blank');
   };
 
-  // Handle edit invoice
-  const handleEditInvoice = () => {
-    navigate(`/worklenz/client-portal/invoices/${invoiceId}/edit`);
-  };
-
-  // Handle delete invoice
-  const handleDeleteInvoice = () => {
-    Modal.confirm({
-      title: t('deleteInvoice', { defaultValue: 'Delete Invoice' }),
-      content: t('deleteConfirmationTitle', { defaultValue: 'Are you sure you want to delete this invoice?' }),
-      okText: t('deleteConfirmationOk', { defaultValue: 'Delete' }),
-      cancelText: t('deleteConfirmationCancel', { defaultValue: 'Cancel' }),
-      okButtonProps: { danger: true },
-      onOk: async () => {
-        try {
-          await deleteInvoice(invoiceId!).unwrap();
-          message.success(t('deleteInvoice.success', { defaultValue: 'Invoice deleted successfully' }));
-          navigate('/worklenz/client-portal/invoices');
-        } catch (error) {
-          message.error(t('deleteInvoice.failure', { defaultValue: 'Failed to delete invoice' }));
-        }
-      },
-    });
-  };
-
   // Loading state
   if (isLoading) {
     return (
@@ -267,24 +238,6 @@ const ClientPortalInvoiceDetails: React.FC = () => {
               onClick={handleDownloadInvoice}
             />
           </Tooltip>
-          {invoice.status !== 'paid' && (
-            <Tooltip title={t('editInvoice', { defaultValue: 'Edit Invoice' })}>
-              <Button
-                icon={<EditOutlined />}
-                onClick={handleEditInvoice}
-              />
-            </Tooltip>
-          )}
-          {invoice.status !== 'paid' && (
-            <Tooltip title={t('deleteInvoice', { defaultValue: 'Delete Invoice' })}>
-              <Button
-                icon={<DeleteOutlined />}
-                danger
-                onClick={handleDeleteInvoice}
-                loading={isDeleting}
-              />
-            </Tooltip>
-          )}
         </Space>
       </Flex>
 
@@ -507,6 +460,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
                               link.href = invoice.paymentProofUrl!;
                               link.download = `payment-proof-${invoice.invoiceNumber}.pdf`;
                               link.click();
+                              return undefined;
                             }}
                           >
                             {t('download', { defaultValue: 'Download' })}
@@ -531,6 +485,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
                               link.href = invoice.paymentProofUrl!;
                               link.download = `payment-proof-${invoice.invoiceNumber}`;
                               link.click();
+                              return undefined;
                             }}
                           >
                             {t('download', { defaultValue: 'Download' })}
