@@ -1,8 +1,8 @@
-import { Button, DatePicker, DatePickerProps, Flex, Select, Space, Radio } from '@/shared/antd-imports';
+import { Button, DatePicker, DatePickerProps, Flex, Select, Space, Radio, message } from '@/shared/antd-imports';
 import React, { useRef, useEffect, useState } from 'react';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_schedule_page_visit } from '@/shared/worklenz-analytics-events';
-import { SettingOutlined } from '@ant-design/icons';
+import { SettingOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useDispatch } from 'react-redux';
 import { setDate, setType, toggleSettingsDrawer } from '@/features/schedule/scheduleSlice';
 import ScheduleSettingsDrawer from '@/features/schedule/ScheduleSettingsDrawer';
@@ -15,6 +15,7 @@ import { TaskTimelineView } from '@/components/schedule/task-timeline';
 import ScheduleDataDebugger from '@/components/schedule/ScheduleDataDebugger';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { PickerType } from '@/types/schedule/schedule-v2.types';
+import { scheduleApi } from '@/api/schedule/scheduleApi';
 
 const { Option } = Select;
 
@@ -41,6 +42,7 @@ const Schedule: React.FC = () => {
   
   // View mode state: 'project' for existing view, 'task' for new task timeline
   const [viewMode, setViewMode] = useState<ScheduleViewMode>('project');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useDocumentTitle('Schedule');
 
@@ -62,8 +64,30 @@ const Schedule: React.FC = () => {
 
   const handleToday = () => {
     const today = new Date();
-    setDate(today);
+    dispatch(setDate(today));
     granttChartRef.current?.scrollToToday();
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    
+    // Invalidate all schedule-related cache to force refetch
+    dispatch(scheduleApi.util.invalidateTags([
+      'DateList', 
+      'Members', 
+      'MemberProjects', 
+      'Capacity', 
+      'Workload', 
+      'CapacityReport',
+      'Conflicts',
+      'TaskTimeline',
+      'TimeOff'
+    ]));
+    
+    // Wait a bit for the refetch to complete
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 1000);
   };
 
   return (
@@ -77,11 +101,11 @@ const Schedule: React.FC = () => {
             paddingBottom: '20px',
           }}
         >
-          <Button onClick={handleToday}>{t('today')}</Button>
+          <Button onClick={handleToday}>{t('today', { defaultValue: 'Today' })}</Button>
           <Space>
             <Select value={type} onChange={value => dispatch(setType(value))}>
-              <Option value="week">{t('week')}</Option>
-              <Option value="month">{t('month')}</Option>
+              <Option value="week">{t('week', { defaultValue: 'Week' })}</Option>
+              <Option value="month">{t('month', { defaultValue: 'Month' })}</Option>
             </Select>
             <PickerWithType date={date as Date} type={type} onChange={handleDateChange} />
           </Space>
@@ -101,9 +125,23 @@ const Schedule: React.FC = () => {
             </Radio.Button>
           </Radio.Group> */}
         </Flex>
-        <Button size="small" shape="circle" onClick={() => dispatch(toggleSettingsDrawer())}>
-          <SettingOutlined />
-        </Button>
+        <Space>
+          <Button 
+            icon={<ReloadOutlined />} 
+            onClick={handleRefresh}
+            loading={isRefreshing}
+            shape="circle"
+            title={t('refreshSchedule', { defaultValue: 'Refresh Schedule' })}
+          />
+          <Button 
+            size="small" 
+            shape="circle" 
+            onClick={() => dispatch(toggleSettingsDrawer())}
+            title={t('settings', { defaultValue: 'Settings' })}
+          >
+            <SettingOutlined />
+          </Button>
+        </Space>
       </Flex>
 
       <Flex vertical gap={24}>

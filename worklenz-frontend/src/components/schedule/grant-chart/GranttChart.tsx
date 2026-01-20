@@ -10,7 +10,7 @@ import {
 import { themeWiseColor } from '../../../utils/themeWiseColor';
 import GranttMembersTable from './grantt-members-table';
 import { CELL_WIDTH } from '../../../shared/constants';
-import { Flex, Popover } from '@/shared/antd-imports';
+import { Flex, Popover, Skeleton, Spin } from '@/shared/antd-imports';
 import DayAllocationCell from './day-allocation-cell';
 import ProjectTimelineBar from './project-timeline-bar';
 import ProjectTimelineModal from '@/features/schedule/ProjectTimelineModal';
@@ -49,12 +49,14 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
   const {
     data: teamDataResponse,
     isLoading: teamLoading,
+    isFetching: teamFetching,
     refetch: refetchTeam,
     error: teamError,
   } = useFetchScheduleMembersQuery();
   const {
     data: dateListResponse,
     isLoading: dateLoading,
+    isFetching: dateFetching,
     refetch: refetchDates,
     error: dateError,
   } = useFetchScheduleDatesQuery({
@@ -66,6 +68,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
   const {
     data: capacityResponse,
     isLoading: capacityLoading,
+    isFetching: capacityFetching,
     refetch: refetchCapacity,
   } = useFetchDailyCapacityQuery({
     startDate: formattedDate,
@@ -90,6 +93,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
   const teamData = teamDataResponse?.body || [];
   const dateList = dateListResponse?.body;
   const loading = teamLoading || dateLoading;
+  const isRefetching = teamFetching || dateFetching || capacityFetching;
   const dayCount = dateList?.date_data?.[0]?.days?.length || 0;
 
   // Helper function to get capacity for specific date/member
@@ -227,6 +231,31 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
     scrollToToday,
   }));
 
+  // Loading skeleton for initial load
+  if (loading) {
+    return (
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '375px 1fr',
+          overflow: 'hidden',
+          height: 'calc(100vh - 206px)',
+          border: themeMode === 'dark' ? '1px solid #303030' : '1px solid #e5e7eb',
+          borderRadius: '4px',
+          backgroundColor: themeMode === 'dark' ? '#141414' : '',
+          padding: '16px',
+        }}
+      >
+        <div>
+          <Skeleton active paragraph={{ rows: 10 }} />
+        </div>
+        <div>
+          <Skeleton active paragraph={{ rows: 10 }} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       {/* Capacity Conflicts Alert */}
@@ -234,6 +263,26 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
         startDate={formattedDate}
         endDate={calculateEndDate}
       />
+      
+      {/* Refetching overlay */}
+      {isRefetching && !loading && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.05)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+          }}
+        >
+          <Spin size="large" tip={t('refreshingData', { defaultValue: 'Refreshing data...' })} />
+        </div>
+      )}
       
       <div
         style={{
@@ -244,6 +293,8 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
           border: themeMode === 'dark' ? '1px solid #303030' : '1px solid #e5e7eb',
           borderRadius: '4px',
           backgroundColor: themeMode === 'dark' ? '#141414' : '',
+          opacity: isRefetching ? 0.6 : 1,
+          transition: 'opacity 0.3s ease',
         }}
       >
       {/* teams table */}
