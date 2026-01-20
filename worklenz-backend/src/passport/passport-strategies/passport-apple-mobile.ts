@@ -136,16 +136,16 @@ async function handleAppleMobileAuth(req: Request, done: any) {
       }
     }
 
-    // Look up user by apple_id (primary) or email (secondary)
+    // Look up user by apple_id (primary) or email (secondary) - exclude deleted accounts
     let userResult;
     if (email) {
       userResult = await db.query(
-        "SELECT id, apple_id, google_id, name, email, active_team FROM users WHERE apple_id = $1 OR LOWER(email) = $2;",
+        "SELECT id, apple_id, google_id, name, email, active_team FROM users WHERE (apple_id = $1 OR LOWER(email) = $2) AND is_deleted = FALSE;",
         [appleId, email]
       );
     } else {
       userResult = await db.query(
-        "SELECT id, apple_id, google_id, name, email, active_team FROM users WHERE apple_id = $1;",
+        "SELECT id, apple_id, google_id, name, email, active_team FROM users WHERE apple_id = $1 AND is_deleted = FALSE;",
         [appleId]
       );
     }
