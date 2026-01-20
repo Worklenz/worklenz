@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import fs from 'fs';
@@ -8,6 +8,8 @@ export default defineConfig(({ command, mode }) => {
   const isProduction = command === 'build';
   const buildTimestamp = Date.now().toString();
 
+  const env = loadEnv(mode, process.cwd(), '');
+
   return {
     // **Plugins**
     plugins: [
@@ -15,9 +17,9 @@ export default defineConfig(({ command, mode }) => {
       // Sentry plugin for source maps upload in production
       // sentryVitePlugin returns an array of plugins, so we spread it
       ...(isProduction ? sentryVitePlugin({
-        org: process.env.VITE_SENTRY_ORG,
-        project: process.env.VITE_SENTRY_PROJECT,
-        authToken: process.env.VITE_SENTRY_AUTH_TOKEN,
+        org: env.VITE_SENTRY_ORG,
+        project: env.VITE_SENTRY_PROJECT,
+        authToken: env.VITE_SENTRY_AUTH_TOKEN,
         telemetry: false,
       }) : []),
       // Custom plugin to inject build timestamp into service worker
@@ -139,19 +141,19 @@ export default defineConfig(({ command, mode }) => {
       minify: isProduction ? 'terser' : false,
       terserOptions: isProduction
         ? {
-            compress: {
-              drop_console: true,
-              drop_debugger: true,
-              pure_funcs: ['console.log', 'console.info', 'console.debug'],
-              passes: 2, // Multiple passes for better compression
-            },
-            mangle: {
-              safari10: true,
-            },
-            format: {
-              comments: false,
-            },
-          }
+          compress: {
+            drop_console: true,
+            drop_debugger: true,
+            pure_funcs: ['console.log', 'console.info', 'console.debug'],
+            passes: 2, // Multiple passes for better compression
+          },
+          mangle: {
+            safari10: true,
+          },
+          format: {
+            comments: false,
+          },
+        }
         : undefined,
 
       // **Chunk Size Warnings**

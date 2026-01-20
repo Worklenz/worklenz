@@ -840,19 +840,20 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
             r.req_no as request_number,
             s.name as service_name,
             s.description as service_description,
-            ot.name as organization_name,
-            ot.logo_url as organization_logo_url,
-            ot.primary_color as organization_primary_color,
-            ot.email as organization_email,
-            ot.phone as organization_phone,
-            ot.address_line_1 as organization_address_line_1,
-            ot.address_line_2 as organization_address_line_2,
-            ot.invoice_footer_message as organization_invoice_footer_message
+            t.name as organization_name,
+            cps.logo_url as organization_logo_url,
+            cps.primary_color as organization_primary_color,
+            cps.contact_email as organization_email,
+            cps.contact_phone as organization_phone,
+            cps.address_line_1 as organization_address_line_1,
+            cps.address_line_2 as organization_address_line_2,
+            cps.invoice_footer_message as organization_invoice_footer_message
           FROM client_portal_invoices i
           LEFT JOIN clients c ON i.client_id = c.id
           LEFT JOIN client_portal_requests r ON i.request_id = r.id
           LEFT JOIN client_portal_services s ON r.service_id = s.id
-          LEFT JOIN organization_teams ot ON i.organization_team_id = ot.id
+          LEFT JOIN teams t ON i.organization_team_id = t.id
+          LEFT JOIN client_portal_settings cps ON cps.organization_team_id = t.id
           WHERE i.id = $1 AND i.client_id = $2 AND i.organization_team_id = $3
         `;
         queryParams = [id, clientId, organizationId];
@@ -877,19 +878,20 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
             r.req_no as request_number,
             s.name as service_name,
             s.description as service_description,
-            ot.name as organization_name,
-            ot.logo_url as organization_logo_url,
-            ot.primary_color as organization_primary_color,
-            ot.email as organization_email,
-            ot.phone as organization_phone,
-            ot.address_line_1 as organization_address_line_1,
-            ot.address_line_2 as organization_address_line_2,
-            ot.invoice_footer_message as organization_invoice_footer_message
+            t.name as organization_name,
+            cps.logo_url as organization_logo_url,
+            cps.primary_color as organization_primary_color,
+            cps.contact_email as organization_email,
+            cps.contact_phone as organization_phone,
+            cps.address_line_1 as organization_address_line_1,
+            cps.address_line_2 as organization_address_line_2,
+            cps.invoice_footer_message as organization_invoice_footer_message
           FROM client_portal_invoices i
           LEFT JOIN clients c ON i.client_id = c.id
           LEFT JOIN client_portal_requests r ON i.request_id = r.id
           LEFT JOIN client_portal_services s ON r.service_id = s.id
-          LEFT JOIN organization_teams ot ON i.organization_team_id = ot.id
+          LEFT JOIN teams t ON i.organization_team_id = t.id
+          LEFT JOIN client_portal_settings cps ON cps.organization_team_id = t.id
           WHERE i.id = $1 AND i.organization_team_id = $2
         `;
         queryParams = [id, organizationId];
@@ -947,36 +949,58 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
       // Generate PDF using puppeteer
       const puppeteer = require('puppeteer');
       const { InvoiceTemplateGenerator } = require('../../shared/invoice-template-generator');
-      
-      const html = InvoiceTemplateGenerator.generateInvoiceHTML(invoiceData);
-      
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      });
-      
-      const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
-      
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '20mm',
-          right: '20mm',
-          bottom: '20mm',
-          left: '20mm',
-        },
-      });
-      
-      await browser.close();
 
-      // Set response headers for PDF download
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoice_no}.pdf"`);
-      res.setHeader('Content-Length', pdfBuffer.length);
-      
-      return res.send(pdfBuffer);
+      try {
+        console.log('Generating invoice HTML for invoice:', invoice.invoice_no);
+        const html = InvoiceTemplateGenerator.generateInvoiceHTML(invoiceData);
+        console.log('HTML generated successfully, length:', html.length);
+
+        console.log('Launching Puppeteer...');
+        const browser = await puppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+        });
+
+        console.log('Browser launched, creating page...');
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+        console.log('Page content set, generating PDF...');
+
+        const pdfBuffer = await page.pdf({
+          format: 'A4',
+          printBackground: true,
+          margin: {
+            top: '20mm',
+            right: '20mm',
+            bottom: '20mm',
+            left: '20mm',
+          },
+        });
+
+        console.log('PDF generated successfully, size:', pdfBuffer.length);
+        await browser.close();
+        console.log('Browser closed');
+
+        // Set response headers for PDF download
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoice_no}.pdf"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+
+        console.log('Sending PDF response...');
+        return res.end(pdfBuffer, 'binary');
+      } catch (pdfError) {
+        console.error('PDF generation error:', pdfError);
+
+        // Fallback: return HTML as a downloadable file if PDF generation fails
+        console.log('Falling back to HTML download...');
+        const html = InvoiceTemplateGenerator.generateInvoiceHTML(invoiceData);
+
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoice_no}.html"`);
+        res.setHeader('Content-Length', Buffer.byteLength(html));
+
+        return res.send(html);
+      }
     } catch (error) {
       console.error("Error downloading invoice:", error);
       return res
