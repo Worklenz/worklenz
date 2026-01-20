@@ -8,6 +8,7 @@ import WorkloadManagement from './WorkloadManagement';
 import { useTranslation } from 'react-i18next';
 import { useFetchScheduleMembersQuery } from '@/api/schedule/scheduleApi';
 import CustomAvatar from '@/components/CustomAvatar';
+import { Member } from '@/types/schedule/schedule-v2.types';
 
 const ScheduleDrawer = () => {
   const isScheduleDrawerOpen = useAppSelector(state => state.schedule?.isScheduleDrawerOpen);
@@ -25,11 +26,12 @@ const ScheduleDrawer = () => {
 
   // Fetch team members data
   const { data: teamDataResponse, isLoading: teamLoading } = useFetchScheduleMembersQuery();
-  const teamData = teamDataResponse?.body || [];
+  const teamData: Member[] = teamDataResponse?.body || [];
 
   // Find selected member or default to first member
+  // Note: selectedMemberId is team_member_id from the cell click
   const selectedMember = selectedMemberId
-    ? teamData.find((member: any) => member.id === selectedMemberId)
+    ? teamData.find((member: Member) => member.team_member_id === selectedMemberId)
     : teamData[0]; // Default to first member if none selected
 
   const items: TabsProps['items'] = [
@@ -43,7 +45,7 @@ const ScheduleDrawer = () => {
       label: t('workloadManagement') || 'Resource Management',
       children: (
         <WorkloadManagement
-          memberId={selectedMember?.id}
+          memberId={selectedMember?.team_member_id}
           onClose={() => dispatch(toggleScheduleDrawer())}
         />
       ),
