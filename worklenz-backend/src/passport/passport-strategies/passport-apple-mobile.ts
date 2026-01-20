@@ -157,7 +157,7 @@ async function handleAppleMobileAuth(req: Request, done: any) {
       // If this is a sign-up request but user already exists
       if (isSignUp) {
         return done(null, false, {
-          message: email 
+          message: email
             ? `An account with email ${email} already exists. Please sign in instead.`
             : "An account with this Apple ID already exists. Please sign in instead.",
           [ERROR_KEY]: "USER_ALREADY_EXISTS"
