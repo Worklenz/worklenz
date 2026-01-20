@@ -87,36 +87,6 @@ export default class AccountDeletionController extends WorklenzControllerBase {
         // Continue with deletion even if session revocation fails
       }
 
-      // 2. REVOKE OAUTH TOKENS
-      // Google token revocation
-      if (userData.google_id) {
-        try {
-          // Note: We don't have the access token stored, but we can revoke by google_id
-          // In a production system, you'd want to store refresh tokens and revoke them
-          // For now, we'll just log this action
-          log_error(`Google account ${userData.google_id} should be unlinked (token revocation requires stored tokens)`, null);
-
-          // Optional: Clear the google_id from the user record
-          await db.query("UPDATE users SET google_id = NULL WHERE id = $1", [userId]);
-        } catch (googleError) {
-          log_error("Error handling Google token revocation:", googleError);
-        }
-      }
-
-      // Apple token revocation
-      if (userData.apple_id) {
-        try {
-          // Note: Apple token revocation requires the refresh token
-          // Similar to Google, we'd need to store refresh tokens
-          log_error(`Apple account ${userData.apple_id} should be unlinked (token revocation requires stored tokens)`, null);
-
-          // Optional: Clear the apple_id from the user record
-          await db.query("UPDATE users SET apple_id = NULL WHERE id = $1", [userId]);
-        } catch (appleError) {
-          log_error("Error handling Apple token revocation:", appleError);
-        }
-      }
-
       // Send Teams webhook notification
       const teamsWebhookUrl = process.env.TEAMS_SUPPORT_WEBHOOK;
 
