@@ -1,4 +1,4 @@
- import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector, useDispatch } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
@@ -32,7 +32,7 @@ import {
   toggleField,
   syncFieldWithDatabase,
 } from '@/features/task-management/taskListFields.slice';
-import { selectColumns } from '@/features/task-management/task-management.slice';
+import { selectColumns } from '@/features/task-management/task-management.selectors';
 
 // Import Redux actions
 import {
@@ -44,10 +44,12 @@ import {
   setSort,
   setSortField,
   setSortOrder,
+} from '@/features/task-management/task-management.slice';
+import {
   selectSort,
   selectSortField,
   selectSortOrder,
-} from '@/features/task-management/task-management.slice';
+} from '@/features/task-management/task-management.selectors';
 import {
   setCurrentGrouping,
   selectCurrentGrouping,
@@ -415,295 +417,289 @@ const FilterDropdown: React.FC<{
   onManagePhase,
   projectPhaseLabel, // Add this prop
 }) => {
-  const { t } = useTranslation('task-list-filters');
-  // Add permission checks for groupBy section
-  const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
-  const isProjectManager = useIsProjectManager();
-  const canConfigure = isOwnerOrAdmin || isProjectManager;
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filteredOptions, setFilteredOptions] = useState(section.options);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+    const { t } = useTranslation('task-list-filters');
+    // Add permission checks for groupBy section
+    const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
+    const isProjectManager = useIsProjectManager();
+    const canConfigure = isOwnerOrAdmin || isProjectManager;
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filteredOptions, setFilteredOptions] = useState(section.options);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Memoized filter function to prevent unnecessary recalculations
-  const filteredOptionsMemo = useMemo(() => {
-    if (!section.searchable || !searchTerm.trim()) {
-      return section.options;
-    }
-
-    const searchLower = searchTerm.toLowerCase();
-    return section.options.filter(option => option.label.toLowerCase().includes(searchLower));
-  }, [searchTerm, section.options, section.searchable]);
-
-  // Update filtered options when memo changes
-  useEffect(() => {
-    setFilteredOptions(filteredOptionsMemo);
-  }, [filteredOptionsMemo]);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        if (isOpen) onToggle();
+    // Memoized filter function to prevent unnecessary recalculations
+    const filteredOptionsMemo = useMemo(() => {
+      if (!section.searchable || !searchTerm.trim()) {
+        return section.options;
       }
-    };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen, onToggle]);
+      const searchLower = searchTerm.toLowerCase();
+      return section.options.filter(option => option.label.toLowerCase().includes(searchLower));
+    }, [searchTerm, section.options, section.searchable]);
 
-  useEffect(() => {
-    if (!isOpen) {
-      setSearchTerm('');
-    }
-  }, [isOpen]);
+    // Update filtered options when memo changes
+    useEffect(() => {
+      setFilteredOptions(filteredOptionsMemo);
+    }, [filteredOptionsMemo]);
 
-  // Title for button tooltip - use i18next interpolation for pluralization and word-order
-  const buttonTitle = useMemo(() => {
-    // If grouped by a value, show the selected value (e.g. "Group by: Phase")
-    if (section.id === 'groupBy' && section.selectedValues[0]) {
-      const selectedOpt = section.options.find(o => o.value === section.selectedValues[0]);
-      if (selectedOpt?.label) {
-        return t('groupBySelected', {
+    // Close dropdown when clicking outside
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+          if (isOpen) onToggle();
+        }
+      };
+
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isOpen, onToggle]);
+
+    useEffect(() => {
+      if (!isOpen) {
+        setSearchTerm('');
+      }
+    }, [isOpen]);
+
+    // Title for button tooltip - use i18next interpolation for pluralization and word-order
+    const buttonTitle = useMemo(() => {
+      // If grouped by a value, show the selected value (e.g. "Group by: Phase")
+      if (section.id === 'groupBy' && section.selectedValues[0]) {
+        const selectedOpt = section.options.find(o => o.value === section.selectedValues[0]);
+        if (selectedOpt?.label) {
+          return t('groupBySelected', {
+            label: section.label,
+            value: selectedOpt.label,
+            defaultValue: '{{label}}: {{value}}',
+          });
+        }
+        return section.label;
+      }
+
+      // For other multi-select filters, use an interpolated count string (handles pluralization/word order)
+      if (section.id !== 'groupBy' && section.selectedValues.length > 0) {
+        return t('selectedCount', {
+          count: section.selectedValues.length,
           label: section.label,
-          value: selectedOpt.label,
-          defaultValue: '{{label}}: {{value}}',
+          defaultValue: '{{label}}: {{count}} selected',
         });
       }
+
       return section.label;
-    }
+    }, [section, t]);
 
-    // For other multi-select filters, use an interpolated count string (handles pluralization/word order)
-    if (section.id !== 'groupBy' && section.selectedValues.length > 0) {
-      return t('selectedCount', {
-        count: section.selectedValues.length,
-        label: section.label,
-        defaultValue: '{{label}}: {{count}} selected',
-      });
-    }
+    const handleOptionToggle = useCallback(
+      (optionValue: string) => {
+        if (section.multiSelect) {
+          const newValues = section.selectedValues.includes(optionValue)
+            ? section.selectedValues.filter(v => v !== optionValue)
+            : [...section.selectedValues, optionValue];
+          onSelectionChange(section.id, newValues);
+        } else {
+          onSelectionChange(section.id, [optionValue]);
+          onToggle();
+        }
+      },
+      [section, onSelectionChange, onToggle]
+    );
 
-    return section.label;
-  }, [section, t]);
+    const clearSelection = useCallback(() => {
+      onSelectionChange(section.id, []);
+    }, [section.id, onSelectionChange]);
 
-  const handleOptionToggle = useCallback(
-    (optionValue: string) => {
-      if (section.multiSelect) {
-        const newValues = section.selectedValues.includes(optionValue)
-          ? section.selectedValues.filter(v => v !== optionValue)
-          : [...section.selectedValues, optionValue];
-        onSelectionChange(section.id, newValues);
-      } else {
-        onSelectionChange(section.id, [optionValue]);
-        onToggle();
-      }
-    },
-    [section, onSelectionChange, onToggle]
-  );
+    const selectedCount = section.selectedValues.length;
+    const IconComponent = section.icon;
 
-  const clearSelection = useCallback(() => {
-    onSelectionChange(section.id, []);
-  }, [section.id, onSelectionChange]);
-
-  const selectedCount = section.selectedValues.length;
-  const IconComponent = section.icon;
-
-  return (
-    <div className={`relative ${className}`} ref={dropdownRef}>
-      {/* Trigger Button */}
-      <button
-        onClick={onToggle}
-        title={buttonTitle}
-        aria-label={buttonTitle}
-        className={`
+    return (
+      <div className={`relative ${className}`} ref={dropdownRef}>
+        {/* Trigger Button */}
+        <button
+          onClick={onToggle}
+          title={buttonTitle}
+          aria-label={buttonTitle}
+          className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out
-          ${
-            selectedCount > 0
+          ${selectedCount > 0
               ? isDarkMode
                 ? 'bg-gray-600 text-white border-gray-500'
                 : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
               : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
-          }
+            }
           hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
           ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
         `}
-        aria-expanded={isOpen}
-        aria-haspopup="true"
-      >
-        <IconComponent className="w-3.5 h-3.5" />
-        <span>{section.label}</span>
-        {/* Show selected option for single-select (group by) */}
-        {section.id === 'groupBy' && selectedCount > 0 && (
-          <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            {section.options.find(opt => opt.value === section.selectedValues[0])?.label}
-          </span>
-        )}
-        {/* Show count for multi-select filters */}
-        {section.id !== 'groupBy' && selectedCount > 0 && (
-          <span className="inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-gray-500 rounded-full">
-            {selectedCount}
-          </span>
-        )}
-        <DownOutlined
-          className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {/* Configuration Buttons for GroupBy section */}
-      {section.id === 'groupBy' && canConfigure && (
-        <div className="inline-flex items-center gap-1 ml-2">
-          {section.selectedValues[0] === 'phase' && (
-            <button
-              onClick={onManagePhase}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                isDarkMode 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 focus:ring-offset-gray-900' 
-                  : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600 focus:ring-offset-white'
-              }`}
-            >
-              <SettingOutlined className="w-3.5 h-3.5" />
-              {t('manage', { defaultValue: 'Manage' })} {projectPhaseLabel || t('phasesText', { defaultValue: 'Phases' })}
-            </button>
-          )}
-          {section.selectedValues[0] === 'status' && (
-            <button
-              onClick={onManageStatus}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                isDarkMode 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 focus:ring-offset-gray-900' 
-                  : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600 focus:ring-offset-white'
-              }`}
-            >
-              <SettingOutlined className="w-3.5 h-3.5" />
-              {t('manageStatuses', { defaultValue: 'Manage Statuses' })}
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Dropdown Panel */}
-      {isOpen && (
-        <div
-          className={`absolute top-full left-0 z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-sm border ${themeClasses.dropdownBorder}`}
+          aria-expanded={isOpen}
+          aria-haspopup="true"
         >
-          {/* Search Input */}
-          {section.searchable && (
-            <div className={`p-2 border-b ${themeClasses.dividerBorder}`}>
-              <div className="relative w-full">
-                <SearchOutlined className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  placeholder={t('search', { defaultValue: 'Search' })}
-                  className={`w-full pl-8 pr-2 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${
-                    isDarkMode
+          <IconComponent className="w-3.5 h-3.5" />
+          <span>{section.label}</span>
+          {/* Show selected option for single-select (group by) */}
+          {section.id === 'groupBy' && selectedCount > 0 && (
+            <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              {section.options.find(opt => opt.value === section.selectedValues[0])?.label}
+            </span>
+          )}
+          {/* Show count for multi-select filters */}
+          {section.id !== 'groupBy' && selectedCount > 0 && (
+            <span className="inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-gray-500 rounded-full">
+              {selectedCount}
+            </span>
+          )}
+          <DownOutlined
+            className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+
+        {/* Configuration Buttons for GroupBy section */}
+        {section.id === 'groupBy' && canConfigure && (
+          <div className="inline-flex items-center gap-1 ml-2">
+            {section.selectedValues[0] === 'phase' && (
+              <button
+                onClick={onManagePhase}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isDarkMode
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 focus:ring-offset-gray-900'
+                  : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600 focus:ring-offset-white'
+                  }`}
+              >
+                <SettingOutlined className="w-3.5 h-3.5" />
+                {t('manage', { defaultValue: 'Manage' })} {projectPhaseLabel || t('phasesText', { defaultValue: 'Phases' })}
+              </button>
+            )}
+            {section.selectedValues[0] === 'status' && (
+              <button
+                onClick={onManageStatus}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isDarkMode
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 focus:ring-offset-gray-900'
+                  : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600 focus:ring-offset-white'
+                  }`}
+              >
+                <SettingOutlined className="w-3.5 h-3.5" />
+                {t('manageStatuses', { defaultValue: 'Manage Statuses' })}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Dropdown Panel */}
+        {isOpen && (
+          <div
+            className={`absolute top-full left-0 z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-sm border ${themeClasses.dropdownBorder}`}
+          >
+            {/* Search Input */}
+            {section.searchable && (
+              <div className={`p-2 border-b ${themeClasses.dividerBorder}`}>
+                <div className="relative w-full">
+                  <SearchOutlined className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    placeholder={t('search', { defaultValue: 'Search' })}
+                    className={`w-full pl-8 pr-2 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${isDarkMode
                       ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
                       : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
-                  }`}
-                />
+                      }`}
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Options List */}
-          <div className="max-h-48 overflow-y-auto">
-            {filteredOptions.length === 0 ? (
-              <div className={`p-2 text-xs text-center ${themeClasses.secondaryText}`}>
-                {t('noOptionsFound', { defaultValue: 'No options found' })}
-              </div>
-            ) : (
-              <div className="p-0.5">
-                {filteredOptions.map(option => {
-                  const isSelected = section.selectedValues.includes(option.value);
+            {/* Options List */}
+            <div className="max-h-48 overflow-y-auto">
+              {filteredOptions.length === 0 ? (
+                <div className={`p-2 text-xs text-center ${themeClasses.secondaryText}`}>
+                  {t('noOptionsFound', { defaultValue: 'No options found' })}
+                </div>
+              ) : (
+                <div className="p-0.5">
+                  {filteredOptions.map(option => {
+                    const isSelected = section.selectedValues.includes(option.value);
 
-                  return (
-                    <button
-                      key={option.id}
-                      onClick={() => handleOptionToggle(option.value)}
-                      className={`
+                    return (
+                      <button
+                        key={option.id}
+                        onClick={() => handleOptionToggle(option.value)}
+                        className={`
                         w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded
                         transition-colors duration-150 text-left
-                        ${
-                          isSelected
+                        ${isSelected
                             ? isDarkMode
                               ? 'bg-gray-600 text-white'
                               : 'bg-gray-200 text-gray-800 font-semibold'
                             : `${themeClasses.optionText} ${themeClasses.optionHover}`
-                        }
-                      `}
-                    >
-                      {/* Checkbox/Radio indicator - hide for group by */}
-                      {section.id !== 'groupBy' && (
-                        <div
-                          className={`
-                          flex items-center justify-center w-3.5 h-3.5 border rounded
-                          ${
-                            isSelected
-                              ? 'bg-gray-600 border-gray-800 text-white'
-                              : 'border-gray-300 dark:border-gray-600'
                           }
+                      `}
+                      >
+                        {/* Checkbox/Radio indicator - hide for group by */}
+                        {section.id !== 'groupBy' && (
+                          <div
+                            className={`
+                          flex items-center justify-center w-3.5 h-3.5 border rounded
+                          ${isSelected
+                                ? 'bg-gray-600 border-gray-800 text-white'
+                                : 'border-gray-300 dark:border-gray-600'
+                              }
                         `}
-                        >
-                          {isSelected && <CheckOutlined className="w-2.5 h-2.5" />}
-                        </div>
-                      )}
+                          >
+                            {isSelected && <CheckOutlined className="w-2.5 h-2.5" />}
+                          </div>
+                        )}
 
-                      {/* Color indicator */}
-                      {option.color && (
-                        <div
-                          className="w-2.5 h-2.5 rounded-full"
-                          style={{ backgroundColor: option.color }}
-                        />
-                      )}
+                        {/* Color indicator */}
+                        {option.color && (
+                          <div
+                            className="w-2.5 h-2.5 rounded-full"
+                            style={{ backgroundColor: option.color }}
+                          />
+                        )}
 
-                      {/* Avatar - show for assignees section */}
-                      {section.id === 'assignees' && (
-                        <div className="flex-shrink-0">
-                          {option.avatar ? (
-                            <Avatar
-                              src={option.avatar}
-                              alt={option.label}
-                              size={20}
-                              style={{ width: 20, height: 20 }}
-                            />
-                          ) : (
-                            <Avatar
-                              size={20}
-                              style={{
-                                backgroundColor: AvatarNamesMap[option.label[0]?.toUpperCase()] || '#9e9e9e',
-                                width: 20,
-                                height: 20,
-                                fontSize: 10,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              {option.label[0]?.toUpperCase()}
-                            </Avatar>
+                        {/* Avatar - show for assignees section */}
+                        {section.id === 'assignees' && (
+                          <div className="flex-shrink-0">
+                            {option.avatar ? (
+                              <Avatar
+                                src={option.avatar}
+                                alt={option.label}
+                                size={20}
+                                style={{ width: 20, height: 20 }}
+                              />
+                            ) : (
+                              <Avatar
+                                size={20}
+                                style={{
+                                  backgroundColor: AvatarNamesMap[option.label[0]?.toUpperCase()] || '#9e9e9e',
+                                  width: 20,
+                                  height: 20,
+                                  fontSize: 10,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                {option.label[0]?.toUpperCase()}
+                              </Avatar>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Label and Count */}
+                        <div className="flex-1 flex items-center justify-between">
+                          <span className="truncate">{option.label}</span>
+                          {option.count !== undefined && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {option.count}
+                            </span>
                           )}
                         </div>
-                      )}
-
-                      {/* Label and Count */}
-                      <div className="flex-1 flex items-center justify-between">
-                        <span className="truncate">{option.label}</span>
-                        {option.count !== undefined && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {option.count}
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
-};
+        )}
+      </div>
+    );
+  };
 
 // Search Component
 const SearchFilter: React.FC<{
@@ -757,11 +753,10 @@ const SearchFilter: React.FC<{
           onClick={handleToggle}
           title={t('search', { defaultValue: 'Search' })}
           aria-label={t('search', { defaultValue: 'Search' })}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
-            themeClasses.containerBg === 'bg-gray-800'
-              ? 'focus:ring-offset-gray-900'
-              : 'focus:ring-offset-white'
-          }`}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${themeClasses.containerBg === 'bg-gray-800'
+            ? 'focus:ring-offset-gray-900'
+            : 'focus:ring-offset-white'
+            }`}
         >
           <SearchOutlined className="w-3.5 h-3.5" />
           <span>{t('search', { defaultValue: 'Search' })}</span>
@@ -776,21 +771,19 @@ const SearchFilter: React.FC<{
               value={localValue}
               onChange={e => setLocalValue(e.target.value)}
               placeholder={placeholder || t('searchTasks', { defaultValue: 'Search tasks by name or key...' })}
-              className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-150 ${
-                isDarkMode
-                  ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
-                  : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
-              }`}
+              className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-150 ${isDarkMode
+                ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
+                : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
+                }`}
             />
             {localValue && (
               <button
                 type="button"
                 onClick={handleClear}
-                className={`absolute right-1.5 top-1/2 transform -translate-y-1/2 transition-colors duration-150 ${
-                  isDarkMode
-                    ? 'text-gray-400 hover:text-gray-200'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
+                className={`absolute right-1.5 top-1/2 transform -translate-y-1/2 transition-colors duration-150 ${isDarkMode
+                  ? 'text-gray-400 hover:text-gray-200'
+                  : 'text-gray-500 hover:text-gray-700'
+                  }`}
               >
                 <CloseOutlined className="w-3.5 h-3.5" />
               </button>
@@ -798,11 +791,10 @@ const SearchFilter: React.FC<{
           </div>
           <button
             type="submit"
-            className={`px-2.5 py-1.5 text-xs font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200 ${
-              isDarkMode
-                ? 'text-white bg-gray-600 hover:bg-gray-700'
-                : 'text-gray-800 bg-gray-200 hover:bg-gray-300'
-            }`}
+            className={`px-2.5 py-1.5 text-xs font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200 ${isDarkMode
+              ? 'text-white bg-gray-600 hover:bg-gray-700'
+              : 'text-gray-800 bg-gray-200 hover:bg-gray-300'
+              }`}
           >
             {t('search', { defaultValue: 'Search' })}
           </button>
@@ -813,9 +805,8 @@ const SearchFilter: React.FC<{
               onChange('');
               setIsExpanded(false);
             }}
-            className={`px-2.5 py-1.5 text-xs font-medium transition-colors duration-200 ${
-              isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
-            }`}
+            className={`px-2.5 py-1.5 text-xs font-medium transition-colors duration-200 ${isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
+              }`}
           >
             {t('cancel', { defaultValue: 'Cancel' })}
           </button>
@@ -930,12 +921,11 @@ const SortDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
         className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out
-          ${
-            isActive
-              ? isDarkMode
-                ? 'bg-gray-600 text-white border-gray-500'
-                : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
-              : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
+          ${isActive
+            ? isDarkMode
+              ? 'bg-gray-600 text-white border-gray-500'
+              : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
+            : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
           hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
           ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
@@ -991,20 +981,19 @@ const SortDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
                     className={`
                       w-full flex items-center justify-between gap-2 px-2 py-1.5 text-xs rounded
                       transition-colors duration-150 text-left
-                      ${
-                        isSelected
-                          ? isDarkMode
-                            ? 'bg-gray-600 text-white'
-                            : 'bg-gray-200 text-gray-800 font-semibold'
-                          : `${themeClasses.optionText} ${themeClasses.optionHover}`
+                      ${isSelected
+                        ? isDarkMode
+                          ? 'bg-gray-600 text-white'
+                          : 'bg-gray-200 text-gray-800 font-semibold'
+                        : `${themeClasses.optionText} ${themeClasses.optionHover}`
                       }
                     `}
                     title={
                       isSelected
                         ? t('currentSort', {
-                            field: sortField.label,
-                            order: orderText,
-                          }) + ` - ${t('sortDescending', { defaultValue: 'Sort Descending' })}`
+                          field: sortField.label,
+                          order: orderText,
+                        }) + ` - ${t('sortDescending', { defaultValue: 'Sort Descending' })}`
                         : t('sortByField', { field: sortField.label }) + ` - ${t('sortAscending', { defaultValue: 'Sort Ascending' })}`
                     }
                   >
@@ -1123,9 +1112,9 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
   const fieldsTitle = useMemo(() => {
     return visibleCount > 0
       ? t('fieldsWithCount', {
-          count: visibleCount,
-          defaultValue: 'Fields: {{count}}',
-        })
+        count: visibleCount,
+        defaultValue: 'Fields: {{count}}',
+      })
       : t('fieldsText', { defaultValue: 'Fields' });
   }, [visibleCount, t]);
 
@@ -1139,12 +1128,11 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
         className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out
-          ${
-            visibleCount > 0
-              ? isDarkMode
-                ? 'bg-gray-600 text-white border-gray-500'
-                : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
-              : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
+          ${visibleCount > 0
+            ? isDarkMode
+              ? 'bg-gray-600 text-white border-gray-500'
+              : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
+            : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
           hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
           ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
@@ -1204,12 +1192,11 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
                       className={`
                         w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded
                         transition-colors duration-150 text-left
-                        ${
-                          isSelected
-                            ? isDarkMode
-                              ? 'text-white font-semibold'
-                              : 'text-gray-800 font-semibold'
-                            : `${themeClasses.optionText} ${themeClasses.optionHover}`
+                        ${isSelected
+                          ? isDarkMode
+                            ? 'text-white font-semibold'
+                            : 'text-gray-800 font-semibold'
+                          : `${themeClasses.optionText} ${themeClasses.optionHover}`
                         }
                       `}
                     >
@@ -1217,11 +1204,10 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
                       <div
                         className={`
                         flex items-center justify-center w-3.5 h-3.5 border rounded
-                        ${
-                          isSelected
+                        ${isSelected
                             ? 'bg-gray-600 border-gray-600 text-white'
                             : 'border-gray-300 dark:border-gray-600'
-                        }
+                          }
                       `}
                       >
                         {isSelected && <CheckOutlined className="w-2.5 h-2.5" />}
@@ -1391,7 +1377,7 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
     // Add manage buttons based on current grouping
     if (canConfigure) {
       items.push({ type: 'divider' });
-      
+
       if (currentGroupByValue === 'status') {
         items.push({
           key: 'manage-statuses',
@@ -1800,8 +1786,8 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
           {showOverflowMenu && (
             <Dropdown
               className="task-filters-overflow-menu"
-              menu={{ 
-                items: overflowMenuItems, 
+              menu={{
+                items: overflowMenuItems,
                 onClick: handleOverflowMenuClick,
               }}
               trigger={['click']}
@@ -1836,13 +1822,12 @@ const ImprovedTaskFilters: React.FC<ImprovedTaskFiltersProps> = ({ position, cla
               <button
                 onClick={clearAllFilters}
                 disabled={clearingFilters}
-                className={`text-xs font-medium transition-colors duration-150 ${
-                  clearingFilters
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : isDarkMode
-                      ? 'text-gray-400 hover:text-gray-300'
-                      : 'text-gray-600 hover:text-gray-700'
-                }`}
+                className={`text-xs font-medium transition-colors duration-150 ${clearingFilters
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : isDarkMode
+                    ? 'text-gray-400 hover:text-gray-300'
+                    : 'text-gray-600 hover:text-gray-700'
+                  }`}
               >
                 {clearingFilters ? t('clearing', { defaultValue: 'Clearing' }) : t('clearAll', { defaultValue: 'Clear All' })}
               </button>
