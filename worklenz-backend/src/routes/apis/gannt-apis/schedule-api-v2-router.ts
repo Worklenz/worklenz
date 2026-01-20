@@ -6,6 +6,7 @@ import ScheduleControllerV2 from "../../../controllers/schedule-v2/schedule-cont
 import TaskTimelineController from "../../../controllers/schedule-v2/task-timeline-controller";
 import TimeOffController from "../../../controllers/schedule-v2/time-off-controller";
 import CapacityController from "../../../controllers/schedule-v2/capacity-controller";
+import WorkloadController from "../../../controllers/schedule-v2/workload-controller";
 
 const scheduleApiRouter = express.Router();
 
@@ -61,5 +62,23 @@ scheduleApiRouter.put("/time-off/:id", idParamValidator, safeControllerFunction(
 
 // Delete time-off entry
 scheduleApiRouter.delete("/time-off/:id", idParamValidator, safeControllerFunction(TimeOffController.deleteTimeOff));
+
+// ============================================
+// Workload Management Endpoints (NEW)
+// ============================================
+// Get member workload data
+scheduleApiRouter.get("/workload", safeControllerFunction(WorkloadController.getMemberWorkload));
+
+// Update resource allocation
+scheduleApiRouter.put("/allocation", safeControllerFunction(WorkloadController.updateResourceAllocation));
+
+// Rebalance workload
+scheduleApiRouter.post("/rebalance", safeControllerFunction(WorkloadController.rebalanceWorkload));
+
+// Get resource conflicts
+scheduleApiRouter.get("/conflicts", safeControllerFunction(WorkloadController.getResourceConflicts));
+
+// Get capacity report
+scheduleApiRouter.get("/capacity-report", safeControllerFunction(WorkloadController.getCapacityReport));
 
 export default scheduleApiRouter;
