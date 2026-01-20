@@ -100,6 +100,25 @@ export function sendResetSuccessEmail(toEmail: string) {
   });
 }
 
+export function sendClientPortalResetEmail(toEmail: string, user_id: string, hash: string) {
+  let content = FileConstants.getEmailTemplate(IEmailTemplateType.ResetPassword) as string;
+  if (!content) return;
+
+  const CLIENT_PORTAL_HOSTNAME = process.env.CLIENT_PORTAL_HOSTNAME
+    ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}`
+    : "http://localhost:5174";
+
+  content = content.replace("[VAR_HOSTNAME]", sanitize(CLIENT_PORTAL_HOSTNAME));
+  content = content.replace("[VAR_USER_ID]", sanitize(user_id));
+  content = content.replace("[VAR_HASH]", hash);
+
+  sendEmail({
+    to: [toEmail],
+    subject: "Reset your Client Portal password.",
+    html: content
+  });
+}
+
 // * This implementation should be improved
 export function sendInvitationEmail(isNewMember: boolean, user: IPassportSession, userNameOrId: string, email: string, userId: string, userName?: string, projectId?: string) {
   if (isNewMember) {

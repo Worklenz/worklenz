@@ -10,6 +10,7 @@ import PublicRoute from '@/components/PublicRoute';
 import LoginPage from '@/pages/LoginPage';
 import InvitePage from '@/pages/InvitePage';
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import DashboardPage from '@/pages/DashboardPage';
 import ServicesPage from '@/pages/ServicesPage';
 import ServiceDetailsPage from '@/pages/ServiceDetailsPage';
@@ -43,6 +44,14 @@ export const AppRoutes: React.FC = () => (
       element={
         <PublicRoute restricted>
           <ForgotPasswordPage />
+        </PublicRoute>
+      }
+    />
+    <Route
+      path="/auth/reset-password"
+      element={
+        <PublicRoute restricted>
+          <ResetPasswordPage />
         </PublicRoute>
       }
     />
