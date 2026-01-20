@@ -95,14 +95,12 @@ const LanguageAndRegionSettings = () => {
     }
   };
 
+  // FIX: Create searchable options with plain text labels for filtering
   const timeZoneOptions = timezones.map(timezone => ({
     value: timezone.id,
-    label: (
-      <Flex align="center" justify="space-between">
-        <span>{timezone.name}</span>
-        <Typography.Text type="secondary">{timezone.abbrev}</Typography.Text>
-      </Flex>
-    ),
+    label: `${timezone.name} (${timezone.abbrev})`, // Plain string for search
+    // Store the timezone data for custom rendering
+    timezone: timezone,
   }));
 
   useEffect(() => {
@@ -146,8 +144,17 @@ const LanguageAndRegionSettings = () => {
             <Select
               showSearch
               optionFilterProp="label"
-              options={timeZoneOptions}
               loading={loadingTimezones}
+              options={timeZoneOptions}
+              // Custom option rendering for better visual layout
+              optionRender={(option) => (
+                <Flex align="center" justify="space-between">
+                  <span>{option.data.timezone?.name}</span>
+                  <Typography.Text type="secondary">
+                    {option.data.timezone?.abbrev}
+                  </Typography.Text>
+                </Flex>
+              )}
             />
           </Form.Item>
           <Form.Item>
