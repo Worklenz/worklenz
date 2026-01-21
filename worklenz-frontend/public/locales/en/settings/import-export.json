@@ -3,7 +3,7 @@
   "auth": {
     "asanaTitle": "Connect Asana to import",
     "asanaBody": "We’ll open Asana’s consent screen to grant access to your projects and tasks.",
-    "asanaCta": "Grant permission",
+    "asanaCta": "Allow Permission",
     "asanaHint": "Opens a new tab to Asana",
     "mondayTitle": "Enter your Monday token",
     "mondayBody": "Paste a personal access token to let Worklenz fetch boards and items for import.",

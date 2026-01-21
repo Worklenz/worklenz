@@ -2380,14 +2380,28 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const renderAuthGate = () => {
     if (lowerKey === 'asana') {
       return (
-        <div style={{ padding: 48, background: themeToken.colorBgLayout, height: '100%' }}>
-          <Typography.Title level={2} style={{ color: themeToken.colorText }}>
+        <div
+          style={{
+            width: 820,
+            height: 245,
+            padding: '40px 40px',
+            borderRadius: 10,
+            background: themeToken.colorBgLayout,
+            margin: '0 auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+          }}
+        >
+          <Typography.Title level={2} style={{ color: themeToken.colorText, margin: 0 }}>
             {t('auth.asanaTitle', 'Connect Asana to import')}
           </Typography.Title>
-          <Typography.Paragraph style={{ color: themeToken.colorTextSecondary, fontSize: 16 }}>
+          <Typography.Paragraph
+            style={{ color: themeToken.colorTextSecondary, fontSize: 16, margin: 0 }}
+          >
             {t(
               'auth.asanaBody',
-              'WeÃ¢â‚¬â„¢ll open AsanaÃ¢â‚¬â„¢s consent screen to grant access to your projects and tasks.'
+              "We'll open Asana's consent screen to grant access to your projects and tasks."
             )}
           </Typography.Paragraph>
           {authError && (
@@ -2395,10 +2409,10 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               {authError}
             </Typography.Text>
           )}
-          <Button type="primary" size="large" loading={authLoading} onClick={handleAsanaAuth}>
-            {t('auth.asanaCta', 'Grant permission')}
+          <Button type="primary" size="middle" loading={authLoading} onClick={handleAsanaAuth}>
+            {t('auth.asanaCta', 'Allow Permission')}
           </Button>
-          <div style={{ marginTop: 12, color: themeToken.colorTextSecondary }}>
+          <div style={{ color: themeToken.colorTextSecondary }}>
             {t('auth.asanaHint', 'Opens a new tab to Asana')}
           </div>
         </div>
