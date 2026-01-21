@@ -23,6 +23,8 @@ router.get("/invitation/validate/:slug", safeControllerFunction(ClientPortalAuth
 router.post("/invitation/accept", safeControllerFunction(ClientPortalAuthController.acceptInvitation));
 router.post("/auth/login", safeControllerFunction(ClientPortalAuthController.clientLogin));
 router.post("/auth/refresh", safeControllerFunction(ClientPortalAuthController.refreshClientToken));
+router.post("/auth/forgot-password", safeControllerFunction(ClientPortalAuthController.forgotPassword));
+router.post("/auth/reset-password", safeControllerFunction(ClientPortalAuthController.resetPassword));
 router.post("/handle-organization-invite", safeControllerFunction(ClientPortalAuthController.handleOrganizationInvite));
 
 // Protected routes (authentication required)

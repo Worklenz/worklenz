@@ -149,7 +149,8 @@ export const fetchGroupedProjects = createAsyncThunk(
       archived: state.archived,
     };
     const response = await reportingProjectsApiService.getProjectsGrouped(params);
-    return response.body;
+    // Ensure we return a valid structure even if response.body is null
+    return response.body || { groups: [], total_groups: 0 };
   }
 );
 
@@ -414,8 +415,8 @@ const projectReportsSlice = createSlice({
       })
       .addCase(fetchGroupedProjects.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.groupedProjects = action.payload.groups || [];
-        state.totalGroups = action.payload.total_groups || 0;
+        state.groupedProjects = action.payload?.groups || [];
+        state.totalGroups = action.payload?.total_groups || 0;
       })
       .addCase(fetchGroupedProjects.rejected, (state, action) => {
         state.isLoading = false;

@@ -438,10 +438,10 @@ export const refreshTaskProgress = createAsyncThunk(
 
 export const duplicateTask = createAsyncThunk(
   'taskManagement/duplicateTask',
-  async ({projectId, taskId, duplicateOptions}: {projectId: string, taskId: string, duplicateOptions: any },{ rejectWithValue }) => {
+  async ({ projectId, taskId, duplicateOptions }: { projectId: string, taskId: string, duplicateOptions: any }, { rejectWithValue }) => {
     try {
       // console.log('Duplicate Task Thunk', projectId, taskId, duplicateOptions);
-      const response = await duplicateTaskApiService.duplicate({task_id: taskId, project_id: projectId, options: duplicateOptions});
+      const response = await duplicateTaskApiService.duplicate({ task_id: taskId, project_id: projectId, options: duplicateOptions });
       return response;
     } catch (error) {
       logger.error('Failed to duplicate task', error);
@@ -637,7 +637,7 @@ const taskManagementSlice = createSlice({
 
       if (
         oldTask &&
-        state.grouping?.id === IGroupBy.STATUS &&
+        state.grouping === IGroupBy.STATUS &&
         oldTask.status !== updatedTask.status
       ) {
         // Remove from old status group
@@ -777,7 +777,7 @@ const taskManagementSlice = createSlice({
           group.taskIds = newTasks;
 
           // Update order for affected tasks using the appropriate sort field
-          const sortField = getSortOrderField(state.grouping?.id);
+          const sortField = getSortOrderField(state.grouping);
           newTasks.forEach((id, index) => {
             if (newEntities[id]) {
               newEntities[id] = { ...newEntities[id], [sortField]: index };
@@ -805,7 +805,7 @@ const taskManagementSlice = createSlice({
           // This will be handled by the socket event handler after backend confirmation.
 
           // Update order for affected tasks in both groups using the appropriate sort field
-          const sortField = getSortOrderField(state.grouping?.id);
+          const sortField = getSortOrderField(state.grouping);
           sourceGroup.taskIds.forEach((id, index) => {
             if (newEntities[id]) newEntities[id] = { ...newEntities[id], [sortField]: index };
           });
@@ -1162,7 +1162,7 @@ const taskManagementSlice = createSlice({
         const { taskId } = action.meta.arg;
         state.loadingSubtasks[taskId] = false;
         state.error =
-          action.error.message || action.payload || 'Failed to fetch subtasks. Please try again.';
+          action.error.message || (action.payload as string) || 'Failed to fetch subtasks. Please try again.';
       })
       .addCase(fetchTasks.pending, state => {
         state.loading = true;
@@ -1202,9 +1202,9 @@ const taskManagementSlice = createSlice({
         const customPayload = action.payload.custom;
         const customColumns = Array.isArray(customPayload)
           ? customPayload.map((col: any) => ({
-              ...col,
-              isCustom: true,
-            }))
+            ...col,
+            isCustom: true,
+          }))
           : [];
 
         // Merge columns
@@ -1283,74 +1283,8 @@ export const {
 } = taskManagementSlice.actions;
 
 // Export the selectors
-export const selectAllTasks = (state: RootState) => state.taskManagement.entities;
-
-// Memoized selector to prevent unnecessary re-renders
-export const selectAllTasksArray = createSelector([selectAllTasks], entities =>
-  Object.values(entities)
-);
-export const selectTaskById = (state: RootState, taskId: string) =>
-  state.taskManagement.entities[taskId];
-export const selectTaskIds = (state: RootState) => state.taskManagement.ids;
-export const selectGroups = (state: RootState) => state.taskManagement.groups;
-export const selectGrouping = (state: RootState) => state.taskManagement.grouping;
-export const selectLoading = (state: RootState) => state.taskManagement.loading;
-export const selectError = (state: RootState) => state.taskManagement.error;
-export const selectSelectedPriorities = (state: RootState) =>
-  state.taskManagement.selectedPriorities;
-export const selectSearch = (state: RootState) => state.taskManagement.search;
-export const selectSortField = (state: RootState) => state.taskManagement.sortField;
-export const selectSortOrder = (state: RootState) => state.taskManagement.sortOrder;
-export const selectSort = (state: RootState) => ({
-  field: state.taskManagement.sortField,
-  order: state.taskManagement.sortOrder,
-});
-export const selectSubtaskLoading = (state: RootState, taskId: string) =>
-  state.taskManagement.loadingSubtasks[taskId] || false;
-
-// Memoized selectors to prevent unnecessary re-renders
-export const selectTasksByStatus = createSelector(
-  [selectAllTasksArray, (_state: RootState, status: string) => status],
-  (tasks, status) => tasks.filter(task => task.status === status)
-);
-
-export const selectTasksByPriority = createSelector(
-  [selectAllTasksArray, (_state: RootState, priority: string) => priority],
-  (tasks, priority) => tasks.filter(task => task.priority === priority)
-);
-
-export const selectTasksByPhase = createSelector(
-  [selectAllTasksArray, (_state: RootState, phase: string) => phase],
-  (tasks, phase) => tasks.filter(task => task.phase === phase)
-);
-
-// Add archived selector
-export const selectArchived = (state: RootState) => state.taskManagement.archived;
+// Export the selectors from the new file to avoid circular dependencies
+export * from './task-management.selectors';
 
 // Export the reducer as default
 export default taskManagementSlice.reducer;
-
-// V3 API selectors - no processing needed, data is pre-processed by backend
-export const selectTaskGroupsV3 = (state: RootState) => state.taskManagement.groups;
-export const selectCurrentGroupingV3 = (state: RootState) => state.grouping.currentGrouping;
-
-// Column-related selectors
-export const selectColumns = (state: RootState) => state.taskManagement.columns;
-export const selectCustomColumns = (state: RootState) => state.taskManagement.customColumns;
-export const selectLoadingColumns = (state: RootState) => state.taskManagement.loadingColumns;
-
-// Helper selector to check if columns are in sync with local fields
-export const selectColumnsInSync = (state: RootState) => {
-  const columns = state.taskManagement.columns;
-  const fields = state.taskManagementFields || [];
-
-  if (columns.length === 0 || fields.length === 0) return true;
-
-  return !fields.some(field => {
-    const backendColumn = columns.find(c => c.key === field.key);
-    if (backendColumn) {
-      return (backendColumn.pinned ?? false) !== field.visible;
-    }
-    return false;
-  });
-};

@@ -136,16 +136,16 @@ async function handleAppleMobileAuth(req: Request, done: any) {
       }
     }
 
-    // Look up user by apple_id (primary) or email (secondary)
+    // Look up user by apple_id (primary) or email (secondary) - exclude deleted accounts
     let userResult;
     if (email) {
       userResult = await db.query(
-        "SELECT id, apple_id, google_id, name, email, active_team FROM users WHERE apple_id = $1 OR LOWER(email) = $2;",
+        "SELECT id, apple_id, google_id, name, email, active_team FROM users WHERE (apple_id = $1 OR LOWER(email) = $2) AND is_deleted = FALSE;",
         [appleId, email]
       );
     } else {
       userResult = await db.query(
-        "SELECT id, apple_id, google_id, name, email, active_team FROM users WHERE apple_id = $1;",
+        "SELECT id, apple_id, google_id, name, email, active_team FROM users WHERE apple_id = $1 AND is_deleted = FALSE;",
         [appleId]
       );
     }
@@ -157,7 +157,7 @@ async function handleAppleMobileAuth(req: Request, done: any) {
       // If this is a sign-up request but user already exists
       if (isSignUp) {
         return done(null, false, {
-          message: email 
+          message: email
             ? `An account with email ${email} already exists. Please sign in instead.`
             : "An account with this Apple ID already exists. Please sign in instead.",
           [ERROR_KEY]: "USER_ALREADY_EXISTS"
