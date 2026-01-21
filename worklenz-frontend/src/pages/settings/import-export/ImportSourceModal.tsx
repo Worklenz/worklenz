@@ -2657,6 +2657,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
 
   return (
     <Modal
+      centered
       open={open}
       onCancel={onClose}
       footer={null}
@@ -2691,16 +2692,26 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         </div>
 
         {!showCompletion && (
-          <div className="stepper" style={{ padding: '0 8px', marginBottom: 32 }}>
-            <Steps
-              direction="horizontal"
-              current={step}
-              items={steps.map(title => ({ title }))}
-              onChange={current => {
-                if (navigationDisabled) return;
-                setStep(current);
-              }}
-            />
+          <div
+            className="stepper"
+            style={{
+              padding: '0 8px',
+              marginBottom: 32,
+              display: 'flex',
+              justifyContent: 'center',
+            }}
+          >
+            <div style={{ width: '100%', maxWidth: 820 }}>
+              <Steps
+                direction="horizontal"
+                current={step}
+                items={steps.map(title => ({ title }))}
+                onChange={current => {
+                  if (navigationDisabled) return;
+                  setStep(current);
+                }}
+              />
+            </div>
           </div>
         )}
 
