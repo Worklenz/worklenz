@@ -1378,16 +1378,20 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <div
                 style={{
-                  width: '100%',
-                  maxWidth: 900,
+                  width: 820,
+                  maxWidth: 820,
+                  minWidth: 820,
+                  height: 743.12,
+                  minHeight: 743.12,
                   background: '#f5f8ff',
-                  borderRadius: 12,
+                  borderRadius: 10,
                   border: '1px solid #e4ecfb',
-                  padding: '28px 32px 32px',
+                  padding: '40px',
                   boxShadow: '0 10px 40px rgba(38,132,255,0.08)',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 16,
+                  gap: 20,
+                  margin: '40px auto',
                 }}
               >
                 <div
@@ -1499,8 +1503,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                         flexDirection: 'column',
                         overflowY: 'auto',
                         overflowX: 'auto',
-                        maxHeight: 430,
+                        maxHeight: 520,
                         paddingRight: 6,
+                        paddingBottom: 12,
                         WebkitOverflowScrolling: 'touch',
                       }}
                     >
