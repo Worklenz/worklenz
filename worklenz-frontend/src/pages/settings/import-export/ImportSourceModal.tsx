@@ -1367,139 +1367,218 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         }
         if (reviewSubScreen === 'fieldMapping') {
           // Field mapping sub-screen
+          const fieldMappingTitle = t('importStep.fieldMappingTitle', 'Field mapping');
+          const fieldMappingDescription = t(
+            'importStep.fieldMappingDescription',
+            "We've automatically mapped your {{source}} data into system and custom fields in Worklenz. You can customize some fields that have other compatible field types. More about field mapping.",
+            { source: source.label || 'source' }
+          );
+
           return (
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <div style={{ width: '100%', maxWidth: 980 }}>
-                <a
-                  href="#"
-                  style={{ color: '#7aa2f7', display: 'inline-flex', alignItems: 'center' }}
-                  onClick={e => {
-                    e.preventDefault();
-                    setReviewSubScreen('main');
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: 900,
+                  background: '#f5f8ff',
+                  borderRadius: 12,
+                  border: '1px solid #e4ecfb',
+                  padding: '28px 32px 32px',
+                  boxShadow: '0 10px 40px rgba(38,132,255,0.08)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 16,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 12,
                   }}
                 >
-                  <RightOutlined
-                    style={{ fontSize: 12, marginRight: 6, transform: 'rotate(180deg)' }}
-                  />
-                  {'Back to review details'}
-                </a>
-                <Typography.Title level={3} style={{ marginTop: 12, marginBottom: 4 }}>
-                  {'Field mapping'}
-                </Typography.Title>
-                <Typography.Paragraph style={{ marginBottom: 20 }}>
-                  {`We've automatically mapped your ${source.label || 'source'} data into system and custom fields in Worklenz. You can customize some fields that have other compatible field types. More about field mapping`}
-                </Typography.Paragraph>
+                  <a
+                    href="#"
+                    style={{
+                      color: '#2684ff',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      fontWeight: 600,
+                    }}
+                    onClick={e => {
+                      e.preventDefault();
+                      setReviewSubScreen('main');
+                    }}
+                  >
+                    <ArrowLeftOutlined style={{ fontSize: 14 }} />
+                    {t('importStep.backToReview', 'Back to review details')}
+                  </a>
+                  <Button type="primary">{t('common.save', 'Save')}</Button>
+                </div>
 
-                <div style={{ marginBottom: 16, maxWidth: 340 }}>
-                  <Input placeholder={'Search fields'} prefix={<SearchOutlined />} />
+                <div>
+                  <Typography.Title
+                    level={3}
+                    style={{ margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 8 }}
+                  >
+                    {fieldMappingTitle}
+                  </Typography.Title>
+                  <Typography.Paragraph style={{ margin: 0, color: themeToken.colorTextSecondary }}>
+                    {fieldMappingDescription}
+                  </Typography.Paragraph>
+                </div>
+
+                <div style={{ marginTop: 12 }}>
+                  <Input
+                    placeholder={t('importStep.searchFields', 'Search fields')}
+                    prefix={<SearchOutlined />}
+                    style={{
+                      width: '100%',
+                      maxWidth: 560,
+                      background: '#fff',
+                      borderColor: '#e1e7f5',
+                    }}
+                  />
                 </div>
 
                 <div
                   style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1.4fr 1.6fr 140px',
-                    color: '#9ca3af',
-                    fontWeight: 600,
-                    fontSize: 13,
-                    marginBottom: 8,
+                    background: '#fff',
+                    borderRadius: 12,
+                    border: '1px solid #e5ecf8',
+                    boxShadow: '0 6px 22px rgba(38,132,255,0.06)',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    maxHeight: 500,
                   }}
                 >
-                  <span style={{ paddingLeft: 6 }}>
-                    {t('importStep.sourceField', {
-                      defaultValue: '{{source}} field',
-                      source: source.label || 'Source',
-                    })}
-                  </span>
-                  <span>{t('importStep.worklenzField', 'Worklenz field')}</span>
-                  <span style={{ textAlign: 'center' }}>
-                    {t('importStep.includeInImport', 'Include in import')}
-                  </span>
-                </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1.2fr 1.5fr 150px',
+                      alignItems: 'center',
+                      padding: '12px 14px',
+                      background: '#f7f9fc',
+                      color: '#5a6475',
+                      fontWeight: 600,
+                      fontSize: 13,
+                    }}
+                  >
+                    <span style={{ paddingLeft: 2 }}>
+                      {t('importStep.sourceField', {
+                        defaultValue: '{{source}} field',
+                        source: source.label || 'Source',
+                      })}
+                    </span>
+                    <span>{t('importStep.worklenzField', 'Worklenz field')}</span>
+                    <span style={{ textAlign: 'center' }}>
+                      {t('importStep.includeInImport', 'Include in import')}
+                    </span>
+                  </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {fieldMappingRows.length === 0 ? (
-                    <div style={{ color: '#9ca3af' }}>
+                    <div
+                      style={{
+                        padding: '14px 16px',
+                        color: themeToken.colorTextSecondary,
+                        fontWeight: 500,
+                      }}
+                    >
                       {t(
                         'importStep.autoMapPlaceholder',
                         'Auto-mapping will populate fields here.'
                       )}
                     </div>
                   ) : (
-                    fieldMappingRows.map((row, idx) => {
-                      const options = [
-                        { value: row.target_field, label: row.target_field },
-                        ...worklenzFieldOptions,
-                      ].filter(
-                        (option, optionIdx, arr) =>
-                          arr.findIndex(a => a.value === option.value) === optionIdx
-                      );
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflowY: 'auto',
+                        overflowX: 'auto',
+                        maxHeight: 430,
+                        paddingRight: 6,
+                        WebkitOverflowScrolling: 'touch',
+                      }}
+                    >
+                      {fieldMappingRows.map((row, idx) => {
+                        const options = [
+                          { value: row.target_field, label: row.target_field },
+                          ...worklenzFieldOptions,
+                        ].filter(
+                          (option, optionIdx, arr) =>
+                            arr.findIndex(a => a.value === option.value) === optionIdx
+                        );
 
-                      return (
-                        <div
-                          key={`${row.source_field}-${idx}`}
-                          style={{
-                            display: 'grid',
-                            gridTemplateColumns: '1.4fr 1.6fr 140px',
-                            alignItems: 'center',
-                            gap: 12,
-                            padding: 12,
-                            background: idx % 2 === 0 ? '#0b0e13' : '#0e1116',
-                            borderRadius: 10,
-                            border: '1px solid #1e2633',
-                          }}
-                        >
-                          <span style={{ color: '#e5e7eb', paddingLeft: 6 }}>
-                            {row.source_field}
-                          </span>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <Select
-                              value={row.target_field}
-                              style={{ width: '100%' }}
-                              styles={{
-                                popup: { root: { background: '#0f1117', color: '#e5e7eb' } },
-                              }}
-                              options={options}
-                              onChange={value =>
-                                setFieldMappingRows(rows =>
-                                  rows.map((current, currentIdx) =>
-                                    currentIdx === idx
-                                      ? { ...current, target_field: value as string }
-                                      : current
+                        return (
+                          <div
+                            key={`${row.source_field}-${idx}`}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '1.2fr 1.5fr 150px',
+                              alignItems: 'center',
+                              gap: 12,
+                              padding: '12px 14px',
+                              background: idx % 2 === 0 ? '#fff' : '#f9fbff',
+                              borderTop: idx === 0 ? '1px solid #eef3fb' : '1px solid #eef3fb',
+                            }}
+                          >
+                            <span style={{ color: '#1f2a44', paddingLeft: 2, fontWeight: 600 }}>
+                              {row.source_field}
+                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <Select
+                                value={row.target_field}
+                                style={{ width: '100%' }}
+                                options={options}
+                                onChange={value =>
+                                  setFieldMappingRows(rows =>
+                                    rows.map((current, currentIdx) =>
+                                      currentIdx === idx
+                                        ? { ...current, target_field: value as string }
+                                        : current
+                                    )
                                   )
-                                )
-                              }
-                            />
-                            {row.required && (
-                              <span
-                                style={{
-                                  background: '#2d3748',
-                                  color: '#cbd5e0',
-                                  fontSize: 10,
-                                  borderRadius: 6,
-                                  padding: '2px 6px',
-                                  letterSpacing: 0.4,
-                                  textTransform: 'uppercase',
-                                }}
-                              >
-                                {t('importStep.required', 'Required')}
-                              </span>
-                            )}
-                          </div>
-                          <div style={{ textAlign: 'center' }}>
-                            <Switch
-                              checked={row.include !== false}
-                              onChange={checked =>
-                                setFieldMappingRows(rows =>
-                                  rows.map((current, currentIdx) =>
-                                    currentIdx === idx ? { ...current, include: checked } : current
+                                }
+                              />
+                              {row.required && (
+                                <span
+                                  style={{
+                                    background: '#f0f4ff',
+                                    color: '#2c3c67',
+                                    fontSize: 10,
+                                    borderRadius: 6,
+                                    padding: '2px 6px',
+                                    letterSpacing: 0.4,
+                                    textTransform: 'uppercase',
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  {t('importStep.required', 'Required')}
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                              <Switch
+                                checked={row.include !== false}
+                                onChange={checked =>
+                                  setFieldMappingRows(rows =>
+                                    rows.map((current, currentIdx) =>
+                                      currentIdx === idx
+                                        ? { ...current, include: checked }
+                                        : current
+                                    )
                                   )
-                                )
-                              }
-                            />
+                                }
+                              />
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
               </div>
