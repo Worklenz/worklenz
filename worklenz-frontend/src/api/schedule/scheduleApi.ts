@@ -62,6 +62,7 @@ interface DateRequest {
 
 interface MemberProjectsRequest {
   id: string;
+  chartStart?: string;
 }
 
 interface ScheduleSubmitRequest {
@@ -223,7 +224,11 @@ export const scheduleApi = createApi({
     }),
 
     fetchMemberProjects: builder.query<IServerResponse<Project>, MemberProjectsRequest>({
-      query: ({ id }) => `/members/projects/${id}`,
+      query: ({ id, chartStart }) => {
+        const params = new URLSearchParams();
+        if (chartStart) params.append('chartStart', chartStart);
+        return `/members/projects/${id}${params.toString() ? `?${params.toString()}` : ''}`;
+      },
       providesTags: (result, error, { id }) => [{ type: 'MemberProjects' as const, id }],
     }),
 

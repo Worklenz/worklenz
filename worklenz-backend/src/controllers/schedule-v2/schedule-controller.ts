@@ -261,8 +261,15 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
     public static async getOrganizationMemberProjects(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
 
         const { id } = req.params; // This is team_member_id from frontend
+        const { chartStart } = req.query; // Get chart_start from query params
+
+        // If no chartStart provided, return empty projects
+        if (!chartStart) {
+            return res.status(400).send(new ServerResponse(false, null, "chartStart parameter is required"));
+        }
 
         // Updated query to include projects from both allocations AND task assignments
+        // Calculate indicator_offset based on the provided chart_start date
         const getDataq = `
             WITH member_projects AS (
                 -- Get projects from project_member_allocations
@@ -330,8 +337,9 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                     pd.start_date,
                     pd.end_date,
                     p.team_id,
+                    -- Calculate offset from the chart_start date (passed as $2)
                     COALESCE(
-                        (DATE_PART('day', pd.start_date - MIN(pd.start_date) OVER ())) * 75,
+                        (DATE_PART('day', pd.start_date - $2::DATE)) * 75,
                         0
                     ) AS indicator_offset,
                     COALESCE((DATE_PART('day', pd.end_date - pd.start_date) + 1) * 75, 75) AS indicator_width,
@@ -362,7 +370,7 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
             FROM projects_with_offsets;
         `;
 
-        const results = await db.query(getDataq, [id]);
+        const results = await db.query(getDataq, [id, chartStart]);
         
         const [data] = results.rows;
         return res.status(200).send(new ServerResponse(true, { projects: data?.projects || [], id }));

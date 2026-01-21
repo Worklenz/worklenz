@@ -141,7 +141,14 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
       setExpandedMemberId(memberId);
       if (!memberProjects[memberId]) {
         try {
-          const result = await fetchMemberProjects({ id: memberId }).unwrap();
+          // Get chart_start from dateList response
+          const chartStart = dateList?.chart_start;
+          
+          const result = await fetchMemberProjects({ 
+            id: memberId,
+            chartStart: chartStart 
+          }).unwrap();
+          
           if (result?.body?.projects) {
             setMemberProjects(prev => ({
               ...prev,
@@ -168,6 +175,10 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
     refetchTeam();
     refetchDates();
     refetchCapacity();
+    
+    // Clear member projects cache when date changes so they'll be refetched with new chartStart
+    setMemberProjects({});
+    setExpandedMemberId(null);
   }, [date, type, refetchTeam, refetchDates, refetchCapacity, formattedDate]);
 
   // function to scroll the timeline header and body together
