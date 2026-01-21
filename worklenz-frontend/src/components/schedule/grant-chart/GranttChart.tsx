@@ -75,18 +75,6 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
     endDate: calculateEndDate,
   });
 
-  // Debug capacity response
-  React.useEffect(() => {
-    if (capacityResponse) {
-      console.log('📊 Capacity Response:', {
-        success: capacityResponse.done,
-        memberCount: capacityResponse.body?.length,
-        firstMember: capacityResponse.body?.[0],
-        sampleCapacity: capacityResponse.body?.[0]?.daily_capacity?.slice(0, 2)
-      });
-    }
-  }, [capacityResponse]);
-
   // Lazy query for fetching member projects
   const [fetchMemberProjects, { isLoading: isProjectsLoading }] = useLazyFetchMemberProjectsQuery();
 
@@ -100,34 +88,12 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
   const capacityData = capacityResponse?.body || [];
   
   const getCapacityForDate = (memberId: string, dateStr: string) => {
-    // Debug logging
-    console.log('🔍 Looking for capacity:', { 
-      memberId, 
-      dateStr, 
-      totalMembers: capacityData.length,
-      availableMemberIds: capacityData.map((m: any) => m.team_member_id)
-    });
-    
     const memberCapacity = capacityData.find((m: any) => m.team_member_id === memberId);
     if (!memberCapacity) {
-      console.warn('⚠️ No capacity found for member:', memberId);
       return null;
     }
     
-    console.log('✅ Found member capacity:', {
-      memberId,
-      dailyCapacityCount: memberCapacity.daily_capacity?.length,
-      sampleDates: memberCapacity.daily_capacity?.slice(0, 3).map((d: any) => d.date)
-    });
-    
     const dayCapacity = memberCapacity.daily_capacity.find((d: any) => d.date === dateStr);
-    
-    if (!dayCapacity) {
-      console.warn('⚠️ No capacity found for date:', { memberId, dateStr });
-    } else {
-      console.log('✅ Found day capacity:', { dateStr, status: dayCapacity.status, allocated: dayCapacity.allocated_hours });
-    }
-    
     return dayCapacity || null;
   };
 
@@ -137,27 +103,29 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
       // Collapse
       setExpandedMemberId(null);
     } else {
-      // Expand and fetch projects if not already fetched
+      // Expand and fetch projects
       setExpandedMemberId(memberId);
-      if (!memberProjects[memberId]) {
-        try {
-          // Get chart_start from dateList response
-          const chartStart = dateList?.chart_start;
-          
-          const result = await fetchMemberProjects({ 
-            id: memberId,
-            chartStart: chartStart 
-          }).unwrap();
-          
-          if (result?.body?.projects) {
-            setMemberProjects(prev => ({
-              ...prev,
-              [memberId]: result.body.projects || [],
-            }));
-          }
-        } catch (error) {
-          console.error('Failed to fetch member projects:', error);
+      
+      // Always fetch with current chartStart and chartEnd (don't rely on local cache)
+      try {
+        // Get chart_start and chart_end from dateList response
+        const chartStart = dateList?.chart_start;
+        const chartEnd = dateList?.chart_end;
+        
+        const result = await fetchMemberProjects({ 
+          id: memberId,
+          chartStart: chartStart,
+          chartEnd: chartEnd
+        }, true).unwrap(); // Force refetch with second parameter
+        
+        if (result?.body?.projects) {
+          setMemberProjects(prev => ({
+            ...prev,
+            [memberId]: result.body.projects || [],
+          }));
         }
+      } catch (error) {
+        console.error('Failed to fetch member projects:', error);
       }
     }
   };
@@ -392,14 +360,6 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
               // Standardize on team_member_id since that's what backend returns
               const memberId = member.team_member_id;
               
-              // Debug member ID
-              console.log('👤 Processing member:', {
-                name: member.name,
-                team_member_id: member.team_member_id,
-                id: member.id,
-                usingId: memberId
-              });
-              
               const isExpanded = expandedMemberId === memberId;
               const projects = getMemberProjects(memberId);
               
@@ -430,18 +390,6 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                         
                         // Format date as YYYY-MM-DD to match capacity data
                         const formattedDateStr = `${year}-${monthNumber}-${String(day.day).padStart(2, '0')}`;
-                        
-                        // Debug date formatting
-                        if (dayIndex === 0 && dateIndex === 0) {
-                          console.log('📅 Date formatting sample:', {
-                            monthName,
-                            year,
-                            monthNumber,
-                            dayNumber: day.day,
-                            formattedDateStr,
-                            rawMonth: dateObj.month
-                          });
-                        }
                         
                         const dayCapacity = getCapacityForDate(memberId, formattedDateStr);
                         

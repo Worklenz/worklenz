@@ -261,39 +261,45 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
     public static async getOrganizationMemberProjects(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
 
         const { id } = req.params; // This is team_member_id from frontend
-        const { chartStart } = req.query; // Get chart_start from query params
+        const { chartStart, chartEnd } = req.query; // Get chart_start and chart_end from query params
 
         // If no chartStart provided, return empty projects
         if (!chartStart) {
             return res.status(400).send(new ServerResponse(false, null, "chartStart parameter is required"));
         }
 
-        // Updated query to include projects from both allocations AND task assignments
-        // Calculate indicator_offset based on the provided chart_start date
+        // Updated query to show only tasks within the visible date range
+        // This ensures we only show the portion of work actually scheduled in this period
         const getDataq = `
             WITH member_projects AS (
-                -- Get projects from project_member_allocations
+                -- Get projects from project_member_allocations within the visible range
                 SELECT DISTINCT
                     pm.project_id,
-                    MIN(pm.allocated_from) AS start_date,
-                    MAX(pm.allocated_to) AS end_date,
+                    MIN(GREATEST(pm.allocated_from, $2::DATE)) AS start_date,
+                    MAX(LEAST(pm.allocated_to, COALESCE($3::DATE, pm.allocated_to))) AS end_date,
                     MAX(pm.seconds_per_day) / 3600 AS hours_per_day,
-                    t.organization_id
+                    t.organization_id,
+                    'allocation' AS source_type
                 FROM public.project_member_allocations pm
                 JOIN public.projects p ON pm.project_id = p.id
                 JOIN public.teams t ON p.team_id = t.id
                 WHERE pm.team_member_id = $1
+                    -- Only include allocations that overlap with visible range
+                    AND pm.allocated_from <= COALESCE($3::DATE, pm.allocated_from)
+                    AND pm.allocated_to >= $2::DATE
                 GROUP BY pm.project_id, t.organization_id
                 
                 UNION
                 
-                -- Get projects from task assignments (where member has assigned tasks)
+                -- Get projects from task assignments within the visible range
+                -- IMPORTANT: Filter tasks by date range BEFORE aggregating
                 SELECT DISTINCT
                     t.project_id,
-                    MIN(t.start_date) AS start_date,
-                    MAX(t.end_date) AS end_date,
-                    0 AS hours_per_day, -- No allocation hours for task-only assignments
-                    te.organization_id
+                    MIN(GREATEST(t.start_date, $2::DATE)) AS start_date,
+                    MAX(LEAST(t.end_date, COALESCE($3::DATE, t.end_date))) AS end_date,
+                    0 AS hours_per_day,
+                    te.organization_id,
+                    'task' AS source_type
                 FROM tasks t
                 JOIN tasks_assignees ta ON t.id = ta.task_id
                 JOIN project_members pm ON ta.project_member_id = pm.id
@@ -302,6 +308,10 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                 WHERE pm.team_member_id = $1
                     AND t.start_date IS NOT NULL
                     AND t.end_date IS NOT NULL
+                    AND t.archived = false
+                    -- Filter: only tasks that overlap with the visible range
+                    AND t.start_date <= COALESCE($3::DATE, t.start_date)
+                    AND t.end_date >= $2::DATE
                 GROUP BY t.project_id, te.organization_id
             ),
             project_dates AS (
@@ -370,9 +380,10 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
             FROM projects_with_offsets;
         `;
 
-        const results = await db.query(getDataq, [id, chartStart]);
+        const results = await db.query(getDataq, [id, chartStart, chartEnd || null]);
         
         const [data] = results.rows;
+        
         return res.status(200).send(new ServerResponse(true, { projects: data?.projects || [], id }));
 
     }
