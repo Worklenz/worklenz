@@ -1237,97 +1237,129 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
           // Space hierarchy sub-screen
           return (
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <div style={{ width: '100%', maxWidth: 900 }}>
-                <a
-                  href="#"
-                  style={{ color: '#7aa2f7', display: 'inline-flex', alignItems: 'center' }}
-                  onClick={e => {
-                    e.preventDefault();
-                    setReviewSubScreen('main');
-                  }}
-                >
-                  <RightOutlined
-                    style={{ fontSize: 12, marginRight: 6, transform: 'rotate(180deg)' }}
-                  />
-                  {'Back to review details'}
-                </a>
-                <Typography.Title level={3} style={{ marginTop: 12, marginBottom: 4 }}>
-                  {'Space hierarchy'}
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: 820,
+                  minHeight: 469,
+                  background: '#2684FF08',
+                  borderRadius: 10,
+                  padding: '40px 40px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                  <a
+                    href="#"
+                    style={{ color: '#2684FF', display: 'inline-flex', alignItems: 'center' }}
+                    onClick={e => {
+                      e.preventDefault();
+                      setReviewSubScreen('main');
+                    }}
+                  >
+                    <RightOutlined
+                      style={{ fontSize: 12, marginRight: 6, transform: 'rotate(180deg)' }}
+                    />
+                    {t('importStep.backToReview', 'Back to review details')}
+                  </a>
+                  <div style={{ flex: 1 }} />
+                  <Button type="primary">{t('common.save', 'Save')}</Button>
+                </div>
+
+                <Typography.Title level={3} style={{ margin: '0 0 4px' }}>
+                  {t('importStep.spaceHierarchy', 'Space hierarchy')}
                 </Typography.Title>
-                <Typography.Paragraph style={{ marginBottom: 20 }}>
-                  {
-                    "HereÃ¢â‚¬â„¢s how we've mapped your Asana data to Worklenz. More about project hierarchy in Worklenz"
-                  }
+                <Typography.Paragraph
+                  style={{ marginBottom: 16, color: themeToken.colorTextSecondary }}
+                >
+                  {t(
+                    'importStep.hierarchyIntro',
+                    "How we've mapped your Asana data to Worklenz. More about project hierarchy in Worklenz."
+                  )}
                 </Typography.Paragraph>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <span
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: 8,
+                      background: '#F8C7C7',
+                      color: '#b11e1e',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {source.label}
+                  </span>
+                  <span style={{ fontSize: 16, color: '#111' }}>→</span>
+                  <span
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: 8,
+                      background: '#C8D9F4',
+                      color: '#0b3c91',
+                      fontWeight: 700,
+                    }}
+                  >
+                    Worklenz
+                  </span>
+                </div>
 
                 <div
                   style={{
-                    background: '#0e1116',
+                    background: '#fff',
                     borderRadius: 12,
-                    padding: 16,
-                    border: '1px solid #1e2633',
+                    border: '1px solid #e8eef9',
+                    boxShadow: '0 8px 26px rgba(38,132,255,0.12)',
+                    padding: 6,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 12 }}>
-                    <span style={{ color: '#ea4335', fontSize: 16, fontWeight: 600 }}>
-                      {source.label}
-                    </span>
-                    <RightOutlined style={{ color: '#9ca3af' }} />
-                    <span style={{ color: '#60a5fa', fontSize: 16, fontWeight: 600 }}>
-                      Worklenz
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {hierarchyDisplayRows.map((row, idx) => (
-                      <div
-                        key={`${row.source_level}-${idx}`}
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: '1fr 36px 1.4fr 32px',
-                          alignItems: 'center',
-                          gap: 12,
-                          padding: 10,
-                          background: idx % 2 === 0 ? '#0b0e13' : '#0e1116',
-                          borderRadius: 8,
-                        }}
-                      >
-                        <div style={{ color: '#e5e7eb', fontWeight: 500 }}>{row.source_level}</div>
-                        <RightOutlined style={{ color: '#9ca3af', fontSize: 12 }} />
-                        <Select
-                          value={row.target_level}
-                          style={{ width: '100%' }}
-                          styles={{ popup: { root: { background: '#0f1117', color: '#e5e7eb' } } }}
-                          options={
-                            // Ensure option values are unique to avoid React duplicate key warnings
-                            (
-                              [
-                                { value: row.target_level, label: row.target_level },
-                                { value: 'Status', label: 'Status' },
-                              ] as Array<{
-                                value: string;
-                                label: string;
-                              }>
-                            ).reduce((acc: Array<{ value: string; label: string }>, cur) => {
-                              if (!acc.find(a => a.value === cur.value)) acc.push(cur);
-                              return acc;
-                            }, [])
-                          }
-                          onChange={value =>
-                            setHierarchyRows(rows =>
-                              rows.map((current, currentIdx) =>
-                                currentIdx === idx
-                                  ? { ...current, target_level: value as string }
-                                  : current
-                              )
-                            )
-                          }
-                        />
-                        <Tooltip title="More info">
-                          <InfoCircleOutlined style={{ color: '#9ca3af' }} />
-                        </Tooltip>
+                  {hierarchyDisplayRows.map((row, idx) => (
+                    <div
+                      key={`${row.source_level}-${idx}`}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1.2fr 40px 1.4fr',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: '12px 14px',
+                        background: '#fff',
+                        borderRadius: 10,
+                        border: '1px solid #eef3fb',
+                      }}
+                    >
+                      <div style={{ color: '#1f2a44', fontWeight: 600, fontSize: 15 }}>
+                        {row.source_level}
                       </div>
-                    ))}
-                  </div>
+                      <RightOutlined style={{ color: '#9ca3af', fontSize: 12 }} />
+                      <Select
+                        value={row.target_level}
+                        style={{ width: '100%' }}
+                        options={(
+                          [
+                            { value: row.target_level, label: row.target_level },
+                            { value: 'Status', label: 'Status' },
+                          ] as Array<{ value: string; label: string }>
+                        ).reduce((acc: Array<{ value: string; label: string }>, cur) => {
+                          if (!acc.find(a => a.value === cur.value)) acc.push(cur);
+                          return acc;
+                        }, [])}
+                        onChange={value =>
+                          setHierarchyRows(rows =>
+                            rows.map((current, currentIdx) =>
+                              currentIdx === idx
+                                ? { ...current, target_level: value as string }
+                                : current
+                            )
+                          )
+                        }
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
