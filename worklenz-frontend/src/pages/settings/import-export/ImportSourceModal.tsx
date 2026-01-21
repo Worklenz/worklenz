@@ -1381,17 +1381,17 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   width: 820,
                   maxWidth: 820,
                   minWidth: 820,
-                  height: 743.12,
-                  minHeight: 743.12,
+                  height: 657.26,
+                  minHeight: 657.26,
                   background: '#f5f8ff',
                   borderRadius: 10,
                   border: '1px solid #e4ecfb',
-                  padding: '40px',
+                  padding: '8px 32px 40px',
                   boxShadow: '0 10px 40px rgba(38,132,255,0.08)',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 20,
-                  margin: '40px auto',
+                  gap: 8,
+                  margin: '0 auto 24px',
                 }}
               >
                 <div
@@ -1434,7 +1434,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   </Typography.Paragraph>
                 </div>
 
-                <div style={{ marginTop: 12 }}>
+                <div style={{ marginTop: 8 }}>
                   <Input
                     placeholder={t('importStep.searchFields', 'Search fields')}
                     prefix={<SearchOutlined />}
@@ -1457,6 +1457,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                     display: 'flex',
                     flexDirection: 'column',
                     maxHeight: 500,
+                    marginBottom: 40,
                   }}
                 >
                   <div
@@ -1503,7 +1504,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                         flexDirection: 'column',
                         overflowY: 'auto',
                         overflowX: 'auto',
-                        maxHeight: 520,
+                        maxHeight: 340,
                         paddingRight: 6,
                         paddingBottom: 12,
                         WebkitOverflowScrolling: 'touch',
@@ -2784,6 +2785,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       styles={{
         content: {
           borderRadius: 20,
+          background: '#fff',
           overflow: 'hidden',
         },
         body: {
@@ -2791,12 +2793,13 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
           maxHeight: modalHeight,
           display: 'flex',
           flexDirection: 'column',
+          background: '#fff',
         },
       }}
     >
       <div
         className="import-modal-body"
-        style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}
+        style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}
       >
         <div className="heading" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           {showIllustration && source?.icon && (
@@ -2811,8 +2814,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
           <div
             className="stepper"
             style={{
-              padding: '0 8px',
-              marginBottom: 32,
+              padding: '0 4px',
+              marginBottom: 0,
               display: 'flex',
               justifyContent: 'center',
             }}
