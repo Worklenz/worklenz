@@ -513,10 +513,11 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
           const commitProgress = await commitImportJob(job.id);
           if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
 
-          setShowCompletion(true);
+          setShowCompletion(false);
           message.success(
             t('importStep.importStarted', 'Import started. We will notify once ready.')
           );
+          onClose();
         } catch (err: any) {
           message.error(
             err?.message || t('importStep.importError', 'Import failed. Please try again.')
@@ -601,10 +602,11 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
           const commitProgress = await commitImportJob(job.id);
           if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
 
-          setShowCompletion(true);
+          setShowCompletion(false);
           message.success(
             t('importStep.importStarted', 'Import started. We will notify once ready.')
           );
+          onClose();
         } catch (err: any) {
           message.error(
             err?.message || t('importStep.importError', 'Import failed. Please try again.')
@@ -616,7 +618,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         return;
       }
 
-      setShowCompletion(true);
+      setShowCompletion(false);
+      onClose();
       return;
     }
 
@@ -684,8 +687,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       const commitProgress = await commitImportJob(activeJob.id);
       if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
 
-      setShowCompletion(true);
+      setShowCompletion(false);
       message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
+      onClose();
     } catch (err: any) {
       message.error(
         err?.message || t('importStep.importError', 'Import failed. Please try again.')
