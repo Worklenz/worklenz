@@ -169,6 +169,7 @@ export const fetchTaskGroups = createAsyncThunk(
         isSubtasksInclude: false,
         labels: selectedLabels,
         priorities: taskReducer.priorities.join(' '),
+        customColumns: true,
       };
 
       const response = await tasksApiService.getTaskListV3(config);
@@ -238,6 +239,7 @@ export const fetchSubTasks = createAsyncThunk(
       labels: selectedLabels,
       priorities: taskReducer.priorities.join(' '),
       parent_task: taskId,
+      customColumns: true,
     };
     try {
       const response = await tasksApiService.getTaskListV3(config);

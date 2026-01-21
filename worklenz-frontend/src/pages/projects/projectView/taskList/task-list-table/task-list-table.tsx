@@ -1328,6 +1328,24 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
   const { project } = useAppSelector(state => state.projectReducer);
   const { selectedTaskIdsList, selectedTasks } = useAppSelector(state => state.bulkActionReducer);
 
+  // Expose a small debug snapshot to the window for quick inspection of custom column payloads.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const firstGroup = taskGroups?.[0];
+    const firstTask = firstGroup?.tasks?.[0];
+    const snapshot = {
+      columns: columnList,
+      groupsCount: taskGroups?.length ?? 0,
+      firstGroupSize: firstGroup?.tasks?.length ?? 0,
+      firstTask,
+    };
+    (window as any).__wlTasklistDebug = snapshot;
+    // Convenience alias in case a single underscore is typed in console.
+    (window as any)._wlTasklistDebug = snapshot;
+    // Aid manual inspection in console.
+    console.debug('WL tasklist debug snapshot', snapshot);
+  }, [columnList, taskGroups]);
+
   // Function to update custom column values
   const updateTaskCustomColumnValue = (taskId: string, columnKey: string, value: string) => {
     try {

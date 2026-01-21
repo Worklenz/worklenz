@@ -186,11 +186,11 @@ const coerceBooleanValue = (value: string): boolean | null => {
 
 const buildSelectionOptions = (
   plan: CustomColumnPlan,
-  values: string[]
+  values: string[],
 ): { selections: SelectionOptionPlan[]; map: Map<string, string> } => {
   const uniqueValues = Array.from(new Set(values)).slice(
     0,
-    MAX_SELECTION_OPTIONS
+    MAX_SELECTION_OPTIONS,
   );
   const selections = uniqueValues.map((value, index) => {
     const slug =
@@ -214,7 +214,7 @@ const inferColumnConfig = (plan: CustomColumnPlan): ColumnPlanConfig => {
   if (values.length && values.every(isNumericSample)) {
     const decimals = values.reduce(
       (acc, value) => Math.max(acc, countDecimalPlaces(value)),
-      0
+      0,
     );
     return { fieldType: "number", numberType: "formatted", decimals };
   }
@@ -302,9 +302,52 @@ const toColumnKey = (value: string) =>
   slugify(value || "custom-column", { lower: true, strict: true }) ||
   "custom-column";
 
+const normalizeRawFieldName = (value?: string | null) =>
+  slugify(value || "", { lower: true, strict: true }).replace(/-/g, "");
+
+const getNormalizedFieldValue = (
+  source: Record<string, unknown>,
+  candidates: string[],
+) => {
+  if (!candidates?.length) return null;
+
+  for (const candidate of candidates) {
+    if (
+      Object.prototype.hasOwnProperty.call(source, candidate) &&
+      source[candidate] !== undefined &&
+      source[candidate] !== null &&
+      source[candidate] !== ""
+    ) {
+      return source[candidate];
+    }
+  }
+
+  const normalizedEntries = Object.entries(source).map(([key, value]) => ({
+    key: normalizeRawFieldName(key),
+    value,
+  }));
+
+  for (const candidate of candidates) {
+    const normalizedCandidate = normalizeRawFieldName(candidate);
+    const match = normalizedEntries.find(
+      (entry) => entry.key === normalizedCandidate,
+    );
+    if (
+      match &&
+      match.value !== undefined &&
+      match.value !== null &&
+      match.value !== ""
+    ) {
+      return match.value;
+    }
+  }
+
+  return null;
+};
+
 export const mapRawToTaskFields = (
   raw: unknown,
-  mappings: FieldMappingRow[]
+  mappings: FieldMappingRow[],
 ): { patch: TaskFieldPatch; customValues: CustomFieldValuePlan[] } => {
   // DEBUG: Log mapping and raw input
   // eslint-disable-next-line no-console
@@ -312,12 +355,18 @@ export const mapRawToTaskFields = (
   // eslint-disable-next-line no-console
   console.log("[mapRawToTaskFields] Number of mappings:", mappings.length);
   // eslint-disable-next-line no-console
-  console.log(
-    "[mapRawToTaskFields] Created field mapping:",
-    mappings.find(
-      (m) => m.source_field === "Created" || m.target_field === "createdDate"
-    )
-  );
+  const createdMapping = mappings.find((m) => {
+    const normalizedTarget = normalizeTargetField(m.target_field);
+    const normalizedSource = normalizeRawFieldName(m.source_field);
+    return (
+      normalizedTarget === "createdDate" ||
+      normalizedSource === "created" ||
+      normalizedSource === "createdat" ||
+      normalizedSource === "createddate"
+    );
+  });
+  // eslint-disable-next-line no-console
+  console.log("[mapRawToTaskFields] Created field mapping:", createdMapping);
   const source =
     raw && typeof raw === "object" && !Array.isArray(raw)
       ? (raw as Record<string, unknown>)
@@ -325,15 +374,23 @@ export const mapRawToTaskFields = (
   // eslint-disable-next-line no-console
   console.log(
     "[mapRawToTaskFields] Raw 'Created' value:",
-    (source as any)?.Created
+    (source as any)?.Created,
   );
 
   const patch: TaskFieldPatch = {};
   const customValues: CustomFieldValuePlan[] = [];
 
+  const pushCustomValue = (
+    columnKey: string,
+    columnName: string,
+    value: unknown,
+  ) => {
+    customValues.push({ columnKey, columnName, value });
+  };
+
   mappings.forEach((mapping) => {
     if (mapping.include === false) return;
-    const value = source[mapping.source_field];
+    const value = getNormalizedFieldValue(source, [mapping.source_field]);
     if (value === undefined || value === null || value === "") return;
 
     const targetField = normalizeTargetField(mapping.target_field);
@@ -357,7 +414,7 @@ export const mapRawToTaskFields = (
           "[mapRawToTaskFields] ✓ Mapping createdDate - source_field:",
           mapping.source_field,
           "value:",
-          value
+          value,
         );
         patch.created_at = String(value);
         break;
@@ -379,10 +436,53 @@ export const mapRawToTaskFields = (
       case "completedDate":
         patch.completed_at = String(value);
         break;
+      case "labels": {
+        const normalized = Array.isArray(value)
+          ? value.join(", ")
+          : String(value);
+        pushCustomValue(
+          toColumnKey("labels"),
+          mapping.source_field || "Labels",
+          normalized,
+        );
+        break;
+      }
+      case "progress": {
+        pushCustomValue(
+          toColumnKey("progress"),
+          mapping.source_field || "Progress",
+          value,
+        );
+        break;
+      }
+      case "timetracking": {
+        pushCustomValue(
+          toColumnKey("timeTracking"),
+          mapping.source_field || "Time Tracking",
+          value,
+        );
+        break;
+      }
+      case "estimation": {
+        pushCustomValue(
+          toColumnKey("estimation"),
+          mapping.source_field || "Estimation",
+          value,
+        );
+        break;
+      }
+      case "reporter": {
+        pushCustomValue(
+          toColumnKey("reporter"),
+          mapping.source_field || "Reporter",
+          value,
+        );
+        break;
+      }
       default: {
         const columnKey = toColumnKey(targetField);
         const columnName = mapping.source_field || targetField;
-        customValues.push({ columnKey, columnName, value });
+        pushCustomValue(columnKey, columnName, value);
         break;
       }
     }
@@ -394,13 +494,22 @@ export const mapRawToTaskFields = (
       (source as any)?.Created ??
       (source as any)?.created ??
       (source as any)?.created_at ??
-      (source as any)?.createdDate;
+      (source as any)?.createdDate ??
+      getNormalizedFieldValue(source, [
+        "Created at",
+        "created at",
+        "Created on",
+        "created on",
+        "Created date",
+        "created date",
+        "date created",
+      ]);
     if (rawCreated) {
       patch.created_at = String(rawCreated);
       // eslint-disable-next-line no-console
       console.log(
         "[mapRawToTaskFields] Fallback applied for created_at from raw",
-        rawCreated
+        rawCreated,
       );
     }
   }
@@ -411,13 +520,25 @@ export const mapRawToTaskFields = (
       (source as any)?.updated ??
       (source as any)?.updated_at ??
       (source as any)?.updatedDate ??
-      (source as any)?.lastUpdated;
+      (source as any)?.lastUpdated ??
+      getNormalizedFieldValue(source, [
+        "Updated at",
+        "updated at",
+        "Updated on",
+        "updated on",
+        "Last updated",
+        "last updated",
+        "Modified",
+        "modified",
+        "modified at",
+        "modified on",
+      ]);
     if (rawUpdated) {
       patch.updated_at = String(rawUpdated);
       // eslint-disable-next-line no-console
       console.log(
         "[mapRawToTaskFields] Fallback applied for updated_at from raw",
-        rawUpdated
+        rawUpdated,
       );
     }
   }
@@ -462,12 +583,12 @@ class ImportsService {
 
   async getJobForUser(
     jobId: string,
-    userId?: string | null
+    userId?: string | null,
   ): Promise<ImportJob | null> {
     if (!userId) return null;
     const { rows } = await db.query(
       "SELECT * FROM import_jobs WHERE id = $1 AND created_by = $2",
-      [jobId, userId]
+      [jobId, userId],
     );
     return rows[0] || null;
   }
@@ -479,7 +600,7 @@ class ImportsService {
        SET source_reference = COALESCE(source_reference, '{}'::jsonb) || $2::jsonb,
            updated_at = NOW()
        WHERE id = $1`,
-      [jobId, patch]
+      [jobId, patch],
     );
   }
 
@@ -487,11 +608,11 @@ class ImportsService {
     jobId: string,
     status: ImportStatus,
     errorMessage?: string | null,
-    stats?: Record<string, unknown>
+    stats?: Record<string, unknown>,
   ) {
     await db.query(
       "UPDATE import_jobs SET status = $2, error_message = $3, stats = COALESCE($4, stats), updated_at = NOW() WHERE id = $1",
-      [jobId, status, errorMessage || null, stats || null]
+      [jobId, status, errorMessage || null, stats || null],
     );
   }
 
@@ -499,7 +620,7 @@ class ImportsService {
     jobId: string,
     targetProjectId?: string | null,
     targetSpaceType?: string | null,
-    targetTemplate?: string | null
+    targetTemplate?: string | null,
   ) {
     await db.query(
       `UPDATE import_jobs
@@ -513,7 +634,7 @@ class ImportsService {
         targetProjectId || null,
         targetSpaceType || null,
         targetTemplate || null,
-      ]
+      ],
     );
   }
 
@@ -521,11 +642,11 @@ class ImportsService {
     jobId: string,
     level: string,
     message: string,
-    context: Record<string, unknown> = {}
+    context: Record<string, unknown> = {},
   ) {
     await db.query(
       "INSERT INTO import_logs (job_id, level, message, context) VALUES ($1,$2,$3,$4)",
-      [jobId, level, message, context]
+      [jobId, level, message, context],
     );
   }
 
@@ -535,7 +656,7 @@ class ImportsService {
       source_level: string;
       target_level: string;
       position: number;
-    }>
+    }>,
   ) {
     await db.query("DELETE FROM import_hierarchy_mappings WHERE job_id = $1", [
       jobId,
@@ -544,7 +665,7 @@ class ImportsService {
     const params: unknown[] = [];
     rows.forEach((row, idx) => {
       insertValues.push(
-        `($1, $${idx * 3 + 2}, $${idx * 3 + 3}, $${idx * 3 + 4})`
+        `($1, $${idx * 3 + 2}, $${idx * 3 + 3}, $${idx * 3 + 4})`,
       );
       params.push(row.source_level, row.target_level, row.position);
     });
@@ -552,7 +673,7 @@ class ImportsService {
       await db.query(
         `INSERT INTO import_hierarchy_mappings (job_id, source_level, target_level, position)
          VALUES ${insertValues.join(",")}`,
-        [jobId, ...params]
+        [jobId, ...params],
       );
     }
   }
@@ -564,7 +685,7 @@ class ImportsService {
       target_field: string;
       required?: boolean;
       include?: boolean;
-    }>
+    }>,
   ) {
     await db.query("DELETE FROM import_field_mappings WHERE job_id = $1", [
       jobId,
@@ -575,20 +696,20 @@ class ImportsService {
       insertValues.push(
         `($1, $${idx * 4 + 2}, $${idx * 4 + 3}, $${idx * 4 + 4}, $${
           idx * 4 + 5
-        })`
+        })`,
       );
       params.push(
         row.source_field,
         row.target_field,
         row.required ?? false,
-        row.include ?? true
+        row.include ?? true,
       );
     });
     if (rows.length) {
       await db.query(
         `INSERT INTO import_field_mappings (job_id, source_field, target_field, required, include)
          VALUES ${insertValues.join(",")}`,
-        [jobId, ...params]
+        [jobId, ...params],
       );
     }
   }
@@ -602,14 +723,14 @@ class ImportsService {
     const params: unknown[] = [];
     rows.forEach((row, idx) => {
       insertValues.push(
-        `($1, $${idx * 3 + 2}, $${idx * 3 + 3}, $${idx * 3 + 4})`
+        `($1, $${idx * 3 + 2}, $${idx * 3 + 3}, $${idx * 3 + 4})`,
       );
       params.push(row.source_value, row.target_worktype, row.include ?? true);
     });
     await db.query(
       `INSERT INTO import_value_mappings (job_id, source_value, target_worktype, include)
        VALUES ${insertValues.join(",")}`,
-      [jobId, ...params]
+      [jobId, ...params],
     );
   }
 
@@ -624,20 +745,20 @@ class ImportsService {
       insertValues.push(
         `($1, $${idx * 6 + 2}, $${idx * 6 + 3}, $${idx * 6 + 4}, $${
           idx * 6 + 5
-        }, $${idx * 6 + 6})`
+        }, $${idx * 6 + 6})`,
       );
       params.push(
         row.source_user_id || null,
         row.source_email || null,
         row.target_user_id || null,
         row.resolution || "unresolved",
-        row.include ?? true
+        row.include ?? true,
       );
     });
     await db.query(
       `INSERT INTO import_user_mappings (job_id, source_user_id, source_email, target_user_id, resolution, include)
        VALUES ${insertValues.join(",")}`,
-      [jobId, ...params]
+      [jobId, ...params],
     );
   }
 
@@ -652,7 +773,7 @@ class ImportsService {
       insertValues.push(
         `($1, $${idx * 6 + 2}, $${idx * 6 + 3}, $${idx * 6 + 4}, $${
           idx * 6 + 5
-        }, $${idx * 6 + 6}, $${idx * 6 + 7})`
+        }, $${idx * 6 + 6}, $${idx * 6 + 7})`,
       );
       params.push(
         row.source_url,
@@ -660,13 +781,13 @@ class ImportsService {
         row.content_type || null,
         row.size_bytes ?? null,
         row.status || "planned",
-        row.storage_key || null
+        row.storage_key || null,
       );
     });
     await db.query(
       `INSERT INTO import_attachment_plans (job_id, source_url, filename, content_type, size_bytes, status, storage_key)
        VALUES ${insertValues.join(",")}`,
-      [jobId, ...params]
+      [jobId, ...params],
     );
   }
 
@@ -681,7 +802,7 @@ class ImportsService {
           idx * 11 + 5
         }, $${idx * 11 + 6}, $${idx * 11 + 7}, $${idx * 11 + 8}, $${
           idx * 11 + 9
-        }, $${idx * 11 + 10}, $${idx * 11 + 11}, $${idx * 11 + 12})`
+        }, $${idx * 11 + 10}, $${idx * 11 + 11}, $${idx * 11 + 12})`,
       );
       params.push(
         row.source_task_id || null,
@@ -694,20 +815,20 @@ class ImportsService {
         row.worktype || null,
         row.assignee_source_id || null,
         row.attachments_planned ?? false,
-        row.raw || null
+        row.raw || null,
       );
     });
     await db.query(
       `INSERT INTO import_stage_tasks (job_id, source_task_id, parent_source_task_id, title, description, status, due_at, start_at, worktype, assignee_source_id, attachments_planned, raw)
        VALUES ${insertValues.join(",")}`,
-      [jobId, ...params]
+      [jobId, ...params],
     );
   }
 
   async listStageTasks(jobId: string) {
     const { rows } = await db.query(
       "SELECT * FROM import_stage_tasks WHERE job_id = $1 ORDER BY id",
-      [jobId]
+      [jobId],
     );
     return rows;
   }
@@ -715,7 +836,7 @@ class ImportsService {
   async listLogs(jobId: string) {
     const { rows } = await db.query(
       "SELECT * FROM import_logs WHERE job_id = $1 ORDER BY id DESC LIMIT 200",
-      [jobId]
+      [jobId],
     );
     return rows;
   }
@@ -734,43 +855,43 @@ class ImportsService {
       db
         .query(
           "SELECT COUNT(*)::int AS count FROM import_hierarchy_mappings WHERE job_id = $1",
-          [jobId]
+          [jobId],
         )
         .then((r) => r.rows),
       db
         .query(
           "SELECT COUNT(*)::int AS count FROM import_field_mappings WHERE job_id = $1",
-          [jobId]
+          [jobId],
         )
         .then((r) => r.rows),
       db
         .query(
           "SELECT COUNT(*)::int AS count FROM import_value_mappings WHERE job_id = $1",
-          [jobId]
+          [jobId],
         )
         .then((r) => r.rows),
       db
         .query(
           "SELECT COUNT(*)::int AS count FROM import_user_mappings WHERE job_id = $1",
-          [jobId]
+          [jobId],
         )
         .then((r) => r.rows),
       db
         .query(
           "SELECT COUNT(*)::int AS count FROM import_stage_tasks WHERE job_id = $1",
-          [jobId]
+          [jobId],
         )
         .then((r) => r.rows),
       db
         .query(
           "SELECT COUNT(*)::int AS count FROM import_attachment_plans WHERE job_id = $1",
-          [jobId]
+          [jobId],
         )
         .then((r) => r.rows),
     ]);
     const { rows: recentLogs } = await db.query(
       "SELECT level, message, created_at FROM import_logs WHERE job_id = $1 ORDER BY id DESC LIMIT 20",
-      [jobId]
+      [jobId],
     );
     return {
       job,
@@ -807,7 +928,7 @@ class ImportsService {
       ] = await Promise.all([
         client.query(
           "SELECT * FROM import_stage_tasks WHERE job_id = $1 ORDER BY id",
-          [jobId]
+          [jobId],
         ),
         client.query(
           `SELECT ts.id,
@@ -818,32 +939,32 @@ class ImportsService {
              LEFT JOIN sys_task_status_categories cat ON cat.id = ts.category_id
              WHERE ts.project_id = $1
              ORDER BY ts.sort_order`,
-          [job.target_project_id]
+          [job.target_project_id],
         ),
         client.query(
-          "SELECT id, name, value FROM task_priorities ORDER BY value NULLS LAST"
+          "SELECT id, name, value FROM task_priorities ORDER BY value NULLS LAST",
         ),
         client.query(
           "SELECT source_user_id, source_email, target_user_id FROM import_user_mappings WHERE job_id = $1 AND (include IS NULL OR include = true)",
-          [jobId]
+          [jobId],
         ),
         client.query(
           "SELECT source_field, target_field, include FROM import_field_mappings WHERE job_id = $1",
-          [jobId]
+          [jobId],
         ),
         client.query(
           "SELECT id, key, field_type FROM cc_custom_columns WHERE project_id = $1",
-          [job.target_project_id]
+          [job.target_project_id],
         ),
         client.query(
           "SELECT id, key, pinned FROM project_task_list_cols WHERE project_id = $1",
-          [job.target_project_id]
+          [job.target_project_id],
         ),
       ]);
 
       const { rows: projectRows } = await client.query(
         "SELECT team_id FROM projects WHERE id = $1",
-        [job.target_project_id]
+        [job.target_project_id],
       );
       const targetTeamId = projectRows[0]?.team_id || null;
 
@@ -857,7 +978,7 @@ class ImportsService {
              LEFT JOIN users u ON u.id = tm.user_id
              LEFT JOIN email_invitations ei ON ei.team_member_id = tm.id
              WHERE tm.team_id = $1`,
-          [targetTeamId]
+          [targetTeamId],
         );
         return rows as any[];
       };
@@ -937,7 +1058,7 @@ class ImportsService {
         if (row.source_email && row.target_user_id)
           assigneeMap.set(
             row.source_email.toString().toLowerCase(),
-            row.target_user_id
+            row.target_user_id,
           );
       });
 
@@ -978,7 +1099,9 @@ class ImportsService {
               ? (task.raw as Record<string, unknown>)
               : {};
           customColumnPlans.forEach((plan) => {
-            const rawValue = rawSource?.[plan.sourceField];
+            const rawValue = getNormalizedFieldValue(rawSource, [
+              plan.sourceField,
+            ]);
             const sanitized = sanitizeSampleValue(rawValue);
             if (sanitized) {
               plan.samples.add(sanitized);
@@ -1037,7 +1160,7 @@ class ImportsService {
           if (!existing.pinned) {
             await client.query(
               "UPDATE project_task_list_cols SET pinned = TRUE WHERE id = $1",
-              [existing.id]
+              [existing.id],
             );
             taskListColumnMap.set(info.key, { id: existing.id, pinned: true });
           }
@@ -1048,7 +1171,7 @@ class ImportsService {
           `INSERT INTO project_task_list_cols (project_id, name, key, index, pinned, custom_column, custom_column_obj)
            VALUES ($1, $2, $3, $4, TRUE, FALSE, NULL)
            RETURNING id`,
-          [job.target_project_id, info.name, info.key, info.index]
+          [job.target_project_id, info.name, info.key, info.index],
         );
         const newId = inserted.rows[0]?.id;
         if (newId) taskListColumnMap.set(info.key, { id: newId, pinned: true });
@@ -1066,11 +1189,11 @@ class ImportsService {
       const configureColumnMetadata = async (
         columnId: string,
         plan: CustomColumnPlan,
-        config: ColumnPlanConfig
+        config: ColumnPlanConfig,
       ) => {
         await client.query(
           "DELETE FROM cc_column_configurations WHERE column_id = $1",
-          [columnId]
+          [columnId],
         );
         await client.query(
           `INSERT INTO cc_column_configurations (
@@ -1098,15 +1221,15 @@ class ImportsService {
             null,
             null,
             null,
-          ]
+          ],
         );
         await client.query(
           "DELETE FROM cc_selection_options WHERE column_id = $1",
-          [columnId]
+          [columnId],
         );
         await client.query(
           "DELETE FROM cc_label_options WHERE column_id = $1",
-          [columnId]
+          [columnId],
         );
         if (config.fieldType === "selection" && config.selections?.length) {
           for (const [order, selection] of config.selections.entries()) {
@@ -1118,7 +1241,7 @@ class ImportsService {
                  selection_color,
                  selection_order
                ) VALUES ($1,$2,$3,$4,$5)`,
-              [columnId, selection.id, selection.name, selection.color, order]
+              [columnId, selection.id, selection.name, selection.color, order],
             );
           }
         }
@@ -1126,7 +1249,7 @@ class ImportsService {
 
       const ensureCustomColumn = async (
         plan: CustomColumnPlan,
-        config: ColumnPlanConfig
+        config: ColumnPlanConfig,
       ): Promise<CustomColumnRef | null> => {
         const existing = customColumnMap.get(plan.key);
         if (existing) {
@@ -1136,7 +1259,7 @@ class ImportsService {
                  field_type = $2,
                  updated_at = NOW()
              WHERE id = $3`,
-            [plan.name, config.fieldType, existing.id]
+            [plan.name, config.fieldType, existing.id],
           );
           await configureColumnMetadata(existing.id, plan, config);
           const column = {
@@ -1166,7 +1289,7 @@ class ImportsService {
             config.fieldType,
             150,
             true,
-          ]
+          ],
         );
         const columnId = columnResult.rows[0]?.id;
         if (!columnId) return null;
@@ -1185,13 +1308,13 @@ class ImportsService {
         taskId: string,
         column: CustomColumnRef,
         customValue: CustomFieldValuePlan,
-        config?: ColumnPlanConfig
+        config?: ColumnPlanConfig,
       ) => {
         if (!column?.id) {
           // eslint-disable-next-line no-console
           console.log(
             "[createTask] Skipping custom column insert - missing column id for",
-            column?.key
+            column?.key,
           );
           return;
         }
@@ -1204,6 +1327,58 @@ class ImportsService {
         let dateValue: Date | null = null;
         let booleanValue: boolean | null = null;
         let jsonValue: string | null = null;
+
+        // Ensure selection options stay in sync with incoming values. If a value arrives
+        // that wasn't part of the initial sample set (or was trimmed differently), we
+        // create the option on the fly so the stored selection_id always matches an
+        // existing dropdown option.
+        const ensureSelectionOption = async (
+          value: string,
+        ): Promise<string> => {
+          if (!effectiveConfig) return value;
+
+          // Lazily initialise selections/valueToSelectionId if missing
+          if (!effectiveConfig.selections) effectiveConfig.selections = [];
+          if (!effectiveConfig.valueToSelectionId)
+            effectiveConfig.valueToSelectionId = new Map<string, string>();
+
+          const existingId = effectiveConfig.valueToSelectionId.get(value);
+          if (existingId) return existingId;
+
+          const slug =
+            slugify(value, { lower: true, strict: true }).slice(0, 40) ||
+            `option-${effectiveConfig.selections.length}`;
+          const generatedId = `${column.key}-${slug}-${effectiveConfig.selections.length}`;
+
+          effectiveConfig.selections.push({
+            id: generatedId,
+            name: value,
+            color:
+              SELECTION_COLORS[
+                effectiveConfig.selections.length % SELECTION_COLORS.length
+              ],
+          });
+          effectiveConfig.valueToSelectionId.set(value, generatedId);
+
+          // Persist the newly discovered option so dropdowns render it immediately
+          await client.query(
+            `INSERT INTO cc_selection_options (
+               column_id, selection_id, selection_name, selection_color, selection_order
+             ) VALUES ($1,$2,$3,$4,$5)
+             ON CONFLICT DO NOTHING;`,
+            [
+              column.id,
+              generatedId,
+              value,
+              SELECTION_COLORS[
+                effectiveConfig.selections.length % SELECTION_COLORS.length
+              ],
+              effectiveConfig.selections.length - 1,
+            ],
+          );
+
+          return generatedId;
+        };
 
         switch (fieldType) {
           case "number": {
@@ -1229,9 +1404,11 @@ class ImportsService {
           }
           case "selection": {
             if (!normalizedValue) break;
-            const selectionId =
-              effectiveConfig?.valueToSelectionId?.get(normalizedValue) ||
-              normalizedValue;
+            const selectionId = effectiveConfig?.valueToSelectionId?.get(
+              normalizedValue,
+            )
+              ? effectiveConfig.valueToSelectionId!.get(normalizedValue)!
+              : await ensureSelectionOption(normalizedValue);
             textValue = selectionId;
             break;
           }
@@ -1284,7 +1461,7 @@ class ImportsService {
             dateValue,
             booleanValue,
             jsonValue,
-          ]
+          ],
         );
       };
 
@@ -1320,7 +1497,7 @@ class ImportsService {
           ([key, value]) => ({
             key: key.trim().toLowerCase(),
             value,
-          })
+          }),
         );
         const candidates = new Set([
           "completed on",
@@ -1341,7 +1518,7 @@ class ImportsService {
       const finalizeTaskCompletion = async (
         taskId: string,
         statusId: string | null,
-        completedDate: Date | null
+        completedDate: Date | null,
       ) => {
         const shouldMarkDone =
           (statusId && doneStatusIds.has(statusId)) || !!completedDate;
@@ -1351,7 +1528,7 @@ class ImportsService {
              SET done = TRUE,
                  completed_at = COALESCE($2::timestamptz, completed_at, NOW())
            WHERE id = $1`,
-          [taskId, completedDate || null]
+          [taskId, completedDate || null],
         );
       };
 
@@ -1376,7 +1553,7 @@ class ImportsService {
       const createTask = async (task: any, parentId?: string | null) => {
         const { patch, customValues } = mapRawToTaskFields(
           task.raw,
-          activeFieldMappings
+          activeFieldMappings,
         );
         const taskWithMappings = { ...task, ...patch } as any;
         // eslint-disable-next-line no-console
@@ -1384,12 +1561,12 @@ class ImportsService {
         // eslint-disable-next-line no-console
         console.log(
           "[createTask] taskWithMappings.created_at:",
-          taskWithMappings.created_at
+          taskWithMappings.created_at,
         );
         // eslint-disable-next-line no-console
         console.log(
           "[createTask] taskWithMappings.updated_at:",
-          taskWithMappings.updated_at
+          taskWithMappings.updated_at,
         );
         let statusId = lookupStatusId(taskWithMappings.status);
         const completedValue =
@@ -1444,7 +1621,7 @@ class ImportsService {
         // eslint-disable-next-line no-console
         console.log(
           "[createTask] Initial created.created_at from DB:",
-          created?.created_at
+          created?.created_at,
         );
         if (
           created?.id &&
@@ -1461,7 +1638,7 @@ class ImportsService {
             "[createTask] About to UPDATE - createdAt:",
             createdAt?.toISOString(),
             "updatedAt:",
-            updatedAt?.toISOString()
+            updatedAt?.toISOString(),
           );
           const updateResult = await client.query(
             `UPDATE tasks
@@ -1473,12 +1650,12 @@ class ImportsService {
               created.id,
               createdAt && !isNaN(createdAt.valueOf()) ? createdAt : null,
               updatedAt && !isNaN(updatedAt.valueOf()) ? updatedAt : null,
-            ]
+            ],
           );
           // eslint-disable-next-line no-console
           console.log(
             "[createTask] UPDATE complete - new values:",
-            updateResult.rows[0]
+            updateResult.rows[0],
           );
         } else {
           // eslint-disable-next-line no-console
@@ -1486,7 +1663,7 @@ class ImportsService {
             "[createTask] Skipping timestamp update - created?.id:",
             created?.id,
             "has timestamps:",
-            !!(taskWithMappings.created_at || taskWithMappings.updated_at)
+            !!(taskWithMappings.created_at || taskWithMappings.updated_at),
           );
         }
         if (created?.id && task.source_task_id) {
@@ -1533,7 +1710,7 @@ class ImportsService {
               created.id,
               column,
               customValue,
-              config
+              config,
             );
           }
         }
