@@ -1386,7 +1386,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   background: '#f5f8ff',
                   borderRadius: 10,
                   border: '1px solid #e4ecfb',
-                  padding: '8px 32px 40px',
+                  padding: '14px 32px 40px',
                   boxShadow: '0 10px 40px rgba(38,132,255,0.08)',
                   display: 'flex',
                   flexDirection: 'column',
@@ -1434,7 +1434,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   </Typography.Paragraph>
                 </div>
 
-                <div style={{ marginTop: 8 }}>
+                <div style={{ marginTop: 10 }}>
                   <Input
                     placeholder={t('importStep.searchFields', 'Search fields')}
                     prefix={<SearchOutlined />}
