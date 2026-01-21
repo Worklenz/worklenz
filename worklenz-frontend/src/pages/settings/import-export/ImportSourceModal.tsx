@@ -1434,7 +1434,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   </Typography.Paragraph>
                 </div>
 
-                <div style={{ marginTop: 10 }}>
+                <div style={{ marginTop: 20, marginBottom: 16 }}>
                   <Input
                     placeholder={t('importStep.searchFields', 'Search fields')}
                     prefix={<SearchOutlined />}
