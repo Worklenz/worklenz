@@ -21,9 +21,9 @@ import {
   SearchOutlined,
   ArrowLeftOutlined,
   ArrowRightOutlined,
-  ApartmentOutlined,    
-  TableOutlined,          
-  TeamOutlined,           
+  ApartmentOutlined,
+  TableOutlined,
+  TeamOutlined,
   PaperClipOutlined,
 } from '@ant-design/icons';
 import Papa from 'papaparse';
@@ -169,7 +169,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   // Steps for each flow
   const steps =
     integrationType === 'direct'
-      ? ['Select list', 'Create space', 'Review details', 'Import data']
+      ? ['Select list', 'Create space', 'Review Details & Import']
       : ['Upload CSV', 'Set up space', 'Map fields', 'Map values', 'Move users', 'Review details'];
 
   const [step, setStep] = React.useState(0);
@@ -1024,7 +1024,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         );
       }
       if (step === 2) {
-        // Step 3: Review details (main or sub-screens)
+        // Step 3: Review details & import
         if (reviewSubScreen === 'main') {
           /*
           const reviewCards = [
@@ -1095,7 +1095,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
           ];
           */
 
-                    const reviewCards = [
+          const reviewCards = [
             {
               key: 'hierarchy',
               title: t('importStep.spaceHierarchy', 'Space hierarchy'),
@@ -1166,7 +1166,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <div style={{ width: '100%', maxWidth: 720 }}>
                 <Typography.Title level={3} style={{ marginBottom: 4 }}>
-                  {t('importStep.reviewDetails', 'Review details')}
+                  {t('importStep.reviewDetails', 'Review Details & Import')}
                 </Typography.Title>
                 <Typography.Paragraph style={{ marginBottom: 24 }}>
                   {t('importStep.reviewIntro', {
@@ -1463,22 +1463,6 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
           );
         }
       }
-      if (step === 3) {
-        // Step 4: Import data (last step before completion)
-        return (
-          <div style={{ width: '100%', textAlign: 'center' }}>
-            <Typography.Title level={3} style={{ marginBottom: 12 }}>
-              {t('importStep.importData', 'Import data')}
-            </Typography.Title>
-            <Typography.Paragraph>
-              {t(
-                'importStep.importReady',
-                'Review is complete. Click Finish to start the import and we will set up your space.'
-              )}
-            </Typography.Paragraph>
-          </div>
-        );
-      }
       return null;
     }
     // ...existing code for CSV import steps...
@@ -1613,9 +1597,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 Set up a space in Worklenz
               </Typography.Title>
               <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 16 }}>
-                Your teamÃ¢â‚¬â„¢s data from <b>{source?.label || 'your app'}</b> will be imported into
-                this space. Check if youÃ¢â‚¬â„¢re selecting the right Worklenz space, template, and space
-                type as these options canÃ¢â‚¬â„¢t be modified later.
+                Your teamÃ¢â‚¬â„¢s data from <b>{source?.label || 'your app'}</b> will be imported
+                into this space. Check if youÃ¢â‚¬â„¢re selecting the right Worklenz space,
+                template, and space type as these options canÃ¢â‚¬â„¢t be modified later.
               </Typography.Paragraph>
               <div style={{ color: '#f87171', fontSize: 13, marginBottom: 20 }}>
                 All fields are required
@@ -1757,8 +1741,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               Map space fields
             </Typography.Title>
             <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 16 }}>
-              WeÃ¢â‚¬â„¢ve automatically mapped a few columns from the CSV file to <b>Worklenz fields</b>.
-              Verify and{' '}
+              WeÃ¢â‚¬â„¢ve automatically mapped a few columns from the CSV file to{' '}
+              <b>Worklenz fields</b>. Verify and{' '}
               <a href="#" style={{ color: '#4096ff' }}>
                 map any remaining columns
               </a>
@@ -2111,7 +2095,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-                  <span style={{ fontSize: 20, marginRight: 10, color: '#60a5fa' }}>Ã¢â€žÂ¹Ã¯Â¸Â</span>
+                  <span style={{ fontSize: 20, marginRight: 10, color: '#60a5fa' }}>
+                    Ã¢â€žÂ¹Ã¯Â¸Â
+                  </span>
                   <span style={{ fontWeight: 600, fontSize: 18 }}>
                     There are no users in the CSV file
                   </span>
@@ -2177,7 +2163,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   }}
                 >
                   <span style={{ flex: 2, paddingLeft: 8 }}>
-                    <span style={{ marginRight: 8 }}>Ã°Å¸â€œâ€ž</span>Users in CSV ({userRows.length})
+                    <span style={{ marginRight: 8 }}>Ã°Å¸â€œâ€ž</span>Users in CSV (
+                    {userRows.length})
                   </span>
                   <span style={{ width: 40 }}></span>
                   <span style={{ flex: 3 }}>
@@ -2239,8 +2226,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               Review space details
             </Typography.Title>
             <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 24 }}>
-              WeÃ¢â‚¬â„¢re ready to import your teamÃ¢â‚¬â„¢s data. HereÃ¢â‚¬â„¢s a summary of whatÃ¢â‚¬â„¢s being imported into
-              Worklenz.
+              WeÃ¢â‚¬â„¢re ready to import your teamÃ¢â‚¬â„¢s data. HereÃ¢â‚¬â„¢s a summary of
+              whatÃ¢â‚¬â„¢s being imported into Worklenz.
               <br />
               Confirm the details before starting the import.
             </Typography.Paragraph>
@@ -2487,7 +2474,10 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             onChange={v => setSelectedClickupSpace(v)}
             style={{ width: 320, marginBottom: 16 }}
             options={clickupTeams.flatMap(team =>
-              team.spaces.map(space => ({ value: space.id, label: `${team.name} Ã¢â‚¬Â¢ ${space.name}` }))
+              team.spaces.map(space => ({
+                value: space.id,
+                label: `${team.name} Ã¢â‚¬Â¢ ${space.name}`,
+              }))
             )}
           />
           <Select
@@ -2499,7 +2489,10 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               .flatMap(team => team.spaces)
               .filter(space => !selectedClickupSpace || space.id === selectedClickupSpace)
               .flatMap(space =>
-                space.lists.map(list => ({ value: list.id, label: `${space.name} Ã¢â‚¬Â¢ ${list.name}` }))
+                space.lists.map(list => ({
+                  value: list.id,
+                  label: `${space.name} Ã¢â‚¬Â¢ ${list.name}`,
+                }))
               )}
           />
           {authError && (
@@ -2734,7 +2727,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   }
                 >
                   {step === totalSteps - 1
-                    ? t('common.finish', 'Finish')
+                    ? integrationType === 'direct'
+                      ? t('importStep.importCta', 'Import')
+                      : t('common.finish', 'Finish')
                     : t('common.next', 'Next')}
                 </Button>
               </div>

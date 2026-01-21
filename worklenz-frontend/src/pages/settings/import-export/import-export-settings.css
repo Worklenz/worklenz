@@ -87,6 +87,16 @@
   align-items: center;
   justify-content: center;
   background: #fff;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.csv-dropzone:hover,
+.csv-dropzone:focus-visible {
+  border-color: #4096ff;
+  box-shadow: 0 6px 18px rgba(64, 150, 255, 0.12);
 }
 
 .csv-dropzone-icon {

@@ -19,21 +19,27 @@ const AsanaIcon = () => (
   </svg>
 );
 
-const importSources = [
+type ImportSource = { key: string; icon: React.ReactNode; label: string };
+
+const importSources: ImportSource[] = [
   { key: 'asana', icon: <AsanaIcon />, label: 'Asana' },
   { key: 'jira-software', icon: <BranchesOutlined style={{ color: '#0052CC' }} />, label: 'Jira' },
   { key: 'trello', icon: <ProjectOutlined style={{ color: '#0079BF' }} />, label: 'Trello' },
   { key: 'monday', icon: <AppstoreOutlined style={{ color: '#F6C34E' }} />, label: 'Monday.com' },
 ];
 
+const csvSource: ImportSource = {
+  key: 'csv',
+  icon: <CloudUploadOutlined />,
+  label: 'CSV',
+};
+
 export const ImportExportSettings: React.FC = () => {
   const { t } = useTranslation('settings/import-export');
   const [modalOpen, setModalOpen] = React.useState(false);
-  const [selectedSource, setSelectedSource] = React.useState<null | (typeof importSources)[0]>(
-    null
-  );
+  const [selectedSource, setSelectedSource] = React.useState<ImportSource | null>(null);
 
-  const handleSourceClick = (source: (typeof importSources)[0]) => {
+  const handleSourceClick = (source: ImportSource) => {
     setSelectedSource(source);
     setModalOpen(true);
   };
@@ -76,7 +82,18 @@ export const ImportExportSettings: React.FC = () => {
               "If you don't see your app here, select CSV to use any CSV file to import your data."
             )}
           </Typography.Text>
-          <div className="csv-dropzone">
+          <div
+            className="csv-dropzone"
+            role="button"
+            tabIndex={0}
+            onClick={() => handleSourceClick(csvSource)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleSourceClick(csvSource);
+              }
+            }}
+          >
             <div className="csv-dropzone-icon">
               <CloudUploadOutlined />
             </div>
