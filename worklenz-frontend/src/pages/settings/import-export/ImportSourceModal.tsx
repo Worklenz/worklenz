@@ -308,15 +308,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     [fieldMappingRows]
   );
 
-  const modalHeight = React.useMemo(() => {
-    if (authNeeded && !authCompleted) return 399;
-    if (integrationType === 'direct') {
-      if (step === 0) return 613;
-      if (step === 1) return 632;
-      if (step === 2) return 753;
-    }
-    return 753;
-  }, [authCompleted, authNeeded, integrationType, step]);
+  const modalHeight = React.useMemo(() => 753, []);
   const hierarchyCount = React.useMemo(() => hierarchyRows.length, [hierarchyRows]);
   const hierarchyDisplayRows = React.useMemo(
     () => [...hierarchyRows].sort((a, b) => (a.position || 0) - (b.position || 0)),
@@ -828,8 +820,17 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
 
   // Example content for each step
   function renderStepContent() {
+    const directContainerStyle = {
+      width: '100%',
+      maxWidth: 820,
+      margin: '0 auto',
+      background: '#2684FF08',
+      borderRadius: 12,
+      padding: 32,
+    };
+
     if (integrationType === 'direct') {
-      // 4-step direct integration flow
+      // 3-step direct integration flow
       if (step === 0) {
         // Step 1: Select project/list/board
         const workspaceOptions =
@@ -857,18 +858,18 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
           lowerKey === 'monday' ? mondayBoards.map(b => ({ value: b.id, label: b.name })) : [];
 
         return (
-          <div>
-            <Typography.Title level={3}>
-              {t('importStep.selectList', 'Select a source')}
-            </Typography.Title>
-            <Typography.Paragraph>
-              {t(
-                'importStep.selectListHelp',
-                'Select the workspace and list/board youÃ¢â‚¬â„¢d like to import data from. Required fields are marked with an asterisk.'
-              )}
-            </Typography.Paragraph>
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <div style={{ width: '100%', maxWidth: 720 }}>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div style={directContainerStyle}>
+              <Typography.Title level={3} style={{ marginBottom: 8 }}>
+                {t('importStep.selectList', 'Select a source')}
+              </Typography.Title>
+              <Typography.Paragraph style={{ color: themeToken.colorTextSecondary }}>
+                {t(
+                  'importStep.selectListHelp',
+                  'Select the workspace and list/board youÃ¢â‚¬â„¢d like to import data from. Required fields are marked with an asterisk.'
+                )}
+              </Typography.Paragraph>
+              <div style={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>
                 {lowerKey !== 'monday' && lowerKey !== 'jira' && (
                   <>
                     <label>{t('importStep.workspaceLabel', 'Workspace *')}</label>
@@ -987,36 +988,38 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         // Step 2: Create space
         return (
           <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <div style={{ width: '100%', maxWidth: 720 }}>
-              <Typography.Title level={3}>
+            <div style={directContainerStyle}>
+              <Typography.Title level={3} style={{ marginBottom: 8 }}>
                 {t('importStep.setupSpaceTitle', 'Set up a space in Worklenz')}
               </Typography.Title>
-              <Typography.Paragraph>
+              <Typography.Paragraph style={{ color: themeToken.colorTextSecondary }}>
                 {t('importStep.setupSpaceDesc', {
                   defaultValue:
                     "Your team's data from {{source}} will be imported into this space. Check if you're selecting the right Worklenz space, template, and space type as these options can't be modified later. All fields are required.",
                   source: source.label || 'your app',
                 })}
               </Typography.Paragraph>
-              <label>{t('importStep.worklenzSpace', 'Worklenz space')}</label>
-              <Select
-                style={{ width: '100%', marginBottom: 16 }}
-                value={spaceType}
-                onChange={setSpaceType}
-                options={[
-                  { value: 'business', label: t('importStep.businessSpace', 'Business space') },
-                  { value: 'software', label: t('importStep.softwareSpace', 'Software space') },
-                ]}
-              />
-              <label>{t('importStep.spaceName', 'Space name')}</label>
-              <Input
-                style={{ width: '100%', marginBottom: 8 }}
-                value={spaceName}
-                onChange={e => setSpaceName(e.target.value)}
-              />
-              <a href="#" style={{ color: '#4096ff', fontSize: 14 }}>
-                {t('importStep.showMore', 'Show more')}
-              </a>
+              <div style={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>
+                <label>{t('importStep.worklenzSpace', 'Worklenz space')}</label>
+                <Select
+                  style={{ width: '100%', marginBottom: 16 }}
+                  value={spaceType}
+                  onChange={setSpaceType}
+                  options={[
+                    { value: 'business', label: t('importStep.businessSpace', 'Business space') },
+                    { value: 'software', label: t('importStep.softwareSpace', 'Software space') },
+                  ]}
+                />
+                <label>{t('importStep.spaceName', 'Space name')}</label>
+                <Input
+                  style={{ width: '100%', marginBottom: 8 }}
+                  value={spaceName}
+                  onChange={e => setSpaceName(e.target.value)}
+                />
+                <a href="#" style={{ color: '#4096ff', fontSize: 14 }}>
+                  {t('importStep.showMore', 'Show more')}
+                </a>
+              </div>
             </div>
           </div>
         );
@@ -1162,11 +1165,13 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
 
           return (
             <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <div style={{ width: '100%', maxWidth: 720 }}>
+              <div style={directContainerStyle}>
                 <Typography.Title level={3} style={{ marginBottom: 4 }}>
                   {t('importStep.reviewDetails', 'Review Details & Import')}
                 </Typography.Title>
-                <Typography.Paragraph style={{ marginBottom: 24 }}>
+                <Typography.Paragraph
+                  style={{ marginBottom: 24, color: themeToken.colorTextSecondary }}
+                >
                   {t('importStep.reviewIntro', {
                     defaultValue:
                       "We've mapped your project and you're ready to import. Here's how the {{source}} data will be imported into the {{target}} project. Learn more about the project setup",
@@ -1183,8 +1188,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                       bordered={false}
                       style={{
                         borderRadius: 10,
-                        background: '#111318',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.22)',
+                        background: '#fff',
+                        boxShadow: '0 12px 34px rgba(38,132,255,0.12)',
+                        border: '1px solid #e8eef9',
                         cursor: card.action ? 'pointer' : 'default',
                       }}
                       bodyStyle={{ padding: 14 }}
@@ -1205,10 +1211,18 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                           {card.icon}
                         </div>
                         <div style={{ flex: 1 }}>
-                          <div style={{ color: '#e5e7eb', fontWeight: 600, fontSize: 16 }}>
+                          <div
+                            style={{
+                              color: themeToken.colorTextHeading,
+                              fontWeight: 600,
+                              fontSize: 16,
+                            }}
+                          >
                             {card.title}
                           </div>
-                          <div style={{ color: '#9ca3af', fontSize: 13 }}>{card.description}</div>
+                          <div style={{ color: themeToken.colorTextSecondary, fontSize: 13 }}>
+                            {card.description}
+                          </div>
                         </div>
                         <div>{card.control}</div>
                       </div>
@@ -2386,7 +2400,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             height: 245,
             padding: '40px 40px',
             borderRadius: 10,
-            background: themeToken.colorBgLayout,
+            background: '#067EFC08',
             margin: '0 auto',
             display: 'flex',
             flexDirection: 'column',
