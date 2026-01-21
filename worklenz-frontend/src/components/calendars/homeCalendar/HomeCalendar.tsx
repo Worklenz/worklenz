@@ -4,7 +4,6 @@ import dayjs from 'dayjs';
 import { useState, useMemo } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-/* homepage calendar style override  */
 import './homeCalendar.css';
 import { setHomeTasksConfig } from '@/features/home-page/home-page.slice';
 import { useGetTaskCountsByMonthQuery } from '@/api/home-page/home-page.api.service';
@@ -17,7 +16,6 @@ const HomeCalendar = () => {
     (homeTasksConfig.selected_date || dayjs()).format('YYYY-MM')
   );
 
-  // Fetch task counts for current month
   const { data: taskCounts } = useGetTaskCountsByMonthQuery(
     {
       month: currentMonth,
@@ -29,7 +27,6 @@ const HomeCalendar = () => {
     }
   );
 
-  // Create a map for quick lookup
   const countsByDate = useMemo(() => {
     const map = new Map<string, number>();
     if (taskCounts?.body) {
@@ -53,7 +50,6 @@ const HomeCalendar = () => {
     const dateStr = value.format('YYYY-MM-DD');
     const count = countsByDate.get(dateStr);
     
-    // Get due date status and color
     const dueDateStatus = getDueDateStatus(value);
     const badgeColor = getDueDateColor(dueDateStatus) || '#1890ff';
 
