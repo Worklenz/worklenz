@@ -857,8 +857,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 'Select the workspace and list/board youÃ¢â‚¬â„¢d like to import data from. Required fields are marked with an asterisk.'
               )}
             </Typography.Paragraph>
-            <div style={{ display: 'flex', gap: 48 }}>
-              <div style={{ flex: 1, maxWidth: 400 }}>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <div style={{ width: '100%', maxWidth: 720 }}>
                 {lowerKey !== 'monday' && lowerKey !== 'jira' && (
                   <>
                     <label>{t('importStep.workspaceLabel', 'Workspace *')}</label>
@@ -969,12 +969,6 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   />
                 )}
               </div>
-              <div
-                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                {/* Illustration placeholder */}
-                <div style={{ width: 240, height: 140, background: '#23272f', borderRadius: 12 }} />
-              </div>
             </div>
           </div>
         );
@@ -982,8 +976,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       if (step === 1) {
         // Step 2: Create space
         return (
-          <div style={{ display: 'flex', gap: 48 }}>
-            <div style={{ flex: 1, maxWidth: 400 }}>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div style={{ width: '100%', maxWidth: 720 }}>
               <Typography.Title level={3}>
                 {t('importStep.setupSpaceTitle', 'Set up a space in Worklenz')}
               </Typography.Title>
@@ -1013,12 +1007,6 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               <a href="#" style={{ color: '#4096ff', fontSize: 14 }}>
                 {t('importStep.showMore', 'Show more')}
               </a>
-            </div>
-            <div
-              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              {/* Board illustration placeholder */}
-              <div style={{ width: 320, height: 180, background: '#18181a', borderRadius: 16 }} />
             </div>
           </div>
         );
@@ -2634,15 +2622,18 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       open={open}
       onCancel={onClose}
       footer={null}
-      width="1800px"
+      width={900}
       style={{
-        top: 8,
-        maxWidth: '2000px',
-        minWidth: 1500,
+        top: 124,
       }}
       styles={{
+        content: {
+          borderRadius: 20,
+          overflow: 'hidden',
+        },
         body: {
-          minHeight: '78vh',
+          minHeight: 753,
+          maxHeight: 753,
           display: 'flex',
           flexDirection: 'column',
         },
@@ -2703,7 +2694,13 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               </div>
               <div
                 className="content-footer"
-                style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 'auto' }}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: 12,
+                  marginTop: 'auto',
+                  padding: '12px 0 4px',
+                }}
               >
                 <Button
                   type="text"
