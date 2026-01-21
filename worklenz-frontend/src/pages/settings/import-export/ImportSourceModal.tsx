@@ -307,6 +307,16 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     () => fieldMappingRows.filter(row => row.include !== false).length,
     [fieldMappingRows]
   );
+
+  const modalHeight = React.useMemo(() => {
+    if (authNeeded && !authCompleted) return 399;
+    if (integrationType === 'direct') {
+      if (step === 0) return 613;
+      if (step === 1) return 632;
+      if (step === 2) return 753;
+    }
+    return 753;
+  }, [authCompleted, authNeeded, integrationType, step]);
   const hierarchyCount = React.useMemo(() => hierarchyRows.length, [hierarchyRows]);
   const hierarchyDisplayRows = React.useMemo(
     () => [...hierarchyRows].sort((a, b) => (a.position || 0) - (b.position || 0)),
@@ -2632,8 +2642,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
           overflow: 'hidden',
         },
         body: {
-          minHeight: 753,
-          maxHeight: 753,
+          minHeight: modalHeight,
+          maxHeight: modalHeight,
           display: 'flex',
           flexDirection: 'column',
         },
