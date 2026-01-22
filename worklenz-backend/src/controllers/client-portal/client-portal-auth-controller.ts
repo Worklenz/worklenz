@@ -38,6 +38,17 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
 
       const client = clientResult.rows[0];
 
+      // Check if email exists in Worklenz users table
+      let isExistingWorklenzUser = false;
+      if (client.email) {
+        const existingWorklenzUserQuery = `
+          SELECT id FROM users
+          WHERE LOWER(email) = LOWER($1) AND is_deleted = FALSE
+        `;
+        const existingWorklenzUserResult = await db.query(existingWorklenzUserQuery, [client.email]);
+        isExistingWorklenzUser = existingWorklenzUserResult.rows.length > 0;
+      }
+
       // Return client details for the frontend (similar to token-based invitation)
       return res.json(new ServerResponse(true, {
         valid: true,
@@ -47,7 +58,8 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         companyName: client.company_name,
         teamName: client.team_name,
         inviteSlug: client.invite_slug,
-        type: 'vanity_url'
+        type: 'vanity_url',
+        isExistingWorklenzUser
       }, "Invitation is valid"));
     } catch (error) {
       console.error("Error validating invitation by slug:", error);
@@ -78,6 +90,17 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
           );
       }
 
+      // Check if email exists in Worklenz users table
+      let isExistingWorklenzUser = false;
+      if (invitation.email) {
+        const existingWorklenzUserQuery = `
+          SELECT id FROM users
+          WHERE LOWER(email) = LOWER($1) AND is_deleted = FALSE
+        `;
+        const existingWorklenzUserResult = await db.query(existingWorklenzUserQuery, [invitation.email]);
+        isExistingWorklenzUser = existingWorklenzUserResult.rows.length > 0;
+      }
+
       // Return invitation details for the frontend
       return res.json(new ServerResponse(true, {
         valid: true,
@@ -91,7 +114,8 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         teamName: invitation.team_name,
         expiresAt: invitation.expires_at,
         status: invitation.status,
-        type: 'token'
+        type: 'token',
+        isExistingWorklenzUser
       }, "Invitation is valid"));
     } catch (error) {
       console.error("Error validating invitation:", error);
@@ -1402,10 +1426,49 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
 
       const [data] = result.rows;
 
-      // For linked Worklenz users (user_id is set), don't send reset email
-      // They should use the main Worklenz app for password reset
+      // For linked Worklenz users (user_id is set), send reset email using main Worklenz flow
+      // They need to reset their password on the main Worklenz app where their password is stored
       if (data?.user_id) {
-        console.log(`Password reset attempted for linked Worklenz user: ${normalizedEmail}`);
+        try {
+          // Get the Worklenz user data
+          const worklenzUserQuery = `SELECT id, email, password FROM users WHERE id = $1;`;
+          const worklenzUserResult = await db.query(worklenzUserQuery, [data.user_id]);
+
+          if (worklenzUserResult.rowCount && worklenzUserResult.rows[0].password) {
+            const worklenzUser = worklenzUserResult.rows[0];
+            const userIdBase64 = Buffer.from(worklenzUser.id, "utf8").toString("base64");
+
+            const salt = bcrypt.genSaltSync(10);
+            const hashedUserData = bcrypt.hashSync(worklenzUser.id + worklenzUser.email + worklenzUser.password, salt);
+            const hashedString = hashedUserData.toString().replace(/\//g, "-");
+
+            // Invalidate all previous unused tokens for this user
+            await db.query(
+              `UPDATE password_reset_tokens
+               SET is_used = TRUE
+               WHERE user_id = $1 AND is_used = FALSE`,
+              [worklenzUser.id]
+            );
+
+            // Store the new token in the database with 1 hour expiration
+            const expiresAt = new Date();
+            expiresAt.setHours(expiresAt.getHours() + 1);
+
+            await db.query(
+              `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+               VALUES ($1, $2, $3)`,
+              [worklenzUser.id, hashedString, expiresAt]
+            );
+
+            // Import and send the main Worklenz reset email (not client portal)
+            const { sendResetEmail } = await import("../../shared/email-templates");
+            sendResetEmail(normalizedEmail, userIdBase64, hashedString);
+          }
+        } catch (error) {
+          // Log error internally but don't expose to client
+          console.error(`Failed to send password reset email for linked Worklenz user: ${normalizedEmail}`, error);
+        }
+
         return res.status(200).json(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
       }
 
