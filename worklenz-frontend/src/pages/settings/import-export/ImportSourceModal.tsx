@@ -1461,7 +1461,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                     display: 'flex',
                     flexDirection: 'column',
                     maxHeight: 500,
-                    marginBottom: 40,
+                    marginBottom: -10,
                   }}
                 >
                   <div
