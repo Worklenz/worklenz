@@ -7,6 +7,7 @@ import {
   Card,
   Steps,
   Collapse,
+  AutoComplete,
   Select,
   Input,
   Tooltip,
@@ -308,13 +309,18 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     [fieldMappingRows]
   );
 
-  const modalDims = React.useMemo(
-    () =>
-      integrationType === 'csv'
-        ? { width: 1400, height: 820, stepperMaxWidth: 1120 }
-        : { width: 900, height: 753, stepperMaxWidth: 820 },
-    [integrationType]
-  );
+  const modalDims = React.useMemo(() => {
+    if (integrationType === 'csv') {
+      const isReviewStep = step === 5; // step index 5 = "Review details" in CSV flow
+      return {
+        width: 1180,
+        height: isReviewStep ? 900 : 820,
+        stepperMaxWidth: 1120,
+      };
+    }
+
+    return { width: 900, height: 753, stepperMaxWidth: 820 };
+  }, [integrationType, step]);
   const hierarchyCount = React.useMemo(() => hierarchyRows.length, [hierarchyRows]);
   const hierarchyDisplayRows = React.useMemo(
     () => [...hierarchyRows].sort((a, b) => (a.position || 0) - (b.position || 0)),
@@ -2016,19 +2022,17 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   >
                     <span style={{ flex: 2, paddingLeft: 8, color: '#fff' }}>{col}</span>
                     <span style={{ flex: 2 }}>
-                      <Select
-                        placeholder="Select a field to map"
+                      <AutoComplete
+                        placeholder="Select or type a field to map"
                         style={{ width: '100%' }}
-                        showSearch
-                        value={fieldMappings[col] || undefined}
+                        value={fieldMappings[col] || ''}
                         onChange={val => setFieldMappings(m => ({ ...m, [col]: val }))}
-                      >
-                        {worklenzFieldOptions.map(option => (
-                          <Select.Option key={option.value} value={option.value}>
-                            {option.label}
-                          </Select.Option>
-                        ))}
-                      </Select>
+                        options={worklenzFieldOptions}
+                        allowClear
+                        filterOption={(inputValue, option) =>
+                          option?.label?.toLowerCase().includes(inputValue.toLowerCase()) || false
+                        }
+                      />
                     </span>
                     <span style={{ width: 140, textAlign: 'center' }}>
                       <input
@@ -2812,7 +2816,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       footer={null}
       width={modalDims.width}
       style={{
-        top: 124,
+        top: 40,
       }}
       styles={{
         content: {
