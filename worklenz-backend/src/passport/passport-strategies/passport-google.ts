@@ -1,9 +1,9 @@
 import GoogleStrategy from "passport-google-oauth20";
-import {sendWelcomeEmail} from "../../shared/email-templates";
-import {log_error} from "../../shared/utils";
+import { sendWelcomeEmail } from "../../shared/email-templates";
+import { log_error } from "../../shared/utils";
 import db from "../../config/db";
-import {ERROR_KEY} from "./passport-constants";
-import {Request} from "express";
+import { ERROR_KEY } from "./passport-constants";
+import { Request } from "express";
 
 async function handleGoogleLogin(req: Request, _accessToken: string, _refreshToken: string, profile: GoogleStrategy.Profile, done: GoogleStrategy.VerifyCallback) {
   try {
@@ -20,8 +20,8 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
 
     const q1 = `SELECT id, google_id, name, email, active_team
                 FROM users
-                WHERE google_id = $1
-                   OR email = $2;`;
+                WHERE (google_id = $1 OR email = $2)
+                  AND is_deleted = FALSE;`;
     const result1 = await db.query(q1, [body.id, body.email]);
 
     if (result1.rowCount) { // Login
@@ -46,17 +46,17 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
 
       if (user)
         return done(null, user);
-      
+
       return done(null, false, { message: "User not found" });
     }
-    
+
     // Register
     const q2 = `SELECT register_google_user($1) AS user;`;
     const result2 = await db.query(q2, [JSON.stringify(body)]);
     const [data] = result2.rows;
 
     sendWelcomeEmail(data.user.email, body.displayName);
-    return done(null, data.user, {message: "User successfully logged in"});
+    return done(null, data.user, { message: "User successfully logged in" });
   } catch (error: any) {
     return done(error);
   }
@@ -67,9 +67,9 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
  * http://www.passportjs.org/packages/passport-google-oauth20/
  */
 export default new GoogleStrategy.Strategy({
-    clientID: process.env.GOOGLE_CLIENT_ID as string,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL as string,
-    passReqToCallback: true
-  },
+  clientID: process.env.GOOGLE_CLIENT_ID as string,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+  callbackURL: process.env.GOOGLE_CALLBACK_URL as string,
+  passReqToCallback: true
+},
   (req, _accessToken, _refreshToken, profile, done) => void handleGoogleLogin(req, _accessToken, _refreshToken, profile, done));

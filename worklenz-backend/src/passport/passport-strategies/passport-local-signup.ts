@@ -1,13 +1,13 @@
 import bcrypt from "bcrypt";
-import {Strategy as LocalStrategy} from "passport-local";
+import { Strategy as LocalStrategy } from "passport-local";
 
-import {DEFAULT_ERROR_MESSAGE} from "../../shared/constants";
-import {sendWelcomeEmail} from "../../shared/email-templates";
-import {log_error, sanitizePlainText} from "../../shared/utils";
+import { DEFAULT_ERROR_MESSAGE } from "../../shared/constants";
+import { sendWelcomeEmail } from "../../shared/email-templates";
+import { log_error, sanitizePlainText } from "../../shared/utils";
 
 import db from "../../config/db";
-import {Request} from "express";
-import {ERROR_KEY, SUCCESS_KEY} from "./passport-constants";
+import { Request } from "express";
+import { ERROR_KEY, SUCCESS_KEY } from "./passport-constants";
 
 async function isGoogleAccountFound(email: string) {
   const q = `
@@ -56,7 +56,7 @@ async function registerUser(password: string, team_id: string, name: string, tea
 async function handleSignUp(req: Request, email: string, password: string, done: any) {
   (req.session as any).flash = {};
   // team = Invited team_id if req.body.from_invitation is true
-  const {name, team_name, team_member_id, team_id, timezone} = req.body;
+  const { name, team_name, team_member_id, team_id, timezone } = req.body;
 
   if (!team_name) return done(null, null, req.flash(ERROR_KEY, "Team name is required"));
 

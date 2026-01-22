@@ -39,9 +39,17 @@ export default class ReportingAllTasksController extends ReportingControllerBase
     const teamId = req.user?.team_id;
     const userId = req.user?.id;
 
-    // Base team filter
-    values.push(teamId);
-    clauses.push(`t.project_id IN (SELECT id FROM projects WHERE team_id = $${values.length})`);
+    // Teams filter - if specific teams are selected, use those; otherwise use current team
+    if (body.teams && body.teams.length > 0) {
+      // User has selected specific teams, use only those
+      const { clause, params } = SqlHelper.buildInClause(body.teams, values.length + 1);
+      clauses.push(`t.project_id IN (SELECT id FROM projects WHERE team_id IN (${clause}))`);
+      values.push(...params);
+    } else {
+      // No specific teams selected, fall back to current user's team
+      values.push(teamId);
+      clauses.push(`t.project_id IN (SELECT id FROM projects WHERE team_id = $${values.length})`);
+    }
 
     // Archived filter
     if (!body.includeArchived) {
@@ -52,13 +60,6 @@ export default class ReportingAllTasksController extends ReportingControllerBase
     // Subtasks filter
     if (!body.includeSubtasks) {
       clauses.push(`t.parent_task_id IS NULL`);
-    }
-
-    // Teams filter
-    if (body.teams && body.teams.length > 0) {
-      const { clause, params } = SqlHelper.buildInClause(body.teams, values.length + 1);
-      clauses.push(`t.project_id IN (SELECT id FROM projects WHERE team_id IN (${clause}))`);
-      values.push(...params);
     }
 
     // Projects filter

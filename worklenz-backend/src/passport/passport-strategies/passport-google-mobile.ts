@@ -61,9 +61,9 @@ async function handleMobileGoogleAuth(req: Request, done: any) {
 
     const normalizedEmail = profile.email.toLowerCase().trim();
 
-    // Check if user exists
+    // Check if user exists (exclude deleted accounts)
     const userResult = await db.query(
-      "SELECT id, google_id, name, email, active_team FROM users WHERE google_id = $1 OR LOWER(email) = $2;",
+      "SELECT id, google_id, name, email, active_team FROM users WHERE (google_id = $1 OR LOWER(email) = $2) AND is_deleted = FALSE;",
       [profile.sub, normalizedEmail]
     );
 
@@ -107,52 +107,52 @@ async function handleMobileGoogleAuth(req: Request, done: any) {
         message: "Team name is required for registration",
         [ERROR_KEY]: "TEAM_NAME_REQUIRED"
       });
-    }
+    } else {
+      // New user - register
+      const googleUserData = {
+        id: profile.sub,
+        displayName: profile.name,
+        email: normalizedEmail,
+        picture: profile.picture,
+        team_name: team_name.trim(),
+        timezone: timezone || "UTC"
+      };
 
-    // Register new user
-    const googleUserData = {
-      id: profile.sub,
-      displayName: profile.name,
-      email: normalizedEmail,
-      picture: profile.picture,
-      team_name: team_name.trim(),
-      timezone: timezone || "UTC"
-    };
+      try {
+        const registerResult = await db.query(
+          "SELECT register_google_user($1) AS user;",
+          [JSON.stringify(googleUserData)]
+        );
+        const { user } = registerResult.rows[0];
 
-    try {
-      const registerResult = await db.query(
-        "SELECT register_google_user($1) AS user;",
-        [JSON.stringify(googleUserData)]
-      );
-      const { user } = registerResult.rows[0];
+        return done(null, user, {
+          message: "User successfully registered and logged in",
+        });
+      } catch (error: any) {
+        log_error(error);
 
-      return done(null, user, {
-        message: "User successfully registered and logged in",
-      });
-    } catch (error: any) {
-      log_error(error);
-      
-      // Handle specific database errors
-      if (error.message?.includes("EMAIL_EXISTS_ERROR")) {
+        // Handle specific database errors
+        if (error.message?.includes("EMAIL_EXISTS_ERROR")) {
+          return done(null, false, {
+            message: `An account with email ${profile.email} already exists.`,
+            [ERROR_KEY]: "EMAIL_EXISTS"
+          });
+        }
+
+        if (error.message?.includes("TEAM_NAME_EXISTS_ERROR")) {
+          const [, teamName] = error.message.split(":");
+          return done(null, false, {
+            message: `Team name "${teamName}" already exists. Please choose a different team name.`,
+            [ERROR_KEY]: "TEAM_NAME_EXISTS"
+          });
+        }
+
+        // Generic error
         return done(null, false, {
-          message: `An account with email ${profile.email} already exists.`,
-          [ERROR_KEY]: "EMAIL_EXISTS"
+          message: "Registration failed. Please try again.",
+          [ERROR_KEY]: "REGISTRATION_FAILED"
         });
       }
-
-      if (error.message?.includes("TEAM_NAME_EXISTS_ERROR")) {
-        const [, teamName] = error.message.split(":");
-        return done(null, false, {
-          message: `Team name "${teamName}" already exists. Please choose a different team name.`,
-          [ERROR_KEY]: "TEAM_NAME_EXISTS"
-        });
-      }
-
-      // Generic error
-      return done(null, false, {
-        message: "Registration failed. Please try again.",
-        [ERROR_KEY]: "REGISTRATION_FAILED"
-      });
     }
   } catch (error: any) {
     log_error(error);
