@@ -231,7 +231,7 @@ const DayAllocationCell = ({
           {/* Capacity display */}
           {isInteractive && (
             <>
-              <span
+              {/* <span
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -242,10 +242,10 @@ const DayAllocationCell = ({
                 }}
               >
                 {effectiveData.utilization_percent.toFixed(0)}%
-              </span>
+              </span> */}
               <span
                 style={{
-                  fontSize: '9px',
+                  fontSize: '12px',
                   opacity: 0.7,
                   color: colors.text,
                 }}

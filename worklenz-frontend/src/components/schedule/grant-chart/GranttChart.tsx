@@ -237,12 +237,6 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
 
   return (
     <>
-      {/* Capacity Conflicts Alert */}
-      <CapacityConflictsAlert
-        startDate={formattedDate}
-        endDate={calculateEndDate}
-      />
-      
       {/* Refetching overlay */}
       {isRefetching && !loading && (
         <div
@@ -503,6 +497,11 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
         </Flex>
       </div>
     </div>
+    {/* Capacity Conflicts Alert */}
+      {/* <CapacityConflictsAlert
+        startDate={formattedDate}
+        endDate={calculateEndDate}
+      /> */}
     </>
   );
 });
