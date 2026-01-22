@@ -113,7 +113,7 @@ const ensureRequiredTargets = (rows: FieldMappingRow[]): FieldMappingRow[] => {
   const presentTargets = new Set(
     rows
       .filter((row) => !!row.target_field)
-      .map((row) => row.target_field.toLowerCase())
+      .map((row) => row.target_field.toLowerCase()),
   );
   REQUIRED_TARGET_MAPPINGS.forEach(({ target, fallbackSource }) => {
     if (!presentTargets.has(target.toLowerCase())) {
@@ -173,33 +173,86 @@ export default class ImportsController {
         sourceReference,
       });
       return res.status(200).send(new ServerResponse(true, job));
-    }
+    },
   );
 
   static setSource = safeControllerFunction(
     async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
       const userId = this.getUserId(req);
       const job = await this.assertJob(req.params.jobId, userId);
-      const { workspaceId, projectId, projectKey, projectName, token } = req.body || {};
+      const {
+        workspaceId,
+        projectId,
+        projectKey,
+        projectName,
+        token,
+        key,
+        boardId,
+        boardName,
+      } = req.body || {};
 
       // DEBUG: Log what we received
-     console.log("[setSource DEBUG] Received payload:", {
-      workspaceId,
-      projectId,
-      projectKey,
-      projectName,
-      hasToken: !!token
-     });
-     console.log("[setSource DEBUG] Provider:", job.provider);
+      console.log("[setSource DEBUG] Received payload:", {
+        workspaceId,
+        projectId,
+        projectKey,
+        projectName,
+        boardId,
+        boardName,
+        hasToken: !!token,
+        hasKey: !!key,
+      });
+      console.log("[setSource DEBUG] Provider:", job.provider);
+
+      const providerKey = (job.provider || "asana").toLowerCase();
+      const ref = (job.source_reference as any) || {};
+
+      if (providerKey === "trello") {
+        if (!boardId)
+          throw createHttpError(
+            400,
+            "boardId is required for source selection",
+          );
+
+        const sourcePatch = {
+          source: {
+            ...(ref.source || {}),
+            [providerKey]: {
+              ...(ref.source?.[providerKey] || {}),
+              boardId,
+              boardName: boardName || null,
+            },
+          },
+        } as Record<string, unknown>;
+
+        const authPatch =
+          key || token
+            ? {
+                auth: {
+                  ...(ref.auth || {}),
+                  [providerKey]: {
+                    ...(ref.auth?.[providerKey] || {}),
+                    key: key || ref.auth?.[providerKey]?.key || null,
+                    access_token:
+                      token || ref.auth?.[providerKey]?.access_token || null,
+                  },
+                },
+              }
+            : {};
+
+        await ImportsService.mergeSourceReference(job.id, {
+          ...sourcePatch,
+          ...authPatch,
+        });
+        const updated = await ImportsService.getJob(job.id);
+        return res.status(200).send(new ServerResponse(true, updated));
+      }
 
       if (!projectId && !projectKey)
         throw createHttpError(
           400,
-          "projectId is required for source selection"
+          "projectId is required for source selection",
         );
-
-      const providerKey = (job.provider || "asana").toLowerCase();
-      const ref = (job.source_reference as any) || {};
 
       const resolvedProjectId = projectId || projectKey;
       const resolvedProjectKey = projectKey || projectId;
@@ -235,7 +288,7 @@ export default class ImportsController {
       });
       const updated = await ImportsService.getJob(job.id);
       return res.status(200).send(new ServerResponse(true, updated));
-    }
+    },
   );
 
   static setTarget = safeControllerFunction(
@@ -251,11 +304,11 @@ export default class ImportsController {
         job.id,
         targetProjectId,
         targetSpaceType,
-        targetTemplate
+        targetTemplate,
       );
       const updated = await ImportsService.getJob(job.id);
       return res.status(200).send(new ServerResponse(true, updated));
-    }
+    },
   );
 
   static get = safeControllerFunction(
@@ -263,7 +316,7 @@ export default class ImportsController {
       const job = await ImportsService.getJob(req.params.jobId);
       if (!job) throw createHttpError(404, "Import job not found");
       return res.status(200).send(new ServerResponse(true, job));
-    }
+    },
   );
 
   static autoHierarchy = safeControllerFunction(
@@ -285,7 +338,7 @@ export default class ImportsController {
             "Asana auto hierarchy failed",
             {
               error: (err as any)?.message,
-            }
+            },
           );
         }
       } else if (providerKey === "jira") {
@@ -299,14 +352,14 @@ export default class ImportsController {
             "JIRA auto hierarchy failed",
             {
               error: (err as any)?.message,
-            }
+            },
           );
         }
       }
 
       await ImportsService.upsertHierarchy(jobId, rows);
       return res.status(200).send(new ServerResponse(true, rows));
-    }
+    },
   );
 
   static autoFields = safeControllerFunction(
@@ -328,7 +381,7 @@ export default class ImportsController {
             "Asana auto fields failed",
             {
               error: (err as any)?.message,
-            }
+            },
           );
         }
       } else if (providerKey === "jira") {
@@ -342,7 +395,7 @@ export default class ImportsController {
             "JIRA auto fields failed",
             {
               error: (err as any)?.message,
-            }
+            },
           );
         }
       }
@@ -350,7 +403,7 @@ export default class ImportsController {
       rows = ensureRequiredTargets(rows);
       await ImportsService.upsertFields(jobId, rows);
       return res.status(200).send(new ServerResponse(true, rows));
-    }
+    },
   );
 
   static saveFields = safeControllerFunction(
@@ -363,7 +416,7 @@ export default class ImportsController {
       if (!job) throw createHttpError(404, "Import job not found");
       await ImportsService.upsertFields(jobId, rows);
       return res.status(200).send(new ServerResponse(true, rows));
-    }
+    },
   );
 
   static saveHierarchy = safeControllerFunction(
@@ -375,7 +428,7 @@ export default class ImportsController {
         throw createHttpError(400, "hierarchy must be array");
       await ImportsService.upsertHierarchy(job.id, rows);
       return res.status(200).send(new ServerResponse(true, rows));
-    }
+    },
   );
 
   static saveValueMappings = safeControllerFunction(
@@ -387,7 +440,7 @@ export default class ImportsController {
         throw createHttpError(400, "values must be array");
       await ImportsService.upsertValueMappings(job.id, rows);
       return res.status(200).send(new ServerResponse(true, rows));
-    }
+    },
   );
 
   static saveUserMappings = safeControllerFunction(
@@ -399,7 +452,7 @@ export default class ImportsController {
         throw createHttpError(400, "users must be array");
       await ImportsService.upsertUserMappings(job.id, rows);
       return res.status(200).send(new ServerResponse(true, rows));
-    }
+    },
   );
 
   static saveAttachments = safeControllerFunction(
@@ -411,7 +464,7 @@ export default class ImportsController {
         throw createHttpError(400, "attachments must be array");
       await ImportsService.upsertAttachmentPlans(job.id, rows);
       return res.status(200).send(new ServerResponse(true, rows));
-    }
+    },
   );
 
   static saveStageTasks = safeControllerFunction(
@@ -423,7 +476,7 @@ export default class ImportsController {
         throw createHttpError(400, "tasks must be array");
       await ImportsService.upsertStageTasks(job.id, rows);
       return res.status(200).send(new ServerResponse(true, rows));
-    }
+    },
   );
 
   static listStageTasks = safeControllerFunction(
@@ -432,7 +485,7 @@ export default class ImportsController {
       const job = await this.assertJob(req.params.jobId, userId);
       const tasks = await ImportsService.listStageTasks(job.id);
       return res.status(200).send(new ServerResponse(true, tasks));
-    }
+    },
   );
 
   static progress = safeControllerFunction(
@@ -441,7 +494,7 @@ export default class ImportsController {
       const job = await this.assertJob(req.params.jobId, userId);
       const data = await ImportsService.progress(job.id);
       return res.status(200).send(new ServerResponse(true, data));
-    }
+    },
   );
 
   static ingest = safeControllerFunction(
@@ -454,7 +507,7 @@ export default class ImportsController {
       return res
         .status(200)
         .send(new ServerResponse(true, { ...data, ingest: result }));
-    }
+    },
   );
 
   static logs = safeControllerFunction(
@@ -463,7 +516,7 @@ export default class ImportsController {
       const job = await this.assertJob(req.params.jobId, userId);
       const logs = await ImportsService.listLogs(job.id);
       return res.status(200).send(new ServerResponse(true, logs));
-    }
+    },
   );
 
   static commit = safeControllerFunction(
@@ -473,7 +526,7 @@ export default class ImportsController {
       await ImportsService.commit(job.id);
       const data = await ImportsService.progress(job.id);
       return res.status(200).send(new ServerResponse(true, data));
-    }
+    },
   );
 
   static cancel = safeControllerFunction(
@@ -483,7 +536,7 @@ export default class ImportsController {
       await ImportsService.cancel(job.id, req.body?.message);
       const data = await ImportsService.progress(job.id);
       return res.status(200).send(new ServerResponse(true, data));
-    }
+    },
   );
 
   // --- Auth flows ---
@@ -506,7 +559,7 @@ export default class ImportsController {
         process.env.ASANA_PKCE_ENABLED !== "false";
       const codeChallenge = pkceEnabled
         ? base64UrlEncode(
-            crypto.createHash("sha256").update(codeVerifier).digest()
+            crypto.createHash("sha256").update(codeVerifier).digest(),
           )
         : undefined;
 
@@ -530,7 +583,7 @@ export default class ImportsController {
 
       const authUrl = `https://app.asana.com/-/oauth_authorize?${params.toString()}`;
       return res.status(200).send(new ServerResponse(true, { authUrl, state }));
-    }
+    },
   );
 
   static asanaCallback = safeControllerFunction(async (req, res) => {
@@ -580,7 +633,7 @@ export default class ImportsController {
         `<html><body style="font-family: Arial, sans-serif; padding: 24px;">
              <h2>Asana already connected</h2>
              <p>This import job already has Asana credentials. You can close this window and return to Worklenz.</p>
-           </body></html>`
+           </body></html>`,
       );
     }
 
@@ -590,14 +643,14 @@ export default class ImportsController {
         return res
           .status(202)
           .send(
-            new ServerResponse(true, { message: "authorization_in_progress" })
+            new ServerResponse(true, { message: "authorization_in_progress" }),
           );
       }
       return res.status(200).send(
         `<html><body style="font-family: Arial, sans-serif; padding: 24px;">
              <h2>Authorization in progress</h2>
              <p>The authorization is currently being processed. Please close this window and return to Worklenz — it will update automatically shortly.</p>
-           </body></html>`
+           </body></html>`,
       );
     }
 
@@ -619,7 +672,7 @@ export default class ImportsController {
         body.toString(),
         {
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        }
+        },
       );
     } catch (err: any) {
       const status = err?.response?.status;
@@ -630,14 +683,14 @@ export default class ImportsController {
           return res.status(400).send(
             new ServerResponse(false, {
               message: "authorization_code_invalid_or_used",
-            })
+            }),
           );
         }
         return res.status(200).send(
           `<html><body style="font-family: Arial, sans-serif; padding: 24px;">
                <h2>Authorization failed</h2>
                <p>The authorization code appears to be invalid or already used. Please close this window and retry the "Connect" flow from Worklenz (create a fresh import job and click Connect).</p>
-             </body></html>`
+             </body></html>`,
         );
       }
       throw err;
@@ -663,7 +716,7 @@ export default class ImportsController {
         `<html><body style="font-family: Arial, sans-serif; padding: 24px;">
              <h2>Asana already connected</h2>
              <p>This import job already has Asana credentials. You can close this window and return to Worklenz.</p>
-           </body></html>`
+           </body></html>`,
       );
     }
 
@@ -673,7 +726,7 @@ export default class ImportsController {
       {
         headers: authHeader,
         params: { limit: 100 },
-      }
+      },
     );
     const workspaces = (workspacesResp.data?.data || []).map((w: any) => ({
       id: w.gid,
@@ -686,7 +739,7 @@ export default class ImportsController {
       try {
         const pResp = await axios.get(
           `https://app.asana.com/api/1.0/workspaces/${ws.id}/projects`,
-          { headers: authHeader, params: { limit: 50 } }
+          { headers: authHeader, params: { limit: 50 } },
         );
         (pResp.data?.data || []).forEach((p: any) => {
           projects.push({ id: p.gid, name: p.name, workspaceId: ws.id });
@@ -699,7 +752,7 @@ export default class ImportsController {
           {
             workspaceId: ws.id,
             error: (err as any)?.message,
-          }
+          },
         );
       }
     }
@@ -731,7 +784,7 @@ export default class ImportsController {
       `<html><body style="font-family: Arial, sans-serif; padding: 24px;">
            <h2>Asana connected</h2>
            <p>You can close this window and return to Worklenz.</p>
-         </body></html>`
+         </body></html>`,
     );
   });
 
@@ -748,7 +801,7 @@ export default class ImportsController {
         { query },
         {
           headers: { "Content-Type": "application/json", Authorization: token },
-        }
+        },
       );
 
       const boards = (data?.data?.boards || []).map((b: any) => ({
@@ -766,7 +819,7 @@ export default class ImportsController {
       return res
         .status(200)
         .send(new ServerResponse(true, { authorized: true, boards }));
-    }
+    },
   );
 
   static clickupWorkspaces = safeControllerFunction(
@@ -801,7 +854,7 @@ export default class ImportsController {
         try {
           const spacesResp = await axios.get(
             `https://api.clickup.com/api/v2/team/${teamItem.id}/space`,
-            { headers: authHeader, params: { archived: false } }
+            { headers: authHeader, params: { archived: false } },
           );
           const spacesRaw = spacesResp.data?.spaces || [];
           for (const s of spacesRaw.slice(0, 5)) {
@@ -813,7 +866,7 @@ export default class ImportsController {
             try {
               const listsResp = await axios.get(
                 `https://api.clickup.com/api/v2/space/${space.id}/list`,
-                { headers: authHeader, params: { archived: false } }
+                { headers: authHeader, params: { archived: false } },
               );
               const listsRaw = listsResp.data?.lists || [];
               space.lists = listsRaw
@@ -827,7 +880,7 @@ export default class ImportsController {
                 {
                   spaceId: space.id,
                   error: (err as any)?.message,
-                }
+                },
               );
             }
             teamItem.spaces.push(space);
@@ -840,7 +893,7 @@ export default class ImportsController {
             {
               teamId: teamItem.id,
               error: (err as any)?.message,
-            }
+            },
           );
         }
         teams.push(teamItem);
@@ -856,7 +909,61 @@ export default class ImportsController {
       return res
         .status(200)
         .send(new ServerResponse(true, { authorized: true, teams }));
-    }
+    },
+  );
+
+  static trelloValidate = safeControllerFunction(
+    async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+      const userId = this.getUserId(req);
+      const job = await this.assertJob(req.params.jobId, userId);
+
+      const key = (req.body?.key as string | undefined)?.trim() || "";
+      const token = (req.body?.token as string | undefined)?.trim() || "";
+      if (!key) throw createHttpError(400, "key is required");
+      if (!token) throw createHttpError(400, "token is required");
+
+      let boards: Array<{ id: string; name: string; url?: string }> = [];
+      try {
+        const boardsResp = await axios.get(
+          "https://api.trello.com/1/members/me/boards",
+          {
+            params: { key, token, fields: "name,url,shortUrl,closed" },
+          },
+        );
+
+        boards = (boardsResp.data || [])
+          .filter((b: any) => b && b.id && b.name && b.closed !== true)
+          .map((b: any) => ({
+            id: b.id?.toString?.() || "",
+            name: b.name,
+            url: b.url || b.shortUrl || "",
+          }));
+      } catch (err) {
+        await ImportsService.appendLog(
+          job.id,
+          "warn",
+          "Trello boards fetch failed",
+          {
+            error: (err as any)?.message,
+          },
+        );
+        throw createHttpError(
+          401,
+          "Invalid Trello credentials. Please check your key and token.",
+        );
+      }
+
+      await ImportsService.mergeSourceReference(job.id, {
+        auth: {
+          ...(job.source_reference as any)?.auth,
+          trello: { key, token, boards },
+        },
+      });
+
+      return res
+        .status(200)
+        .send(new ServerResponse(true, { authorized: true, boards }));
+    },
   );
 
   static jiraValidate = safeControllerFunction(
@@ -871,7 +978,7 @@ export default class ImportsController {
         .split("\n")
         .filter(
           (line) =>
-            !line.trim().startsWith("#") && !line.trim().startsWith("//")
+            !line.trim().startsWith("#") && !line.trim().startsWith("//"),
         )
         .join("")
         .trim();
@@ -899,16 +1006,16 @@ export default class ImportsController {
         console.log("[JIRA DEBUG] token length:", token.length);
         console.log(
           "[JIRA DEBUG] token first 10 chars:",
-          token.substring(0, 10)
+          token.substring(0, 10),
         );
         console.log(
           "[JIRA DEBUG] token last 10 chars:",
-          token.substring(token.length - 10)
+          token.substring(token.length - 10),
         );
         console.log("[JIRA DEBUG] auth string length:", authString.length);
         console.log(
           "[JIRA DEBUG] Authorization header:",
-          authHeader.Authorization.substring(0, 20) + "..."
+          authHeader.Authorization.substring(0, 20) + "...",
         );
         const response = await axios.get(`${baseUrl}/rest/api/3/myself`, {
           headers: authHeader,
@@ -926,12 +1033,12 @@ export default class ImportsController {
         if (status === 401 || status === 403) {
           throw createHttpError(
             401,
-            "Invalid JIRA credentials. Please check your email, API token, and domain."
+            "Invalid JIRA credentials. Please check your email, API token, and domain.",
           );
         }
         throw createHttpError(
           500,
-          `Failed to connect to JIRA: ${err?.message || "Unknown error"}`
+          `Failed to connect to JIRA: ${err?.message || "Unknown error"}`,
         );
       }
 
@@ -943,7 +1050,7 @@ export default class ImportsController {
           {
             headers: authHeader,
             params: { maxResults: 100 },
-          }
+          },
         );
         projects = (projectsResp.data?.values || []).map((p: any) => ({
           key: p.key,
@@ -956,7 +1063,7 @@ export default class ImportsController {
           "JIRA projects fetch failed",
           {
             error: (err as any)?.message,
-          }
+          },
         );
       }
 
@@ -976,6 +1083,6 @@ export default class ImportsController {
       return res
         .status(200)
         .send(new ServerResponse(true, { authorized: true, projects }));
-    }
+    },
   );
 }

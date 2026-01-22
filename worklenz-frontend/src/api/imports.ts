@@ -57,6 +57,14 @@ export const clickupWorkspaces = async (jobId: string, token: string) => {
   };
 };
 
+export const trelloValidate = async (jobId: string, payload: { key: string; token: string }) => {
+  const { data } = await apiClient.post(`/api/v1/imports/${jobId}/auth/trello/validate`, payload);
+  return data?.body as {
+    authorized: boolean;
+    boards: Array<{ id: string; name: string; url?: string }>;
+  };
+};
+
 export const jiraValidate = async (
   jobId: string,
   payload: { token: string; email: string; domain: string }
@@ -96,9 +104,12 @@ export const updateImportSource = async (
   payload: {
     workspaceId?: string | null;
     projectId?: string;
-    projectKey?: string; 
+    projectKey?: string;
     projectName?: string | null;
     token?: string;
+    key?: string;
+    boardId?: string | null;
+    boardName?: string | null;
   }
 ) => {
   const { data } = await apiClient.post(`/api/v1/imports/${jobId}/source`, payload);

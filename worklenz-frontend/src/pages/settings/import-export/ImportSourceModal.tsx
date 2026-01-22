@@ -35,6 +35,7 @@ import {
   getImportJob,
   commitImportJob,
   ingestImportJob,
+  trelloValidate,
   jiraValidate,
   mondayValidate,
   updateImportTarget,
@@ -77,7 +78,15 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     'jira-software',
     'jira-business',
   ];
-  const authGateApps = ['asana', 'monday', 'clickup', 'jira', 'jira-software', 'jira-business'];
+  const authGateApps = [
+    'asana',
+    'monday',
+    'clickup',
+    'trello',
+    'jira',
+    'jira-software',
+    'jira-business',
+  ];
   const lowerKey = source.key.toLowerCase();
   const isJira =
     lowerKey === 'jira' || lowerKey === 'jira-software' || lowerKey === 'jira-business';
@@ -99,6 +108,10 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     Array<{ id: string; name: string; workspaceId?: string }>
   >([]);
   const [mondayBoards, setMondayBoards] = React.useState<Array<{ id: string; name: string }>>([]);
+  const [trelloBoards, setTrelloBoards] = React.useState<Array<{ id: string; name: string }>>([]);
+  const [trelloKey, setTrelloKey] = React.useState('');
+  const [trelloToken, setTrelloToken] = React.useState('');
+  const [selectedTrelloBoard, setSelectedTrelloBoard] = React.useState('');
   const [clickupTeams, setClickupTeams] = React.useState<
     Array<{
       id: string;
@@ -130,13 +143,17 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     setSelectedWorkspace('');
     setSelectedProject('');
     setSelectedBoard('');
+    setSelectedTrelloBoard('');
     setSelectedClickupSpace('');
     setSelectedClickupList('');
     setAsanaProjects([]);
     setAsanaWorkspaces([]);
     setMondayBoards([]);
+    setTrelloBoards([]);
     setClickupTeams([]);
     setClickupToken('');
+    setTrelloKey('');
+    setTrelloToken('');
     setAuthError(null);
     setShowCompletion(false);
     setCsvText('');
@@ -630,6 +647,106 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         return;
       }
 
+      if (lowerKey === 'trello') {
+        if (!selectedTrelloBoard) {
+          message.error(
+            t('importStep.trelloBoardRequired', 'Please select a Trello board before importing.')
+          );
+          return;
+        }
+        if (!job?.id) {
+          message.error(t('importStep.importError', 'Import failed. Please try again.'));
+          return;
+        }
+
+        setIsImporting(true);
+        try {
+          const statusId = await ensureDefaultProjectStatusId();
+          const projectPayload: IProjectViewModel = {
+            name: spaceName.trim(),
+            color_code: '#2563eb',
+            status_id: statusId,
+            category_id: null,
+            health_id: null,
+            notes: '',
+            working_days: 0,
+            man_days: 0,
+            hours_per_day: 0,
+            use_manual_progress: false,
+            use_weighted_progress: false,
+            use_time_progress: false,
+          };
+
+          const projectResp = await projectsApiService.createProject(projectPayload);
+          const projectId = projectResp?.body?.id;
+          if (!projectResp?.done || !projectId) {
+            throw new Error(
+              projectResp?.message || t('importStep.projectCreateError', 'Failed to create project')
+            );
+          }
+
+          await updateImportTarget(job.id, {
+            targetProjectId: projectId,
+            targetSpaceType: spaceType,
+            targetTemplate: spaceTemplate,
+          });
+
+          const boardName = trelloBoards.find(b => b.id === selectedTrelloBoard)?.name || null;
+          await updateImportSource(job.id, {
+            boardId: selectedTrelloBoard,
+            boardName,
+          });
+
+          if (!fieldMappingRows.length || !hierarchyRows.length) {
+            await runAutoMapping(true);
+          }
+
+          if (fieldMappingRows.length) {
+            await saveImportFields(job.id, fieldMappingRows as any);
+          }
+
+          const trelloAuth = (job as any)?.source_reference?.auth?.trello || {};
+          const resolvedKey = trelloKey.trim() || trelloAuth?.key;
+          const resolvedToken = trelloToken.trim() || trelloAuth?.token || trelloAuth?.access_token;
+
+          if (!resolvedKey || !resolvedToken) {
+            throw new Error(
+              t(
+                'importStep.trelloCredentialsMissing',
+                'Missing Trello credentials. Please reconnect and try again.'
+              )
+            );
+          }
+
+          await ingestImportJob(job.id, {
+            sourceReference: {
+              provider: lowerKey,
+              key: resolvedKey,
+              token: resolvedToken,
+              boardId: selectedTrelloBoard,
+              boardName,
+            },
+          });
+
+          const commitProgress = await commitImportJob(job.id);
+          if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
+
+          setShowCompletion(false);
+          message.success(
+            t('importStep.importStarted', 'Import started. We will notify once ready.')
+          );
+          onClose();
+        } catch (err: any) {
+          message.error(
+            err?.message || t('importStep.importError', 'Import failed. Please try again.')
+          );
+        } finally {
+          setIsImporting(false);
+        }
+
+        return;
+      }
+
       setShowCompletion(false);
       onClose();
       return;
@@ -790,6 +907,41 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     }
   };
 
+  const handleTrelloValidate = async () => {
+    if (!job || !trelloKey.trim() || !trelloToken.trim()) return;
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      const resp = await trelloValidate(job.id, {
+        key: trelloKey.trim(),
+        token: trelloToken.trim(),
+      });
+      const boards = resp.boards || [];
+      setTrelloBoards(boards);
+      const firstBoardId = boards?.[0]?.id || '';
+      setSelectedTrelloBoard(firstBoardId);
+      if (firstBoardId) {
+        try {
+          await updateImportSource(job.id, {
+            boardId: firstBoardId,
+            boardName: boards?.[0]?.name || '',
+            key: trelloKey.trim(),
+            token: trelloToken.trim(),
+          });
+        } catch (err) {
+          // best-effort persistence
+        }
+      }
+      setAuthCompleted(true);
+      setAuthError(null);
+      message.success(t('auth.success', 'Connected'));
+    } catch (err: any) {
+      setAuthError(err?.message || t('auth.error', 'Connection failed. Please try again.'));
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   const handleClickupValidate = async () => {
     if (!job || !clickupToken.trim()) return;
     setAuthLoading(true);
@@ -856,7 +1008,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               ? clickupTeams.flatMap(team =>
                   team.spaces.map(space => ({
                     value: space.id,
-                    label: `${team.name} Ã¢â‚¬Â¢ ${space.name}`,
+                    label: `${team.name} â€¢ ${space.name}`,
                   }))
                 )
               : isJira
@@ -871,7 +1023,11 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               ? jiraProjects.map(p => ({ value: p.key, label: p.name }))
               : [];
         const boardOptions =
-          lowerKey === 'monday' ? mondayBoards.map(b => ({ value: b.id, label: b.name })) : [];
+          lowerKey === 'monday'
+            ? mondayBoards.map(b => ({ value: b.id, label: b.name }))
+            : lowerKey === 'trello'
+              ? trelloBoards.map(b => ({ value: b.id, label: b.name }))
+              : [];
 
         return (
           <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -882,11 +1038,11 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               <Typography.Paragraph style={{ color: themeToken.colorTextSecondary }}>
                 {t(
                   'importStep.selectListHelp',
-                  'Select the workspace and list/board youÃ¢â‚¬â„¢d like to import data from. Required fields are marked with an asterisk.'
+                  'Select the workspace and list/board youâ€™d like to import data from. Required fields are marked with an asterisk.'
                 )}
               </Typography.Paragraph>
               <div style={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>
-                {lowerKey !== 'monday' && lowerKey !== 'jira' && (
+                {lowerKey !== 'monday' && lowerKey !== 'jira' && lowerKey !== 'trello' && (
                   <>
                     <label>{t('importStep.workspaceLabel', 'Workspace *')}</label>
                     <Select
@@ -921,7 +1077,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 )}
 
                 <label>
-                  {lowerKey === 'monday'
+                  {lowerKey === 'monday' || lowerKey === 'trello'
                     ? t('importStep.boardLabel', 'Board *')
                     : isJira
                       ? t('importStep.jiraProjectLabel', 'Project *')
@@ -933,6 +1089,27 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                     placeholder={t('importStep.boardPlaceholder', 'Select a board')}
                     value={selectedBoard || undefined}
                     onChange={v => setSelectedBoard(v)}
+                    options={boardOptions}
+                    disabled={!authCompleted}
+                  />
+                ) : lowerKey === 'trello' ? (
+                  <Select
+                    style={{ width: '100%' }}
+                    placeholder={t('importStep.boardPlaceholder', 'Select a board')}
+                    value={selectedTrelloBoard || undefined}
+                    onChange={async v => {
+                      setSelectedTrelloBoard(v);
+                      const boardName = trelloBoards.find(b => b.id === v)?.name;
+                      try {
+                        if (job?.id) {
+                          await updateImportSource(job.id, { boardId: v, boardName });
+                        }
+                      } catch (err: any) {
+                        message.error(
+                          err?.message || t('importStep.autoMapError', 'Auto-mapping failed')
+                        );
+                      }
+                    }}
                     options={boardOptions}
                     disabled={!authCompleted}
                   />
@@ -1308,7 +1485,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   >
                     {source.label}
                   </span>
-                  <span style={{ fontSize: 16, color: '#111' }}>→</span>
+                  <span style={{ fontSize: 16, color: '#111' }}>?</span>
                   <span
                     style={{
                       padding: '8px 14px',
@@ -1742,9 +1919,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 Set up a space in Worklenz
               </Typography.Title>
               <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 16 }}>
-                Your teamÃ¢â‚¬â„¢s data from <b>{source?.label || 'your app'}</b> will be imported
-                into this space. Check if youÃ¢â‚¬â„¢re selecting the right Worklenz space,
-                template, and space type as these options canÃ¢â‚¬â„¢t be modified later.
+                Your teamâ€™s data from <b>{source?.label || 'your app'}</b> will be imported into
+                this space. Check if youâ€™re selecting the right Worklenz space, template, and
+                space type as these options canâ€™t be modified later.
               </Typography.Paragraph>
               <div style={{ color: '#f87171', fontSize: 13, marginBottom: 20 }}>
                 All fields are required
@@ -1797,13 +1974,13 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 >
                   <Select.Option value="scrum" label="Scrum">
                     <span role="img" aria-label="Scrum" style={{ marginRight: 8 }}>
-                      Ã°Å¸Ââ€°
+                      ðŸ‰
                     </span>
                     Scrum
                   </Select.Option>
                   <Select.Option value="kanban" label="Kanban">
                     <span role="img" aria-label="Kanban" style={{ marginRight: 8 }}>
-                      Ã°Å¸â€”â€šÃ¯Â¸Â
+                      ðŸ—‚ï¸
                     </span>
                     Kanban
                   </Select.Option>
@@ -1886,7 +2063,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               Map space fields
             </Typography.Title>
             <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 16 }}>
-              WeÃ¢â‚¬â„¢ve automatically mapped a few columns from the CSV file to{' '}
+              Weâ€™ve automatically mapped a few columns from the CSV file to{' '}
               <b>Worklenz fields</b>. Verify and{' '}
               <a href="#" style={{ color: '#4096ff' }}>
                 map any remaining columns
@@ -2111,7 +2288,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             >
               <span style={{ flex: 2, paddingLeft: 8 }}>
                 <span role="img" aria-label="values" style={{ marginRight: 8 }}>
-                  Ã°Å¸â€œÂ¦
+                  ðŸ“¦
                 </span>
                 Values in the selected column
               </span>
@@ -2122,7 +2299,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   aria-label="work types"
                   style={{ marginRight: 8, color: '#4096ff' }}
                 >
-                  Ã°Å¸ÂÂ·Ã¯Â¸Â
+                  ðŸ·ï¸
                 </span>
                 Worklenz work types
               </span>
@@ -2252,9 +2429,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-                  <span style={{ fontSize: 20, marginRight: 10, color: '#60a5fa' }}>
-                    Ã¢â€žÂ¹Ã¯Â¸Â
-                  </span>
+                  <span style={{ fontSize: 20, marginRight: 10, color: '#60a5fa' }}>â„¹ï¸</span>
                   <span style={{ fontWeight: 600, fontSize: 18 }}>
                     There are no users in the CSV file
                   </span>
@@ -2306,7 +2481,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 </div>
                 <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 20 }}>
                   Enter a valid email address next to the user information to add a user to the
-                  space. Users without a corresponding email address wonÃ¢â‚¬â„¢t be imported.
+                  space. Users without a corresponding email address wonâ€™t be imported.
                 </Typography.Paragraph>
                 {/* Table header */}
                 <div
@@ -2320,12 +2495,11 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   }}
                 >
                   <span style={{ flex: 2, paddingLeft: 8 }}>
-                    <span style={{ marginRight: 8 }}>Ã°Å¸â€œâ€ž</span>Users in CSV (
-                    {userRows.length})
+                    <span style={{ marginRight: 8 }}>ðŸ“„</span>Users in CSV ({userRows.length})
                   </span>
                   <span style={{ width: 40 }}></span>
                   <span style={{ flex: 3 }}>
-                    <span style={{ marginRight: 8 }}>Ã°Å¸â€ºÂ«</span>Users moving to Worklenz (0)
+                    <span style={{ marginRight: 8 }}>ðŸ›«</span>Users moving to Worklenz (0)
                   </span>
                 </div>
                 {/* User mapping rows */}
@@ -2383,8 +2557,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               Review space details
             </Typography.Title>
             <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 24 }}>
-              WeÃ¢â‚¬â„¢re ready to import your teamÃ¢â‚¬â„¢s data. HereÃ¢â‚¬â„¢s a summary of
-              whatÃ¢â‚¬â„¢s being imported into Worklenz.
+              Weâ€™re ready to import your teamâ€™s data. Hereâ€™s a summary of whatâ€™s being
+              imported into Worklenz.
               <br />
               Confirm the details before starting the import.
             </Typography.Paragraph>
@@ -2616,6 +2790,51 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       );
     }
 
+    if (lowerKey === 'trello') {
+      return (
+        <div style={{ padding: 48, background: themeToken.colorBgLayout, height: '100%' }}>
+          <Typography.Title level={4} style={{ color: themeToken.colorText, marginBottom: 8 }}>
+            {t('auth.trelloTitle', 'Connect Trello to import')}
+          </Typography.Title>
+          <Typography.Paragraph style={{ color: themeToken.colorTextSecondary, marginBottom: 16 }}>
+            {t(
+              'auth.trelloBody',
+              'Enter your Trello API key and token so Worklenz can fetch your boards.'
+            )}
+          </Typography.Paragraph>
+          <Input
+            placeholder={t('auth.trelloKeyPlaceholder', 'Enter your Trello API key')}
+            value={trelloKey}
+            onChange={e => setTrelloKey(e.target.value)}
+            style={{ marginBottom: 12 }}
+            allowClear
+          />
+          <Input.Password
+            placeholder={t('auth.trelloTokenPlaceholder', 'Enter your Trello token')}
+            value={trelloToken}
+            onChange={e => setTrelloToken(e.target.value)}
+            style={{ marginBottom: 16 }}
+          />
+          {authError && (
+            <Typography.Text type="danger" style={{ display: 'block', marginBottom: 12 }}>
+              {authError}
+            </Typography.Text>
+          )}
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+            <Button onClick={onClose}>{t('common.cancel', 'Cancel')}</Button>
+            <Button
+              type="primary"
+              disabled={!trelloKey.trim() || !trelloToken.trim()}
+              loading={authLoading}
+              onClick={handleTrelloValidate}
+            >
+              {t('auth.trelloSubmit', 'Continue')}
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     if (lowerKey === 'clickup') {
       return (
         <div style={{ padding: 48, background: themeToken.colorBgLayout, height: '100%' }}>
@@ -2625,7 +2844,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
           <Typography.Paragraph style={{ color: themeToken.colorTextSecondary, fontSize: 16 }}>
             {t(
               'auth.clickupBody',
-              'Choose the ClickUp workspace to connect. WeÃ¢â‚¬â„¢ll request access to read your spaces, folders, lists, and tasks for import.'
+              'Choose the ClickUp workspace to connect. Weâ€™ll request access to read your spaces, folders, lists, and tasks for import.'
             )}
           </Typography.Paragraph>
           <Input.Password
@@ -2647,7 +2866,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             options={clickupTeams.flatMap(team =>
               team.spaces.map(space => ({
                 value: space.id,
-                label: `${team.name} Ã¢â‚¬Â¢ ${space.name}`,
+                label: `${team.name} â€¢ ${space.name}`,
               }))
             )}
           />
@@ -2662,7 +2881,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               .flatMap(space =>
                 space.lists.map(list => ({
                   value: list.id,
-                  label: `${space.name} Ã¢â‚¬Â¢ ${list.name}`,
+                  label: `${space.name} â€¢ ${list.name}`,
                 }))
               )}
           />

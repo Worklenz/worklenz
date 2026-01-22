@@ -20,71 +20,75 @@ importsApiRouter.post("/", validateCreate, ImportsController.create);
 importsApiRouter.post(
   "/:jobId/target",
   validateTarget,
-  ImportsController.setTarget
+  ImportsController.setTarget,
 );
 importsApiRouter.post(
   "/:jobId/source",
   validateSource,
-  ImportsController.setSource
+  ImportsController.setSource,
 );
 importsApiRouter.get("/:jobId", ImportsController.get);
 importsApiRouter.post(
   "/:jobId/auth/asana/start",
-  ImportsController.startAsanaAuth
+  ImportsController.startAsanaAuth,
 );
 importsApiRouter.post(
   "/:jobId/hierarchy/auto",
-  ImportsController.autoHierarchy
+  ImportsController.autoHierarchy,
 );
 importsApiRouter.get("/auth/asana/callback", ImportsController.asanaCallback);
 importsApiRouter.post("/:jobId/fields/auto", ImportsController.autoFields);
 importsApiRouter.post(
   "/:jobId/fields",
   validateFields,
-  ImportsController.saveFields
+  ImportsController.saveFields,
 );
 importsApiRouter.post(
   "/:jobId/hierarchy",
   validateHierarchy,
-  ImportsController.saveHierarchy
+  ImportsController.saveHierarchy,
 );
 importsApiRouter.post(
   "/:jobId/value-mappings",
   validateValues,
-  ImportsController.saveValueMappings
+  ImportsController.saveValueMappings,
 );
 importsApiRouter.post(
   "/:jobId/user-mappings",
   validateUsers,
-  ImportsController.saveUserMappings
+  ImportsController.saveUserMappings,
 );
 importsApiRouter.post(
   "/:jobId/auth/monday/validate",
-  ImportsController.mondayValidate
+  ImportsController.mondayValidate,
 );
 importsApiRouter.post(
   "/:jobId/attachments",
   validateAttachments,
-  ImportsController.saveAttachments
+  ImportsController.saveAttachments,
 );
 importsApiRouter.post(
   "/:jobId/stage-tasks",
   validateTasks,
-  ImportsController.saveStageTasks
+  ImportsController.saveStageTasks,
 );
 importsApiRouter.get("/:jobId/stage-tasks", ImportsController.listStageTasks);
 importsApiRouter.post(
   "/:jobId/ingest",
   validateIngest,
-  ImportsController.ingest
+  ImportsController.ingest,
 );
 importsApiRouter.post(
   "/:jobId/auth/clickup/workspaces",
-  ImportsController.clickupWorkspaces
+  ImportsController.clickupWorkspaces,
+);
+importsApiRouter.post(
+  "/:jobId/auth/trello/validate",
+  ImportsController.trelloValidate,
 );
 importsApiRouter.post(
   "/:jobId/auth/jira/validate",
-  ImportsController.jiraValidate
+  ImportsController.jiraValidate,
 );
 importsApiRouter.get("/:jobId/progress", ImportsController.progress);
 importsApiRouter.get("/:jobId/logs", ImportsController.logs);

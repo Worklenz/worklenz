@@ -9,6 +9,11 @@
     "mondayBody": "Paste a personal access token to let Worklenz fetch boards and items for import.",
     "mondayPlaceholder": "Paste your Monday token",
     "mondaySubmit": "Continue",
+    "trelloTitle": "Connect Trello to import",
+    "trelloBody": "Enter your Trello API key and token so Worklenz can fetch your boards.",
+    "trelloKeyPlaceholder": "Enter your Trello API key",
+    "trelloTokenPlaceholder": "Enter your Trello token",
+    "trelloSubmit": "Continue",
     "clickupTitle": "Connect ClickUp workspace",
     "clickupBody": "Choose the ClickUp workspace to connect. We’ll request access to read your spaces, folders, lists, and tasks for import.",
     "clickupWorkspace": "Workspace",
@@ -27,6 +32,8 @@
     "boardLabel": "Board *",
     "projectPlaceholder": "Select a project",
     "boardPlaceholder": "Select a board",
-    "listPlaceholder": "Select a list"
+    "listPlaceholder": "Select a list",
+    "trelloBoardRequired": "Please select a Trello board before importing.",
+    "trelloCredentialsMissing": "Missing Trello credentials. Please reconnect and try again."
   }
 }
