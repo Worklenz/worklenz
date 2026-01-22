@@ -1961,67 +1961,81 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 <Select.Option value="unmapped">Unmapped</Select.Option>
               </Select>
             </div>
-            {/* Table header */}
             <div
               style={{
                 display: 'flex',
-                alignItems: 'center',
-                color: '#b0b0b0',
-                fontWeight: 500,
-                fontSize: 14,
-                marginBottom: 4,
+                flexDirection: 'column',
+                gap: 4,
                 marginTop: 16,
+                maxHeight: 420,
+                overflowY: 'auto',
+                overflowX: 'auto',
+                paddingRight: 6,
+                paddingBottom: 12,
+                WebkitOverflowScrolling: 'touch',
               }}
             >
-              <span style={{ flex: 2, paddingLeft: 8 }}>Columns in CSV</span>
-              <span style={{ flex: 2 }}>Worklenz fields</span>
-              <span style={{ width: 140, textAlign: 'center' }}>Include in import</span>
-            </div>
-            {/* Mapping rows for each CSV column */}
-            {csvColumns.length === 0 ? (
-              <div style={{ color: '#888', margin: '24px 0' }}>
-                Upload a CSV file to map fields.
+              {/* Table header */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  color: '#b0b0b0',
+                  fontWeight: 500,
+                  fontSize: 14,
+                  marginBottom: 4,
+                }}
+              >
+                <span style={{ flex: 2, paddingLeft: 8 }}>Columns in CSV</span>
+                <span style={{ flex: 2 }}>Worklenz fields</span>
+                <span style={{ width: 140, textAlign: 'center' }}>Include in import</span>
               </div>
-            ) : (
-              csvColumns.map(col => (
-                <div
-                  key={col}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    background: '#23272f',
-                    borderRadius: 6,
-                    marginBottom: 4,
-                    minHeight: 44,
-                  }}
-                >
-                  <span style={{ flex: 2, paddingLeft: 8, color: '#fff' }}>{col}</span>
-                  <span style={{ flex: 2 }}>
-                    <Select
-                      placeholder="Select a field to map"
-                      style={{ width: '100%' }}
-                      showSearch
-                      value={fieldMappings[col] || undefined}
-                      onChange={val => setFieldMappings(m => ({ ...m, [col]: val }))}
-                    >
-                      {worklenzFieldOptions.map(option => (
-                        <Select.Option key={option.value} value={option.value}>
-                          {option.label}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  </span>
-                  <span style={{ width: 140, textAlign: 'center' }}>
-                    <input
-                      type="checkbox"
-                      checked={includeInImport[col] !== false}
-                      onChange={e => setIncludeInImport(i => ({ ...i, [col]: e.target.checked }))}
-                      style={{ accentColor: '#4096ff', width: 18, height: 18 }}
-                    />
-                  </span>
+              {/* Mapping rows for each CSV column */}
+              {csvColumns.length === 0 ? (
+                <div style={{ color: '#888', margin: '24px 0' }}>
+                  Upload a CSV file to map fields.
                 </div>
-              ))
-            )}
+              ) : (
+                csvColumns.map(col => (
+                  <div
+                    key={col}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      background: '#23272f',
+                      borderRadius: 6,
+                      marginBottom: 4,
+                      minHeight: 44,
+                    }}
+                  >
+                    <span style={{ flex: 2, paddingLeft: 8, color: '#fff' }}>{col}</span>
+                    <span style={{ flex: 2 }}>
+                      <Select
+                        placeholder="Select a field to map"
+                        style={{ width: '100%' }}
+                        showSearch
+                        value={fieldMappings[col] || undefined}
+                        onChange={val => setFieldMappings(m => ({ ...m, [col]: val }))}
+                      >
+                        {worklenzFieldOptions.map(option => (
+                          <Select.Option key={option.value} value={option.value}>
+                            {option.label}
+                          </Select.Option>
+                        ))}
+                      </Select>
+                    </span>
+                    <span style={{ width: 140, textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={includeInImport[col] !== false}
+                        onChange={e => setIncludeInImport(i => ({ ...i, [col]: e.target.checked }))}
+                        style={{ accentColor: '#4096ff', width: 18, height: 18 }}
+                      />
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         );
       case 3:
