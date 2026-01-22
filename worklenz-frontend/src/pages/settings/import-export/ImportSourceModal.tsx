@@ -1248,7 +1248,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   minHeight: 469,
                   background: '#2684FF08',
                   borderRadius: 10,
-                  padding: '40px 40px',
+                  padding: '40px 40px 20px',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 10,
@@ -2663,8 +2663,16 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     }
 
     if (isJira) {
+      // Align JIRA wrapper styling with Asana: light blue-tinted background container.
       return (
-        <div style={{ padding: 48, background: themeToken.colorBgLayout, height: '100%' }}>
+        <div
+          style={{
+            padding: 48,
+            background: '#2684FF08',
+            height: '100%',
+            borderRadius: 12,
+          }}
+        >
           <Typography.Title level={2} style={{ color: themeToken.colorText, marginBottom: 12 }}>
             {t('auth.jiraTitle', 'Connect JIRA')}
           </Typography.Title>
