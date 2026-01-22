@@ -29,10 +29,13 @@ const PushNotificationTemplate = ({
 
   // Sanitize notification message to prevent XSS attacks
   // Allow only safe formatting tags (b, strong, i, em) and no attributes
+  // Additional security options to prevent any XSS vectors
   const sanitizedMessage = DOMPurify.sanitize(notificationData.message, {
     ALLOWED_TAGS: ['b', 'strong', 'i', 'em'],
     ALLOWED_ATTR: [],
     KEEP_CONTENT: true,
+    ALLOW_DATA_ATTR: false,
+    SAFE_FOR_TEMPLATES: true,
   });
 
   return (

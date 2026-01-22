@@ -169,23 +169,34 @@ export function sanitize(value: string) {
 }
 
 /**
- * Sanitizes plain text fields (like task names) to prevent XSS attacks
- * Strips all HTML tags while preserving the text content
+ * Sanitizes plain text fields (like user names) to prevent XSS attacks
+ * Strips all HTML tags while preserving the text content, then escapes special characters
  * Use this for fields that should never contain HTML markup
  * 
  * @param value - The plain text to sanitize
- * @returns Sanitized plain text with HTML removed
+ * @returns Sanitized plain text with HTML removed and entities escaped
  */
 export function sanitizePlainText(value: string): string {
   if (!value) return "";
-  
-  // Use sanitize-html with strict settings: strip ALL HTML tags and attributes
+
+  // First strip all HTML tags using sanitize-html
   // This converts "<script>alert(1)</script>Hello" to "alert(1)Hello"
-  return sanitizeHtml(value, {
+  // and "><img src=x onerror=alert()>" to ""
+  const stripped = sanitizeHtml(value, {
     allowedTags: [],        // No HTML tags allowed
     allowedAttributes: {},  // No attributes allowed
-    textFilter: (text) => text.trim() // Trim whitespace
   });
+
+  // Then escape HTML special characters for extra safety
+  // This prevents any remaining special chars from being interpreted as HTML
+  // Note: We trim after escaping to preserve intentional spaces
+  return stripped
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;")
+    .trim();
 }
 
 /**
