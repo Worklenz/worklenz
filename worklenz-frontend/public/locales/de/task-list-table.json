@@ -25,6 +25,7 @@
   "lastupdatedColumn": "Zuletzt aktualisiert",
   "reporterColumn": "Melder",
   "dueTimeColumn": "Fällige Zeit",
+  "moveColumnHandle": "Spalte verschieben",
   "todoSelectorText": "Zu erledigen",
   "doingSelectorText": "Tun",
   "doneSelectorText": "Erledigt",
@@ -56,7 +57,7 @@
   "pendingInvitation": "Einladung ausstehend",
 
   "contextMenu": {
-    "duplicateTask":"Doppelte Aufgabe",
+    "duplicateTask": "Doppelte Aufgabe",
     "assignToMe": "Mir zuweisen",
     "copyLink": "Link zur Aufgabe kopieren",
     "linkCopied": "Link in die Zwischenablage kopiert",

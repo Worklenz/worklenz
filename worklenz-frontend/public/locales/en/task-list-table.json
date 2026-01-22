@@ -24,6 +24,7 @@
   "lastUpdatedColumn": "Last Updated",
   "lastupdatedColumn": "Last Updated",
   "reporterColumn": "Reporter",
+  "moveColumnHandle": "Move column",
   "dueTimeColumn": "Due Time",
   "todoSelectorText": "To Do",
   "doingSelectorText": "Doing",
@@ -56,7 +57,7 @@
   "pendingInvitation": "Pending Invitation",
 
   "contextMenu": {
-    "duplicateTask":"Duplicate task",
+    "duplicateTask": "Duplicate task",
     "assignToMe": "Assign to me",
     "copyLink": "Copy link to task",
     "linkCopied": "Link copied to clipboard",
