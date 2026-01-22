@@ -308,7 +308,13 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     [fieldMappingRows]
   );
 
-  const modalHeight = React.useMemo(() => 753, []);
+  const modalDims = React.useMemo(
+    () =>
+      integrationType === 'csv'
+        ? { width: 1400, height: 820, stepperMaxWidth: 1120 }
+        : { width: 900, height: 753, stepperMaxWidth: 820 },
+    [integrationType]
+  );
   const hierarchyCount = React.useMemo(() => hierarchyRows.length, [hierarchyRows]);
   const hierarchyDisplayRows = React.useMemo(
     () => [...hierarchyRows].sort((a, b) => (a.position || 0) - (b.position || 0)),
@@ -2804,7 +2810,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       open={open}
       onCancel={onClose}
       footer={null}
-      width={900}
+      width={modalDims.width}
       style={{
         top: 124,
       }}
@@ -2815,8 +2821,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
           overflow: 'hidden',
         },
         body: {
-          minHeight: modalHeight,
-          maxHeight: modalHeight,
+          minHeight: modalDims.height,
+          maxHeight: modalDims.height,
           display: 'flex',
           flexDirection: 'column',
           background: '#fff',
@@ -2846,7 +2852,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               justifyContent: 'center',
             }}
           >
-            <div style={{ width: '100%', maxWidth: 820 }}>
+            <div style={{ width: '100%', maxWidth: modalDims.stepperMaxWidth }}>
               <Steps
                 direction="horizontal"
                 current={step}
