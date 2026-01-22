@@ -848,6 +848,7 @@ const ProjectViewUpdates = () => {
           ...prev,
           {
             ...(res.body as IProjectUpdateCommentViewModel),
+            id: (res.body as IProjectUpdateCommentViewModel).id || `temp-${Date.now()}-${Math.random()}`, // Ensure unique ID
             created_by: getUserSession()?.name || '',
             created_at: new Date().toISOString(),
             content: processedContent,
@@ -960,14 +961,20 @@ const ProjectViewUpdates = () => {
   );
 
   const renderComment = useCallback(
-    (comment: IProjectUpdateCommentViewModel) => {
+    (comment: IProjectUpdateCommentViewModel, index: number) => {
       const timeDifference = calculateTimeDifference(comment.created_at || '');
       const themeClass = theme === 'dark' ? 'dark' : 'light';
 
+      // Generate a unique key for each comment
+      // Use id if available, otherwise create a composite key
+      const commentKey = comment.id 
+        ? comment.id 
+        : `comment-${index}-${comment.created_at || ''}-${comment.created_by || ''}`;
+
       return (
         <Dropdown
-          key={comment.id ?? ''}
-          overlay={getCommentMenu(comment.id ?? '')}
+          key={commentKey}
+          overlay={getCommentMenu(comment.id || commentKey)}
           trigger={['contextMenu']}
         >
           <div>
@@ -1004,7 +1011,10 @@ const ProjectViewUpdates = () => {
     [theme, handleDeleteComment, handleCommentLinkClick, getCommentMenu]
   );
 
-  const commentsList = useMemo(() => comments.map(renderComment), [comments, renderComment]);
+  const commentsList = useMemo(
+    () => comments.map((comment, index) => renderComment(comment, index)),
+    [comments, renderComment]
+  );
 
   return (
     <Flex gap={24} vertical>
