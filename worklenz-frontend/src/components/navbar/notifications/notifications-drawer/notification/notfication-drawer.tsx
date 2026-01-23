@@ -117,6 +117,26 @@ const NotificationDrawer = () => {
     dispatch(fetchInvitations());
   };
 
+  const handleTeamMemberRemoved = async (data: { teamId: string; message: string }) => {
+    const notification: IWorklenzNotification = {
+      id: '',
+      team: '',
+      team_id: data.teamId,
+      message: data.message,
+    };
+
+    if (isPushEnabled()) {
+      createPush(
+        notification.message,
+        'Worklenz',
+        notification.team_id || null
+      );
+    }
+
+    showNotification(notification);
+    // Don't fetch invitations - this is a removal, not an invitation
+  };
+
   const askPushPermission = () => {
     if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
       if (Notification.permission !== 'granted') {
@@ -203,7 +223,7 @@ const NotificationDrawer = () => {
   useEffect(() => {
     socket?.on(SocketEvents.INVITATIONS_UPDATE.toString(), handleInvitationsUpdate);
     socket?.on(SocketEvents.NOTIFICATIONS_UPDATE.toString(), handleNotificationsUpdate);
-    socket?.on(SocketEvents.TEAM_MEMBER_REMOVED.toString(), handleTeamInvitationsUpdate);
+    socket?.on(SocketEvents.TEAM_MEMBER_REMOVED.toString(), handleTeamMemberRemoved);
     fetchNotificationsSettings();
     askPushPermission();
 
@@ -215,7 +235,7 @@ const NotificationDrawer = () => {
       );
       socket?.removeListener(
         SocketEvents.TEAM_MEMBER_REMOVED.toString(),
-        handleTeamInvitationsUpdate
+        handleTeamMemberRemoved
       );
     };
   }, [socket]);

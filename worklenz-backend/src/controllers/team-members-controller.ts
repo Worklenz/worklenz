@@ -14,7 +14,7 @@ import { IO } from "../shared/io";
 import { SocketEvents } from "../socket.io/events";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-import { formatDuration, getColor } from "../shared/utils";
+import { formatDuration, getColor, sanitizePlainText } from "../shared/utils";
 import { statusExclude, TEAM_MEMBER_TREE_MAP_COLOR_ALPHA, TRIAL_MEMBER_LIMIT } from "../shared/constants";
 import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
 import { updateUsers } from "../shared/paddle-requests";
@@ -433,7 +433,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
     const result = await db.query(q, [id, req.user?.id, req.user?.team_id]);
     const [data] = result.rows;
 
-    const message = `You have been removed from <b>${req.user?.team_name}</b> by <b>${req.user?.name}</b>`;
+    const safeName = sanitizePlainText(req.user?.name || 'an administrator');
+    const safeTeamName = sanitizePlainText(req.user?.team_name || 'the team');
+    const message = `You have been removed from <b>${safeTeamName}</b> by <b>${safeName}</b>`;
 
     // if (subscriptionData.status === "trialing") break;
     // if (!subscriptionData.is_credit && !subscriptionData.is_custom) {
@@ -451,14 +453,14 @@ export default class TeamMembersController extends WorklenzControllerBase {
     // }
 
     NotificationsService.sendNotification({
-      receiver_socket_id: data.socket_id,
+      receiver_socket_id: data.member.socket_id,
       message,
-      team: data.team,
-      team_id: id
+      team: data.member.team,
+      team_id: req.user?.team_id
     });
 
     IO.emitByUserId(data.member.id, req.user?.id || null, SocketEvents.TEAM_MEMBER_REMOVED, {
-      teamId: id,
+      teamId: req.user?.team_id,
       message
     });
     return res.status(200).send(new ServerResponse(true, result.rows));
