@@ -344,6 +344,30 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     [hierarchyRows]
   );
 
+  const autoMappedRef = React.useRef(false);
+
+  const runAutoMapping = React.useCallback(
+    async (suppressToast?: boolean) => {
+      if (!job?.id) return;
+      try {
+        setAutoMappingRunning(true);
+        const fieldsResp = await autoImportFields(job.id);
+        if (Array.isArray(fieldsResp)) setFieldMappingRows(fieldsResp as any);
+        const hierarchyResp = await autoImportHierarchy(job.id);
+        if (Array.isArray(hierarchyResp)) setHierarchyRows(hierarchyResp as any);
+        autoMappedRef.current = true;
+        if (!suppressToast)
+          message.success(t('importStep.autoMapped', 'Fields and hierarchy auto-mapped'));
+      } catch (err) {
+        if (!suppressToast)
+          message.error(t('importStep.autoMapError', 'Auto-mapping failed. Please try again.'));
+      } finally {
+        setAutoMappingRunning(false);
+      }
+    },
+    [job?.id, t]
+  );
+
   React.useEffect(() => {
     let cancelled = false;
     const fetchStatuses = async () => {
@@ -376,6 +400,39 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       cancelled = true;
     };
   }, [defaultWorkTypes]);
+
+  React.useEffect(() => {
+    autoMappedRef.current = false;
+  }, [
+    lowerKey,
+    selectedTrelloBoard,
+    selectedProject,
+    selectedBoard,
+    selectedJiraProject,
+    selectedClickupList,
+  ]);
+
+  React.useEffect(() => {
+    if (integrationType !== 'direct') return;
+    if (step !== 2) return;
+    if (autoMappingRunning) return;
+    if (autoMappedRef.current) return;
+    if (!job?.id) return;
+
+    const trelloReady = lowerKey !== 'trello' || (authCompleted && !!selectedTrelloBoard);
+    if (!trelloReady) return;
+
+    void runAutoMapping(true);
+  }, [
+    integrationType,
+    step,
+    autoMappingRunning,
+    job?.id,
+    lowerKey,
+    authCompleted,
+    selectedTrelloBoard,
+    runAutoMapping,
+  ]);
 
   const navigationDisabled = authNeeded && !authCompleted;
 
@@ -438,27 +495,6 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       });
     },
     [job?.id]
-  );
-
-  const runAutoMapping = React.useCallback(
-    async (suppressToast?: boolean) => {
-      if (!job?.id) return;
-      try {
-        setAutoMappingRunning(true);
-        const fieldsResp = await autoImportFields(job.id);
-        if (Array.isArray(fieldsResp)) setFieldMappingRows(fieldsResp as any);
-        const hierarchyResp = await autoImportHierarchy(job.id);
-        if (Array.isArray(hierarchyResp)) setHierarchyRows(hierarchyResp as any);
-        if (!suppressToast)
-          message.success(t('importStep.autoMapped', 'Fields and hierarchy auto-mapped'));
-      } catch (err) {
-        if (!suppressToast)
-          message.error(t('importStep.autoMapError', 'Auto-mapping failed. Please try again.'));
-      } finally {
-        setAutoMappingRunning(false);
-      }
-    },
-    [job?.id, t]
   );
 
   const handleBack = () => setStep(s => Math.max(0, s - 1));
@@ -1103,6 +1139,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                       try {
                         if (job?.id) {
                           await updateImportSource(job.id, { boardId: v, boardName });
+                          await runAutoMapping();
                         }
                       } catch (err: any) {
                         message.error(

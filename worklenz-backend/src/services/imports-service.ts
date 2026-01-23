@@ -88,6 +88,7 @@ export interface TaskFieldPatch {
   start_at?: string | null;
   due_at?: string | null;
   assignee_source_id?: string | null;
+  labels?: string[] | null;
   priority_label?: string | null;
   completed_at?: string | null;
   created_at?: string | null;
@@ -182,6 +183,95 @@ const coerceBooleanValue = (value: string): boolean | null => {
   if (["true", "yes", "1"].includes(normalized)) return true;
   if (["false", "no", "0"].includes(normalized)) return false;
   return null;
+};
+
+const normalizeLabelName = (value: string): string => value.trim();
+
+const parseLabelValues = (
+  value: unknown,
+  source: Record<string, unknown>,
+): string[] => {
+  const labels: string[] = [];
+
+  const pushValues = (candidate: unknown) => {
+    if (Array.isArray(candidate)) {
+      candidate.forEach((entry) => {
+        if (typeof entry === "string" && entry.trim()) {
+          labels.push(entry.trim());
+        }
+      });
+      return;
+    }
+    if (typeof candidate === "string" && candidate.trim()) {
+      candidate
+        .split(/[;,]/)
+        .map((v) => v.trim())
+        .filter(Boolean)
+        .forEach((part) => labels.push(part));
+    }
+  };
+
+  pushValues(value);
+  // Allow providers to pass richer metadata alongside display strings.
+  if (Array.isArray((source as any)?.__labels))
+    pushValues((source as any).__labels);
+  if (Array.isArray((source as any)?.__labelNames))
+    pushValues((source as any).__labelNames);
+
+  return Array.from(new Set(labels.map(normalizeLabelName))).filter(Boolean);
+};
+
+const collectAssigneeCandidates = (
+  value: unknown,
+  source: Record<string, unknown>,
+): string[] => {
+  const candidates: string[] = [];
+
+  const push = (candidate?: string | null) => {
+    if (candidate && candidate.trim()) {
+      candidates.push(candidate.trim());
+    }
+  };
+
+  const pushValue = (entry: unknown) => {
+    if (entry === null || entry === undefined) return;
+    if (typeof entry === "string") {
+      push(entry);
+      return;
+    }
+    const coerced = String(entry);
+    if (coerced) push(coerced);
+  };
+
+  if (Array.isArray(value)) {
+    value.forEach(pushValue);
+  } else if (typeof value === "string" && value.trim()) {
+    value
+      .split(/[,;]/)
+      .map((v) => v.trim())
+      .filter(Boolean)
+      .forEach(push);
+  }
+
+  const rawMembers = (source as any).__memberIds as unknown[] | undefined;
+  const rawNames = (source as any).__memberNames as unknown[] | undefined;
+  const rawEmails = (source as any).__memberEmails as unknown[] | undefined;
+
+  (rawEmails || []).forEach(pushValue);
+  (rawMembers || []).forEach(pushValue);
+  (rawNames || []).forEach(pushValue);
+
+  return Array.from(new Set(candidates));
+};
+
+const pickBestAssignee = (
+  candidates: string[],
+  current?: string | null,
+): string | null => {
+  if (!candidates.length) return current || null;
+  const hasEmail = candidates.find((c) => c.includes("@"));
+  if (hasEmail) return hasEmail;
+  return candidates[0] || current || null;
 };
 
 const buildSelectionOptions = (
@@ -421,15 +511,14 @@ export const mapRawToTaskFields = (
       case "lastUpdated":
         patch.updated_at = String(value);
         break;
-      case "assignees":
-        if (
-          typeof value === "string" &&
-          value.trim() &&
-          (value.includes("@") || !patch.assignee_source_id)
-        ) {
-          patch.assignee_source_id = String(value);
+      case "assignees": {
+        const candidates = collectAssigneeCandidates(value, source);
+        const selected = pickBestAssignee(candidates, patch.assignee_source_id);
+        if (selected) {
+          patch.assignee_source_id = selected;
         }
         break;
+      }
       case "priority":
         patch.priority_label = String(value);
         break;
@@ -437,14 +526,12 @@ export const mapRawToTaskFields = (
         patch.completed_at = String(value);
         break;
       case "labels": {
-        const normalized = Array.isArray(value)
-          ? value.join(", ")
-          : String(value);
-        pushCustomValue(
-          toColumnKey("labels"),
-          mapping.source_field || "Labels",
-          normalized,
-        );
+        const parsedLabels = parseLabelValues(value, source);
+        if (parsedLabels.length) {
+          patch.labels = Array.from(
+            new Set([...(patch.labels || []), ...parsedLabels]),
+          );
+        }
         break;
       }
       case "progress": {
@@ -1022,6 +1109,73 @@ class ImportsService {
 
       await ensureAssigneeTeamMembers();
 
+      const labelNameMap = new Map<string, string>();
+
+      const loadTeamLabels = async () => {
+        if (!targetTeamId) return;
+        const { rows } = await client.query(
+          "SELECT id, name FROM team_labels WHERE team_id = $1",
+          [targetTeamId],
+        );
+        rows.forEach((row: any) => {
+          if (row?.name && row?.id) {
+            labelNameMap.set(row.name.toString().trim().toLowerCase(), row.id);
+          }
+        });
+      };
+
+      await loadTeamLabels();
+
+      const { rows: replaceTaskLabelsRows } = await client.query(
+        "SELECT to_regproc('replace_task_labels') AS fn;",
+      );
+      const hasReplaceTaskLabels = !!replaceTaskLabelsRows?.[0]?.fn;
+
+      let labelColorIndex = labelNameMap.size;
+      const nextLabelColor = () =>
+        SELECTION_COLORS[labelColorIndex++ % SELECTION_COLORS.length];
+
+      const ensureLabelId = async (name: string): Promise<string | null> => {
+        if (!targetTeamId) return null;
+        const normalized = normalizeLabelName(name);
+        if (!normalized) return null;
+        const key = normalized.toLowerCase();
+        const existing = labelNameMap.get(key);
+        if (existing) return existing;
+
+        const { rows } = await client.query(
+          `INSERT INTO team_labels (name, color_code, team_id)
+             VALUES ($1, $2, $3)
+             ON CONFLICT DO NOTHING
+             RETURNING id;`,
+          [normalized, nextLabelColor(), targetTeamId],
+        );
+
+        const createdId = rows?.[0]?.id;
+        if (createdId) {
+          labelNameMap.set(key, createdId);
+          return createdId;
+        }
+
+        const { rows: fallbackRows } = await client.query(
+          "SELECT id FROM team_labels WHERE team_id = $1 AND name = $2",
+          [targetTeamId, normalized],
+        );
+        const fallbackId = fallbackRows?.[0]?.id || null;
+        if (fallbackId) labelNameMap.set(key, fallbackId);
+        return fallbackId;
+      };
+
+      const resolveLabelIds = async (labels?: string[] | null) => {
+        if (!labels?.length) return [] as string[];
+        const ids: string[] = [];
+        for (const label of labels) {
+          const id = await ensureLabelId(label);
+          if (id) ids.push(id);
+        }
+        return Array.from(new Set(ids));
+      };
+
       const statusMap = new Map<string, string>();
       const doneStatusIds = new Set<string>();
       let defaultDoneStatusId: string | null = null;
@@ -1055,6 +1209,11 @@ class ImportsService {
       userRows.forEach((row: any) => {
         if (row.source_user_id && row.target_user_id)
           assigneeMap.set(row.source_user_id.toString(), row.target_user_id);
+        if (row.source_user_id && row.target_user_id)
+          assigneeMap.set(
+            row.source_user_id.toString().toLowerCase(),
+            row.target_user_id,
+          );
         if (row.source_email && row.target_user_id)
           assigneeMap.set(
             row.source_email.toString().toLowerCase(),
@@ -1583,6 +1742,8 @@ class ImportsService {
           statusId = defaultDoneStatusId;
         }
 
+        const labelIds = await resolveLabelIds(taskWithMappings.labels);
+
         const payload: Record<string, unknown> = {
           name: task.title,
           project_id: job.target_project_id,
@@ -1673,6 +1834,23 @@ class ImportsService {
           await finalizeTaskCompletion(created.id, statusId, completedDate);
           if (completedDate && created) {
             created.completed_at = completedDate.toISOString();
+          }
+        }
+
+        if (created?.id && labelIds.length) {
+          if (hasReplaceTaskLabels) {
+            await client.query(
+              "SELECT replace_task_labels($1, $2) AS labels;",
+              [created.id, labelIds],
+            );
+          } else {
+            await client.query("DELETE FROM task_labels WHERE task_id = $1", [
+              created.id,
+            ]);
+            await client.query(
+              "INSERT INTO task_labels (task_id, label_id) SELECT $1, UNNEST($2::uuid[]) ON CONFLICT DO NOTHING",
+              [created.id, labelIds],
+            );
           }
         }
         createdTasks.push(created);

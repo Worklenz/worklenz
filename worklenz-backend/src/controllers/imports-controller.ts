@@ -16,6 +16,7 @@ import crypto from "crypto";
 import { nanoid } from "nanoid";
 import AsanaProvider from "../services/import-providers/asana-provider";
 import JiraProvider from "../services/import-providers/jira-provider";
+import TrelloProvider from "../services/import-providers/trello-provider";
 
 const autoHierarchyTemplate = [
   { source_level: "Section", target_level: "Status", position: 1 },
@@ -95,6 +96,7 @@ const autoFieldTemplate: FieldMappingRow[] = [
 
 const asanaProvider = new AsanaProvider();
 const jiraProvider = new JiraProvider();
+const trelloProvider = new TrelloProvider();
 
 const REQUIRED_TARGET_MAPPINGS: Array<{
   target: string;
@@ -341,6 +343,20 @@ export default class ImportsController {
             },
           );
         }
+      } else if (providerKey === "trello") {
+        try {
+          const auto = await trelloProvider.getAutoMappings(job, req.body);
+          if (auto.hierarchy?.length) rows = auto.hierarchy;
+        } catch (err) {
+          await ImportsService.appendLog(
+            job.id,
+            "warn",
+            "Trello auto hierarchy failed",
+            {
+              error: (err as any)?.message,
+            },
+          );
+        }
       } else if (providerKey === "jira") {
         try {
           const auto = await jiraProvider.getAutoMappings(job, req.body);
@@ -379,6 +395,20 @@ export default class ImportsController {
             job.id,
             "warn",
             "Asana auto fields failed",
+            {
+              error: (err as any)?.message,
+            },
+          );
+        }
+      } else if (providerKey === "trello") {
+        try {
+          const auto = await trelloProvider.getAutoMappings(job, req.body);
+          if (auto.fields?.length) rows = auto.fields as any;
+        } catch (err) {
+          await ImportsService.appendLog(
+            job.id,
+            "warn",
+            "Trello auto fields failed",
             {
               error: (err as any)?.message,
             },
