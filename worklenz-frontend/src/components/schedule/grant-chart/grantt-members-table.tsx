@@ -217,8 +217,16 @@ const GranttMembersTable = React.memo(
                   </Button>
                 </Flex>
 
-                {isExpanded && projects.length > 0 &&
-                  projects.map((project: any, index: any) => {
+                {isExpanded && projects.length > 0 && (() => {
+                  // Group projects by project ID to show each project only once
+                  const groupedProjects = projects.reduce((acc: Record<string, any>, project: any) => {
+                    if (!acc[project.id]) {
+                      acc[project.id] = project; // Keep first segment for display
+                    }
+                    return acc;
+                  }, {});
+                  
+                  return Object.values(groupedProjects).map((project: any, index: any) => {
                     return (
                       <Flex
                         gap={8}
@@ -247,7 +255,8 @@ const GranttMembersTable = React.memo(
                         </Tooltip>
                       </Flex>
                     );
-                  })}
+                  });
+                })()}
                 
                 {isExpanded && projects.length === 0 && !isProjectsLoading && (
                   <Flex

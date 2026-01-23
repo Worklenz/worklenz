@@ -269,7 +269,7 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
         }
 
         // Updated query to show ALL projects where member is assigned
-        // Timeline bars only show for tasks/allocations within the visible date range
+        // Timeline bars show as separate segments when there are gaps between tasks
         const getDataq = `
             WITH member_project_list AS (
                 -- Get all projects where this member is a project member
@@ -285,59 +285,115 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                     -- Exclude archived projects
                     AND p.id NOT IN (SELECT project_id FROM archived_projects)
             ),
-            member_projects_in_range AS (
-                -- Get projects from project_member_allocations within the visible range
-                SELECT DISTINCT
-                    pm.project_id,
-                    MIN(GREATEST(pm.allocated_from, $2::DATE)) AS start_date,
-                    MAX(LEAST(pm.allocated_to, COALESCE($3::DATE, pm.allocated_to))) AS end_date,
-                    MAX(pm.seconds_per_day) / 3600 AS hours_per_day,
-                    t.organization_id,
-                    'allocation' AS source_type
-                FROM public.project_member_allocations pm
-                JOIN public.projects p ON pm.project_id = p.id
-                JOIN public.teams t ON p.team_id = t.id
-                WHERE pm.team_member_id = $1
-                    -- Only include allocations that overlap with visible range
-                    AND pm.allocated_from <= COALESCE($3::DATE, pm.allocated_from)
-                    AND pm.allocated_to >= $2::DATE
-                GROUP BY pm.project_id, t.organization_id
-                
-                UNION
-                
-                -- Get projects from task assignments within the visible range
+            member_tasks_in_range AS (
+                -- Get all individual tasks for this member within the visible range
                 SELECT DISTINCT
                     t.project_id,
-                    MIN(GREATEST(t.start_date, $2::DATE)) AS start_date,
-                    MAX(LEAST(t.end_date, COALESCE($3::DATE, t.end_date))) AS end_date,
-                    0 AS hours_per_day,
-                    te.organization_id,
-                    'task' AS source_type
+                    GREATEST(t.start_date, $2::DATE) AS start_date,
+                    LEAST(t.end_date, COALESCE($3::DATE, t.end_date)) AS end_date,
+                    t.id AS task_id
                 FROM tasks t
                 JOIN tasks_assignees ta ON t.id = ta.task_id
                 JOIN project_members pm ON ta.project_member_id = pm.id
-                JOIN projects p ON t.project_id = p.id
-                JOIN teams te ON p.team_id = te.id
                 WHERE pm.team_member_id = $1
                     AND t.start_date IS NOT NULL
                     AND t.end_date IS NOT NULL
                     AND t.archived = false
-                    -- Filter: only tasks that overlap with the visible range
                     AND t.start_date <= COALESCE($3::DATE, t.start_date)
                     AND t.end_date >= $2::DATE
-                GROUP BY t.project_id, te.organization_id
             ),
-            project_dates AS (
+            member_allocations_in_range AS (
+                -- Get allocations within the visible range
+                SELECT DISTINCT
+                    pm.project_id,
+                    GREATEST(pm.allocated_from, $2::DATE) AS start_date,
+                    LEAST(pm.allocated_to, COALESCE($3::DATE, pm.allocated_to)) AS end_date,
+                    pm.seconds_per_day / 3600 AS hours_per_day
+                FROM public.project_member_allocations pm
+                WHERE pm.team_member_id = $1
+                    AND pm.allocated_from <= COALESCE($3::DATE, pm.allocated_from)
+                    AND pm.allocated_to >= $2::DATE
+            ),
+            all_date_ranges AS (
+                -- Combine tasks and allocations
+                SELECT project_id, start_date, end_date, 0 AS hours_per_day
+                FROM member_tasks_in_range
+                UNION ALL
+                SELECT project_id, start_date, end_date, hours_per_day
+                FROM member_allocations_in_range
+            ),
+            -- Find continuous date segments (only merge truly overlapping dates, not adjacent ones)
+            ordered_ranges AS (
+                SELECT 
+                    project_id,
+                    start_date,
+                    end_date,
+                    hours_per_day,
+                    ROW_NUMBER() OVER (PARTITION BY project_id ORDER BY start_date, end_date) AS rn
+                FROM all_date_ranges
+            ),
+            -- Detect gaps: a new segment starts when there's a gap from the previous end date
+            segments_with_gaps AS (
+                SELECT 
+                    project_id,
+                    start_date,
+                    end_date,
+                    hours_per_day,
+                    CASE 
+                        WHEN LAG(end_date) OVER (PARTITION BY project_id ORDER BY start_date) IS NULL THEN 1
+                        WHEN start_date > LAG(end_date) OVER (PARTITION BY project_id ORDER BY start_date) + INTERVAL '1 day' THEN 1
+                        ELSE 0
+                    END AS is_new_segment
+                FROM ordered_ranges
+            ),
+            -- Assign segment numbers based on gaps
+            segments_numbered AS (
+                SELECT 
+                    project_id,
+                    start_date,
+                    end_date,
+                    hours_per_day,
+                    SUM(is_new_segment) OVER (PARTITION BY project_id ORDER BY start_date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS segment_id
+                FROM segments_with_gaps
+            ),
+            -- Merge overlapping/adjacent dates within each segment
+            continuous_segments AS (
+                SELECT 
+                    project_id,
+                    segment_id,
+                    MIN(start_date) AS segment_start,
+                    MAX(end_date) AS segment_end,
+                    MAX(hours_per_day) AS hours_per_day
+                FROM segments_numbered
+                GROUP BY project_id, segment_id
+            ),
+            segments_with_stats AS (
                 SELECT
-                    mp.project_id,
-                    MIN(mp.start_date) AS start_date,
-                    MAX(mp.end_date) AS end_date,
-                    MAX(mp.hours_per_day) AS hours_per_day,
-                    mp.organization_id,
+                    cs.project_id,
+                    cs.segment_start,
+                    cs.segment_end,
+                    cs.hours_per_day,
+                    -- Count tasks in this segment
+                    (
+                        SELECT COUNT(DISTINCT t.id)
+                        FROM tasks t
+                        JOIN tasks_assignees ta ON t.id = ta.task_id
+                        JOIN project_members pm ON ta.project_member_id = pm.id
+                        WHERE pm.team_member_id = $1
+                            AND t.project_id = cs.project_id
+                            AND t.archived = false
+                            AND t.start_date IS NOT NULL
+                            AND t.end_date IS NOT NULL
+                            AND t.start_date <= cs.segment_end
+                            AND t.end_date >= cs.segment_start
+                    ) AS task_count,
+                    -- Calculate total hours for this segment
                     (
                         SELECT COUNT(*) 
-                        FROM generate_series(MIN(mp.start_date), MAX(mp.end_date), '1 day'::interval) AS day
-                        JOIN public.organization_working_days owd ON owd.organization_id = mp.organization_id
+                        FROM generate_series(cs.segment_start, cs.segment_end, '1 day'::interval) AS day
+                        JOIN public.organization_working_days owd ON owd.organization_id = (
+                            SELECT organization_id FROM member_project_list WHERE project_id = cs.project_id LIMIT 1
+                        )
                         WHERE 
                             (EXTRACT(ISODOW FROM day) = 1 AND owd.monday = true) OR
                             (EXTRACT(ISODOW FROM day) = 2 AND owd.tuesday = true) OR
@@ -346,40 +402,23 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                             (EXTRACT(ISODOW FROM day) = 5 AND owd.friday = true) OR
                             (EXTRACT(ISODOW FROM day) = 6 AND owd.saturday = true) OR
                             (EXTRACT(ISODOW FROM day) = 7 AND owd.sunday = true)
-                    ) * MAX(mp.hours_per_day) AS total_hours
-                FROM member_projects_in_range mp
-                WHERE mp.start_date IS NOT NULL AND mp.end_date IS NOT NULL
-                GROUP BY mp.project_id, mp.organization_id
+                    ) * cs.hours_per_day AS total_hours
+                FROM continuous_segments cs
             ),
-            all_projects_with_dates AS (
-                -- Combine all member projects with their date ranges (if any)
+            all_projects_with_segments AS (
+                -- Combine all member projects with their segments
                 SELECT
                     mpl.project_id,
                     mpl.project_name,
                     mpl.project_color,
-                    pd.start_date,
-                    pd.end_date,
-                    COALESCE(pd.hours_per_day, 0) AS hours_per_day,
-                    COALESCE(pd.total_hours, 0) AS total_hours,
-                    mpl.organization_id,
-                    -- Count tasks assigned to this member in this project within the date range
-                    (
-                        SELECT COUNT(DISTINCT t.id)
-                        FROM tasks t
-                        JOIN tasks_assignees ta ON t.id = ta.task_id
-                        JOIN project_members pm ON ta.project_member_id = pm.id
-                        WHERE pm.team_member_id = $1
-                            AND t.project_id = mpl.project_id
-                            AND t.archived = false
-                            AND t.start_date IS NOT NULL
-                            AND t.end_date IS NOT NULL
-                            AND (
-                                $3::DATE IS NULL OR
-                                (t.start_date <= $3::DATE AND t.end_date >= $2::DATE)
-                            )
-                    ) AS task_count
+                    sws.segment_start AS start_date,
+                    sws.segment_end AS end_date,
+                    COALESCE(sws.hours_per_day, 0) AS hours_per_day,
+                    COALESCE(sws.total_hours, 0) AS total_hours,
+                    COALESCE(sws.task_count, 0) AS task_count,
+                    ROW_NUMBER() OVER (PARTITION BY mpl.project_id ORDER BY sws.segment_start) AS segment_number
                 FROM member_project_list mpl
-                LEFT JOIN project_dates pd ON mpl.project_id = pd.project_id
+                LEFT JOIN segments_with_stats sws ON mpl.project_id = sws.project_id
             ),
             projects_with_offsets AS (
                 SELECT
@@ -391,8 +430,8 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                     apd.task_count,
                     apd.start_date,
                     apd.end_date,
-                    -- Calculate offset from the chart_start date (passed as $2)
-                    -- Only if dates exist
+                    apd.segment_number,
+                    -- Calculate offset from the chart_start date
                     CASE 
                         WHEN apd.start_date IS NOT NULL THEN
                             (DATE_PART('day', apd.start_date - $2::DATE)) * 75
@@ -404,11 +443,10 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                         ELSE NULL
                     END AS indicator_width,
                     75 AS min_width
-                FROM all_projects_with_dates apd
+                FROM all_projects_with_segments apd
                 ORDER BY 
-                    CASE WHEN apd.start_date IS NOT NULL THEN 0 ELSE 1 END,  -- Projects with dates first
-                    apd.start_date,
-                    apd.project_name
+                    apd.project_name,
+                    apd.segment_number
             )
             SELECT jsonb_agg(jsonb_build_object(
                 'name', project_name,
@@ -417,6 +455,7 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                 'hours_per_day', hours_per_day,
                 'total_hours', total_hours,
                 'task_count', task_count,
+                'segment_number', segment_number,
                 'date_union', jsonb_build_object(
                     'start', start_date::DATE,
                     'end', end_date::DATE

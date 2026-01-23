@@ -423,58 +423,84 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                         trigger={'click'}
                         open={isModalOpen}
                       ></Popover>
-                      {projects.map((project: any) => (
-                        <div
-                          key={project.id}
-                          onClick={() => {
-                            if (!(project?.date_union?.start && project?.date_union?.end)) {
-                              setSelectedProjectId(project?.id);
-                              setIsModalOpen(true);
-                            }
-                          }}
-                          style={{
-                            display: 'grid',
-                            gridTemplateColumns: `repeat(${dayCount}, ${CELL_WIDTH}px)`,
-                            position: 'relative',
-                          }}
-                        >
-                          <Flex
-                            align="center"
+                      {/* Group projects by project ID to show all segments in one row */}
+                      {Object.entries(
+                        projects.reduce((acc: Record<string, any[]>, project: any) => {
+                          if (!acc[project.id]) {
+                            acc[project.id] = [];
+                          }
+                          acc[project.id].push(project);
+                          return acc;
+                        }, {})
+                      ).map(([projectId, projectSegments]: [string, any[]]) => {
+                        // Use the first segment for project metadata
+                        const firstSegment = projectSegments[0];
+                        
+                        return (
+                          <div
+                            key={projectId}
+                            onClick={() => {
+                              // Only open modal if no segments have dates
+                              const hasAnyDates = projectSegments.some(
+                                seg => seg?.date_union?.start && seg?.date_union?.end
+                              );
+                              if (!hasAnyDates) {
+                                setSelectedProjectId(projectId);
+                                setIsModalOpen(true);
+                              }
+                            }}
                             style={{
-                              position: 'absolute',
-                              left: 0,
-                              zIndex: 50,
-                              height: 65,
+                              display: 'grid',
+                              gridTemplateColumns: `repeat(${dayCount}, ${CELL_WIDTH}px)`,
+                              position: 'relative',
                             }}
                           >
-                            {project?.date_union?.start && project?.date_union?.end && (
-                              <ProjectTimelineBar
-                                defaultData={project?.default_values}
-                                project={project}
-                                indicatorWidth={project?.indicator_width}
-                                indicatorOffset={project?.indicator_offset}
-                              />
-                            )}
-                          </Flex>
-
-                          {dateList?.date_data?.map((date: any) =>
-                            date.days.map((day: any) => (
-                              <div
-                                key={`${date.month}-${day.day}`}
+                            {/* Render all segments as separate bars in the same row */}
+                            {projectSegments.map((segment: any, segmentIndex: number) => (
+                              <Flex
+                                key={`segment-${segmentIndex}`}
+                                align="center"
                                 style={{
-                                  background: day.isWeekend ? 'rgba(217, 217, 217, 0.4)' : '',
+                                  position: 'absolute',
+                                  left: 0,
+                                  zIndex: 50 + segmentIndex,
                                   height: 65,
+                                  pointerEvents: 'none',
                                 }}
                               >
+                                {segment?.date_union?.start && segment?.date_union?.end && (
+                                  <div style={{ pointerEvents: 'auto' }}>
+                                    <ProjectTimelineBar
+                                      defaultData={segment?.default_values}
+                                      project={segment}
+                                      indicatorWidth={segment?.indicator_width}
+                                      indicatorOffset={segment?.indicator_offset}
+                                    />
+                                  </div>
+                                )}
+                              </Flex>
+                            ))}
+
+                            {/* Background grid cells */}
+                            {dateList?.date_data?.map((date: any) =>
+                              date.days.map((day: any) => (
                                 <div
-                                  style={{ width: '100%', height: '100%' }}
-                                  className={`rounded-xs outline-1 hover:outline-solid ${themeMode === 'dark' ? 'outline-white/10' : 'outline-black/10'}`}
-                                ></div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      ))}
+                                  key={`${date.month}-${day.day}`}
+                                  style={{
+                                    background: day.isWeekend ? 'rgba(217, 217, 217, 0.4)' : '',
+                                    height: 65,
+                                  }}
+                                >
+                                  <div
+                                    style={{ width: '100%', height: '100%' }}
+                                    className={`rounded-xs outline-1 hover:outline-solid ${themeMode === 'dark' ? 'outline-white/10' : 'outline-black/10'}`}
+                                  ></div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
