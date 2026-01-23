@@ -82,7 +82,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
   const dateList = dateListResponse?.body;
   const loading = teamLoading || dateLoading;
   const isRefetching = teamFetching || dateFetching || capacityFetching;
-  const dayCount = dateList?.date_data?.[0]?.days?.length || 0;
+  const dayCount = dateList?.date_data?.reduce((total: number, month: any) => total + (month.days?.length || 0), 0) || 0;
 
   // Helper function to get capacity for specific date/member
   const capacityData = capacityResponse?.body || [];

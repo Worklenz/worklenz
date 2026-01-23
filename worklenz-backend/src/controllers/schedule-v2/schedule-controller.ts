@@ -87,8 +87,6 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                                 (given_date - (EXTRACT(DOW FROM given_date)::INT + 6) % 7 + 6)::DATE AS end_date, -- Current week end date
                                 (given_date - (EXTRACT(DOW FROM given_date)::INT + 6) % 7 + 7)::DATE AS next_week_start, -- Next week start date
                                 (given_date - (EXTRACT(DOW FROM given_date)::INT + 6) % 7 + 13)::DATE AS next_week_end, -- Next week end date
-                                TO_CHAR(given_date, 'Mon YYYY') AS month_year,  -- Format the month as 'Jan 2025'
-                                EXTRACT(DAY FROM given_date) AS day_number,      -- Extract the day from the date
                                 (given_date - (EXTRACT(DOW FROM given_date)::INT + 6) % 7)::DATE AS chart_start,  -- First week start date
                                 (given_date - (EXTRACT(DOW FROM given_date)::INT + 6) % 7 + 13)::DATE AS chart_end,  -- Second week end date
                                 CURRENT_DATE::DATE AS today,
@@ -111,7 +109,7 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                                 d.date,
                                 TO_CHAR(d.date, 'Dy') AS day_name,
                                 EXTRACT(DAY FROM d.date) AS day,
-                                TO_CHAR(d.date, 'Mon YYYY') AS month,  -- Format the month as 'Jan 2025'
+                                TO_CHAR(d.date, 'Mon YYYY') AS month,  -- Each day has its correct month
                                 CASE 
                                     WHEN EXTRACT(DOW FROM d.date) = 0 THEN (SELECT sunday FROM org_working_days)
                                     WHEN EXTRACT(DOW FROM d.date) = 1 THEN (SELECT monday FROM org_working_days)
@@ -124,31 +122,33 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                                 CASE WHEN d.date = (SELECT today FROM week_range) THEN TRUE ELSE FALSE END AS is_today
                             FROM days d
                         ),
-                        aggregated_days AS (
+                        grouped_by_month AS (
                             SELECT 
+                                month AS month_name,
                                 jsonb_agg(
                                     jsonb_build_object(
                                         'day', day,
-                                        'month', month,  -- Include formatted month
                                         'name', day_name,
                                         'isWeekend', NOT is_weekend,
                                         'isToday', is_today
                                     ) ORDER BY date
-                                ) AS days_json
+                                ) AS days
                             FROM formatted_days
+                            GROUP BY month
+                            ORDER BY MIN(date)  -- Order months by their first date
                         )
                         SELECT jsonb_build_object(
                             'date_data', jsonb_agg(
                                 jsonb_build_object(
-                                    'month', (SELECT month_year FROM week_range),  -- Formatted month-year (e.g., Jan 2025)
-                                    'day', (SELECT day_number FROM week_range),    -- Dynamic day number
-                                    'weeks', '[]',  -- Empty weeks array for now
-                                    'days', (SELECT days_json FROM aggregated_days)  -- Aggregated days data
-                                )
+                                    'month', month_name,
+                                    'weeks', '[]'::JSONB,
+                                    'days', days
+                                ) ORDER BY month_name
                             ),
-                            'chart_start', (SELECT chart_start FROM week_range),  -- First week start date
-                            'chart_end', (SELECT chart_end FROM week_range)  -- Second week end date
-                        ) AS result_json;`;
+                            'chart_start', (SELECT chart_start FROM week_range),
+                            'chart_end', (SELECT chart_end FROM week_range)
+                        ) AS result_json
+                        FROM grouped_by_month;`;
 
             const results = await db.query(getDataq, [date, req.user?.owner_id]);
             const [data] = results.rows;
