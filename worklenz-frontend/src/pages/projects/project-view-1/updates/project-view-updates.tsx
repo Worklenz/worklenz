@@ -842,22 +842,8 @@ const ProjectViewUpdates = () => {
 
       const res = await projectCommentsApiService.createProjectComment(body);
       if (res.done) {
-        const processedContent = processContent(commentValue.trim());
-        
-        setComments(prev => [
-          ...prev,
-          {
-            ...(res.body as IProjectUpdateCommentViewModel),
-            id: (res.body as IProjectUpdateCommentViewModel).id || `temp-${Date.now()}-${Math.random()}`, // Ensure unique ID
-            created_by: getUserSession()?.name || '',
-            created_at: new Date().toISOString(),
-            content: processedContent,
-            mentions: (res.body as IProjectUpdateCommentViewModel).mentions ?? [
-              undefined,
-              undefined,
-            ],
-          },
-        ]);
+        // Simply refetch all comments to ensure we have proper IDs
+        await getComments();
         handleCancel();
       }
     } catch (error) {
@@ -865,7 +851,7 @@ const ProjectViewUpdates = () => {
     } finally {
       setIsSubmitting(false);
     }
-  }, [projectId, characterLength, commentValue, selectedMembers]);
+  }, [projectId, characterLength, commentValue, selectedMembers, getComments]);
 
   useEffect(() => {
     void getMembers();
