@@ -138,34 +138,49 @@ const ProjectTimelineBar = ({
             dispatch(getWorking());
           }}
         >
-          <Typography.Text
-            style={{
-              fontSize: '12px',
-              fontWeight: 'bold',
-            }}
-            ellipsis={{ expanded: false }}
-          >
-            {t('total')} {totalHours}h
-          </Typography.Text>
-          {currentDuration > 1 && (
-            <Typography.Text style={{ fontSize: '10px' }} ellipsis={{ expanded: false }}>
-              {t('perDay')} {project?.hours_per_day}h
+          {totalHours > 0 && (
+            <Typography.Text
+              style={{
+                fontSize: '12px',
+                fontWeight: 'bold',
+              }}
+              ellipsis={{ expanded: false }}
+            >
+              {t('total', { defaultValue: 'Total' })} {totalHours.toFixed(1)}h
             </Typography.Text>
           )}
-          <Typography.Text
-            style={{
-              fontSize: '10px',
-              textDecoration: 'underline',
-              width: 'fit-content',
-            }}
-            ellipsis={{ expanded: false }}
-            onClick={e => {
-              e.stopPropagation();
-              dispatch(toggleScheduleDrawer());
-            }}
-          >
-            20 {t('tasks')}
-          </Typography.Text>
+          {currentDuration > 1 && project?.hours_per_day > 0 && (
+            <Typography.Text style={{ fontSize: '10px' }} ellipsis={{ expanded: false }}>
+              {t('perDay', { defaultValue: 'Per Day' })} {project?.hours_per_day.toFixed(1)}h
+            </Typography.Text>
+          )}
+          {project?.task_count > 0 && (
+            <Typography.Text
+              style={{
+                fontSize: '10px',
+                textDecoration: 'underline',
+                width: 'fit-content',
+              }}
+              ellipsis={{ expanded: false }}
+              onClick={e => {
+                e.stopPropagation();
+                dispatch(toggleScheduleDrawer());
+              }}
+            >
+              {project.task_count} {project.task_count === 1 ? t('task', { defaultValue: 'task' }) : t('tasks', { defaultValue: 'tasks' })}
+            </Typography.Text>
+          )}
+          {!totalHours && !project?.task_count && (
+            <Typography.Text
+              style={{
+                fontSize: '11px',
+                color: themeWiseColor('#666', '#999', themeMode),
+              }}
+              ellipsis={{ expanded: false }}
+            >
+              {t('noTasksScheduled', { defaultValue: 'No tasks scheduled' })}
+            </Typography.Text>
+          )}
         </Flex>
       </Resizable>
     </Popover>

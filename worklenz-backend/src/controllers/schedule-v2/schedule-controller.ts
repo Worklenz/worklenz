@@ -361,7 +361,23 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                     pd.end_date,
                     COALESCE(pd.hours_per_day, 0) AS hours_per_day,
                     COALESCE(pd.total_hours, 0) AS total_hours,
-                    mpl.organization_id
+                    mpl.organization_id,
+                    -- Count tasks assigned to this member in this project within the date range
+                    (
+                        SELECT COUNT(DISTINCT t.id)
+                        FROM tasks t
+                        JOIN tasks_assignees ta ON t.id = ta.task_id
+                        JOIN project_members pm ON ta.project_member_id = pm.id
+                        WHERE pm.team_member_id = $1
+                            AND t.project_id = mpl.project_id
+                            AND t.archived = false
+                            AND t.start_date IS NOT NULL
+                            AND t.end_date IS NOT NULL
+                            AND (
+                                $3::DATE IS NULL OR
+                                (t.start_date <= $3::DATE AND t.end_date >= $2::DATE)
+                            )
+                    ) AS task_count
                 FROM member_project_list mpl
                 LEFT JOIN project_dates pd ON mpl.project_id = pd.project_id
             ),
@@ -372,6 +388,7 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                     apd.project_color,
                     apd.hours_per_day,
                     apd.total_hours,
+                    apd.task_count,
                     apd.start_date,
                     apd.end_date,
                     -- Calculate offset from the chart_start date (passed as $2)
@@ -399,6 +416,7 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                 'color_code', project_color,
                 'hours_per_day', hours_per_day,
                 'total_hours', total_hours,
+                'task_count', task_count,
                 'date_union', jsonb_build_object(
                     'start', start_date::DATE,
                     'end', end_date::DATE
