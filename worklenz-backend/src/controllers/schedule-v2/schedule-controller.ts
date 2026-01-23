@@ -268,10 +268,24 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
             return res.status(400).send(new ServerResponse(false, null, "chartStart parameter is required"));
         }
 
-        // Updated query to show only tasks within the visible date range
-        // This ensures we only show the portion of work actually scheduled in this period
+        // Updated query to show ALL projects where member is assigned
+        // Timeline bars only show for tasks/allocations within the visible date range
         const getDataq = `
-            WITH member_projects AS (
+            WITH member_project_list AS (
+                -- Get all projects where this member is a project member
+                SELECT DISTINCT
+                    p.id AS project_id,
+                    p.name AS project_name,
+                    p.color_code AS project_color,
+                    t.organization_id
+                FROM project_members pm
+                JOIN projects p ON pm.project_id = p.id
+                JOIN teams t ON p.team_id = t.id
+                WHERE pm.team_member_id = $1
+                    -- Exclude archived projects
+                    AND p.id NOT IN (SELECT project_id FROM archived_projects)
+            ),
+            member_projects_in_range AS (
                 -- Get projects from project_member_allocations within the visible range
                 SELECT DISTINCT
                     pm.project_id,
@@ -292,7 +306,6 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                 UNION
                 
                 -- Get projects from task assignments within the visible range
-                -- IMPORTANT: Filter tasks by date range BEFORE aggregating
                 SELECT DISTINCT
                     t.project_id,
                     MIN(GREATEST(t.start_date, $2::DATE)) AS start_date,
@@ -334,33 +347,56 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                             (EXTRACT(ISODOW FROM day) = 6 AND owd.saturday = true) OR
                             (EXTRACT(ISODOW FROM day) = 7 AND owd.sunday = true)
                     ) * MAX(mp.hours_per_day) AS total_hours
-                FROM member_projects mp
+                FROM member_projects_in_range mp
                 WHERE mp.start_date IS NOT NULL AND mp.end_date IS NOT NULL
                 GROUP BY mp.project_id, mp.organization_id
             ),
-            projects_with_offsets AS (
+            all_projects_with_dates AS (
+                -- Combine all member projects with their date ranges (if any)
                 SELECT
-                    p.name AS project_name,
-                    p.id AS project_id,
-                    COALESCE(pd.hours_per_day, 0) AS hours_per_day,
-                    COALESCE(pd.total_hours, 0) AS total_hours,
+                    mpl.project_id,
+                    mpl.project_name,
+                    mpl.project_color,
                     pd.start_date,
                     pd.end_date,
-                    p.team_id,
+                    COALESCE(pd.hours_per_day, 0) AS hours_per_day,
+                    COALESCE(pd.total_hours, 0) AS total_hours,
+                    mpl.organization_id
+                FROM member_project_list mpl
+                LEFT JOIN project_dates pd ON mpl.project_id = pd.project_id
+            ),
+            projects_with_offsets AS (
+                SELECT
+                    apd.project_name,
+                    apd.project_id,
+                    apd.project_color,
+                    apd.hours_per_day,
+                    apd.total_hours,
+                    apd.start_date,
+                    apd.end_date,
                     -- Calculate offset from the chart_start date (passed as $2)
-                    COALESCE(
-                        (DATE_PART('day', pd.start_date - $2::DATE)) * 75,
-                        0
-                    ) AS indicator_offset,
-                    COALESCE((DATE_PART('day', pd.end_date - pd.start_date) + 1) * 75, 75) AS indicator_width,
+                    -- Only if dates exist
+                    CASE 
+                        WHEN apd.start_date IS NOT NULL THEN
+                            (DATE_PART('day', apd.start_date - $2::DATE)) * 75
+                        ELSE NULL
+                    END AS indicator_offset,
+                    CASE 
+                        WHEN apd.start_date IS NOT NULL AND apd.end_date IS NOT NULL THEN
+                            (DATE_PART('day', apd.end_date - apd.start_date) + 1) * 75
+                        ELSE NULL
+                    END AS indicator_width,
                     75 AS min_width
-                FROM public.projects p
-                JOIN project_dates pd ON p.id = pd.project_id
-                ORDER BY pd.start_date, pd.end_date
+                FROM all_projects_with_dates apd
+                ORDER BY 
+                    CASE WHEN apd.start_date IS NOT NULL THEN 0 ELSE 1 END,  -- Projects with dates first
+                    apd.start_date,
+                    apd.project_name
             )
             SELECT jsonb_agg(jsonb_build_object(
                 'name', project_name,
                 'id', project_id,
+                'color_code', project_color,
                 'hours_per_day', hours_per_day,
                 'total_hours', total_hours,
                 'date_union', jsonb_build_object(

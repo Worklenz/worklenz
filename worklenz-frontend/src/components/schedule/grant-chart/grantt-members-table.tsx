@@ -166,7 +166,7 @@ const GranttMembersTable = React.memo(
                         >
                           {member.name}
                         </Button>
-                        {(() => {
+                        {/* {(() => {
                           const workload = calculateMemberWorkload(member);
                           return (
                             <Tag
@@ -176,7 +176,7 @@ const GranttMembersTable = React.memo(
                               {workload.utilizationPercent.toFixed(0)}%
                             </Tag>
                           );
-                        })()}
+                        })()} */}
                       </Flex>
                       <Tooltip
                         title={(() => {
@@ -230,15 +230,15 @@ const GranttMembersTable = React.memo(
                           height: 65,
                         }}
                       >
-                        <Badge color="red" />
+                        <Badge color={project.color_code || '#1890ff'} />
                         <Tooltip
                           title={
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                               <span>
-                                {t('startDate')}: {project?.date_union?.start}
+                                {t('startDate', { defaultValue: 'Start Date' })}: {project?.date_union?.start || t('notSet', { defaultValue: 'Not set' })}
                               </span>
                               <span>
-                                {t('endDate')}: {project?.date_union?.end}
+                                {t('endDate', { defaultValue: 'End Date' })}: {project?.date_union?.end || t('notSet', { defaultValue: 'Not set' })}
                               </span>
                             </div>
                           }
