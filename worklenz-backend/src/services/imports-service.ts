@@ -1056,11 +1056,13 @@ class ImportsService {
       const targetTeamId = projectRows[0]?.team_id || null;
 
       const teamMemberEmailMap = new Map<string, string>();
+      const teamMemberNameMap = new Map<string, string>();
       const loadTeamMemberEmails = async () => {
         if (!targetTeamId) return [] as any[];
         const { rows } = await client.query(
           `SELECT tm.id,
-                  LOWER(COALESCE(u.email, ei.email)) AS email
+                  LOWER(COALESCE(u.email, ei.email)) AS email,
+                  COALESCE(u.display_name, CONCAT_WS(' ', u.first_name, u.last_name)) AS name
              FROM team_members tm
              LEFT JOIN users u ON u.id = tm.user_id
              LEFT JOIN email_invitations ei ON ei.team_member_id = tm.id
@@ -1073,6 +1075,10 @@ class ImportsService {
         rows.forEach((row) => {
           if (row?.email) {
             teamMemberEmailMap.set(row.email, row.id);
+          }
+          if (row?.name) {
+            const normalizedName = row.name.toString().trim().toLowerCase();
+            if (normalizedName) teamMemberNameMap.set(normalizedName, row.id);
           }
         });
       };
@@ -1697,15 +1703,22 @@ class ImportsService {
         return priorityMap.get(key) || defaultPriorityId;
       };
 
+      const normalizeAssigneeToken = (token: string) =>
+        token.trim().toLowerCase().replace(/\s+/g, " ");
+
       const resolveAssignees = (value?: string | null) => {
         if (!value) return [] as string[];
         const normalized = value.toString().trim();
         if (!normalized) return [] as string[];
         const lower = normalized.toLowerCase();
+        const nameKey = normalizeAssigneeToken(normalized);
         const direct = assigneeMap.get(normalized);
         const emailMatch = assigneeMap.get(lower);
         const teamMemberId =
-          direct || emailMatch || teamMemberEmailMap.get(lower);
+          direct ||
+          emailMatch ||
+          teamMemberEmailMap.get(lower) ||
+          teamMemberNameMap.get(nameKey);
         return teamMemberId ? [teamMemberId] : [];
       };
 
