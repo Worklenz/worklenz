@@ -83,6 +83,7 @@ export interface FieldMappingRow {
 }
 
 export interface TaskFieldPatch {
+  title?: string;
   description?: string | null;
   status?: string | null;
   start_at?: string | null;
@@ -486,6 +487,13 @@ export const mapRawToTaskFields = (
     const targetField = normalizeTargetField(mapping.target_field);
 
     switch (targetField) {
+      case "key": {
+        const normalized = String(value).trim();
+        if (normalized) {
+          patch.title = normalized;
+        }
+        break;
+      }
       case "description":
         patch.description = String(value);
         break;
@@ -1744,6 +1752,7 @@ class ImportsService {
           "[createTask] taskWithMappings.updated_at:",
           taskWithMappings.updated_at,
         );
+        const taskTitle = (taskWithMappings as any).title || task.title;
         let statusId = lookupStatusId(taskWithMappings.status);
         const completedValue =
           typeof taskWithMappings.completed_at === "string" &&
@@ -1762,7 +1771,7 @@ class ImportsService {
         const labelIds = await resolveLabelIds(taskWithMappings.labels);
 
         const payload: Record<string, unknown> = {
-          name: task.title,
+          name: taskTitle,
           project_id: job.target_project_id,
           team_id: targetTeamId,
           description: taskWithMappings.description,
