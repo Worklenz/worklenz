@@ -1,6 +1,12 @@
 {
-  "inputPlaceholder": "添加评论",
-  "addButton": "添加",
+  "title": "项目更新",
+  "inputPlaceholder": "在此输入您的更新... 使用 @ 提及团队成员",
+  "addButton": "发布更新",
   "cancelButton": "取消",
-  "deleteButton": "删除"
+  "deleteButton": "删除",
+  "deleteConfirmTitle": "删除此更新？",
+  "deleteConfirmContent": "您确定要删除此更新吗？此操作无法撤销。",
+  "yes": "是",
+  "no": "否",
+  "emptyState": "暂无更新。开始对话吧！"
 }

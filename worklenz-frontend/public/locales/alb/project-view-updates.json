@@ -1,6 +1,12 @@
 {
-  "inputPlaceholder": "Shto një koment..",
-  "addButton": "Shto",
+  "title": "Përditësimet e Projektit",
+  "inputPlaceholder": "Shkruani përditësimin tuaj këtu... Përdorni @ për të përmendur anëtarët e ekipit",
+  "addButton": "Posto Përditësimin",
   "cancelButton": "Anulo",
-  "deleteButton": "Fshi"
+  "deleteButton": "Fshi",
+  "deleteConfirmTitle": "Fshi këtë përditësim?",
+  "deleteConfirmContent": "A jeni i sigurt që dëshironi të fshini këtë përditësim? Ky veprim nuk mund të zhbëhet.",
+  "yes": "Po",
+  "no": "Jo",
+  "emptyState": "Ende nuk ka përditësime. Filloni bisedën!"
 }

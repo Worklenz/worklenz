@@ -1,6 +1,12 @@
 {
-  "inputPlaceholder": "Agregar un comentario..",
-  "addButton": "Agregar",
+  "title": "Actualizaciones del proyecto",
+  "inputPlaceholder": "Escribe tu actualización aquí... Usa @ para mencionar a los miembros del equipo",
+  "addButton": "Publicar actualización",
   "cancelButton": "Cancelar",
-  "deleteButton": "Eliminar"
+  "deleteButton": "Eliminar",
+  "deleteConfirmTitle": "¿Eliminar esta actualización?",
+  "deleteConfirmContent": "¿Estás seguro de que quieres eliminar esta actualización? Esta acción no se puede deshacer.",
+  "yes": "Sí",
+  "no": "No",
+  "emptyState": "Aún no hay actualizaciones. ¡Inicia la conversación!"
 }
