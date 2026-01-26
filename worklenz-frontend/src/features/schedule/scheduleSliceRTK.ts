@@ -45,7 +45,9 @@ interface ScheduleState {
 
   // Resource Management State
   selectedMemberId: string | null;
+  selectedProjectId: string | null;
   selectedDate: string | null;
+  selectedDateRange: { start: string | null; end: string | null } | null;
   workloadData: WorkloadData[];
 
   // Filters and Search
@@ -81,7 +83,9 @@ const initialState: ScheduleState = {
   type: 'month',
   date: new Date(),
   selectedMemberId: null,
+  selectedProjectId: null,
   selectedDate: null,
+  selectedDateRange: null,
   workloadData: [],
   searchTerm: '',
   selectedProjects: [],
@@ -157,8 +161,16 @@ const scheduleSlice = createSlice({
       state.selectedMemberId = action.payload;
     },
 
+    setSelectedProject: (state, action: PayloadAction<string | null>) => {
+      state.selectedProjectId = action.payload;
+    },
+
     setSelectedDate: (state, action: PayloadAction<string | null>) => {
       state.selectedDate = action.payload;
+    },
+
+    setSelectedDateRange: (state, action: PayloadAction<{ start: string | null; end: string | null } | null>) => {
+      state.selectedDateRange = action.payload;
     },
 
     // Filter Actions
@@ -290,7 +302,9 @@ export const {
   setDate,
   setType,
   setSelectedMember,
+  setSelectedProject,
   setSelectedDate,
+  setSelectedDateRange,
 
   // Filter Actions
   setSearchTerm,
@@ -325,8 +339,12 @@ export const selectWorkloadData = (state: { schedule: ScheduleState }) =>
   state.schedule.workloadData;
 export const selectSelectedMemberId = (state: { schedule: ScheduleState }) =>
   state.schedule.selectedMemberId;
+export const selectSelectedProjectId = (state: { schedule: ScheduleState }) =>
+  state.schedule.selectedProjectId;
 export const selectSelectedDate = (state: { schedule: ScheduleState }) =>
   state.schedule.selectedDate;
+export const selectSelectedDateRange = (state: { schedule: ScheduleState }) =>
+  state.schedule.selectedDateRange;
 export const selectFilters = (state: { schedule: ScheduleState }) => ({
   searchTerm: state.schedule.searchTerm,
   selectedProjects: state.schedule.selectedProjects,

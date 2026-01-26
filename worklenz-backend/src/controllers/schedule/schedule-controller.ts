@@ -782,8 +782,9 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
     if (!text) return { clause: "", params: [] };
     const memberIds = text.split(" ").filter(id => id.trim());
     const { clause } = SqlHelper.buildInClause(memberIds, paramOffset);
+    const fullClause = `id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${clause}))`;
     return {
-      clause: `id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${clause}))`,
+      clause: fullClause,
       params: memberIds
     };
   }
@@ -820,8 +821,15 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
 
     const isSubTasks = !!options.parent_task;
 
-    const queryParams: any[] = [];
-    let paramOffset = 1;
+    // Start with projectId as $1
+    const queryParams: any[] = [projectId];
+    let paramOffset = 2; // Next param will be $2
+
+    // Add parent_task_id if this is subtasks query
+    if (isSubTasks && options.parent_task) {
+      queryParams.push(options.parent_task as string);
+      paramOffset++;
+    }
 
     const sortFields = sortField.replace(/ascend/g, "ASC").replace(/descend/g, "DESC") || "sort_order";
     const membersResult = ScheduleControllerV2.getFilterByMembersWhereClosure(options.members as string, paramOffset);
@@ -834,6 +842,19 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
 
     const archivedFilter = options.archived === "true" ? "archived IS TRUE" : "archived IS FALSE";
 
+    // Date range filtering
+    let dateRangeFilter = "";
+    if (options.startDate && options.endDate) {
+      // Filter tasks that overlap with the selected date range
+      // A task overlaps if: task.start_date <= range.endDate AND task.end_date >= range.startDate
+      dateRangeFilter = `(
+        (start_date IS NOT NULL AND end_date IS NOT NULL) AND
+        (start_date <= $${paramOffset} AND end_date >= $${paramOffset + 1})
+      )`;
+      queryParams.push(options.endDate as string);
+      queryParams.push(options.startDate as string);
+      paramOffset += 2;
+    }
 
     let subTasksFilter;
 
@@ -846,7 +867,8 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
     const filters = [
       subTasksFilter,
       (isSubTasks ? "1 = 1" : archivedFilter),
-      membersFilter
+      membersFilter,
+      dateRangeFilter
     ].filter(i => !!i).join(" AND ");
 
     const query = `
@@ -902,14 +924,7 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
       ORDER BY end_date DESC NULLS LAST
     `;
 
-    // Build final params array: projectId first, then any additional params
-    const finalParams = [projectId];
-    if (isSubTasks && options.parent_task) {
-      finalParams.push(options.parent_task as string);
-    }
-    finalParams.push(...queryParams);
-
-    return { query, params: finalParams };
+    return { query, params: queryParams };
   }
 
   public static async getGroups(groupBy: string, projectId: string): Promise<IScheduleTaskGroup[]> {
@@ -972,31 +987,109 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
     const groupBy = (req.query.group || GroupBy.STATUS) as string;
 
     const { query: q, params } = ScheduleControllerV2.getQuery(req.user?.id as string, req.params.id, req.query);
+    
     const result = await db.query(q, params);
     const tasks = [...result.rows];
 
+    // Get groups metadata from database
     const groups = await this.getGroups(groupBy, req.params.id);
-    const map = groups.reduce((g: { [x: string]: IScheduleTaskGroup }, group) => {
-      if (group.id)
-        g[group.id] = new IScheduleTaskListGroup(group);
-      return g;
-    }, {});
 
-    this.updateMapByGroup(tasks, groupBy, map);
+    // Transform tasks with necessary preprocessing
+    const transformedTasks = tasks.map((task, index) => {
+      task.index = index;
+      ScheduleControllerV2.updateTaskViewModel(task);
+      return task;
+    });
 
-    const updatedGroups = Object.keys(map).map(key => {
-      const group = map[key];
+    // Initialize grouped response structure
+    const groupedResponse: Record<string, any> = {};
 
-      if (groupBy === GroupBy.PHASE)
-        group.color_code = getColor(group.name) + TASK_PRIORITY_COLOR_ALPHA;
-
-      return {
-        id: key,
-        ...group
+    // Initialize groups from database data
+    groups.forEach((group) => {
+      if (!group.id) return;
+      
+      const groupKey = group.id;
+      
+      groupedResponse[groupKey] = {
+        id: group.id,
+        name: group.name,
+        category_id: group.category_id || null,
+        color_code: group.color_code + TASK_STATUS_COLOR_ALPHA,
+        tasks: [],
+        isExpand: true,
+        // Additional metadata (safely access optional properties)
+        start_date: (group as any).start_date || null,
+        end_date: (group as any).end_date || null,
       };
     });
 
-    return res.status(200).send(new ServerResponse(true, updatedGroups));
+    // Distribute tasks into groups
+    const unmappedTasks: any[] = [];
+
+    transformedTasks.forEach((task) => {
+      let taskAssigned = false;
+
+      if (groupBy === GroupBy.STATUS) {
+        if (task.status && groupedResponse[task.status]) {
+          groupedResponse[task.status].tasks.push(task);
+          taskAssigned = true;
+        }
+      } else if (groupBy === GroupBy.PRIORITY) {
+        if (task.priority && groupedResponse[task.priority]) {
+          groupedResponse[task.priority].tasks.push(task);
+          taskAssigned = true;
+        }
+      } else if (groupBy === GroupBy.PHASE) {
+        if (task.phase_id && groupedResponse[task.phase_id]) {
+          groupedResponse[task.phase_id].tasks.push(task);
+          taskAssigned = true;
+        }
+      }
+
+      if (!taskAssigned) {
+        unmappedTasks.push(task);
+      }
+    });
+
+    // Add unmapped group if there are tasks without proper assignment
+    if (unmappedTasks.length > 0) {
+      groupedResponse[UNMAPPED] = {
+        id: UNMAPPED,
+        name: UNMAPPED,
+        category_id: null,
+        color_code: "#f0f0f0",
+        tasks: unmappedTasks,
+        isExpand: true,
+        start_date: null,
+        end_date: null,
+      };
+    }
+
+    // Apply color adjustments for phase grouping
+    Object.values(groupedResponse).forEach((group: any) => {
+      if (groupBy === GroupBy.PHASE && group.id !== UNMAPPED) {
+        group.color_code = getColor(group.name) + TASK_PRIORITY_COLOR_ALPHA;
+      }
+    });
+
+    // Convert to array format, maintaining database order
+    // Include ALL groups, even those without tasks
+    const responseGroups = groups
+      .filter((group) => group.id) // Filter out groups without id
+      .map((group) => groupedResponse[group.id!]); // Use non-null assertion since we filtered
+
+    // Add unmapped group to the end if it exists
+    if (groupedResponse[UNMAPPED]) {
+      responseGroups.push(groupedResponse[UNMAPPED]);
+    }
+
+    // Return structured response similar to getTasksV3
+    return res.status(200).send(new ServerResponse(true, {
+      groups: responseGroups,
+      allTasks: transformedTasks,
+      grouping: groupBy,
+      totalTasks: transformedTasks.length,
+    }));
   }
 
   public static updateMapByGroup(tasks: any[], groupBy: string, map: { [p: string]: IScheduleTaskGroup }) {

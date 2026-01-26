@@ -8,12 +8,14 @@ import {
   toggleSettingsDrawer,
   updateSettings,
   updateWorking,
+  triggerScheduleRefresh,
 } from './scheduleSlice';
 import { useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { scheduleAPIService } from '@/api/schedule/schedule.api.service';
 import Skeleton from 'antd/es/skeleton/Skeleton';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { scheduleApi } from '@/api/schedule/scheduleApi';
 
 const ScheduleSettingsDrawer: React.FC = () => {
   const isDrawerOpen = useAppSelector(state => state.scheduleReducer.isSettingsDrawerOpen);
@@ -29,6 +31,22 @@ const ScheduleSettingsDrawer: React.FC = () => {
     dispatch(toggleSettingsDrawer());
     dispatch(fetchDateList({ date, type }));
     dispatch(fetchTeamData());
+    
+    // Invalidate all schedule-related cache to force refetch
+    dispatch(scheduleApi.util.invalidateTags([
+      'DateList', 
+      'Members', 
+      'MemberProjects', 
+      'Capacity', 
+      'Workload', 
+      'CapacityReport',
+      'Conflicts',
+      'TaskTimeline',
+      'TimeOff'
+    ]));
+    
+    // Trigger refresh in the schedule page
+    dispatch(triggerScheduleRefresh());
   };
 
   const fetchSettings = async () => {

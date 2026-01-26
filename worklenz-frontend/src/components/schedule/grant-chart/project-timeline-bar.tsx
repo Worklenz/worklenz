@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Flex, Popover, Typography } from '@/shared/antd-imports';
+import { Flex, Typography } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { getWorking, toggleScheduleDrawer } from '../../../features/schedule/scheduleSlice';
-import ProjectTimelineModal from '../../../features/schedule/ProjectTimelineModal';
+import { toggleScheduleDrawer, setSelectedMember, setSelectedProject, setSelectedDateRange } from '../../../features/schedule/scheduleSliceRTK';
 import { Resizable } from 're-resizable';
 import { themeWiseColor } from '../../../utils/themeWiseColor';
 import { MoreOutlined } from '@/shared/antd-imports';
@@ -16,6 +15,7 @@ type ProjectTimelineBarProps = {
   indicatorOffset: number;
   indicatorWidth: number;
   defaultData?: ScheduleData;
+  memberId?: string;
 };
 
 const ProjectTimelineBar = ({
@@ -23,16 +23,34 @@ const ProjectTimelineBar = ({
   indicatorOffset,
   indicatorWidth,
   defaultData,
+  memberId,
 }: ProjectTimelineBarProps) => {
   const [width, setWidth] = useState(indicatorWidth);
   const [currentDuration, setCurrentDuration] = useState(indicatorWidth);
   const [totalHours, setTotalHours] = useState(project?.total_hours);
   const [leftOffset, setLeftOffset] = useState(indicatorOffset);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { t } = useTranslation('schedule');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const dispatch = useAppDispatch();
+
+  const handleTimelineClick = () => {
+    // Set selected member, project, and date range in Redux
+    if (memberId) {
+      dispatch(setSelectedMember(memberId));
+    }
+    if (project?.id) {
+      dispatch(setSelectedProject(project.id));
+    }
+    if (project?.date_union?.start && project?.date_union?.end) {
+      dispatch(setSelectedDateRange({
+        start: project.date_union.start,
+        end: project.date_union.end,
+      }));
+    }
+    // Open the drawer
+    dispatch(toggleScheduleDrawer());
+  };
 
   const handleResize = (
     event: MouseEvent | TouchEvent,
@@ -67,17 +85,7 @@ const ProjectTimelineBar = ({
   };
 
   return (
-    <Popover
-      content={
-        <ProjectTimelineModal
-          defaultData={defaultData}
-          projectId={project?.id}
-          setIsModalOpen={setIsModalOpen}
-        />
-      }
-      trigger={'click'}
-      open={isModalOpen}
-    >
+    <div onClick={handleTimelineClick}>
       <Resizable
         size={{ width, height: 56 }}
         onResizeStop={(e, direction, ref, delta) =>
@@ -133,10 +141,6 @@ const ProjectTimelineBar = ({
           align="center"
           justify="center"
           style={{ width: '100%' }}
-          onClick={() => {
-            setIsModalOpen(true);
-            dispatch(getWorking());
-          }}
         >
           {totalHours > 0 && (
             <Typography.Text
@@ -162,10 +166,6 @@ const ProjectTimelineBar = ({
                 width: 'fit-content',
               }}
               ellipsis={{ expanded: false }}
-              onClick={e => {
-                e.stopPropagation();
-                dispatch(toggleScheduleDrawer());
-              }}
             >
               {project.task_count} {project.task_count === 1 ? t('task', { defaultValue: 'task' }) : t('tasks', { defaultValue: 'tasks' })}
             </Typography.Text>
@@ -183,7 +183,7 @@ const ProjectTimelineBar = ({
           )}
         </Flex>
       </Resizable>
-    </Popover>
+    </div>
   );
 };
 

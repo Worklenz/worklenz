@@ -6,33 +6,37 @@ import { toggleScheduleDrawer } from './scheduleSliceRTK';
 import WithStartAndEndDates from '../../components/schedule-old/tabs/withStartAndEndDates/WithStartAndEndDates';
 import WorkloadManagement from './WorkloadManagement';
 import { useTranslation } from 'react-i18next';
-import { useFetchScheduleMembersQuery } from '@/api/schedule/scheduleApi';
+import { useFetchScheduleMembersQuery, useFetchMemberProjectsQuery } from '@/api/schedule/scheduleApi';
 import CustomAvatar from '@/components/CustomAvatar';
 import { Member } from '@/types/schedule/schedule-v2.types';
 
 const ScheduleDrawer = () => {
   const isScheduleDrawerOpen = useAppSelector(state => state.schedule?.isScheduleDrawerOpen);
   const selectedMemberId = useAppSelector(state => state.schedule?.selectedMemberId);
-  const selectedDate = useAppSelector(state => state.schedule?.selectedDate);
+  const selectedProjectId = useAppSelector(state => state.schedule?.selectedProjectId);
+  const selectedDateRange = useAppSelector(state => state.schedule?.selectedDateRange);
   const dispatch = useAppDispatch();
   const { t } = useTranslation('schedule');
-
-  // Debug selected state
-  React.useEffect(() => {
-    if (isScheduleDrawerOpen) {
-      console.log('📂 Drawer opened with:', { selectedMemberId, selectedDate });
-    }
-  }, [isScheduleDrawerOpen, selectedMemberId, selectedDate]);
 
   // Fetch team members data
   const { data: teamDataResponse, isLoading: teamLoading } = useFetchScheduleMembersQuery();
   const teamData: Member[] = teamDataResponse?.body || [];
 
-  // Find selected member or default to first member
-  // Note: selectedMemberId is team_member_id from the cell click
+  // Fetch member projects to get project name (only if we have a selected member and project)
+  const { data: projectsResponse } = useFetchMemberProjectsQuery(
+    { id: selectedMemberId || '', chartStart: '', chartEnd: '' },
+    { skip: !selectedMemberId || !selectedProjectId }
+  );
+
+  // Find selected member
   const selectedMember = selectedMemberId
     ? teamData.find((member: Member) => member.team_member_id === selectedMemberId)
-    : teamData[0]; // Default to first member if none selected
+    : teamData[0];
+
+  // Find selected project name
+  const selectedProject = projectsResponse?.body?.projects?.find(
+    (p: any) => p.id === selectedProjectId
+  );
 
   const items: TabsProps['items'] = [
     {
@@ -91,7 +95,17 @@ const ScheduleDrawer = () => {
         selectedMember ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <CustomAvatar avatarName={selectedMember.name || ''} size={32} />
-            <span>{selectedMember.name}</span>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span>{selectedMember.name}</span>
+              {selectedProject && (
+                <span style={{ fontSize: '12px', color: '#999', fontWeight: 'normal' }}>
+                  {selectedProject.name}
+                  {selectedDateRange?.start && selectedDateRange?.end && (
+                    <> • {selectedDateRange.start} to {selectedDateRange.end}</>
+                  )}
+                </span>
+              )}
+            </div>
             {teamLoading && <span style={{ fontSize: '12px', color: '#999' }}> (Loading...)</span>}
           </div>
         ) : (

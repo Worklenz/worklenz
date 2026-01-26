@@ -467,10 +467,31 @@ export const scheduleApi = createApi({
     }),
 
     // Member Schedule Summary
-    fetchMemberScheduleSummary: builder.query<IServerResponse<any>, { memberId: string; startDate: string; endDate: string }>({
-      query: ({ memberId, startDate, endDate }) => 
-        `/members/${memberId}/summary?startDate=${startDate}&endDate=${endDate}`,
+    fetchMemberScheduleSummary: builder.query<IServerResponse<any>, { memberId: string; startDate: string; endDate: string; projectId?: string }>({
+      query: ({ memberId, startDate, endDate, projectId }) => {
+        const params = new URLSearchParams();
+        params.append('startDate', startDate);
+        params.append('endDate', endDate);
+        if (projectId) params.append('projectId', projectId);
+        return `/members/${memberId}/summary?${params.toString()}`;
+      },
       providesTags: ['Members'],
+    }),
+
+    // Fetch tasks for a specific project and member (old schedule controller)
+    // Note: This uses the OLD schedule API at /api/schedule-gannt (not v2)
+    fetchProjectMemberTasks: builder.query<IServerResponse<any>, { projectId: string; memberId: string; startDate?: string; endDate?: string; group?: string }>({
+      query: ({ projectId, memberId, startDate, endDate, group }) => {
+        const params = new URLSearchParams();
+        // Member filtering is done via 'members' query param (space-separated member IDs)
+        params.append('members', memberId);
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
+        if (group) params.append('group', group);
+        // Use the old schedule API endpoint - need to go up one level from schedule-gannt-v2 to schedule-gannt
+        return `/../schedule-gannt/tasks-by-member/${projectId}?${params.toString()}`;
+      },
+      providesTags: ['TaskTimeline'],
     }),
   }),
 });
@@ -535,6 +556,10 @@ export const {
   // Member Schedule Summary hooks
   useFetchMemberScheduleSummaryQuery,
   useLazyFetchMemberScheduleSummaryQuery,
+
+  // Project Member Tasks hooks
+  useFetchProjectMemberTasksQuery,
+  useLazyFetchProjectMemberTasksQuery,
 } = scheduleApi;
 
 // Export the reducer

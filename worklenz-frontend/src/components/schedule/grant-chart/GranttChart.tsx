@@ -412,7 +412,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                   {/* Expanded projects */}
                   {isExpanded && projects.length > 0 && (
                     <div>
-                      <Popover
+                      {/* <Popover
                         content={
                           <ProjectTimelineModal
                             memberId={memberId}
@@ -422,7 +422,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                         }
                         trigger={'click'}
                         open={isModalOpen}
-                      ></Popover>
+                      ></Popover> */}
                       {/* Group projects by project ID to show all segments in one row */}
                       {Object.entries(
                         projects.reduce((acc: Record<string, any[]>, project: any) => {
@@ -475,6 +475,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                                       project={segment}
                                       indicatorWidth={segment?.indicator_width}
                                       indicatorOffset={segment?.indicator_offset}
+                                      memberId={memberId}
                                     />
                                   </div>
                                 )}

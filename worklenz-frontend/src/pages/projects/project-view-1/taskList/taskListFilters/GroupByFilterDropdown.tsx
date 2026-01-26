@@ -1,7 +1,6 @@
 import { CaretDownFilled } from '@/shared/antd-imports';
 import { ConfigProvider, Flex, Select } from '@/shared/antd-imports';
-import React, { useState } from 'react';
-import { colors } from '@/styles/colors';
+import { useState } from 'react';
 import ConfigPhaseButton from '@features/projects/singleProject/phase/ConfigPhaseButton';
 import { useSelectedProject } from '@/hooks/useSelectedProject';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -16,7 +15,7 @@ import { FilterSortEventProps } from '@/types/mixpanel-events.types';
 const GroupByFilterDropdown = ({ position }: { position: 'list' | 'board' }) => {
   const dispatch = useAppDispatch();
 
-  type GroupTypes = 'status' | 'priority' | 'phase' | 'members' | 'list';
+  type GroupTypes = 'status' | 'priority' | 'phase';
 
   const [activeGroup, setActiveGroup] = useState<GroupTypes>('status');
 
@@ -36,40 +35,33 @@ const GroupByFilterDropdown = ({ position }: { position: 'list' | 'board' }) => 
     trackMixpanelEvent(evt_project_task_list_search_task, props);
   };
 
-  // get selected project from useSelectedPro
+  // get selected project from useSelectedProject
   const selectedProject = useSelectedProject();
 
-  //get phases details from phases slice
-  const phase =
-    useAppSelector(state => state.phaseReducer.phaseList).find(
-      phase => phase.projectId === selectedProject?.id
-    ) || null;
-
+  // Only show status, priority, and phase for schedule drawer
   const groupDropdownMenuItems = [
-    { key: 'status', value: 'status', label: t('statusText') },
-    { key: 'priority', value: 'priority', label: t('priorityText') },
+    { key: 'status', value: 'status', label: t('statusText', { defaultValue: 'Status' }) },
+    { key: 'priority', value: 'priority', label: t('priorityText', { defaultValue: 'Priority' }) },
     {
       key: 'phase',
       value: 'phase',
-      label: phase ? phase?.phase : t('phaseText'),
+      label: t('phaseText', { defaultValue: 'Phase' }),
     },
-    { key: 'members', value: 'members', label: t('memberText') },
-    { key: 'list', value: 'list', label: t('listText') },
   ];
 
   return (
     <Flex align="center" gap={4} style={{ marginInlineStart: 12 }}>
-      {t('groupByText')}:
+      {t('groupByText', { defaultValue: 'Group by' })}:
       <Select
         defaultValue={'status'}
         options={groupDropdownMenuItems}
         onChange={handleChange}
         suffixIcon={<CaretDownFilled />}
-        dropdownStyle={{ width: 'wrap-content' }}
+        popupMatchSelectWidth={false}
       />
       {(activeGroup === 'status' || activeGroup === 'phase') && (
         <ConfigProvider wave={{ disabled: true }}>
-          {activeGroup === 'phase' && <ConfigPhaseButton color={colors.skyBlue} />}
+          {activeGroup === 'phase' && <ConfigPhaseButton />}
           {activeGroup === 'status' && <CreateStatusButton />}
         </ConfigProvider>
       )}

@@ -527,7 +527,7 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
     @HandleExceptions()
     public static async getMemberScheduleSummary(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
         const { memberId } = req.params;
-        const { startDate, endDate } = req.query as { startDate?: string; endDate?: string };
+        const { startDate, endDate, projectId } = req.query as { startDate?: string; endDate?: string; projectId?: string };
 
         if (!memberId || !startDate || !endDate) {
             return res.status(400).send(new ServerResponse(false, null, "memberId, startDate, and endDate are required"));
@@ -543,6 +543,17 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
 
         const organizationId = orgResult.rows[0].id;
 
+        // Build query parameters
+        const queryParams: any[] = [startDate, endDate, memberId, organizationId];
+        let projectFilter = '';
+        
+        if (projectId) {
+            queryParams.push(projectId);
+            projectFilter = `AND pma.project_id = $5`;
+        }
+
+        const projectFilterForLogs = projectId ? `AND t.project_id = $5` : '';
+
         // Query to get allocated hours and logged hours for the member
         const summaryQuery = `
             WITH date_range AS (
@@ -552,21 +563,19 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                     $3::UUID AS team_member_id,
                     $4::UUID AS organization_id
             ),
-            -- Get allocated hours from project allocations
+            -- Get allocated hours from task total_minutes (estimation)
             allocated_hours AS (
                 SELECT 
-                    COALESCE(SUM(
-                        (pma.seconds_per_day / 3600.0) * 
-                        (DATE_PART('day', 
-                            LEAST(pma.allocated_to, dr.end_date) - 
-                            GREATEST(pma.allocated_from, dr.start_date)
-                        ) + 1)
-                    ), 0) AS total_allocated
+                    COALESCE(SUM(t.total_minutes / 60.0), 0) AS total_allocated
                 FROM date_range dr
-                LEFT JOIN project_member_allocations pma 
-                    ON pma.team_member_id = dr.team_member_id
-                    AND pma.allocated_from <= dr.end_date
-                    AND pma.allocated_to >= dr.start_date
+                LEFT JOIN tasks t ON t.archived = FALSE
+                    AND t.start_date IS NOT NULL
+                    AND t.end_date IS NOT NULL
+                    AND t.start_date <= dr.end_date
+                    AND t.end_date >= dr.start_date
+                    ${projectFilterForLogs}
+                LEFT JOIN tasks_assignees ta ON ta.task_id = t.id
+                WHERE ta.team_member_id = dr.team_member_id
             ),
             -- Get logged hours from task work logs
             logged_hours AS (
@@ -579,6 +588,7 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                 LEFT JOIN task_work_log twl ON twl.user_id = tm.user_id
                     AND twl.created_at::DATE BETWEEN dr.start_date AND dr.end_date
                 LEFT JOIN tasks t ON t.id = twl.task_id
+                    ${projectFilterForLogs}
                 LEFT JOIN projects p ON p.id = t.project_id
                 LEFT JOIN teams te ON te.id = p.team_id
                 WHERE te.organization_id = dr.organization_id OR te.organization_id IS NULL
@@ -591,7 +601,7 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
             FROM allocated_hours ah, logged_hours lh;
         `;
 
-        const result = await db.query(summaryQuery, [startDate, endDate, memberId, organizationId]);
+        const result = await db.query(summaryQuery, queryParams);
         
         const summary = result.rows[0] || {
             allocated_hours: 0,

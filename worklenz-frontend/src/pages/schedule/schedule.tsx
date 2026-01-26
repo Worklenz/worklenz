@@ -37,7 +37,7 @@ const Schedule: React.FC = () => {
   const { t } = useTranslation('schedule');
   const dispatch = useDispatch();
   const granttChartRef = useRef<any>(null);
-  const { date, type } = useAppSelector(state => state.scheduleReducer);
+  const { date, type, error } = useAppSelector(state => state.scheduleReducer);
   const { trackMixpanelEvent } = useMixpanelTracking();
   
   // View mode state: 'project' for existing view, 'task' for new task timeline
@@ -49,6 +49,18 @@ const Schedule: React.FC = () => {
   useEffect(() => {
     trackMixpanelEvent(evt_schedule_page_visit);
   }, [trackMixpanelEvent]);
+
+  // Listen for settings changes and trigger refresh
+  // The error state is cleared when triggerScheduleRefresh is called
+  // We use a ref to track previous error state to detect changes
+  const prevErrorRef = useRef(error);
+  useEffect(() => {
+    // If error changed from something to null, it means triggerScheduleRefresh was called
+    if (prevErrorRef.current !== null && error === null && !isRefreshing) {
+      handleRefresh();
+    }
+    prevErrorRef.current = error;
+  }, [error]);
 
   const handleDateChange = (value: dayjs.Dayjs | null) => {
     if (!value) return;

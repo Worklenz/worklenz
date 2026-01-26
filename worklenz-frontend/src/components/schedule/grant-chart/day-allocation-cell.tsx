@@ -2,7 +2,7 @@ import React from 'react';
 import { Tooltip } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { toggleScheduleDrawer, setSelectedMember, setSelectedDate } from '../../../features/schedule/scheduleSliceRTK';
+import { toggleScheduleDrawer, setSelectedMember, setSelectedDate, setSelectedProject, setSelectedDateRange } from '../../../features/schedule/scheduleSliceRTK';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 
 interface DailyCapacityData {
@@ -46,6 +46,9 @@ const DayAllocationCell = ({
       // Set selected member and date before opening drawer
       dispatch(setSelectedMember(memberId));
       dispatch(setSelectedDate(date || null));
+      // Clear project and date range (cell click is for member view, not project-specific)
+      dispatch(setSelectedProject(null));
+      dispatch(setSelectedDateRange(null));
       dispatch(toggleScheduleDrawer());
     }
   };
@@ -134,7 +137,7 @@ const DayAllocationCell = ({
         <strong>Status: {effectiveData.status.replace('-', ' ').toUpperCase()}</strong>
       </span>
 
-      {effectiveData.projects && effectiveData.projects.length > 0 && (
+      {/* {effectiveData.projects && effectiveData.projects.length > 0 && (
         <>
           <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #ddd' }} />
           <div style={{ fontWeight: 'bold', marginTop: 4, marginBottom: 4 }}>
@@ -155,7 +158,7 @@ const DayAllocationCell = ({
             </div>
           ))}
         </>
-      )}
+      )} */}
     </div>
   );
 
@@ -199,7 +202,7 @@ const DayAllocationCell = ({
             overflow: 'hidden',
             transition: 'all 0.2s',
           }}
-          onClick={handleClick}
+          // onClick={handleClick}
           className={isInteractive ? 'hover:opacity-80' : ''}
         >
           {/* Over-allocation warning stripe */}
