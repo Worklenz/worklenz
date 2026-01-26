@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +7,9 @@ import { Empty, Spin } from '@/shared/antd-imports';
 import dayjs from 'dayjs';
 import GroupByFilterDropdown from '@/pages/projects/project-view-1/taskList/taskListFilters/GroupByFilterDropdown';
 import { setMembers } from '@/features/tasks/tasks.slice';
+import ScheduleTaskGroupHeader from '@/components/schedule/ScheduleTaskGroupHeader';
+import ScheduleTaskRow from '@/components/schedule/ScheduleTaskRow';
+import ScheduleTaskListHeader from '@/components/schedule/ScheduleTaskListHeader';
 
 const WithStartAndEndDates = () => {
   const { t } = useTranslation('schedule');
@@ -96,32 +99,35 @@ const WithStartAndEndDates = () => {
     return [];
   }, [projectTasksResponse]);
 
-  // Debug project tasks
+  // State for collapsed groups
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  const toggleGroupCollapse = (groupId: string) => {
+    setCollapsedGroups(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(groupId)) {
+        newSet.delete(groupId);
+      } else {
+        newSet.add(groupId);
+      }
+      return newSet;
+    });
+  };
+  
+  // Fetch statuses and priorities when project is selected
   useEffect(() => {
     if (selectedProjectId) {
-      console.log('🔍 Project Tasks Debug:', {
-        selectedProjectId,
-        selectedMemberId,
-        dateRange,
-        projectTasks,
-        projectTasksLoading,
-        projectTasksError,
+      // Fetch statuses for the selected project
+      import('@/features/taskAttributes/taskStatusSlice').then(({ fetchStatuses }) => {
+        dispatch(fetchStatuses(selectedProjectId));
+      });
+      
+      // Fetch priorities (they're global, not project-specific)
+      import('@/features/taskAttributes/taskPrioritySlice').then(({ fetchPriorities }) => {
+        dispatch(fetchPriorities());
       });
     }
-  }, [selectedProjectId, selectedMemberId, dateRange, projectTasks, projectTasksLoading, projectTasksError]);
-  
-  // Debug state
-  useEffect(() => {
-    console.log('📋 WithStartAndEndDates state:', { 
-      selectedMemberId, 
-      selectedProjectId, 
-      selectedDateRange,
-      dateRange,
-      summary,
-      projectTasks: projectTasks.length,
-      hasProjectSelected: !!selectedProjectId,
-    });
-  }, [selectedMemberId, selectedProjectId, selectedDateRange, dateRange, summary, projectTasks]);
+  }, [selectedProjectId, dispatch]);
   
   // Set filter to show only selected member's tasks
   useEffect(() => {
@@ -138,7 +144,6 @@ const WithStartAndEndDates = () => {
           selected: true
         }];
         dispatch(setMembers(memberFilter));
-        console.log('🔍 Filtering tasks for member:', selectedMember.name);
       }
     }
     
@@ -226,88 +231,99 @@ const WithStartAndEndDates = () => {
               <Spin size="large" />
             </div>
           ) : projectTasks.length > 0 ? (
-            <div style={{ 
-              border: '1px solid rgba(0, 0, 0, 0.1)', 
-              borderRadius: '8px',
-              padding: '16px',
-              maxHeight: '500px',
-              overflow: 'auto'
-            }}>
-              {/* Display project tasks grouped */}
-              {projectTasks.map((group: any) => (
-                <div key={group.id} style={{ marginBottom: '24px' }}>
-                  <div style={{ 
-                    fontSize: '16px', 
-                    fontWeight: 'bold', 
-                    marginBottom: '12px',
-                    padding: '8px',
-                    backgroundColor: `${group.color_code}20`,
-                    borderLeft: `4px solid ${group.color_code}`,
-                    borderRadius: '4px'
-                  }}>
-                    {group.name} ({group.tasks?.length || 0})
-                  </div>
-                  {group.tasks && group.tasks.length > 0 ? (
-                    <div style={{ paddingLeft: '16px' }}>
-                      {group.tasks.map((task: any) => (
-                        <div 
-                          key={task.id} 
-                          style={{ 
-                            padding: '12px',
-                            marginBottom: '8px',
-                            border: '1px solid rgba(0, 0, 0, 0.1)',
-                            borderRadius: '6px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s'
-                          }}
-                          className="hover:shadow-md"
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontWeight: 500 }}>{task.name}</span>
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              {task.start_date && task.end_date && (
-                                <span style={{ fontSize: '12px', color: '#666' }}>
-                                  {task.start_date} → {task.end_date}
-                                </span>
-                              )}
-                              {task.status_color && (
-                                <span style={{ 
-                                  fontSize: '11px', 
-                                  padding: '2px 8px', 
-                                  borderRadius: '4px',
-                                  backgroundColor: task.status_color || '#ccc',
-                                  color: '#fff'
-                                }}>
-                                  {task.status}
-                                </span>
-                              )}
+            <div
+              style={{
+                border: '1px solid rgba(0, 0, 0, 0.1)',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                maxHeight: '600px',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {/* Sticky Header */}
+              <ScheduleTaskListHeader />
+
+              {/* Scrollable Content */}
+              <div style={{ overflowY: 'auto', flex: 1 }}>
+                {/* Display project tasks grouped */}
+                {projectTasks.map((group: any) => {
+                  const isCollapsed = collapsedGroups.has(group.id);
+                  
+                  return (
+                    <div key={group.id}>
+                      <ScheduleTaskGroupHeader
+                        group={{
+                          id: group.id,
+                          name: group.name,
+                          tasks: group.tasks || [],
+                          color_code: group.color_code,
+                        }}
+                        isCollapsed={isCollapsed}
+                        onToggle={() => toggleGroupCollapse(group.id)}
+                      />
+
+                      {!isCollapsed && (
+                        <>
+                          {group.tasks && group.tasks.length > 0 ? (
+                            group.tasks.map((task: any) => (
+                              <ScheduleTaskRow
+                                key={task.id}
+                                task={{
+                                  id: task.id,
+                                  name: task.name,
+                                  status: task.status,
+                                  status_color: task.status_color,
+                                  labels: task.labels,
+                                  total_minutes: task.total_minutes,
+                                  phase_name: task.phase_name,
+                                  phase_color: task.phase_color,
+                                  priority: task.priority,
+                                  priority_color: task.priority_color,
+                                  start_date: task.start_date,
+                                  end_date: task.end_date,
+                                  progress: task.progress,
+                                  assignees: task.assignees,
+                                }}
+                                onClick={() => {
+                                  // Handle task click - could open task drawer
+                                  console.log('Task clicked:', task.id);
+                                }}
+                              />
+                            ))
+                          ) : (
+                            <div
+                              style={{
+                                padding: '24px',
+                                textAlign: 'center',
+                                color: '#999',
+                                fontStyle: 'italic',
+                              }}
+                            >
+                              {t('noTasksInGroup', { defaultValue: 'No tasks in this group' })}
                             </div>
-                          </div>
-                        </div>
-                      ))}
+                          )}
+                        </>
+                      )}
                     </div>
-                  ) : (
-                    <div style={{ 
-                      paddingLeft: '16px', 
-                      color: '#999', 
-                      fontStyle: 'italic',
-                      padding: '12px'
-                    }}>
-                      {t('noTasksInGroup', { defaultValue: 'No tasks in this group' })}
-                    </div>
-                  )}
-                </div>
-              ))}
+                  );
+                })}
+              </div>
             </div>
           ) : (
-            <Empty description={t('noTasksInDateRange', { defaultValue: 'No tasks found in this date range' })} />
+            <Empty
+              description={t('noTasksInDateRange', {
+                defaultValue: 'No tasks found in this date range',
+              })}
+            />
           )}
         </>
       ) : (
         <div style={{ padding: '40px' }}>
           <Empty
-            description={t('selectProjectToViewTasks', { defaultValue: 'Select a project to view tasks' })}
+            description={t('selectProjectToViewTasks', {
+              defaultValue: 'Select a project to view tasks',
+            })}
           />
         </div>
       )}
