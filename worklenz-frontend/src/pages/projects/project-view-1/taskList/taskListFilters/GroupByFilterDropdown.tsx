@@ -17,15 +17,15 @@ const GroupByFilterDropdown = ({ position }: { position: 'list' | 'board' }) => 
 
   type GroupTypes = 'status' | 'priority' | 'phase';
 
-  const [activeGroup, setActiveGroup] = useState<GroupTypes>('status');
-
   // localization
   const { t } = useTranslation('task-list-filters');
   const { projectId } = useAppSelector(state => state.projectReducer);
   const { trackMixpanelEvent } = useMixpanelTracking();
+  
+  // Get current groupBy value from Redux store
+  const groupBy = useAppSelector(state => state.groupByFilterDropdownReducer?.groupBy || 'status');
 
   const handleChange = (value: string) => {
-    setActiveGroup(value as GroupTypes);
     dispatch(setGroupBy(value as GroupTypes));
     const props: FilterSortEventProps = {
       filter_type: 'custom',
@@ -53,18 +53,16 @@ const GroupByFilterDropdown = ({ position }: { position: 'list' | 'board' }) => 
     <Flex align="center" gap={4} style={{ marginInlineStart: 12 }}>
       {t('groupByText', { defaultValue: 'Group by' })}:
       <Select
-        defaultValue={'status'}
+        value={groupBy}
         options={groupDropdownMenuItems}
         onChange={handleChange}
-        suffixIcon={<CaretDownFilled />}
-        popupMatchSelectWidth={false}
       />
-      {(activeGroup === 'status' || activeGroup === 'phase') && (
+      {/* {(groupBy === 'status' || groupBy === 'phase') && (
         <ConfigProvider wave={{ disabled: true }}>
-          {activeGroup === 'phase' && <ConfigPhaseButton />}
-          {activeGroup === 'status' && <CreateStatusButton />}
+          {groupBy === 'phase' && <ConfigPhaseButton />}
+          {groupBy === 'status' && <CreateStatusButton />}
         </ConfigProvider>
-      )}
+      )} */}
     </Flex>
   );
 };
