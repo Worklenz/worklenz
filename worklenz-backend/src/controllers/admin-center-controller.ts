@@ -10,6 +10,7 @@ import {
   getColor,
   log_error,
   megabytesToBytes,
+  sanitizePlainText,
 } from "../shared/utils";
 import moment from "moment";
 import { calculateStorage } from "../shared/s3";
@@ -1263,7 +1264,9 @@ export default class AdminCenterController extends WorklenzControllerBase {
     const result = await db.query(q, [id, req.user?.id, teamId]);
     const [data] = result.rows;
 
-    const message = `You have been removed from <b>${req.user?.team_name}</b> by <b>${req.user?.name}</b>`;
+    const safeName = sanitizePlainText(req.user?.name || 'an administrator');
+    const safeTeamName = sanitizePlainText(req.user?.team_name || 'the team');
+    const message = `You have been removed from <b>${safeTeamName}</b> by <b>${safeName}</b>`;
 
     // if (subscriptionData.status === "trialing") break;
     if (!subscriptionData.is_credit && !subscriptionData.is_custom) {
@@ -1297,10 +1300,10 @@ export default class AdminCenterController extends WorklenzControllerBase {
     }
 
     NotificationsService.sendNotification({
-      receiver_socket_id: data.socket_id,
+      receiver_socket_id: data.member.socket_id,
       message,
-      team: data.team,
-      team_id: id,
+      team: data.member.team,
+      team_id: teamId,
     });
 
     IO.emitByUserId(
@@ -1308,7 +1311,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
       req.user?.id || null,
       SocketEvents.TEAM_MEMBER_REMOVED,
       {
-        teamId: id,
+        teamId: teamId,
         message,
       }
     );

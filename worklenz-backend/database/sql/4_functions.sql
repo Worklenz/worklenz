@@ -5226,7 +5226,7 @@ BEGIN
     RETURN JSON_BUILD_OBJECT(
         'id', _removed_user_id,
         'team', _removed_team_name,
-        'socket_id', (SELECT socket_id FROM users WHERE id = _user_id)
+        'socket_id', (SELECT socket_id FROM users WHERE id = _removed_user_id)
         );
 END;
 $$;
