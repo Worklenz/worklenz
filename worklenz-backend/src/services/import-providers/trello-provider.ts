@@ -58,6 +58,28 @@ interface TrelloCard {
   shortUrl?: string;
   dateLastActivity?: string;
   attachments?: TrelloAttachment[];
+  customFieldItems?: TrelloCustomFieldItem[];
+}
+
+interface TrelloCustomField {
+  id: string;
+  name?: string;
+  type?: string;
+}
+
+interface TrelloCustomFieldItemValue {
+  text?: string;
+  number?: string;
+  date?: string;
+  checked?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+interface TrelloCustomFieldItem {
+  idCustomField?: string;
+  value?: TrelloCustomFieldItemValue | null;
 }
 
 const DEFAULT_FIELDS: FieldMappingRow[] = [
@@ -73,6 +95,7 @@ const DEFAULT_FIELDS: FieldMappingRow[] = [
   { source_field: "Start date", target_field: "startDate", include: true },
   { source_field: "Members", target_field: "assignees", include: true },
   { source_field: "Labels", target_field: "labels", include: true },
+  { source_field: "Location", target_field: "location", include: true },
   {
     source_field: "Completed on",
     target_field: "completedDate",
@@ -138,6 +161,7 @@ export default class TrelloProvider implements ImportProvider {
     listName: string,
     memberNames: string[],
     labelNames: string[],
+    locationDisplay?: string,
   ): Record<string, unknown> {
     return {
       "Card name": card.name || "",
@@ -148,6 +172,7 @@ export default class TrelloProvider implements ImportProvider {
       "Start date": card.start || "",
       Members: memberNames.join(", "),
       Labels: labelNames.join(", "),
+      Location: locationDisplay || "",
       "Completed on": card.dueComplete && card.due ? card.due : "",
       "Last updated": card.dateLastActivity || "",
       URL: card.shortUrl || "",
@@ -198,7 +223,7 @@ export default class TrelloProvider implements ImportProvider {
       return { tasks: [], raw: { warning: (err as Error)?.message } };
     }
 
-    const [lists, labels, members, cards] = await Promise.all([
+    const [lists, labels, members, customFields, cards] = await Promise.all([
       getWithRetries<TrelloList[]>({
         method: "GET",
         url: `https://api.trello.com/1/boards/${options.boardId}/lists`,
@@ -228,12 +253,21 @@ export default class TrelloProvider implements ImportProvider {
           fields: "fullName,username,memberType,confirmed,email",
         },
       }),
+      getWithRetries<TrelloCustomField[]>({
+        method: "GET",
+        url: `https://api.trello.com/1/boards/${options.boardId}/customFields`,
+        params: {
+          key: options.key,
+          token: options.token,
+        },
+      }),
       getWithRetries<TrelloCard[]>({
         method: "GET",
         url: `https://api.trello.com/1/boards/${options.boardId}/cards`,
         params: {
           key: options.key,
           token: options.token,
+          customFieldItems: true,
           attachments: true,
           attachment_fields: "id,name,url,bytes,date,mimeType,isUpload",
           fields:
@@ -258,6 +292,17 @@ export default class TrelloProvider implements ImportProvider {
       if (member.id) memberDirectory.set(member.id, member);
     });
 
+    const customFieldNameById = new Map<string, string>();
+    const locationFieldIds = new Set<string>();
+    (customFields || []).forEach((field) => {
+      if (!field.id) return;
+      if (field.name) customFieldNameById.set(field.id, field.name);
+      const nameLower = (field.name || "").toLowerCase();
+      if (field.type === "location" || nameLower.includes("location")) {
+        locationFieldIds.add(field.id);
+      }
+    });
+
     const tasks: StageTaskRow[] = [];
     const attachments: AttachmentPlanRow[] = [];
     const userMappings = new Map<string, UserMappingRow>();
@@ -274,14 +319,66 @@ export default class TrelloProvider implements ImportProvider {
       const labelNames = (card.idLabels || []).map(
         (id) => labelNameMap.get(id) || id,
       );
-      const raw = {
-        ...this.buildRawCard(card, listName, memberNames, labelNames),
+      const locationValues: string[] = [];
+      const toLocationString = (
+        loc?: TrelloCustomFieldItemValue | null,
+      ): string | null => {
+        if (!loc) return null;
+        if (loc.address) return loc.address;
+        if (loc.text) return loc.text;
+        if (
+          typeof loc.latitude === "number" &&
+          typeof loc.longitude === "number"
+        ) {
+          return `${loc.latitude}, ${loc.longitude}`;
+        }
+        if (loc.number) return loc.number;
+        if (loc.date) return loc.date;
+        if (loc.checked) return loc.checked;
+        return null;
+      };
+
+      if (Array.isArray(card.customFieldItems)) {
+        for (const item of card.customFieldItems) {
+          const fieldId = item.idCustomField;
+          if (!fieldId || !locationFieldIds.has(fieldId)) continue;
+          const value = toLocationString(
+            item.value as TrelloCustomFieldItemValue,
+          );
+          if (value) {
+            locationValues.push(value);
+          }
+        }
+      }
+      const locationDisplay = locationValues.join("; ");
+      const raw: Record<string, unknown> = {
+        ...this.buildRawCard(
+          card,
+          listName,
+          memberNames,
+          labelNames,
+          locationDisplay,
+        ),
         __labelIds: card.idLabels || [],
         __labels: labelNames,
         __memberIds: card.idMembers || [],
         __memberNames: memberNames,
         __memberEmails: memberEmails,
       };
+
+      if (Array.isArray(card.customFieldItems)) {
+        for (const item of card.customFieldItems) {
+          const fieldId = item.idCustomField;
+          if (!fieldId || !locationFieldIds.has(fieldId)) continue;
+          const fieldName = customFieldNameById.get(fieldId) || "Location";
+          const value = toLocationString(
+            item.value as TrelloCustomFieldItemValue,
+          );
+          if (fieldName && value) {
+            (raw as Record<string, unknown>)[fieldName] = value;
+          }
+        }
+      }
 
       const assigneeSource =
         memberEmails[0] || (card.idMembers?.[0] ?? null) || memberNames[0];
