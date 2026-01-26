@@ -1061,12 +1061,16 @@ class ImportsService {
         if (!targetTeamId) return [] as any[];
         const { rows } = await client.query(
           `SELECT tm.id,
-                  LOWER(COALESCE(u.email, ei.email)) AS email,
-                  COALESCE(u.display_name, CONCAT_WS(' ', u.first_name, u.last_name)) AS name
-             FROM team_members tm
-             LEFT JOIN users u ON u.id = tm.user_id
-             LEFT JOIN email_invitations ei ON ei.team_member_id = tm.id
-             WHERE tm.team_id = $1`,
+              LOWER(COALESCE(u.email, ei.email)) AS email,
+              COALESCE(
+                u.name,
+                ei.name,
+                SPLIT_PART(COALESCE(u.email, ei.email, ''), '@', 1)
+              ) AS name
+               FROM team_members tm
+               LEFT JOIN users u ON u.id = tm.user_id
+               LEFT JOIN email_invitations ei ON ei.team_member_id = tm.id
+               WHERE tm.team_id = $1`,
           [targetTeamId],
         );
         return rows as any[];
