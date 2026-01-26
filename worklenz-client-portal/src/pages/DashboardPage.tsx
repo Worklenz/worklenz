@@ -171,18 +171,6 @@ const DashboardPage: React.FC = () => {
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <StatCard
-            icon={<TeamOutlined />}
-            iconBg="#52c41a"
-            label={t('dashboard.teamMembers')}
-            value={stats.teamMembers}
-          />
-        </Col>
-      </Row>
-
-      {/* Secondary Stats Row */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} lg={6}>
-          <StatCard
             icon={<DollarOutlined />}
             iconBg={stats.unpaidAmount > 0 ? '#ff4d4f' : '#52c41a'}
             label={t('dashboard.unpaidAmount')}
