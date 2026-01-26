@@ -6,7 +6,6 @@ import { useFetchScheduleMembersQuery, useFetchMemberScheduleSummaryQuery, useFe
 import { Empty, Spin } from '@/shared/antd-imports';
 import dayjs from 'dayjs';
 import GroupByFilterDropdown from '@/pages/projects/project-view-1/taskList/taskListFilters/GroupByFilterDropdown';
-import TaskListV2Section from '@/components/task-list-v2/TaskListV2Table';
 import { setMembers } from '@/features/tasks/tasks.slice';
 
 const WithStartAndEndDates = () => {
@@ -246,7 +245,7 @@ const WithStartAndEndDates = () => {
                     borderLeft: `4px solid ${group.color_code}`,
                     borderRadius: '4px'
                   }}>
-                    {group.name} ({group.tasks?.length || 0} {t('tasks', { defaultValue: 'tasks' })})
+                    {group.name} ({group.tasks?.length || 0})
                   </div>
                   {group.tasks && group.tasks.length > 0 ? (
                     <div style={{ paddingLeft: '16px' }}>
@@ -306,16 +305,11 @@ const WithStartAndEndDates = () => {
           )}
         </>
       ) : (
-        <>
-          {/* Show all member tasks with filters */}
-          <div>
-            <GroupByFilterDropdown position="list" />
-          </div>
-          
-          <div style={{ height: '500px', overflow: 'hidden' }}>
-            <TaskListV2Section />
-          </div>
-        </>
+        <div style={{ padding: '40px' }}>
+          <Empty
+            description={t('selectProjectToViewTasks', { defaultValue: 'Select a project to view tasks' })}
+          />
+        </div>
       )}
     </div>
   );
