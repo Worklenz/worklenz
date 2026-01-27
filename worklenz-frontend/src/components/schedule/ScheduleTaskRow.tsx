@@ -125,7 +125,7 @@ const ScheduleTaskRow: React.FC<ScheduleTaskRowProps> = ({ task, onClick }) => {
     const minutes = task.total_minutes ?? 0;
     if (minutes === 0) return '0h';
     const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+    const mins = Math.round(minutes % 60); // Round the remaining minutes to avoid decimals
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   }, [task.total_minutes]);
 
@@ -134,7 +134,7 @@ const ScheduleTaskRow: React.FC<ScheduleTaskRowProps> = ({ task, onClick }) => {
     const minutes = task.total_minutes_spent ?? 0;
     if (minutes === 0) return '0h';
     const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+    const mins = Math.round(minutes % 60); // Round the remaining minutes to avoid decimals
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   }, [task.total_minutes_spent]);
 

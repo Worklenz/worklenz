@@ -872,7 +872,7 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
     ].filter(i => !!i).join(" AND ");
 
     // Build member-specific time spent query
-    let timeSpentQuery = "(SELECT SUM(time_spent) / 60.0 FROM task_work_log WHERE task_id = t.id) AS total_minutes_spent";
+    let timeSpentQuery = "(SELECT ROUND(SUM(time_spent) / 60.0, 2) FROM task_work_log WHERE task_id = t.id) AS total_minutes_spent";
     
     // If specific members are selected, filter time logs by those members
     if (options.members && typeof options.members === 'string') {
@@ -880,7 +880,7 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
       if (memberIds.length > 0) {
         // Create placeholders for member IDs in the time spent query
         const memberPlaceholders = memberIds.map((_, index) => `$${paramOffset + index}`).join(', ');
-        timeSpentQuery = `(SELECT SUM(twl.time_spent) / 60.0
+        timeSpentQuery = `(SELECT ROUND(SUM(twl.time_spent) / 60.0, 2)
                          FROM task_work_log twl 
                          INNER JOIN team_members tm ON twl.user_id = tm.user_id 
                          WHERE twl.task_id = t.id 
