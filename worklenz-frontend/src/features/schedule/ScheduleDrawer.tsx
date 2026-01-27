@@ -1,5 +1,5 @@
 import { Avatar, Drawer, Tabs, TabsProps } from '@/shared/antd-imports';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleScheduleDrawer } from './scheduleSliceRTK';
@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useFetchScheduleMembersQuery, useFetchMemberProjectsQuery } from '@/api/schedule/scheduleApi';
 import CustomAvatar from '@/components/CustomAvatar';
 import { Member } from '@/types/schedule/schedule-v2.types';
+import { setProjectId } from '@/features/project/project.slice';
 
 const ScheduleDrawer = () => {
   const isScheduleDrawerOpen = useAppSelector(state => state.schedule?.isScheduleDrawerOpen);
@@ -37,6 +38,13 @@ const ScheduleDrawer = () => {
   const selectedProject = projectsResponse?.body?.projects?.find(
     (p: any) => p.id === selectedProjectId
   );
+
+  // Set project ID in Redux when a project is selected
+  useEffect(() => {
+    if (selectedProjectId) {
+      dispatch(setProjectId(selectedProjectId));
+    }
+  }, [selectedProjectId, dispatch]);
 
   const items: TabsProps['items'] = [
     {

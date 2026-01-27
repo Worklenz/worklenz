@@ -1,23 +1,25 @@
 import React, { useMemo } from 'react';
-import { Tag, Avatar, Tooltip, Progress } from '@/shared/antd-imports';
-import { ClockCircleOutlined, CalendarOutlined } from '@/shared/antd-imports';
+import { Tag, Tooltip } from '@/shared/antd-imports';
+import { ClockCircleOutlined, ArrowsAltOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 import dayjs from 'dayjs';
 
 interface ScheduleTaskRowProps {
   task: {
     id: string;
     name: string;
-    task_key?: string; // Task key (e.g., "PROJ-123")
-    status?: string; // This is the status ID
+    task_key?: string;
+    status?: string;
     status_color?: string;
     labels?: Array<{ id: string; name: string; color_code: string }>;
-    total_minutes?: number; // Estimated time
-    total_minutes_spent?: number; // Actual logged time
+    total_minutes?: number;
+    total_minutes_spent?: number;
     phase_name?: string;
     phase_color?: string;
-    priority?: string; // This is the priority name (low/medium/high)
+    priority?: string;
     priority_color?: string;
     start_date?: string;
     end_date?: string;
@@ -29,6 +31,7 @@ interface ScheduleTaskRowProps {
 
 const ScheduleTaskRow: React.FC<ScheduleTaskRowProps> = ({ task, onClick }) => {
   const { t } = useTranslation('schedule');
+  const dispatch = useAppDispatch();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDarkMode = themeMode === 'dark';
 
@@ -143,9 +146,7 @@ const ScheduleTaskRow: React.FC<ScheduleTaskRowProps> = ({ task, onClick }) => {
 
   return (
     <div
-      className={`flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer ${
-        isDarkMode ? 'bg-gray-900' : 'bg-white'
-      }`}
+      className={`flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer group`}
       onClick={onClick}
       style={{ height: '40px', minHeight: '40px' }}
     >
@@ -159,8 +160,8 @@ const ScheduleTaskRow: React.FC<ScheduleTaskRowProps> = ({ task, onClick }) => {
       </div>
 
       {/* Task Name - 35% width */}
-      <div className="flex-[3.5] min-w-0 px-2 border-r border-gray-200 dark:border-gray-700" style={{ height: '100%' }}>
-        <div className="flex items-center h-full gap-2">
+      <div className="flex-[3.5] min-w-0 px-2 border-r border-gray-200 dark:border-gray-700 relative" style={{ height: '100%' }}>
+        <div className="flex items-center h-full gap-2 pr-0 transition-[padding] duration-200 group-hover:pr-14">
           <span className="text-sm text-gray-900 dark:text-gray-100 truncate flex-1">
             {task.name}
           </span>
@@ -171,6 +172,19 @@ const ScheduleTaskRow: React.FC<ScheduleTaskRowProps> = ({ task, onClick }) => {
             </span>
           )}
         </div>
+        
+        {/* Open Task Drawer Button */}
+        <button
+          className="pointer-events-none group-hover:pointer-events-auto focus-visible:pointer-events-auto opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all duration-200 px-2 py-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer rounded-md shadow-sm hover:shadow-md flex items-center gap-1 absolute right-2 top-1/2 -translate-y-1/2"
+          onClick={e => {
+            e.stopPropagation();
+            dispatch(setSelectedTaskId(task.id));
+            dispatch(setShowTaskDrawer(true));
+          }}
+        >
+          <ArrowsAltOutlined style={{ fontSize: '11px' }} />
+          <span>{t('open', { defaultValue: 'Open' })}</span>
+        </button>
       </div>
 
       {/* Status - 13% width */}

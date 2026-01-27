@@ -1,5 +1,5 @@
 import { Button, DatePicker, DatePickerProps, Flex, Select, Space, Radio, message } from '@/shared/antd-imports';
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, Suspense, lazy } from 'react';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_schedule_page_visit } from '@/shared/worklenz-analytics-events';
 import { SettingOutlined, ReloadOutlined } from '@ant-design/icons';
@@ -16,6 +16,10 @@ import ScheduleDataDebugger from '@/components/schedule/ScheduleDataDebugger';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { PickerType } from '@/types/schedule/schedule-v2.types';
 import { scheduleApi } from '@/api/schedule/scheduleApi';
+import { createPortal } from 'react-dom';
+
+// Lazy load TaskDrawer
+const TaskDrawer = lazy(() => import('@/components/task-drawer/task-drawer'));
 
 const { Option } = Select;
 
@@ -166,6 +170,15 @@ const Schedule: React.FC = () => {
 
       <ScheduleSettingsDrawer />
       <ScheduleDrawer />
+      
+      {/* Task Drawer for opening individual tasks */}
+      {createPortal(
+        <Suspense fallback={null}>
+          <TaskDrawer />
+        </Suspense>,
+        document.body,
+        'schedule-task-drawer'
+      )}
     </div>
   );
 };
