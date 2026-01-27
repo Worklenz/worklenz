@@ -525,10 +525,12 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
     }
 
     @HandleExceptions()
+    @HandleExceptions()
     public static async getMemberScheduleSummary(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
         const { memberId } = req.params;
         const { startDate, endDate, projectId } = req.query as { startDate?: string; endDate?: string; projectId?: string };
 
+        // Validate required parameters
         if (!memberId || !startDate || !endDate) {
             return res.status(400).send(new ServerResponse(false, null, "memberId, startDate, and endDate are required"));
         }
@@ -549,12 +551,10 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
         
         if (projectId) {
             queryParams.push(projectId);
-            projectFilter = `AND pma.project_id = $5`;
+            projectFilter = 'AND t.project_id = $5';
         }
 
-        const projectFilterForLogs = projectId ? `AND t.project_id = $5` : '';
-
-        // Query to get allocated hours and logged hours for the member
+        // Main query to get allocated and logged hours
         const summaryQuery = `
             WITH date_range AS (
                 SELECT 
@@ -563,7 +563,7 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                     $3::UUID AS team_member_id,
                     $4::UUID AS organization_id
             ),
-            -- Get allocated hours from task total_minutes (estimation)
+            -- Get allocated hours from task estimations (total_minutes)
             allocated_hours AS (
                 SELECT 
                     COALESCE(SUM(t.total_minutes / 60.0), 0) AS total_allocated
@@ -573,31 +573,37 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                     AND t.end_date IS NOT NULL
                     AND t.start_date <= dr.end_date
                     AND t.end_date >= dr.start_date
-                    ${projectFilterForLogs}
+                    ${projectFilter}
                 LEFT JOIN tasks_assignees ta ON ta.task_id = t.id
                 WHERE ta.team_member_id = dr.team_member_id
             ),
-            -- Get logged hours from task work logs
+            -- Get logged hours from work logs for tasks scheduled within date range
             logged_hours AS (
                 SELECT 
-                    COALESCE(SUM(twl.time_spent / 3600.0), 0) AS total_logged,
-                    COALESCE(SUM(CASE WHEN t.billable = true THEN twl.time_spent / 3600.0 ELSE 0 END), 0) AS logged_billable,
-                    COALESCE(SUM(CASE WHEN t.billable = false OR t.billable IS NULL THEN twl.time_spent / 3600.0 ELSE 0 END), 0) AS logged_non_billable
+                    COALESCE(SUM(twl.time_spent), 0) AS total_logged_seconds,
+                    COALESCE(SUM(CASE WHEN t.billable = true THEN twl.time_spent ELSE 0 END), 0) AS logged_billable_seconds,
+                    COALESCE(SUM(CASE WHEN t.billable = false OR t.billable IS NULL THEN twl.time_spent ELSE 0 END), 0) AS logged_non_billable_seconds
                 FROM date_range dr
-                LEFT JOIN team_members tm ON tm.id = dr.team_member_id
-                LEFT JOIN task_work_log twl ON twl.user_id = tm.user_id
-                    AND twl.created_at::DATE BETWEEN dr.start_date AND dr.end_date
-                LEFT JOIN tasks t ON t.id = twl.task_id
-                    ${projectFilterForLogs}
+                JOIN team_members tm ON tm.id = dr.team_member_id
+                LEFT JOIN tasks t ON t.archived = FALSE
+                    AND t.start_date IS NOT NULL
+                    AND t.end_date IS NOT NULL
+                    AND t.start_date <= dr.end_date
+                    AND t.end_date >= dr.start_date
+                    ${projectFilter}
+                LEFT JOIN tasks_assignees ta ON ta.task_id = t.id
+                    AND ta.team_member_id = dr.team_member_id
+                LEFT JOIN task_work_log twl ON twl.task_id = t.id
+                    AND twl.user_id = tm.user_id
                 LEFT JOIN projects p ON p.id = t.project_id
                 LEFT JOIN teams te ON te.id = p.team_id
-                WHERE te.organization_id = dr.organization_id OR te.organization_id IS NULL
+                WHERE te.organization_id = dr.organization_id OR t.id IS NULL
             )
             SELECT 
                 ah.total_allocated AS allocated_hours,
-                lh.total_logged AS total_logged,
-                lh.logged_billable,
-                lh.logged_non_billable
+                lh.total_logged_seconds,
+                lh.logged_billable_seconds,
+                lh.logged_non_billable_seconds
             FROM allocated_hours ah, logged_hours lh;
         `;
 
@@ -605,18 +611,30 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
         
         const summary = result.rows[0] || {
             allocated_hours: 0,
-            total_logged: 0,
-            logged_billable: 0,
-            logged_non_billable: 0
+            total_logged_seconds: 0,
+            logged_billable_seconds: 0,
+            logged_non_billable_seconds: 0
         };
 
+        // Helper function to convert seconds to hours with 2 decimal places
+        const convertSecondsToHours = (seconds: number): number => {
+            return parseFloat((seconds / 3600).toFixed(2));
+        };
+
+        // Helper function to safely convert to number with 2 decimal places
+        const safeToFixed = (value: any): number => {
+            const num = parseFloat(value) || 0;
+            return parseFloat(num.toFixed(2));
+        };
+
+        // Return formatted response
         return res.status(200).send(new ServerResponse(true, {
             startDate,
             endDate,
-            allocatedHours: parseFloat(summary.allocated_hours) || 0,
-            totalLogged: parseFloat(summary.total_logged) || 0,
-            loggedBillable: parseFloat(summary.logged_billable) || 0,
-            loggedNonBillable: parseFloat(summary.logged_non_billable) || 0
+            allocatedHours: safeToFixed(summary.allocated_hours),
+            totalLogged: convertSecondsToHours(summary.total_logged_seconds),
+            loggedBillable: convertSecondsToHours(summary.logged_billable_seconds),
+            loggedNonBillable: convertSecondsToHours(summary.logged_non_billable_seconds)
         }));
     }
 }
