@@ -251,17 +251,9 @@ const UpgradePlansLKR: React.FC = () => {
         },
       };
 
-      // Try to load and use DirectPay SDK first
-      try {
-        await loadDirectPaySDK();
-        initializeDirectPaySDK({ sessionData, stage }, callbacks);
-        setDirectPayLoading(false);
-      } catch (sdkError) {
-        // SDK approach failed, try popup fallback
-        logger.warn('DirectPay SDK failed, using popup fallback', sdkError);
-        openDirectPayPopup({ sessionData, stage }, callbacks);
-        setDirectPayLoading(false);
-      }
+      // Use popup method directly for v3 API (SDK doesn't support v3 response format)
+      openDirectPayPopup({ sessionData, stage }, callbacks);
+      setDirectPayLoading(false);
     } catch (error: any) {
       setDirectPayLoading(false);
       const errorMessage = error?.message || 'Failed to initialize DirectPay checkout';
@@ -307,7 +299,7 @@ const UpgradePlansLKR: React.FC = () => {
       {/* Plan Cards - Centered and Responsive */}
       <Row justify="center" gutter={[24, 32]}>
         {/* Free Plan */}
-        <Col xs={24} sm={20} md={10} lg={8} xl={8}>
+        <Col xs={24} sm={20} md={12} lg={12} xl={12} style={{ minWidth: 280, maxWidth: 320 }}>
           <Card
             hoverable
             style={getCardStyle(isPlanSelected('free'))}
@@ -318,11 +310,13 @@ const UpgradePlansLKR: React.FC = () => {
                 {plans.free.tag && <Tag color="orange">{plans.free.tag}</Tag>}
               </div>
             }
-            bodyStyle={{ 
-              display: 'flex',
-              flexDirection: 'column',
-              height: '100%',
-              padding: 0
+            styles={{
+              body: {
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                padding: 0
+              }
             }}
           >
             <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', height: '100%', flex: 1 }}>
@@ -359,7 +353,7 @@ const UpgradePlansLKR: React.FC = () => {
         </Col>
 
         {/* Startup Plan */}
-        <Col xs={24} sm={20} md={10} lg={8} xl={8}>
+        <Col xs={24} sm={20} md={12} lg={12} xl={12} style={{ minWidth: 280, maxWidth: 320 }}>
           <Card
             hoverable
             style={getCardStyle(isPlanSelected('startup'))}
@@ -370,11 +364,13 @@ const UpgradePlansLKR: React.FC = () => {
                 <Tag color="volcano">{plans.startup.tag}</Tag>
               </div>
             }
-            bodyStyle={{ 
-              display: 'flex',
-              flexDirection: 'column',
-              height: '100%',
-              padding: 0
+            styles={{
+              body: {
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                padding: 0
+              }
             }}
           >
             <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', height: '100%', flex: 1 }}>

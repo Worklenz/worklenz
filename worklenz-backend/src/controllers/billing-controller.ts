@@ -424,31 +424,39 @@ VALUES ($1, $2, $3);`;
       return res.status(400).send(new ServerResponse(false, null, "User email and name are required"));
     }
 
-    const { DP_MERCHANT_ID, DP_SECRET_KEY, DP_STAGE, FRONTEND_URL } = process.env;
+    const { DP_MERCHANT_ID, DP_SECRET_KEY, DP_STAGE, FRONTEND_URL, BACKEND_URL, PORT } = process.env;
     const uniqueTimestamp = moment().format("YYYYMMDDHHmmss");
     const orderId = `WORKLENZ_CARD_${email}_${uniqueTimestamp}`;
+
+    // Construct backend URL for response callback
+    const backendBaseUrl = BACKEND_URL || `http://localhost:${PORT || 3000}`;
+    const frontendBaseUrl = FRONTEND_URL || "http://localhost:5000";
 
     // Split name into first_name and last_name
     const nameParts = name.trim().split(" ");
     const firstName = nameParts[0] || name;
     const lastName = nameParts.slice(1).join(" ") || null;
 
-    const requestPayload = {
+    const requestPayload: any = {
       merchant_id: DP_MERCHANT_ID,
-      amount: amount ? String(amount) : "10.00", // Default amount for card add
+      amount: "10.00",
       type: "CARD_ADD",
       order_id: orderId,
       currency: "LKR",
-      response_url: `${process.env.BACKEND_URL || ""}/api/billing/directpay-card-response`,
-      return_url: `${FRONTEND_URL || ""}/worklenz/admin-center/billing?card_added=true`,
+      response_url: `${backendBaseUrl}/api/billing/directpay-card-response`,
+      return_url: `${frontendBaseUrl}/worklenz/admin-center/billing?card_added=true`,
       first_name: firstName,
-      last_name: lastName,
-      phone: phone || null,
       email: email,
-      description: `Card Add - ${name} (${email})`,
-      logo: "https://app.worklenz.com/assets/icons/icon-96x96.png",
-      do_initial_payment: doInitialPayment ? "1" : "0", // 0 = Disable, 1 = Enable
+      do_initial_payment: "1",
     };
+
+    // Add optional fields only if they have values
+    if (lastName) {
+      requestPayload.last_name = lastName;
+    }
+    if (phone) {
+      requestPayload.phone = phone;
+    }
 
     // Base64 encode the JSON payload
     const jsonEncodedPayload = JSON.stringify(requestPayload);
@@ -469,6 +477,7 @@ VALUES ($1, $2, $3);`;
         headers: {
           "Content-Type": "text/plain",
           "Authorization": signature,
+          "x-api-key": DP_SECRET_KEY,
         },
         timeout: 30000,
       });

@@ -67,7 +67,7 @@ export const initializeDirectPaySDK = (
     }
 
     // Initialize payment with SDK
-    DirectPayCardPayment({
+    DirectPayCardPayment.init({
       data: config.sessionData,
       onSuccess: callbacks.onSuccess,
       onFailed: callbacks.onError,
@@ -80,7 +80,7 @@ export const initializeDirectPaySDK = (
 };
 
 /**
- * Open DirectPay checkout in a popup window (fallback method)
+ * Open DirectPay checkout in an iframe modal (inline payment experience)
  */
 export const openDirectPayPopup = (
   config: DirectPayConfig,
@@ -89,13 +89,24 @@ export const openDirectPayPopup = (
   try {
     let checkoutUrl: string | null = null;
 
-    // Try to get URL from session data
-    if (config.sessionData?.redirect_url) {
+    // Try to get URL from session data (v3 API response format)
+    if (config.sessionData?.data?.link) {
+      checkoutUrl = config.sessionData.data.link;
+    } else if (config.sessionData?.link) {
+      checkoutUrl = config.sessionData.link;
+    } else if (config.sessionData?.redirect_url) {
       checkoutUrl = config.sessionData.redirect_url;
     } else if (config.sessionData?.url) {
       checkoutUrl = config.sessionData.url;
+    } else if (config.sessionData?.data?.token) {
+      // Construct URL from token (v3 API)
+      const baseUrl =
+        config.stage === 'PROD' || config.stage === 'prod'
+          ? 'https://gateway.directpay.lk'
+          : 'https://test-gateway.directpay.lk';
+      checkoutUrl = `${baseUrl}/${config.sessionData.data.token}`;
     } else if (config.sessionData?.session_id) {
-      // Construct URL from session ID
+      // Construct URL from session ID (older format)
       const baseUrl =
         config.stage === 'PROD' || config.stage === 'prod'
           ? 'https://gateway.directpay.lk'
@@ -107,23 +118,82 @@ export const openDirectPayPopup = (
       throw new Error('No checkout URL available from session data');
     }
 
-    // Open popup
-    const width = 600;
-    const height = 700;
-    const left = (window.screen.width - width) / 2;
-    const top = (window.screen.height - height) / 2;
+    // Create modal overlay with iframe
+    const overlay = document.createElement('div');
+    overlay.id = 'directpay-modal-overlay';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+    `;
 
-    const popup = window.open(
-      checkoutUrl,
-      'DirectPayCheckout',
-      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
-    );
+    const modalContainer = document.createElement('div');
+    modalContainer.style.cssText = `
+      position: relative;
+      width: 90%;
+      max-width: 600px;
+      height: 90%;
+      max-height: 700px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    `;
 
-    if (!popup) {
-      throw new Error('Popup blocked. Please allow popups for this site.');
-    }
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = '×';
+    closeButton.style.cssText = `
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      font-size: 24px;
+      line-height: 1;
+      cursor: pointer;
+      border-radius: 50%;
+      z-index: 10001;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    `;
+    closeButton.onclick = () => {
+      document.body.removeChild(overlay);
+      callbacks.onCancel();
+    };
 
-    // Setup message listener for popup communication
+    const iframe = document.createElement('iframe');
+    iframe.src = checkoutUrl;
+    iframe.style.cssText = `
+      width: 100%;
+      height: 100%;
+      border: none;
+    `;
+
+    modalContainer.appendChild(closeButton);
+    modalContainer.appendChild(iframe);
+    overlay.appendChild(modalContainer);
+    document.body.appendChild(overlay);
+
+    // Close on overlay click
+    overlay.onclick = (e) => {
+      if (e.target === overlay) {
+        document.body.removeChild(overlay);
+        callbacks.onCancel();
+      }
+    };
+
+    // Setup message listener for iframe communication
     const handleMessage = (event: MessageEvent) => {
       // Verify origin
       const validOrigins = ['directpay.lk', 'test-gateway.directpay.lk'];
@@ -133,8 +203,11 @@ export const openDirectPayPopup = (
 
       if (!event.data) return;
 
-      // Handle response
-      popup?.close();
+      // Handle response and close modal
+      const existingOverlay = document.getElementById('directpay-modal-overlay');
+      if (existingOverlay) {
+        document.body.removeChild(existingOverlay);
+      }
       window.removeEventListener('message', handleMessage);
 
       if (event.data.card && event.data.walletId) {
@@ -158,17 +231,7 @@ export const openDirectPayPopup = (
 
     window.addEventListener('message', handleMessage);
 
-    // Monitor popup close
-    const checkClosed = setInterval(() => {
-      if (popup.closed) {
-        clearInterval(checkClosed);
-        window.removeEventListener('message', handleMessage);
-        // User closed popup manually - treat as cancel
-        callbacks.onCancel();
-      }
-    }, 1000);
-
-    return popup;
+    return null;
   } catch (error) {
     logger.error('Failed to open DirectPay popup', error);
     callbacks.onError(error);

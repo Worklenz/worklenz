@@ -22,6 +22,7 @@ const MainLayout = memo(() => {
 
   // Get browser timezone for upgrade plans
   const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const isLkrUser = browserTimeZone === 'Asia/Colombo';
 
   // Determine if user is AppSumo user for modal width
   const isAppSumoUser = useMemo(() => {
@@ -82,7 +83,7 @@ const MainLayout = memo(() => {
       <Modal
         open={isUpgradeModalOpen}
         onCancel={() => dispatch(toggleUpgradeModal())}
-        width={isAppSumoUser ? 700 : 1400}
+        width={isLkrUser ? 'fit-content' : isAppSumoUser ? 700 : 1400}
         centered
         okButtonProps={{ hidden: true }}
         cancelButtonProps={{ hidden: true }}
