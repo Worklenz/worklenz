@@ -6,7 +6,8 @@ import { toggleScheduleDrawer } from './scheduleSliceRTK';
 import WithStartAndEndDates from '../../components/schedule-old/tabs/withStartAndEndDates/WithStartAndEndDates';
 import WorkloadManagement from './WorkloadManagement';
 import { useTranslation } from 'react-i18next';
-import { useFetchScheduleMembersQuery, useFetchMemberProjectsQuery } from '@/api/schedule/scheduleApi';
+import { useFetchScheduleMembersQuery } from '@/api/schedule/scheduleApi';
+import { useGetProjectQuery } from '@/api/projects/projects.v1.api.service';
 import CustomAvatar from '@/components/CustomAvatar';
 import { Member } from '@/types/schedule/schedule-v2.types';
 import { setProjectId } from '@/features/project/project.slice';
@@ -23,21 +24,18 @@ const ScheduleDrawer = () => {
   const { data: teamDataResponse, isLoading: teamLoading } = useFetchScheduleMembersQuery();
   const teamData: Member[] = teamDataResponse?.body || [];
 
-  // Fetch member projects to get project name (only if we have a selected member and project)
-  const { data: projectsResponse } = useFetchMemberProjectsQuery(
-    { id: selectedMemberId || '', chartStart: '', chartEnd: '' },
-    { skip: !selectedMemberId || !selectedProjectId }
-  );
+  // Fetch project details directly if a project is selected
+  const { data: projectResponse } = useGetProjectQuery(selectedProjectId || '', {
+    skip: !selectedProjectId,
+  });
 
   // Find selected member
   const selectedMember = selectedMemberId
     ? teamData.find((member: Member) => member.team_member_id === selectedMemberId)
     : teamData[0];
 
-  // Find selected project name
-  const selectedProject = projectsResponse?.body?.projects?.find(
-    (p: any) => p.id === selectedProjectId
-  );
+  // Get selected project from the direct project query
+  const selectedProject = projectResponse?.body || null;
 
   // Set project ID in Redux when a project is selected
   useEffect(() => {
@@ -52,16 +50,16 @@ const ScheduleDrawer = () => {
       label: t('schedule') || '2024-11-04 - 2024-12-24',
       children: <WithStartAndEndDates />,
     },
-    {
-      key: '2',
-      label: t('workloadManagement') || 'Resource Management',
-      children: (
-        <WorkloadManagement
-          memberId={selectedMember?.team_member_id}
-          onClose={() => dispatch(toggleScheduleDrawer())}
-        />
-      ),
-    },
+    // {
+    //   key: '2',
+    //   label: t('workloadManagement') || 'Resource Management',
+    //   children: (
+    //     <WorkloadManagement
+    //       memberId={selectedMember?.team_member_id}
+    //       onClose={() => dispatch(toggleScheduleDrawer())}
+    //     />
+    //   ),
+    // },
     // {
     //   key: '3',
     //   label: t('timeTracking') || 'Time Tracking',
@@ -104,13 +102,10 @@ const ScheduleDrawer = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <CustomAvatar avatarName={selectedMember.name || ''} size={32} />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span>{selectedMember.name}</span>
+              <span style={{ fontSize: '14px', fontWeight: 600 }}>{selectedMember.name}</span>
               {selectedProject && (
                 <span style={{ fontSize: '12px', color: '#999', fontWeight: 'normal' }}>
                   {selectedProject.name}
-                  {selectedDateRange?.start && selectedDateRange?.end && (
-                    <> • {selectedDateRange.start} to {selectedDateRange.end}</>
-                  )}
                 </span>
               )}
             </div>

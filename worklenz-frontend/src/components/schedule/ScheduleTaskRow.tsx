@@ -165,12 +165,6 @@ const ScheduleTaskRow: React.FC<ScheduleTaskRowProps> = ({ task, onClick }) => {
           <span className="text-sm text-gray-900 dark:text-gray-100 truncate flex-1">
             {task.name}
           </span>
-          {/* Progress indicator - compact */}
-          {task.progress !== undefined && task.progress > 0 && (
-            <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-              {task.progress}%
-            </span>
-          )}
         </div>
         
         {/* Open Task Drawer Button */}
