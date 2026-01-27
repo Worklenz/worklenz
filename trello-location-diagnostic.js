@@ -143,7 +143,7 @@ async function diagnoseTrelloLocationFields() {
         key: TRELLO_CONFIG.key,
         token: TRELLO_CONFIG.token,
         customFieldItems: true,
-        limit: 5, // Only fetch first 5 cards for diagnosis
+        limit: 20, // Fetch more cards for diagnosis
         fields: "name,desc,customFieldItems",
       },
     );

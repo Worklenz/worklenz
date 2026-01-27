@@ -302,6 +302,19 @@ const buildSelectionOptions = (
 
 const inferColumnConfig = (plan: CustomColumnPlan): ColumnPlanConfig => {
   const values = Array.from(plan.samples).filter((value) => !!value);
+
+  // Special handling for location fields - create as labels type for text display
+  if (
+    plan.name.toLowerCase().includes("location") ||
+    plan.key.includes("location")
+  ) {
+    console.log(
+      `[LOCATION DEBUG] Creating location field as labels type for:`,
+      plan.name,
+    );
+    return { fieldType: "labels" };
+  }
+
   if (values.length && values.every(isNumericSample)) {
     const decimals = values.reduce(
       (acc, value) => Math.max(acc, countDecimalPlaces(value)),
@@ -483,9 +496,12 @@ export const mapRawToTaskFields = (
   mappings.forEach((mapping) => {
     if (mapping.include === false) return;
     const value = getNormalizedFieldValue(source, [mapping.source_field]);
-    
+
     // Special debug for Location field
-    if (mapping.source_field === "Location" || mapping.target_field === "location") {
+    if (
+      mapping.source_field === "Location" ||
+      mapping.target_field === "location"
+    ) {
       console.log(`[LOCATION DEBUG] Processing Location mapping:`, {
         source_field: mapping.source_field,
         target_field: mapping.target_field,
@@ -494,7 +510,7 @@ export const mapRawToTaskFields = (
         allSourceKeys: Object.keys(source),
       });
     }
-    
+
     if (value === undefined || value === null || value === "") return;
 
     const targetField = normalizeTargetField(mapping.target_field);

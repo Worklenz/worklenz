@@ -106,6 +106,7 @@ const DEFAULT_FIELDS: FieldMappingRow[] = [
 
 export default class TrelloProvider implements ImportProvider {
   name = "trello";
+  private customFieldsCache?: TrelloCustomField[];
 
   private resolveOptions(
     job: ImportJob,
@@ -152,8 +153,92 @@ export default class TrelloProvider implements ImportProvider {
     }));
   }
 
-  private buildFieldMappings(): FieldMappingRow[] {
-    return [...DEFAULT_FIELDS];
+  private extractCustomFieldValue(value: any): string | null {
+    if (!value) return null;
+
+    // Handle string values directly
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+
+    // Handle object values
+    if (typeof value === "object") {
+      // Text fields
+      if (value.text && typeof value.text === "string") {
+        return value.text.trim() || null;
+      }
+
+      // Number fields
+      if (typeof value.number === "number") {
+        return String(value.number);
+      }
+
+      // Date fields
+      if (value.date && typeof value.date === "string") {
+        return value.date;
+      }
+
+      // Checkbox fields
+      if (typeof value.checked === "boolean") {
+        return value.checked ? "true" : "false";
+      }
+
+      // List/dropdown fields
+      if (value.idValue && typeof value.idValue === "string") {
+        return value.idValue;
+      }
+    }
+
+    return null;
+  }
+
+  private buildFieldMappings(
+    customFields?: TrelloCustomField[],
+  ): FieldMappingRow[] {
+    const mappings = [...DEFAULT_FIELDS];
+
+    // Add dynamic custom fields from Trello
+    if (customFields) {
+      console.log(
+        `[FIELD MAPPING DEBUG] Processing ${customFields.length} custom fields for field mappings`,
+      );
+      customFields.forEach((field) => {
+        if (field.name && field.id) {
+          // Skip location field as it's already in DEFAULT_FIELDS
+          const isLocationField =
+            field.type === "location" ||
+            field.name.toLowerCase().includes("location") ||
+            field.name === "Location";
+          if (!isLocationField) {
+            const targetField = field.name.toLowerCase().replace(/\s+/g, "_");
+            console.log(
+              `[FIELD MAPPING DEBUG] Adding custom field: "${field.name}" -> "${targetField}" (type: ${field.type})`,
+            );
+            mappings.push({
+              source_field: field.name,
+              target_field: targetField,
+              include: true,
+            });
+          } else {
+            console.log(
+              `[FIELD MAPPING DEBUG] Skipping location field: "${field.name}" (already in defaults)`,
+            );
+          }
+        }
+      });
+    } else {
+      console.log(`[FIELD MAPPING DEBUG] No custom fields provided`);
+    }
+
+    console.log(
+      `[FIELD MAPPING DEBUG] Final field mappings count:`,
+      mappings.length,
+    );
+    console.log(
+      `[FIELD MAPPING DEBUG] Field mapping names:`,
+      mappings.map((m) => m.source_field),
+    );
+    return mappings;
   }
 
   private buildRawCard(
@@ -187,11 +272,29 @@ export default class TrelloProvider implements ImportProvider {
     try {
       options = this.resolveOptions(job, payload);
     } catch (err) {
-      return {
-        hierarchy: this.buildHierarchy([]),
-        fields: this.buildFieldMappings(),
-        raw: err,
-      };
+      // Even in error case, try to get custom fields if possible
+      try {
+        const tempOptions = this.resolveOptions(job, payload);
+        const customFields = await getWithRetries<TrelloCustomField[]>({
+          method: "GET",
+          url: `https://api.trello.com/1/boards/${tempOptions.boardId}/customFields`,
+          params: {
+            key: tempOptions.key,
+            token: tempOptions.token,
+          },
+        });
+        return {
+          hierarchy: this.buildHierarchy([]),
+          fields: this.buildFieldMappings(customFields),
+          raw: err,
+        };
+      } catch (innerErr) {
+        return {
+          hierarchy: this.buildHierarchy([]),
+          fields: this.buildFieldMappings(),
+          raw: err,
+        };
+      }
     }
 
     const lists = await getWithRetries<TrelloList[]>({
@@ -205,9 +308,31 @@ export default class TrelloProvider implements ImportProvider {
       },
     });
 
+    // Get custom fields for dynamic field mapping
+    const customFields = await getWithRetries<TrelloCustomField[]>({
+      method: "GET",
+      url: `https://api.trello.com/1/boards/${options.boardId}/customFields`,
+      params: {
+        key: options.key,
+        token: options.token,
+      },
+    });
+
+    // Cache custom fields for use in ingest method
+    this.customFieldsCache = customFields;
+
+    console.log(
+      `[GETAUTOMAPPINGS DEBUG] Returning field mappings for ${customFields?.length || 0} custom fields`,
+    );
+    const fieldMappings = this.buildFieldMappings(customFields);
+    console.log(
+      `[GETAUTOMAPPINGS DEBUG] Total field mappings:`,
+      fieldMappings.length,
+    );
+
     return {
       hierarchy: this.buildHierarchy(lists || []),
-      fields: this.buildFieldMappings(),
+      fields: fieldMappings,
       raw: { boardId: options.boardId, boardName: options.boardName },
     };
   }
@@ -324,6 +449,12 @@ export default class TrelloProvider implements ImportProvider {
     console.log(
       `[TRELLO API DEBUG] Found ${locationFieldIds.size} location fields:`,
       Array.from(locationFieldIds),
+    );
+
+    // CRITICAL FIX: Update the custom fields cache for field mappings
+    this.customFieldsCache = customFields || [];
+    console.log(
+      `[TRELLO API DEBUG] Updated customFieldsCache with ${this.customFieldsCache.length} fields`,
     );
 
     const tasks: StageTaskRow[] = [];
@@ -489,27 +620,63 @@ export default class TrelloProvider implements ImportProvider {
         raw.Location,
       );
 
-      // Second loop: Add location values to raw data with field names as keys
+      // Second loop: Add ALL custom field values to raw data
       if (Array.isArray(card.customFieldItems)) {
         console.log(
           `[RAW DEBUG] Adding custom fields to raw data for "${card.name}"`,
         );
         for (const item of card.customFieldItems) {
           const fieldId = item.idCustomField;
-          if (!fieldId || !locationFieldIds.has(fieldId)) continue;
-          const fieldName = customFieldNameById.get(fieldId) || "Location";
-          const value = toLocationString(
-            item.value as TrelloCustomFieldItemValue | string,
-          );
-          console.log(`[RAW DEBUG] Setting raw["${fieldName}"] =`, value);
-          if (fieldName && value) {
-            (raw as Record<string, unknown>)[fieldName] = value;
+          if (!fieldId) continue;
+
+          const fieldName = customFieldNameById.get(fieldId);
+          if (!fieldName) continue;
+
+          // Handle location fields specially
+          if (locationFieldIds.has(fieldId)) {
+            const value = toLocationString(
+              item.value as TrelloCustomFieldItemValue | string,
+            );
+            console.log(`[RAW DEBUG] Setting raw["${fieldName}"] =`, value);
+            if (value) {
+              (raw as Record<string, unknown>)[fieldName] = value;
+            }
+          } else {
+            // Handle other custom fields
+            let value = this.extractCustomFieldValue(item.value);
+            console.log(`[RAW DEBUG] Setting raw["${fieldName}"] =`, value);
+            if (value !== null && value !== undefined) {
+              (raw as Record<string, unknown>)[fieldName] = value;
+            }
           }
         }
       }
       console.log(`[RAW DEBUG] Final raw data for "${card.name}":`, {
         Location: raw.Location,
         allKeys: Object.keys(raw),
+        customFieldKeys: Object.keys(raw).filter(
+          (key) =>
+            ![
+              "Card name",
+              "Description",
+              "List",
+              "Status",
+              "Due date",
+              "Start date",
+              "Members",
+              "Labels",
+              "Location",
+              "Completed on",
+              "Last updated",
+              "URL",
+              "__labelIds",
+              "__labels",
+              "__memberIds",
+              "__memberNames",
+              "__memberEmails",
+            ].includes(key),
+        ),
+        fullRawData: raw,
       });
 
       const assigneeSource =
@@ -554,7 +721,7 @@ export default class TrelloProvider implements ImportProvider {
     return {
       tasks,
       hierarchy: this.buildHierarchy(lists || []),
-      fields: this.buildFieldMappings(),
+      fields: this.buildFieldMappings(this.customFieldsCache),
       attachments,
       users: Array.from(userMappings.values()),
       raw: {
