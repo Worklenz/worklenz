@@ -379,6 +379,7 @@ const TARGET_FIELD_ALIASES: Record<string, string> = {
   updatedat: "lastUpdated",
   reporter: "reporter",
   owner: "reporter",
+  location: "location",
 };
 
 const normalizeTargetField = (value: string) => {
@@ -482,6 +483,18 @@ export const mapRawToTaskFields = (
   mappings.forEach((mapping) => {
     if (mapping.include === false) return;
     const value = getNormalizedFieldValue(source, [mapping.source_field]);
+    
+    // Special debug for Location field
+    if (mapping.source_field === "Location" || mapping.target_field === "location") {
+      console.log(`[LOCATION DEBUG] Processing Location mapping:`, {
+        source_field: mapping.source_field,
+        target_field: mapping.target_field,
+        value: value,
+        sourceLocationField: source.Location,
+        allSourceKeys: Object.keys(source),
+      });
+    }
+    
     if (value === undefined || value === null || value === "") return;
 
     const targetField = normalizeTargetField(mapping.target_field);
@@ -570,6 +583,19 @@ export const mapRawToTaskFields = (
         pushCustomValue(
           toColumnKey("reporter"),
           mapping.source_field || "Reporter",
+          value,
+        );
+        break;
+      }
+      case "location": {
+        console.log(`[LOCATION DEBUG] Processing location case:`, {
+          value: value,
+          columnKey: toColumnKey("location"),
+          columnName: mapping.source_field || "Location",
+        });
+        pushCustomValue(
+          toColumnKey("location"),
+          mapping.source_field || "Location",
           value,
         );
         break;
