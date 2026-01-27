@@ -439,7 +439,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                         return (
                           <div
                             key={projectId}
-                            onClick={() => {
+                            onClick={(e) => {
                               // Only open modal if no segments have dates
                               const hasAnyDates = projectSegments.some(
                                 seg => seg?.date_union?.start && seg?.date_union?.end
@@ -462,7 +462,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                                 align="center"
                                 style={{
                                   position: 'absolute',
-                                  left: 0,
+                                  left: 0, // This should be 0 because ProjectTimelineBar handles its own offset
                                   zIndex: 50 + segmentIndex,
                                   height: 65,
                                   pointerEvents: 'none',
@@ -476,6 +476,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                                       indicatorWidth={segment?.indicator_width}
                                       indicatorOffset={segment?.indicator_offset}
                                       memberId={memberId}
+                                      allProjectSegments={projectSegments}
                                     />
                                   </div>
                                 )}

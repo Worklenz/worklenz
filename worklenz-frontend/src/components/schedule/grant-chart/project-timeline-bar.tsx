@@ -16,6 +16,7 @@ type ProjectTimelineBarProps = {
   indicatorWidth: number;
   defaultData?: ScheduleData;
   memberId?: string;
+  allProjectSegments?: any[]; // Add this to pass all segments for the project
 };
 
 const ProjectTimelineBar = ({
@@ -24,6 +25,7 @@ const ProjectTimelineBar = ({
   indicatorWidth,
   defaultData,
   memberId,
+  allProjectSegments = [],
 }: ProjectTimelineBarProps) => {
   const [width, setWidth] = useState(indicatorWidth);
   const [currentDuration, setCurrentDuration] = useState(indicatorWidth);
@@ -34,7 +36,10 @@ const ProjectTimelineBar = ({
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const dispatch = useAppDispatch();
 
-  const handleTimelineClick = () => {
+  const handleTimelineClick = (e: React.MouseEvent) => {
+    // Stop event propagation to prevent parent click handlers from firing
+    e.stopPropagation();
+
     // Set selected member, project, and date range in Redux
     if (memberId) {
       dispatch(setSelectedMember(memberId));
@@ -42,12 +47,38 @@ const ProjectTimelineBar = ({
     if (project?.id) {
       dispatch(setSelectedProject(project.id));
     }
-    if (project?.date_union?.start && project?.date_union?.end) {
+    
+    // Calculate overall project date range from all segments
+    if (allProjectSegments.length > 0) {
+      const validSegments = allProjectSegments.filter(seg => 
+        seg?.date_union?.start && seg?.date_union?.end
+      );
+      
+      if (validSegments.length > 0) {
+        // Find the earliest start date and latest end date across all segments
+        const startDates = validSegments.map(seg => seg.date_union.start);
+        const endDates = validSegments.map(seg => seg.date_union.end);
+        
+        const overallStartDate = startDates.reduce((earliest, current) => 
+          current < earliest ? current : earliest
+        );
+        const overallEndDate = endDates.reduce((latest, current) => 
+          current > latest ? current : latest
+        );
+        
+        dispatch(setSelectedDateRange({
+          start: overallStartDate,
+          end: overallEndDate,
+        }));
+      }
+    } else if (project?.date_union?.start && project?.date_union?.end) {
+      // Fallback to segment-specific date range if no allProjectSegments provided
       dispatch(setSelectedDateRange({
         start: project.date_union.start,
         end: project.date_union.end,
       }));
     }
+    
     // Open the drawer
     dispatch(toggleScheduleDrawer());
   };
