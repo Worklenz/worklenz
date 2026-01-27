@@ -19,29 +19,29 @@ const ScheduleTaskListHeader: React.FC = () => {
       className="flex items-center gap-3 px-3 py-3 sticky top-0 z-20"
       style={{ ...headerStyle, minHeight: '44px' }}
     >
-      {/* Task Name - 30% */}
-      <div className={`flex-[3] ${columnHeaderClass}`}>
+      {/* Task Key - 10% */}
+      <div className={`flex-[1] ${columnHeaderClass}`}>
+        {t('key', { defaultValue: 'Key' })}
+      </div>
+
+      {/* Task Name - 35% */}
+      <div className={`flex-[3.5] ${columnHeaderClass}`}>
         {t('taskName', { defaultValue: 'Task Name' })}
       </div>
 
-      {/* Status - 12% */}
-      <div className={`flex-[1.2] ${columnHeaderClass}`}>
+      {/* Status - 13% */}
+      <div className={`flex-[1.3] ${columnHeaderClass}`}>
         {t('status', { defaultValue: 'Status' })}
       </div>
 
-      {/* Labels - 15% */}
-      <div className={`flex-[1.5] ${columnHeaderClass}`}>
-        {t('labels', { defaultValue: 'Labels' })}
-      </div>
-
-      {/* Logged Time - 10% */}
-      <div className={`flex-[1] ${columnHeaderClass}`}>
+      {/* Estimation - 11% */}
+      <div className={`flex-[1.1] ${columnHeaderClass}`}>
         {t('estimation', { defaultValue: 'Estimation' })}
       </div>
 
-      {/* Phase - 12% */}
-      <div className={`flex-[1.2] ${columnHeaderClass}`}>
-        {t('phase', { defaultValue: 'Phase' })}
+      {/* Logged Time - 11% */}
+      <div className={`flex-[1.1] ${columnHeaderClass}`}>
+        {t('loggedTime', { defaultValue: 'Logged' })}
       </div>
 
       {/* Priority - 10% */}
@@ -49,19 +49,14 @@ const ScheduleTaskListHeader: React.FC = () => {
         {t('priority', { defaultValue: 'Priority' })}
       </div>
 
-      {/* Start Date - 12% */}
-      <div className={`flex-[1.2] ${columnHeaderClass}`}>
+      {/* Start Date - 13% */}
+      <div className={`flex-[1.3] ${columnHeaderClass}`}>
         {t('startDate', { defaultValue: 'Start Date' })}
       </div>
 
-      {/* End Date - 12% */}
-      <div className={`flex-[1.2] ${columnHeaderClass}`}>
+      {/* End Date - 13% */}
+      <div className={`flex-[1.3] ${columnHeaderClass}`}>
         {t('endDate', { defaultValue: 'End Date' })}
-      </div>
-
-      {/* Assignees - 10% */}
-      <div className={`flex-[1] ${columnHeaderClass}`}>
-        {t('assignees', { defaultValue: 'Assignees' })}
       </div>
     </div>
   );

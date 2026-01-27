@@ -144,13 +144,11 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({ type, date }) => {
   // Handle task click
   const handleTaskClick = useCallback((task: Task) => {
     // Could open task details modal here
-    console.log('Task clicked:', task);
   }, []);
 
   // Handle progress change
   const handleProgressChange = useCallback((task: Task) => {
     // Progress changes could be handled here if needed
-    console.log('Progress changed:', task);
   }, []);
 
   // Clear all filters
@@ -169,7 +167,6 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({ type, date }) => {
     if (!socket) return;
 
     const handleTaskUpdate = (data: any) => {
-      console.log('Real-time task update:', data);
       refetchTasks();
     };
 

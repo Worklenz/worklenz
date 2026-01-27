@@ -9,10 +9,12 @@ interface ScheduleTaskRowProps {
   task: {
     id: string;
     name: string;
+    task_key?: string; // Task key (e.g., "PROJ-123")
     status?: string; // This is the status ID
     status_color?: string;
     labels?: Array<{ id: string; name: string; color_code: string }>;
-    total_minutes?: number;
+    total_minutes?: number; // Estimated time
+    total_minutes_spent?: number; // Actual logged time
     phase_name?: string;
     phase_color?: string;
     priority?: string; // This is the priority name (low/medium/high)
@@ -115,13 +117,23 @@ const ScheduleTaskRow: React.FC<ScheduleTaskRowProps> = ({ task, onClick }) => {
     };
   }, [task.priority, task.priority_color, priorityList, isDarkMode]);
 
-  // Format logged time
-  const loggedTime = useMemo(() => {
-    if (!task.total_minutes) return '0h';
-    const hours = Math.floor(task.total_minutes / 60);
-    const minutes = task.total_minutes % 60;
-    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  // Format estimation time (total_minutes)
+  const estimationTime = useMemo(() => {
+    const minutes = task.total_minutes ?? 0;
+    if (minutes === 0) return '0h';
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   }, [task.total_minutes]);
+
+  // Format logged time (total_minutes_spent)
+  const loggedTime = useMemo(() => {
+    const minutes = task.total_minutes_spent ?? 0;
+    if (minutes === 0) return '0h';
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  }, [task.total_minutes_spent]);
 
   // Format dates
   const formattedStartDate = task.start_date
@@ -131,122 +143,88 @@ const ScheduleTaskRow: React.FC<ScheduleTaskRowProps> = ({ task, onClick }) => {
 
   return (
     <div
-      className={`flex items-center gap-3 p-3 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer ${
+      className={`flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer ${
         isDarkMode ? 'bg-gray-900' : 'bg-white'
       }`}
       onClick={onClick}
-      style={{ minHeight: '60px' }}
+      style={{ height: '40px', minHeight: '40px' }}
     >
-      {/* Task Name - 30% width */}
-      <div className="flex-[3] min-w-0">
-        <div className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+      {/* Task Key - 10% width */}
+      <div className="flex-[1] min-w-0 px-2 border-r border-gray-200 dark:border-gray-700" style={{ height: '100%' }}>
+        <div className="flex items-center h-full">
+          <span className="text-xs font-mono text-gray-600 dark:text-gray-400 truncate">
+            {task.task_key || '-'}
+          </span>
+        </div>
+      </div>
+
+      {/* Task Name - 35% width */}
+      <div className="flex-[3.5] min-w-0 px-2 border-r border-gray-200 dark:border-gray-700" style={{ height: '100%' }}>
+        <div className="flex items-center h-full gap-2">
+          <span className="text-sm text-gray-900 dark:text-gray-100 truncate flex-1">
             {task.name}
           </span>
-          {/* Progress bar */}
-          {task.progress !== undefined && (
-            <Progress
-              percent={task.progress}
-              size="small"
-              strokeColor={task.progress === 100 ? '#52c41a' : '#1890ff'}
-              showInfo={false}
-              style={{ maxWidth: '200px' }}
-            />
+          {/* Progress indicator - compact */}
+          {task.progress !== undefined && task.progress > 0 && (
+            <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+              {task.progress}%
+            </span>
           )}
         </div>
       </div>
 
-      {/* Status - 12% width */}
-      <div className="flex-[1.2] min-w-0">
-        {statusInfo && (
+      {/* Status - 13% width */}
+      <div className="flex-[1.3] min-w-0 flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={{ height: '100%' }}>
+        {statusInfo ? (
           <Tag
             color={statusInfo.color}
             style={{
-              borderRadius: '4px',
+              borderRadius: '12px',
               fontSize: '11px',
-              padding: '2px 8px',
+              padding: '2px 10px',
+              margin: 0,
               maxWidth: '100%',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
+              border: 'none',
             }}
           >
             {statusInfo.name}
-          </Tag>
-        )}
-      </div>
-
-      {/* Labels - 15% width */}
-      <div className="flex-[1.5] min-w-0">
-        <div className="flex flex-wrap gap-1">
-          {task.labels && task.labels.length > 0 ? (
-            task.labels.slice(0, 2).map(label => (
-              <Tag
-                key={label.id}
-                color={label.color_code}
-                style={{
-                  fontSize: '10px',
-                  padding: '1px 6px',
-                  borderRadius: '3px',
-                  maxWidth: '80px',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {label.name}
-              </Tag>
-            ))
-          ) : (
-            <span className="text-xs text-gray-400">-</span>
-          )}
-          {task.labels && task.labels.length > 2 && (
-            <Tag style={{ fontSize: '10px', padding: '1px 6px' }}>
-              +{task.labels.length - 2}
-            </Tag>
-          )}
-        </div>
-      </div>
-
-      {/* Logged Time - 10% width */}
-      <div className="flex-[1] min-w-0">
-        <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
-          <ClockCircleOutlined style={{ fontSize: '12px' }} />
-          <span>{loggedTime}</span>
-        </div>
-      </div>
-
-      {/* Phase - 12% width */}
-      <div className="flex-[1.2] min-w-0">
-        {task.phase_name ? (
-          <Tag
-            color={task.phase_color || '#722ed1'}
-            style={{
-              borderRadius: '4px',
-              fontSize: '11px',
-              padding: '2px 8px',
-              maxWidth: '100%',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {task.phase_name}
           </Tag>
         ) : (
           <span className="text-xs text-gray-400">-</span>
         )}
       </div>
 
+      {/* Estimation - 11% width */}
+      <div className="flex-[1.1] min-w-0 flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={{ height: '100%' }}>
+        <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+          <ClockCircleOutlined style={{ fontSize: '12px' }} />
+          <span className="whitespace-nowrap">{estimationTime}</span>
+        </div>
+      </div>
+
+      {/* Logged Time - 11% width */}
+      <div className="flex-[1.1] min-w-0 flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={{ height: '100%' }}>
+        <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+          <ClockCircleOutlined style={{ fontSize: '12px' }} />
+          <span className="whitespace-nowrap">{loggedTime}</span>
+        </div>
+      </div>
+
       {/* Priority - 10% width */}
-      <div className="flex-[1] min-w-0">
+      <div className="flex-[1] min-w-0 flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={{ height: '100%' }}>
         {priorityInfo ? (
           <Tag
             color={priorityInfo.color}
             style={{
-              borderRadius: '4px',
+              borderRadius: '12px',
               fontSize: '11px',
-              padding: '2px 8px',
+              padding: '2px 10px',
+              margin: 0,
               textTransform: 'capitalize',
+              border: 'none',
             }}
           >
             {priorityInfo.name}
@@ -256,44 +234,18 @@ const ScheduleTaskRow: React.FC<ScheduleTaskRowProps> = ({ task, onClick }) => {
         )}
       </div>
 
-      {/* Start Date - 12% width */}
-      <div className="flex-[1.2] min-w-0">
-        <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
-          <CalendarOutlined style={{ fontSize: '12px' }} />
-          <span className="truncate">{formattedStartDate}</span>
-        </div>
+      {/* Start Date - 13% width */}
+      <div className="flex-[1.3] min-w-0 flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={{ height: '100%' }}>
+        <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap truncate">
+          {formattedStartDate}
+        </span>
       </div>
 
-      {/* End Date - 12% width */}
-      <div className="flex-[1.2] min-w-0">
-        <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
-          <CalendarOutlined style={{ fontSize: '12px' }} />
-          <span className="truncate">{formattedEndDate}</span>
-        </div>
-      </div>
-
-      {/* Assignees - 10% width */}
-      <div className="flex-[1] min-w-0">
-        {task.assignees && task.assignees.length > 0 ? (
-          <Avatar.Group maxCount={3} size="small">
-            {task.assignees.map((assignee, index) => (
-              <Tooltip key={index} title={assignee.name}>
-                <Avatar
-                  size="small"
-                  src={assignee.avatar_url}
-                  style={{
-                    backgroundColor: assignee.color_code || '#1890ff',
-                    fontSize: '10px',
-                  }}
-                >
-                  {!assignee.avatar_url && assignee.name?.charAt(0).toUpperCase()}
-                </Avatar>
-              </Tooltip>
-            ))}
-          </Avatar.Group>
-        ) : (
-          <span className="text-xs text-gray-400">-</span>
-        )}
+      {/* End Date - 13% width */}
+      <div className="flex-[1.3] min-w-0 flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700" style={{ height: '100%' }}>
+        <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap truncate">
+          {formattedEndDate}
+        </span>
       </div>
     </div>
   );

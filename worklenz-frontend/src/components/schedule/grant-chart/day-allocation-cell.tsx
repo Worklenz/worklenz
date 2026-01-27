@@ -42,7 +42,6 @@ const DayAllocationCell = ({
 
   const handleClick = () => {
     if (isInteractive && memberId) {
-      console.log('🖱️ Cell clicked:', { memberId, date });
       // Set selected member and date before opening drawer
       dispatch(setSelectedMember(memberId));
       dispatch(setSelectedDate(date || null));

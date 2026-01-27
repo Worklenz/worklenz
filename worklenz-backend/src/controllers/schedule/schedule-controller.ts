@@ -874,6 +874,7 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
     const query = `
       SELECT id,
              name,
+             CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no) AS task_key,
              t.project_id AS project_id,
              t.parent_task_id,
              t.parent_task_id IS NOT NULL AS is_sub_task,
@@ -917,6 +918,7 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
              (SELECT id FROM task_priorities WHERE id = t.priority_id) AS priority,
              (SELECT value FROM task_priorities WHERE id = t.priority_id) AS priority_value,
              total_minutes,
+             (SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id) AS total_minutes_spent,
              start_date,
              end_date ${statusesQuery}
       FROM tasks t

@@ -272,10 +272,12 @@ const WithStartAndEndDates = () => {
                                 task={{
                                   id: task.id,
                                   name: task.name,
+                                  task_key: task.task_key,
                                   status: task.status,
                                   status_color: task.status_color,
                                   labels: task.labels,
                                   total_minutes: task.total_minutes,
+                                  total_minutes_spent: task.total_minutes_spent,
                                   phase_name: task.phase_name,
                                   phase_color: task.phase_color,
                                   priority: task.priority,
@@ -287,7 +289,6 @@ const WithStartAndEndDates = () => {
                                 }}
                                 onClick={() => {
                                   // Handle task click - could open task drawer
-                                  console.log('Task clicked:', task.id);
                                 }}
                               />
                             ))
