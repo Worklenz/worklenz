@@ -71,6 +71,11 @@ export enum SocketEvents {
   // Task completion events
   GET_DONE_STATUSES,
   
+  // Schedule Timeline events
+  SCHEDULE_TASK_UPDATE,
+  SCHEDULE_TIME_OFF_ADDED,
+  SCHEDULE_TIME_OFF_REMOVED,
+  
   // Client Portal events
   CLIENT_PORTAL_NEW_MESSAGE,
   CLIENT_PORTAL_REQUEST_STATUS_UPDATED,
