@@ -229,6 +229,8 @@ const parseLabelValues = (
     "tags",
     "Labels",
     "labels",
+    "Label", // Monday.com label columns
+    "label",
   ];
 
   tagFields.forEach((fieldName) => {
@@ -253,7 +255,149 @@ const parseLabelValues = (
     }
   });
 
+  // Monday.com status-based label processing
+  Object.keys(source).forEach((key) => {
+    if (
+      key.toLowerCase().includes("label") ||
+      (key.startsWith("color_") && source[key])
+    ) {
+      const labelValue = source[key];
+      pushValues(labelValue);
+    }
+  });
+
   return Array.from(new Set(labels.map(normalizeLabelName))).filter(Boolean);
+};
+
+// Create custom columns from Monday.com custom fields
+const createCustomColumnFromMondayField = async (
+  projectId: string,
+  column: { id: string; title: string; type: string; settings_str?: string },
+  db: any,
+): Promise<string | null> => {
+  try {
+    // Map Monday.com column types to Worklenz custom field types
+    const typeMapping: Record<
+      string,
+      { fieldType: string; numberType?: string }
+    > = {
+      numbers: { fieldType: "number", numberType: "formatted" },
+      numeric: { fieldType: "number", numberType: "formatted" },
+      dropdown: { fieldType: "selection" },
+      text: { fieldType: "people" }, // Use people type for text fields
+      timeline: { fieldType: "date" },
+      date: { fieldType: "date" },
+      checkbox: { fieldType: "checkbox" },
+    };
+
+    const mapping = typeMapping[column.type];
+    if (!mapping) {
+      console.log(
+        `[Monday Custom Column] Skipping unsupported column type: ${column.type}`,
+      );
+      return null;
+    }
+
+    const columnKey = `monday_${column.id}_${column.type}`;
+    const columnName = column.title || `Monday ${column.type}`;
+
+    console.log(
+      `[Monday Custom Column] Creating custom column: ${columnName} (${column.type} -> ${mapping.fieldType})`,
+    );
+
+    const client = await db.pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // 1. Insert the main custom column
+      const columnQuery = `
+        INSERT INTO cc_custom_columns (
+          project_id, name, key, field_type, width, is_visible, is_custom_column
+        ) VALUES ($1, $2, $3, $4, $5, $6, true)
+        RETURNING id;
+      `;
+      const columnResult = await client.query(columnQuery, [
+        projectId,
+        columnName,
+        columnKey,
+        mapping.fieldType,
+        150, // Default width
+        true, // Visible by default
+      ]);
+      const columnId = columnResult.rows[0].id;
+
+      // 2. Insert the column configuration
+      const configQuery = `
+        INSERT INTO cc_column_configurations (
+          column_id, field_title, field_type, number_type, 
+          decimals, label, label_position, preview_value
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING id;
+      `;
+      await client.query(configQuery, [
+        columnId,
+        columnName,
+        mapping.fieldType,
+        mapping.numberType || null,
+        mapping.fieldType === "number" ? 2 : null, // Default 2 decimals for numbers
+        mapping.fieldType === "number" ? "" : null, // No label for now
+        mapping.fieldType === "number" ? "left" : null,
+        mapping.fieldType === "number" ? 0 : null,
+      ]);
+
+      // 3. For dropdown fields, create selection options
+      if (mapping.fieldType === "selection" && column.settings_str) {
+        try {
+          const settings = JSON.parse(column.settings_str);
+          if (settings.labels && Array.isArray(settings.labels)) {
+            const selectionQuery = `
+              INSERT INTO cc_selection_options (
+                column_id, selection_id, selection_name, selection_color, selection_order
+              ) VALUES ($1, $2, $3, $4, $5);
+            `;
+            for (const [index, label] of settings.labels.entries()) {
+              const labelId = typeof label === "object" ? label.id : index;
+              const labelName =
+                typeof label === "object" ? label.name : String(label);
+              const labelColor =
+                typeof label === "object" ? label.color : "#3498db";
+
+              await client.query(selectionQuery, [
+                columnId,
+                String(labelId),
+                labelName,
+                labelColor,
+                index,
+              ]);
+            }
+          }
+        } catch (parseError) {
+          console.log(
+            `[Monday Custom Column] Failed to parse settings for dropdown:`,
+            parseError,
+          );
+        }
+      }
+
+      await client.query("COMMIT");
+      console.log(
+        `[Monday Custom Column] Created custom column with ID: ${columnId}`,
+      );
+      return columnKey;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error(`[Monday Custom Column] Failed to create column:`, error);
+      return null;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error(
+      `[Monday Custom Column] Error creating custom column:`,
+      error,
+    );
+    return null;
+  }
 };
 
 const collectAssigneeCandidates = (

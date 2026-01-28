@@ -1,6 +1,7 @@
 import { ImportProvider, ProviderResult } from "./provider-types";
 import { ImportJob, StageTaskRow, FieldMappingRow } from "../imports-service";
 import axios from "axios";
+import db from "../../config/db";
 
 interface MondayOptions {
   token?: string;
@@ -180,7 +181,10 @@ export default class MondayProvider implements ImportProvider {
     return baseMapping;
   }
 
-  private buildFieldMappings(columns?: MondayColumn[]): FieldMappingRow[] {
+  private async buildFieldMappings(
+    columns?: MondayColumn[],
+    job?: ImportJob,
+  ): Promise<FieldMappingRow[]> {
     const mappings = [...MONDAY_DEFAULT_FIELDS];
 
     if (columns) {
@@ -289,6 +293,22 @@ export default class MondayProvider implements ImportProvider {
               include: true,
             });
           } else if (
+            smartTargetField === "labels" &&
+            column.type === "status"
+          ) {
+            // Map status-based label columns (e.g., Label, Category columns)
+            mappings.push({
+              source_field: `${columnTitle}_raw`,
+              target_field: "labels",
+              include: true,
+            });
+            // Also map the column ID based fields
+            mappings.push({
+              source_field: `${column.id}_raw`,
+              target_field: "labels",
+              include: true,
+            });
+          } else if (
             smartTargetField === "status" &&
             column.type === "status"
           ) {
@@ -321,7 +341,253 @@ export default class MondayProvider implements ImportProvider {
       );
     });
 
+    // Create custom columns for Monday.com custom fields
+    if (columns && job && job.target_project_id) {
+      console.log(
+        `[Monday Provider] Creating custom columns for Monday.com custom fields...`,
+      );
+      await this.createCustomColumnsForMondayFields(
+        columns,
+        job.target_project_id,
+      );
+
+      // Add field mappings for the custom columns to populate data
+      await this.addCustomColumnFieldMappings(columns, mappings);
+    }
+
     return mappings;
+  }
+
+  // Add field mappings for custom columns to populate data
+  private async addCustomColumnFieldMappings(
+    columns: MondayColumn[],
+    mappings: FieldMappingRow[],
+  ): Promise<void> {
+    const customFieldTypes = [
+      "numbers",
+      "numeric",
+      "dropdown",
+      "text",
+      "timeline",
+      "checkbox",
+    ];
+    const systemFields = ["name", "people", "status", "date"];
+
+    for (const column of columns) {
+      // Skip system columns and already handled columns
+      if (systemFields.includes(column.type)) {
+        continue;
+      }
+
+      // Only create mappings for supported custom field types
+      if (customFieldTypes.includes(column.type)) {
+        const columnKey = `monday_${column.id}_${column.type}`;
+
+        // Add mapping for the main field (display value)
+        mappings.push({
+          source_field: column.title,
+          target_field: columnKey,
+          include: true,
+        });
+
+        // Add mapping for the column ID field (alternative field name)
+        mappings.push({
+          source_field: column.id,
+          target_field: columnKey,
+          include: true,
+        });
+
+        console.log(
+          `[Monday Provider] Added field mapping for custom column: "${column.title}" -> ${columnKey}`,
+        );
+      }
+    }
+  }
+
+  // Create custom columns for Monday.com custom fields
+  private async createCustomColumnsForMondayFields(
+    columns: MondayColumn[],
+    projectId: string,
+  ): Promise<void> {
+    const customFieldTypes = [
+      "numbers",
+      "numeric",
+      "dropdown",
+      "text",
+      "timeline",
+      "checkbox",
+    ];
+    const systemFields = ["name", "people", "status", "date"];
+
+    for (const column of columns) {
+      try {
+        // Skip system columns and already handled columns
+        if (systemFields.includes(column.type)) {
+          continue;
+        }
+
+        // Only create custom columns for supported custom field types
+        if (customFieldTypes.includes(column.type)) {
+          console.log(
+            `[Monday Provider] Processing custom field: "${column.title}" (type: ${column.type})`,
+          );
+          await this.createCustomColumnFromMondayField(projectId, column);
+        } else {
+          console.log(
+            `[Monday Provider] Skipping unsupported custom field type: "${column.title}" (type: ${column.type})`,
+          );
+        }
+      } catch (error) {
+        console.error(
+          `[Monday Provider] Failed to create custom column for "${column.title}":`,
+          error,
+        );
+      }
+    }
+  }
+
+  // Create a single custom column from Monday.com field
+  private async createCustomColumnFromMondayField(
+    projectId: string,
+    column: MondayColumn,
+  ): Promise<string | null> {
+    try {
+      // Map Monday.com column types to Worklenz custom field types
+      const typeMapping: Record<
+        string,
+        { fieldType: string; numberType?: string }
+      > = {
+        numbers: { fieldType: "number", numberType: "formatted" },
+        numeric: { fieldType: "number", numberType: "formatted" },
+        dropdown: { fieldType: "selection" },
+        text: { fieldType: "people" }, // Use people type for text fields as it supports text
+        timeline: { fieldType: "date" },
+        date: { fieldType: "date" },
+        checkbox: { fieldType: "checkbox" },
+      };
+
+      const mapping = typeMapping[column.type];
+      if (!mapping) {
+        console.log(
+          `[Monday Custom Column] Skipping unsupported column type: ${column.type}`,
+        );
+        return null;
+      }
+
+      const columnKey = `monday_${column.id}_${column.type}`;
+      const columnName = column.title || `Monday ${column.type}`;
+
+      console.log(
+        `[Monday Custom Column] Creating custom column: ${columnName} (${column.type} -> ${mapping.fieldType})`,
+      );
+
+      const client = await db.pool.connect();
+      try {
+        await client.query("BEGIN");
+
+        // Check if column already exists
+        const existingCheck = await client.query(
+          "SELECT id FROM cc_custom_columns WHERE project_id = $1 AND key = $2",
+          [projectId, columnKey],
+        );
+
+        if (existingCheck.rows.length > 0) {
+          console.log(
+            `[Monday Custom Column] Column already exists: ${columnName}`,
+          );
+          await client.query("ROLLBACK");
+          return columnKey;
+        }
+
+        // 1. Insert the main custom column
+        const columnQuery = `
+          INSERT INTO cc_custom_columns (
+            project_id, name, key, field_type, width, is_visible, is_custom_column
+          ) VALUES ($1, $2, $3, $4, $5, $6, true)
+          RETURNING id;
+        `;
+        const columnResult = await client.query(columnQuery, [
+          projectId,
+          columnName,
+          columnKey,
+          mapping.fieldType,
+          150, // Default width
+          true, // Visible by default
+        ]);
+        const columnId = columnResult.rows[0].id;
+
+        // 2. Insert the column configuration
+        const configQuery = `
+          INSERT INTO cc_column_configurations (
+            column_id, field_title, field_type, number_type, 
+            decimals, label, label_position, preview_value
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          RETURNING id;
+        `;
+        await client.query(configQuery, [
+          columnId,
+          columnName,
+          mapping.fieldType,
+          mapping.numberType || null,
+          mapping.fieldType === "number" ? 2 : null, // Default 2 decimals for numbers
+          mapping.fieldType === "number" ? "" : null, // No label for now
+          mapping.fieldType === "number" ? "left" : null,
+          mapping.fieldType === "number" ? 0 : null,
+        ]);
+
+        // 3. For dropdown fields, create selection options
+        if (mapping.fieldType === "selection" && column.settings_str) {
+          try {
+            const settings = JSON.parse(column.settings_str);
+            if (settings.labels && Array.isArray(settings.labels)) {
+              const selectionQuery = `
+                INSERT INTO cc_selection_options (
+                  column_id, selection_id, selection_name, selection_color, selection_order
+                ) VALUES ($1, $2, $3, $4, $5);
+              `;
+              for (const [index, label] of settings.labels.entries()) {
+                const labelId = typeof label === "object" ? label.id : index;
+                const labelName =
+                  typeof label === "object" ? label.name : String(label);
+                const labelColor =
+                  typeof label === "object" ? label.color : "#3498db";
+
+                await client.query(selectionQuery, [
+                  columnId,
+                  String(labelId),
+                  labelName,
+                  labelColor,
+                  index,
+                ]);
+              }
+            }
+          } catch (parseError) {
+            console.log(
+              `[Monday Custom Column] Failed to parse settings for dropdown:`,
+              parseError,
+            );
+          }
+        }
+
+        await client.query("COMMIT");
+        console.log(
+          `[Monday Custom Column] Created custom column with ID: ${columnId}`,
+        );
+        return columnKey;
+      } catch (error) {
+        await client.query("ROLLBACK");
+        console.error(`[Monday Custom Column] Failed to create column:`, error);
+        return null;
+      } finally {
+        client.release();
+      }
+    } catch (error) {
+      console.error(
+        `[Monday Custom Column] Error creating custom column:`,
+        error,
+      );
+      return null;
+    }
   }
 
   async getAutoMappings(
@@ -339,7 +605,7 @@ export default class MondayProvider implements ImportProvider {
         "[Monday Provider] Missing token or boardId for auto mappings",
       );
       return {
-        fields: this.buildFieldMappings(),
+        fields: await this.buildFieldMappings(),
         raw: { warning: "Missing Monday token/boardId for auto mappings" },
       };
     }
@@ -384,7 +650,7 @@ export default class MondayProvider implements ImportProvider {
       const columns = data?.data?.boards?.[0]?.columns || [];
       this.columnsCache = columns;
 
-      const fieldMappings = this.buildFieldMappings(columns);
+      const fieldMappings = await this.buildFieldMappings(columns, job);
 
       return {
         fields: fieldMappings,
@@ -397,7 +663,7 @@ export default class MondayProvider implements ImportProvider {
     } catch (error: any) {
       console.error("[Monday Provider] Error getting auto mappings:", error);
       return {
-        fields: this.buildFieldMappings(),
+        fields: await this.buildFieldMappings(),
         raw: { error: error?.message || "Unknown error in auto mappings" },
       };
     }
