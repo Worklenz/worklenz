@@ -27,26 +27,30 @@ const ScheduleSettingsDrawer: React.FC = () => {
   const { date, type } = useAppSelector(state => state.scheduleReducer);
 
   const handleFormSubmit = async (values: any) => {
-    await dispatch(updateWorking(values));
-    dispatch(toggleSettingsDrawer());
-    dispatch(fetchDateList({ date, type }));
-    dispatch(fetchTeamData());
-    
-    // Invalidate all schedule-related cache to force refetch
-    dispatch(scheduleApi.util.invalidateTags([
-      'DateList', 
-      'Members', 
-      'MemberProjects', 
-      'Capacity', 
-      'Workload', 
-      'CapacityReport',
-      'Conflicts',
-      'TaskTimeline',
-      'TimeOff'
-    ]));
-    
-    // Trigger refresh in the schedule page
-    dispatch(triggerScheduleRefresh());
+    try {
+      await dispatch(updateWorking(values));
+      dispatch(toggleSettingsDrawer());
+      dispatch(fetchDateList({ date, type }));
+      dispatch(fetchTeamData());
+      
+      // Invalidate all schedule-related cache to force refetch
+      dispatch(scheduleApi.util.invalidateTags([
+        'DateList', 
+        'Members', 
+        'MemberProjects', 
+        'Capacity', 
+        'Workload', 
+        'CapacityReport',
+        'Conflicts',
+        'TaskTimeline',
+        'TimeOff'
+      ]));
+      
+      // Trigger refresh in the schedule page
+      dispatch(triggerScheduleRefresh());
+    } catch (error) {
+      console.error('Failed to update schedule settings:', error);
+    }
   };
 
   const fetchSettings = async () => {
