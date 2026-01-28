@@ -219,6 +219,40 @@ const parseLabelValues = (
   if (Array.isArray((source as any)?.__labelNames))
     pushValues((source as any).__labelNames);
 
+  // Monday.com specific tag processing
+  const tagFields = [
+    "Tags_tag_ids",
+    "tags_tag_ids",
+    "Labels_tag_ids",
+    "labels_tag_ids",
+    "Tags",
+    "tags",
+    "Labels",
+    "labels",
+  ];
+
+  tagFields.forEach((fieldName) => {
+    const tagValue = source[fieldName];
+    pushValues(tagValue);
+  });
+
+  // Look for _raw tag data
+  Object.keys(source).forEach((key) => {
+    if (key.toLowerCase().includes("tag") && key.includes("_raw")) {
+      const tagData = source[key];
+      if (typeof tagData === "object" && tagData && (tagData as any).tags) {
+        const tags = (tagData as any).tags;
+        if (Array.isArray(tags)) {
+          tags.forEach((tag) => {
+            if (tag && tag.name) {
+              pushValues(tag.name);
+            }
+          });
+        }
+      }
+    }
+  });
+
   return Array.from(new Set(labels.map(normalizeLabelName))).filter(Boolean);
 };
 
@@ -261,6 +295,48 @@ const collectAssigneeCandidates = (
   (rawEmails || []).forEach(pushValue);
   (rawMembers || []).forEach(pushValue);
   (rawNames || []).forEach(pushValue);
+
+  // Monday.com specific email extraction from enhanced fields
+  const mondayEmailFields = [
+    "Person_emails",
+    "Assignee_emails",
+    "person_emails",
+    "assignee_emails",
+    "People_emails",
+    "Owner_emails",
+  ];
+
+  mondayEmailFields.forEach((fieldName) => {
+    const emailValue = source[fieldName];
+    if (emailValue && typeof emailValue === "string" && emailValue.trim()) {
+      emailValue
+        .split(/[,;]/)
+        .map((email) => email.trim())
+        .filter(Boolean)
+        .forEach(push);
+    }
+  });
+
+  // Also check for name fields from Monday.com
+  const mondayNameFields = [
+    "Person_names",
+    "Assignee_names",
+    "person_names",
+    "assignee_names",
+    "People_names",
+    "Owner_names",
+  ];
+
+  mondayNameFields.forEach((fieldName) => {
+    const nameValue = source[fieldName];
+    if (nameValue && typeof nameValue === "string" && nameValue.trim()) {
+      nameValue
+        .split(/[,;]/)
+        .map((name) => name.trim())
+        .filter(Boolean)
+        .forEach(push);
+    }
+  });
 
   return Array.from(new Set(candidates));
 };
@@ -530,8 +606,13 @@ export const mapRawToTaskFields = (
         patch.status = String(value);
         break;
       case "startDate":
-        // Handle Monday.com timeline data
-        if (source[`${mapping.source_field}_raw`]) {
+        // Handle Monday.com timeline data - check for _start suffix first
+        if (mapping.source_field?.includes("_start")) {
+          patch.start_at = String(value);
+          console.log(
+            `[Monday Timeline Start] Set start date from ${mapping.source_field}: ${value}`,
+          );
+        } else if (source[`${mapping.source_field}_raw`]) {
           const timelineData = source[`${mapping.source_field}_raw`];
           if (
             typeof timelineData === "object" &&
@@ -545,13 +626,23 @@ export const mapRawToTaskFields = (
           } else {
             patch.start_at = String(value);
           }
+        } else if (source[`${mapping.source_field}_start`]) {
+          patch.start_at = String(source[`${mapping.source_field}_start`]);
+          console.log(
+            `[Monday Timeline] Using _start field: ${source[`${mapping.source_field}_start`]}`,
+          );
         } else {
           patch.start_at = String(value);
         }
         break;
       case "dueDate":
-        // Handle Monday.com timeline data and regular dates
-        if (source[`${mapping.source_field}_raw`]) {
+        // Handle Monday.com timeline data and regular dates - check for _end suffix first
+        if (mapping.source_field?.includes("_end")) {
+          patch.due_at = String(value);
+          console.log(
+            `[Monday Timeline End] Set due date from ${mapping.source_field}: ${value}`,
+          );
+        } else if (source[`${mapping.source_field}_raw`]) {
           const timelineData = source[`${mapping.source_field}_raw`];
           if (
             typeof timelineData === "object" &&
@@ -574,6 +665,11 @@ export const mapRawToTaskFields = (
           } else {
             patch.due_at = String(value);
           }
+        } else if (source[`${mapping.source_field}_end`]) {
+          patch.due_at = String(source[`${mapping.source_field}_end`]);
+          console.log(
+            `[Monday Timeline] Using _end field: ${source[`${mapping.source_field}_end`]}`,
+          );
         } else {
           patch.due_at = String(value);
         }

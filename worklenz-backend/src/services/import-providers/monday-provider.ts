@@ -54,7 +54,19 @@ const MONDAY_DEFAULT_FIELDS: FieldMappingRow[] = [
     include: true,
   },
   {
+    source_field: "name",
+    target_field: "key",
+    required: true,
+    include: true,
+  },
+  // Map both Notes and long_text for descriptions
+  {
     source_field: "Notes",
+    target_field: "description",
+    include: true,
+  },
+  {
+    source_field: "Description", // Monday.com often uses Description as column title
     target_field: "description",
     include: true,
   },
@@ -74,7 +86,33 @@ const MONDAY_DEFAULT_FIELDS: FieldMappingRow[] = [
     include: true,
   },
   {
+    source_field: "Timeline_start", // Extract start date from timeline
+    target_field: "startDate",
+    include: true,
+  },
+  {
+    source_field: "Timeline_end", // Extract end date from timeline
+    target_field: "dueDate",
+    include: true,
+  },
+  // Map both Person and people fields
+  {
     source_field: "Person",
+    target_field: "assignees",
+    include: true,
+  },
+  {
+    source_field: "Assignee",
+    target_field: "assignees",
+    include: true,
+  },
+  {
+    source_field: "Person_emails", // Map email fields for assignees
+    target_field: "assignees",
+    include: true,
+  },
+  {
+    source_field: "Assignee_emails", // Map email fields for assignees
     target_field: "assignees",
     include: true,
   },
@@ -214,6 +252,60 @@ export default class MondayProvider implements ImportProvider {
             target_field: smartTargetField,
             include: true,
           });
+
+          // Add additional mappings for special Monday.com field structures
+          if (smartTargetField === "assignees") {
+            // Map the email variants for assignee fields
+            mappings.push({
+              source_field: `${columnTitle}_emails`,
+              target_field: "assignees",
+              include: true,
+            });
+            mappings.push({
+              source_field: `${columnTitle}_names`,
+              target_field: "assignees",
+              include: true,
+            });
+          } else if (
+            smartTargetField === "startDate" &&
+            column.type === "timeline"
+          ) {
+            // Map timeline start/end dates
+            mappings.push({
+              source_field: `${columnTitle}_start`,
+              target_field: "startDate",
+              include: true,
+            });
+            mappings.push({
+              source_field: `${columnTitle}_end`,
+              target_field: "dueDate",
+              include: true,
+            });
+          } else if (smartTargetField === "labels" && column.type === "tags") {
+            // Map tags field variants
+            mappings.push({
+              source_field: `${columnTitle}_tag_ids`,
+              target_field: "labels",
+              include: true,
+            });
+          } else if (
+            smartTargetField === "status" &&
+            column.type === "status"
+          ) {
+            // Map status label variants
+            mappings.push({
+              source_field: `${columnTitle}_label`,
+              target_field: "status",
+              include: true,
+            });
+          }
+
+          // Also add mapping for column ID as fallback
+          mappings.push({
+            source_field: column.id,
+            target_field: smartTargetField,
+            include: true,
+          });
         } else {
           console.log(
             `[Monday Provider] Skipping system column: "${column.title}" (type: ${column.type})`,
@@ -329,8 +421,15 @@ export default class MondayProvider implements ImportProvider {
       return { tasks: [], raw: { warning: "Missing Monday token/boardId" } };
     }
 
+    // Enhanced query that includes column information
     const query = `query ($boardId: [ID!]) { 
       boards(ids: $boardId) { 
+        columns {
+          id
+          title
+          type
+          settings_str
+        }
         items_page (limit: 200) { 
           items { 
             id 
@@ -370,10 +469,16 @@ export default class MondayProvider implements ImportProvider {
         data?.data?.boards?.[0]?.items ||
         [];
 
-      console.log("[Monday Provider] Extracted items:", items);
+      // Get columns from the current response
+      const columns =
+        data?.data?.boards?.[0]?.columns || this.columnsCache || [];
 
-      // Get cached columns for enhanced data processing
-      const columns = this.columnsCache || [];
+      console.log("[Monday Provider] Extracted items:", items);
+      console.log("[Monday Provider] Available columns:", columns.length);
+      console.log(
+        "[Monday Provider] Column details:",
+        columns.map((c) => ({ id: c.id, title: c.title, type: c.type })),
+      );
 
       const tasks: StageTaskRow[] = items.map((item: MondayItem) => {
         const rawItem = this.buildRawItem(item, columns);
