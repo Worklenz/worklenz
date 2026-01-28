@@ -55,17 +55,26 @@ export default class CapacityController extends WorklenzControllerBase {
             return res.status(400).send(new ServerResponse(false, null, "startDate and endDate are required"));
         }
 
-        // Get organization ID
-        const orgQuery = `SELECT id FROM organizations WHERE user_id = $1 LIMIT 1`;
-        const orgResult = await db.query(orgQuery, [req.user?.owner_id]);
+        // Get organization ID and active team
+        const orgQuery = `
+            SELECT o.id as organization_id, u.active_team 
+            FROM organizations o
+            JOIN users u ON o.user_id = u.id 
+            WHERE u.id = $1 
+            LIMIT 1`;
+        const orgResult = await db.query(orgQuery, [req.user?.id]);
         
         if (orgResult.rows.length === 0) {
-            return res.status(404).send(new ServerResponse(false, null, "Organization not found"));
+            return res.status(404).send(new ServerResponse(false, null, "Organization or active team not found"));
         }
 
-        const organizationId = orgResult.rows[0].id;
+        const { organization_id: organizationId, active_team: activeTeamId } = orgResult.rows[0];
 
-        // Get team members
+        if (!activeTeamId) {
+            return res.status(400).send(new ServerResponse(false, null, "No active team selected"));
+        }
+
+        // Get team members from active team only
         let memberQuery = `
             SELECT DISTINCT ON (u.email)
                 tm.id AS team_member_id,
@@ -73,13 +82,11 @@ export default class CapacityController extends WorklenzControllerBase {
                 u.email AS member_email
             FROM team_members tm
             JOIN users u ON tm.user_id = u.id
-            WHERE tm.team_id IN (
-                SELECT id FROM teams WHERE organization_id = $1
-            )
+            WHERE tm.team_id = $1
             AND tm.active = true
         `;
 
-        const params: any[] = [organizationId];
+        const params: any[] = [activeTeamId];
         let paramIndex = 2;
 
         if (teamMemberId) {
@@ -163,24 +170,31 @@ export default class CapacityController extends WorklenzControllerBase {
             return res.status(400).send(new ServerResponse(false, null, "startDate and endDate are required"));
         }
 
-        // Get organization ID
-        const orgQuery = `SELECT id FROM organizations WHERE user_id = $1 LIMIT 1`;
-        const orgResult = await db.query(orgQuery, [req.user?.owner_id]);
+        // Get organization ID and active team
+        const orgQuery = `
+            SELECT o.id as organization_id, u.active_team 
+            FROM organizations o
+            JOIN users u ON o.user_id = u.id 
+            WHERE u.id = $1 
+            LIMIT 1`;
+        const orgResult = await db.query(orgQuery, [req.user?.id]);
         
         if (orgResult.rows.length === 0) {
-            return res.status(404).send(new ServerResponse(false, null, "Organization not found"));
+            return res.status(404).send(new ServerResponse(false, null, "Organization or active team not found"));
         }
 
-        const organizationId = orgResult.rows[0].id;
+        const { organization_id: organizationId, active_team: activeTeamId } = orgResult.rows[0];
 
-        // Get aggregated capacity summary
+        if (!activeTeamId) {
+            return res.status(400).send(new ServerResponse(false, null, "No active team selected"));
+        }
+
+        // Get aggregated capacity summary from active team only
         const summaryQuery = `
             WITH member_list AS (
                 SELECT DISTINCT tm.id AS team_member_id
                 FROM team_members tm
-                WHERE tm.team_id IN (
-                    SELECT id FROM teams WHERE organization_id = $1
-                )
+                WHERE tm.team_id = $1
                 AND tm.active = true
             ),
             capacity_data AS (
@@ -208,7 +222,7 @@ export default class CapacityController extends WorklenzControllerBase {
             WHERE working_hours > 0
         `;
 
-        const result = await db.query(summaryQuery, [organizationId, startDate, endDate]);
+        const result = await db.query(summaryQuery, [activeTeamId, startDate, endDate]);
 
         return res.status(200).send(new ServerResponse(true, result.rows[0]));
     }
@@ -228,17 +242,26 @@ export default class CapacityController extends WorklenzControllerBase {
             return res.status(400).send(new ServerResponse(false, null, "startDate and endDate are required"));
         }
 
-        // Get organization ID
-        const orgQuery = `SELECT id FROM organizations WHERE user_id = $1 LIMIT 1`;
-        const orgResult = await db.query(orgQuery, [req.user?.owner_id]);
+        // Get organization ID and active team
+        const orgQuery = `
+            SELECT o.id as organization_id, u.active_team 
+            FROM organizations o
+            JOIN users u ON o.user_id = u.id 
+            WHERE u.id = $1 
+            LIMIT 1`;
+        const orgResult = await db.query(orgQuery, [req.user?.id]);
         
         if (orgResult.rows.length === 0) {
-            return res.status(404).send(new ServerResponse(false, null, "Organization not found"));
+            return res.status(404).send(new ServerResponse(false, null, "Organization or active team not found"));
         }
 
-        const organizationId = orgResult.rows[0].id;
+        const { organization_id: organizationId, active_team: activeTeamId } = orgResult.rows[0];
 
-        // Find all conflicts
+        if (!activeTeamId) {
+            return res.status(400).send(new ServerResponse(false, null, "No active team selected"));
+        }
+
+        // Find all conflicts from active team only
         const conflictsQuery = `
             WITH member_list AS (
                 SELECT DISTINCT 
@@ -247,9 +270,7 @@ export default class CapacityController extends WorklenzControllerBase {
                     u.email AS member_email
                 FROM team_members tm
                 JOIN users u ON tm.user_id = u.id
-                WHERE tm.team_id IN (
-                    SELECT id FROM teams WHERE organization_id = $1
-                )
+                WHERE tm.team_id = $1
                 AND tm.active = true
             ),
             capacity_data AS (
@@ -280,7 +301,7 @@ export default class CapacityController extends WorklenzControllerBase {
             ORDER BY date, member_name
         `;
 
-        const result = await db.query(conflictsQuery, [organizationId, startDate, endDate]);
+        const result = await db.query(conflictsQuery, [activeTeamId, startDate, endDate]);
 
         const conflicts = result.rows.map(row => ({
             type: 'overallocation',

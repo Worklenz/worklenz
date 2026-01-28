@@ -298,17 +298,12 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                             '[]'::JSONB AS projects
                         FROM team_members 
                         INNER JOIN users ON users.id = team_members.user_id 
-                        WHERE team_members.team_id IN (
-                            SELECT id FROM teams 
-                            WHERE organization_id IN (
-                                SELECT id FROM organizations 
-                                WHERE user_id = $1 
-                                LIMIT 1
-                            )
+                        WHERE team_members.team_id = (
+                            SELECT active_team FROM users WHERE id = $1
                         )
                         ORDER BY users.email ASC, users.name ASC;`;
 
-        const results = await db.query(getDataq, [req.user?.owner_id]);
+        const results = await db.query(getDataq, [req.user?.id]);
         return res.status(200).send(new ServerResponse(true, results.rows));
 
     }
