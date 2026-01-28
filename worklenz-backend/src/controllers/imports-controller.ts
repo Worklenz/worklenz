@@ -17,6 +17,7 @@ import { nanoid } from "nanoid";
 import AsanaProvider from "../services/import-providers/asana-provider";
 import JiraProvider from "../services/import-providers/jira-provider";
 import TrelloProvider from "../services/import-providers/trello-provider";
+import MondayProvider from "../services/import-providers/monday-provider";
 
 const autoHierarchyTemplate = [
   { source_level: "Section", target_level: "Status", position: 1 },
@@ -97,6 +98,7 @@ const autoFieldTemplate: FieldMappingRow[] = [
 const asanaProvider = new AsanaProvider();
 const jiraProvider = new JiraProvider();
 const trelloProvider = new TrelloProvider();
+const mondayProvider = new MondayProvider();
 
 const REQUIRED_TARGET_MAPPINGS: Array<{
   target: string;
@@ -423,6 +425,20 @@ export default class ImportsController {
             job.id,
             "warn",
             "JIRA auto fields failed",
+            {
+              error: (err as any)?.message,
+            },
+          );
+        }
+      } else if (providerKey === "monday") {
+        try {
+          const auto = await mondayProvider.getAutoMappings(job, req.body);
+          if (auto.fields?.length) rows = auto.fields as any;
+        } catch (err) {
+          await ImportsService.appendLog(
+            job.id,
+            "warn",
+            "Monday auto fields failed",
             {
               error: (err as any)?.message,
             },

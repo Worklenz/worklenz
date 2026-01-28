@@ -530,10 +530,53 @@ export const mapRawToTaskFields = (
         patch.status = String(value);
         break;
       case "startDate":
-        patch.start_at = String(value);
+        // Handle Monday.com timeline data
+        if (source[`${mapping.source_field}_raw`]) {
+          const timelineData = source[`${mapping.source_field}_raw`];
+          if (
+            typeof timelineData === "object" &&
+            timelineData &&
+            (timelineData as any).from
+          ) {
+            patch.start_at = String((timelineData as any).from);
+            console.log(
+              `[Monday Timeline] Extracted start date from timeline: ${(timelineData as any).from}`,
+            );
+          } else {
+            patch.start_at = String(value);
+          }
+        } else {
+          patch.start_at = String(value);
+        }
         break;
       case "dueDate":
-        patch.due_at = String(value);
+        // Handle Monday.com timeline data and regular dates
+        if (source[`${mapping.source_field}_raw`]) {
+          const timelineData = source[`${mapping.source_field}_raw`];
+          if (
+            typeof timelineData === "object" &&
+            timelineData &&
+            (timelineData as any).to
+          ) {
+            patch.due_at = String((timelineData as any).to);
+            console.log(
+              `[Monday Timeline] Extracted end date from timeline: ${(timelineData as any).to}`,
+            );
+          } else if (
+            typeof timelineData === "object" &&
+            timelineData &&
+            (timelineData as any).date
+          ) {
+            patch.due_at = String((timelineData as any).date);
+            console.log(
+              `[Monday Date] Extracted date: ${(timelineData as any).date}`,
+            );
+          } else {
+            patch.due_at = String(value);
+          }
+        } else {
+          patch.due_at = String(value);
+        }
         break;
       case "createdDate":
         // eslint-disable-next-line no-console
