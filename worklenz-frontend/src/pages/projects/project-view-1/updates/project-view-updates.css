@@ -1,288 +1,257 @@
-/* Custom Mentions Wrapper */
-.custom-mentions-wrapper {
-  position: relative;
-  width: 100%;
+/* Mentions styling */
+.mentions {
+  font-weight: 500;
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin: 0 1px;
 }
 
-/* Contenteditable div styling */
-.custom-mentions-editable {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  font-size: 14px;
-  line-height: 1.5715;
-  transition: border-color 0.3s;
-  position: relative;
-  cursor: text;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-.custom-mentions-editable:focus {
-  border-color: #40a9ff !important;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-  outline: none;
-}
-
-.custom-mentions-editable.theme-dark:focus {
-  border-color: #177ddc !important;
-  box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.2);
-}
-
-/* Placeholder styling */
-.custom-mentions-editable:empty:before {
-  content: attr(data-placeholder);
-  color: #bfbfbf;
-  pointer-events: none;
-  position: absolute;
-}
-
-.custom-mentions-editable:empty:focus:before {
-  color: #8c8c8c;
-}
-
-.custom-mentions-editable.theme-dark:empty:before {
-  color: #595959;
-}
-
-.custom-mentions-editable.theme-dark:empty:focus:before {
-  color: #8c8c8c;
-}
-
-/* Mention highlight styling - Light theme (for input field) */
-.mention-highlight-light {
-  background-color: #e1f3ff !important;
-  color: #1890ff !important;
-  border: 1px solid #c2e4f9 !important;
-  border-radius: 4px !important;
-  padding: 1px 4px !important;
-  margin: 0 1px !important;
-  font-weight: 500 !important;
-  display: inline !important;
-  white-space: nowrap !important;
-  user-select: none !important;
-  -webkit-user-select: none !important;
-  -moz-user-select: none !important;
-  -ms-user-select: none !important;
-  pointer-events: none !important;
-  cursor: default !important;
-  line-height: 1.5715 !important;
-  vertical-align: baseline !important;
-}
-
-/* Mention highlight styling - Dark theme (for input field) */
-.mention-highlight-dark {
-  background-color: #1e3a5f !important;
-  color: #40a9ff !important;
-  border: 1px solid #2a4a6d !important;
-  border-radius: 4px !important;
-  padding: 1px 4px !important;
-  margin: 0 1px !important;
-  font-weight: 500 !important;
-  display: inline !important;
-  white-space: nowrap !important;
-  user-select: none !important;
-  -webkit-user-select: none !important;
-  -moz-user-select: none !important;
-  -ms-user-select: none !important;
-  pointer-events: none !important;
-  cursor: default !important;
-  line-height: 1.5715 !important;
-  vertical-align: baseline !important;
-}
-
-/* Mentions styling in posted comments - Light mode */
-.mentions-light .mentions {
-  background-color: #f0f2f5;
+.theme-light .mentions {
+  background: #f0f2f5;
   color: #1890ff;
-  font-weight: 500;
-  border-radius: 4px;
-  padding: 2px 4px;
-  margin: 0 1px;
   border: 1px solid #e6e6e6;
-  display: inline;
-  white-space: nowrap;
-  transition: all 0.2s ease;
 }
 
-/* Mentions styling in posted comments - Dark mode */
-.mentions-dark .mentions {
-  background-color: #2a3a4a;
+.theme-dark .mentions {
+  background: #2a3a4a;
   color: #40a9ff;
-  font-weight: 500;
-  border-radius: 4px;
-  padding: 2px 4px;
-  margin: 0 1px;
   border: 1px solid #2a4a6d;
-  display: inline;
-  white-space: nowrap;
-  transition: all 0.2s ease;
 }
 
-/* Hover effect for mentions - Light mode */
-.mentions-light .mentions:hover {
-  background-color: #e6f7ff;
-  border-color: #1890ff;
-  cursor: pointer;
+/* Conversation-like styles */
+.project-view-updates {
+  padding: 4px 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Hover effect for mentions - Dark mode */
-.mentions-dark .mentions:hover {
-  background-color: #1e3a5f;
-  border-color: #40a9ff;
-  cursor: pointer;
-}
-
-/* Tooltip mentions - no background */
-.tooltip-comment .mentions {
-  background-color: transparent;
-  font-weight: 500;
+/* Base comment styles */
+.theme-light .ant-comment,
+.theme-dark .ant-comment {
+  position: relative;
+  margin-bottom: 12px;
   padding: 0;
+  box-shadow: none;
+  border: none;
+  background-color: transparent;
 }
 
-/* Ensure mentions have proper spacing */
-.mention-highlight-light + .mention-highlight-light,
-.mention-highlight-dark + .mention-highlight-dark,
-.mention-highlight-light + .mention-highlight-dark,
-.mention-highlight-dark + .mention-highlight-light {
-  margin-left: 2px !important;
-}
-
-/* Dropdown styling */
-.mentions-dropdown {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  border: 1px solid;
-  border-radius: 4px;
-  max-height: 200px;
-  overflow-y: auto;
-  animation: slideIn 0.2s ease-out;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  margin-top: 4px;
-  z-index: 1050;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.mentions-dropdown.theme-light {
-  background-color: #fff;
-  border-color: #d9d9d9;
-  color: rgba(0, 0, 0, 0.85);
-}
-
-.mentions-dropdown.theme-dark {
-  background-color: #1f1f1f;
-  border-color: #434343;
-  color: rgba(255, 255, 255, 0.85);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.mentions-option {
-  transition: background-color 0.2s;
-  cursor: pointer;
+/* Comment content bubble styles */
+.theme-light .ant-comment-content-detail,
+.theme-dark .ant-comment-content-detail {
+  position: relative;
+  border-radius: 12px;
   padding: 8px 12px;
-  user-select: none;
+  margin-top: 2px;
+  max-width: 85%;
+  width: fit-content;
 }
 
-.mentions-option:hover {
-  background-color: #f5f5f5;
+.theme-light .ant-comment-content-detail {
+  background-color: #f0f2f5;
+  border: 1px solid #e6e6e6;
 }
 
-.mentions-dropdown.theme-dark .mentions-option:hover {
+.theme-dark .ant-comment-content-detail {
   background-color: #2a2a2a;
+  border: 1px solid #333;
 }
 
-.mentions-option.selected {
-  background-color: #f5f5f5;
-  font-weight: 500;
+/* Current user comment styles */
+.current-user-comment {
+  flex-direction: row-reverse;
 }
 
-.mentions-dropdown.theme-dark .mentions-option.selected {
-  background-color: #2a2a2a;
+.current-user-comment .ant-comment-inner {
+  display: flex;
+  flex-direction: row-reverse;
 }
 
-/* Scrollbar styling */
-.custom-mentions-editable::-webkit-scrollbar,
-.mentions-dropdown::-webkit-scrollbar {
+.current-user-comment .ant-comment-content {
+  margin-right: 8px;
+  margin-left: 0;
+  max-width: calc(100% - 40px);
+  /* Adjust for avatar */
+}
+
+.current-user-comment .ant-comment-content-author {
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 6px;
+  padding-left: 0;
+}
+
+.current-user-comment .ant-comment-content-detail {
+  margin-left: auto;
+}
+
+.theme-light .current-user-comment .ant-comment-content-detail {
+  background-color: #e1f3ff;
+  border-color: #c2e4f9;
+}
+
+.theme-dark .current-user-comment .ant-comment-content-detail {
+  background-color: #1e3a5f;
+  border-color: #2a4a6d;
+}
+
+/* Mentions in current user comments */
+.theme-light .current-user-comment .mentions {
+  background: #d1e9ff;
+  border-color: #b3d8ff;
+}
+
+.theme-dark .current-user-comment .mentions {
+  background: #2a4a6d;
+  border-color: #3a5a7d;
+}
+
+.current-user-comment .ant-comment-actions {
+  margin-left: auto;
+  padding-right: 12px;
+  padding-left: 0;
+  text-align: right;
+}
+
+/* Comment author and timestamp */
+.ant-comment-content-author {
+  margin-bottom: 0;
+  padding-left: 6px;
+}
+
+/* Reduce the space between author and content */
+.ant-comment-inner {
+  padding: 10px 0;
+}
+
+/* Comment actions */
+.ant-comment-actions {
+  margin-top: 2px;
+  padding-left: 12px;
+}
+
+/* Comment content */
+.comment-content-light {
+  color: #333;
+  margin-bottom: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.comment-content-dark {
+  color: #d1d0d3;
+  margin-bottom: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Comment actions styling */
+.theme-light .ant-comment-actions>li>span {
+  color: #707070;
+  transition: color 0.3s;
+  font-size: 11px;
+}
+
+.theme-dark .ant-comment-actions>li>span {
+  color: #d1d0d3;
+  transition: color 0.3s;
+  font-size: 11px;
+}
+
+.theme-light .ant-comment-actions>li>span:hover {
+  color: #1890ff;
+}
+
+.theme-dark .ant-comment-actions>li>span:hover {
+  color: #1890ff;
+}
+
+/* Time separator */
+.comment-time-separator {
+  text-align: center;
+  margin: 10px 0;
+  position: relative;
+}
+
+.comment-time-separator::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 1px;
+  background-color: #e6e6e6;
+  z-index: 0;
+}
+
+.theme-dark .comment-time-separator::before {
+  background-color: #333;
+}
+
+.comment-time-separator span {
+  position: relative;
+  padding: 0 10px;
+  font-size: 11px;
+  z-index: 1;
+}
+
+.theme-light .comment-time-separator span {
+  background-color: #fff;
+  color: #707070;
+}
+
+.theme-dark .comment-time-separator span {
+  background-color: #1e1e1e;
+  /* Match main layout bg if possible, or assume card bg */
+  color: #d1d0d3;
+}
+
+/* Adjust avatar size for more compact look */
+.ant-comment-avatar img {
+  width: 28px;
+  height: 28px;
+}
+
+/* Scrollable area */
+.updates-list-container {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0 16px;
+  min-height: 0;
+  /* Important for flex children to scroll properly */
+}
+
+.updates-list-container::-webkit-scrollbar {
   width: 6px;
 }
 
-.custom-mentions-editable::-webkit-scrollbar-track,
-.mentions-dropdown::-webkit-scrollbar-track {
-  background: #f0f0f0;
+.updates-list-container::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.1);
   border-radius: 3px;
 }
 
-.custom-mentions-editable::-webkit-scrollbar-thumb,
-.mentions-dropdown::-webkit-scrollbar-thumb {
-  background: #bfbfbf;
-  border-radius: 3px;
-  transition: background 0.2s;
+/* Input area - sticky at bottom */
+.updates-input-container {
+  padding: 16px 24px;
+  border-top: 1px solid transparent;
+  /* controlled by theme */
+  flex-shrink: 0;
+  /* Prevent input from shrinking */
 }
 
-.custom-mentions-editable.theme-dark::-webkit-scrollbar-track,
-.mentions-dropdown.theme-dark::-webkit-scrollbar-track {
-  background: #1f1f1f;
+/* Delete button hover */
+.ant-comment .ant-comment-actions>li {
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.2s;
 }
 
-.custom-mentions-editable.theme-dark::-webkit-scrollbar-thumb,
-.mentions-dropdown.theme-dark::-webkit-scrollbar-thumb {
-  background: #434343;
+.ant-comment:hover .ant-comment-actions>li {
+  visibility: visible;
+  opacity: 1;
 }
 
-.custom-mentions-editable::-webkit-scrollbar-thumb:hover,
-.mentions-dropdown::-webkit-scrollbar-thumb:hover {
-  background: #8c8c8c;
-}
-
-.custom-mentions-editable.theme-dark::-webkit-scrollbar-thumb:hover,
-.mentions-dropdown.theme-dark::-webkit-scrollbar-thumb:hover {
-  background: #595959;
-}
-
-/* Dropdown slide-in animation */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Ensure proper text flow and line breaks */
-.custom-mentions-editable br {
-  display: block;
-  margin: 0;
-  line-height: inherit;
-  content: '';
-}
-
-/* Make sure text nodes flow properly */
-.custom-mentions-editable > * {
-  display: inline;
-}
-
-/* Prevent text selection in mentions */
-.mention-highlight-light *,
-.mention-highlight-dark * {
-  pointer-events: none;
-}
-
-/* Ensure proper cursor behavior */
-.custom-mentions-editable {
-  caret-color: auto;
-}
-
-/* Fix for Firefox contenteditable */
-.custom-mentions-editable[contenteditable="true"] {
-  -webkit-user-modify: read-write-plaintext-only;
-  -moz-user-modify: read-write-plaintext-only;
-}
-
-/* Ensure proper spacing between elements */
-.custom-mentions-editable * {
-  margin: 0;
-  padding: 0;
+.current-user-comment .ant-comment-actions>li {
+  float: right;
 }
