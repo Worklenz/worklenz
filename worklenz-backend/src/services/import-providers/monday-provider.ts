@@ -195,6 +195,12 @@ export default class MondayProvider implements ImportProvider {
     columns?: MondayColumn[],
     job?: ImportJob,
   ): Promise<FieldMappingRow[]> {
+    console.log(`[Monday Provider] buildFieldMappings called with:`, {
+      columnsCount: columns?.length || 0,
+      hasJob: !!job,
+      targetProjectId: job?.target_project_id || "undefined",
+    });
+
     const mappings = [...MONDAY_DEFAULT_FIELDS];
 
     if (columns) {
@@ -363,6 +369,14 @@ export default class MondayProvider implements ImportProvider {
     });
 
     // Create custom columns for Monday.com custom fields
+    console.log(`[Monday Provider] Custom column creation check:`, {
+      hasColumns: !!columns,
+      hasJob: !!job,
+      hasTargetProjectId: !!(job && job.target_project_id),
+      targetProjectId: job?.target_project_id,
+      columnsCount: columns?.length || 0,
+    });
+
     if (columns && job && job.target_project_id) {
       console.log(
         `[Monday Provider] Creating custom columns for Monday.com custom fields...`,
@@ -374,6 +388,10 @@ export default class MondayProvider implements ImportProvider {
 
       // Add field mappings for the custom columns to populate data
       await this.addCustomColumnFieldMappings(columns, mappings);
+    } else {
+      console.log(
+        `[Monday Provider] Skipping custom column creation - condition failed`,
+      );
     }
 
     return mappings;
@@ -766,6 +784,31 @@ export default class MondayProvider implements ImportProvider {
         "[Monday Provider] Column details:",
         columns.map((c) => ({ id: c.id, title: c.title, type: c.type })),
       );
+
+      // Create custom columns for Monday.com fields during ingest phase
+      console.log(
+        "[Monday Provider] Creating custom columns for Monday fields during ingest",
+      );
+      try {
+        if (job.target_project_id) {
+          await this.createCustomColumnsForMondayFields(
+            columns,
+            job.target_project_id,
+          );
+          console.log(
+            "[Monday Provider] Custom column creation completed successfully",
+          );
+        } else {
+          console.log(
+            "[Monday Provider] No target_project_id available, skipping custom column creation",
+          );
+        }
+      } catch (error) {
+        console.error(
+          "[Monday Provider] Error creating custom columns:",
+          error,
+        );
+      }
 
       const tasks: StageTaskRow[] = items.map((item: MondayItem) => {
         const rawItem = this.buildRawItem(item, columns);
