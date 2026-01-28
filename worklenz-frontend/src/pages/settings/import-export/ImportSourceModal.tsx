@@ -783,6 +783,106 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         return;
       }
 
+      if (lowerKey === 'monday') {
+        if (!selectedBoard) {
+          message.error(
+            t('importStep.mondayBoardRequired', 'Please select a Monday board before importing.')
+          );
+          return;
+        }
+        if (!job?.id) {
+          message.error(t('importStep.importError', 'Import failed. Please try again.'));
+          return;
+        }
+
+        setIsImporting(true);
+        try {
+          const statusId = await ensureDefaultProjectStatusId();
+          const projectPayload: IProjectViewModel = {
+            name: spaceName.trim(),
+            color_code: '#2563eb',
+            status_id: statusId,
+            category_id: null,
+            health_id: null,
+            notes: '',
+            working_days: 0,
+            man_days: 0,
+            hours_per_day: 0,
+            use_manual_progress: false,
+            use_weighted_progress: false,
+            use_time_progress: false,
+          };
+
+          const projectResp = await projectsApiService.createProject(projectPayload);
+          const projectId = projectResp?.body?.id;
+          if (!projectResp?.done || !projectId) {
+            throw new Error(
+              projectResp?.message || t('importStep.projectCreateError', 'Failed to create project')
+            );
+          }
+
+          await updateImportTarget(job.id, {
+            targetProjectId: projectId,
+            targetSpaceType: spaceType,
+            targetTemplate: spaceTemplate,
+          });
+
+          const boardName = mondayBoards.find(b => b.id === selectedBoard)?.name || null;
+          await updateImportSource(job.id, {
+            projectId: selectedBoard,
+            boardId: selectedBoard,
+            boardName,
+          });
+
+          if (!fieldMappingRows.length || !hierarchyRows.length) {
+            await runAutoMapping(true);
+          }
+
+          if (fieldMappingRows.length) {
+            await saveImportFields(job.id, fieldMappingRows as any);
+          }
+
+          const mondayAuth = (job as any)?.source_reference?.auth?.monday || {};
+          const resolvedToken = mondayToken.trim() || mondayAuth?.token;
+
+          if (!resolvedToken) {
+            throw new Error(
+              t(
+                'importStep.mondayCredentialsMissing',
+                'Missing Monday credentials. Please reconnect and try again.'
+              )
+            );
+          }
+
+          await ingestImportJob(job.id, {
+            sourceReference: {
+              provider: lowerKey,
+              token: resolvedToken,
+              projectId: selectedBoard,
+              boardId: selectedBoard,
+              boardName,
+            },
+          });
+
+          const commitProgress = await commitImportJob(job.id);
+          if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
+
+          setShowCompletion(false);
+          message.success(
+            t('importStep.importStarted', 'Import started. We will notify once ready.')
+          );
+          onClose();
+        } catch (err: any) {
+          message.error(
+            err?.message || t('importStep.importError', 'Import failed. Please try again.')
+          );
+        } finally {
+          setIsImporting(false);
+        }
+
+        return;
+      }
+
       setShowCompletion(false);
       onClose();
       return;
