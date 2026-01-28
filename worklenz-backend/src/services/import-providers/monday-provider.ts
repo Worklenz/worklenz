@@ -123,6 +123,16 @@ const MONDAY_DEFAULT_FIELDS: FieldMappingRow[] = [
     include: true,
   },
   {
+    source_field: "Label",
+    target_field: "labels",
+    include: true,
+  },
+  {
+    source_field: "Labels",
+    target_field: "labels",
+    include: true,
+  },
+  {
     source_field: "Priority",
     target_field: "priority",
     include: true,
@@ -297,12 +307,23 @@ export default class MondayProvider implements ImportProvider {
             column.type === "status"
           ) {
             // Map status-based label columns (e.g., Label, Category columns)
+            // Map the direct column name (most important for Monday.com labels)
+            mappings.push({
+              source_field: columnTitle,
+              target_field: "labels",
+              include: true,
+            });
             mappings.push({
               source_field: `${columnTitle}_raw`,
               target_field: "labels",
               include: true,
             });
             // Also map the column ID based fields
+            mappings.push({
+              source_field: column.id,
+              target_field: "labels",
+              include: true,
+            });
             mappings.push({
               source_field: `${column.id}_raw`,
               target_field: "labels",

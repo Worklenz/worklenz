@@ -266,6 +266,20 @@ const parseLabelValues = (
     }
   });
 
+  // Additional Monday.com label extraction
+  // Check for direct Label fields (Label, Label1, Label2, etc.)
+  Object.keys(source).forEach((key) => {
+    if (key.match(/^Label\d*$/i) && source[key]) {
+      console.log(
+        `[parseLabelValues] Found Monday label field: ${key} = ${source[key]}`,
+      );
+      pushValues(source[key]);
+    }
+  });
+
+  console.log(
+    `[parseLabelValues] Final parsed labels: ${JSON.stringify(labels)}`,
+  );
   return Array.from(new Set(labels.map(normalizeLabelName))).filter(Boolean);
 };
 
