@@ -40,27 +40,83 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
 
     @HandleExceptions()
     public static async updateSettings(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-        const { workingDays, workingHours } = req.body;
+        try {
+            const { workingDays, workingHours } = req.body;
 
-        // Days of the week
-        const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+            // Validate input parameters
+            if (!workingDays || !Array.isArray(workingDays)) {
+                return res.status(400).send(new ServerResponse(false, null, "workingDays must be an array"));
+            }
 
-        // Generate the SET clause dynamically
-        const setClause = days
-            .map(day => `${day.toLowerCase()} = ${workingDays.includes(day)}`)
-            .join(", ");
+            if (workingHours === undefined || workingHours === null || isNaN(Number(workingHours))) {
+                return res.status(400).send(new ServerResponse(false, null, "workingHours must be a valid number"));
+            }
 
-        const updateQuery = `UPDATE public.organization_working_days
-      SET ${setClause}, updated_at = CURRENT_TIMESTAMP
-      WHERE organization_id IN (SELECT id FROM organizations WHERE user_id = $1);`;
+            // Validate working hours range (reasonable limits)
+            const hours = Number(workingHours);
+            if (hours < 1 || hours > 24) {
+                return res.status(400).send(new ServerResponse(false, null, "workingHours must be between 1 and 24"));
+            }
 
-        await db.query(updateQuery, [req.user?.owner_id]);
+            // Days of the week
+            const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-        const getDataHoursq = `UPDATE organizations SET hours_per_day = $1 WHERE user_id = $2;`;
+            // Validate working days
+            const invalidDays = workingDays.filter(day => !days.includes(day));
+            if (invalidDays.length > 0) {
+                return res.status(400).send(new ServerResponse(false, null, `Invalid working days: ${invalidDays.join(', ')}`));
+            }
 
-        await db.query(getDataHoursq, [workingHours, req.user?.owner_id]);
+            // Generate the SET clause dynamically for UPDATE
+            const setClause = days
+                .map(day => `${day.toLowerCase()} = ${workingDays.includes(day)}`)
+                .join(", ");
 
-        return res.status(200).send(new ServerResponse(true, {}));
+            // Generate VALUES clause for INSERT
+            const valuesClause = days
+                .map(day => workingDays.includes(day))
+                .join(", ");
+
+            // Use UPSERT (INSERT ... ON CONFLICT) to handle both insert and update cases
+            const upsertWorkingDaysQuery = `
+                INSERT INTO public.organization_working_days (
+                    organization_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday, created_at, updated_at
+                )
+                SELECT 
+                    org.id, ${valuesClause}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                FROM organizations org
+                WHERE org.user_id = $1
+                ON CONFLICT (organization_id) 
+                DO UPDATE SET 
+                    ${setClause}, 
+                    updated_at = CURRENT_TIMESTAMP;`;
+
+            await db.query(upsertWorkingDaysQuery, [req.user?.owner_id]);
+
+            // Update working hours
+            const updateWorkingHoursQuery = `UPDATE organizations SET hours_per_day = $1 WHERE user_id = $2;`;
+            await db.query(updateWorkingHoursQuery, [hours, req.user?.owner_id]);
+
+            return res.status(200).send(new ServerResponse(true, {
+                workingDays,
+                workingHours: hours
+            }, "Settings updated successfully"));
+
+        } catch (error: any) {
+            console.error('Error updating schedule settings:', error);
+            
+            // Handle specific database errors
+            if (error.code === '23503') { // Foreign key violation
+                return res.status(400).send(new ServerResponse(false, null, "Invalid organization or user reference"));
+            } else if (error.code === '23505') { // Unique violation
+                return res.status(400).send(new ServerResponse(false, null, "Duplicate entry detected"));
+            } else if (error.code === '42P01') { // Table doesn't exist
+                return res.status(500).send(new ServerResponse(false, null, "Database configuration error"));
+            }
+
+            // Generic error response
+            return res.status(500).send(new ServerResponse(false, null, "Failed to update settings. Please try again."));
+        }
     }
 
     @HandleExceptions()
@@ -524,7 +580,6 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
 
     }
 
-    @HandleExceptions()
     @HandleExceptions()
     public static async getMemberScheduleSummary(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
         const { memberId } = req.params;

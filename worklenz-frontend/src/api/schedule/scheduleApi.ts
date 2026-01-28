@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '@/shared/constants';
+import { getCsrfToken, ensureCsrfToken } from '../api-client';
 import {
   PickerType,
   ScheduleData,
@@ -177,9 +178,23 @@ export const scheduleApi = createApi({
   reducerPath: 'scheduleApi',
   baseQuery: fetchBaseQuery({
     baseUrl: rootUrl,
-    prepareHeaders: (headers, { getState }) => {
-      // Add authentication headers if needed
+    credentials: 'include',
+    prepareHeaders: async (headers, { endpoint, type }) => {
+      // Add authentication headers
       headers.set('Content-Type', 'application/json');
+      headers.set('Accept', 'application/json');
+      
+      // Add CSRF token for state-changing requests
+      const isStateChanging = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(type || '');
+      if (isStateChanging) {
+        // Ensure CSRF token is available
+        await ensureCsrfToken();
+        const csrfToken = getCsrfToken();
+        if (csrfToken) {
+          headers.set('X-CSRF-Token', csrfToken);
+        }
+      }
+      
       return headers;
     },
   }),
