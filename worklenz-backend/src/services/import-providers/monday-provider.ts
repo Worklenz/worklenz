@@ -6,6 +6,12 @@ import db from "../../config/db";
 interface MondayOptions {
   token?: string;
   boardId?: number | string;
+  auth?: {
+    monday?: {
+      token: string;
+      boards: Array<{ id: string; name: string }>;
+    };
+  };
 }
 
 interface MondayColumnValue {
@@ -82,11 +88,6 @@ const MONDAY_DEFAULT_FIELDS: FieldMappingRow[] = [
     include: true,
   },
   {
-    source_field: "Timeline",
-    target_field: "startDate",
-    include: true,
-  },
-  {
     source_field: "Timeline_start", // Extract start date from timeline
     target_field: "startDate",
     include: true,
@@ -96,6 +97,7 @@ const MONDAY_DEFAULT_FIELDS: FieldMappingRow[] = [
     target_field: "dueDate",
     include: true,
   },
+  // Note: "Timeline" mapping removed as Timeline is a custom field type handled separately
   // Map both Person and people fields
   {
     source_field: "Person",
@@ -208,6 +210,16 @@ export default class MondayProvider implements ImportProvider {
         `[Monday Provider] Processing ${columns.length} columns for field mappings`,
       );
 
+      // Define custom field types that will be handled by Monday-specific custom columns
+      const customFieldTypes = [
+        "numbers",
+        "numeric",
+        "dropdown",
+        "text",
+        "timeline",
+        "checkbox",
+      ];
+
       columns.forEach((column) => {
         // Skip built-in system columns that are already mapped
         const skipColumns = [
@@ -221,6 +233,14 @@ export default class MondayProvider implements ImportProvider {
         if (!skipColumns.includes(column.type) && column.title) {
           const targetField = this.mapMondayFieldType(column);
           const columnTitle = column.title.trim();
+
+          // Skip custom field types that will be handled by Monday-specific custom columns
+          if (customFieldTypes.includes(column.type)) {
+            console.log(
+              `[Monday Provider] Skipping custom field type: "${columnTitle}" (type: ${column.type}) - will be handled by Monday-specific custom columns`,
+            );
+            return;
+          }
 
           console.log(
             `[Monday Provider] Adding column: "${columnTitle}" -> "${targetField}" (type: ${column.type})`,
@@ -377,20 +397,17 @@ export default class MondayProvider implements ImportProvider {
       columnsCount: columns?.length || 0,
     });
 
-    if (columns && job && job.target_project_id) {
+    // Note: Custom column creation moved to ingest phase
+    // Custom columns will be created when we have a target project ID during ingestion
+    if (columns) {
       console.log(
-        `[Monday Provider] Creating custom columns for Monday.com custom fields...`,
+        `[Monday Provider] Adding field mappings for custom columns (creation deferred to ingest)...`,
       );
-      await this.createCustomColumnsForMondayFields(
-        columns,
-        job.target_project_id,
-      );
-
-      // Add field mappings for the custom columns to populate data
+      // Add field mappings for the custom columns (creation happens in ingest)
       await this.addCustomColumnFieldMappings(columns, mappings);
     } else {
       console.log(
-        `[Monday Provider] Skipping custom column creation - condition failed`,
+        `[Monday Provider] No columns available for custom field mappings`,
       );
     }
 
@@ -422,14 +439,7 @@ export default class MondayProvider implements ImportProvider {
       if (customFieldTypes.includes(column.type)) {
         const columnKey = `monday_${column.id}_${column.type}`;
 
-        // Add mapping for the main field (display value)
-        mappings.push({
-          source_field: column.title,
-          target_field: columnKey,
-          include: true,
-        });
-
-        // Add mapping for the column ID field (alternative field name)
+        // Add mapping for the column ID field (this is what's in the raw data)
         mappings.push({
           source_field: column.id,
           target_field: columnKey,
@@ -448,6 +458,14 @@ export default class MondayProvider implements ImportProvider {
     columns: MondayColumn[],
     projectId: string,
   ): Promise<void> {
+    console.log(
+      "[Monday Provider] Skipping standard custom column creation - Monday-specific columns are used instead",
+    );
+    // NOTE: This method is intentionally disabled to prevent duplicate column creation
+    // Monday-specific custom columns with field IDs are created via field mappings instead
+    // e.g., "dropdown_mm016g8k" -> "monday_dropdown_mm016g8k_dropdown"
+    return;
+
     const customFieldTypes = [
       "numbers",
       "numeric",
@@ -638,15 +656,103 @@ export default class MondayProvider implements ImportProvider {
       {}) as MondayOptions;
 
     console.log("[Monday Provider] Getting auto mappings with options:", opts);
+    console.log(
+      "[Monday Provider] Payload structure:",
+      JSON.stringify(payload, null, 2),
+    );
 
-    if (!opts.token || !opts.boardId) {
+    // Extract token and boardId from nested auth structure
+    let token = opts.token;
+    let boardId = opts.boardId;
+
+    // First check opts.auth.monday (this is where the auth data actually is)
+    if (opts.auth && (opts.auth as any).monday) {
+      const mondayAuth = (opts.auth as any).monday;
+      token = mondayAuth.token;
+      boardId = mondayAuth.boards?.[0]?.id; // Use first board if multiple
+      console.log("[Monday Provider] Extracted auth from opts.auth.monday:", {
+        hasToken: !!token,
+        boardId,
+        boardsCount: mondayAuth.boards?.length || 0,
+        tokenStart: token ? token.substring(0, 20) + "..." : "undefined",
+        mondayAuth: mondayAuth,
+      });
+    }
+    // Fallback: Handle nested auth structure from payload
+    else if (payload?.auth && (payload.auth as any).monday) {
+      const mondayAuth = (payload.auth as any).monday;
+      token = mondayAuth.token;
+      boardId = mondayAuth.boards?.[0]?.id; // Use first board if multiple
+      console.log(
+        "[Monday Provider] Extracted auth from payload.auth.monday:",
+        {
+          hasToken: !!token,
+          boardId,
+          boardsCount: mondayAuth.boards?.length || 0,
+          tokenStart: token ? token.substring(0, 20) + "..." : "undefined",
+          mondayAuth: mondayAuth,
+        },
+      );
+    } else {
+      console.log(
+        "[Monday Provider] No nested auth structure found in opts.auth or payload.auth",
+      );
+      console.log("[Monday Provider] Direct options check:", {
+        hasOptsToken: !!opts.token,
+        optsBoardId: opts.boardId,
+        optsTokenStart: opts.token
+          ? opts.token.substring(0, 20) + "..."
+          : "undefined",
+        hasOptsAuth: !!opts.auth,
+      });
+    }
+
+    if (!token || !boardId) {
       console.log(
         "[Monday Provider] Missing token or boardId for auto mappings",
+        {
+          hasToken: !!token,
+          boardId,
+          tokenExists: token !== undefined && token !== null,
+          tokenLength: token ? token.length : 0,
+          boardIdExists: boardId !== undefined && boardId !== null,
+        },
       );
-      return {
-        fields: await this.buildFieldMappings(),
-        raw: { warning: "Missing Monday token/boardId for auto mappings" },
-      };
+      console.log(
+        "[Monday Provider] Fallback check - trying different payload structures...",
+      );
+
+      // Try additional payload structures
+      if (payload?.monday) {
+        console.log("[Monday Provider] Found payload.monday:", payload.monday);
+        const mondayData = payload.monday as any;
+        token = token || mondayData.token;
+        boardId = boardId || mondayData.boardId || mondayData.boards?.[0]?.id;
+      }
+
+      if (payload?.auth) {
+        console.log("[Monday Provider] Found payload.auth:", payload.auth);
+        const authData = payload.auth as any;
+        token = token || authData.token || authData.monday?.token;
+        boardId =
+          boardId ||
+          authData.boardId ||
+          authData.monday?.boardId ||
+          authData.monday?.boards?.[0]?.id;
+      }
+
+      console.log("[Monday Provider] After fallback attempts:", {
+        hasToken: !!token,
+        boardId,
+        tokenStart: token ? token.substring(0, 20) + "..." : "undefined",
+      });
+
+      if (!token || !boardId) {
+        return {
+          fields: await this.buildFieldMappings(),
+          raw: { warning: "Missing Monday token/boardId for auto mappings" },
+        };
+      }
     }
 
     try {
@@ -663,7 +769,7 @@ export default class MondayProvider implements ImportProvider {
           }
         }
       }`;
-      const variables = { boardId: [String(opts.boardId)] };
+      const variables = { boardId: [String(boardId)] }; // Use extracted boardId
 
       console.log("[Monday Provider] Fetching board structure:", {
         query,
@@ -676,7 +782,7 @@ export default class MondayProvider implements ImportProvider {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: opts.token,
+            Authorization: token, // Use extracted token
           },
         },
       );
@@ -694,7 +800,7 @@ export default class MondayProvider implements ImportProvider {
       return {
         fields: fieldMappings,
         raw: {
-          boardId: opts.boardId,
+          boardId: boardId, // Use extracted boardId
           boardName: data?.data?.boards?.[0]?.name,
           columnsCount: columns.length,
         },

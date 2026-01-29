@@ -729,7 +729,44 @@ export const mapRawToTaskFields = (
 
   mappings.forEach((mapping) => {
     if (mapping.include === false) return;
+
+    // Skip standard custom field mappings for Monday imports when Monday-specific mappings exist
+    if (
+      mapping.target_field &&
+      mappings.some((m) => m.target_field?.startsWith("monday_"))
+    ) {
+      const standardCustomFieldTypes = [
+        "dropdown",
+        "text",
+        "cost",
+        "timeline",
+        "checkbox",
+      ];
+      if (
+        standardCustomFieldTypes.includes(mapping.target_field.toLowerCase())
+      ) {
+        console.log(
+          `[Monday Provider] Skipping standard custom field mapping: "${mapping.source_field}" -> "${mapping.target_field}" (Monday-specific version exists)`,
+        );
+        return;
+      }
+    }
+
     const value = getNormalizedFieldValue(source, [mapping.source_field]);
+
+    // Special debug for Monday custom fields
+    if (mapping.target_field?.startsWith("monday_")) {
+      console.log(
+        `[Monday Custom Field] Processing Monday custom field mapping:`,
+        {
+          source_field: mapping.source_field,
+          target_field: mapping.target_field,
+          normalized_target: normalizeTargetField(mapping.target_field),
+          value: value,
+          rawSourceValue: source[mapping.source_field],
+        },
+      );
+    }
 
     // Special debug for Location field
     if (
@@ -916,6 +953,13 @@ export const mapRawToTaskFields = (
       default: {
         const columnKey = toColumnKey(targetField);
         const columnName = mapping.source_field || targetField;
+        console.log(`[Custom Field] Adding custom field value:`, {
+          originalTargetField: mapping.target_field,
+          normalizedTargetField: targetField,
+          columnKey: columnKey,
+          columnName: columnName,
+          value: value,
+        });
         pushCustomValue(columnKey, columnName, value);
         break;
       }
@@ -982,6 +1026,8 @@ export const mapRawToTaskFields = (
   console.log("[mapRawToTaskFields] FINAL patch.created_at:", patch.created_at);
   // eslint-disable-next-line no-console
   console.log("[mapRawToTaskFields] FINAL patch:", patch);
+  // eslint-disable-next-line no-console
+  console.log("[mapRawToTaskFields] FINAL customValues:", customValues);
   // eslint-disable-next-line no-console
   console.log("[mapRawToTaskFields] === END ===");
 
@@ -1596,6 +1642,21 @@ class ImportsService {
         if (mapping.include === false) return;
         const normalizedTarget = normalizeTargetField(mapping.target_field);
         if (STANDARD_TARGET_FIELDS.has(normalizedTarget)) return;
+
+        // Skip standard custom field mappings when Monday-specific versions exist
+        const hasMondaySpecificMapping = activeFieldMappings.some(
+          (m) =>
+            m.target_field?.startsWith("monday_") &&
+            m.target_field.includes(normalizedTarget),
+        );
+
+        if (hasMondaySpecificMapping) {
+          console.log(
+            `[Standard Column Creation] Skipping standard custom column for "${mapping.source_field}" -> "${normalizedTarget}" (Monday-specific version exists)`,
+          );
+          return;
+        }
+
         const key = toColumnKey(normalizedTarget);
         if (!customColumnPlans.has(key)) {
           const sourceField = mapping.source_field || normalizedTarget;
