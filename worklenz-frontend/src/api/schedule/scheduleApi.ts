@@ -1,6 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '@/shared/constants';
 import { getCsrfToken, ensureCsrfToken } from '../api-client';
+import config from '@/config/env';
 import {
   PickerType,
   ScheduleData,
@@ -11,7 +12,7 @@ import {
 } from '@/types/schedule/schedule-v2.types';
 import { IServerResponse } from '@/types/common.types';
 
-const rootUrl = `${API_BASE_URL}/schedule-gannt-v2`;
+const rootUrl = `${config.apiUrl}${API_BASE_URL}/schedule-gannt-v2`;
 
 // Define types for RTK Query
 interface WorkloadData {
