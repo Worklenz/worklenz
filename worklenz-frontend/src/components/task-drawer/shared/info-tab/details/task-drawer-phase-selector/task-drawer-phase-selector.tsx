@@ -1,6 +1,6 @@
 import { useSocket } from '@/socket/socketContext';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
-import { Select } from '@/shared/antd-imports';
+import { Select, Form } from '@/shared/antd-imports';
 import { SocketEvents } from '@/shared/socket-events';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -51,29 +51,15 @@ const TaskDrawerPhaseSelector = ({ phases, task }: TaskDrawerPhaseSelectorProps)
   };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      alignItems: 'center', 
-      marginBottom: 24,
-      gap: 8
-    }}>
-      <div style={{ 
-        minWidth: 165,
-        textAlign: 'right',
-        fontSize: 14,
-        color: 'rgba(255, 255, 255, 0.85)'
-      }}>
-        Phase :
-      </div>
+    <Form.Item name="phase" label="Phase">
       <Select
         allowClear
         placeholder="Select Phase"
         value={selectedPhase}
         options={phaseMenuItems}
-        style={{ width: 'fit-content', minWidth: 145 }}
         onChange={handlePhaseChange}
       />
-    </div>
+    </Form.Item>
   );
 };
 
