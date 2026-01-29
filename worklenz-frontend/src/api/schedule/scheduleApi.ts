@@ -249,8 +249,13 @@ export const scheduleApi = createApi({
       },
       providesTags: (result, error, { id, chartStart }) => [
         { type: 'MemberProjects' as const, id },
-        { type: 'MemberProjects' as const, id: `${id}-${chartStart}` }
+        { type: 'MemberProjects' as const, id: `${id}-${chartStart}` },
+        // Add more granular tags for better cache management
+        { type: 'TaskTimeline' as const, id: `member-${id}` },
+        'Workload', // General workload tag for broader invalidation
       ],
+      // Keep data fresh for real-time updates but allow some caching
+      keepUnusedDataFor: 10, // Reduced from 30 to 10 seconds for more responsive updates
     }),
 
     // Schedule submission

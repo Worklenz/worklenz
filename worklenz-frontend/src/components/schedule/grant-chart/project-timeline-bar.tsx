@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Flex, Typography } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
@@ -35,6 +35,22 @@ const ProjectTimelineBar = ({
   const { t } = useTranslation('schedule');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const dispatch = useAppDispatch();
+
+  // 🔄 Real-time updates: Sync local state with props when they change
+  useEffect(() => {
+    setWidth(indicatorWidth);
+    setLeftOffset(indicatorOffset);
+    setTotalHours(project?.total_hours || 0);
+    setCurrentDuration(indicatorWidth);
+  }, [indicatorWidth, indicatorOffset, project?.total_hours, project?.task_count, project?.hours_per_day]);
+
+  // 🔄 Additional effect to handle project data changes
+  useEffect(() => {
+    if (project) {
+      // Update total hours when project data changes
+      setTotalHours(project.total_hours || 0);
+    }
+  }, [project]);
 
   const handleTimelineClick = (e: React.MouseEvent) => {
     // Stop event propagation to prevent parent click handlers from firing
@@ -98,7 +114,9 @@ const ProjectTimelineBar = ({
         setWidth(newWidth);
         const newDuration = Math.round(newWidth / CELL_WIDTH);
         setCurrentDuration(newDuration);
-        setTotalHours(newDuration * project?.hours_per_day);
+        // Use current project hours_per_day (which updates via useEffect)
+        const currentHoursPerDay = project?.hours_per_day || 0;
+        setTotalHours(newDuration * currentHoursPerDay);
       }
     } else if (direction === 'left') {
       const deltaWidth = Math.min(leftOffset, delta.width);
@@ -110,7 +128,9 @@ const ProjectTimelineBar = ({
         setWidth(newWidth);
         const newDuration = Math.round(newWidth / CELL_WIDTH);
         setCurrentDuration(newDuration);
-        setTotalHours(newDuration * project?.hours_per_day);
+        // Use current project hours_per_day (which updates via useEffect)
+        const currentHoursPerDay = project?.hours_per_day || 0;
+        setTotalHours(newDuration * currentHoursPerDay);
       }
     }
   };
@@ -184,12 +204,12 @@ const ProjectTimelineBar = ({
               {t('total', { defaultValue: 'Total' })} {totalHours.toFixed(1)}h
             </Typography.Text>
           )}
-          {currentDuration > 1 && project?.hours_per_day > 0 && (
+          {currentDuration > 1 && (project?.hours_per_day || 0) > 0 && (
             <Typography.Text style={{ fontSize: '10px' }} ellipsis={{ expanded: false }}>
-              {t('perDay', { defaultValue: 'Per Day' })} {project?.hours_per_day.toFixed(1)}h
+              {t('perDay', { defaultValue: 'Per Day' })} {(project?.hours_per_day || 0).toFixed(1)}h
             </Typography.Text>
           )}
-          {project?.task_count > 0 && (
+          {(project?.task_count || 0) > 0 && (
             <Typography.Text
               style={{
                 fontSize: '10px',
@@ -198,10 +218,10 @@ const ProjectTimelineBar = ({
               }}
               ellipsis={{ expanded: false }}
             >
-              {project.task_count} {project.task_count === 1 ? t('task', { defaultValue: 'task' }) : t('tasks', { defaultValue: 'tasks' })}
+              {project?.task_count || 0} {(project?.task_count || 0) === 1 ? t('task', { defaultValue: 'task' }) : t('tasks', { defaultValue: 'tasks' })}
             </Typography.Text>
           )}
-          {!totalHours && !project?.task_count && (
+          {!totalHours && !(project?.task_count || 0) && (
             <Typography.Text
               style={{
                 fontSize: '11px',
@@ -218,4 +238,17 @@ const ProjectTimelineBar = ({
   );
 };
 
-export default React.memo(ProjectTimelineBar);
+export default React.memo(ProjectTimelineBar, (prevProps, nextProps) => {
+  // Custom comparison function for React.memo to ensure re-render when project data changes
+  return (
+    prevProps.indicatorOffset === nextProps.indicatorOffset &&
+    prevProps.indicatorWidth === nextProps.indicatorWidth &&
+    prevProps.project?.id === nextProps.project?.id &&
+    prevProps.project?.total_hours === nextProps.project?.total_hours &&
+    prevProps.project?.task_count === nextProps.project?.task_count &&
+    prevProps.project?.hours_per_day === nextProps.project?.hours_per_day &&
+    prevProps.memberId === nextProps.memberId &&
+    JSON.stringify(prevProps.project?.date_union) === JSON.stringify(nextProps.project?.date_union) &&
+    prevProps.allProjectSegments?.length === nextProps.allProjectSegments?.length
+  );
+});

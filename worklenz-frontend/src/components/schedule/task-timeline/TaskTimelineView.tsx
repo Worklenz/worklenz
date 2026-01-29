@@ -17,6 +17,7 @@ import {
 
 import TaskTimelineFilters from './TaskTimelineFilters';
 import TimeOffCalendar from './TimeOffCalendar';
+import { useScheduleSocketHandlers } from '@/hooks/useScheduleSocketHandlers';
 import {
   transformTasksToGanttFormat,
   mapViewModeToGantt,
@@ -36,6 +37,9 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({ type, date }) => {
   const { t } = useTranslation('schedule');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDarkMode = themeMode === 'dark';
+
+  // Initialize schedule socket handlers for real-time updates
+  useScheduleSocketHandlers();
 
   // Filter states
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -170,14 +174,12 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({ type, date }) => {
       refetchTasks();
     };
 
-    socket.on('SCHEDULE_TASK_UPDATE', handleTaskUpdate);
-    socket.on('TASK_START_DATE_CHANGE', handleTaskUpdate);
-    socket.on('TASK_END_DATE_CHANGE', handleTaskUpdate);
-
+    // Use our comprehensive socket handlers instead of individual ones
+    // The useScheduleSocketHandlers hook will handle all task-related events
+    // and invalidate the appropriate RTK Query cache, which will trigger refetch
+    
     return () => {
-      socket.off('SCHEDULE_TASK_UPDATE', handleTaskUpdate);
-      socket.off('TASK_START_DATE_CHANGE', handleTaskUpdate);
-      socket.off('TASK_END_DATE_CHANGE', handleTaskUpdate);
+      // Cleanup is handled by useScheduleSocketHandlers
     };
   }, [socket, refetchTasks]);
 

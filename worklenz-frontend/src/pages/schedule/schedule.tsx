@@ -17,6 +17,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { PickerType } from '@/types/schedule/schedule-v2.types';
 import { scheduleApi } from '@/api/schedule/scheduleApi';
 import { createPortal } from 'react-dom';
+import { useScheduleSocketHandlers } from '@/hooks/useScheduleSocketHandlers';
 
 // Lazy load TaskDrawer
 const TaskDrawer = lazy(() => import('@/components/task-drawer/task-drawer'));
@@ -43,6 +44,9 @@ const Schedule: React.FC = () => {
   const granttChartRef = useRef<any>(null);
   const { date, type, error } = useAppSelector(state => state.scheduleReducer);
   const { trackMixpanelEvent } = useMixpanelTracking();
+  
+  // Initialize schedule socket handlers for real-time updates
+  useScheduleSocketHandlers();
   
   // View mode state: 'project' for existing view, 'task' for new task timeline
   const [viewMode, setViewMode] = useState<ScheduleViewMode>('project');

@@ -1,11 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   useFetchScheduleMembersQuery,
   useFetchScheduleDatesQuery,
   useLazyFetchMemberProjectsQuery,
+  useFetchMemberProjectsQuery,
   useFetchDailyCapacityQuery,
+  scheduleApi,
 } from '@/api/schedule/scheduleApi';
 import { themeWiseColor } from '../../../utils/themeWiseColor';
 import GranttMembersTable from './grantt-members-table';
@@ -15,9 +18,15 @@ import DayAllocationCell from './day-allocation-cell';
 import ProjectTimelineBar from './project-timeline-bar';
 import ProjectTimelineModal from '@/features/schedule/ProjectTimelineModal';
 import CapacityConflictsAlert from './CapacityConflictsAlert';
+import { useScheduleSocketHandlers } from '@/hooks/useScheduleSocketHandlers';
+import { useMemberProjectsSocketHandlers } from '@/hooks/useMemberProjectsSocketHandlers';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 
 const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date }, ref) => {
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const { socket, connected } = useSocket();
   const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null);
   const [memberProjects, setMemberProjects] = useState<Record<string, any[]>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -84,6 +93,63 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
   const isRefetching = teamFetching || dateFetching || capacityFetching;
   const dayCount = dateList?.date_data?.reduce((total: number, month: any) => total + (month.days?.length || 0), 0) || 0;
 
+  // Initialize base schedule socket handlers for real-time updates
+  useScheduleSocketHandlers();
+
+  // Enhanced member projects socket handlers for real-time segment updates
+  const expandedMemberIds = expandedMemberId ? [expandedMemberId] : [];
+  
+  // Use RTK Query hook for expanded member projects (this will auto-refetch on cache invalidation)
+  const {
+    data: expandedMemberProjectsResponse,
+    isLoading: isExpandedProjectsLoading,
+    refetch: refetchExpandedMemberProjects
+  } = useFetchMemberProjectsQuery(
+    {
+      id: expandedMemberId || '',
+      chartStart: dateList?.chart_start || '',
+      chartEnd: dateList?.chart_end || ''
+    },
+    {
+      skip: !expandedMemberId || !dateList?.chart_start || !dateList?.chart_end,
+      // This will automatically refetch when cache is invalidated
+      refetchOnMountOrArgChange: true,
+      // Refetch when focus returns to window (for real-time updates)
+      refetchOnFocus: true,
+      // Refetch when reconnecting (for network issues)
+      refetchOnReconnect: true,
+    }
+  );
+
+  // Get expanded member projects from RTK Query (this updates automatically)
+  const expandedMemberProjects = expandedMemberProjectsResponse?.body?.projects || [];
+
+  const { invalidateMemberProjectCache } = useMemberProjectsSocketHandlers(
+    expandedMemberIds,
+    dateList?.chart_start,
+    (memberId: string) => {
+      // The RTK Query hook above will automatically refetch when cache is invalidated
+    }
+  );
+
+  // Update local state when RTK Query data changes
+  useEffect(() => {
+    if (expandedMemberId && expandedMemberProjects.length > 0) {
+      setMemberProjects(prev => ({
+        ...prev,
+        [expandedMemberId]: expandedMemberProjects,
+      }));
+    }
+  }, [expandedMemberId, expandedMemberProjects]);
+
+  // Helper function to refetch member projects (now just uses RTK Query)
+  const handleRefetchMemberProjects = useCallback(async (memberId: string) => {
+    // RTK Query will handle this automatically, but we can force refetch if needed
+    if (memberId === expandedMemberId) {
+      refetchExpandedMemberProjects();
+    }
+  }, [expandedMemberId, refetchExpandedMemberProjects]);
+
   // Helper function to get capacity for specific date/member
   const capacityData = capacityResponse?.body || [];
   
@@ -102,36 +168,27 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
     if (expandedMemberId === memberId) {
       // Collapse
       setExpandedMemberId(null);
+      // Clear the member projects from local state
+      setMemberProjects(prev => {
+        const newState = { ...prev };
+        delete newState[memberId];
+        return newState;
+      });
     } else {
-      // Expand and fetch projects
+      // Expand - just set the expanded member ID
+      // The RTK Query hook will automatically fetch the data
       setExpandedMemberId(memberId);
-      
-      // Always fetch with current chartStart and chartEnd (don't rely on local cache)
-      try {
-        // Get chart_start and chart_end from dateList response
-        const chartStart = dateList?.chart_start;
-        const chartEnd = dateList?.chart_end;
-        
-        const result = await fetchMemberProjects({ 
-          id: memberId,
-          chartStart: chartStart,
-          chartEnd: chartEnd
-        }, true).unwrap(); // Force refetch with second parameter
-        
-        if (result?.body?.projects) {
-          setMemberProjects(prev => ({
-            ...prev,
-            [memberId]: result.body.projects || [],
-          }));
-        }
-      } catch (error) {
-        console.error('Failed to fetch member projects:', error);
-      }
+      // No need to manually fetch - RTK Query hook handles this automatically
     }
   };
 
-  // Get projects for a member (from local state)
+  // Get projects for a member (from local state or RTK Query)
   const getMemberProjects = (memberId: string) => {
+    // If this is the expanded member, use RTK Query data (which updates automatically)
+    if (memberId === expandedMemberId) {
+      return expandedMemberProjects;
+    }
+    // Otherwise use local state (for previously expanded members)
     return memberProjects[memberId] || [];
   };
 
@@ -282,7 +339,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
           expandedMemberId={expandedMemberId}
           onToggleProject={handleToggleProject}
           getMemberProjects={getMemberProjects}
-          isProjectsLoading={isProjectsLoading}
+          isProjectsLoading={isProjectsLoading || isExpandedProjectsLoading}
           membersScrollRef={membersScrollRef}
           syncVerticalScroll={syncVerticalScroll}
         />
@@ -471,6 +528,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                                 {segment?.date_union?.start && segment?.date_union?.end && (
                                   <div style={{ pointerEvents: 'auto' }}>
                                     <ProjectTimelineBar
+                                      key={`${segment?.id}-${segment?.segment_number}-${segment?.total_hours}-${segment?.task_count}`}
                                       defaultData={segment?.default_values}
                                       project={segment}
                                       indicatorWidth={segment?.indicator_width}

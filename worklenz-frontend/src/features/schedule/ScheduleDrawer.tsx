@@ -11,6 +11,7 @@ import { useGetProjectQuery } from '@/api/projects/projects.v1.api.service';
 import CustomAvatar from '@/components/CustomAvatar';
 import { Member } from '@/types/schedule/schedule-v2.types';
 import { setProjectId } from '@/features/project/project.slice';
+import { useScheduleSocketHandlers } from '@/hooks/useScheduleSocketHandlers';
 
 const ScheduleDrawer = () => {
   const isScheduleDrawerOpen = useAppSelector(state => state.schedule?.isScheduleDrawerOpen);
@@ -19,6 +20,9 @@ const ScheduleDrawer = () => {
   const selectedDateRange = useAppSelector(state => state.schedule?.selectedDateRange);
   const dispatch = useAppDispatch();
   const { t } = useTranslation('schedule');
+
+  // Initialize schedule socket handlers for real-time updates
+  useScheduleSocketHandlers();
 
   // Fetch team members data
   const { data: teamDataResponse, isLoading: teamLoading } = useFetchScheduleMembersQuery();
