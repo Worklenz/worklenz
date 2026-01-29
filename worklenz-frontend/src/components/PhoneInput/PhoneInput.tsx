@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Input, Select, Space } from '@/shared/antd-imports';
 import { getCountries, getCountryCallingCode, parsePhoneNumber, AsYouType } from 'libphonenumber-js';
 import type { CountryCode } from 'libphonenumber-js';
+// Import flag icons from country-flag-icons
+import * as flags from 'country-flag-icons/react/3x2';
 
 interface PhoneInputProps {
   value?: string;
@@ -80,13 +82,61 @@ const countryNames: Record<string, string> = {
   BD: 'Bangladesh',
 };
 
-// Helper function to get flag emoji from country code
+// Helper function to get flag emoji from country code with fallback
 const getFlagEmoji = (countryCode: string): string => {
-  const codePoints = countryCode
-    .toUpperCase()
-    .split('')
-    .map((char) => 127397 + char.charCodeAt(0));
-  return String.fromCodePoint(...codePoints);
+  try {
+    const codePoints = countryCode
+      .toUpperCase()
+      .split('')
+      .map((char) => 127397 + char.charCodeAt(0));
+    return String.fromCodePoint(...codePoints);
+  } catch (error) {
+    // Fallback to country code if emoji fails
+    return countryCode.toUpperCase();
+  }
+};
+
+// SVG Flag component using country-flag-icons
+const FlagIcon: React.FC<{ countryCode: string; style?: React.CSSProperties }> = ({ 
+  countryCode, 
+  style = {} 
+}) => {
+  // Get the flag component dynamically
+  const FlagComponent = flags[countryCode as keyof typeof flags];
+  
+  if (FlagComponent) {
+    return (
+      <FlagComponent 
+        style={{
+          width: '20px',
+          height: '15px',
+          borderRadius: '2px',
+          objectFit: 'cover',
+          ...style
+        }}
+        title={`${countryNames[countryCode] || countryCode} flag`}
+      />
+    );
+  }
+  
+  // Fallback to emoji if SVG flag is not available
+  const flagEmoji = getFlagEmoji(countryCode);
+  return (
+    <span 
+      style={{
+        fontSize: '16px',
+        fontFamily: 'Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, Android Emoji, EmojiSymbols, EmojiOne Mozilla, Twemoji Mozilla, Segoe UI Symbol, Noto Emoji',
+        lineHeight: 1,
+        display: 'inline-block',
+        minWidth: '20px',
+        textAlign: 'center',
+        ...style
+      }}
+      title={`${countryNames[countryCode] || countryCode} flag`}
+    >
+      {flagEmoji}
+    </span>
+  );
 };
 
 const PhoneInput: React.FC<PhoneInputProps> = ({
@@ -185,7 +235,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
         value: country,
         label: (
           <Space size={4}>
-            <span style={{ fontSize: '16px' }}>{getFlagEmoji(country)}</span>
+            <FlagIcon countryCode={country} />
             <span>+{callingCode}</span>
           </Space>
         ),
