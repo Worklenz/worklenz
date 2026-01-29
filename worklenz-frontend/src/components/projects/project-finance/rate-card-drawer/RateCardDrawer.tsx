@@ -472,6 +472,7 @@ const RateCardDrawer = ({
                 value={currency}
                 options={CURRENCY_OPTIONS}
                 onChange={value => setCurrency(value)}
+                style={{ minWidth: 200 }}
               />
               <Button onClick={handleAddAllRoles} type="default">
                 {t('addAllButton')}
