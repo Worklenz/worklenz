@@ -39,8 +39,9 @@ export const createProjectComment = createAsyncThunk(
     try {
       const response = await projectCommentsApiService.createProjectComment(data);
       if (response.done) {
-        // The API returns { comment: { ... } }, so we need to extract the comment object
-        return (response.body as any).comment as IProjectUpdateCommentViewModel;
+        // The API returns { comment: { ... } } in response.body
+        const commentData = (response.body as any).comment;
+        return commentData as IProjectUpdateCommentViewModel;
       }
       return rejectWithValue(response.message);
     } catch (error: any) {
@@ -78,6 +79,22 @@ const updatesSlice = createSlice({
     clearUpdates: (state) => {
       state.updatesList = [];
       state.count = 0;
+    },
+    addReactionToComment: (state, action: PayloadAction<{ comment_id: string; reactions: any[] }>) => {
+      const comment = state.updatesList.find(c => c.id === action.payload.comment_id);
+      if (comment) {
+        comment.reactions = action.payload.reactions;
+      }
+    },
+    updateCommentAfterEdit: (state, action: PayloadAction<any>) => {
+      const comment = state.updatesList.find(c => c.id === action.payload.comment_id);
+      if (comment) {
+        comment.content = action.payload.content;
+        comment.edited = action.payload.edited;
+        comment.edit_count = action.payload.edit_count;
+        comment.last_edited_at = action.payload.last_edited_at;
+        comment.last_edited_by_name = action.payload.last_edited_by_name;
+      }
     }
   },
   extraReducers: (builder) => {
@@ -120,5 +137,5 @@ const updatesSlice = createSlice({
   },
 });
 
-export const { addCommentFromSocket, clearUpdates } = updatesSlice.actions;
+export const { addCommentFromSocket, clearUpdates, addReactionToComment, updateCommentAfterEdit } = updatesSlice.actions;
 export default updatesSlice.reducer;

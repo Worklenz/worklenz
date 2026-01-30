@@ -8,12 +8,15 @@ import {
   Popconfirm,
   Space,
   Spin,
-  theme
+  theme,
+  Tooltip,
+  Input
 } from '@/shared/antd-imports';
 import {
   SendOutlined,
   UserOutlined,
-  MessageOutlined
+  MessageOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -29,7 +32,11 @@ import {
   getProjectComments,
   createProjectComment,
   deleteProjectComment,
+  addReactionToComment,
+  updateCommentAfterEdit
 } from '@/features/projects/singleProject/updates/updatesSlice';
+import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
+import EmojiPicker from '@/components/project-updates/EmojiPicker';
 import { getUserSession } from '@/utils/session-helper';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { themeWiseColor } from '@/utils/themeWiseColor';
@@ -75,6 +82,8 @@ const ProjectViewUpdates = () => {
   const projectMembers = useAppSelector(state => state.projectMemberReducer.membersList);
 
   const [submitting, setSubmitting] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
 
   // Initial fetch
   useEffect(() => {
@@ -93,11 +102,35 @@ const ProjectViewUpdates = () => {
       }
     };
 
+    const handleReactionAdded = (data: any) => {
+      dispatch(addReactionToComment({
+        comment_id: data.comment_id,
+        reactions: data.reactions
+      }));
+    };
+
+    const handleReactionRemoved = (data: any) => {
+      dispatch(addReactionToComment({
+        comment_id: data.comment_id,
+        reactions: data.reactions
+      }));
+    };
+
+    const handleCommentEdited = (data: any) => {
+      dispatch(updateCommentAfterEdit(data));
+    };
+
     const eventName = SocketEvents.NEW_PROJECT_COMMENT_RECEIVED.toString();
     socket.on(eventName, handleNewComment);
+    socket.on(SocketEvents.PROJECT_COMMENT_REACTION_ADDED.toString(), handleReactionAdded);
+    socket.on(SocketEvents.PROJECT_COMMENT_REACTION_REMOVED.toString(), handleReactionRemoved);
+    socket.on(SocketEvents.PROJECT_COMMENT_EDITED.toString(), handleCommentEdited);
 
     return () => {
       socket.off(eventName, handleNewComment);
+      socket.off(SocketEvents.PROJECT_COMMENT_REACTION_ADDED.toString(), handleReactionAdded);
+      socket.off(SocketEvents.PROJECT_COMMENT_REACTION_REMOVED.toString(), handleReactionRemoved);
+      socket.off(SocketEvents.PROJECT_COMMENT_EDITED.toString(), handleCommentEdited);
     };
   }, [socket, projectId, dispatch]);
 
@@ -125,16 +158,30 @@ const ProjectViewUpdates = () => {
       }));
 
     try {
-      await dispatch(createProjectComment({
+      const result = await dispatch(createProjectComment({
         project_id: projectId,
         content: content,
         mentions: mentionedMembers
       })).unwrap();
       form.resetFields();
+      
+      // Scroll to bottom after posting
+      setTimeout(() => {
+        if (listRef.current) {
+          listRef.current.scrollTop = listRef.current.scrollHeight;
+        }
+      }, 100);
     } catch (error) {
       console.error('Failed to send comment', error);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && e.shiftKey) {
+      e.preventDefault();
+      form.submit();
     }
   };
 
@@ -145,6 +192,41 @@ const ProjectViewUpdates = () => {
     } catch (error) {
       console.error('Failed to delete comment', error);
     }
+  };
+
+  const handleReaction = async (commentId: string, emoji: string) => {
+    try {
+      await projectCommentsApiService.addReaction(commentId, emoji);
+    } catch (error) {
+      console.error('Failed to add reaction', error);
+    }
+  };
+
+  const handleRemoveReaction = async (commentId: string, emoji: string) => {
+    try {
+      await projectCommentsApiService.removeReaction(commentId, emoji);
+    } catch (error) {
+      console.error('Failed to remove reaction', error);
+    }
+  };
+
+  const handleEdit = async (commentId: string) => {
+    if (!editContent.trim()) return;
+    
+    try {
+      await projectCommentsApiService.editComment(commentId, editContent);
+      setEditingCommentId(null);
+      setEditContent('');
+    } catch (error) {
+      console.error('Failed to edit comment', error);
+    }
+  };
+
+  const startEdit = (commentId: string, content: string) => {
+    setEditingCommentId(commentId);
+    // Strip HTML tags for editing
+    const textContent = content.replace(/<[^>]*>/g, '');
+    setEditContent(textContent);
   };
 
   const renderCommentContent = (htmlContent: string) => {
@@ -199,8 +281,8 @@ const ProjectViewUpdates = () => {
   return (
     <Card
       className={`project-view-updates theme-${themeMode}`}
-      styles={{ body: { padding: 0 } }}
-      style={{ height: 'calc(100vh - 260px)', display: 'flex', flexDirection: 'column' }}
+      styles={{ body: { padding: 0, height: '100%', display: 'flex', flexDirection: 'column' } }}
+      style={{ height: 'calc(100vh - 260px)' }}
     >
       <div
         className="updates-list-container"
@@ -239,12 +321,75 @@ const ProjectViewUpdates = () => {
                     }
                     content={
                       <div className={`comment-content-${themeMode}`}>
-                        {renderCommentContent(item.content || '')}
+                        {editingCommentId === item.id ? (
+                          <div>
+                            <Input.TextArea
+                              value={editContent}
+                              onChange={(e) => setEditContent(e.target.value)}
+                              autoSize={{ minRows: 2, maxRows: 6 }}
+                              style={{ marginBottom: 8 }}
+                            />
+                            <Space>
+                              <Button size="small" type="primary" onClick={() => handleEdit(item.id!)}>
+                                Save
+                              </Button>
+                              <Button size="small" onClick={() => setEditingCommentId(null)}>
+                                Cancel
+                              </Button>
+                            </Space>
+                          </div>
+                        ) : (
+                          <>
+                            {renderCommentContent(item.content || '')}
+                            {item.edited && (
+                              <Tooltip title={`Edited ${dayjs(item.last_edited_at).fromNow()} by ${item.last_edited_by_name || 'Unknown'}`}>
+                                <span style={{ fontSize: 11, color: '#8c8c8c', marginLeft: 8, fontStyle: 'italic' }}>
+                                  (edited)
+                                </span>
+                              </Tooltip>
+                            )}
+                          </>
+                        )}
+                        
+                        {/* Reactions */}
+                        {item.reactions && item.reactions.length > 0 && (
+                          <div style={{ marginTop: 6, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                            {item.reactions.map((reaction: any) => {
+                              const hasReacted = reaction.users?.some((u: any) => u.user_id === user.id);
+                              return (
+                                <Tooltip
+                                  key={reaction.emoji}
+                                  title={reaction.users?.map((u: any) => u.user_name).join(', ') || ''}
+                                >
+                                  <span
+                                    onClick={() => {
+                                      if (hasReacted) {
+                                        handleRemoveReaction(item.id!, reaction.emoji);
+                                      } else {
+                                        handleReaction(item.id!, reaction.emoji);
+                                      }
+                                    }}
+                                    className={`reaction ${hasReacted ? 'reacted' : ''}`}
+                                  >
+                                    {reaction.emoji} {reaction.count}
+                                  </span>
+                                </Tooltip>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     }
                     className={isUserComment ? 'current-user-comment' : ''}
                     actions={
                       isUserComment ? [
+                        <span
+                          key="edit"
+                          style={actionStyle}
+                          onClick={() => startEdit(item.id!, item.content || '')}
+                        >
+                          <EditOutlined /> Edit
+                        </span>,
                         <Popconfirm
                           title={t('deleteConfirmTitle')}
                           description={t('deleteConfirmContent')}
@@ -254,8 +399,17 @@ const ProjectViewUpdates = () => {
                           key="delete"
                         >
                           <span style={actionStyle}>{t('deleteButton')}</span>
-                        </Popconfirm>
-                      ] : undefined
+                        </Popconfirm>,
+                        <EmojiPicker
+                          key="emoji"
+                          onSelect={(emoji) => handleReaction(item.id!, emoji)}
+                        />
+                      ] : [
+                        <EmojiPicker
+                          key="emoji"
+                          onSelect={(emoji) => handleReaction(item.id!, emoji)}
+                        />
+                      ]
                     }
                   />
                 </div>
@@ -273,13 +427,14 @@ const ProjectViewUpdates = () => {
         }}
       >
         <Form form={form} onFinish={onFinish}>
-          <Form.Item name="comment" style={{ marginBottom: 12 }}>
+          <Form.Item name="comment" style={{ marginBottom: 8 }}>
             <Mentions
-              rows={3}
-              placeholder={t('inputPlaceholder')}
+              rows={2}
+              placeholder={`${t('inputPlaceholder')} (Shift+Enter to send)`}
               options={mentionsOptions}
-              autoSize={{ minRows: 2, maxRows: 6 }}
+              autoSize={{ minRows: 1, maxRows: 4 }}
               style={{ borderRadius: '8px' }}
+              onKeyDown={handleKeyDown}
             />
           </Form.Item>
           <Flex justify="flex-end">
@@ -288,6 +443,7 @@ const ProjectViewUpdates = () => {
               htmlType="submit"
               loading={submitting}
               icon={<SendOutlined />}
+              size="small"
             >
               {t('addButton')}
             </Button>

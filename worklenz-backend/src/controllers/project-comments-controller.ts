@@ -199,10 +199,15 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
         u.name AS created_by,
         u.avatar_url,
         pc.created_at,
-        pc.updated_at
+        pc.updated_at,
+        pc.edited,
+        pc.edit_count,
+        pc.last_edited_at,
+        (SELECT name FROM users WHERE id = pc.last_edited_by) AS last_edited_by_name,
+        get_comment_reactions(pc.id) AS reactions
       FROM project_comments pc
       LEFT JOIN users u ON pc.created_by = u.id
-      WHERE pc.project_id = $1 ORDER BY pc.updated_at
+      WHERE pc.project_id = $1 ORDER BY pc.created_at
     `;
     const result = await db.query(q, [req.params.id]);
 
