@@ -10,10 +10,14 @@ import { setMembers } from '@/features/tasks/tasks.slice';
 import ScheduleTaskGroupHeader from '@/components/schedule/ScheduleTaskGroupHeader';
 import ScheduleTaskRow from '@/components/schedule/ScheduleTaskRow';
 import ScheduleTaskListHeader from '@/components/schedule/ScheduleTaskListHeader';
+import { useScheduleSocketHandlers } from '@/hooks/useScheduleSocketHandlers';
 
 const WithStartAndEndDates = () => {
   const { t } = useTranslation('schedule');
   const dispatch = useAppDispatch();
+  
+  // Initialize schedule socket handlers for real-time updates
+  useScheduleSocketHandlers();
   
   // Get selected member, project, and date range from Redux
   const selectedMemberId = useAppSelector(state => state.schedule?.selectedMemberId);
