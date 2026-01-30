@@ -8,5 +8,21 @@
   "deleteConfirmContent": "Sind Sie sicher, dass Sie dieses Update löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
   "yes": "Ja",
   "no": "Nein",
-  "emptyState": "Noch keine Updates. Starten Sie die Unterhaltung!"
+  "emptyState": "Noch keine Updates. Starten Sie die Unterhaltung!",
+  "reactions": {
+    "like": "Gefällt mir",
+    "love": "Liebe",
+    "laugh": "Lachen",
+    "surprised": "Überrascht",
+    "sad": "Traurig",
+    "celebrate": "Feiern",
+    "rocket": "Rakete",
+    "eyes": "Augen",
+    "fire": "Feuer",
+    "hundred": "100"
+  },
+  "actions": {
+    "edit": "Bearbeiten",
+    "save": "Speichern"
+  }
 }

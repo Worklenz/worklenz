@@ -8,5 +8,21 @@
   "deleteConfirmContent": "¿Estás seguro de que quieres eliminar esta actualización? Esta acción no se puede deshacer.",
   "yes": "Sí",
   "no": "No",
-  "emptyState": "Aún no hay actualizaciones. ¡Inicia la conversación!"
+  "emptyState": "Aún no hay actualizaciones. ¡Inicia la conversación!",
+  "reactions": {
+    "like": "Me gusta",
+    "love": "Amor",
+    "laugh": "Risa",
+    "surprised": "Sorprendido",
+    "sad": "Triste",
+    "celebrate": "Celebrar",
+    "rocket": "Cohete",
+    "eyes": "Ojos",
+    "fire": "Fuego",
+    "hundred": "100"
+  },
+  "actions": {
+    "edit": "Editar",
+    "save": "Guardar"
+  }
 }
