@@ -13,6 +13,7 @@ import { useGetProjectWorkloadQuery, useGetWorkloadMembersQuery } from '@/api/pr
 import projectWorkloadApi from '@/api/project-workload/project-workload.api.service';
 import { setWorkloadView, setDateRange } from '@/features/project-workload/projectWorkloadSlice';
 import dayjs from 'dayjs';
+import './project-view-workload.css'; // Import CSS file
 
 type WorkloadView = 'chart' | 'calendar' | 'table';
 
@@ -235,44 +236,54 @@ const ProjectViewWorkload = React.memo(() => {
   };
 
   return (
-    <Flex
-      vertical
-      gap={16}
-      style={{
-        height: '100%',
-        padding: '16px 0',
+    <div 
+      className="workload-scroll-container" 
+      style={{ 
+        height: 'calc(100vh - 220px)', // Adjust based on your header height
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        paddingLeft: '24px',
+        paddingRight: '24px',
       }}
     >
-      <Flex justify="space-between" align="center" wrap="wrap" gap={16}>
-        <Segmented
-          value={localView}
-          onChange={handleViewChange}
-          options={[
-            { label: t('chartView'), value: 'chart' },
-            { label: t('calendarView'), value: 'calendar' },
-            { label: t('tableView'), value: 'table' },
-          ]}
-        />
-        <WorkloadFilters
-          onRefresh={handleRefresh}
-          isLoading={finalLoading}
-          isFetching={finalFetching}
-        />
+      <Flex
+        vertical
+        gap={16}
+        style={{
+          paddingTop: '16px',
+          paddingBottom: '24px',
+        }}
+      >
+        <Flex justify="space-between" align="center" wrap="wrap" gap={16}>
+          <Segmented
+            value={localView}
+            onChange={handleViewChange}
+            options={[
+              { label: t('chartView'), value: 'chart' },
+              { label: t('calendarView'), value: 'calendar' },
+              { label: t('tableView'), value: 'table' },
+            ]}
+          />
+          <WorkloadFilters
+            onRefresh={handleRefresh}
+            isLoading={finalLoading}
+            isFetching={finalFetching}
+          />
+        </Flex>
+
+        {finalLoading || finalFetching ? <Skeleton active paragraph={{ rows: 4 }} style={{ paddingTop: 16 }} /> : <>
+          <WorkloadOverview data={finalData as any} isLoading={finalLoading} />
+
+          <Card
+            style={{
+              flex: 1,
+            }}
+          >
+            {renderContent()}
+          </Card>
+        </>}
       </Flex>
-
-      {finalLoading || finalFetching ? <Skeleton active paragraph={{ rows: 4 }} style={{ paddingTop: 16 }} /> : <>
-        <WorkloadOverview data={finalData as any} isLoading={finalLoading} />
-
-        <Card
-          style={{
-            flex: 1,
-            overflow: 'auto',
-          }}
-        >
-          {renderContent()}
-        </Card>
-      </>}
-    </Flex>
+    </div>
   );
 });
 
