@@ -17,6 +17,7 @@ const ScheduleDrawer = () => {
   const isScheduleDrawerOpen = useAppSelector(state => state.schedule?.isScheduleDrawerOpen);
   const selectedMemberId = useAppSelector(state => state.schedule?.selectedMemberId);
   const selectedProjectId = useAppSelector(state => state.schedule?.selectedProjectId);
+  const selectedSegmentData = useAppSelector(state => state.schedule?.selectedSegmentData);
   const selectedDateRange = useAppSelector(state => state.schedule?.selectedDateRange);
   const dispatch = useAppDispatch();
   const { t } = useTranslation('schedule');

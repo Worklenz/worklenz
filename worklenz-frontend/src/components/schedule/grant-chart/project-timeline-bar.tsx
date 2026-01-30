@@ -3,7 +3,7 @@ import { Flex, Typography } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { toggleScheduleDrawer, setSelectedMember, setSelectedProject, setSelectedDateRange } from '../../../features/schedule/scheduleSliceRTK';
+import { toggleScheduleDrawer, setSelectedMember, setSelectedProject, setSelectedSegmentData, setSelectedDateRange, SegmentData } from '../../../features/schedule/scheduleSliceRTK';
 import { Resizable } from 're-resizable';
 import { themeWiseColor } from '../../../utils/themeWiseColor';
 import { MoreOutlined } from '@/shared/antd-imports';
@@ -52,11 +52,16 @@ const ProjectTimelineBar = ({
     }
   }, [project]);
 
+  /**
+   * Handle click on timeline bar segment
+   * Sets the selected member, project, and segment-specific data in Redux
+   * Opens the schedule drawer with the segment's date range and details
+   */
   const handleTimelineClick = (e: React.MouseEvent) => {
     // Stop event propagation to prevent parent click handlers from firing
     e.stopPropagation();
 
-    // Set selected member, project, and date range in Redux
+    // Set selected member and project in Redux
     if (memberId) {
       dispatch(setSelectedMember(memberId));
     }
@@ -64,31 +69,17 @@ const ProjectTimelineBar = ({
       dispatch(setSelectedProject(project.id));
     }
     
-    // Calculate overall project date range from all segments
-    if (allProjectSegments.length > 0) {
-      const validSegments = allProjectSegments.filter(seg => 
-        seg?.date_union?.start && seg?.date_union?.end
-      );
-      
-      if (validSegments.length > 0) {
-        // Find the earliest start date and latest end date across all segments
-        const startDates = validSegments.map(seg => seg.date_union.start);
-        const endDates = validSegments.map(seg => seg.date_union.end);
-        
-        const overallStartDate = startDates.reduce((earliest, current) => 
-          current < earliest ? current : earliest
-        );
-        const overallEndDate = endDates.reduce((latest, current) => 
-          current > latest ? current : latest
-        );
-        
-        dispatch(setSelectedDateRange({
-          start: overallStartDate,
-          end: overallEndDate,
-        }));
-      }
-    } else if (project?.date_union?.start && project?.date_union?.end) {
-      // Fallback to segment-specific date range if no allProjectSegments provided
+    // Store the complete segment data including date range
+    const segmentData: SegmentData = {
+      ...project,
+      memberId: memberId,
+      segmentId: project?.segment_id || `${project?.id}_${project?.segment_number || 0}`,
+    };
+    
+    dispatch(setSelectedSegmentData(segmentData));
+    
+    // Set the date range for this specific segment
+    if (project?.date_union?.start && project?.date_union?.end) {
       dispatch(setSelectedDateRange({
         start: project.date_union.start,
         end: project.date_union.end,
@@ -105,6 +96,10 @@ const ProjectTimelineBar = ({
     ref: HTMLElement,
     delta: { width: number; height: number }
   ) => {
+    // Temporarily disabled resize functionality
+    return;
+    
+    /* Original resize logic - commented out temporarily
     let newWidth = width;
     let newLeftOffset = leftOffset;
 
@@ -133,6 +128,7 @@ const ProjectTimelineBar = ({
         setTotalHours(newDuration * currentHoursPerDay);
       }
     }
+    */
   };
 
   return (
@@ -147,23 +143,24 @@ const ProjectTimelineBar = ({
         grid={[CELL_WIDTH, 1]}
         enable={{
           top: false,
-          right: true,
+          right: false, // Temporarily disabled
           bottom: false,
-          left: true,
+          left: false, // Temporarily disabled
           topRight: false,
           bottomRight: false,
           bottomLeft: false,
           topLeft: false,
         }}
-        handleComponent={{
-          right: <MoreOutlined style={{ fontSize: 24, color: 'white' }} />,
-          left: <MoreOutlined style={{ fontSize: 24, color: 'white' }} />,
-        }}
-        handleClasses={{
-          right:
-            'hidden group-hover:flex -translate-x-[5px] bg-[#1890ff] px-1 justify-center rounded-tr rounded-br',
-          left: 'hidden group-hover:flex translate-x-[5px] bg-[#1890ff] px-1 justify-center rounded-tl rounded-bl',
-        }}
+        // Temporarily disabled resize handles
+        // handleComponent={{
+        //   right: <MoreOutlined style={{ fontSize: 24, color: 'white' }} />,
+        //   left: <MoreOutlined style={{ fontSize: 24, color: 'white' }} />,
+        // }}
+        // handleClasses={{
+        //   right:
+        //     'hidden group-hover:flex -translate-x-[5px] bg-[#1890ff] px-1 justify-center rounded-tr rounded-br',
+        //   left: 'hidden group-hover:flex translate-x-[5px] bg-[#1890ff] px-1 justify-center rounded-tl rounded-bl',
+        // }}
         className="group hover:shadow-md"
         style={{
           marginInlineStart: leftOffset,
@@ -185,6 +182,7 @@ const ProjectTimelineBar = ({
           padding: '4px 10px',
           zIndex: 99,
           cursor: 'pointer',
+          width: '100%', // Take full width of the container
         }}
       >
         <Flex
@@ -244,6 +242,7 @@ export default React.memo(ProjectTimelineBar, (prevProps, nextProps) => {
     prevProps.indicatorOffset === nextProps.indicatorOffset &&
     prevProps.indicatorWidth === nextProps.indicatorWidth &&
     prevProps.project?.id === nextProps.project?.id &&
+    prevProps.project?.segment_number === nextProps.project?.segment_number &&
     prevProps.project?.total_hours === nextProps.project?.total_hours &&
     prevProps.project?.task_count === nextProps.project?.task_count &&
     prevProps.project?.hours_per_day === nextProps.project?.hours_per_day &&

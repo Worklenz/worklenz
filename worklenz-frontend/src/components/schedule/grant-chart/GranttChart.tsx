@@ -17,7 +17,6 @@ import { Flex, Popover, Skeleton, Spin } from '@/shared/antd-imports';
 import DayAllocationCell from './day-allocation-cell';
 import ProjectTimelineBar from './project-timeline-bar';
 import ProjectTimelineModal from '@/features/schedule/ProjectTimelineModal';
-import CapacityConflictsAlert from './CapacityConflictsAlert';
 import { useScheduleSocketHandlers } from '@/hooks/useScheduleSocketHandlers';
 import { useMemberProjectsSocketHandlers } from '@/hooks/useMemberProjectsSocketHandlers';
 import { useSocket } from '@/socket/socketContext';
@@ -469,17 +468,6 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                   {/* Expanded projects */}
                   {isExpanded && projects.length > 0 && (
                     <div>
-                      {/* <Popover
-                        content={
-                          <ProjectTimelineModal
-                            memberId={memberId}
-                            projectId={selectedProjectId}
-                            setIsModalOpen={setIsModalOpen}
-                          />
-                        }
-                        trigger={'click'}
-                        open={isModalOpen}
-                      ></Popover> */}
                       {/* Group projects by project ID to show all segments in one row */}
                       {Object.entries(
                         projects.reduce((acc: Record<string, any[]>, project: any) => {
@@ -490,9 +478,6 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                           return acc;
                         }, {})
                       ).map(([projectId, projectSegments]: [string, any[]]) => {
-                        // Use the first segment for project metadata
-                        const firstSegment = projectSegments[0];
-                        
                         return (
                           <div
                             key={projectId}
@@ -512,33 +497,34 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                               position: 'relative',
                             }}
                           >
-                            {/* Render all segments as separate bars in the same row */}
+                            {/* Render each segment as a positioned timeline bar 
+                                Each segment gets its own container positioned at the correct offset
+                                to prevent overlapping click areas and ensure independent interaction */}
                             {projectSegments.map((segment: any, segmentIndex: number) => (
-                              <Flex
+                              <div
                                 key={`segment-${segmentIndex}`}
-                                align="center"
                                 style={{
                                   position: 'absolute',
-                                  left: 0, // This should be 0 because ProjectTimelineBar handles its own offset
-                                  zIndex: 50 + segmentIndex,
+                                  left: segment?.indicator_offset || 0,
+                                  width: segment?.indicator_width || 0,
                                   height: 65,
-                                  pointerEvents: 'none',
+                                  zIndex: 50 + segmentIndex,
+                                  display: 'flex',
+                                  alignItems: 'center',
                                 }}
                               >
                                 {segment?.date_union?.start && segment?.date_union?.end && (
-                                  <div style={{ pointerEvents: 'auto' }}>
-                                    <ProjectTimelineBar
-                                      key={`${segment?.id}-${segment?.segment_number}-${segment?.total_hours}-${segment?.task_count}`}
-                                      defaultData={segment?.default_values}
-                                      project={segment}
-                                      indicatorWidth={segment?.indicator_width}
-                                      indicatorOffset={segment?.indicator_offset}
-                                      memberId={memberId}
-                                      allProjectSegments={projectSegments}
-                                    />
-                                  </div>
+                                  <ProjectTimelineBar
+                                    key={`${segment?.id}-${segment?.segment_number}-${segment?.total_hours}-${segment?.task_count}`}
+                                    defaultData={segment?.default_values}
+                                    project={segment}
+                                    indicatorWidth={segment?.indicator_width}
+                                    indicatorOffset={0} // Set to 0 since positioning is handled by container
+                                    memberId={memberId}
+                                    allProjectSegments={projectSegments}
+                                  />
                                 )}
-                              </Flex>
+                              </div>
                             ))}
 
                             {/* Background grid cells */}
@@ -583,11 +569,6 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
         </Flex>
       </div>
     </div>
-    {/* Capacity Conflicts Alert */}
-      {/* <CapacityConflictsAlert
-        startDate={formattedDate}
-        endDate={calculateEndDate}
-      /> */}
     </>
   );
 });
