@@ -744,6 +744,12 @@ BEGIN
     RETURN JSON_BUILD_OBJECT(
             'id', (_comment_id)::UUID,
             'content', (_content)::TEXT,
+            'user_id', (_created_by)::UUID,
+            'created_by', (_user_name)::TEXT,
+            'avatar_url', (SELECT avatar_url FROM users WHERE id = _created_by),
+            'created_at', (SELECT created_at FROM project_comments WHERE id = _comment_id),
+            'updated_at', (SELECT updated_at FROM project_comments WHERE id = _comment_id),
+            'mentions', '[]'::JSON,
             'project_name', (_project_name)::TEXT,
             'team_name', (SELECT name FROM teams WHERE id = (_team_id)::UUID)
         );

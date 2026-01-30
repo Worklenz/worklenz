@@ -1161,6 +1161,42 @@ export default class TeamMembersController extends WorklenzControllerBase {
       const result1 = await db.query(q1, [req.params?.id]);
       const [status] = result1.rows;
 
+      // Check if reactivating an inactive member would exceed limits
+      if (!status.active) {
+        const currentCount = parseInt(subscriptionData.current_count) || 0;
+
+        // Check Business plan limits first - Business plans override AppSumo lifetime limits
+        if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
+          const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
+          if (currentCount + 1 > effectiveUserLimit) {
+            const requiredSeats = (currentCount + 1) - effectiveUserLimit;
+            const obj = {
+              seats_enough: false,
+              required_count: requiredSeats,
+              current_seat_amount: effectiveUserLimit
+            };
+            return res.status(200).send(new ServerResponse(false, obj, "Insufficient seats available. Please upgrade your subscription to reactivate this member."));
+          }
+        }
+
+        // Check AppSumo lifetime deal limit - only applies if not on Business plan
+        if (
+          subscriptionData.is_ltd
+          && subscriptionData.ltd_users
+          && subscriptionData.subscription_type !== 'ANNUAL_BUSINESS'
+          && (currentCount + 1 > parseInt(subscriptionData.ltd_users))
+        ) {
+          return res.status(200).send(new ServerResponse(false, null, "Cannot exceed the maximum number of life time users."));
+        }
+
+        // Check trial user team member limit
+        if (subscriptionData.subscription_status === "trialing") {
+          if (currentCount + 1 > TRIAL_MEMBER_LIMIT) {
+            return res.status(200).send(new ServerResponse(false, null, `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`));
+          }
+        }
+      }
+
       if (status.active) {
         const updateQ1 = `UPDATE users
               SET active_team = (SELECT id FROM teams WHERE user_id = users.id ORDER BY created_at DESC LIMIT 1)
