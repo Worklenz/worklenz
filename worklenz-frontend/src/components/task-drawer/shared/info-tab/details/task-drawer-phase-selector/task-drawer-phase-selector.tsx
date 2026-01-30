@@ -57,6 +57,7 @@ const TaskDrawerPhaseSelector = ({ phases, task }: TaskDrawerPhaseSelectorProps)
         placeholder="Select Phase"
         value={selectedPhase}
         options={phaseMenuItems}
+        style={{ width: 'fit-content', minWidth: 145 }}
         onChange={handlePhaseChange}
       />
     </Form.Item>
