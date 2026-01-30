@@ -735,7 +735,7 @@ BEGIN
                     (_team_id)::UUID,
                     null,
                     (_project_id)::UUID,
-                    CONCAT('<b>', escape_html(_user_name), '</b> has mentioned you in a comment on <b>', escape_html(_task_name), '</b>')
+                    CONCAT('<b>', escape_html(_user_name), '</b> has mentioned you in a comment on <b>', escape_html(_project_name), '</b>')
                 );
             _mention_index := _mention_index + 1;
 
@@ -749,7 +749,12 @@ BEGIN
             'avatar_url', (SELECT avatar_url FROM users WHERE id = _created_by),
             'created_at', (SELECT created_at FROM project_comments WHERE id = _comment_id),
             'updated_at', (SELECT updated_at FROM project_comments WHERE id = _comment_id),
-            'mentions', '[]'::JSON,
+            'mentions', (SELECT COALESCE(JSON_AGG(rec), '[]'::JSON)
+                        FROM (SELECT u.name  AS user_name,
+                                     u.email AS user_email
+                              FROM project_comment_mentions pcm
+                                    LEFT JOIN users u ON pcm.informed_by = u.id
+                              WHERE pcm.comment_id = _comment_id) rec),
             'project_name', (_project_name)::TEXT,
             'team_name', (SELECT name FROM teams WHERE id = (_team_id)::UUID)
         );

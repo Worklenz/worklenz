@@ -8,5 +8,21 @@
   "deleteConfirmContent": "Are you sure you want to delete this update? This action cannot be undone.",
   "yes": "Yes",
   "no": "No",
-  "emptyState": "No updates yet. Start the conversation!"
+  "emptyState": "No updates yet. Start the conversation!",
+  "reactions": {
+    "like": "Like",
+    "love": "Love",
+    "laugh": "Laugh",
+    "surprised": "Surprised",
+    "sad": "Sad",
+    "celebrate": "Celebrate",
+    "rocket": "Rocket",
+    "eyes": "Eyes",
+    "fire": "Fire",
+    "hundred": "100"
+  },
+  "actions": {
+    "edit": "Edit",
+    "save": "Save"
+  }
 }
