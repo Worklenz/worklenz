@@ -1,10 +1,6 @@
--- Function to calculate daily capacity for a team member based on task assignments
--- This function considers:
--- 1. Task assignments with start/end dates
--- 2. Task estimations (total_minutes)
--- 3. Organization working days and hours
--- 4. Time-off periods
--- 5. Holidays
+-- Final fix for same-day task capacity calculation
+-- This migration completely fixes the issue where tasks with same start and end date
+-- were not getting their estimation allocated properly
 
 CREATE OR REPLACE FUNCTION calculate_member_capacity(
     p_team_member_id UUID,
@@ -78,44 +74,78 @@ BEGIN
         FROM date_series ds
         CROSS JOIN working_days wd
     ),
+    task_working_days AS (
+        -- Pre-calculate working days for each task to avoid repeated calculations
+        SELECT 
+            t.id as task_id,
+            t.project_id,
+            t.start_date::DATE as task_start_date,
+            t.end_date::DATE as task_end_date,
+            t.total_minutes,
+            p.name AS project_name,
+            p.color_code,
+            -- Calculate total working days for this task
+            CASE 
+                WHEN t.start_date::DATE = t.end_date::DATE THEN
+                    -- Same day task: check if that day is a working day
+                    CASE 
+                        WHEN (EXTRACT(ISODOW FROM t.start_date::DATE) = 1 AND wd.monday = true) OR
+                             (EXTRACT(ISODOW FROM t.start_date::DATE) = 2 AND wd.tuesday = true) OR
+                             (EXTRACT(ISODOW FROM t.start_date::DATE) = 3 AND wd.wednesday = true) OR
+                             (EXTRACT(ISODOW FROM t.start_date::DATE) = 4 AND wd.thursday = true) OR
+                             (EXTRACT(ISODOW FROM t.start_date::DATE) = 5 AND wd.friday = true) OR
+                             (EXTRACT(ISODOW FROM t.start_date::DATE) = 6 AND wd.saturday = true) OR
+                             (EXTRACT(ISODOW FROM t.start_date::DATE) = 7 AND wd.sunday = true)
+                        THEN 1
+                        ELSE 0  -- Not a working day, so no allocation
+                    END
+                ELSE
+                    -- Multi-day task: count working days in range
+                    GREATEST(1, (
+                        SELECT COUNT(*)
+                        FROM generate_series(t.start_date::DATE, t.end_date::DATE, '1 day'::interval) AS task_day
+                        WHERE 
+                            (EXTRACT(ISODOW FROM task_day) = 1 AND wd.monday = true) OR
+                            (EXTRACT(ISODOW FROM task_day) = 2 AND wd.tuesday = true) OR
+                            (EXTRACT(ISODOW FROM task_day) = 3 AND wd.wednesday = true) OR
+                            (EXTRACT(ISODOW FROM task_day) = 4 AND wd.thursday = true) OR
+                            (EXTRACT(ISODOW FROM task_day) = 5 AND wd.friday = true) OR
+                            (EXTRACT(ISODOW FROM task_day) = 6 AND wd.saturday = true) OR
+                            (EXTRACT(ISODOW FROM task_day) = 7 AND wd.sunday = true)
+                    ))
+            END AS working_days_count
+        FROM tasks t
+        JOIN tasks_assignees ta ON t.id = ta.task_id
+        JOIN project_members pm ON ta.project_member_id = pm.id
+        JOIN projects p ON t.project_id = p.id
+        CROSS JOIN working_days wd
+        WHERE pm.team_member_id = p_team_member_id
+            AND t.start_date IS NOT NULL 
+            AND t.end_date IS NOT NULL
+            AND t.archived = false
+            -- Task overlaps with our date range
+            AND t.start_date::DATE <= p_end_date
+            AND t.end_date::DATE >= p_start_date
+    ),
     task_allocations AS (
         -- Calculate daily task allocations based on task assignments and estimations
         SELECT 
             di.info_date AS alloc_date,
-            t.project_id,
-            p.name AS project_name,
-            p.color_code,
-            -- Distribute task estimation evenly across working days in task date range
+            twd.project_id,
+            twd.project_name,
+            twd.color_code,
+            -- Distribute task estimation evenly across working days
             CASE 
-                WHEN t.start_date IS NOT NULL AND t.end_date IS NOT NULL THEN
-                    (t.total_minutes / 60.0) / NULLIF(
-                        (
-                            SELECT COUNT(*)
-                            FROM generate_series(t.start_date::DATE, t.end_date::DATE, '1 day'::interval) AS task_day
-                            JOIN organization_working_days owd ON owd.organization_id = v_organization_id
-                            WHERE 
-                                (EXTRACT(ISODOW FROM task_day) = 1 AND owd.monday = true) OR
-                                (EXTRACT(ISODOW FROM task_day) = 2 AND owd.tuesday = true) OR
-                                (EXTRACT(ISODOW FROM task_day) = 3 AND owd.wednesday = true) OR
-                                (EXTRACT(ISODOW FROM task_day) = 4 AND owd.thursday = true) OR
-                                (EXTRACT(ISODOW FROM task_day) = 5 AND owd.friday = true) OR
-                                (EXTRACT(ISODOW FROM task_day) = 6 AND owd.saturday = true) OR
-                                (EXTRACT(ISODOW FROM task_day) = 7 AND owd.sunday = true)
-                        ), 1
-                    )
+                WHEN twd.working_days_count > 0 THEN
+                    (twd.total_minutes / 60.0) / twd.working_days_count
                 ELSE 0
             END AS daily_hours
         FROM date_info di
-        JOIN tasks t ON 
-            t.start_date IS NOT NULL 
-            AND t.end_date IS NOT NULL
-            AND di.info_date BETWEEN t.start_date::DATE AND t.end_date::DATE
-            AND t.archived = false
-        JOIN tasks_assignees ta ON t.id = ta.task_id
-        JOIN project_members pm ON ta.project_member_id = pm.id
-        JOIN projects p ON t.project_id = p.id
-        WHERE pm.team_member_id = p_team_member_id
+        JOIN task_working_days twd ON 
+            di.info_date >= twd.task_start_date 
+            AND di.info_date <= twd.task_end_date
             AND di.is_working_day = true
+            AND twd.working_days_count > 0  -- Only include tasks that have working days
     ),
     project_summary AS (
         -- Aggregate allocations by project per day
@@ -173,4 +203,4 @@ $$ LANGUAGE plpgsql STABLE;
 -- Grant execute permission
 GRANT EXECUTE ON FUNCTION calculate_member_capacity(UUID, DATE, DATE) TO postgres;
 
-COMMENT ON FUNCTION calculate_member_capacity IS 'Calculates daily capacity for a team member based on task assignments and estimations';
+COMMENT ON FUNCTION calculate_member_capacity IS 'Calculates daily capacity for a team member based on task assignments and estimations - Final fix for same-day tasks';
