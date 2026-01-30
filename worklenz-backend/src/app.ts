@@ -25,6 +25,8 @@ import AwsSesController from "./controllers/aws-ses-controller";
 import { CSP_POLICIES } from "./shared/csp";
 import { sqlInjectionDetectorWithBlocking } from "./middlewares/sql-injection-detector";
 import { createCsrfRotation } from "./middlewares/csrf-rotation";
+import swaggerUi from "swagger-ui-express";
+import YAML from "yamljs";
 
 const app = express();
 
@@ -368,6 +370,28 @@ if (isProduction()) {
   });
 } else {
   app.use(express.static(path.join(__dirname, "public")));
+}
+
+// Swagger UI documentation (development only)
+if (!isProduction()) {
+  try {
+    const swaggerDocument = YAML.load(path.join(__dirname, "docs/openapi.yaml"));
+
+    app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+      customCss: '.swagger-ui .topbar { display: none }',
+      customSiteTitle: "Worklenz API Documentation",
+      swaggerOptions: {
+        persistAuthorization: true,
+        displayRequestDuration: true,
+        filter: true,
+        tryItOutEnabled: true,
+      }
+    }));
+
+    console.log("📚 Swagger UI available at http://localhost:5000/api-docs");
+  } catch (error) {
+    console.error("Failed to load OpenAPI documentation:", error);
+  }
 }
 
 // API rate limiting
