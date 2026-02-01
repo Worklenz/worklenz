@@ -14,7 +14,7 @@ import { IO } from "../shared/io";
 import { SocketEvents } from "../socket.io/events";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-import { formatDuration, getColor } from "../shared/utils";
+import { formatDuration, getColor, sanitizePlainText } from "../shared/utils";
 import { statusExclude, TEAM_MEMBER_TREE_MAP_COLOR_ALPHA, TRIAL_MEMBER_LIMIT } from "../shared/constants";
 import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
 import { updateUsers } from "../shared/paddle-requests";
@@ -316,24 +316,25 @@ export default class TeamMembersController extends WorklenzControllerBase {
   public static async getById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const q = `
       SELECT id,
-             created_at,
-             updated_at,
-             (SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id),
-             (SELECT avatar_url FROM users WHERE id = team_members.user_id),
-             EXISTS(SELECT email
+            created_at,
+            updated_at,
+            (SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id) AS name,
+            (SELECT avatar_url FROM users WHERE id = team_members.user_id) AS avatar_url,
+            EXISTS(SELECT email
                     FROM email_invitations
                     WHERE team_member_id = team_members.id
                       AND email_invitations.team_id = team_members.team_id) AS pending_invitation,
-             (SELECT name FROM job_titles WHERE id = team_members.job_title_id) AS job_title,
-             COALESCE(
-               (SELECT email FROM users WHERE id = team_members.user_id),
-               (SELECT email
+            (SELECT name FROM job_titles WHERE id = team_members.job_title_id) AS job_title,
+            (SELECT name FROM roles WHERE id = team_members.role_id) AS role_name,
+            COALESCE(
+              (SELECT email FROM users WHERE id = team_members.user_id),
+              (SELECT email
                 FROM email_invitations
                 WHERE email_invitations.team_member_id = team_members.id
                   AND email_invitations.team_id = team_members.team_id
                 LIMIT 1)
-               ) AS email,
-             EXISTS(SELECT id FROM roles WHERE id = team_members.role_id AND admin_role IS TRUE) AS is_admin
+              ) AS email,
+            EXISTS(SELECT id FROM roles WHERE id = team_members.role_id AND admin_role IS TRUE) AS is_admin
       FROM team_members
       WHERE id = $1
         AND team_id = $2;
@@ -432,7 +433,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
     const result = await db.query(q, [id, req.user?.id, req.user?.team_id]);
     const [data] = result.rows;
 
-    const message = `You have been removed from <b>${req.user?.team_name}</b> by <b>${req.user?.name}</b>`;
+    const safeName = sanitizePlainText(req.user?.name || 'an administrator');
+    const safeTeamName = sanitizePlainText(req.user?.team_name || 'the team');
+    const message = `You have been removed from <b>${safeTeamName}</b> by <b>${safeName}</b>`;
 
     // if (subscriptionData.status === "trialing") break;
     // if (!subscriptionData.is_credit && !subscriptionData.is_custom) {
@@ -450,14 +453,14 @@ export default class TeamMembersController extends WorklenzControllerBase {
     // }
 
     NotificationsService.sendNotification({
-      receiver_socket_id: data.socket_id,
+      receiver_socket_id: data.member.socket_id,
       message,
-      team: data.team,
-      team_id: id
+      team: data.member.team,
+      team_id: req.user?.team_id
     });
 
     IO.emitByUserId(data.member.id, req.user?.id || null, SocketEvents.TEAM_MEMBER_REMOVED, {
-      teamId: id,
+      teamId: req.user?.team_id,
       message
     });
     return res.status(200).send(new ServerResponse(true, result.rows));
@@ -1157,6 +1160,42 @@ export default class TeamMembersController extends WorklenzControllerBase {
       const q1 = `SELECT active FROM team_members WHERE  id = $1;`;
       const result1 = await db.query(q1, [req.params?.id]);
       const [status] = result1.rows;
+
+      // Check if reactivating an inactive member would exceed limits
+      if (!status.active) {
+        const currentCount = parseInt(subscriptionData.current_count) || 0;
+
+        // Check Business plan limits first - Business plans override AppSumo lifetime limits
+        if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
+          const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
+          if (currentCount + 1 > effectiveUserLimit) {
+            const requiredSeats = (currentCount + 1) - effectiveUserLimit;
+            const obj = {
+              seats_enough: false,
+              required_count: requiredSeats,
+              current_seat_amount: effectiveUserLimit
+            };
+            return res.status(200).send(new ServerResponse(false, obj, "Insufficient seats available. Please upgrade your subscription to reactivate this member."));
+          }
+        }
+
+        // Check AppSumo lifetime deal limit - only applies if not on Business plan
+        if (
+          subscriptionData.is_ltd
+          && subscriptionData.ltd_users
+          && subscriptionData.subscription_type !== 'ANNUAL_BUSINESS'
+          && (currentCount + 1 > parseInt(subscriptionData.ltd_users))
+        ) {
+          return res.status(200).send(new ServerResponse(false, null, "Cannot exceed the maximum number of life time users."));
+        }
+
+        // Check trial user team member limit
+        if (subscriptionData.subscription_status === "trialing") {
+          if (currentCount + 1 > TRIAL_MEMBER_LIMIT) {
+            return res.status(200).send(new ServerResponse(false, null, `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`));
+          }
+        }
+      }
 
       if (status.active) {
         const updateQ1 = `UPDATE users

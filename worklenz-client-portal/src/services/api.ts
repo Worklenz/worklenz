@@ -211,9 +211,10 @@ class ClientPortalAPI {
     return response.data;
   }
 
-  async resetPassword(resetData: { 
-    token: string; 
-    password: string; 
+  async resetPassword(resetData: {
+    user: string;     // base64 encoded user ID
+    hash: string;     // token hash
+    password: string;
   }): Promise<ApiResponse<{ message: string }>> {
     const response = await this.api.post('/auth/reset-password', resetData);
     return response.data;
@@ -390,6 +391,13 @@ class ClientPortalAPI {
 
   async getInvoiceDetails(id: string) {
     return this.request(`/invoices/${id}`);
+  }
+
+  async updateInvoice(id: string, updateData: { amount?: number; currency?: string; dueDate?: string; notes?: string }) {
+    return this.request(`/invoices/${id}`, {
+      method: 'PUT',
+      data: updateData,
+    });
   }
 
   async payInvoice(id: string, paymentData: { paymentMethod?: string; transactionId?: string; notes?: string }) {

@@ -9,6 +9,7 @@ import { teamMembersApiService } from '@/api/team-members/teamMembers.api.servic
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import TimeWiseFilter from '@/components/reporting/time-wise-filter';
 import CustomPageHeader from '@/components/reporting/common/CustomPageHeader';
+import logger from '@/utils/errorLogger';
 
 interface LogRow {
   key: string;
@@ -33,7 +34,7 @@ const TimeLogsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<LogRow[]>([]);
   const [search, setSearch] = useState<string>('');
-  const [billableFilter, setBillableFilter] = useState<{ billable: boolean; nonBillable: boolean}>({ billable: true, nonBillable: true });
+  const [billableFilter, setBillableFilter] = useState<{ billable: boolean; nonBillable: boolean }>({ billable: true, nonBillable: true });
 
   // Columns
   const columns = useMemo(
@@ -69,8 +70,8 @@ const TimeLogsPage: React.FC = () => {
           const mapped = res.body.map(m => ({ id: m.id as string, name: m.name as string }));
           setMembers(mapped);
         }
-      } catch {
-        // noop
+      } catch (error) {
+        logger.error('Error fetching team members', error);
       }
     })();
   }, []);
@@ -105,7 +106,7 @@ const TimeLogsPage: React.FC = () => {
               member: (l as any).user_name,
               project: l.project_name,
               task: l.task_name,
-              description: undefined,
+              description: l.description || '',
               duration: l.time_spent_string,
             }))
           );
@@ -132,7 +133,7 @@ const TimeLogsPage: React.FC = () => {
               member: (l as any).user_name,
               project: l.project_name,
               task: l.task_name,
-              description: undefined,
+              description: l.description || '',
               duration: l.time_spent_string,
             }))
           );
@@ -141,7 +142,8 @@ const TimeLogsPage: React.FC = () => {
           setLogs([]);
         }
       }
-    } catch {
+    } catch (error) {
+      logger.error('Error fetching time logs', error);
       setLogs([]);
     } finally {
       setLoading(false);
@@ -209,12 +211,12 @@ const TimeLogsPage: React.FC = () => {
         key: 'filters',
         label: (
           <div style={{ padding: '8px 4px', minWidth: 200 }}>
-            <Typography.Text 
-              type="secondary" 
-              style={{ 
-                fontSize: 11, 
-                fontWeight: 500, 
-                textTransform: 'uppercase', 
+            <Typography.Text
+              type="secondary"
+              style={{
+                fontSize: 11,
+                fontWeight: 500,
+                textTransform: 'uppercase',
                 letterSpacing: '0.5px',
                 display: 'block',
                 marginBottom: 12

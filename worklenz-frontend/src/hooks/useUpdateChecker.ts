@@ -49,8 +49,6 @@ export function useUpdateChecker(options: UseUpdateCheckerOptions = {}): UseUpda
       if (hasUpdates && showNotificationOnUpdate && !updateDismissed) {
         setShowUpdateNotification(true);
       }
-
-      console.log('Update check completed:', { hasUpdates });
     } catch (error) {
       console.error('Error checking for updates:', error);
     } finally {

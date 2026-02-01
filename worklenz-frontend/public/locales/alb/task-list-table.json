@@ -24,6 +24,7 @@
   "lastUpdatedColumn": "Përditësuar Së Fundi",
   "lastupdatedColumn": "Përditësuar Së Fundi",
   "reporterColumn": "Raportuesi",
+  "moveColumnHandle": "Zhvendos kolonën",
   "dueTimeColumn": "Koha e Afatit",
   "todoSelectorText": "Për të Bërë",
   "doingSelectorText": "Duke bërë",
@@ -56,7 +57,7 @@
   "pendingInvitation": "Ftesë në Pritje",
 
   "contextMenu": {
-    "duplicateTask":"Detyrë dublikatë",
+    "duplicateTask": "Detyrë dublikatë",
     "assignToMe": "Cakto mua",
     "copyLink": "Kopjo lidhjen e detyrës",
     "linkCopied": "Lidhja u kopjua në clipboard",

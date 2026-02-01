@@ -475,6 +475,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           i.paid_at,
           i.created_at,
           i.updated_at,
+          i.payment_proof_url,
           r.id as request_id,
           r.req_no as request_number,
           r.request_data,
@@ -515,6 +516,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         paidAt: invoice.paid_at,
         createdAt: invoice.created_at,
         updatedAt: invoice.updated_at,
+        paymentProofUrl: invoice.payment_proof_url || null,
         isOverdue:
           invoice.due_date &&
           new Date(invoice.due_date) < new Date() &&
@@ -838,19 +840,20 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
             r.req_no as request_number,
             s.name as service_name,
             s.description as service_description,
-            ot.name as organization_name,
-            ot.logo_url as organization_logo_url,
-            ot.primary_color as organization_primary_color,
-            ot.email as organization_email,
-            ot.phone as organization_phone,
-            ot.address_line_1 as organization_address_line_1,
-            ot.address_line_2 as organization_address_line_2,
-            ot.invoice_footer_message as organization_invoice_footer_message
+            t.name as organization_name,
+            cps.logo_url as organization_logo_url,
+            cps.primary_color as organization_primary_color,
+            cps.contact_email as organization_email,
+            cps.contact_phone as organization_phone,
+            cps.address_line_1 as organization_address_line_1,
+            cps.address_line_2 as organization_address_line_2,
+            cps.invoice_footer_message as organization_invoice_footer_message
           FROM client_portal_invoices i
           LEFT JOIN clients c ON i.client_id = c.id
           LEFT JOIN client_portal_requests r ON i.request_id = r.id
           LEFT JOIN client_portal_services s ON r.service_id = s.id
-          LEFT JOIN organization_teams ot ON i.organization_team_id = ot.id
+          LEFT JOIN teams t ON i.organization_team_id = t.id
+          LEFT JOIN client_portal_settings cps ON cps.organization_team_id = t.id
           WHERE i.id = $1 AND i.client_id = $2 AND i.organization_team_id = $3
         `;
         queryParams = [id, clientId, organizationId];
@@ -875,19 +878,20 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
             r.req_no as request_number,
             s.name as service_name,
             s.description as service_description,
-            ot.name as organization_name,
-            ot.logo_url as organization_logo_url,
-            ot.primary_color as organization_primary_color,
-            ot.email as organization_email,
-            ot.phone as organization_phone,
-            ot.address_line_1 as organization_address_line_1,
-            ot.address_line_2 as organization_address_line_2,
-            ot.invoice_footer_message as organization_invoice_footer_message
+            t.name as organization_name,
+            cps.logo_url as organization_logo_url,
+            cps.primary_color as organization_primary_color,
+            cps.contact_email as organization_email,
+            cps.contact_phone as organization_phone,
+            cps.address_line_1 as organization_address_line_1,
+            cps.address_line_2 as organization_address_line_2,
+            cps.invoice_footer_message as organization_invoice_footer_message
           FROM client_portal_invoices i
           LEFT JOIN clients c ON i.client_id = c.id
           LEFT JOIN client_portal_requests r ON i.request_id = r.id
           LEFT JOIN client_portal_services s ON r.service_id = s.id
-          LEFT JOIN organization_teams ot ON i.organization_team_id = ot.id
+          LEFT JOIN teams t ON i.organization_team_id = t.id
+          LEFT JOIN client_portal_settings cps ON cps.organization_team_id = t.id
           WHERE i.id = $1 AND i.organization_team_id = $2
         `;
         queryParams = [id, organizationId];
@@ -945,36 +949,58 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
       // Generate PDF using puppeteer
       const puppeteer = require('puppeteer');
       const { InvoiceTemplateGenerator } = require('../../shared/invoice-template-generator');
-      
-      const html = InvoiceTemplateGenerator.generateInvoiceHTML(invoiceData);
-      
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      });
-      
-      const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
-      
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '20mm',
-          right: '20mm',
-          bottom: '20mm',
-          left: '20mm',
-        },
-      });
-      
-      await browser.close();
 
-      // Set response headers for PDF download
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoice_no}.pdf"`);
-      res.setHeader('Content-Length', pdfBuffer.length);
-      
-      return res.send(pdfBuffer);
+      try {
+        console.log('Generating invoice HTML for invoice:', invoice.invoice_no);
+        const html = InvoiceTemplateGenerator.generateInvoiceHTML(invoiceData);
+        console.log('HTML generated successfully, length:', html.length);
+
+        console.log('Launching Puppeteer...');
+        const browser = await puppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+        });
+
+        console.log('Browser launched, creating page...');
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+        console.log('Page content set, generating PDF...');
+
+        const pdfBuffer = await page.pdf({
+          format: 'A4',
+          printBackground: true,
+          margin: {
+            top: '20mm',
+            right: '20mm',
+            bottom: '20mm',
+            left: '20mm',
+          },
+        });
+
+        console.log('PDF generated successfully, size:', pdfBuffer.length);
+        await browser.close();
+        console.log('Browser closed');
+
+        // Set response headers for PDF download
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoice_no}.pdf"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+
+        console.log('Sending PDF response...');
+        return res.end(pdfBuffer, 'binary');
+      } catch (pdfError) {
+        console.error('PDF generation error:', pdfError);
+
+        // Fallback: return HTML as a downloadable file if PDF generation fails
+        console.log('Falling back to HTML download...');
+        const html = InvoiceTemplateGenerator.generateInvoiceHTML(invoiceData);
+
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoice_no}.html"`);
+        res.setHeader('Content-Length', Buffer.byteLength(html));
+
+        return res.send(html);
+      }
     } catch (error) {
       console.error("Error downloading invoice:", error);
       return res
@@ -984,20 +1010,47 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
   }
 
   static async updateInvoice(
-    req: IWorkLenzRequest,
+    req: AuthenticatedClientRequest | IWorkLenzRequest,
     res: IWorkLenzResponse
   ) {
     try {
       const { id } = req.params;
-      const { amount, currency, dueDate, notes, status } = req.body;
-      const organizationId = req.user?.team_id;
+      const { amount, currency, dueDate, notes } = req.body;
+      
+      // Determine if this is a client request or admin request
+      const isClientRequest = 'clientId' in req && req.clientId;
+      const clientId = isClientRequest ? (req as AuthenticatedClientRequest).clientId : null;
+      const organizationId = isClientRequest 
+        ? (req as AuthenticatedClientRequest).organizationId 
+        : (req as IWorkLenzRequest).user?.team_id;
 
-      // Verify invoice exists and belongs to organization
-      const checkQuery = `
-        SELECT id, status as current_status FROM client_portal_invoices
-        WHERE id = $1 AND organization_team_id = $2
-      `;
-      const checkResult = await db.query(checkQuery, [id, organizationId]);
+      if (!organizationId) {
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Unauthorized"));
+      }
+
+      // Build query based on request type
+      let checkQuery: string;
+      let queryParams: any[];
+
+      if (isClientRequest && clientId) {
+        // Client-side: verify invoice belongs to client and check if paid
+        checkQuery = `
+          SELECT id, status as current_status FROM client_portal_invoices
+          WHERE id = $1 AND client_id = $2 AND organization_team_id = $3
+        `;
+        queryParams = [id, clientId, organizationId];
+      } else {
+        // Admin-side: verify invoice belongs to organization
+        checkQuery = `
+          SELECT id, status as current_status FROM client_portal_invoices
+          WHERE id = $1 AND organization_team_id = $2
+        `;
+        queryParams = [id, organizationId];
+      }
+
+      const checkResult = await db.query(checkQuery, queryParams);
 
       if (checkResult.rows.length === 0) {
         return res
@@ -1008,28 +1061,11 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
       const currentInvoice = checkResult.rows[0];
       const currentStatus = currentInvoice.current_status;
 
-      // Define allowed status transitions
-      const allowedTransitions: Record<string, string[]> = {
-        draft: ["sent"],
-        sent: ["paid"],
-        paid: [], // Paid invoices cannot transition to other states
-      };
-
-      // Validate status transition if status is being updated
-      if (status && status !== currentStatus) {
-        const allowedNextStates = allowedTransitions[currentStatus] || [];
-        
-        if (!allowedNextStates.includes(status)) {
-          return res
-            .status(400)
-            .json(
-              new ServerResponse(
-                false,
-                null,
-                `Invalid status transition: cannot change from '${currentStatus}' to '${status}'. Use dedicated endpoints for status changes (sendInvoice, markInvoiceAsPaid).`
-              )
-            );
-        }
+      // Prevent editing paid invoices
+      if (currentStatus === "paid") {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Paid invoices cannot be edited"));
       }
 
       // Build SET clause for fields to update
@@ -1051,11 +1087,6 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         setFields.notes = notes;
       }
 
-      // Only include status in update if it's a valid transition
-      if (status && status !== currentStatus) {
-        setFields.status = status;
-      }
-
       if (Object.keys(setFields).length === 0) {
         return res
           .status(400)
@@ -1071,31 +1102,29 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         return `${field} = $${paramIndex++}`;
       });
 
-      // Add timestamp updates based on status transition
-      if (status && status !== currentStatus) {
-        if (status === "sent" && currentStatus === "draft") {
-          setClauses.push("sent_at = NOW()");
-        } else if (status === "paid" && currentStatus === "sent") {
-          setClauses.push("paid_at = NOW()");
-        }
-      }
-
-      // Always update the updated_at timestamp
-      setClauses.push("updated_at = NOW()");
-
       // Build WHERE clause using SqlHelper for security
       const { where: whereClause, params: whereParams } = SqlHelper.buildWhereClause([
         { field: "id", operator: "=", value: id },
         { field: "organization_team_id", operator: "=", value: organizationId, conjunction: "AND" }
       ], paramIndex);
 
-      params.push(...whereParams);
+      // Add client_id filter for client requests
+      if (isClientRequest && clientId) {
+        whereParams.push(clientId);
+        const finalWhereClause = `${whereClause} AND client_id = $${whereParams.length + 2}`;
+        params.push(...whereParams, clientId);
+      } else {
+        params.push(...whereParams);
+      }
+
+      // Always update the updated_at timestamp
+      setClauses.push("updated_at = NOW()");
 
       // Build final query
       const updateQuery = `
         UPDATE client_portal_invoices
         SET ${setClauses.join(", ")}
-        WHERE ${whereClause}
+        WHERE ${isClientRequest && clientId ? `${whereClause} AND client_id = $${params.length + 1}` : whereClause}
         RETURNING id, invoice_no, amount, currency, status, due_date, sent_at, paid_at, updated_at
       `;
 

@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
-import { Flex, Popover, Typography } from '@/shared/antd-imports';
+import React, { useState, useEffect } from 'react';
+import { Flex, Typography } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { getWorking, toggleScheduleDrawer } from '../../../features/schedule/scheduleSlice';
-import ProjectTimelineModal from '../../../features/schedule/ProjectTimelineModal';
+import { toggleScheduleDrawer, setSelectedMember, setSelectedProject, setSelectedDateRange } from '../../../features/schedule/scheduleSliceRTK';
 import { Resizable } from 're-resizable';
 import { themeWiseColor } from '../../../utils/themeWiseColor';
 import { MoreOutlined } from '@/shared/antd-imports';
@@ -16,6 +15,8 @@ type ProjectTimelineBarProps = {
   indicatorOffset: number;
   indicatorWidth: number;
   defaultData?: ScheduleData;
+  memberId?: string;
+  allProjectSegments?: any[]; // Add this to pass all segments for the project
 };
 
 const ProjectTimelineBar = ({
@@ -23,16 +24,80 @@ const ProjectTimelineBar = ({
   indicatorOffset,
   indicatorWidth,
   defaultData,
+  memberId,
+  allProjectSegments = [],
 }: ProjectTimelineBarProps) => {
   const [width, setWidth] = useState(indicatorWidth);
   const [currentDuration, setCurrentDuration] = useState(indicatorWidth);
   const [totalHours, setTotalHours] = useState(project?.total_hours);
   const [leftOffset, setLeftOffset] = useState(indicatorOffset);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { t } = useTranslation('schedule');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const dispatch = useAppDispatch();
+
+  // 🔄 Real-time updates: Sync local state with props when they change
+  useEffect(() => {
+    setWidth(indicatorWidth);
+    setLeftOffset(indicatorOffset);
+    setTotalHours(project?.total_hours || 0);
+    setCurrentDuration(indicatorWidth);
+  }, [indicatorWidth, indicatorOffset, project?.total_hours, project?.task_count, project?.hours_per_day]);
+
+  // 🔄 Additional effect to handle project data changes
+  useEffect(() => {
+    if (project) {
+      // Update total hours when project data changes
+      setTotalHours(project.total_hours || 0);
+    }
+  }, [project]);
+
+  const handleTimelineClick = (e: React.MouseEvent) => {
+    // Stop event propagation to prevent parent click handlers from firing
+    e.stopPropagation();
+
+    // Set selected member, project, and date range in Redux
+    if (memberId) {
+      dispatch(setSelectedMember(memberId));
+    }
+    if (project?.id) {
+      dispatch(setSelectedProject(project.id));
+    }
+    
+    // Calculate overall project date range from all segments
+    if (allProjectSegments.length > 0) {
+      const validSegments = allProjectSegments.filter(seg => 
+        seg?.date_union?.start && seg?.date_union?.end
+      );
+      
+      if (validSegments.length > 0) {
+        // Find the earliest start date and latest end date across all segments
+        const startDates = validSegments.map(seg => seg.date_union.start);
+        const endDates = validSegments.map(seg => seg.date_union.end);
+        
+        const overallStartDate = startDates.reduce((earliest, current) => 
+          current < earliest ? current : earliest
+        );
+        const overallEndDate = endDates.reduce((latest, current) => 
+          current > latest ? current : latest
+        );
+        
+        dispatch(setSelectedDateRange({
+          start: overallStartDate,
+          end: overallEndDate,
+        }));
+      }
+    } else if (project?.date_union?.start && project?.date_union?.end) {
+      // Fallback to segment-specific date range if no allProjectSegments provided
+      dispatch(setSelectedDateRange({
+        start: project.date_union.start,
+        end: project.date_union.end,
+      }));
+    }
+    
+    // Open the drawer
+    dispatch(toggleScheduleDrawer());
+  };
 
   const handleResize = (
     event: MouseEvent | TouchEvent,
@@ -49,7 +114,9 @@ const ProjectTimelineBar = ({
         setWidth(newWidth);
         const newDuration = Math.round(newWidth / CELL_WIDTH);
         setCurrentDuration(newDuration);
-        setTotalHours(newDuration * project?.hours_per_day);
+        // Use current project hours_per_day (which updates via useEffect)
+        const currentHoursPerDay = project?.hours_per_day || 0;
+        setTotalHours(newDuration * currentHoursPerDay);
       }
     } else if (direction === 'left') {
       const deltaWidth = Math.min(leftOffset, delta.width);
@@ -61,23 +128,15 @@ const ProjectTimelineBar = ({
         setWidth(newWidth);
         const newDuration = Math.round(newWidth / CELL_WIDTH);
         setCurrentDuration(newDuration);
-        setTotalHours(newDuration * project?.hours_per_day);
+        // Use current project hours_per_day (which updates via useEffect)
+        const currentHoursPerDay = project?.hours_per_day || 0;
+        setTotalHours(newDuration * currentHoursPerDay);
       }
     }
   };
 
   return (
-    <Popover
-      content={
-        <ProjectTimelineModal
-          defaultData={defaultData}
-          projectId={project?.id}
-          setIsModalOpen={setIsModalOpen}
-        />
-      }
-      trigger={'click'}
-      open={isModalOpen}
-    >
+    <div onClick={handleTimelineClick}>
       <Resizable
         size={{ width, height: 56 }}
         onResizeStop={(e, direction, ref, delta) =>
@@ -133,43 +192,63 @@ const ProjectTimelineBar = ({
           align="center"
           justify="center"
           style={{ width: '100%' }}
-          onClick={() => {
-            setIsModalOpen(true);
-            dispatch(getWorking());
-          }}
         >
-          <Typography.Text
-            style={{
-              fontSize: '12px',
-              fontWeight: 'bold',
-            }}
-            ellipsis={{ expanded: false }}
-          >
-            {t('total')} {totalHours}h
-          </Typography.Text>
-          {currentDuration > 1 && (
-            <Typography.Text style={{ fontSize: '10px' }} ellipsis={{ expanded: false }}>
-              {t('perDay')} {project?.hours_per_day}h
+          {totalHours > 0 && (
+            <Typography.Text
+              style={{
+                fontSize: '12px',
+                fontWeight: 'bold',
+              }}
+              ellipsis={{ expanded: false }}
+            >
+              {t('total', { defaultValue: 'Total' })} {totalHours.toFixed(1)}h
             </Typography.Text>
           )}
-          <Typography.Text
-            style={{
-              fontSize: '10px',
-              textDecoration: 'underline',
-              width: 'fit-content',
-            }}
-            ellipsis={{ expanded: false }}
-            onClick={e => {
-              e.stopPropagation();
-              dispatch(toggleScheduleDrawer());
-            }}
-          >
-            20 {t('tasks')}
-          </Typography.Text>
+          {currentDuration > 1 && (project?.hours_per_day || 0) > 0 && (
+            <Typography.Text style={{ fontSize: '10px' }} ellipsis={{ expanded: false }}>
+              {t('perDay', { defaultValue: 'Per Day' })} {(project?.hours_per_day || 0).toFixed(1)}h
+            </Typography.Text>
+          )}
+          {(project?.task_count || 0) > 0 && (
+            <Typography.Text
+              style={{
+                fontSize: '10px',
+                textDecoration: 'underline',
+                width: 'fit-content',
+              }}
+              ellipsis={{ expanded: false }}
+            >
+              {project?.task_count || 0} {(project?.task_count || 0) === 1 ? t('task', { defaultValue: 'task' }) : t('tasks', { defaultValue: 'tasks' })}
+            </Typography.Text>
+          )}
+          {!totalHours && !(project?.task_count || 0) && (
+            <Typography.Text
+              style={{
+                fontSize: '11px',
+                color: themeWiseColor('#666', '#999', themeMode),
+              }}
+              ellipsis={{ expanded: false }}
+            >
+              {t('noTasksScheduled', { defaultValue: 'No tasks scheduled' })}
+            </Typography.Text>
+          )}
         </Flex>
       </Resizable>
-    </Popover>
+    </div>
   );
 };
 
-export default React.memo(ProjectTimelineBar);
+export default React.memo(ProjectTimelineBar, (prevProps, nextProps) => {
+  // Custom comparison function for React.memo to ensure re-render when project data changes
+  return (
+    prevProps.indicatorOffset === nextProps.indicatorOffset &&
+    prevProps.indicatorWidth === nextProps.indicatorWidth &&
+    prevProps.project?.id === nextProps.project?.id &&
+    prevProps.project?.total_hours === nextProps.project?.total_hours &&
+    prevProps.project?.task_count === nextProps.project?.task_count &&
+    prevProps.project?.hours_per_day === nextProps.project?.hours_per_day &&
+    prevProps.memberId === nextProps.memberId &&
+    JSON.stringify(prevProps.project?.date_union) === JSON.stringify(nextProps.project?.date_union) &&
+    prevProps.allProjectSegments?.length === nextProps.allProjectSegments?.length
+  );
+});

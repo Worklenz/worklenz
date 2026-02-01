@@ -15,14 +15,12 @@ import {
   message,
   LeftOutlined,
   UploadOutlined,
-  PrinterOutlined,
   DownloadOutlined,
 } from "@/shared/antd-imports";
 import { useNavigate, useParams } from "react-router-dom";
 import clientPortalAPI from "@/services/api";
 import { InvoiceDetails } from "@/types";
 import type { UploadFile } from "antd/es/upload/interface";
-import { escapeHtml } from "@/utils/escapeHtml";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -68,183 +66,53 @@ const InvoiceDetailsPage: React.FC = () => {
   const handleDownloadInvoice = async () => {
     try {
       setIsDownloading(true);
-      const response = await clientPortalAPI.downloadInvoice(id!, "pdf");
 
-      if (response.done) {
-        const invoiceData = response.body.invoiceData;
-        
-        // Escape all user-provided values to prevent XSS
-        const escapedInvoiceNumber = escapeHtml(invoiceData.invoiceNumber || "invoice");
-        const escapedClientName = escapeHtml(invoiceData.client?.name || "");
-        const escapedCompanyName = escapeHtml(invoiceData.client?.companyName || "");
-        const escapedClientEmail = escapeHtml(invoiceData.client?.email || "");
-        const escapedClientAddress = escapeHtml(invoiceData.client?.address || "");
-        const escapedStatus = escapeHtml(invoiceData.status || "Pending");
-        const escapedStatusLower = escapeHtml((invoiceData.status?.toLowerCase() || "pending"));
-        const escapedServiceName = escapeHtml(invoiceData.service?.name || "");
-        const escapedServiceDescription = escapeHtml(
-          invoiceData.service?.description ? invoiceData.service.description.replace(/<[^>]+>/g, "") : ""
-        );
-        const escapedRequestNumber = escapeHtml(invoiceData.requestNumber || "");
-        
-        // Format currency amount (safe - numeric value)
-        const formattedAmount = new Intl.NumberFormat("en-US", {
-          style: "currency",
-          currency: invoiceData.currency || "USD",
-        }).format(invoiceData.amount || 0);
-        
-        // Format dates (safe - Date objects)
-        const issueDate = new Date(invoiceData.createdAt).toLocaleDateString();
-        const dueDate = invoiceData.dueDate ? new Date(invoiceData.dueDate).toLocaleDateString() : "N/A";
-        const generatedDate = new Date().toLocaleDateString();
-        const generatedTime = new Date().toLocaleTimeString();
-        
-        const printWindow = window.open("", "_blank");
-        if (printWindow) {
-          printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <title>Invoice ${escapedInvoiceNumber}</title>
-              <style>
-                body {
-                  font-family: Arial, sans-serif;
-                  padding: 40px;
-                  max-width: 800px;
-                  margin: 0 auto;
-                }
-                .header {
-                  text-align: center;
-                  margin-bottom: 40px;
-                  border-bottom: 2px solid #333;
-                  padding-bottom: 20px;
-                }
-                .invoice-title {
-                  font-size: 32px;
-                  font-weight: bold;
-                  margin-bottom: 10px;
-                }
-                .invoice-number {
-                  font-size: 18px;
-                  color: #666;
-                }
-                .section {
-                  margin-bottom: 30px;
-                }
-                .section-title {
-                  font-size: 14px;
-                  color: #666;
-                  margin-bottom: 5px;
-                }
-                .section-content {
-                  font-size: 16px;
-                  font-weight: bold;
-                }
-                .grid {
-                  display: grid;
-                  grid-template-columns: 1fr 1fr;
-                  gap: 30px;
-                  margin-bottom: 30px;
-                }
-                .amount {
-                  font-size: 28px;
-                  color: #3aaf85;
-                  font-weight: bold;
-                }
-                .status {
-                  display: inline-block;
-                  padding: 5px 15px;
-                  border-radius: 4px;
-                  font-size: 14px;
-                  font-weight: bold;
-                }
-                .status-paid { background-color: #d4edda; color: #155724; }
-                .status-pending { background-color: #fff3cd; color: #856404; }
-                .status-overdue { background-color: #f8d7da; color: #721c24; }
-                .footer {
-                  margin-top: 60px;
-                  padding-top: 20px;
-                  border-top: 1px solid #ddd;
-                  text-align: center;
-                  color: #666;
-                  font-size: 12px;
-                }
-                @media print {
-                  body { padding: 20px; }
-                }
-              </style>
-            </head>
-            <body>
-              <div class="header">
-                <div class="invoice-title">INVOICE</div>
-                <div class="invoice-number">#${escapedInvoiceNumber}</div>
-              </div>
-              
-              <div class="grid">
-                <div class="section">
-                  <div class="section-title">Billed To</div>
-                  <div class="section-content">${escapedClientName}</div>
-                  ${escapedCompanyName ? `<div>${escapedCompanyName}</div>` : ""}
-                  ${escapedClientEmail ? `<div>${escapedClientEmail}</div>` : ""}
-                  ${escapedClientAddress ? `<div>${escapedClientAddress}</div>` : ""}
-                </div>
-                
-                <div style="text-align: right;">
-                  <div class="section">
-                    <div class="section-title">Invoice Amount</div>
-                    <div class="amount">${formattedAmount}</div>
-                  </div>
-                  
-                  <div class="section">
-                    <div class="section-title">Status</div>
-                    <span class="status status-${escapedStatusLower}">${escapedStatus}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="grid">
-                <div class="section">
-                  <div class="section-title">Issue Date</div>
-                  <div class="section-content">${issueDate}</div>
-                </div>
-                
-                <div class="section" style="text-align: right;">
-                  <div class="section-title">Due Date</div>
-                  <div class="section-content">${dueDate}</div>
-                </div>
-              </div>
-              
-              ${escapedServiceName ? `
-                <div class="section">
-                  <div class="section-title">Service</div>
-                  <div class="section-content">${escapedServiceName}</div>
-                  ${escapedServiceDescription ? `<div style="margin-top: 10px;">${escapedServiceDescription}</div>` : ""}
-                </div>
-              ` : ""}
-              
-              ${escapedRequestNumber ? `
-                <div class="section">
-                  <div class="section-title">Request Number</div>
-                  <div class="section-content">${escapedRequestNumber}</div>
-                </div>
-              ` : ""}
-              
-              <div class="footer">
-                Generated on ${generatedDate} at ${generatedTime}
-              </div>
-            </body>
-            </html>
-          `);
-          printWindow.document.close();
-          
-          setTimeout(() => {
-            printWindow.print();
-          }, 250);
+      // Create a direct fetch request to handle PDF download
+      const token = clientPortalAPI.getToken();
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/client-portal';
+
+      const response = await fetch(`${baseUrl}/invoices/${id}/download?format=pdf`, {
+        method: 'GET',
+        headers: {
+          'x-client-token': token || '',
+        },
+      });
+
+      if (response.ok) {
+        const contentType = response.headers.get('content-type');
+
+        // Get the filename from Content-Disposition header or create a default one
+        const contentDisposition = response.headers.get('content-disposition');
+        let filename = `invoice-${invoice?.invoiceNumber || 'unknown'}.pdf`;
+
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+          if (filenameMatch && filenameMatch[1]) {
+            filename = filenameMatch[1];
+          }
         }
-        
-        message.success("Invoice ready for download");
+
+        // Use arrayBuffer for better binary data handling
+        const arrayBuffer = await response.arrayBuffer();
+        const blob = new Blob([arrayBuffer], { type: contentType || 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        if (contentType?.includes('application/pdf')) {
+          message.success("Invoice PDF downloaded successfully");
+        } else {
+          message.success("Invoice downloaded successfully (HTML format)");
+        }
       } else {
-        message.error("Failed to download invoice");
+        // Handle error response
+        const errorData = await response.json().catch(() => ({}));
+        message.error(errorData.message || "Failed to download invoice");
       }
     } catch (err) {
       console.error("Download error:", err);
@@ -470,15 +338,12 @@ const InvoiceDetailsPage: React.FC = () => {
                 Submit Payment Proof
               </Button>
             )}
-            <Button 
-              icon={<DownloadOutlined />} 
+            <Button
+              icon={<DownloadOutlined />}
               onClick={handleDownloadInvoice}
               loading={isDownloading}
             >
               Download Invoice
-            </Button>
-            <Button icon={<PrinterOutlined />} onClick={() => window.print()}>
-              Print
             </Button>
           </Flex>
         </Card>

@@ -524,3 +524,44 @@ body.gantt-dragging * {
   box-shadow: 0 4px 8px rgba(5, 150, 105, 0.5) !important;
   border-color: rgba(5, 150, 105, 0.7) !important;
 }
+
+.gantt-scroll-container {
+  position: relative;
+}
+
+/* Firefox scrollbar */
+.gantt-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) scrollbar */
+.gantt-scroll-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.gantt-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gantt-scroll-container::-webkit-scrollbar-thumb {
+  background-color: rgba(155, 155, 155, 0.5);
+  border-radius: 4px;
+}
+
+.gantt-scroll-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(155, 155, 155, 0.7);
+}
+
+/* Dark mode scrollbar */
+[data-theme='dark'] .gantt-scroll-container {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+[data-theme='dark'] .gantt-scroll-container::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme='dark'] .gantt-scroll-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}

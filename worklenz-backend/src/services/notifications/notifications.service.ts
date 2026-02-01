@@ -1,11 +1,11 @@
 import db from "../../config/db";
-import {IO} from "../../shared/io";
-import {log_error} from "../../shared/utils";
-import {SocketEvents} from "../../socket.io/events";
-import {ICreateNotificationRequest, IReceiver} from "./interfaces";
+import { IO } from "../../shared/io";
+import { log_error, sanitizePlainText } from "../../shared/utils";
+import { SocketEvents } from "../../socket.io/events";
+import { ICreateNotificationRequest, IReceiver } from "./interfaces";
 import WorklenzNotification from "./notification";
-import {sendInvitationEmail} from "../../shared/email-templates";
-import {IPassportSession} from "../../interfaces/passport-session";
+import { sendInvitationEmail } from "../../shared/email-templates";
+import { IPassportSession } from "../../interfaces/passport-session";
 
 export class NotificationsService {
   public static TYPE_POP = 1;
@@ -52,7 +52,7 @@ export class NotificationsService {
     }
 
     if (receiver.task_id) {
-      notification.setParams({task: receiver.task_id});
+      notification.setParams({ task: receiver.task_id });
       notification.setTaskId(receiver.task_id);
     }
 
@@ -64,8 +64,11 @@ export class NotificationsService {
   }
 
   public static sendInvitation(userId: string, userName: string, teamName: string, teamId: string, teamMemberId: string) {
-    const message = `<b>${userName}</b> has invited you to work with <b>${teamName}</b>.`;
-    const payload = {message, team: teamName, team_id: teamId};
+    // Sanitize user and team names to prevent XSS attacks in invitation notifications
+    const safeName = sanitizePlainText(userName);
+    const safeTeamName = sanitizePlainText(teamName);
+    const message = `<b>${safeName}</b> has invited you to work with <b>${safeTeamName}</b>.`;
+    const payload = { message, team: teamName, team_id: teamId };
     IO.emitByTeamMemberId(teamMemberId, userId || null, SocketEvents.INVITATIONS_UPDATE, payload);
   }
 

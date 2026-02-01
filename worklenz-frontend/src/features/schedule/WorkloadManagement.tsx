@@ -79,29 +79,18 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
   const [allocationForm] = Form.useForm();
   const [isAllocationModalVisible, setIsAllocationModalVisible] = useState(false);
 
-  // RTK Query hooks with conditional fetching
+  // RTK Query hooks - always fetch workload for all members
   const {
     data: workloadResponse,
     isLoading: workloadLoading,
     refetch: refetchWorkload,
-  } = useFetchMemberWorkloadQuery(
-    {
-      memberId: selectedMember || '',
-      startDate: dateRange[0]?.toISOString() || dayjs().startOf('month').toISOString(),
-      endDate: dateRange[1]?.toISOString() || dayjs().endOf('month').toISOString(),
-    },
-    {
-      skip: !selectedMember && !memberId, // Skip query if no member is selected
-    }
-  );
+  } = useFetchMemberWorkloadQuery({
+    memberId: selectedMember,
+    startDate: dateRange[0]?.format('YYYY-MM-DD'),
+    endDate: dateRange[1]?.format('YYYY-MM-DD'),
+  });
 
-  const { data: conflictsResponse, isLoading: conflictsLoading } = useFetchResourceConflictsQuery(
-    undefined,
-    {
-      // Only fetch conflicts if we have workload data
-      skip: workloadLoading || !workloadResponse,
-    }
-  );
+  const { data: conflictsResponse, isLoading: conflictsLoading } = useFetchResourceConflictsQuery();
 
   const [updateAllocation, { isLoading: updateLoading }] = useUpdateResourceAllocationMutation();
   const [rebalanceWorkload, { isLoading: rebalanceLoading }] = useRebalanceWorkloadMutation();
@@ -139,36 +128,34 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
   const getStatusText = (status: WorkloadData['status']) => {
     switch (status) {
       case 'available':
-        return t('available') || 'Available';
+        return t('available', { defaultValue: 'Available' });
       case 'normal':
-        return t('normal') || 'Normal';
+        return t('normal', { defaultValue: 'Normal' });
       case 'fully-allocated':
-        return t('fullyAllocated') || 'Fully Allocated';
+        return t('fullyAllocated', { defaultValue: 'Fully Allocated' });
       case 'overallocated':
-        return t('overAllocated') || 'Over Allocated';
+        return t('overAllocated', { defaultValue: 'Over Allocated' });
       default:
-        return t('unknown') || 'Unknown';
+        return t('unknown', { defaultValue: 'Unknown' });
     }
   };
 
   // Table columns for workload overview
   const workloadColumns = [
     {
-      title: t('member') || 'Member',
+      title: t('member', { defaultValue: 'Member' }),
       dataIndex: 'name',
       key: 'name',
       render: (name: string, record: WorkloadData) => (
         <Space>
           <UserOutlined />
           <Text strong>{name}</Text>
-          <Tag color={getStatusColor(record.status)} size="small">
-            {getStatusText(record.status)}
-          </Tag>
+          <Tag color={getStatusColor(record.status)}>{getStatusText(record.status)}</Tag>
         </Space>
       ),
     },
     {
-      title: t('utilization') || 'Utilization',
+      title: t('utilization', { defaultValue: 'Utilization' }),
       dataIndex: 'utilizationPercent',
       key: 'utilization',
       render: (percent: number, record: WorkloadData) => (
@@ -186,7 +173,7 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
       ),
     },
     {
-      title: t('projects') || 'Projects',
+      title: t('projects', { defaultValue: 'Projects' }),
       dataIndex: 'projectCount',
       key: 'projects',
       render: (count: number) => (
@@ -197,7 +184,7 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
       ),
     },
     {
-      title: t('available') || 'Available',
+      title: t('available', { defaultValue: 'Available' }),
       dataIndex: 'availableHours',
       key: 'available',
       render: (hours: number) => (
@@ -208,15 +195,15 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
       ),
     },
     {
-      title: t('actions') || 'Actions',
+      title: t('actions', { defaultValue: 'Actions' }),
       key: 'actions',
       render: (_: any, record: WorkloadData) => (
         <Space>
           <Button size="small" onClick={() => handleEditAllocation(record.id)}>
-            {t('manage') || 'Manage'}
+            {t('manage', { defaultValue: 'Manage' })}
           </Button>
           <Button size="small" type="link" onClick={() => handleRebalance(record.id)}>
-            {t('rebalance') || 'Rebalance'}
+            {t('rebalance', { defaultValue: 'Rebalance' })}
           </Button>
         </Space>
       ),
@@ -226,7 +213,7 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
   // Project allocation columns for selected member
   const projectColumns = [
     {
-      title: t('project') || 'Project',
+      title: t('project', { defaultValue: 'Project' }),
       dataIndex: 'name',
       key: 'name',
       render: (name: string) => (
@@ -237,7 +224,7 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
       ),
     },
     {
-      title: t('allocatedHours') || 'Allocated Hours',
+      title: t('allocatedHours', { defaultValue: 'Allocated Hours' }),
       dataIndex: 'allocatedHours',
       key: 'allocatedHours',
       render: (hours: number, record: any) => (
@@ -252,20 +239,20 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
       ),
     },
     {
-      title: t('percentage') || 'Percentage',
+      title: t('percentage', { defaultValue: 'Percentage' }),
       key: 'percentage',
       render: (_: any, record: any) => (
         <Text>{((record.allocatedHours / workingHours) * 100).toFixed(1)}%</Text>
       ),
     },
     {
-      title: t('duration') || 'Duration',
+      title: t('duration', { defaultValue: 'Duration' }),
       key: 'duration',
       render: (_: any, record: any) => (
         <Text type="secondary">
           {record.startDate && record.endDate
             ? `${dayjs(record.startDate).format('MMM DD')} - ${dayjs(record.endDate).format('MMM DD')}`
-            : t('notSet') || 'Not set'}
+            : t('notSet', { defaultValue: 'Not set' })}
         </Text>
       ),
     },
@@ -279,11 +266,13 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
   const handleRebalance = useCallback(
     (memberId: string) => {
       Modal.confirm({
-        title: t('rebalanceWorkload') || 'Rebalance Workload',
+        title: t('rebalanceWorkload', { defaultValue: 'Rebalance Workload' }),
         icon: <ExclamationCircleOutlined />,
         content:
-          t('rebalanceConfirm') ||
-          'This will automatically redistribute tasks to optimize workload. Continue?',
+          t('rebalanceConfirm', {
+            defaultValue:
+              'This will automatically redistribute tasks to optimize workload. Continue?',
+          }),
         onOk: async () => {
           try {
             await rebalanceWorkload({
@@ -291,10 +280,12 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
               strategy: 'even',
               maxUtilization: 100,
             }).unwrap();
-            message.success(t('workloadRebalanced') || 'Workload rebalanced successfully');
+            message.success(
+              t('workloadRebalanced', { defaultValue: 'Workload rebalanced successfully' })
+            );
             refetchWorkload();
           } catch (error) {
-            message.error(t('rebalanceError') || 'Failed to rebalance workload');
+            message.error(t('rebalanceError', { defaultValue: 'Failed to rebalance workload' }));
           }
         },
       });
@@ -312,12 +303,15 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
           projectId,
           allocatedHours: hours,
         }).unwrap();
-        message.success(t('allocationUpdated') || 'Allocation updated successfully');
+        message.success(
+          t('allocationUpdated', { defaultValue: 'Allocation updated successfully' })
+        );
+        refetchWorkload();
       } catch (error) {
-        message.error(t('allocationError') || 'Failed to update allocation');
+        message.error(t('allocationError', { defaultValue: 'Failed to update allocation' }));
       }
     },
-    [selectedMember, updateAllocation, t]
+    [selectedMember, updateAllocation, refetchWorkload, t]
   );
 
   const selectedMemberData = useMemo(() => {
@@ -329,7 +323,9 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
       return (
         <Flex gap={16} style={{ marginBottom: 24 }}>
           <Card size="small" style={{ flex: 1, textAlign: 'center' }}>
-            <Text type="secondary">{t('noDataAvailable') || 'No data available'}</Text>
+            <Text type="secondary">
+              {t('noDataAvailable', { defaultValue: 'No data available' })}
+            </Text>
           </Card>
         </Flex>
       );
@@ -348,7 +344,7 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
             <div>
               <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{totalMembers}</div>
               <div style={{ fontSize: '12px', color: '#666' }}>
-                {t('totalMembers') || 'Total Members'}
+                {t('totalMembers', { defaultValue: 'Total Members' })}
               </div>
             </div>
           </Flex>
@@ -360,7 +356,7 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
             <div>
               <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{overallocated}</div>
               <div style={{ fontSize: '12px', color: '#666' }}>
-                {t('overAllocated') || 'Over Allocated'}
+                {t('overAllocated', { defaultValue: 'Over Allocated' })}
               </div>
             </div>
           </Flex>
@@ -372,7 +368,7 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
             <div>
               <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{fullyAllocated}</div>
               <div style={{ fontSize: '12px', color: '#666' }}>
-                {t('fullyAllocated') || 'Fully Allocated'}
+                {t('fullyAllocated', { defaultValue: 'Fully Allocated' })}
               </div>
             </div>
           </Flex>
@@ -383,7 +379,9 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
             <UserOutlined style={{ color: '#52c41a' }} />
             <div>
               <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{available}</div>
-              <div style={{ fontSize: '12px', color: '#666' }}>{t('available') || 'Available'}</div>
+              <div style={{ fontSize: '12px', color: '#666' }}>
+                {t('available', { defaultValue: 'Available' })}
+              </div>
             </div>
           </Flex>
         </Card>
@@ -395,11 +393,11 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
     <div style={{ padding: 0 }}>
       <Flex justify="space-between" align="center" style={{ marginBottom: 16 }}>
         <Title level={4} style={{ margin: 0 }}>
-          {t('workloadManagement') || 'Workload Management'}
+          {t('workloadManagement', { defaultValue: 'Workload Management' })}
         </Title>
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={() => window.location.reload()}>
-            {t('refresh') || 'Refresh'}
+          <Button icon={<ReloadOutlined />} onClick={() => refetchWorkload()}>
+            {t('refresh', { defaultValue: 'Refresh' })}
           </Button>
         </Space>
       </Flex>
@@ -407,7 +405,7 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
       {renderWorkloadSummary()}
 
       <Tabs defaultActiveKey="overview" type="card">
-        <TabPane tab={t('overview') || 'Overview'} key="overview">
+        <TabPane tab={t('overview', { defaultValue: 'Overview' })} key="overview">
           <Table
             dataSource={processedWorkloadData}
             columns={workloadColumns}
@@ -419,15 +417,18 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
           />
         </TabPane>
 
-        <TabPane tab={t('allocation') || 'Resource Allocation'} key="allocation">
+        <TabPane
+          tab={t('allocation', { defaultValue: 'Resource Allocation' })}
+          key="allocation"
+        >
           <Space direction="vertical" style={{ width: '100%' }}>
             <Flex gap={16} align="center">
-              <Text strong>{t('selectMember') || 'Select Member'}:</Text>
+              <Text strong>{t('selectMember', { defaultValue: 'Select Member' })}:</Text>
               <Select
                 value={selectedMember}
                 onChange={setSelectedMember}
                 style={{ width: 200 }}
-                placeholder={t('chooseMember') || 'Choose member'}
+                placeholder={t('chooseMember', { defaultValue: 'Choose member' })}
                 loading={workloadLoading}
                 allowClear
               >
@@ -455,7 +456,9 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
                     </div>
                   </div>
                   <div style={{ flex: 1 }}>
-                    <Text type="secondary">{t('utilization') || 'Utilization'}</Text>
+                    <Text type="secondary">
+                      {t('utilization', { defaultValue: 'Utilization' })}
+                    </Text>
                     <Progress
                       percent={Math.min(selectedMemberData.utilizationPercent, 100)}
                       strokeColor={getStatusColor(selectedMemberData.status)}
@@ -463,7 +466,7 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
                     />
                   </div>
                   <div>
-                    <Text type="secondary">{t('capacity') || 'Capacity'}</Text>
+                    <Text type="secondary">{t('capacity', { defaultValue: 'Capacity' })}</Text>
                     <div style={{ fontSize: '16px', fontWeight: 'bold' }}>
                       {selectedMemberData.allocatedHours}h / {selectedMemberData.totalHours}h
                     </div>
@@ -479,52 +482,6 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
                 />
               </Card>
             )}
-          </Space>
-        </TabPane>
-
-        <TabPane tab={t('balancing') || 'Load Balancing'} key="balancing">
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <Card>
-              <Title level={5}>{t('autoBalancing') || 'Automatic Load Balancing'}</Title>
-              <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-                {t('autoBalancingDesc') ||
-                  'Automatically redistribute workload across team members to optimize resource utilization.'}
-              </Text>
-
-              <Space>
-                <Button type="primary" icon={<ReloadOutlined />}>
-                  {t('rebalanceAll') || 'Rebalance All'}
-                </Button>
-                <Button>{t('previewChanges') || 'Preview Changes'}</Button>
-              </Space>
-            </Card>
-
-            <Card>
-              <Title level={5}>{t('balancingRules') || 'Balancing Rules'}</Title>
-              <Form layout="vertical">
-                <Form.Item label={t('maxUtilization') || 'Maximum Utilization (%)'}>
-                  <Slider
-                    min={50}
-                    max={120}
-                    defaultValue={100}
-                    marks={{
-                      50: '50%',
-                      75: '75%',
-                      100: '100%',
-                      120: '120%',
-                    }}
-                  />
-                </Form.Item>
-
-                <Form.Item label={t('balancingStrategy') || 'Balancing Strategy'}>
-                  <Select defaultValue="even" style={{ width: 200 }}>
-                    <Option value="even">{t('evenDistribution') || 'Even Distribution'}</Option>
-                    <Option value="skills">{t('skillsBased') || 'Skills Based'}</Option>
-                    <Option value="priority">{t('priorityBased') || 'Priority Based'}</Option>
-                  </Select>
-                </Form.Item>
-              </Form>
-            </Card>
           </Space>
         </TabPane>
       </Tabs>

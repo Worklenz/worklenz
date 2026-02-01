@@ -19,7 +19,9 @@
       "Bash(for lang in zh alb)",
       "Bash(do echo \"=== $lang ===\")",
       "Bash(done)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(xargs:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": [],

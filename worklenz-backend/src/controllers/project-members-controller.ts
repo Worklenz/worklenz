@@ -252,6 +252,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     const q = `
       SELECT project_members.id,
              tm.id AS team_member_id,
+             tm.user_id,
              (SELECT email FROM team_member_info_view WHERE team_member_info_view.team_member_id = tm.id),
              (SELECT name FROM team_member_info_view WHERE team_member_id = project_members.team_member_id) AS name,
              u.avatar_url,

@@ -33,10 +33,11 @@ import { canManageUserRole, getAvailableRoleOptions } from '@/utils/role-permiss
 
 type UpdateMemberDrawerProps = {
   selectedMemberId: string | null;
-  onRoleUpdate?: (memberId: string, newRoleName: string) => void; // Add callback prop
+  onRoleUpdate?: (memberId: string, newRoleName: string) => void;
+  initialRoleName?: string;
 };
 
-const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDrawerProps) => {
+const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate, initialRoleName }: UpdateMemberDrawerProps) => {
   const { t } = useTranslation('settings/team-members');
   const dispatch = useAppDispatch();
   const auth = useAuthService();
@@ -47,7 +48,7 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDraw
   const [resentSuccess, setResentSuccess] = useState(false);
   const [jobTitles, setJobTitles] = useState<IJobTitle[]>([]);
   const [selectedJobTitle, setSelectedJobTitle] = useState<string | null>(null);
-  const [teamMember, setTeamMember] = useState<ITeamMemberViewModel | null>({});
+  const [teamMember, setTeamMember] = useState<ITeamMemberViewModel | null>(null);
 
   const isDrawerOpen = useAppSelector(state => state.memberReducer.isUpdateMemberDrawerOpen);
 
@@ -57,7 +58,6 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDraw
 
   const currentUser = auth.getCurrentSession();
   const canManageTarget = useMemo(() => {
-    // Admin users should have the same permissions as owners (except for other owners)
     if (currentUser?.is_admin && !currentUser?.owner) {
       return teamMember?.role_name?.toLowerCase() !== 'owner';
     }
@@ -65,9 +65,8 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDraw
   }, [currentUser?.role_name, currentUser?.owner, currentUser?.is_admin, teamMember?.role_name]);
 
   const availableRoles = useMemo(() => {
-    // Admin users should have the same role options as owners (except Owner role)
     if (currentUser?.is_admin && !currentUser?.owner) {
-      return getAvailableRoleOptions('admin', true); // Pass true for isOwner to get all options
+      return getAvailableRoleOptions('admin', true);
     }
     return getAvailableRoleOptions(currentUser?.role_name, currentUser?.owner);
   }, [currentUser?.role_name, currentUser?.owner, currentUser?.is_admin]);
@@ -78,7 +77,6 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDraw
 
   const getJobTitles = async () => {
     try {
-      setLoading(true);
       const res = await jobTitlesApiService.getJobTitles(1, 10, null, null, null);
       if (res.done) {
         setJobTitles(res.body.data || []);
@@ -86,8 +84,6 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDraw
     } catch (error) {
       logger.error('Error fetching job titles:', error);
       message.error(t('jobTitlesFetchError'));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -95,25 +91,39 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDraw
     if (!selectedMemberId) return;
 
     try {
+      setLoading(true);
       const res = await teamMembersApiService.getById(selectedMemberId);
       if (res.done) {
         setTeamMember(res.body);
 
-        // Determine access level based on role_name
+        // Determine access level based on role_name (with fallback to initialRoleName)
         let accessLevel = 'member';
-        if (res.body.role_name === 'Admin') {
+        
+        const roleNameToUse = res.body.role_name || initialRoleName;
+        const roleName = (roleNameToUse || '').toLowerCase().trim();
+        
+        if (roleName === 'owner') {
+          accessLevel = 'owner';
+        } else if (roleName === 'admin') {
           accessLevel = 'admin';
-        } else if (res.body.role_name === 'Team Lead') {
+        } else if (roleName === 'team lead' || roleName === 'teamlead') {
           accessLevel = 'team-lead';
+        } else {
+          accessLevel = 'member';
         }
 
-        form.setFieldsValue({
-          jobTitle: jobTitles.find(job => job.id === res.body?.job_title)?.id,
-          access: accessLevel,
-        });
+        // Set form values
+        setTimeout(() => {
+          form.setFieldsValue({
+            jobTitle: res.body?.job_title,
+            access: accessLevel,
+          });
+        }, 0);
       }
     } catch (error) {
       logger.error('Error fetching team member:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -176,12 +186,37 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDraw
     }
   };
 
-  const afterOpenChange = (visible: boolean) => {
+  const afterOpenChange = async (visible: boolean) => {
     if (visible) {
-      getJobTitles();
-      getTeamMember();
+      form.resetFields();
+      await Promise.all([getJobTitles(), getTeamMember()]);
+    } else {
+      setTeamMember(null);
+      setResentSuccess(false);
     }
   };
+
+  // Effect to update form when teamMember changes
+  useEffect(() => {
+    if (teamMember && isDrawerOpen) {
+      const roleNameToUse = teamMember.role_name || initialRoleName;
+      const roleName = (roleNameToUse || '').toLowerCase().trim();
+      let accessLevel = 'member';
+      
+      if (roleName === 'owner') {
+        accessLevel = 'owner';
+      } else if (roleName === 'admin') {
+        accessLevel = 'admin';
+      } else if (roleName === 'team lead' || roleName === 'teamlead') {
+        accessLevel = 'team-lead';
+      }
+
+      form.setFieldsValue({
+        jobTitle: teamMember.job_title,
+        access: accessLevel,
+      });
+    }
+  }, [teamMember, isDrawerOpen, initialRoleName, form]);
 
   return (
     <Drawer
@@ -215,6 +250,7 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDraw
         dispatch(toggleUpdateMemberDrawer());
         setTeamMember(null);
         form.resetFields();
+        setResentSuccess(false);
       }}
       afterOpenChange={afterOpenChange}
       width={400}
@@ -225,12 +261,10 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDraw
         form={form}
         onFinish={handleFormSubmit}
         layout="vertical"
-        initialValues={{ access: 'member' }}
       >
         <Form.Item label={t('jobTitleLabel')} name="jobTitle">
           <Select
             optionLabelProp="label"
-            defaultValue={teamMember?.job_title}
             size="middle"
             placeholder={t('jobTitlePlaceholder')}
             options={jobTitles.map(job => ({
@@ -298,7 +332,7 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDraw
               >
                 {t('addedText')}
                 <Tooltip title={formatDateTimeWithLocale(teamMember?.created_at || '')}>
-                   {calculateTimeDifference(teamMember?.created_at || '')}
+                   {calculateTimeDifference(teamMember?.created_at || '')}
                 </Tooltip>
               </Typography.Text>
               <Typography.Text
@@ -309,7 +343,7 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate }: UpdateMemberDraw
               >
                 {t('updatedText')}
                 <Tooltip title={formatDateTimeWithLocale(teamMember?.updated_at || '')}>
-                   {calculateTimeDifference(teamMember?.updated_at || '')}
+                   {calculateTimeDifference(teamMember?.updated_at || '')}
                 </Tooltip>
               </Typography.Text>
             </Flex>

@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
 import { TaskGroup } from '@/types/task-management.types';
 import { RootState } from '@/app/store';
-import { selectAllTasksArray } from './task-management.slice';
+import { selectAllTasksArray } from './task-management.selectors';
 
 type GroupingType = 'status' | 'priority' | 'phase';
 
@@ -173,22 +173,22 @@ export const selectTaskGroups = createSelector(
       groupOrder.length > 0
         ? groupOrder
         : Array.from(
-            new Set(
-              tasks.map(task => {
-                if (currentGrouping === 'status') return task.status;
-                if (currentGrouping === 'priority') return task.priority;
-                if (currentGrouping === 'phase') {
-                  // For phase grouping, use 'Unmapped' for tasks without a phase
-                  if (!task.phase || task.phase.trim() === '') {
-                    return 'Unmapped';
-                  } else {
-                    return task.phase;
-                  }
+          new Set(
+            tasks.map(task => {
+              if (currentGrouping === 'status') return task.status;
+              if (currentGrouping === 'priority') return task.priority;
+              if (currentGrouping === 'phase') {
+                // For phase grouping, use 'Unmapped' for tasks without a phase
+                if (!task.phase || task.phase.trim() === '') {
+                  return 'Unmapped';
+                } else {
+                  return task.phase;
                 }
-                return task.phase;
-              })
-            )
-          );
+              }
+              return task.phase;
+            })
+          )
+        );
 
     groupValues.forEach(value => {
       if (!value) return; // Skip undefined values

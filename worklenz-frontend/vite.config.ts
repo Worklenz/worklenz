@@ -1,36 +1,58 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import fs from 'fs';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 export default defineConfig(({ command, mode }) => {
   const isProduction = command === 'build';
   const buildTimestamp = Date.now().toString();
 
+  const env = loadEnv(mode, process.cwd(), '');
+
   return {
     // **Plugins**
     plugins: [
       react(),
+      // Sentry plugin for source maps upload in production
+      // sentryVitePlugin returns an array of plugins, so we spread it
+      ...(isProduction ? sentryVitePlugin({
+        org: env.VITE_SENTRY_ORG,
+        project: env.VITE_SENTRY_PROJECT,
+        authToken: env.VITE_SENTRY_AUTH_TOKEN,
+        telemetry: false,
+      }) : []),
       // Custom plugin to inject build timestamp into service worker
       {
         name: 'inject-build-timestamp',
         generateBundle(options, bundle) {
           // Update service worker with build timestamp
-          if (bundle['sw.js']) {
-            const swContent = bundle['sw.js'].source || bundle['sw.js'].code;
+          const swBundle = bundle['sw.js'];
+          if (swBundle && 'source' in swBundle) {
+            // OutputAsset has 'source' property
+            const swContent = swBundle.source;
             if (typeof swContent === 'string') {
               const updatedSw = swContent.replace(
                 /const BUILD_TIMESTAMP = self\.location\.search\.match[^;]+;/,
                 `const BUILD_TIMESTAMP = '${buildTimestamp}';`
               );
-              bundle['sw.js'].source = updatedSw;
-              bundle['sw.js'].code = updatedSw;
+              swBundle.source = updatedSw;
+            }
+          } else if (swBundle && 'code' in swBundle) {
+            // OutputChunk has 'code' property
+            const swContent = swBundle.code;
+            if (typeof swContent === 'string') {
+              const updatedSw = swContent.replace(
+                /const BUILD_TIMESTAMP = self\.location\.search\.match[^;]+;/,
+                `const BUILD_TIMESTAMP = '${buildTimestamp}';`
+              );
+              swBundle.code = updatedSw;
             }
           }
 
           // Add versioning to service worker file name in production
-          if (isProduction && bundle['sw.js']) {
-            bundle[`sw.js?v=${buildTimestamp}`] = bundle['sw.js'];
+          if (isProduction && swBundle) {
+            bundle[`sw.js?v=${buildTimestamp}`] = swBundle;
             delete bundle['sw.js'];
           }
         },
@@ -106,7 +128,9 @@ export default defineConfig(({ command, mode }) => {
       cssCodeSplit: true,
 
       // **Sourcemaps**
-      sourcemap: !isProduction ? 'inline' : false, // Disable sourcemaps in production for smaller bundles
+      // Generate sourcemaps in production for Sentry (they'll be uploaded, not included in bundle)
+      // Use 'hidden' so sourcemaps are generated but not referenced in the bundle
+      sourcemap: !isProduction ? 'inline' : 'hidden',
 
       // **Module Preload Polyfill** - Helps with chunk loading reliability
       modulePreload: {
@@ -117,19 +141,19 @@ export default defineConfig(({ command, mode }) => {
       minify: isProduction ? 'terser' : false,
       terserOptions: isProduction
         ? {
-            compress: {
-              drop_console: true,
-              drop_debugger: true,
-              pure_funcs: ['console.log', 'console.info', 'console.debug'],
-              passes: 2, // Multiple passes for better compression
-            },
-            mangle: {
-              safari10: true,
-            },
-            format: {
-              comments: false,
-            },
-          }
+          compress: {
+            drop_console: true,
+            drop_debugger: true,
+            pure_funcs: ['console.log', 'console.info', 'console.debug'],
+            passes: 2, // Multiple passes for better compression
+          },
+          mangle: {
+            safari10: true,
+          },
+          format: {
+            comments: false,
+          },
+        }
         : undefined,
 
       // **Chunk Size Warnings**
