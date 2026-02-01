@@ -49,6 +49,18 @@ export const hasBusinessFeatureAccess = (session: ILocalSession | null): boolean
 export const isBusinessPlan = (session: ILocalSession | null): boolean => {
   if (!session) return false;
 
+  // Check for active Business plan trial
+  if (session.subscription_type === 'BUSINESS_TRIAL') {
+    return true;
+  }
+
+  if (session.active_plan_trial === 'BUSINESS_LARGE' && session.plan_trial_end_date) {
+    const trialEndDate = new Date(session.plan_trial_end_date);
+    if (trialEndDate > new Date()) {
+      return true;
+    }
+  }
+
   // ANNUAL_BUSINESS is considered a business plan
   if (session.subscription_type === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS) {
     return true;
