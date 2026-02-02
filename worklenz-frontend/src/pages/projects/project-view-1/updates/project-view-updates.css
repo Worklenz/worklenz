@@ -321,3 +321,165 @@
   margin-left: 8px;
   font-style: italic;
 }
+
+/* Grouped comments - reduce spacing for sequential messages from same user */
+.grouped-comment {
+  margin-top: -4px !important;
+  margin-bottom: 4px !important;
+}
+
+.grouped-comment .ant-comment-inner {
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+}
+
+.grouped-comment .ant-comment-content-author {
+  display: none;
+}
+
+.grouped-comment .ant-comment-avatar {
+  visibility: hidden;
+}
+
+/* Constrain width for better readability */
+.updates-list-container > div {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Tighter spacing between all messages */
+.theme-light .ant-comment,
+.theme-dark .ant-comment {
+  margin-bottom: 4px;
+  /* margin-top: 40px; */
+}
+
+.ant-comment-inner {
+  padding: 4px 0;
+}
+
+/* Comment wrapper for hover actions */
+.comment-wrapper {
+  position: relative;
+}
+
+/* Hover bar - appears above message */
+.comment-hover-bar {
+  position: absolute;
+  top: -64px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 20px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s 0.3s, visibility 0.2s 0.3s;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.theme-light .comment-hover-bar {
+  background-color: #ffffff;
+  border: 1px solid #e6e6e6;
+}
+
+.theme-dark .comment-hover-bar {
+  background-color: #2a2a2a;
+  border: 1px solid #3a3a3a;
+}
+
+.ant-comment:hover .comment-hover-bar {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0.5s;
+}
+
+/* Quick reactions container */
+.quick-reactions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.quick-emoji {
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: transform 0.2s, background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quick-emoji:hover {
+  transform: scale(1.2);
+}
+
+.theme-light .quick-emoji:hover {
+  background-color: #f5f5f5;
+}
+
+.theme-dark .quick-emoji:hover {
+  background-color: #3a3a3a;
+}
+
+.more-emoji-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.theme-light .more-emoji-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.theme-dark .more-emoji-btn:hover {
+  background-color: #3a3a3a;
+}
+
+/* Divider between reactions and actions */
+.hover-divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+}
+
+.theme-light .hover-divider {
+  background-color: #e6e6e6;
+}
+
+.theme-dark .hover-divider {
+  background-color: #3a3a3a;
+}
+
+/* Action buttons */
+.hover-action-btn {
+  padding: 4px 8px !important;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.theme-light .hover-action-btn:hover {
+  background-color: #f5f5f5 !important;
+}
+
+.theme-dark .hover-action-btn:hover {
+  background-color: #3a3a3a !important;
+}
+
+/* For current user comments, position bar on the right */
+.current-user-comment .comment-hover-bar {
+  right: 10px;
+  left: auto;
+}
+
+/* Hide default actions */
+.ant-comment-actions {
+  display: none !important;
+}

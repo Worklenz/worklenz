@@ -8,5 +8,21 @@
   "deleteConfirmContent": "A jeni i sigurt që dëshironi të fshini këtë përditësim? Ky veprim nuk mund të zhbëhet.",
   "yes": "Po",
   "no": "Jo",
-  "emptyState": "Ende nuk ka përditësime. Filloni bisedën!"
+  "emptyState": "Ende nuk ka përditësime. Filloni bisedën!",
+  "reactions": {
+    "like": "Pëlqej",
+    "love": "Dashuri",
+    "laugh": "Qesh",
+    "surprised": "I Habitur",
+    "sad": "I Trishtuar",
+    "celebrate": "Festoj",
+    "rocket": "Raketë",
+    "eyes": "Sy",
+    "fire": "Zjarr",
+    "hundred": "100"
+  },
+  "actions": {
+    "edit": "Redakto",
+    "save": "Ruaj"
+  }
 }
