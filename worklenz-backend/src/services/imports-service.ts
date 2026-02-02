@@ -104,6 +104,7 @@ export interface CustomFieldValuePlan {
 
 type SupportedCustomFieldType =
   | "people"
+  | "text"
   | "number"
   | "date"
   | "selection"
@@ -298,7 +299,7 @@ const createCustomColumnFromMondayField = async (
       numbers: { fieldType: "number", numberType: "formatted" },
       numeric: { fieldType: "number", numberType: "formatted" },
       dropdown: { fieldType: "selection" },
-      text: { fieldType: "people" }, // Use people type for text fields
+      text: { fieldType: "text" }, // Use text type for text fields instead of people
       timeline: { fieldType: "date" },
       date: { fieldType: "date" },
       checkbox: { fieldType: "checkbox" },
@@ -565,12 +566,27 @@ const inferColumnConfig = (plan: CustomColumnPlan): ColumnPlanConfig => {
     return { fieldType: "checkbox" };
   }
 
-  const { selections, map } = buildSelectionOptions(plan, values);
-  return {
-    fieldType: "selection",
-    selections,
-    valueToSelectionId: map,
-  };
+  // Default to text type for general text data instead of selection
+  // Only use selection type when there are clear distinct options
+  if (values.length > 0 && values.length <= 50) {
+    const uniqueValues = [...new Set(values)];
+    // Only create selection if there are reasonable number of distinct options
+    // and the ratio suggests categorical data (not unique text)
+    if (
+      uniqueValues.length <= 10 &&
+      uniqueValues.length / values.length <= 0.5
+    ) {
+      const { selections, map } = buildSelectionOptions(plan, values);
+      return {
+        fieldType: "selection",
+        selections,
+        valueToSelectionId: map,
+      };
+    }
+  }
+
+  // Default to text type for most text data
+  return { fieldType: "text" };
 };
 
 const STANDARD_TARGET_FIELDS = new Set<string>([
@@ -1858,6 +1874,10 @@ class ImportsService {
              is_visible,
              is_custom_column
            ) VALUES ($1,$2,$3,$4,$5,$6,true)
+           ON CONFLICT (project_id, key) DO UPDATE SET
+             name = EXCLUDED.name,
+             field_type = EXCLUDED.field_type,
+             updated_at = NOW()
            RETURNING id;`,
           [
             job.target_project_id,
@@ -1992,6 +2012,11 @@ class ImportsService {
           case "people": {
             if (!normalizedValue) break;
             jsonValue = JSON.stringify([normalizedValue]);
+            break;
+          }
+          case "text": {
+            if (!normalizedValue) break;
+            textValue = normalizedValue;
             break;
           }
           default: {
