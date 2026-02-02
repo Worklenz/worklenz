@@ -320,7 +320,7 @@ const ProjectViewHeader = memo(() => {
         >
           <Tag
             key="category"
-            color={selectedProject.category_color || colors.vibrantOrange}  // ✅ FIXED: Now uses dynamic color
+            color={selectedProject.category_color || colors.vibrantOrange}
             style={{ borderRadius: 24, paddingInline: 8, margin: 0 }}
           >
             {selectedProject.category_name}
@@ -329,12 +329,18 @@ const ProjectViewHeader = memo(() => {
       );
     }
 
+    // ✅ UPDATED: Display status icon with name
     if (selectedProject.status) {
       elements.push(
-        <Tooltip key="status" title={`${t('projectStatusTooltip', { defaultValue: 'Project status' })}: ${selectedProject.status}`}>
+        <Tooltip 
+          key="status" 
+          title={`${t('projectStatusTooltip', { defaultValue: 'Project status' })}: ${selectedProject.status}`}
+        >
           <ProjectStatusIcon
             iconName={selectedProject.status_icon || ''}
             color={selectedProject.status_color || ''}
+            statusName={selectedProject.status}
+            showName={true}
           />
         </Tooltip>
       );
