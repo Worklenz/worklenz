@@ -181,8 +181,8 @@ const UpgradePlansLKR: React.FC = () => {
     loadLkrPricing();
   }, []);
 
-  const renderFeature = (text: string) => (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '12px' }}>
+  const renderFeature = (text: string, index: number) => (
+    <div key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '12px' }}>
       <CheckCircleFilled style={cardStyles.checkIcon} />
       <Typography.Text style={cardStyles.featureText}>{t(text)}</Typography.Text>
     </div>
@@ -223,6 +223,7 @@ const UpgradePlansLKR: React.FC = () => {
       // Define callbacks for DirectPay
       const callbacks = {
         onSuccess: (response: any) => {
+          logger.info('DirectPay payment successful', response);
           setDirectPayLoading(false);
           message.success('Payment processed successfully!');
 
@@ -240,6 +241,7 @@ const UpgradePlansLKR: React.FC = () => {
           }, 2000);
         },
         onError: (error: any) => {
+          logger.error('DirectPay payment error', error);
           setDirectPayLoading(false);
           const errorMsg = error?.message || 'Payment failed. Please try again.';
           setDirectPayError(errorMsg);
@@ -331,7 +333,7 @@ const UpgradePlansLKR: React.FC = () => {
                   </Typography.Text>
                 </div>
                 <div style={cardStyles.featuresContainer}>
-                  {plans.free.features.map((f) => renderFeature(f))}
+                  {plans.free.features.map((f, index) => renderFeature(f, index))}
                 </div>
               </div>
               <div style={{ marginTop: 'auto', paddingTop: '20px', textAlign: 'center' }}>
@@ -400,7 +402,7 @@ const UpgradePlansLKR: React.FC = () => {
                   )}
                 </div>
                 <div style={cardStyles.featuresContainer}>
-                  {plans.startup.features.map((f) => renderFeature(f))}
+                  {plans.startup.features.map((f, index) => renderFeature(f, index))}
                 </div>
               </div>
               <div style={{ marginTop: 'auto', paddingTop: '20px', textAlign: 'center' }}>
