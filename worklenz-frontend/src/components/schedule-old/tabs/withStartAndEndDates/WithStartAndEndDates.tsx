@@ -19,9 +19,10 @@ const WithStartAndEndDates = () => {
   // Initialize schedule socket handlers for real-time updates
   useScheduleSocketHandlers();
   
-  // Get selected member, project, and date range from Redux
+  // Get selected member, project, segment data, and date range from Redux
   const selectedMemberId = useAppSelector(state => state.schedule?.selectedMemberId);
   const selectedProjectId = useAppSelector(state => state.schedule?.selectedProjectId);
+  const selectedSegmentData = useAppSelector(state => state.schedule?.selectedSegmentData);
   const selectedDateRange = useAppSelector(state => state.schedule?.selectedDateRange);
   
   // Get groupBy from Redux store
