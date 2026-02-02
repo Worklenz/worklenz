@@ -169,3 +169,129 @@ $$;
 -- Note: Socket-based project date updates now use direct assignment like tasks:
 -- UPDATE projects SET start_date = $2 WHERE id = $1
 -- This matches the task behavior exactly and avoids timezone interpretation issues
+DROP VIEW IF EXISTS project_view CASCADE;
+DROP VIEW IF EXISTS client_portal_projects_view CASCADE;
+
+alter table projects
+    alter column start_date type date using start_date::date;
+
+alter table projects
+    alter column start_date type date using end_date::date;
+
+
+create view project_view
+            (id, name, team_id, start_date, end_date, last_updated_at, project_status, project_health, project_info) as
+SELECT id,
+       name,
+       team_id,
+       to_char(start_date, 'YYYY-MM-DD'::text)                                        AS start_date,
+       to_char(end_date, 'YYYY-MM-DD'::text)                                          AS end_date,
+       to_char(updated_at, 'YYYY-MM-DD'::text)                                        AS last_updated_at,
+       (SELECT ps.name
+        FROM sys_project_statuses ps
+        WHERE ps.id = p.status_id)                                                    AS project_status,
+       (SELECT ph.name
+        FROM sys_project_healths ph
+        WHERE ph.id = p.health_id)                                                    AS project_health,
+       json_build_object('completed_task', (SELECT json_agg(tasks.name) AS json_agg
+                                            FROM tasks
+                                            WHERE tasks.project_id = p.id
+                                              AND is_completed(tasks.status_id, tasks.project_id) IS TRUE),
+                         'incompleted_task', (SELECT json_agg(tasks.name) AS json_agg
+                                              FROM tasks
+                                              WHERE tasks.project_id = p.id
+                                                AND is_completed(tasks.status_id, tasks.project_id) IS FALSE),
+                         'overdue_task', (SELECT json_agg(tasks.name) AS json_agg
+                                          FROM tasks
+                                          WHERE tasks.project_id = p.id
+                                            AND is_overdue(tasks.id)), 'total_allocated_hours_tasks',
+                         (SELECT round(sum(tasks.total_minutes) / 3600.0, 1) AS round
+                          FROM tasks
+                          WHERE tasks.project_id = p.id), 'total_logged_hours_tasks',
+                         (SELECT round(sum(logged.time_spent) / 3600.0, 1) AS round
+                          FROM tasks
+                                   LEFT JOIN (SELECT task_work_log.task_id,
+                                                     sum(task_work_log.time_spent) AS time_spent
+                                              FROM task_work_log
+                                              GROUP BY task_work_log.task_id) logged ON tasks.id = logged.task_id
+                          WHERE tasks.project_id = p.id), 'project_members_data',
+                         (SELECT json_agg(json_build_object('name', team_member_data.name, 'tasks_count',
+                                                            team_member_data.tasks_count, 'completed',
+                                                            team_member_data.completed, 'incompleted',
+                                                            team_member_data.incompleted, 'overdue',
+                                                            team_member_data.overdue, 'time_logged_hours',
+                                                            round(team_member_data.time_logged / 3600.0, 1))) AS json_agg
+                          FROM (SELECT pm.id,
+                                       pm.team_member_id,
+                                       (SELECT team_member_info_view.name
+                                        FROM team_member_info_view
+                                        WHERE team_member_info_view.team_member_id = pm.team_member_id)  AS name,
+                                       count(ta.task_id)                                                 AS tasks_count,
+                                       count(
+                                               CASE
+                                                   WHEN is_completed(t.status_id, t.project_id) IS TRUE THEN 1
+                                                   ELSE NULL::integer
+                                                   END)                                                  AS completed,
+                                       count(
+                                               CASE
+                                                   WHEN is_completed(t.status_id, t.project_id) IS FALSE THEN 1
+                                                   ELSE NULL::integer
+                                                   END)                                                  AS incompleted,
+                                       count(
+                                               CASE
+                                                   WHEN is_overdue(t.id) THEN 1
+                                                   ELSE NULL::integer
+                                                   END)                                                  AS overdue,
+                                       (SELECT sum(twl.time_spent) AS sum
+                                        FROM task_work_log twl
+                                        WHERE twl.user_id = ((SELECT team_member_info_view.user_id
+                                                              FROM team_member_info_view
+                                                              WHERE team_member_info_view.team_member_id = pm.team_member_id))
+                                          AND (twl.task_id IN (SELECT tasks.id
+                                                               FROM tasks
+                                                               WHERE tasks.project_id = pm.project_id))) AS time_logged
+                                FROM project_members pm
+                                         LEFT JOIN tasks_assignees ta
+                                                   ON pm.id = ta.project_member_id AND ta.team_member_id = pm.team_member_id
+                                         LEFT JOIN tasks t ON ta.task_id = t.id
+                                WHERE pm.project_id = p.id
+                                GROUP BY pm.id, pm.team_member_id) team_member_data)) AS project_info
+FROM projects p;
+
+
+-- View for client portal accessible projects
+CREATE OR REPLACE VIEW client_portal_projects_view AS
+SELECT 
+    p.id as project_id,
+    p.name as project_name,
+    p.key as project_key,
+    p.color_code,
+    p.notes,
+    p.start_date,
+    p.end_date,
+    p.status_id,
+    p.health_id,
+    COALESCE(p.client_portal_visible, FALSE) as client_portal_visible,
+    COALESCE(p.client_portal_access_level, 'view') as client_portal_access_level,
+    p.created_at,
+    p.updated_at,
+    c.id as client_id,
+    c.name as client_name,
+    cr.id as client_relationship_id,
+    cr.user_id,
+    cr.access_level as relationship_access_level,
+    COALESCE(pca.access_level, COALESCE(p.client_portal_access_level, 'view')) as effective_access_level,
+    sps.name as status_name,
+    sph.name as health_name,
+    (SELECT COUNT(*) FROM tasks WHERE project_id = p.id AND archived = FALSE) as total_tasks,
+    (SELECT COUNT(*) FROM tasks WHERE project_id = p.id AND archived = FALSE AND done = TRUE) as completed_tasks,
+    (SELECT COUNT(*) FROM project_members WHERE project_id = p.id) as member_count
+FROM projects p
+LEFT JOIN clients c ON p.client_id = c.id
+LEFT JOIN client_relationships cr ON c.id = cr.client_id
+LEFT JOIN project_client_access pca ON p.id = pca.project_id AND cr.id = pca.client_relationship_id
+LEFT JOIN sys_project_statuses sps ON p.status_id = sps.id
+LEFT JOIN sys_project_healths sph ON p.health_id = sph.id
+WHERE COALESCE(p.client_portal_visible, FALSE) = TRUE;
+
+GRANT SELECT ON client_portal_projects_view TO worklenz_client;
