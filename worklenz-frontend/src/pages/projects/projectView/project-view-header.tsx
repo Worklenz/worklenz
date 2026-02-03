@@ -93,6 +93,8 @@ const ProjectViewHeader = memo(() => {
 
   const [creatingTask, setCreatingTask] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  // State for back button hover effect
+  const [isBackButtonHovered, setIsBackButtonHovered] = useState(false);
 
   // Use ref to track subscription timeout
   const subscriptionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -509,13 +511,20 @@ const ProjectViewHeader = memo(() => {
     handleCreateTask,
   ]);
 
-  // Memoized page header title
+  // Memoized page header title with hover effect on back button
   const pageHeaderTitle = useMemo(
     () => (
       <Flex gap={4} align="center">
         <Tooltip title={t('navigateBackTooltip', { defaultValue: 'Go back to projects list' })}>
           <ArrowLeftOutlined
-            style={{ fontSize: 16, cursor: 'pointer' }}
+            style={{ 
+              fontSize: 16, 
+              cursor: 'pointer',
+              transition: 'all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1)',
+              color: isBackButtonHovered ? '#1890ff' : 'rgba(0, 0, 0, 0.85)',
+            }}
+            onMouseEnter={() => setIsBackButtonHovered(true)}
+            onMouseLeave={() => setIsBackButtonHovered(false)}
             onClick={handleNavigateToProjects}
           />
         </Tooltip>
@@ -525,7 +534,7 @@ const ProjectViewHeader = memo(() => {
         {projectAttributes}
       </Flex>
     ),
-    [handleNavigateToProjects, selectedProject?.name, projectAttributes, t]
+    [handleNavigateToProjects, selectedProject?.name, projectAttributes, t, isBackButtonHovered]
   );
 
   // Memoized page header styles
