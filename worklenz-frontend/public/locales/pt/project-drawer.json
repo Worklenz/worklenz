@@ -48,5 +48,7 @@
   "weightedProgressTooltip": "Calcular o progresso com base nos pesos das subtarefas",
   "timeProgress": "Progresso Baseado em Tempo",
   "timeProgressTooltip": "Calcular o progresso com base no tempo estimado",
+  "autoAssignTaskCreator": "Atribuir Automaticamente ao Criador da Tarefa",
+  "autoAssignTaskCreatorTooltip": "Atribuir automaticamente a pessoa que cria uma tarefa a essa tarefa",
   "enterProjectKey": "Insira a chave do projeto"
 }

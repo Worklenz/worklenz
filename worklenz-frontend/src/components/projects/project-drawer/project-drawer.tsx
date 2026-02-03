@@ -111,6 +111,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       use_manual_progress: project?.use_manual_progress || false,
       use_weighted_progress: project?.use_weighted_progress || false,
       use_time_progress: project?.use_time_progress || false,
+      auto_assign_task_creator: project?.auto_assign_task_creator || false,
       health_id: project?.health_id || projectHealths.find(health => health.is_default)?.id,
     };
   }, [project, projectStatuses, projectHealths]);
@@ -201,6 +202,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
           use_manual_progress: project.use_manual_progress || false,
           use_weighted_progress: project.use_weighted_progress || false,
           use_time_progress: project.use_time_progress || false,
+          auto_assign_task_creator: project.auto_assign_task_creator || false,
         };
 
         form.setFieldsValue(formValues);
@@ -319,6 +321,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         use_manual_progress: Boolean(values.use_manual_progress),
         use_weighted_progress: Boolean(values.use_weighted_progress),
         use_time_progress: Boolean(values.use_time_progress),
+        auto_assign_task_creator: Boolean(values.auto_assign_task_creator),
         health_id: values.health_id,
       };
 
@@ -761,6 +764,21 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
               onChange={handleTimeProgressChange}
               disabled={!isProjectManager && !isOwnerorAdmin}
             />
+          </Form.Item>
+
+          <Form.Item
+            name="auto_assign_task_creator"
+            label={
+              <Space>
+                <Typography.Text>{t('autoAssignTaskCreator')}</Typography.Text>
+                <Tooltip title={t('autoAssignTaskCreatorTooltip')}>
+                  <Button type="text" size="small" icon={<Typography.Text>ⓘ</Typography.Text>} />
+                </Tooltip>
+              </Space>
+            }
+            valuePropName="checked"
+          >
+            <Switch disabled={!isProjectManager && !isOwnerorAdmin} />
           </Form.Item>
         </Form>
 

@@ -48,5 +48,7 @@
   "weightedProgressTooltip": "Calculate progress based on subtask weights",
   "timeProgress": "Time-based Progress",
   "timeProgressTooltip": "Calculate progress based on estimated time",
+  "autoAssignTaskCreator": "Auto-assign Task Creator",
+  "autoAssignTaskCreatorTooltip": "Automatically assign the person who creates a task to that task",
   "enterProjectKey": "Enter project key"
 }
