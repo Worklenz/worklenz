@@ -9,17 +9,13 @@ export async function on_project_end_date_change(_io: Server, socket: Socket, da
   try {
     const body = JSON.parse(data as string);
 
-    console.log('[PROJECT_END_DATE_CHANGE] Received data:', body);
-
     // Use the exact same pattern as tasks - direct assignment
     const q = `UPDATE projects SET end_date = $2 WHERE id = $1 RETURNING end_date;`;
     const result = await db.query(q, [body.project_id, body.end_date]);
     
     const [d] = result.rows;
-    console.log('[PROJECT_END_DATE_CHANGE] Database result:', d);
 
     const responseDate = d.end_date ? momentTime.utc(d.end_date).format('YYYY-MM-DD') : null;
-    console.log('[PROJECT_END_DATE_CHANGE] Sending response date:', responseDate);
 
     socket.emit(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), {
       project_id: body.project_id,

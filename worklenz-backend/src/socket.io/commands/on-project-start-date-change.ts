@@ -8,18 +8,14 @@ import {log_error} from "../util";
 export async function on_project_start_date_change(_io: Server, socket: Socket, data?: string) {
   try {
     const body = JSON.parse(data as string);
-    
-    console.log('[PROJECT_START_DATE_CHANGE] Received data:', body);
 
     // Use the exact same pattern as tasks - direct assignment
     const q = `UPDATE projects SET start_date = $2 WHERE id = $1 RETURNING start_date;`;
     const result = await db.query(q, [body.project_id, body.start_date]);
     
     const [d] = result.rows;
-    console.log('[PROJECT_START_DATE_CHANGE] Database result:', d);
 
     const responseDate = d.start_date ? momentTime.utc(d.start_date).format('YYYY-MM-DD') : null;
-    console.log('[PROJECT_START_DATE_CHANGE] Sending response date:', responseDate);
 
     socket.emit(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), {
       project_id: body.project_id,
