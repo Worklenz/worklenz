@@ -50,5 +50,10 @@
   "timeProgressTooltip": "Calculate progress based on estimated time",
   "autoAssignTaskCreator": "Auto-assign Task Creator",
   "autoAssignTaskCreatorTooltip": "Automatically assign the person who creates a task to that task",
+  "generalTab": "General",
+  "advancedSettingsTab": "Advanced Settings",
+  "progressSettingsDescription": "Configure how task progress is calculated for this project. Only one method can be active at a time.",
+  "taskSettings": "Task Settings",
+  "taskSettingsDescription": "Configure default behavior for tasks created in this project.",
   "enterProjectKey": "Enter project key"
 }
