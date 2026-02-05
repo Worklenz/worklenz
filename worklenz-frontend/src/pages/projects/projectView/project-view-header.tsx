@@ -521,7 +521,7 @@ const ProjectViewHeader = memo(() => {
               fontSize: 16, 
               cursor: 'pointer',
               transition: 'all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1)',
-              color: isBackButtonHovered ? '#1890ff' : 'rgba(0, 0, 0, 0.85)',
+              color: isBackButtonHovered ? '#1890ff' : 'inherit',
             }}
             onMouseEnter={() => setIsBackButtonHovered(true)}
             onMouseLeave={() => setIsBackButtonHovered(false)}
