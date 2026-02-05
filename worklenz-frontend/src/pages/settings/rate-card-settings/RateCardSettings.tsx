@@ -122,7 +122,7 @@ const RatecardSettings: React.FC = () => {
         createRateCard({
           name: 'Untitled Rate Card',
           jobRolesList: [],
-          currency: 'LKR',
+          currency: 'lkr', // ✅ FIXED: Changed from 'LKR' to 'lkr' to match CURRENCY_OPTIONS
         }) as any
       );
 
