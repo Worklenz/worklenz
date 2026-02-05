@@ -15,9 +15,11 @@ import {
   Skeleton,
   Space,
   Switch,
+  Tabs,
   Tooltip,
   Typography,
   theme,
+  TabsProps,
 } from '@/shared/antd-imports';
 import dayjs from 'dayjs';
 
@@ -111,6 +113,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       use_manual_progress: project?.use_manual_progress || false,
       use_weighted_progress: project?.use_weighted_progress || false,
       use_time_progress: project?.use_time_progress || false,
+      auto_assign_task_creator: project?.auto_assign_task_creator || false,
       health_id: project?.health_id || projectHealths.find(health => health.is_default)?.id,
     };
   }, [project, projectStatuses, projectHealths]);
@@ -201,6 +204,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
           use_manual_progress: project.use_manual_progress || false,
           use_weighted_progress: project.use_weighted_progress || false,
           use_time_progress: project.use_time_progress || false,
+          auto_assign_task_creator: project.auto_assign_task_creator || false,
         };
 
         form.setFieldsValue(formValues);
@@ -319,6 +323,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         use_manual_progress: Boolean(values.use_manual_progress),
         use_weighted_progress: Boolean(values.use_weighted_progress),
         use_time_progress: Boolean(values.use_time_progress),
+        auto_assign_task_creator: Boolean(values.auto_assign_task_creator),
         health_id: values.health_id,
       };
 
@@ -471,60 +476,13 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     }
   };
 
-  return (
-    <Drawer
-      title={
-        <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>
-          {projectId ? t('editProject') : t('createProject')}
-        </Typography.Text>
-      }
-      open={isProjectDrawerOpen}
-      onClose={handleDrawerClose}
-      destroyOnClose
-      afterOpenChange={handleVisibilityChange}
-      footer={
-        <Flex justify="space-between">
-          <Space>
-            {editMode && (isProjectManager || isOwnerorAdmin) && (
-              <Popconfirm
-                title={t('deleteConfirmation')}
-                description={t('deleteConfirmationDescription')}
-                onConfirm={handleDeleteProject}
-                okText={t('yes')}
-                cancelText={t('no')}
-              >
-                <Button danger type="dashed" loading={isDeletingProject}>
-                  {t('delete')}
-                </Button>
-              </Popconfirm>
-            )}
-          </Space>
-          <Space>
-            {(isProjectManager || isOwnerorAdmin) && (
-              <Button
-                type="primary"
-                onClick={() => form.submit()}
-                loading={isCreatingProject || isUpdatingProject}
-                disabled={!isFormValid}
-              >
-                {editMode ? t('update') : t('create')}
-              </Button>
-            )}
-          </Space>
-        </Flex>
-      }
-    >
-      {!isEditable && (
-        <Alert message={t('noPermission')} type="warning" showIcon style={{ marginBottom: 16 }} />
-      )}
-      <Skeleton active paragraph={{ rows: 12 }} loading={editMode && (loading || projectLoading)}>
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleFormSubmit}
-          initialValues={defaultFormValues}
-          onFieldsChange={handleFieldsChange}
-        >
+  // Tab items for the drawer
+  const tabItems: TabsProps['items'] = [
+    {
+      key: 'general',
+      label: t('generalTab', { defaultValue: 'General' }),
+      children: (
+        <>
           <ProjectBasicInfo
             editMode={editMode}
             project={project}
@@ -566,22 +524,28 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
             disabled={!isProjectManager && !isOwnerorAdmin}
           />
 
-          <Form.Item name="project_manager" label={
-            <Flex align="center" gap={4}>
-              <span>{t('projectManager')}</span>
-              {isFree && (
-                <Tooltip title={tCommon('upgrade-plan')} placement="top">
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<CrownOutlined style={{ fontSize: '14px', color: token.colorWarning }} />}
-                    onClick={handleUpgradeClick}
-                    aria-label={tCommon('upgrade-plan')}
-                  />
-                </Tooltip>
-              )}
-            </Flex>
-          } layout="horizontal">
+          <Form.Item
+            name="project_manager"
+            label={
+              <Flex align="center" gap={4}>
+                <span>{t('projectManager')}</span>
+                {isFree && (
+                  <Tooltip title={tCommon('upgrade-plan')} placement="top">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={
+                        <CrownOutlined style={{ fontSize: '14px', color: token.colorWarning }} />
+                      }
+                      onClick={handleUpgradeClick}
+                      aria-label={tCommon('upgrade-plan')}
+                    />
+                  </Tooltip>
+                )}
+              </Flex>
+            }
+            layout="horizontal"
+          >
             <ProjectManagerDropdown
               selectedProjectManager={selectedProjectManager}
               setSelectedProjectManager={setSelectedProjectManager}
@@ -602,7 +566,6 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
                         const days = calculateWorkingDays(date, endDate);
                         form.setFieldsValue({ working_days: days });
                       } else if (!date) {
-                        // Clear working days if start date is cleared
                         form.setFieldsValue({ working_days: 0 });
                       }
                     } catch (error) {
@@ -622,7 +585,6 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
                         const days = calculateWorkingDays(startDate, date);
                         form.setFieldsValue({ working_days: days });
                       } else if (!date) {
-                        // Clear working days if end date is cleared
                         form.setFieldsValue({ working_days: 0 });
                       }
                     } catch (error) {
@@ -706,8 +668,23 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
               }}
             />
           </Form.Item>
-
-          <Divider orientation="left">{t('progressSettings')}</Divider>
+        </>
+      ),
+    },
+    {
+      key: 'advanced',
+      label: t('advancedSettingsTab', { defaultValue: 'Advanced Settings' }),
+      children: (
+        <>
+          <Typography.Title level={5} style={{ marginTop: 0 }}>
+            {t('progressSettings')}
+          </Typography.Title>
+          <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 16 }}>
+            {t('progressSettingsDescription', {
+              defaultValue:
+                'Configure how task progress is calculated for this project. Only one method can be active at a time.',
+            })}
+          </Typography.Paragraph>
 
           <Form.Item
             name="use_manual_progress"
@@ -762,6 +739,90 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
               disabled={!isProjectManager && !isOwnerorAdmin}
             />
           </Form.Item>
+
+          <Divider />
+
+          <Typography.Title level={5}>{t('taskSettings', { defaultValue: 'Task Settings' })}</Typography.Title>
+          <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 16 }}>
+            {t('taskSettingsDescription', {
+              defaultValue: 'Configure default behavior for tasks created in this project.',
+            })}
+          </Typography.Paragraph>
+
+          <Form.Item
+            name="auto_assign_task_creator"
+            label={
+              <Space>
+                <Typography.Text>{t('autoAssignTaskCreator')}</Typography.Text>
+                <Tooltip title={t('autoAssignTaskCreatorTooltip')}>
+                  <Button type="text" size="small" icon={<Typography.Text>ⓘ</Typography.Text>} />
+                </Tooltip>
+              </Space>
+            }
+            valuePropName="checked"
+          >
+            <Switch disabled={!isProjectManager && !isOwnerorAdmin} />
+          </Form.Item>
+        </>
+      ),
+    },
+  ];
+
+  return (
+    <Drawer
+      title={
+        <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>
+          {projectId ? t('editProject') : t('createProject')}
+        </Typography.Text>
+      }
+      open={isProjectDrawerOpen}
+      onClose={handleDrawerClose}
+      destroyOnClose
+      afterOpenChange={handleVisibilityChange}
+      footer={
+        <Flex justify="space-between">
+          <Space>
+            {editMode && (isProjectManager || isOwnerorAdmin) && (
+              <Popconfirm
+                title={t('deleteConfirmation')}
+                description={t('deleteConfirmationDescription')}
+                onConfirm={handleDeleteProject}
+                okText={t('yes')}
+                cancelText={t('no')}
+              >
+                <Button danger type="dashed" loading={isDeletingProject}>
+                  {t('delete')}
+                </Button>
+              </Popconfirm>
+            )}
+          </Space>
+          <Space>
+            {(isProjectManager || isOwnerorAdmin) && (
+              <Button
+                type="primary"
+                onClick={() => form.submit()}
+                loading={isCreatingProject || isUpdatingProject}
+                disabled={!isFormValid}
+              >
+                {editMode ? t('update') : t('create')}
+              </Button>
+            )}
+          </Space>
+        </Flex>
+      }
+    >
+      {!isEditable && (
+        <Alert message={t('noPermission')} type="warning" showIcon style={{ marginBottom: 16 }} />
+      )}
+      <Skeleton active paragraph={{ rows: 12 }} loading={editMode && (loading || projectLoading)}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleFormSubmit}
+          initialValues={defaultFormValues}
+          onFieldsChange={handleFieldsChange}
+        >
+          <Tabs defaultActiveKey="general" items={tabItems} />
         </Form>
 
         {editMode && (
