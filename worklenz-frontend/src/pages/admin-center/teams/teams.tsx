@@ -37,6 +37,7 @@ const Teams: React.FC = () => {
   const [teams, setTeams] = useState<IOrganizationTeam[]>([]);
   const [currentTeam, setCurrentTeam] = useState<IOrganizationTeam | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // Add refresh trigger
 
   const [requestParams, setRequestParams] = useState<IRequestParams>({
     total: 0,
@@ -85,6 +86,11 @@ const Teams: React.FC = () => {
     }
   };
 
+  const reloadTeams = () => {
+    // Trigger refresh by updating the refreshTrigger
+    setRefreshTrigger(prev => prev + 1);
+  };
+
   useEffect(() => {
     trackMixpanelEvent(evt_admin_center_teams_visit);
     fetchTeams();
@@ -92,7 +98,7 @@ const Teams: React.FC = () => {
 
   useEffect(() => {
     fetchTeams();
-  }, [requestParams.search]);
+  }, [requestParams.search, refreshTrigger]); // Add refreshTrigger as dependency
 
   return (
     <div style={{ width: '100%' }}>
@@ -121,7 +127,7 @@ const Teams: React.FC = () => {
               <Button
                 shape="circle"
                 icon={<SyncOutlined spin={isLoading} />}
-                onClick={() => fetchTeams()}
+                onClick={() => reloadTeams()}
               />
             </Tooltip>
             <Input
