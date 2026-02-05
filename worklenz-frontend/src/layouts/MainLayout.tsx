@@ -1,6 +1,6 @@
 import { Layout, Modal } from '@/shared/antd-imports';
 import { Outlet, useLocation } from 'react-router-dom';
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState, useEffect } from 'react';
 
 import Navbar from '@/features/navbar/navbar';
 // import BusinessPlanAnnouncement from '@/components/business-plan-announcement/BusinessPlanAnnouncement';
@@ -12,6 +12,8 @@ import UpgradePlans from '@/components/admin-center/billing/drawers/upgrade-plan
 import UpgradePlansLKR from '@/components/admin-center/billing/drawers/upgrade-plans-lkr/upgrade-plans-lkr';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '../hooks/useAuth';
+import { billingApiService } from '@/api/admin-center/billing.api.service';
+import logger from '@/utils/errorLogger';
 
 const MainLayout = memo(() => {
   const dispatch = useAppDispatch();
@@ -20,9 +22,103 @@ const MainLayout = memo(() => {
   const currentSession = useAuthService().getCurrentSession();
   const location = useLocation();
 
-  // Get browser timezone for upgrade plans
-  const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const isLkrUser = browserTimeZone === 'Asia/Colombo';
+  // State for LKR eligibility detection
+  const [isLkrUser, setIsLkrUser] = useState<boolean>(false);
+  const [regionCheckComplete, setRegionCheckComplete] = useState<boolean>(false);
+
+  // Check user's region on mount using IP-based geolocation with timezone fallback
+  // Uses localStorage caching to avoid repeated API calls (24-hour cache validity)
+  useEffect(() => {
+    const CACHE_KEY = 'worklenz_user_region_check';
+    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+    const checkUserRegion = async () => {
+      try {
+        // Check if we have a valid cached result
+        const cachedData = localStorage.getItem(CACHE_KEY);
+        if (cachedData) {
+          try {
+            const { isLkrUser: cachedIsLkrUser, timestamp } = JSON.parse(cachedData);
+            const now = Date.now();
+            
+            // If cache is still valid (less than 24 hours old), use it
+            if (now - timestamp < CACHE_DURATION) {
+              setIsLkrUser(cachedIsLkrUser);
+              setRegionCheckComplete(true);
+              logger.info(`Using cached region data: LKR eligible = ${cachedIsLkrUser}`);
+              return;
+            }
+            // Cache expired, continue to make API call
+            logger.info('Region cache expired, fetching fresh data');
+          } catch (parseError) {
+            // Invalid cache data, continue to make API call
+            logger.error('Failed to parse cached region data', parseError);
+          }
+        }
+
+        // Make API call to check region
+        const response = await billingApiService.checkRegion();
+        
+        if (response.done && response.body) {
+          const { isLkrEligible, countryCode } = response.body;
+          let finalIsLkrUser = false;
+          
+          // If IP detection succeeded (not null), use that result
+          if (isLkrEligible !== null) {
+            finalIsLkrUser = isLkrEligible;
+            setIsLkrUser(isLkrEligible);
+            logger.info(`Region detected via IP: ${countryCode} - LKR eligible: ${isLkrEligible}`);
+          } else {
+            // Fallback to timezone detection
+            const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const isLkrByTimezone = browserTimeZone === 'Asia/Colombo';
+            finalIsLkrUser = isLkrByTimezone;
+            setIsLkrUser(isLkrByTimezone);
+            logger.info(`Region detection fallback to timezone: ${browserTimeZone} - LKR eligible: ${isLkrByTimezone}`);
+          }
+
+          // Cache the result with timestamp
+          localStorage.setItem(CACHE_KEY, JSON.stringify({
+            isLkrUser: finalIsLkrUser,
+            timestamp: Date.now()
+          }));
+        } else {
+          // API call failed, fallback to timezone
+          const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          const isLkrByTimezone = browserTimeZone === 'Asia/Colombo';
+          setIsLkrUser(isLkrByTimezone);
+          logger.error('Region check API failed, using timezone fallback');
+          
+          // Cache the fallback result
+          localStorage.setItem(CACHE_KEY, JSON.stringify({
+            isLkrUser: isLkrByTimezone,
+            timestamp: Date.now()
+          }));
+        }
+      } catch (error) {
+        // On error, fallback to timezone detection
+        const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const isLkrByTimezone = browserTimeZone === 'Asia/Colombo';
+        setIsLkrUser(isLkrByTimezone);
+        logger.error('Region check error, using timezone fallback', error);
+        
+        // Cache the fallback result
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify({
+            isLkrUser: isLkrByTimezone,
+            timestamp: Date.now()
+          }));
+        } catch (storageError) {
+          // Ignore localStorage errors (e.g., quota exceeded, private browsing)
+          logger.error('Failed to cache region data', storageError);
+        }
+      } finally {
+        setRegionCheckComplete(true);
+      }
+    };
+
+    checkUserRegion();
+  }, []);
 
   // Determine if user is AppSumo user for modal width
   const isAppSumoUser = useMemo(() => {
@@ -92,9 +188,12 @@ const MainLayout = memo(() => {
         maskClosable={false}
       >
         <div style={{ padding: '20px' }}>
-          {/* LKR pricing disabled for now - always show main upgrade plans */}
-          {/* <UpgradePlans /> */}
-          {browserTimeZone === 'Asia/Colombo' ? <UpgradePlansLKR /> : <UpgradePlans />}
+          {/* Show appropriate upgrade plans based on IP-detected region with timezone fallback */}
+          {regionCheckComplete ? (
+            isLkrUser ? <UpgradePlansLKR /> : <UpgradePlans />
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px' }}>Loading...</div>
+          )}
         </div>
       </Modal>
     </>

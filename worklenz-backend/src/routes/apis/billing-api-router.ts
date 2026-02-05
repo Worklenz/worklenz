@@ -12,6 +12,7 @@ billingApiRouter.post("/save-transaction-data", BillingController.saveTransactio
 billingApiRouter.get("/get-card-list", BillingController.getCardList);
 billingApiRouter.get("/contact-us", BillingController.contactUs);
 billingApiRouter.get("/pricing-plans", BillingController.getPricingPlans);
+billingApiRouter.get("/check-region", BillingController.checkRegion);
 billingApiRouter.get("/lkr-pricing", BillingController.getLkrPricing);
 
 // DirectPay Tokenization APIs

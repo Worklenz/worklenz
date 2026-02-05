@@ -665,6 +665,75 @@ VALUES ($1, $2, $3);`;
   }
 
   @HandleExceptions()
+  public static async checkRegion(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    try {
+      // Extract IP address from request headers (handle proxies and load balancers)
+      const forwardedFor = req.headers['x-forwarded-for'];
+      const realIp = req.headers['x-real-ip'];
+      const remoteAddress = req.connection?.remoteAddress || req.socket?.remoteAddress;
+
+      let ip: string | undefined;
+
+      if (forwardedFor) {
+        // x-forwarded-for can contain multiple IPs, take the first one (client IP)
+        ip = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor.split(',')[0].trim();
+      } else if (realIp) {
+        ip = Array.isArray(realIp) ? realIp[0] : realIp;
+      } else if (remoteAddress) {
+        ip = remoteAddress;
+      }
+
+      // Remove IPv6 prefix if present (::ffff:)
+      if (ip?.startsWith('::ffff:')) {
+        ip = ip.substring(7);
+      }
+
+      // Skip geolocation for localhost/private IPs (development environment)
+      if (!ip || ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
+        return res.status(200).send(new ServerResponse(true, {
+          isLkrEligible: null, // null means fallback to timezone detection
+          country: 'Unknown (Local/Private IP)',
+          countryCode: null,
+          ip: ip || 'unknown'
+        }));
+      }
+
+      // Use free IP geolocation service (ip-api.com - no API key required, 45 requests/minute)
+      const response = await axios.get(`http://ip-api.com/json/${ip}?fields=status,country,countryCode`, {
+        timeout: 3000 // 3 second timeout
+      });
+
+      if (response.data.status === 'success') {
+        const isLkrEligible = response.data.countryCode === 'LK';
+        
+        return res.status(200).send(new ServerResponse(true, {
+          isLkrEligible,
+          country: response.data.country,
+          countryCode: response.data.countryCode,
+          ip
+        }));
+      } else {
+        // API returned failure status, fallback to timezone
+        return res.status(200).send(new ServerResponse(true, {
+          isLkrEligible: null,
+          country: 'Unknown',
+          countryCode: null,
+          ip
+        }));
+      }
+    } catch (error) {
+      // On any error (network, timeout, etc.), return null to trigger timezone fallback
+      log_error(error);
+      return res.status(200).send(new ServerResponse(true, {
+        isLkrEligible: null,
+        country: 'Error',
+        countryCode: null,
+        error: 'Geolocation service unavailable'
+      }));
+    }
+  }
+
+  @HandleExceptions()
   public static async getLkrPricing(_req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     // Query the licensing_custom_plan_pricing table for LKR pricing
     const q = `

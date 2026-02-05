@@ -129,6 +129,31 @@ export const billingApiService = {
   },
 
   /**
+   * Check user's region based on IP address to determine LKR pricing eligibility.
+   * Returns null for isLkrEligible if IP detection fails (triggers timezone fallback).
+   */
+  async checkRegion(): Promise<
+    IServerResponse<{
+      isLkrEligible: boolean | null;
+      country: string;
+      countryCode: string | null;
+      ip?: string;
+      error?: string;
+    }>
+  > {
+    const response = await apiClient.get<
+      IServerResponse<{
+        isLkrEligible: boolean | null;
+        country: string;
+        countryCode: string | null;
+        ip?: string;
+        error?: string;
+      }>
+    >(`${rootUrl}/check-region`);
+    return response.data;
+  },
+
+  /**
    * Get LKR (local) pricing for Free and Business plans.
    * This is a simplified endpoint used by the LKR upgrade modal.
    */
