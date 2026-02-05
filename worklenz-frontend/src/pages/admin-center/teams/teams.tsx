@@ -54,9 +54,27 @@ const Teams: React.FC = () => {
       if (res.done) {
         setRequestParams(prev => ({ ...prev, total: res.body.total ?? 0 }));
         const mergedTeams = [...(res.body.data ?? [])];
+        
+        // Only add current team if there's no search filter or if it matches the search
         if (res.body.current_team_data) {
-          mergedTeams.unshift(res.body.current_team_data);
+          const searchTerm = requestParams.search?.toLowerCase().trim() || '';
+          const currentTeamName = res.body.current_team_data.name?.toLowerCase() || '';
+          
+          // Add current team if: no search term OR current team name matches search
+          const shouldIncludeCurrentTeam = !searchTerm || currentTeamName.includes(searchTerm);
+          
+          if (shouldIncludeCurrentTeam) {
+            // Check if current team is already in the results to avoid duplicates
+            const isCurrentTeamInResults = mergedTeams.some(
+              team => team.id === res.body.current_team_data?.id
+            );
+            
+            if (!isCurrentTeamInResults) {
+              mergedTeams.unshift(res.body.current_team_data);
+            }
+          }
         }
+        
         setTeams(mergedTeams);
         setCurrentTeam(res.body.current_team_data ?? null);
       }
