@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '@/shared/constants';
-import apiClient from '../api-client';
+import apiClient, { ensureCsrfToken } from '../api-client';
 import { IServerResponse } from '@/types/common.types';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 import {
@@ -25,6 +25,9 @@ export const scheduleAPIService = {
     workingDays: string[];
     workingHours: number;
   }): Promise<IServerResponse<any>> => {
+    // Ensure CSRF token is available before making the request
+    await ensureCsrfToken();
+    
     const response = await apiClient.put<IServerResponse<any>>(`${rootUrl}/settings`, {
       workingDays,
       workingHours,
@@ -62,6 +65,9 @@ export const scheduleAPIService = {
   }: {
     schedule: ScheduleData;
   }): Promise<IServerResponse<any>> => {
+    // Ensure CSRF token is available before making the request
+    await ensureCsrfToken();
+    
     const response = await apiClient.post<IServerResponse<any>>(`${rootUrl}/schedule`, schedule);
     return response.data;
   },
@@ -100,6 +106,9 @@ export const scheduleAPIService = {
     startDate?: string;
     endDate?: string;
   }): Promise<IServerResponse<any>> => {
+    // Ensure CSRF token is available before making the request
+    await ensureCsrfToken();
+    
     const response = await apiClient.put<IServerResponse<any>>(`${rootUrl}/allocation`, {
       memberId,
       projectId,
@@ -119,6 +128,9 @@ export const scheduleAPIService = {
     strategy?: 'even' | 'skills' | 'priority';
     maxUtilization?: number;
   }): Promise<IServerResponse<any>> => {
+    // Ensure CSRF token is available before making the request
+    await ensureCsrfToken();
+    
     const response = await apiClient.post<IServerResponse<any>>(`${rootUrl}/rebalance`, {
       memberIds,
       strategy,

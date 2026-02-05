@@ -353,11 +353,7 @@ const CustomColumnModal = () => {
 
   return (
     <Modal
-      title={
-        customColumnModalType === 'create'
-          ? t('customColumns.modal.addFieldTitle')
-          : t('customColumns.modal.editFieldTitle')
-      }
+      title={t('customColumns.modal.addFieldTitle')}
       centered
       open={isCustomColumnModalOpen}
       onCancel={() => {

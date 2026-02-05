@@ -568,6 +568,7 @@ export default class ProjectsController extends WorklenzControllerBase {
              projects.use_manual_progress,
              projects.use_weighted_progress,
              projects.use_time_progress,
+             projects.auto_assign_task_creator,
 
              (SELECT COALESCE(ROW_TO_JSON(pm), '{}'::JSON)
                     FROM (SELECT team_member_id AS id,

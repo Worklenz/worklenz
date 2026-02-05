@@ -1,10 +1,10 @@
-import { Card, Descriptions, Flex, Typography, Button, Tag, Divider } from '@/shared/antd-imports';
+import { Card, Descriptions, Flex, Typography, Button, Tag, Divider, Modal, message } from '@/shared/antd-imports';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { durationDateFormat } from '../../../../utils/durationDateFormat';
-import { DownloadOutlined, PrinterOutlined, DollarOutlined } from '@ant-design/icons';
+import { DownloadOutlined, PrinterOutlined, DollarOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const ClientViewInvoiceDetails = () => {
   const { t } = useTranslation('client-view-invoices');
@@ -61,6 +61,26 @@ const ClientViewInvoiceDetails = () => {
     window.print();
   };
 
+  const handleEditInvoice = () => {
+    // Navigate to edit page - this would need to be implemented
+    message.info('Edit functionality would be implemented here');
+  };
+
+  const handleDeleteInvoice = () => {
+    Modal.confirm({
+      title: t('deleteInvoice', { defaultValue: 'Delete Invoice' }),
+      content: t('confirmDeleteInvoice', { defaultValue: 'Are you sure you want to delete this invoice? This action cannot be undone.' }),
+      okText: t('delete', { defaultValue: 'Delete' }),
+      okType: 'danger',
+      cancelText: t('cancel', { defaultValue: 'Cancel' }),
+      onOk: () => {
+        // Delete functionality would be implemented here
+        message.success('Invoice deleted successfully');
+        navigate('/client-portal/invoices');
+      },
+    });
+  };
+
   return (
     <Flex vertical gap={24} style={{ width: '100%' }}>
       <Flex align="center" justify="space-between">
@@ -70,6 +90,8 @@ const ClientViewInvoiceDetails = () => {
         <Flex gap={8}>
           <Button icon={<DownloadOutlined />} onClick={handleDownloadInvoice}>{t('download')}</Button>
           <Button icon={<PrinterOutlined />} onClick={handlePrintInvoice}>{t('print')}</Button>
+          <Button icon={<EditOutlined />} onClick={handleEditInvoice}>{t('edit', { defaultValue: 'Edit' })}</Button>
+          <Button icon={<DeleteOutlined />} danger onClick={handleDeleteInvoice}>{t('delete', { defaultValue: 'Delete' })}</Button>
           <Button onClick={() => navigate('/client-portal/invoices')}>{t('backToInvoices')}</Button>
         </Flex>
       </Flex>

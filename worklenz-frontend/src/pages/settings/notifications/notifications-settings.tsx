@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, Checkbox, Divider, Flex, Form, Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -20,7 +20,7 @@ const NotificationsSettings = () => {
 
   useDocumentTitle(t('title'));
 
-  const fetchNotificationsSettings = async () => {
+  const fetchNotificationsSettings = useCallback(async () => {
     try {
       setIsLoading(true);
       const res = await profileSettingsApiService.getNotificationSettings();
@@ -32,38 +32,42 @@ const NotificationsSettings = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const updateNotificationSettings = async (settings: INotificationSettings) => {
-    setIsLoading(true);
+  const updateNotificationSettings = useCallback(async (settings: INotificationSettings) => {
     try {
       const res = await profileSettingsApiService.updateNotificationSettings(settings);
       if (res.done) {
-        // ✅ FIX: Use response body instead of refetching
-        // This prevents unnecessary re-render and flickering
-        setNotificationsSettings(res.body || settings);
+        // Update with server response if available
+        setNotificationsSettings(prev => res.body || prev);
+        return true;
       }
+      return false;
     } catch (error) {
       logger.error('Error updating notifications settings', error);
-      // ❌ On error, refetch to revert to server state
+      // On error, refetch to revert to server state
       await fetchNotificationsSettings();
-    } finally {
-      setIsLoading(false);
+      return false;
     }
-  };
+  }, [fetchNotificationsSettings]);
 
-  const toggleNotificationSetting = async (key: keyof INotificationSettings) => {
-    // ✅ FIX: Optimistic update - update UI immediately
-    const newSettings = { ...notificationsSettings, [key]: !notificationsSettings[key] };
-    setNotificationsSettings(newSettings);
+  const toggleNotificationSetting = useCallback(async (key: keyof INotificationSettings) => {
+    // Optimistic update - update UI immediately using functional update
+    setNotificationsSettings(prev => {
+      const newValue = !prev[key];
+      const newSettings = { ...prev, [key]: newValue };
+      
+      // Sync with server in the background (don't block UI)
+      updateNotificationSettings(newSettings);
+      
+      return newSettings;
+    });
     
-    // Then sync with server in the background
-    await updateNotificationSettings(newSettings);
-    
+    // Handle push notification permission
     if (key === 'popup_notifications_enabled') {
       askPushPermission();
     }
-  };
+  }, [updateNotificationSettings]);
 
   const askPushPermission = () => {
     if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
@@ -83,7 +87,7 @@ const NotificationsSettings = () => {
   useEffect(() => {
     trackMixpanelEvent(evt_settings_notifications_visit);
     fetchNotificationsSettings();
-  }, [trackMixpanelEvent]);
+  }, [trackMixpanelEvent, fetchNotificationsSettings]);
 
   return (
     <Card style={{ width: '100%' }}>

@@ -95,13 +95,79 @@ const LanguageAndRegionSettings = () => {
     }
   };
 
-  // FIX: Create searchable options with plain text labels for filtering
+  // Create searchable options with plain text labels
   const timeZoneOptions = timezones.map(timezone => ({
     value: timezone.id,
-    label: `${timezone.name} (${timezone.abbrev})`, // Plain string for search
-    // Store the timezone data for custom rendering
+    label: `${timezone.name} (${timezone.abbrev})`,
     timezone: timezone,
   }));
+
+  // Custom filter function to prioritize results that start with search term
+  const filterTimezoneOption = (input: string, option: any) => {
+    if (!input) return true;
+    
+    const searchTerm = input.toLowerCase();
+    const timezoneName = option.timezone?.name?.toLowerCase() || '';
+    const timezoneAbbrev = option.timezone?.abbrev?.toLowerCase() || '';
+    
+    // Check if timezone name or abbreviation contains the search term
+    return timezoneName.includes(searchTerm) || timezoneAbbrev.includes(searchTerm);
+  };
+
+  // Sort function to prioritize results that start with search term
+  const sortTimezoneOptions = (
+    optionA: any, 
+    optionB: any, 
+    info: { searchValue: string }
+  ): number => {
+    if (!info.searchValue) return 0;
+    
+    const searchTerm = info.searchValue.toLowerCase();
+    const nameA = optionA.timezone?.name?.toLowerCase() || '';
+    const nameB = optionB.timezone?.name?.toLowerCase() || '';
+    
+    // Split by slash to get parts
+    const partsA = nameA.split('/');
+    const partsB = nameB.split('/');
+    
+    // Check if first part starts with search term (highest priority)
+    // e.g., "Australia/Sydney" -> first part is "australia"
+    const aFirstPartStarts = partsA[0]?.startsWith(searchTerm);
+    const bFirstPartStarts = partsB[0]?.startsWith(searchTerm);
+    
+    if (aFirstPartStarts && !bFirstPartStarts) return -1;
+    if (!aFirstPartStarts && bFirstPartStarts) return 1;
+    
+    // Check if any part starts with search term (medium priority)
+    const aAnyPartStarts = partsA.some((part: string) => part.startsWith(searchTerm));
+    const bAnyPartStarts = partsB.some((part: string) => part.startsWith(searchTerm));
+    
+    if (aAnyPartStarts && !bAnyPartStarts) return -1;
+    if (!aAnyPartStarts && bAnyPartStarts) return 1;
+    
+    // Prefer shorter paths (less slashes) - "Australia/Sydney" over "posix/Australia/Sydney"
+    const aDepth = partsA.length;
+    const bDepth = partsB.length;
+    
+    if (aDepth !== bDepth) return aDepth - bDepth;
+    
+    // Finally sort alphabetically
+    return nameA.localeCompare(nameB);
+  };
+
+  // Handle search to reset scroll position
+  const handleTimezoneSearch = (value: string) => {
+    // Small delay to ensure dropdown is rendered before scrolling
+    setTimeout(() => {
+      const dropdown = document.querySelector('.ant-select-dropdown');
+      if (dropdown) {
+        const scrollContainer = dropdown.querySelector('.rc-virtual-list-holder');
+        if (scrollContainer) {
+          scrollContainer.scrollTop = 0;
+        }
+      }
+    }, 0);
+  };
 
   useEffect(() => {
     fetchTimezones();
@@ -143,10 +209,11 @@ const LanguageAndRegionSettings = () => {
           >
             <Select
               showSearch
-              optionFilterProp="label"
+              filterOption={filterTimezoneOption}
+              filterSort={sortTimezoneOptions}
+              onSearch={handleTimezoneSearch}
               loading={loadingTimezones}
               options={timeZoneOptions}
-              // Custom option rendering for better visual layout
               optionRender={(option) => (
                 <Flex align="center" justify="space-between">
                   <span>{option.data.timezone?.name}</span>

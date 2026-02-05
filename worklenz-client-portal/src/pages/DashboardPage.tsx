@@ -16,8 +16,7 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   DollarOutlined,
-  RightOutlined,
-  TeamOutlined,
+  RightOutlined
 } from "@/shared/antd-imports";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -37,11 +36,11 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ icon, iconBg, label, value, suffix }) => {
   const { token } = theme.useToken();
-  
+
   return (
-    <div style={{ 
-      display: 'flex', 
-      alignItems: 'center', 
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
       gap: 16,
       padding: '16px 20px',
       background: token.colorBgContainer,
@@ -171,18 +170,6 @@ const DashboardPage: React.FC = () => {
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <StatCard
-            icon={<TeamOutlined />}
-            iconBg="#52c41a"
-            label={t('dashboard.teamMembers')}
-            value={stats.teamMembers}
-          />
-        </Col>
-      </Row>
-
-      {/* Secondary Stats Row */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} lg={6}>
-          <StatCard
             icon={<DollarOutlined />}
             iconBg={stats.unpaidAmount > 0 ? '#ff4d4f' : '#52c41a'}
             label={t('dashboard.unpaidAmount')}
@@ -195,7 +182,7 @@ const DashboardPage: React.FC = () => {
       {/* Projects & Requests Cards */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} lg={12}>
-          <Card 
+          <Card
             title={
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <ProjectOutlined style={{ color: token.colorPrimary }} />
@@ -233,7 +220,7 @@ const DashboardPage: React.FC = () => {
         </Col>
 
         <Col xs={24} lg={12}>
-          <Card 
+          <Card
             title={
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <FileTextOutlined style={{ color: '#722ed1' }} />
@@ -278,7 +265,7 @@ const DashboardPage: React.FC = () => {
       </Row>
 
       {/* Invoices Card */}
-      <Card 
+      <Card
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <FileDoneOutlined style={{ color: '#13c2c2' }} />
@@ -306,9 +293,9 @@ const DashboardPage: React.FC = () => {
             <Text type="secondary">{t('dashboard.unpaidInvoices')}</Text>
           </Col>
           <Col xs={24} sm={8} style={{ textAlign: 'center', marginBottom: 16 }}>
-            <div style={{ 
-              display: 'inline-flex', 
-              alignItems: 'center', 
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
               gap: 4,
               padding: '8px 16px',
               background: stats.unpaidAmount > 0 ? '#fff2f0' : '#f6ffed',

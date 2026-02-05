@@ -93,6 +93,8 @@ const ProjectViewHeader = memo(() => {
 
   const [creatingTask, setCreatingTask] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  // State for back button hover effect
+  const [isBackButtonHovered, setIsBackButtonHovered] = useState(false);
 
   // Use ref to track subscription timeout
   const subscriptionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -320,7 +322,7 @@ const ProjectViewHeader = memo(() => {
         >
           <Tag
             key="category"
-            color={selectedProject.category_color || colors.vibrantOrange}  // ✅ FIXED: Now uses dynamic color
+            color={selectedProject.category_color || colors.vibrantOrange}
             style={{ borderRadius: 24, paddingInline: 8, margin: 0 }}
           >
             {selectedProject.category_name}
@@ -329,12 +331,18 @@ const ProjectViewHeader = memo(() => {
       );
     }
 
+    // ✅ UPDATED: Display status icon with name
     if (selectedProject.status) {
       elements.push(
-        <Tooltip key="status" title={`${t('projectStatusTooltip', { defaultValue: 'Project status' })}: ${selectedProject.status}`}>
+        <Tooltip 
+          key="status" 
+          title={`${t('projectStatusTooltip', { defaultValue: 'Project status' })}: ${selectedProject.status}`}
+        >
           <ProjectStatusIcon
             iconName={selectedProject.status_icon || ''}
             color={selectedProject.status_color || ''}
+            statusName={selectedProject.status}
+            showName={true}
           />
         </Tooltip>
       );
@@ -503,13 +511,20 @@ const ProjectViewHeader = memo(() => {
     handleCreateTask,
   ]);
 
-  // Memoized page header title
+  // Memoized page header title with hover effect on back button
   const pageHeaderTitle = useMemo(
     () => (
       <Flex gap={4} align="center">
         <Tooltip title={t('navigateBackTooltip', { defaultValue: 'Go back to projects list' })}>
           <ArrowLeftOutlined
-            style={{ fontSize: 16, cursor: 'pointer' }}
+            style={{ 
+              fontSize: 16, 
+              cursor: 'pointer',
+              transition: 'all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1)',
+              color: isBackButtonHovered ? '#1890ff' : 'inherit',
+            }}
+            onMouseEnter={() => setIsBackButtonHovered(true)}
+            onMouseLeave={() => setIsBackButtonHovered(false)}
             onClick={handleNavigateToProjects}
           />
         </Tooltip>
@@ -519,7 +534,7 @@ const ProjectViewHeader = memo(() => {
         {projectAttributes}
       </Flex>
     ),
-    [handleNavigateToProjects, selectedProject?.name, projectAttributes, t]
+    [handleNavigateToProjects, selectedProject?.name, projectAttributes, t, isBackButtonHovered]
   );
 
   // Memoized page header styles
