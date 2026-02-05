@@ -132,9 +132,9 @@ const DayAllocationCell = ({
       <span>Allocated: {effectiveData.allocated_hours.toFixed(1)}h</span>
       <span>Available: {effectiveData.available_hours.toFixed(1)}h</span>
       <span>Utilization: {effectiveData.utilization_percent.toFixed(0)}%</span>
-      <span>
+      {/* <span>
         <strong>Status: {effectiveData.status.replace('-', ' ').toUpperCase()}</strong>
-      </span>
+      </span> */}
 
       {/* {effectiveData.projects && effectiveData.projects.length > 0 && (
         <>
