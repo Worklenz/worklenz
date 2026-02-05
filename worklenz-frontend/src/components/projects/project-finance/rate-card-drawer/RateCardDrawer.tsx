@@ -145,14 +145,17 @@ const RateCardDrawer = ({
     }
   }, [type, ratecardId, dispatch]);
 
+  // ✅ FIX 1: Added currency normalization to handle uppercase currencies from database
   useEffect(() => {
     if (type === 'update' && drawerRatecard) {
       setRoles(drawerRatecard.jobRolesList || []);
       setInitialRoles(drawerRatecard.jobRolesList || []);
       setName(drawerRatecard.name || '');
       setInitialName(drawerRatecard.name || '');
-      setCurrency(drawerRatecard.currency || DEFAULT_CURRENCY);
-      setInitialCurrency(drawerRatecard.currency || DEFAULT_CURRENCY);
+      // Normalize currency to lowercase to match CURRENCY_OPTIONS
+      const normalizedCurrency = (drawerRatecard.currency || DEFAULT_CURRENCY).toLowerCase();
+      setCurrency(normalizedCurrency);
+      setInitialCurrency(normalizedCurrency);
     }
   }, [drawerRatecard, type]);
 
@@ -356,8 +359,8 @@ const RateCardDrawer = ({
     },
     {
       title: isManDaysMethod
-        ? `${t('ratePerManDayColumn', { ns: 'project-view-finance' }) || 'Rate per day'} (${currency})`
-        : `${t('ratePerHourColumn')} (${currency})`,
+        ? `${t('ratePerManDayColumn', { ns: 'project-view-finance' }) || 'Rate per day'} (${currency.toUpperCase()})`
+        : `${t('ratePerHourColumn')} (${currency.toUpperCase()})`,
       dataIndex: isManDaysMethod ? 'man_day_rate' : 'rate',
       align: 'right' as const,
       render: (text: number, record: any, index: number) => (
@@ -468,6 +471,7 @@ const RateCardDrawer = ({
             </Typography.Text>
             <Flex gap={8} align="center">
               <Typography.Text>{t('currency')}</Typography.Text>
+              {/* ✅ FIX 2: Added minWidth to prevent truncation */}
               <Select
                 value={currency}
                 options={CURRENCY_OPTIONS}
