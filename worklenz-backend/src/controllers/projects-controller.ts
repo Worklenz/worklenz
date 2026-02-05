@@ -88,6 +88,14 @@ export default class ProjectsController extends WorklenzControllerBase {
     req.body.project_member_added_log = LOG_DESCRIPTIONS.PROJECT_MEMBER_ADDED;
     req.body.project_manager_id = req.body.project_manager ? req.body.project_manager.id : null;
 
+    // FIX: Format dates consistently like tasks - parse as date-only strings to avoid timezone issues
+    if (req.body.start_date) {
+      req.body.start_date = req.body.start_date.toString().split('T')[0]; // Ensure YYYY-MM-DD format
+    }
+    if (req.body.end_date) {
+      req.body.end_date = req.body.end_date.toString().split('T')[0]; // Ensure YYYY-MM-DD format
+    }
+
     const keys = await this.getAllKeysByTeamId(req.user?.team_id as string);
     req.body.key = generateProjectKey(req.body.name, keys) || null;
 
@@ -596,6 +604,16 @@ export default class ProjectsController extends WorklenzControllerBase {
       data.project_manager.color_code = getColor(data.project_manager.name);
     }
 
+    // FIX: Format dates consistently like tasks to avoid timezone issues
+    if (data) {
+      if (data.start_date) {
+        data.start_date = moment(data.start_date).format('YYYY-MM-DD');
+      }
+      if (data.end_date) {
+        data.end_date = moment(data.end_date).format('YYYY-MM-DD');
+      }
+    }
+
     return res.status(200).send(new ServerResponse(true, data));
   }
 
@@ -625,6 +643,14 @@ export default class ProjectsController extends WorklenzControllerBase {
     req.body.project_member_added_log = LOG_DESCRIPTIONS.PROJECT_MEMBER_ADDED;
     req.body.project_member_removed_log = LOG_DESCRIPTIONS.PROJECT_MEMBER_REMOVED;
     req.body.team_member_id = req.body.project_manager ? req.body.project_manager.id : null;
+
+    // FIX: Format dates consistently like tasks - parse as date-only strings to avoid timezone issues
+    if (req.body.start_date) {
+      req.body.start_date = req.body.start_date.toString().split('T')[0]; // Ensure YYYY-MM-DD format
+    }
+    if (req.body.end_date) {
+      req.body.end_date = req.body.end_date.toString().split('T')[0]; // Ensure YYYY-MM-DD format
+    }
 
     const result = await db.query(q, [JSON.stringify(req.body)]);
     const [data] = result.rows;

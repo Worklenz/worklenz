@@ -44,11 +44,14 @@ import ProjectHealthSection from './project-health-section/project-health-sectio
 import ProjectStatusSection from './project-status-section/project-status-section';
 import ProjectCategorySection from './project-category-section/project-category-section';
 import ProjectClientSection from './project-client-section/project-client-section';
+import { ProjectDatePicker } from './components/ProjectDatePicker';
 
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 import { calculateTimeDifference } from '@/utils/calculate-time-difference';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 import logger from '@/utils/errorLogger';
 import {
   setProjectData,
@@ -98,6 +101,9 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   const [deleteProject, { isLoading: isDeletingProject }] = useDeleteProjectMutation();
   const [updateProject, { isLoading: isUpdatingProject }] = useUpdateProjectMutation();
   const [createProject, { isLoading: isCreatingProject }] = useCreateProjectMutation();
+
+  // Socket connection
+  const { socket, connected } = useSocket();
 
   // Memoized values
   const defaultFormValues = useMemo(() => {
@@ -260,6 +266,60 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     }
   }, [drawerVisible, projectId, projectLoading]);
 
+  // Socket event handlers for real-time date updates
+  const handleStartDateChangeResponse = useCallback((data: { project_id: string; start_date: string }) => {
+    try {
+      if (data.project_id === projectId) {
+        const newStartDate = data.start_date ? dayjs(data.start_date) : null;
+        form.setFieldsValue({ start_date: newStartDate });
+        
+        // Recalculate working days if both dates are present
+        const endDate = form.getFieldValue('end_date');
+        if (newStartDate && endDate) {
+          const days = calculateWorkingDays(newStartDate, endDate);
+          form.setFieldsValue({ working_days: days });
+        } else if (!newStartDate) {
+          form.setFieldsValue({ working_days: 0 });
+        }
+      }
+    } catch (error) {
+      logger.error('Error handling start date change response:', error);
+    }
+  }, [projectId, form, calculateWorkingDays]);
+
+  const handleEndDateChangeResponse = useCallback((data: { project_id: string; end_date: string }) => {
+    try {
+      if (data.project_id === projectId) {
+        const newEndDate = data.end_date ? dayjs(data.end_date) : null;
+        form.setFieldsValue({ end_date: newEndDate });
+        
+        // Recalculate working days if both dates are present
+        const startDate = form.getFieldValue('start_date');
+        if (startDate && newEndDate) {
+          const days = calculateWorkingDays(startDate, newEndDate);
+          form.setFieldsValue({ working_days: days });
+        } else if (!newEndDate) {
+          form.setFieldsValue({ working_days: 0 });
+        }
+      }
+    } catch (error) {
+      logger.error('Error handling end date change response:', error);
+    }
+  }, [projectId, form, calculateWorkingDays]);
+
+  // Socket event listeners
+  useEffect(() => {
+    if (connected && socket && projectId) {
+      socket.on(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
+      socket.on(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
+
+      return () => {
+        socket.removeListener(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
+        socket.removeListener(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
+      };
+    }
+  }, [connected, socket, projectId, handleStartDateChangeResponse, handleEndDateChangeResponse]);
+
   // Define resetForm function - only reset when drawer is actually closing
   const resetForm = useCallback(() => {
     setEditMode(false);
@@ -285,6 +345,67 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       form.setFieldsValue({ working_days: 0 });
     }
   }, [form, calculateWorkingDays]);
+
+  // Socket event emitters for date changes
+  const handleStartDateChange = useCallback((date: dayjs.Dayjs | null) => {
+    try {
+      // Update form immediately for responsive UI
+      form.setFieldsValue({ start_date: date });
+      
+      // Recalculate working days
+      const endDate = form.getFieldValue('end_date');
+      if (date && endDate) {
+        const days = calculateWorkingDays(date, endDate);
+        form.setFieldsValue({ working_days: days });
+      } else if (!date) {
+        form.setFieldsValue({ working_days: 0 });
+      }
+
+      // Emit socket event for real-time updates (only for existing projects)
+      if (socket && projectId) {
+        socket.emit(
+          SocketEvents.PROJECT_START_DATE_CHANGE.toString(),
+          JSON.stringify({
+            project_id: projectId,
+            start_date: date?.format('YYYY-MM-DD'),
+            time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          })
+        );
+      }
+    } catch (error) {
+      logger.error('Error handling start date change', error);
+    }
+  }, [form, calculateWorkingDays, socket, projectId]);
+
+  const handleEndDateChange = useCallback((date: dayjs.Dayjs | null) => {
+    try {
+      // Update form immediately for responsive UI
+      form.setFieldsValue({ end_date: date });
+      
+      // Recalculate working days
+      const startDate = form.getFieldValue('start_date');
+      if (startDate && date) {
+        const days = calculateWorkingDays(startDate, date);
+        form.setFieldsValue({ working_days: days });
+      } else if (!date) {
+        form.setFieldsValue({ working_days: 0 });
+      }
+
+      // Emit socket event for real-time updates (only for existing projects)
+      if (socket && projectId) {
+        socket.emit(
+          SocketEvents.PROJECT_END_DATE_CHANGE.toString(),
+          JSON.stringify({
+            project_id: projectId,
+            end_date: date?.format('YYYY-MM-DD'),
+            time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          })
+        );
+      }
+    } catch (error) {
+      logger.error('Error handling end date change', error);
+    }
+  }, [form, calculateWorkingDays, socket, projectId]);
 
   // Handlers
   const handleUpgradeClick = useCallback(() => {
@@ -313,8 +434,9 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         key: values.key,
         client_id: values.client_id,
         client_name: values.client_name,
-        start_date: values.start_date,
-        end_date: values.end_date,
+        // FIX: Format dates as YYYY-MM-DD strings like tasks do, ensuring timezone consistency
+        start_date: values.start_date ? dayjs(values.start_date).format('YYYY-MM-DD') : undefined,
+        end_date: values.end_date ? dayjs(values.end_date).format('YYYY-MM-DD') : undefined,
         working_days: parseInt(values.working_days),
         man_days: parseInt(values.man_days),
         hours_per_day: parseInt(values.hours_per_day),
@@ -556,8 +678,9 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
           <Form.Item name="date" layout="horizontal">
             <Flex gap={8}>
               <Form.Item name="start_date" label={t('startDate')}>
-                <DatePicker
-                  disabledDate={disabledStartDate}
+                <ProjectDatePicker
+                  field="start_date"
+                  value={form.getFieldValue('start_date')}
                   disabled={!isProjectManager && !isOwnerorAdmin}
                   onChange={date => {
                     try {
@@ -575,8 +698,9 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
                 />
               </Form.Item>
               <Form.Item name="end_date" label={t('endDate')}>
-                <DatePicker
-                  disabledDate={disabledEndDate}
+                <ProjectDatePicker
+                  field="end_date"
+                  value={form.getFieldValue('end_date')}
                   disabled={!isProjectManager && !isOwnerorAdmin}
                   onChange={date => {
                     try {
