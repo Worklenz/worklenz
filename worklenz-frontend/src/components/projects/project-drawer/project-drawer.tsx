@@ -65,7 +65,7 @@ import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { isFreeUser } from '@/utils/subscription-utils';
 import { CrownOutlined } from '@ant-design/icons';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
-import { ensureCsrfToken } from '@/api/api-client';
+import { ensureCsrfToken, refreshCsrfToken } from '@/api/api-client';
 
 export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   const dispatch = useAppDispatch();
@@ -228,6 +228,11 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         setSelectedProjectManager(project.project_manager || null);
         setLoading(false);
         console.log('Form populated successfully with project data');
+        
+        // Force refresh CSRF token for project updates to prevent stale token errors
+        refreshCsrfToken().catch(error => {
+          console.warn('[CSRF] Failed to refresh token for project update:', error);
+        });
       } catch (error) {
         console.error('Error setting form values:', error);
         logger.error('Error setting form values in project drawer', error);
@@ -246,9 +251,9 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       }
       setSelectedProjectManager(null);
       
-      // Pre-ensure CSRF token is available for new project creation
-      ensureCsrfToken().catch(error => {
-        console.warn('[CSRF] Failed to pre-ensure token for project creation:', error);
+      // Force refresh CSRF token for new project creation to prevent stale token errors
+      refreshCsrfToken().catch(error => {
+        console.warn('[CSRF] Failed to refresh token for project creation:', error);
       });
     } else if (drawerVisible && projectId && !project && !projectLoading) {
       console.warn('Project drawer is visible but no project data available');
