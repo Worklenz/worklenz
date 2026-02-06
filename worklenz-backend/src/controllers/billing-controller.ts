@@ -443,7 +443,7 @@ VALUES ($1, $2, $3);`;
       type: "CARD_ADD",
       order_id: orderId,
       currency: "LKR",
-      response_url: `${backendBaseUrl}/api/billing/directpay-card-response`,
+      response_url: `https://b4e9-2402-d000-8100-2185-557f-1df2-e5f4-fe1f.ngrok-free.app/api/billing/directpay-card-response`,
       return_url: `${frontendBaseUrl}/worklenz/admin-center/billing?card_added=true`,
       first_name: firstName,
       email: email,
