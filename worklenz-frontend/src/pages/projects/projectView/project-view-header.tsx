@@ -17,7 +17,8 @@ import {
   SyncOutlined,
   UsergroupAddOutlined,
 } from '@/shared/antd-imports';
-import { PageHeader } from '@ant-design/pro-components';
+// Removed PageHeader from @ant-design/pro-components due to findDOMNode deprecation warning
+// Using custom header implementation instead
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useState, useCallback, useMemo, memo, useRef, useEffect } from 'react';
@@ -58,7 +59,7 @@ import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { getGroupIdByGroupedColumn } from '@/services/task-list/taskList.service';
 import logger from '@/utils/errorLogger';
 import ImportTaskTemplate from '@/components/task-templates/import-task-template';
-import ProjectDrawer from '@/components/projects/project-drawer/project-drawer';
+import { ProjectDrawer } from '@/components/projects/project-drawer/project-drawer';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
@@ -92,6 +93,8 @@ const ProjectViewHeader = memo(() => {
 
   const [creatingTask, setCreatingTask] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  // State for back button hover effect
+  const [isBackButtonHovered, setIsBackButtonHovered] = useState(false);
 
   // Use ref to track subscription timeout
   const subscriptionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -319,7 +322,7 @@ const ProjectViewHeader = memo(() => {
         >
           <Tag
             key="category"
-            color={colors.vibrantOrange}
+            color={selectedProject.category_color || colors.vibrantOrange}
             style={{ borderRadius: 24, paddingInline: 8, margin: 0 }}
           >
             {selectedProject.category_name}
@@ -328,6 +331,7 @@ const ProjectViewHeader = memo(() => {
       );
     }
 
+    // ✅ UPDATED: Display status icon with name
     if (selectedProject.status) {
       elements.push(
         <Tooltip
@@ -337,6 +341,8 @@ const ProjectViewHeader = memo(() => {
           <ProjectStatusIcon
             iconName={selectedProject.status_icon || ''}
             color={selectedProject.status_color || ''}
+            statusName={selectedProject.status}
+            showName={true}
           />
         </Tooltip>
       );
@@ -531,13 +537,20 @@ const ProjectViewHeader = memo(() => {
     handleCreateTask,
   ]);
 
-  // Memoized page header title
+  // Memoized page header title with hover effect on back button
   const pageHeaderTitle = useMemo(
     () => (
       <Flex gap={4} align="center">
         <Tooltip title={t('navigateBackTooltip', { defaultValue: 'Go back to projects list' })}>
           <ArrowLeftOutlined
-            style={{ fontSize: 16, cursor: 'pointer' }}
+            style={{
+              fontSize: 16,
+              cursor: 'pointer',
+              transition: 'all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1)',
+              color: isBackButtonHovered ? '#1890ff' : 'inherit',
+            }}
+            onMouseEnter={() => setIsBackButtonHovered(true)}
+            onMouseLeave={() => setIsBackButtonHovered(false)}
             onClick={handleNavigateToProjects}
           />
         </Tooltip>
@@ -547,7 +560,7 @@ const ProjectViewHeader = memo(() => {
         {projectAttributes}
       </Flex>
     ),
-    [handleNavigateToProjects, selectedProject?.name, projectAttributes, t]
+    [handleNavigateToProjects, selectedProject?.name, projectAttributes, t, isBackButtonHovered]
   );
 
   // Memoized page header styles
@@ -569,12 +582,20 @@ const ProjectViewHeader = memo(() => {
 
   return (
     <>
-      <PageHeader
+      <div
         className="site-page-header"
-        title={pageHeaderTitle}
-        style={pageHeaderStyle}
-        extra={headerActions}
-      />
+        style={{
+          ...pageHeaderStyle,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '16px 0',
+          marginBottom: '16px',
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>{pageHeaderTitle}</div>
+        <div style={{ marginLeft: '16px', flexShrink: 0 }}>{headerActions}</div>
+      </div>
       {createPortal(<ProjectDrawer onClose={() => {}} />, document.body, 'project-drawer')}
       {createPortal(<ImportTaskTemplate />, document.body, 'import-task-template')}
       {createPortal(<SaveProjectAsTemplate />, document.body, 'save-project-as-template')}

@@ -52,6 +52,7 @@ const InvitePage: React.FC = () => {
   const [form] = Form.useForm<InviteFormValues>();
   const [passwordValue, setPasswordValue] = useState("");
   const [passwordActive, setPasswordActive] = useState(false);
+  const [isWorklenzUser, setIsWorklenzUser] = useState(false);
   const themeMode = useAppSelector((state: RootState) => state.ui.theme);
 
   const passwordChecklistItems = [
@@ -101,34 +102,40 @@ const InvitePage: React.FC = () => {
       { required: true, message: t("invite.email_required") },
       { type: "email" as const, message: t("invite.email_invalid") },
     ],
-    password: [
-      { required: true, message: t("invite.password_required") },
-      { min: 8, message: t("invite.password_min") },
-      {
-        max: 32,
-        message: t("invite.password_max", {
-          defaultValue: "Password must be at most 32 characters",
-        }),
-      },
-      {
-        pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])/,
-        message: t("invite.password_pattern", {
-          defaultValue:
-            "Password must include uppercase, lowercase, number, and special character",
-        }),
-      },
-    ],
-    confirmPassword: [
-      { required: true, message: t("invite.confirm_password_required") },
-      ({ getFieldValue }: { getFieldValue: (field: string) => string }) => ({
-        validator(_: unknown, value: string) {
-          if (!value || getFieldValue("password") === value) {
-            return Promise.resolve();
-          }
-          return Promise.reject(new Error(t("invite.password_mismatch")));
-        },
-      }),
-    ],
+    password: isWorklenzUser
+      ? [
+          { required: true, message: t("invite.password_required") },
+        ]
+      : [
+          { required: true, message: t("invite.password_required") },
+          { min: 8, message: t("invite.password_min") },
+          {
+            max: 32,
+            message: t("invite.password_max", {
+              defaultValue: "Password must be at most 32 characters",
+            }),
+          },
+          {
+            pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])/,
+            message: t("invite.password_pattern", {
+              defaultValue:
+                "Password must include uppercase, lowercase, number, and special character",
+            }),
+          },
+        ],
+    confirmPassword: isWorklenzUser
+      ? [] // No confirm password needed for existing Worklenz users
+      : [
+          { required: true, message: t("invite.confirm_password_required") },
+          ({ getFieldValue }: { getFieldValue: (field: string) => string }) => ({
+            validator(_: unknown, value: string) {
+              if (!value || getFieldValue("password") === value) {
+                return Promise.resolve();
+              }
+              return Promise.reject(new Error(t("invite.password_mismatch")));
+            },
+          }),
+        ],
   };
 
   // Redirect authenticated users to dashboard
@@ -164,6 +171,11 @@ const InvitePage: React.FC = () => {
         email: inviteDetails.email || "",
         name: inviteDetails.name || "",
       });
+
+      // Set isWorklenzUser flag immediately if user is an existing Worklenz user
+      if (inviteDetails.isExistingWorklenzUser) {
+        setIsWorklenzUser(true);
+      }
     }
   }, [inviteDetails, form]);
 
@@ -189,13 +201,20 @@ const InvitePage: React.FC = () => {
           navigate("/dashboard", { replace: true });
         } else {
           const errorKey = result.payload as string;
-          
+
+          // Fallback: Check if this is a Worklenz user error (in case backend detection missed it)
+          if (errorKey && errorKey.includes("worklenz_account_found")) {
+            setIsWorklenzUser(true);
+          }
+
           // Check if the error is an i18n key (starts with "errors.")
-          const errorMessage = errorKey && errorKey.startsWith("errors.") 
-            ? t(errorKey) 
-            : errorKey || t("invite.acceptance_error");
-          
-          message.error(errorMessage);
+          if (errorKey && errorKey.startsWith("errors.")) {
+            const errorMessage = t(errorKey);
+            // Show error message for longer duration to give user time to read
+            message.error(errorMessage, 6);
+          } else {
+            message.error(errorKey || t("invite.acceptance_error"));
+          }
         }
       } catch (error) {
         console.error("Invite acceptance failed:", error);
@@ -263,11 +282,9 @@ const InvitePage: React.FC = () => {
             <Typography.Text style={{ marginBottom: 24, display: "block" }}>
               {t("invite.invalid_description")}
             </Typography.Text>
-            <Link to="/auth/login">
-              <Button type="primary" size="large">
-                {t("invite.back_to_login")}
-              </Button>
-            </Link>
+            <Button type="primary" size="large" onClick={() => navigate("/auth/login")}>
+              {t("invite.back_to_login")}
+            </Button>
           </div>
         </Card>
       </div>
@@ -291,12 +308,27 @@ const InvitePage: React.FC = () => {
       >
         <AuthPageHeader description={t("invite.description")} />
 
-        <Alert
-          message={t("invite.welcome_message")}
-          type="info"
-          showIcon
-          style={{ marginBottom: 24 }}
-        />
+        {isWorklenzUser ? (
+          <Alert
+            message={t("invite.existing_worklenz_user_title", {
+              defaultValue: "Existing Worklenz Account Detected",
+            })}
+            description={t("invite.existing_worklenz_user_description", {
+              defaultValue:
+                "You already have a Worklenz account with this email. Please use your existing Worklenz password below to link your client portal access.",
+            })}
+            type="info"
+            showIcon
+            style={{ marginBottom: 24 }}
+          />
+        ) : (
+          <Alert
+            message={t("invite.welcome_message")}
+            type="info"
+            showIcon
+            style={{ marginBottom: 24 }}
+          />
+        )}
 
         {error && (
           <Alert
@@ -344,7 +376,13 @@ const InvitePage: React.FC = () => {
             <div>
               <Input.Password
                 prefix={<LockOutlined />}
-                placeholder={t("invite.password_placeholder")}
+                placeholder={
+                  isWorklenzUser
+                    ? t("invite.existing_user_password_placeholder", {
+                        defaultValue: "Enter your Worklenz password",
+                      })
+                    : t("invite.password_placeholder")
+                }
                 size="large"
                 style={styles.button}
                 value={passwordValue}
@@ -357,21 +395,33 @@ const InvitePage: React.FC = () => {
                   if (!passwordValue) setPasswordActive(false);
                 }}
               />
-              <Typography.Text
-                type="secondary"
-                style={{
-                  fontSize: 12,
-                  marginTop: 4,
-                  marginBottom: 0,
-                  display: "block",
-                }}
-              >
-                {t("invite.password_guideline", {
-                  defaultValue:
-                    "Password must be at least 8 characters, include uppercase and lowercase letters, a number, and a special character.",
-                })}
-              </Typography.Text>
-              {passwordActive && (
+              {isWorklenzUser ? (
+                <Alert
+                  message={t("invite.worklenz_user_info", {
+                    defaultValue:
+                      "You already have a Worklenz account. Please enter your existing Worklenz password to link your client portal access.",
+                  })}
+                  type="info"
+                  showIcon
+                  style={{ marginTop: 8 }}
+                />
+              ) : (
+                <Typography.Text
+                  type="secondary"
+                  style={{
+                    fontSize: 12,
+                    marginTop: 4,
+                    marginBottom: 0,
+                    display: "block",
+                  }}
+                >
+                  {t("invite.password_guideline", {
+                    defaultValue:
+                      "Password must be at least 8 characters, include uppercase and lowercase letters, a number, and a special character.",
+                  })}
+                </Typography.Text>
+              )}
+              {passwordActive && !isWorklenzUser && (
                 <div style={{ marginTop: 8, marginBottom: 4 }}>
                   {passwordChecklistItems.map((item) => {
                     const passed = item.test(passwordValue);
@@ -412,17 +462,19 @@ const InvitePage: React.FC = () => {
             </div>
           </Form.Item>
 
-          <Form.Item
-            name="confirmPassword"
-            rules={validationRules.confirmPassword}
-          >
-            <Input.Password
-              prefix={<LockOutlined />}
-              placeholder={t("invite.confirm_password_placeholder")}
-              size="large"
-              style={styles.button}
-            />
-          </Form.Item>
+          {!isWorklenzUser && (
+            <Form.Item
+              name="confirmPassword"
+              rules={validationRules.confirmPassword}
+            >
+              <Input.Password
+                prefix={<LockOutlined />}
+                placeholder={t("invite.confirm_password_placeholder")}
+                size="large"
+                style={styles.button}
+              />
+            </Form.Item>
+          )}
 
           <Form.Item>
             <Button
@@ -433,7 +485,11 @@ const InvitePage: React.FC = () => {
               loading={isLoading}
               style={styles.button}
             >
-              {t("invite.accept_invite")}
+              {isWorklenzUser
+                ? t("invite.link_account", {
+                    defaultValue: "Link Account & Continue",
+                  })
+                : t("invite.accept_invite")}
             </Button>
           </Form.Item>
 

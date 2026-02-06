@@ -10,6 +10,7 @@ import {
   getColor,
   log_error,
   megabytesToBytes,
+  sanitizePlainText,
 } from "../shared/utils";
 import moment from "moment";
 import { calculateStorage } from "../shared/s3";
@@ -127,10 +128,11 @@ export default class AdminCenterController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    const { searchQuery, size, offset } = this.toPaginationOptions(req.query, [
+    // owner_id is $1, size is $2, offset is $3, so search params start at $4
+    const { searchQuery, searchParams, size, offset } = this.toPaginationOptions(req.query, [
       "outer_tmiv.name",
       "outer_tmiv.email",
-    ]);
+    ], false, 4);
 
     const q = `SELECT ROW_TO_JSON(rec) AS users
             FROM (SELECT COUNT(*) AS total,
@@ -139,13 +141,22 @@ export default class AdminCenterController extends WorklenzControllerBase {
                                       STRING_AGG(DISTINCT CAST(user_id AS VARCHAR), ', ') AS user_id,
                                       STRING_AGG(DISTINCT name, ', ') AS name,
                                       STRING_AGG(DISTINCT avatar_url, ', ') AS avatar_url,
-                                      (SELECT twl.created_at
-                                        FROM task_work_log twl
-                                        WHERE twl.user_id IN (SELECT tmiv.user_id
-                                                              FROM team_member_info_view tmiv
-                                                              WHERE tmiv.email = outer_tmiv.email)
-                                        ORDER BY created_at DESC
-                                        LIMIT 1) AS last_logged
+                                      (SELECT GREATEST(
+                                        (SELECT twl.created_at
+                                          FROM task_work_log twl
+                                          WHERE twl.user_id IN (SELECT tmiv.user_id
+                                                                FROM team_member_info_view tmiv
+                                                                WHERE tmiv.email = outer_tmiv.email)
+                                          ORDER BY created_at DESC
+                                          LIMIT 1),
+                                        (SELECT tal.created_at
+                                          FROM task_activity_logs tal
+                                          WHERE tal.user_id IN (SELECT tmiv.user_id
+                                                                FROM team_member_info_view tmiv
+                                                                WHERE tmiv.email = outer_tmiv.email)
+                                          ORDER BY created_at DESC
+                                          LIMIT 1)
+                                      )) AS last_logged
                                 FROM team_member_info_view outer_tmiv
                                 WHERE outer_tmiv.team_id IN (SELECT id
                                                             FROM teams
@@ -158,7 +169,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
                               (SELECT id
                               FROM teams
                               WHERE teams.user_id = $1) ${searchQuery}) AS total) rec;`;
-    const result = await db.query(q, [req.user?.owner_id, size, offset]);
+    const result = await db.query(q, [req.user?.owner_id, size, offset, ...searchParams]);
     const [data] = result.rows;
 
     return res.status(200).send(new ServerResponse(true, data.users));
@@ -437,9 +448,10 @@ export default class AdminCenterController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    const { searchQuery, size, offset } = this.toPaginationOptions(req.query, [
+    // owner_id is $1, size is $2, offset is $3, team_id is $4, so search params start at $5
+    const { searchQuery, searchParams, size, offset } = this.toPaginationOptions(req.query, [
       "name",
-    ]);
+    ], false, 5);
 
     let size_changed = size;
 
@@ -496,6 +508,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
       size_changed,
       offset,
       req.user?.team_id,
+      ...searchParams,
     ]);
 
     const [obj] = result.rows;
@@ -1251,7 +1264,9 @@ export default class AdminCenterController extends WorklenzControllerBase {
     const result = await db.query(q, [id, req.user?.id, teamId]);
     const [data] = result.rows;
 
-    const message = `You have been removed from <b>${req.user?.team_name}</b> by <b>${req.user?.name}</b>`;
+    const safeName = sanitizePlainText(req.user?.name || 'an administrator');
+    const safeTeamName = sanitizePlainText(req.user?.team_name || 'the team');
+    const message = `You have been removed from <b>${safeTeamName}</b> by <b>${safeName}</b>`;
 
     // if (subscriptionData.status === "trialing") break;
     if (!subscriptionData.is_credit && !subscriptionData.is_custom) {
@@ -1285,10 +1300,10 @@ export default class AdminCenterController extends WorklenzControllerBase {
     }
 
     NotificationsService.sendNotification({
-      receiver_socket_id: data.socket_id,
+      receiver_socket_id: data.member.socket_id,
       message,
-      team: data.team,
-      team_id: id,
+      team: data.member.team,
+      team_id: teamId,
     });
 
     IO.emitByUserId(
@@ -1296,7 +1311,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
       req.user?.id || null,
       SocketEvents.TEAM_MEMBER_REMOVED,
       {
-        teamId: id,
+        teamId: teamId,
         message,
       }
     );
@@ -1318,15 +1333,19 @@ export default class AdminCenterController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    const { searchQuery, size, offset } = this.toPaginationOptions(req.query, [
+    // For count query: owner_id is $1, search params start at $2
+    const countSearchOptions = this.toPaginationOptions(req.query, ["p.name"], false, 2);
+    
+    // For data query: owner_id is $1, offset is $2, size is $3, search params start at $4
+    const { searchQuery, searchParams, size, offset } = this.toPaginationOptions(req.query, [
       "p.name",
-    ]);
+    ], false, 4);
 
     const countQ = `SELECT COUNT(*) AS total
         FROM projects p
         JOIN teams t ON p.team_id = t.id
-        WHERE t.user_id = $1;`;
-    const countResult = await db.query(countQ, [req.user?.owner_id]);
+        WHERE t.user_id = $1 ${countSearchOptions.searchQuery};`;
+    const countResult = await db.query(countQ, [req.user?.owner_id, ...countSearchOptions.searchParams]);
 
     // Query to get the project data
     const dataQ = `SELECT p.id,
@@ -1345,7 +1364,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
         ORDER BY p.name
         OFFSET $2 LIMIT $3;`;
 
-    const result = await db.query(dataQ, [req.user?.owner_id, offset, size]);
+    const result = await db.query(dataQ, [req.user?.owner_id, offset, size, ...searchParams]);
 
     const response = {
       total: countResult.rows[0]?.total ?? 0,

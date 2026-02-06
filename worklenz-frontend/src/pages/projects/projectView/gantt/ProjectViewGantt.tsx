@@ -18,7 +18,6 @@ import {
   transformToGanttTasks,
   transformToGanttPhases,
 } from './services/roadmap-api.service';
-import { TimelineUtils } from './utils/timeline-calculator';
 import { UnifiedTimelineCalculator } from './utils/unified-timeline-calculator';
 import { getColumnWidth } from './constants/gantt-constants';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -29,8 +28,6 @@ import {
   fetchTask,
 } from '@features/task-drawer/task-drawer.slice';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
-import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import { SocketEvents } from '@/shared/socket-events';
 import './gantt-styles.css';
@@ -39,7 +36,6 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   const { projectId } = useParams<{ projectId: string }>();
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
-  const auth = useAuthService();
   const { t } = useTranslation('gantt');
   const [viewMode, setViewMode] = useState<GanttViewMode>('day');
   const [showPhaseModal, setShowPhaseModal] = useState(false);
@@ -63,7 +59,6 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     { projectId: projectId || '' }, 
     { 
       skip: !projectId,
-      // Poll every 30 seconds for real-time updates in collaborative environment
       pollingInterval: 30000,
     }
   );
@@ -77,21 +72,11 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     { projectId: projectId || '' }, 
     { 
       skip: !projectId,
-      // Poll every 30 seconds for real-time updates in collaborative environment
       pollingInterval: 30000,
     }
   );
 
   const [reorderPhases, { isLoading: isReordering }] = useReorderPhasesMutation();
-
-  // Check if user has business feature access for editing capabilities
-  const hasBusinessAccess = useMemo(() => {
-    const session = auth.getCurrentSession();
-    return hasBusinessFeatureAccess(session);
-  }, [auth]);
-
-  // Read-only mode for non-business users
-  const isReadOnly = !hasBusinessAccess;
 
   // Transform API data to component format
   const tasks = useMemo(() => {
@@ -101,7 +86,6 @@ const ProjectViewGantt: React.FC = React.memo(() => {
       const result: any[] = [];
 
       transformedTasks.forEach(task => {
-        // Always show phase milestones
         if (task.type === 'milestone' || task.is_milestone) {
           console.log(`Adding phase to result: ${task.name}`, {
             start_date: task.start_date,
@@ -109,7 +93,6 @@ const ProjectViewGantt: React.FC = React.memo(() => {
             phase_id: task.phase_id
           });
           
-          // Create a deep copy of the task to avoid mutation issues
           const taskCopy = {
             ...task,
             start_date: task.start_date ? new Date(task.start_date) : null,
@@ -119,7 +102,6 @@ const ProjectViewGantt: React.FC = React.memo(() => {
           
           result.push(taskCopy);
 
-          // If this phase is expanded, show its children tasks
           const phaseId =
             task.id === 'phase-unmapped'
               ? 'unmapped'
@@ -132,7 +114,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
                 ...child,
                 start_date: child.start_date ? new Date(child.start_date) : null,
                 end_date: child.end_date ? new Date(child.end_date) : null,
-                phase_id: task.phase_id, // Ensure child has correct phase_id
+                phase_id: task.phase_id,
               });
             });
           }
@@ -151,7 +133,6 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     return [];
   }, [phasesResponse]);
 
-  // Calculate date range based on tasks using unified timeline calculator
   const dateRange = useMemo(() => {
     if (tasks.length > 0) {
       const range = UnifiedTimelineCalculator.createAlignedDateRange(tasks, viewMode, true);
@@ -163,7 +144,6 @@ const ProjectViewGantt: React.FC = React.memo(() => {
       });
       return range;
     }
-    // Create a reasonable default range when no tasks exist
     const today = new Date();
     const start = new Date(today);
     start.setDate(start.getDate() - 15);
@@ -172,7 +152,6 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     return { start, end };
   }, [tasks, viewMode]);
 
-  // Create unified timeline calculator instance
   const timelineCalculator = useMemo(() => {
     if (!dateRange) return null;
     const baseColumnWidth = getColumnWidth(viewMode);
@@ -191,19 +170,16 @@ const ProjectViewGantt: React.FC = React.memo(() => {
 
   const loading = tasksLoading || phasesLoading;
 
-  // Load priorities for task drawer functionality
   useEffect(() => {
     dispatch(fetchPriorities());
   }, [dispatch]);
 
-  // Socket listener for quick task creation response
   useEffect(() => {
     if (!socket) return;
 
     const handleQuickTaskResponse = (response: any) => {
       if (response) {
         message.success(`Task "${response.name}" created successfully`);
-        // Refresh the Gantt data to show the new task
         refetchTasks();
         refetchPhases();
       } else {
@@ -218,23 +194,19 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     };
   }, [socket, refetchTasks, refetchPhases]);
 
-  // Track expansion changes for animations
   useEffect(() => {
     const currentExpanded = expandedTasks;
     const previousExpanded = prevExpandedTasks;
 
-    // Find newly expanded or collapsed phases
     const newlyExpanded = new Set([...currentExpanded].filter(id => !previousExpanded.has(id)));
     const newlyCollapsed = new Set([...previousExpanded].filter(id => !currentExpanded.has(id)));
 
     if (newlyExpanded.size > 0 || newlyCollapsed.size > 0) {
-      // Set animation state for newly changed phases
       setAnimatingTasks(new Set([...newlyExpanded, ...newlyCollapsed]));
 
-      // Clear animation state after animation completes
       const timeout = setTimeout(() => {
         setAnimatingTasks(new Set());
-      }, 400); // Match CSS animation duration
+      }, 400);
 
       setPrevExpandedTasks(new Set(currentExpanded));
 
@@ -249,12 +221,10 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   const handleChartScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const target = e.target as HTMLDivElement;
 
-    // Sync horizontal scroll with timeline
     if (timelineRef.current) {
       timelineRef.current.scrollLeft = target.scrollLeft;
     }
 
-    // Sync vertical scroll with task list
     if (taskListRef.current) {
       taskListRef.current.scrollTop = target.scrollTop;
     }
@@ -263,7 +233,6 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   const handleTaskListScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const target = e.target as HTMLDivElement;
 
-    // Sync vertical scroll with chart
     if (chartRef.current) {
       chartRef.current.scrollTop = target.scrollTop;
     }
@@ -275,54 +244,36 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   }, [refetchTasks, refetchPhases]);
 
   const handleCreatePhase = useCallback(() => {
-    if (isReadOnly) {
-      message.warning(t('businessPlan.phaseCreationRestricted', { defaultValue: 'Phase creation is available for Business plan users only' }));
-      return;
-    }
     setShowPhaseModal(true);
-  }, [isReadOnly, t]);
+  }, []);
 
   const handleCreateTask = useCallback(
     (phaseId?: string) => {
-      if (isReadOnly) {
-        message.warning(t('businessPlan.taskCreationRestricted', { defaultValue: 'Task creation is available for Business plan users only' }));
-        return;
-      }
-
-      // Create a new task using the task drawer
       const newTaskViewModel = {
         id: null,
         name: DEFAULT_TASK_NAME,
         project_id: projectId,
         phase_id: phaseId || null,
-        // Add other default properties as needed
       };
 
       dispatch(setSelectedTaskId(null));
       dispatch(setTaskFormViewModel(newTaskViewModel));
       dispatch(setShowTaskDrawer(true));
     },
-    [dispatch, projectId, isReadOnly, t]
+    [dispatch, projectId]
   );
 
   const handleTaskClick = useCallback(
     (taskId: string) => {
-      if (isReadOnly) {
-        message.info(t('businessPlan.taskEditingRestricted', { defaultValue: 'Task editing is available for Business plan users only' }));
-        return;
-      }
-
-      // Open existing task in the task drawer
       dispatch(setSelectedTaskId(taskId));
-      dispatch(setTaskFormViewModel(null)); // Clear form view model for existing task
+      dispatch(setTaskFormViewModel(null));
       dispatch(setShowTaskDrawer(true));
 
-      // Fetch the complete task data including priorities
       if (projectId) {
         dispatch(fetchTask({ taskId, projectId }));
       }
     },
-    [dispatch, projectId, isReadOnly, t]
+    [dispatch, projectId]
   );
 
   const handleClosePhaseModal = useCallback(() => {
@@ -330,15 +281,9 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   }, []);
 
   const handlePhaseClick = useCallback((phase: any) => {
-    if (isReadOnly) {
-      message.info(t('businessPlan.phaseEditingRestricted', { defaultValue: 'Phase editing is available for Business plan users only' }));
-      return;
-    }
-
-    // Open the PhaseDetailsModal (Configure Phase) when clicking on a phase bar
     setSelectedPhase(phase);
     setShowPhaseDetailsModal(true);
-  }, [isReadOnly, t]);
+  }, []);
 
   const handleClosePhaseDetailsModal = useCallback(() => {
     setShowPhaseDetailsModal(false);
@@ -347,7 +292,6 @@ const ProjectViewGantt: React.FC = React.memo(() => {
 
   const handlePhaseUpdate = useCallback(
     (updatedPhase: any) => {
-      // Refresh the data after phase update
       refetchTasks();
       refetchPhases();
     },
@@ -356,30 +300,19 @@ const ProjectViewGantt: React.FC = React.memo(() => {
 
   const handlePhaseReorder = useCallback(
     async (oldIndex: number, newIndex: number) => {
-      if (isReadOnly) {
-        message.warning(t('businessPlan.phaseReorderingRestricted', { defaultValue: 'Phase reordering is available for Business plan users only' }));
-        return;
-      }
-
       if (!projectId || !phasesResponse?.body) {
         message.error('Unable to reorder phases: missing project data');
         return;
       }
 
-      // Get current phases (already sorted from backend)
       const currentPhases = [...phasesResponse.body];
-
-      // Reorder phases array
       const reorderedPhases = [...currentPhases];
       const [moved] = reorderedPhases.splice(oldIndex, 1);
       reorderedPhases.splice(newIndex, 0, moved);
 
-      // Create phase order data with new indices
-      // Since backend returns phases in descending order (latest first),
-      // we need to assign higher sort_index to phases at the top
       const phase_orders = reorderedPhases.map((phase, index) => ({
         phase_id: phase.id,
-        sort_index: reorderedPhases.length - index, // Higher index for top positions
+        sort_index: reorderedPhases.length - index,
       }));
 
       try {
@@ -389,8 +322,6 @@ const ProjectViewGantt: React.FC = React.memo(() => {
         }).unwrap();
 
         message.success('Phases reordered successfully');
-
-        // Refresh data to reflect the changes
         refetchPhases();
         refetchTasks();
       } catch (error: any) {
@@ -398,16 +329,11 @@ const ProjectViewGantt: React.FC = React.memo(() => {
         message.error(error?.data?.message || 'Failed to reorder phases');
       }
     },
-    [projectId, phasesResponse?.body, reorderPhases, refetchPhases, refetchTasks, isReadOnly, t]
+    [projectId, phasesResponse?.body, reorderPhases, refetchPhases, refetchTasks]
   );
 
   const handleCreateQuickTask = useCallback(
     (taskName: string, phaseId?: string, startDate?: Date) => {
-      if (isReadOnly) {
-        message.warning(t('businessPlan.taskCreationRestricted', { defaultValue: 'Task creation is available for Business plan users only' }));
-        return;
-      }
-
       if (!socket || !projectId || !taskName.trim()) {
         return;
       }
@@ -419,35 +345,29 @@ const ProjectViewGantt: React.FC = React.memo(() => {
         start_date: startDate ? startDate.toISOString().split('T')[0] : null,
       };
 
-      // Emit the task creation event through socket
       socket.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(taskData));
     },
-    [socket, projectId, isReadOnly, t]
+    [socket, projectId]
   );
 
   const handleTaskNameClick = useCallback(
     (task: any) => {
-      // Scroll timeline to show the task bar
       if (chartRef.current && task.start_date && dateRange) {
         const totalTimeSpan = dateRange.end.getTime() - dateRange.start.getTime();
         const timeFromStart = new Date(task.start_date).getTime() - dateRange.start.getTime();
 
-        // Calculate the position based on the current viewport dimensions
         const chartElement = chartRef.current;
         const chartWidth = chartElement.scrollWidth;
         const viewportWidth = chartElement.clientWidth;
 
-        // Calculate the scroll position to center the task
         const taskPosition = (timeFromStart / totalTimeSpan) * chartWidth;
         const scrollPosition = Math.max(0, taskPosition - viewportWidth / 2);
 
-        // Smooth scroll to the task position
         chartElement.scrollTo({
           left: scrollPosition,
           behavior: 'smooth',
         });
 
-        // Also scroll timeline to match
         if (timelineRef.current) {
           timelineRef.current.scrollTo({
             left: scrollPosition,
@@ -461,7 +381,6 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     [dateRange]
   );
 
-  // Handle errors
   if (tasksError || phasesError) {
     message.error('Failed to load Gantt chart data');
   }
@@ -484,83 +403,85 @@ const ProjectViewGantt: React.FC = React.memo(() => {
         dateRange,
         onRefresh: handleRefresh,
         timelineCalculator,
-        isReadOnly,
-        hasBusinessAccess,
       }}
     >
       <div
-        className="flex flex-col h-full w-full bg-gray-50 dark:bg-gray-900"
-        style={{ height: 'calc(100vh - 64px)' }}
+        className="gantt-scroll-container"
+        style={{
+          height: 'calc(100vh - 220px)', // Adjust based on your header height
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
       >
-        <GanttToolbar
-          viewMode={viewMode}
-          onViewModeChange={handleViewModeChange}
-          dateRange={dateRange}
-        />
-        <div className="flex flex-1 overflow-hidden border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800">
-          <div className="relative flex w-full h-full">
-            {/* Fixed Task List - positioned absolutely to avoid scrollbar interference */}
-            <div className="absolute left-0 top-0 bottom-0 z-20 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
-              <GanttTaskList
-                tasks={tasks}
-                projectId={projectId || ''}
-                viewMode={viewMode}
-                onTaskClick={handleTaskClick}
-                onPhaseClick={handlePhaseClick}
-                onCreateTask={handleCreateTask}
-                onCreateQuickTask={handleCreateQuickTask}
-                onCreatePhase={handleCreatePhase}
-                onPhaseReorder={handlePhaseReorder}
-                ref={taskListRef}
-                onScroll={handleTaskListScroll}
-                expandedTasks={expandedTasks}
-                onExpandedTasksChange={setExpandedTasks}
-                animatingTasks={animatingTasks}
-                onTaskNameClick={handleTaskNameClick}
-              />
-            </div>
+        <div className="flex flex-col bg-gray-50 dark:bg-gray-900" style={{ paddingBottom: '24px' }}>
+          <GanttToolbar
+            viewMode={viewMode}
+            onViewModeChange={handleViewModeChange}
+            dateRange={dateRange}
+          />
+          <div className="flex flex-1 overflow-hidden border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800">
+            <div className="relative flex w-full h-full">
+              <div className="absolute left-0 top-0 bottom-0 z-20 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+                <GanttTaskList
+                  tasks={tasks}
+                  projectId={projectId || ''}
+                  viewMode={viewMode}
+                  onTaskClick={handleTaskClick}
+                  onPhaseClick={handlePhaseClick}
+                  onCreateTask={handleCreateTask}
+                  onCreateQuickTask={handleCreateQuickTask}
+                  onCreatePhase={handleCreatePhase}
+                  onPhaseReorder={handlePhaseReorder}
+                  ref={taskListRef}
+                  onScroll={handleTaskListScroll}
+                  expandedTasks={expandedTasks}
+                  onExpandedTasksChange={setExpandedTasks}
+                  animatingTasks={animatingTasks}
+                  onTaskNameClick={handleTaskNameClick}
+                />
+              </div>
 
-            {/* Scrollable Timeline and Chart - with left margin for task list */}
-            <div
-              className="flex-1 flex flex-col overflow-hidden gantt-timeline-container"
-              style={{ marginLeft: '444px' }}
-              ref={containerRef}
-            >
-              <GanttTimeline
-                viewMode={viewMode}
-                ref={timelineRef}
-                containerRef={containerRef}
-                dateRange={dateRange}
-              />
-              <GanttChart
-                tasks={tasks}
-                viewMode={viewMode}
-                ref={chartRef}
-                onScroll={handleChartScroll}
-                onPhaseClick={handlePhaseClick}
-                onTaskClick={handleTaskClick}
-                containerRef={containerRef}
-                dateRange={dateRange}
-                phases={phases}
-                expandedTasks={expandedTasks}
-                animatingTasks={animatingTasks}
-                onCreateQuickTask={handleCreateQuickTask}
-                projectId={projectId || ''}
-                onRefresh={handleRefresh}
-              />
+              <div
+                className="flex-1 flex flex-col overflow-hidden gantt-timeline-container"
+                style={{ marginLeft: '444px' }}
+                ref={containerRef}
+              >
+                <GanttTimeline
+                  viewMode={viewMode}
+                  ref={timelineRef}
+                  containerRef={containerRef}
+                  dateRange={dateRange}
+                />
+                <GanttChart
+                  tasks={tasks}
+                  viewMode={viewMode}
+                  ref={chartRef}
+                  onScroll={handleChartScroll}
+                  onPhaseClick={handlePhaseClick}
+                  onTaskClick={handleTaskClick}
+                  containerRef={containerRef}
+                  dateRange={dateRange}
+                  phases={phases}
+                  expandedTasks={expandedTasks}
+                  animatingTasks={animatingTasks}
+                  onCreateQuickTask={handleCreateQuickTask}
+                  projectId={projectId || ''}
+                  onRefresh={handleRefresh}
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Phase Management Modal */}
       <ManagePhaseModal
         open={showPhaseModal}
         onClose={handleClosePhaseModal}
         projectId={projectId}
       />
 
-      {/* Phase Details Modal */}
       <PhaseDetailsModal
         open={showPhaseDetailsModal}
         onClose={handleClosePhaseDetailsModal}

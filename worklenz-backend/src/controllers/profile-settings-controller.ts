@@ -1,14 +1,14 @@
 import db from "../config/db";
 import HandleExceptions from "../decorators/handle-exceptions";
-import {IPassportSession} from "../interfaces/passport-session";
+import { IPassportSession } from "../interfaces/passport-session";
 
-import {IWorkLenzRequest} from "../interfaces/worklenz-request";
-import {IWorkLenzResponse} from "../interfaces/worklenz-response";
+import { IWorkLenzRequest } from "../interfaces/worklenz-request";
+import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 
-import {ServerResponse} from "../models/server-response";
-import {NotificationsService} from "../services/notifications/notifications.service";
-import {slugify} from "../shared/utils";
-import {generateProjectKey} from "../utils/generate-project-key";
+import { ServerResponse } from "../models/server-response";
+import { NotificationsService } from "../services/notifications/notifications.service";
+import { slugify, sanitizePlainText } from "../shared/utils";
+import { generateProjectKey } from "../utils/generate-project-key";
 import WorklenzControllerBase from "./worklenz-controller-base";
 
 export default class ProfileSettingsController extends WorklenzControllerBase {
@@ -41,12 +41,15 @@ export default class ProfileSettingsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async update(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // Sanitize name to prevent HTML injection (defense in depth - validator should handle this too)
+    const sanitizedName = sanitizePlainText(req.body.name);
+
     const q = `UPDATE users
                SET name       = $2,
                    updated_at = CURRENT_TIMESTAMP
                WHERE id = $1
-               RETURNING id, name, email;`;
-    const result = await db.query(q, [req.user?.id, req.body.name]);
+               RETURNING id, name, email, updated_at;`;
+    const result = await db.query(q, [req.user?.id, sanitizedName]);
     const [data] = result.rows;
     return res.status(200).send(new ServerResponse(true, data));
   }

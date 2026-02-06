@@ -261,14 +261,18 @@ export const fetchSubTasks = createAsyncThunk(
 export const fetchTaskListColumns = createAsyncThunk(
   'tasks/fetTaskListColumns',
   async (projectId: string, { dispatch }) => {
-    const [standardColumns, customColumns] = await Promise.all([
+    const [standardColumns, customColumnsAction] = await Promise.all([
       tasksApiService.fetchTaskListColumns(projectId),
       dispatch(fetchCustomColumns(projectId)),
     ]);
 
+    // Extract the actual payload from the dispatched action
+    // Use unwrap() or check if payload exists
+    const customColumns = customColumnsAction.payload || [];
+
     return {
       standard: standardColumns.body,
-      custom: customColumns.payload,
+      custom: Array.isArray(customColumns) ? customColumns : [],
     };
   }
 );
@@ -632,6 +636,7 @@ const taskSlice = createSlice({
         assignees: ITeamMemberViewModel[];
       }>
     ) => {
+      if (!action.payload) return;
       const { groupId, taskId, assignees } = action.payload;
       const group = state.taskGroups.find(group => group.id === groupId);
       if (!group) return;
@@ -656,6 +661,7 @@ const taskSlice = createSlice({
     },
 
     updateTaskLabel: (state, action: PayloadAction<ILabelsChangeResponse>) => {
+      if (!action.payload) return;
       const label = action.payload;
       for (const group of state.taskGroups) {
         // Find the task or its subtask
@@ -673,6 +679,7 @@ const taskSlice = createSlice({
     },
 
     updateTaskStatus: (state, action: PayloadAction<ITaskListStatusChangeResponse>) => {
+      if (!action.payload) return;
       const {
         id,
         status_id,
@@ -716,6 +723,7 @@ const taskSlice = createSlice({
         task: IProjectTask;
       }>
     ) => {
+      if (!action.payload) return;
       const { task } = action.payload;
 
       for (const group of state.taskGroups) {
@@ -735,6 +743,7 @@ const taskSlice = createSlice({
         task: IProjectTask;
       }>
     ) => {
+      if (!action.payload) return;
       const { task } = action.payload;
 
       for (const group of state.taskGroups) {
@@ -754,6 +763,7 @@ const taskSlice = createSlice({
         task: IProjectTask;
       }>
     ) => {
+      if (!action.payload) return;
       const { task } = action.payload;
 
       for (const group of state.taskGroups) {
@@ -768,6 +778,7 @@ const taskSlice = createSlice({
     },
 
     updateTaskPhase: (state, action: PayloadAction<ITaskPhaseChangeResponse>) => {
+      if (!action.payload) return;
       const { id: phase_id, task_id, color_code } = action.payload;
 
       if (!task_id || !phase_id) return;
@@ -830,6 +841,7 @@ const taskSlice = createSlice({
     },
 
     updateTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
+      if (!action.payload) return;
       const { id, priority_id, color_code, color_code_dark } = action.payload;
 
       // Find the task in any group
@@ -865,6 +877,7 @@ const taskSlice = createSlice({
         description: string;
       }>
     ) => {
+      if (!action.payload) return;
       const { id: taskId, description, parent_task } = action.payload;
       for (const group of state.taskGroups) {
         const existingTask =
@@ -1036,6 +1049,7 @@ const taskSlice = createSlice({
     },
 
     updateRecurringChange: (state, action: PayloadAction<ITaskRecurringScheduleData>) => {
+      if (!action.payload) return;
       const { id, schedule_type, task_id } = action.payload;
       const taskInfo = findTaskInGroups(state.taskGroups, task_id as string);
       if (!taskInfo) return;
@@ -1119,11 +1133,14 @@ const taskSlice = createSlice({
           index: 1,
           pinned: true,
         });
-        // Process custom columns
-        const customColumns = (action.payload as { custom: any[] }).custom.map((col: any) => ({
-          ...col,
-          isCustom: true,
-        }));
+        // Process custom columns with safety check
+        const customPayload = action.payload.custom;
+        const customColumns = Array.isArray(customPayload)
+          ? customPayload.map((col: any) => ({
+              ...col,
+              isCustom: true,
+            }))
+          : [];
 
         // Merge columns
         state.columns = [...standardColumns, ...customColumns];

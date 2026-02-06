@@ -38,6 +38,7 @@ export interface DashboardStats {
   totalInvoices: number;
   unpaidInvoices: number;
   unpaidAmount: number;
+  teamMembers: number;
 }
 
 export interface ClientService {
@@ -290,6 +291,8 @@ export interface InvoiceDetails {
   paidAt?: string;
   createdAt: string;
   updatedAt: string;
+  paymentProofUrl?: string | null;
+  notes?: string | null;
   isOverdue: boolean;
   request?: {
     id: string;

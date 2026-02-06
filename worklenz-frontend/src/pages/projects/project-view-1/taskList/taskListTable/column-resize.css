@@ -19,24 +19,24 @@
   transition: all 0.15s ease;
 }
 
-/* Hover state - show blue indicator */
+/* Hover state - show gray indicator */
 .column-resize-handle:hover,
 .column-resize-handle:active {
-  background-color: #1890ff;
+  background-color: #9ca3af; /* gray */
   cursor: col-resize !important;
 }
 
 /* Visual indicator on column header hover */
 th.group:hover .column-resize-handle {
   opacity: 1;
-  background-color: rgba(24, 144, 255, 0.3);
+  background-color: rgba(156, 163, 175, 0.35); /* gray */
 }
 
 /* Active dragging state */
 .column-resize-handle:active {
-  background-color: #1890ff;
+  background-color: #9ca3af; /* gray */
   width: 4px;
-  box-shadow: 0 0 4px rgba(24, 144, 255, 0.5);
+  box-shadow: 0 0 4px rgba(156, 163, 175, 0.5);
 }
 
 /* Prevent text selection during resize */
@@ -48,11 +48,11 @@ body.column-resizing {
 /* Dark theme support */
 [data-theme="dark"] .column-resize-handle:hover,
 [data-theme="dark"] .column-resize-handle:active {
-  background-color: #177ddc;
+  background-color: #9ca3af; /* gray even in dark */
 }
 
 [data-theme="dark"] th.group:hover .column-resize-handle {
-  background-color: rgba(23, 125, 220, 0.3);
+  background-color: rgba(156, 163, 175, 0.35);
 }
 
 /* Resize handle for sticky columns (task, selector) */
@@ -63,14 +63,8 @@ th.sticky .column-resize-handle {
 
 /* Visual feedback - resize line during drag */
 .column-resize-indicator {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background-color: #1890ff;
-  pointer-events: none;
-  z-index: 9999;
-  box-shadow: 0 0 4px rgba(24, 144, 255, 0.6);
+  /* Hide the visual indicator while keeping resize logic intact */
+  display: none;
 }
 
 /* Tooltip for resize hint */
@@ -91,15 +85,9 @@ th.sticky .column-resize-handle {
   color: #000;
 }
 
-/* Smooth column width transitions (optional - can be disabled for performance) */
+/* Remove width transitions to make resize feel immediate */
 th,
 td {
-  transition: width 0.05s ease-out;
-}
-
-/* Disable transitions during active resize for better performance */
-body.column-resizing th,
-body.column-resizing td {
   transition: none !important;
 }
 
@@ -132,4 +120,70 @@ th.max-width-reached .column-resize-handle {
 .column-resize-handle:focus-visible {
   outline: 2px solid #1890ff;
   outline-offset: -2px;
+}
+
+/* Column drag handle for reordering */
+.column-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  margin-left: 4px;
+  border-radius: 9999px;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.1);
+  color: #0f9c6e;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: grab;
+  user-select: none;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease,
+    opacity 0.12s ease,
+    visibility 0.12s ease;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.column-drag-handle:hover {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.6);
+  transform: translateY(-1px);
+}
+
+.column-drag-handle:active {
+  cursor: grabbing;
+  transform: translateY(0);
+}
+
+.column-header-cell:hover .column-drag-handle,
+.column-drag-handle:focus-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+[data-theme="dark"] .column-drag-handle {
+  border-color: rgba(16, 185, 129, 0.5);
+  background: rgba(16, 185, 129, 0.15);
+  color: #22d3a3;
+}
+
+[data-theme="dark"] .column-drag-handle:hover {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: rgba(16, 185, 129, 0.75);
+}
+
+/* Drop target highlighting */
+.column-drop-target {
+  box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+[data-theme="dark"] .column-drop-target {
+  box-shadow: inset 0 0 0 2px rgba(34, 211, 165, 0.55);
+  background: rgba(34, 211, 165, 0.12);
 }

@@ -105,6 +105,20 @@ const NewRequestPage: React.FC = () => {
 
   const onFinish = async (values: Record<string, unknown>) => {
     try {
+      // Validate required fields
+      if (!values.service_id) {
+        message.error(t("requests.selectServiceRequired") || "Please select a service");
+        return;
+      }
+      if (!values.title) {
+        message.error(t("requests.titleRequired") || "Please enter a title");
+        return;
+      }
+      if (!values.description) {
+        message.error(t("requests.descriptionRequired") || "Please enter a description");
+        return;
+      }
+
       // Collect question attachments IDs
       const attachmentIds: string[] = [];
       Object.values(questionAttachments).forEach(files => {
@@ -160,8 +174,12 @@ const NewRequestPage: React.FC = () => {
         notes: values.description as string,
       };
 
+      console.log('[NewRequestPage] Submitting request with data:', requestData);
+
       const result = await createRequest(requestData).unwrap();
       const requestId = result?.body?.id;
+      
+      console.log('[NewRequestPage] Request created successfully:', result);
       
       // Link attachments to the newly created request if we have attachment IDs
       if (attachmentIds.length > 0 && requestId) {
@@ -176,11 +194,12 @@ const NewRequestPage: React.FC = () => {
       // Mark question attachments as submitted to prevent cleanup
       Object.values(questionMarkAsSubmittedRefs.current).forEach(fn => fn?.());
       
-      message.success(t("requests.createSuccess"));
+      message.success(t("requests.createSuccess") || "Request submitted successfully");
       navigate("/requests");
-    } catch (error) {
-      message.error(t("requests.createError"));
-      console.error("Error creating request:", error);
+    } catch (error: any) {
+      console.error("[NewRequestPage] Error creating request:", error);
+      const errorMessage = error?.data?.message || error?.message || t("requests.createError") || "Failed to submit request";
+      message.error(errorMessage);
     }
   };
 

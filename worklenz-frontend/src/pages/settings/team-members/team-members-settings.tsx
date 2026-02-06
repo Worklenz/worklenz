@@ -56,7 +56,7 @@ const TeamMembersSettings = () => {
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
   const auth = useAuthService();
-  const refreshTeamMembers = useAppSelector(state => state.memberReducer.refreshTeamMembers); // Listen to refresh flag
+  const refreshTeamMembers = useAppSelector(state => state.memberReducer.refreshTeamMembers);
 
   useDocumentTitle(t('title') || 'Team Members');
 
@@ -66,6 +66,7 @@ const TeamMembersSettings = () => {
   const [isManagerDrawerVisible, setManagerDrawerVisible] = useState(false);
   const [selectedMember, setSelectedMember] = useState<ITeamMemberViewModel | null>(null);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [selectedMemberRole, setSelectedMemberRole] = useState<string | null>(null); // Add this
   const [selectedMembers, setSelectedMembers] = useState<ITeamMemberViewModel[]>([]);
   const [isBulkAssignDrawerVisible, setBulkAssignDrawerVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -140,8 +141,9 @@ const TeamMembersSettings = () => {
   }, [getTeamMembers]);
 
   const handleMemberClick = useCallback(
-    (memberId: string) => {
+    (memberId: string, roleName?: string) => {
       setSelectedMemberId(memberId);
+      setSelectedMemberRole(roleName || null);
       dispatch(toggleUpdateMemberDrawer());
     },
     [dispatch]
@@ -183,14 +185,24 @@ const TeamMembersSettings = () => {
 
   
   const handleTableChange = useCallback((newPagination: any, filters: any, sorter: any) => {
+    // Extract field - ensure it's always a single string, not an array
+    let field = 'name';
+    if (sorter.field) {
+      // If sorter.field is an array, take the first element, otherwise use it as-is
+      field = Array.isArray(sorter.field) ? sorter.field[0] : sorter.field;
+    }
+    
+    // Extract order - if no order specified, maintain current order or default to 'asc'
+    const order = sorter.order ? (sorter.order === 'ascend' ? 'asc' : 'desc') : pagination.order;
+    
     setPagination(prev => ({
       ...prev,
       current: newPagination.current,
       pageSize: newPagination.pageSize,
-      field: sorter.field || 'name',
-      order: sorter.order === 'ascend' ? 'asc' : 'desc',
+      field: field,
+      order: order,
     }));
-  }, []);
+  }, [pagination]);
 
   useEffect(() => {
     if (socket) {
@@ -240,7 +252,7 @@ const TeamMembersSettings = () => {
         label: t('editTooltip'),
         icon: <EditOutlined />,
         disabled: !canManage,
-        onClick: () => canManage && record.id && handleMemberClick(record.id),
+        onClick: () => canManage && record.id && handleMemberClick(record.id, record.role_name),
       },
       {
         key: 'status',
@@ -286,7 +298,7 @@ const TeamMembersSettings = () => {
         defaultSortOrder: 'ascend',
         sorter: true,
         onCell: (record: ITeamMemberViewModel) => ({
-          onClick: () => handleMemberClick(record.id || ''),
+          onClick: () => handleMemberClick(record.id || '', record.role_name),
           style: { cursor: 'pointer' },
         }),
         render: (_, record: ITeamMemberViewModel) => (
@@ -317,7 +329,7 @@ const TeamMembersSettings = () => {
         title: t('projectsColumn'),
         sorter: true,
         onCell: (record: ITeamMemberViewModel) => ({
-          onClick: () => handleMemberClick(record.id || ''),
+          onClick: () => handleMemberClick(record.id || '', record.role_name),
           style: { cursor: 'pointer' },
         }),
         render: (_, record: ITeamMemberViewModel) => (
@@ -330,7 +342,7 @@ const TeamMembersSettings = () => {
         title: t('emailColumn'),
         sorter: true,
         onCell: (record: ITeamMemberViewModel) => ({
-          onClick: () => handleMemberClick(record.id || ''),
+          onClick: () => handleMemberClick(record.id || '', record.role_name),
           style: { cursor: 'pointer' },
         }),
         render: (_, record: ITeamMemberViewModel) => (
@@ -350,7 +362,7 @@ const TeamMembersSettings = () => {
         title: t('teamAccessColumn'),
         sorter: true,
         onCell: (record: ITeamMemberViewModel) => ({
-          onClick: () => handleMemberClick(record.id || ''),
+          onClick: () => handleMemberClick(record.id || '', record.role_name),
           style: { cursor: 'pointer' },
         }),
         render: (_, record: ITeamMemberViewModel) => (
@@ -478,7 +490,7 @@ const TeamMembersSettings = () => {
         },
       },
     ],
-    [t, isPrivilegedUser, effectiveRole, currentUser?.owner, getActionMenuItems, canManageUser, handleStatusChange, handleDeleteMember]
+    [t, isPrivilegedUser, effectiveRole, currentUser?.owner, getActionMenuItems, canManageUser, handleStatusChange, handleDeleteMember, handleMemberClick]
   );
 
   return (
@@ -592,7 +604,11 @@ const TeamMembersSettings = () => {
         onAssignmentComplete={handleBulkAssignComplete}
       />
       {createPortal(
-        <UpdateMemberDrawer selectedMemberId={selectedMemberId} onRoleUpdate={handleRoleUpdate} />,
+        <UpdateMemberDrawer 
+          selectedMemberId={selectedMemberId} 
+          onRoleUpdate={handleRoleUpdate}
+          initialRoleName={selectedMemberRole}
+        />,
         document.body
       )}
     </>

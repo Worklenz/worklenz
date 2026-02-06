@@ -5,14 +5,22 @@ import {SocketEvents} from "../events";
 import {log_error, notifyProjectUpdates} from "../util";
 import {getTaskDetails, logStartDateChange} from "../../services/activity-logs/activity-logs.service";
 import momentTime from "moment-timezone";
+import {verifyTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
 
 export async function on_task_start_date_change(_io: Server, socket: Socket, data?: string) {
   try {
+    const body = JSON.parse(data as string);
+    
+    const hasAccess = await verifyTaskAccessSocket(socket, body.task_id);
+    if (!hasAccess) {
+      logUnauthorizedSocketAccess(socket, 'TASK_START_DATE_CHANGE', 'task', body.task_id);
+      return;
+    }
+    
     const q = `UPDATE tasks
                SET start_date = $2
                WHERE id = $1
                RETURNING start_date, end_date;`;
-    const body = JSON.parse(data as string);
     const task_data = await getTaskDetails(body.task_id, "start_date");
     const result = await db.query(q, [body.task_id, body.start_date]);
 

@@ -160,16 +160,63 @@ const CustomMentionsInput = ({
     return plainText;
   };
 
+  // Helper function to safely add a range to selection
+  const safelyAddRange = (selection: Selection, range: Range): boolean => {
+    if (!selection || !range) return false;
+    
+    try {
+      // Validate that the range is still valid
+      if (!range.startContainer || !range.endContainer) return false;
+      
+      // Check if containers are still in the DOM
+      if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
+        return false;
+      }
+      
+      // Validate that the editable element is still in the DOM
+      if (!editableRef.current || !document.contains(editableRef.current)) {
+        return false;
+      }
+      
+      // Ensure the range is within the editable element
+      if (!editableRef.current.contains(range.startContainer) || 
+          !editableRef.current.contains(range.endContainer)) {
+        return false;
+      }
+      
+      selection.removeAllRanges();
+      selection.addRange(range);
+      return true;
+    } catch (e) {
+      // Selection might be in an invalid state
+      console.debug('Failed to add range to selection:', e);
+      return false;
+    }
+  };
+
   // Get cursor position that respects mention boundaries
   const getCursorPosition = () => {
     const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return 0;
-    
-    const range = selection.getRangeAt(0);
-    const preCaretRange = range.cloneRange();
-    preCaretRange.selectNodeContents(editableRef.current!);
-    preCaretRange.setEnd(range.endContainer, range.endOffset);
-    
+    if (!selection || selection.rangeCount === 0 || !editableRef.current) return 0;
+
+    let range;
+    try {
+      range = selection.getRangeAt(0);
+      
+      // Validate range is still valid
+      if (!range.startContainer || !range.endContainer) return 0;
+      if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
+        return 0;
+      }
+      
+      const preCaretRange = range.cloneRange();
+      preCaretRange.selectNodeContents(editableRef.current!);
+      preCaretRange.setEnd(range.endContainer, range.endOffset);
+    } catch (e) {
+      // Selection might be in an invalid state
+      return 0;
+    }
+
     // Walk through nodes to count text length
     let length = 0;
     const walker = document.createTreeWalker(
@@ -187,7 +234,7 @@ const CustomMentionsInput = ({
         }
       }
     );
-    
+
     let currentNode: Node | null;
     while ((currentNode = walker.nextNode())) {
       if (currentNode === range.endContainer) {
@@ -205,7 +252,7 @@ const CustomMentionsInput = ({
         length += currentNode.textContent?.length || 0;
       }
     }
-    
+
     return length;
   };
 
@@ -214,7 +261,19 @@ const CustomMentionsInput = ({
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return false;
     
-    const range = selection.getRangeAt(0);
+    let range;
+    try {
+      range = selection.getRangeAt(0);
+      
+      // Validate range is still valid
+      if (!range.startContainer || !range.endContainer) return false;
+      if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+    
     let node = range.commonAncestorContainer;
     
     // If it's a text node, check its parent
@@ -236,14 +295,26 @@ const CustomMentionsInput = ({
   // Move cursor after mention with a space
   const moveCursorAfterMentionWithSpace = () => {
     const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
+    if (!selection || selection.rangeCount === 0 || !editableRef.current) return;
     
-    const range = selection.getRangeAt(0);
+    let range;
+    try {
+      range = selection.getRangeAt(0);
+      
+      // Validate range is still valid
+      if (!range.startContainer || !range.endContainer) return;
+      if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
+        return;
+      }
+    } catch (e) {
+      return;
+    }
+    
     const mention = range.commonAncestorContainer.nodeType === Node.TEXT_NODE 
       ? range.commonAncestorContainer.parentNode
       : range.commonAncestorContainer;
     
-    if (!mention || mention === editableRef.current) return;
+    if (!mention || mention === editableRef.current || !document.contains(mention)) return;
     
     const newRange = document.createRange();
     
@@ -270,8 +341,7 @@ const CustomMentionsInput = ({
     }
     
     newRange.collapse(true);
-    selection.removeAllRanges();
-    selection.addRange(newRange);
+    safelyAddRange(selection, newRange);
   };
 
   // Handle input changes
@@ -342,13 +412,24 @@ const CustomMentionsInput = ({
       
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
+        let range;
+        try {
+          range = selection.getRangeAt(0);
+          
+          // Validate range is still valid
+          if (!range.startContainer || !range.endContainer) return;
+          if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
+            return;
+          }
+        } catch (err) {
+          return;
+        }
+        
         const textNode = document.createTextNode(e.key);
         range.insertNode(textNode);
         range.setStartAfter(textNode);
         range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
+        safelyAddRange(selection, range);
         
         // Trigger input update
         setTimeout(() => {
@@ -372,7 +453,18 @@ const CustomMentionsInput = ({
     if (e.key === 'Backspace' || e.key === 'Delete') {
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
+        let range;
+        try {
+          range = selection.getRangeAt(0);
+          
+          // Validate range is still valid
+          if (!range.startContainer || !range.endContainer) return;
+          if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
+            return;
+          }
+        } catch (err) {
+          return;
+        }
         
         if (e.key === 'Backspace' && range.collapsed) {
           const previousNode = range.startContainer.childNodes[range.startOffset - 1];
@@ -477,18 +569,39 @@ const CustomMentionsInput = ({
     const selection = window.getSelection();
     if (!selection || !editableRef.current) return;
     
+    // Check if editable element is still in the DOM
+    if (!document.contains(editableRef.current)) {
+      return;
+    }
+
+    // Guard against invalid selection state
+    try {
+      selection.removeAllRanges();
+    } catch (e) {
+      // Selection might be in an invalid state, skip restoration
+      return;
+    }
+    
     const newRange = document.createRange();
     let currentPos = 0;
     let found = false;
     
     const walkNodes = (node: Node): boolean => {
+      // Validate node is still in the DOM
+      if (!document.contains(node)) return false;
+      
       if (node.nodeType === Node.TEXT_NODE) {
         const textLength = node.textContent?.length || 0;
         if (currentPos + textLength >= offset) {
-          newRange.setStart(node, offset - currentPos);
-          newRange.collapse(true);
-          found = true;
-          return true;
+          try {
+            newRange.setStart(node, Math.min(offset - currentPos, textLength));
+            newRange.collapse(true);
+            found = true;
+            return true;
+          } catch (e) {
+            console.debug('Failed to set range start:', e);
+            return false;
+          }
         }
         currentPos += textLength;
         return false;
@@ -503,16 +616,29 @@ const CustomMentionsInput = ({
             const nextSibling = node.nextSibling;
             if (nextSibling && nextSibling.nodeType === Node.TEXT_NODE && nextSibling.textContent?.startsWith(' ')) {
               // Place cursor after the space
-              newRange.setStart(nextSibling, 1);
+              try {
+                newRange.setStart(nextSibling, 1);
+                newRange.collapse(true);
+                found = true;
+                return true;
+              } catch (e) {
+                console.debug('Failed to set range start after space:', e);
+                return false;
+              }
             } else {
               // Create a space after the mention
-              const spaceNode = document.createTextNode(' ');
-              node.parentNode?.insertBefore(spaceNode, node.nextSibling);
-              newRange.setStart(spaceNode, 1);
+              try {
+                const spaceNode = document.createTextNode(' ');
+                node.parentNode?.insertBefore(spaceNode, node.nextSibling);
+                newRange.setStart(spaceNode, 1);
+                newRange.collapse(true);
+                found = true;
+                return true;
+              } catch (e) {
+                console.debug('Failed to create space node:', e);
+                return false;
+              }
             }
-            newRange.collapse(true);
-            found = true;
-            return true;
           }
           currentPos += textLength;
           return false;
@@ -529,23 +655,31 @@ const CustomMentionsInput = ({
     };
     
     walkNodes(editableRef.current);
-    
-    if (found) {
-      selection.removeAllRanges();
-      selection.addRange(newRange);
-    } else {
-      // Place cursor at end
-      const lastNode = editableRef.current.lastChild;
-      if (lastNode) {
-        if (lastNode.nodeType === Node.TEXT_NODE) {
-          newRange.setStart(lastNode, lastNode.textContent?.length || 0);
-        } else {
-          newRange.setStartAfter(lastNode);
+
+    try {
+      if (found) {
+        safelyAddRange(selection, newRange);
+      } else {
+        // Place cursor at end
+        const lastNode = editableRef.current.lastChild;
+        if (lastNode && document.contains(lastNode)) {
+          try {
+            if (lastNode.nodeType === Node.TEXT_NODE) {
+              const textLength = lastNode.textContent?.length || 0;
+              newRange.setStart(lastNode, textLength);
+            } else {
+              newRange.setStartAfter(lastNode);
+            }
+            newRange.collapse(true);
+            safelyAddRange(selection, newRange);
+          } catch (e) {
+            console.debug('Failed to set cursor at end:', e);
+          }
         }
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
       }
+    } catch (e) {
+      // Ignore errors from selection manipulation - browser may be in invalid state
+      console.debug('Selection restoration failed:', e);
     }
   };
 
@@ -810,7 +944,7 @@ const InfoTabFooter = () => {
     if (!selectedTaskId || !projectId) return;
 
     if (!isCommentValid()) {
-      message.error(t('taskInfoTab.comments.addCommentError'));
+      message.error(t('taskInfoTab.comments.addCommentError', { defaultValue: 'Please add a comment or attachment' }));
       return;
     }
 
@@ -854,7 +988,7 @@ const InfoTabFooter = () => {
     const files = Array.from(event.target.files);
 
     if (selectedFiles.length + files.length > MAXIMUM_FILE_COUNT) {
-      message.error(t('taskInfoTab.comments.maxFilesError', { count: MAXIMUM_FILE_COUNT }));
+      message.error(t('taskInfoTab.comments.maxFilesError', { count: MAXIMUM_FILE_COUNT, defaultValue: 'Maximum {count} files allowed' }));
       return;
     }
 
@@ -884,7 +1018,7 @@ const InfoTabFooter = () => {
       }
     } catch (error) {
       console.error('Failed to process files:', error);
-      message.error(t('taskInfoTab.comments.processFilesError'));
+      message.error(t('taskInfoTab.comments.processFilesError', { defaultValue: 'Failed to process files' }));
     } finally {
       setUploading(false);
 
@@ -942,7 +1076,7 @@ const InfoTabFooter = () => {
           }}
         >
           <CustomMentionsInput
-            placeholder={t('taskInfoTab.comments.addCommentPlaceholder')}
+            placeholder={t('taskInfoTab.comments.addCommentPlaceholder', { defaultValue: 'Add a comment...' })}
             options={mentionsOptions}
             value={commentValue}
             onClick={() => setIsCommentBoxExpand(true)}
@@ -977,7 +1111,7 @@ const InfoTabFooter = () => {
           {selectedFiles.length > 0 && (
             <Flex vertical gap={8} style={{ marginTop: 12 }}>
               <Typography.Title level={5} style={{ margin: 0 }}>
-                {t('taskInfoTab.comments.selectedFiles', { count: MAXIMUM_FILE_COUNT })}
+                {t('taskInfoTab.comments.selectedFiles', { count: MAXIMUM_FILE_COUNT, defaultValue: 'Selected Files ({count} max)' })}
               </Typography.Title>
               <Flex
                 vertical
@@ -1033,7 +1167,7 @@ const InfoTabFooter = () => {
                     icon={<PlusOutlined />}
                     disabled={selectedFiles.length >= MAXIMUM_FILE_COUNT || uploading}
                   >
-                    {t('taskInfoTab.comments.addMoreFiles')}
+                    {t('taskInfoTab.comments.addMoreFiles', { defaultValue: 'Add More Files' })}
                   </Button>
                 </Flex>
               </Flex>
@@ -1043,7 +1177,7 @@ const InfoTabFooter = () => {
           <Form.Item name={'comment'} style={{ marginBlock: 12 }}>
             <div style={{ position: 'relative' }}>
               <CustomMentionsInput
-                placeholder={t('taskInfoTab.comments.addCommentPlaceholder')}
+                placeholder={t('taskInfoTab.comments.addCommentPlaceholder', { defaultValue: 'Add a comment...' })}
                 options={mentionsOptions}
                 autoFocus
                 value={commentValue}
@@ -1090,8 +1224,8 @@ const InfoTabFooter = () => {
               <Tooltip
                 title={
                   selectedFiles.length >= MAXIMUM_FILE_COUNT
-                    ? t('taskInfoTab.comments.maxFilesError', { count: MAXIMUM_FILE_COUNT })
-                    : t('taskInfoTab.comments.attachFiles')
+                    ? t('taskInfoTab.comments.maxFilesError', { count: MAXIMUM_FILE_COUNT, defaultValue: 'Maximum {count} files allowed' })
+                    : t('taskInfoTab.comments.attachFiles', { defaultValue: 'Attach Files' })
                 }
               >
                 <Button
@@ -1102,14 +1236,14 @@ const InfoTabFooter = () => {
               </Tooltip>
 
               <Space>
-                <Button onClick={handleCancel}>{t('taskInfoTab.comments.cancel')}</Button>
+                <Button onClick={handleCancel}>{t('taskInfoTab.comments.cancel', { defaultValue: 'Cancel' })}</Button>
                 <Button
                   type="primary"
                   disabled={!isCommentValid()}
                   onClick={handleSubmit}
                   loading={uploading}
                 >
-                  {t('taskInfoTab.comments.commentButton')}
+                  {t('taskInfoTab.comments.commentButton', { defaultValue: 'Comment' })}
                 </Button>
               </Space>
             </Flex>
@@ -1121,6 +1255,7 @@ const InfoTabFooter = () => {
         <Tooltip title={createdFromNow !== 'N/A' ? `Created ${createdFromNow}` : 'N/A'}>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {t('taskInfoTab.comments.createdBy', {
+              defaultValue: 'Created {time} by {user}',
               time: createdFromNow,
               user: taskFormViewModel?.task?.reporter || '',
             })}
@@ -1129,6 +1264,7 @@ const InfoTabFooter = () => {
         <Tooltip title={updatedFromNow !== 'N/A' ? `Updated ${updatedFromNow}` : 'N/A'}>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {t('taskInfoTab.comments.updatedTime', {
+              defaultValue: 'Updated {time}',
               time: updatedFromNow,
             })}
           </Typography.Text>

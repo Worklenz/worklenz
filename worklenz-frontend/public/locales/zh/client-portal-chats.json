@@ -57,5 +57,6 @@
   "attachFile": "附加文件",
   "emojiPicker": "添加表情",
   "noChatsWithClient": "与此客户还没有对话",
-  "startConversationWithClient": "开始对话以与客户讨论此请求。"
+  "startConversationWithClient": "开始对话以与客户讨论此请求。",
+  "messageUnavailable": "消息不可用"
 }

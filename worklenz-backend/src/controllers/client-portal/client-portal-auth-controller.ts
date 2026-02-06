@@ -38,6 +38,17 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
 
       const client = clientResult.rows[0];
 
+      // Check if email exists in Worklenz users table
+      let isExistingWorklenzUser = false;
+      if (client.email) {
+        const existingWorklenzUserQuery = `
+          SELECT id FROM users
+          WHERE LOWER(email) = LOWER($1) AND is_deleted = FALSE
+        `;
+        const existingWorklenzUserResult = await db.query(existingWorklenzUserQuery, [client.email]);
+        isExistingWorklenzUser = existingWorklenzUserResult.rows.length > 0;
+      }
+
       // Return client details for the frontend (similar to token-based invitation)
       return res.json(new ServerResponse(true, {
         valid: true,
@@ -47,7 +58,8 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         companyName: client.company_name,
         teamName: client.team_name,
         inviteSlug: client.invite_slug,
-        type: 'vanity_url'
+        type: 'vanity_url',
+        isExistingWorklenzUser
       }, "Invitation is valid"));
     } catch (error) {
       console.error("Error validating invitation by slug:", error);
@@ -78,6 +90,17 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
           );
       }
 
+      // Check if email exists in Worklenz users table
+      let isExistingWorklenzUser = false;
+      if (invitation.email) {
+        const existingWorklenzUserQuery = `
+          SELECT id FROM users
+          WHERE LOWER(email) = LOWER($1) AND is_deleted = FALSE
+        `;
+        const existingWorklenzUserResult = await db.query(existingWorklenzUserQuery, [invitation.email]);
+        isExistingWorklenzUser = existingWorklenzUserResult.rows.length > 0;
+      }
+
       // Return invitation details for the frontend
       return res.json(new ServerResponse(true, {
         valid: true,
@@ -91,7 +114,8 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         teamName: invitation.team_name,
         expiresAt: invitation.expires_at,
         status: invitation.status,
-        type: 'token'
+        type: 'token',
+        isExistingWorklenzUser
       }, "Invitation is valid"));
     } catch (error) {
       console.error("Error validating invitation:", error);
@@ -135,24 +159,6 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
               );
           }
 
-          // For organization invites, create a new client user account
-          // First, check if user already exists
-          const existingUserCheck = await db.query(
-            "SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)",
-            [email]
-          );
-
-          if (existingUserCheck.rows.length > 0) {
-            return res.status(400).json({
-              done: false,
-              body: null,
-              title: "Email Already Registered",
-              message:
-                "A user with this email already exists. Please login instead.",
-              messageKey: "errors.email_already_registered_message", // For frontend i18n
-            });
-          }
-
           // Check if email exists in Worklenz users table for linking
           const existingWorklenzUserQuery = `
             SELECT id, email, name, password FROM users
@@ -191,29 +197,47 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
           // Create the client user - link to Worklenz user if exists, otherwise use password_hash
           // Check if email already exists in client_users to avoid duplicate key error
           const emailExistsCheck = await db.query(
-            `SELECT id FROM client_users WHERE LOWER(email) = LOWER($1)`,
+            `SELECT id, user_id, password_hash FROM client_users WHERE LOWER(email) = LOWER($1)`,
             [email]
           );
 
           let userResult;
           if (emailExistsCheck.rows.length > 0) {
-            // Email already exists - update the existing record
+            // Email already exists - this user is joining a second organization
             const existingClientUserId = emailExistsCheck.rows[0].id;
-            if (worklenzUserId) {
-              await db.query(
-                `UPDATE client_users
-                 SET user_id = $1, client_id = $2, name = $3, status = 'active', updated_at = NOW()
-                 WHERE id = $4`,
-                [worklenzUserId, clientId, name, existingClientUserId]
-              );
+            const existingUserId = emailExistsCheck.rows[0].user_id;
+            const existingPasswordHash = emailExistsCheck.rows[0].password_hash;
+            
+            // Verify password before allowing access to second organization
+            if (existingUserId) {
+              // User is linked to Worklenz account - password already verified above
+              if (!worklenzUserId || existingUserId !== worklenzUserId) {
+                return res.status(401).json({
+                  done: false,
+                  body: null,
+                  titleKey: "errors.invalid_credentials_title",
+                  messageKey: "errors.invalid_credentials_message"
+                });
+              }
             } else {
-              await db.query(
-                `UPDATE client_users
-                 SET client_id = $1, name = $2, password_hash = $3, status = 'active', updated_at = NOW()
-                 WHERE id = $4`,
-                [clientId, name, crypto.createHash("sha256").update(password).digest("hex"), existingClientUserId]
-              );
+              // Standalone client portal user - verify password hash (supports both bcrypt and SHA256)
+              const verificationResult = await TokenService.verifyClientPassword(password, existingPasswordHash);
+              if (!verificationResult.isValid) {
+                return res.status(401).json({
+                  done: false,
+                  body: null,
+                  titleKey: "errors.invalid_credentials_title",
+                  messageKey: "errors.invalid_credentials_message"
+                });
+              }
+              
+              // Lazy migration: if password is SHA256, migrate to bcrypt
+              if (verificationResult.needsMigration) {
+                await TokenService.migratePasswordHash(existingClientUserId, password);
+              }
             }
+            
+            // Password verified - don't update client_id, just fetch the user
             userResult = await db.query(
               `SELECT id, email, name, role, client_id FROM client_users WHERE id = $1`,
               [existingClientUserId]
@@ -227,7 +251,8 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
               [clientId, worklenzUserId, email, name]
             );
           } else {
-            // Standalone client portal user - create with password_hash
+            // Standalone client portal user - create with password_hash (bcrypt)
+            const passwordHash = TokenService.hashClientPassword(password);
             userResult = await db.query(
               `INSERT INTO client_users (id, client_id, email, name, password_hash, role, status, created_at)
              VALUES (gen_random_uuid(), $1, $2, $3, $4, 'member', 'active', NOW())
@@ -236,18 +261,28 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
                 clientId,
                 email,
                 name,
-                crypto.createHash("sha256").update(password).digest("hex"),
+                passwordHash,
               ]
             );
           }
 
           const newUser = userResult.rows[0];
 
+          // Create organization access record for multi-org support
+          const orgAccessQuery = `
+            INSERT INTO client_user_organizations (client_user_id, team_id, client_id, is_default, created_at, updated_at)
+            VALUES ($1, $2, $3, TRUE, NOW(), NOW())
+            ON CONFLICT (client_user_id, team_id) 
+            DO UPDATE SET client_id = $3, updated_at = NOW()
+          `;
+          await db.query(orgAccessQuery, [newUser.id, orgInvitePayload.teamId, clientId]);
+
           // Generate client access token
           const permissions = await TokenService.getClientPermissions(clientId);
           const tokenPayload = {
             clientId,
             organizationId: orgInvitePayload.teamId,
+            clientUserId: newUser.id,
             email: newUser.email,
             permissions,
             type: "client" as const,
@@ -830,21 +865,34 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
             [user.email]
           );
 
+          let clientUserId: string;
           if (emailExistsCheck.rows.length > 0) {
             // Update existing record
+            clientUserId = emailExistsCheck.rows[0].id;
             await db.query(
               `UPDATE client_users
                SET user_id = $1, client_id = $2, name = $3, team_id = $4, status = 'active', updated_at = NOW()
                WHERE id = $5`,
-              [userId, clientId, user.name, invitation.team_id, emailExistsCheck.rows[0].id]
+              [userId, clientId, user.name, invitation.team_id, clientUserId]
             );
           } else {
             const linkUserQuery = `
               INSERT INTO client_users (user_id, client_id, email, name, role, team_id, status, created_at, updated_at)
               VALUES ($1, $2, $3, $4, 'member', $5, 'active', NOW(), NOW())
+              RETURNING id
             `;
-            await db.query(linkUserQuery, [userId, clientId, user.email, user.name, invitation.team_id]);
+            const result = await db.query(linkUserQuery, [userId, clientId, user.email, user.name, invitation.team_id]);
+            clientUserId = result.rows[0].id;
           }
+
+          // Create organization access record for multi-org support
+          const orgAccessQuery = `
+            INSERT INTO client_user_organizations (client_user_id, team_id, client_id, is_default, created_at, updated_at)
+            VALUES ($1, $2, $3, FALSE, NOW(), NOW())
+            ON CONFLICT (client_user_id, team_id) 
+            DO UPDATE SET client_id = $3, updated_at = NOW()
+          `;
+          await db.query(orgAccessQuery, [clientUserId, invitation.team_id, clientId]);
 
           return res.json(
             new ServerResponse(true, {
@@ -1144,12 +1192,12 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         const existingInvitation = pendingInviteCheck.rows[0];
         inviteToken = TokenService.generateInviteToken();
 
-        // Update only this specific invitation by ID with new token and expiry
+        // Update invitation with new token, expiry, and current client email/name
         await db.query(
           `UPDATE client_invitations
-           SET token = $1, expires_at = $2, updated_at = NOW()
-           WHERE id = $3`,
-          [inviteToken, new Date(expiresAt), existingInvitation.id]
+           SET token = $1, expires_at = $2, email = $3, name = $4, updated_at = NOW()
+           WHERE id = $5`,
+          [inviteToken, new Date(expiresAt), client.email, client.name, existingInvitation.id]
         );
       } else {
         inviteToken = TokenService.generateInviteToken();
@@ -1355,6 +1403,198 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
             "Failed to generate organization invitation link"
           )
         );
+    }
+  }
+
+  static async forgotPassword(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    try {
+      const { email } = req.body;
+
+      // Normalize email to lowercase for case-insensitive comparison
+      const normalizedEmail = email ? email.toLowerCase().trim() : null;
+
+      // Security: Always return the same generic message to prevent email enumeration
+      const GENERIC_SUCCESS_MESSAGE = "If an account with that email exists, a password reset link has been sent to your email.";
+
+      const q = `SELECT id, email, user_id, password_hash FROM client_users WHERE LOWER(email) = $1;`;
+      const result = await db.query(q, [normalizedEmail]);
+
+      // If email doesn't exist, return generic message without revealing account status
+      if (!result.rowCount) {
+        return res.status(200).json(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
+      }
+
+      const [data] = result.rows;
+
+      // For linked Worklenz users (user_id is set), send reset email using main Worklenz flow
+      // They need to reset their password on the main Worklenz app where their password is stored
+      if (data?.user_id) {
+        try {
+          // Get the Worklenz user data
+          const worklenzUserQuery = `SELECT id, email, password FROM users WHERE id = $1;`;
+          const worklenzUserResult = await db.query(worklenzUserQuery, [data.user_id]);
+
+          if (worklenzUserResult.rowCount && worklenzUserResult.rows[0].password) {
+            const worklenzUser = worklenzUserResult.rows[0];
+            const userIdBase64 = Buffer.from(worklenzUser.id, "utf8").toString("base64");
+
+            const salt = bcrypt.genSaltSync(10);
+            const hashedUserData = bcrypt.hashSync(worklenzUser.id + worklenzUser.email + worklenzUser.password, salt);
+            const hashedString = hashedUserData.toString().replace(/\//g, "-");
+
+            // Invalidate all previous unused tokens for this user
+            await db.query(
+              `UPDATE password_reset_tokens
+               SET is_used = TRUE
+               WHERE user_id = $1 AND is_used = FALSE`,
+              [worklenzUser.id]
+            );
+
+            // Store the new token in the database with 1 hour expiration
+            const expiresAt = new Date();
+            expiresAt.setHours(expiresAt.getHours() + 1);
+
+            await db.query(
+              `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+               VALUES ($1, $2, $3)`,
+              [worklenzUser.id, hashedString, expiresAt]
+            );
+
+            // Import and send the main Worklenz reset email (not client portal)
+            const { sendResetEmail } = await import("../../shared/email-templates");
+            sendResetEmail(normalizedEmail, userIdBase64, hashedString);
+          }
+        } catch (error) {
+          // Log error internally but don't expose to client
+          console.error(`Failed to send password reset email for linked Worklenz user: ${normalizedEmail}`, error);
+        }
+
+        return res.status(200).json(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
+      }
+
+      // Only send reset email if account exists and has a password_hash (standalone client user)
+      if (data?.password_hash) {
+        try {
+          const userIdBase64 = Buffer.from(data.id, "utf8").toString("base64");
+
+          const salt = bcrypt.genSaltSync(10);
+          const hashedUserData = bcrypt.hashSync(data.id + data.email + data.password_hash, salt);
+          const hashedString = hashedUserData.toString().replace(/\//g, "-");
+
+          // Invalidate all previous unused tokens for this user
+          await db.query(
+            `UPDATE password_reset_tokens
+             SET is_used = TRUE
+             WHERE user_id = $1 AND is_used = FALSE`,
+            [data.id]
+          );
+
+          // Store the new token in the database with 1 hour expiration
+          const expiresAt = new Date();
+          expiresAt.setHours(expiresAt.getHours() + 1);
+
+          await db.query(
+            `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+             VALUES ($1, $2, $3)`,
+            [data.id, hashedString, expiresAt]
+          );
+
+          // Import and call the email sending function
+          const { sendClientPortalResetEmail } = await import("../../shared/email-templates");
+          sendClientPortalResetEmail(email, userIdBase64, hashedString);
+        } catch (error) {
+          // Log error internally but don't expose to client
+          console.error(`Failed to send password reset email for: ${normalizedEmail}`, error);
+        }
+      }
+
+      // Always return the same generic success message to prevent email enumeration
+      return res.status(200).json(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
+    } catch (error) {
+      console.error("Error during forgot password:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to process password reset request"));
+    }
+  }
+
+  static async resetPassword(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    try {
+      const { user, hash, password } = req.body;
+      const hashedString = hash.replace(/\-/g, "/");
+
+      const userId = Buffer.from(user as string, "base64").toString("ascii");
+
+      // First, verify the token exists, is not used, and is not expired
+      const tokenCheck = await db.query(
+        `SELECT id, user_id, expires_at, is_used
+         FROM password_reset_tokens
+         WHERE token_hash = $1 AND is_used = FALSE AND expires_at > NOW()`,
+        [hashedString]
+      );
+
+      if (!tokenCheck.rowCount) {
+        return res.status(200).json(new ServerResponse(false, null, "Invalid or expired reset link. Please request a new password reset."));
+      }
+
+      const tokenData = tokenCheck.rows[0];
+
+      // Verify the user ID matches
+      if (tokenData.user_id !== userId) {
+        return res.status(200).json(new ServerResponse(false, null, "Invalid reset link. Please request a new password reset."));
+      }
+
+      // Get client user data
+      const q = `SELECT id, email, user_id, password_hash FROM client_users WHERE id = $1;`;
+      const result = await db.query(q, [userId || null]);
+
+      if (!result.rowCount) {
+        return res.status(200).json(new ServerResponse(false, null, "User not found. Please request a new password reset."));
+      }
+
+      const [data] = result.rows;
+
+      // Block password reset for linked Worklenz users
+      if (data.user_id) {
+        return res.status(200).json(new ServerResponse(false, null, "This account is linked to Worklenz. Please use the main Worklenz app to reset your password."));
+      }
+
+      // Verify the token hash matches the current user data (for additional security)
+      const salt = bcrypt.genSaltSync(10);
+      if (!bcrypt.compareSync(data.id + data.email + data.password_hash, hashedString)) {
+        // Token doesn't match - mark as used to prevent further attempts
+        await db.query(
+          `UPDATE password_reset_tokens SET is_used = TRUE, used_at = NOW() WHERE id = $1`,
+          [tokenData.id]
+        );
+        return res.status(200).json(new ServerResponse(false, null, "Invalid reset link. Please request a new password reset."));
+      }
+
+      // Update password using TokenService.hashClientPassword()
+      const encryptedPassword = TokenService.hashClientPassword(password);
+      const updatePasswordQ = `UPDATE client_users SET password_hash = $1, updated_at = NOW() WHERE id = $2;`;
+      await db.query(updatePasswordQ, [encryptedPassword, userId || null]);
+
+      // Mark token as used
+      await db.query(
+        `UPDATE password_reset_tokens SET is_used = TRUE, used_at = NOW() WHERE id = $1`,
+        [tokenData.id]
+      );
+
+      // Invalidate all other unused tokens for this user (defense in depth)
+      await db.query(
+        `UPDATE password_reset_tokens
+         SET is_used = TRUE
+         WHERE user_id = $1 AND is_used = FALSE AND id != $2`,
+        [userId, tokenData.id]
+      );
+
+      return res.status(200).json(new ServerResponse(true, null, "Password updated successfully"));
+    } catch (error) {
+      console.error("Error during reset password:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to reset password"));
     }
   }
 

@@ -92,10 +92,15 @@ export default abstract class ReportingControllerBase extends WorklenzController
     return data.count || 0;
   }
 
-  protected static async getArchivedProjectsClause(archived = false, user_id: string, column_name: string) {
-    return archived
-      ? ""
-      : `AND ${column_name} NOT IN (SELECT project_id FROM archived_projects WHERE project_id = ${column_name} AND user_id = '${user_id}') `;
+  protected static async getArchivedProjectsClause(archived = false, user_id: string, column_name: string, paramOffset = 1): Promise<{ clause: string; params: any[] }> {
+    // Use parameterized query for user_id
+    if (archived) {
+      return { clause: "", params: [] };
+    }
+    return {
+      clause: `AND ${column_name} NOT IN (SELECT project_id FROM archived_projects WHERE project_id = ${column_name} AND user_id = $${paramOffset}) `,
+      params: [user_id]
+    };
   }
 
   protected static async getAllTasks(projectId: string | null) {
@@ -196,7 +201,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
       paramIndex++;
     }
 
-    // Validate sort field to prevent SQL injection
+    // Validate sort field
     const allowedSortFields: { [key: string]: string } = {
       'name': 't.name',
       'end_date': 't.end_date',
@@ -330,29 +335,39 @@ export default abstract class ReportingControllerBase extends WorklenzController
     return result.rows;
   }
 
-  protected static getDateRangeClause(key: string, dateRange: string[]) {
-    if (dateRange.length === 2) {
-      const start = moment(dateRange[0]).format("YYYY-MM-DD");
-      const end = moment(dateRange[1]).format("YYYY-MM-DD");
-      let query = `AND task_work_log.created_at::DATE >= '${start}'::DATE AND task_work_log.created_at < '${end}'::DATE + INTERVAL '1 day'`;
+  protected static getDateRangeClause(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
+    // Predefined ranges take priority - check these first
+    if (key === DATE_RANGES.YESTERDAY)
+      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE", params: [] };
+    if (key === DATE_RANGES.LAST_WEEK)
+      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'", params: [] };
+    if (key === DATE_RANGES.LAST_MONTH)
+      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'", params: [] };
+    if (key === DATE_RANGES.LAST_QUARTER)
+      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'", params: [] };
 
+    // Custom date range - only use if no predefined range is specified
+    if (dateRange && dateRange.length === 2) {
+      // Use parameterized queries for custom date ranges
+      // Parse dates - handle both ISO strings and Date.toString() format
+      const start = moment(new Date(dateRange[0])).format("YYYY-MM-DD");
+      const end = moment(new Date(dateRange[1])).format("YYYY-MM-DD");
+      
+      let query: string;
+      const params: any[] = [];
+      
       if (start === end) {
-        query = `AND task_work_log.created_at::DATE = '${start}'::DATE`;
+        query = `AND task_work_log.created_at::DATE = $${paramOffset}::DATE`;
+        params.push(start);
+      } else {
+        query = `AND task_work_log.created_at::DATE >= $${paramOffset}::DATE AND task_work_log.created_at < $${paramOffset + 1}::DATE + INTERVAL '1 day'`;
+        params.push(start, end);
       }
 
-      return query;
+      return { clause: query, params };
     }
 
-    if (key === DATE_RANGES.YESTERDAY)
-      return "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE";
-    if (key === DATE_RANGES.LAST_WEEK)
-      return "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'";
-    if (key === DATE_RANGES.LAST_MONTH)
-      return "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'";
-    if (key === DATE_RANGES.LAST_QUARTER)
-      return "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'";
-
-    return "";
+    return { clause: "", params: [] };
   }
 
   protected static buildBillableQuery(selectedStatuses: { billable: boolean; nonBillable: boolean }): string {
@@ -424,7 +439,8 @@ export default abstract class ReportingControllerBase extends WorklenzController
     categoryClause: string,
     archivedClause = "",
     teamFilterClause: string,
-    projectManagersClause: string) {
+    projectManagersClause: string,
+    queryParams: any[] = []) {
 
     const q = `SELECT COUNT(*) AS total,
              (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
@@ -561,7 +577,10 @@ export default abstract class ReportingControllerBase extends WorklenzController
                LEFT JOIN project_categories pc ON pc.id = p.category_id
                LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
       WHERE ${teamFilterClause} ${searchQuery} ${healthClause} ${statusClause} ${categoryClause} ${projectManagersClause} ${archivedClause};`;
-    const result = await db.query(q, [teamId, size, offset]);
+    
+    // Build final params: teamId ($1), size ($2), offset ($3), then filter params ($4+)
+    const finalParams = [teamId, size, offset, ...queryParams];
+    const result = await db.query(q, finalParams);
     const [data] = result.rows;
 
     for (const project of data.projects) {

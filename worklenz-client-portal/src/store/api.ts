@@ -68,7 +68,10 @@ export const clientPortalApi = createApi({
       providesTags: ['Requests'],
     }),
 
-    createRequest: builder.mutation<ApiResponse<ClientRequest>, Partial<ClientRequest>>({
+    createRequest: builder.mutation<
+      ApiResponse<ClientRequest>,
+      { serviceId: string; requestData?: any; notes?: string }
+    >({
       query: (data) => ({
         url: '/requests',
         method: 'POST',

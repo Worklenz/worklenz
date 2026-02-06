@@ -3,9 +3,83 @@ import { AuthenticatedClientRequest } from "../../middlewares/client-auth-middle
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import db from "../../config/db";
-import { uploadBase64, deleteObject } from "../../shared/storage";
+import { uploadBase64, deleteObject, getClientPortalStorageKey } from "../../shared/storage";
 
 export default class ClientPortalServicesController extends ClientPortalControllerBase {
+  
+  // Helper function to validate and process service_key
+  private static async validateServiceKey(
+    serviceKey: string | null | undefined,
+    organizationId: string,
+    excludeServiceId?: string
+  ): Promise<{ isValid: boolean; error?: string; finalKey: string | null }> {
+    if (serviceKey === null || serviceKey === undefined || serviceKey === '') {
+      return { isValid: true, finalKey: null };
+    }
+
+    // Validate format: 2-6 uppercase alphanumeric characters
+    const keyRegex = /^[A-Z0-9]{2,6}$/;
+    const upperKey = serviceKey.toUpperCase();
+    if (!keyRegex.test(upperKey)) {
+      return {
+        isValid: false,
+        error: "Service key must be 2-6 uppercase alphanumeric characters (A-Z, 0-9)",
+        finalKey: null,
+      };
+    }
+
+    // Check if service_key already exists for this organization
+    const keyCheckQuery = excludeServiceId
+      ? `SELECT id FROM client_portal_services WHERE organization_team_id = $1 AND service_key = $2 AND id != $3`
+      : `SELECT id FROM client_portal_services WHERE organization_team_id = $1 AND service_key = $2`;
+    const keyCheckValues = excludeServiceId
+      ? [organizationId, upperKey, excludeServiceId]
+      : [organizationId, upperKey];
+    
+    const keyCheck = await db.query(keyCheckQuery, keyCheckValues);
+    if (keyCheck.rows.length > 0) {
+      return {
+        isValid: false,
+        error: `Service key "${upperKey}" is already in use. Please choose a different key.`,
+        finalKey: null,
+      };
+    }
+
+    return { isValid: true, finalKey: upperKey };
+  }
+
+  // Helper function to auto-generate service_key from name
+  private static async generateServiceKey(
+    name: string,
+    organizationId: string
+  ): Promise<string | null> {
+    const cleanName = name.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    if (cleanName.length < 2) {
+      return null;
+    }
+
+    let baseKey = cleanName.substring(0, Math.min(6, cleanName.length));
+    let counter = 1;
+    let uniqueKey = baseKey;
+
+    while (true) {
+      const keyCheck = await db.query(
+        `SELECT id FROM client_portal_services WHERE organization_team_id = $1 AND service_key = $2`,
+        [organizationId, uniqueKey]
+      );
+      if (keyCheck.rows.length === 0) {
+        return uniqueKey;
+      }
+      // If key exists, try appending a number (max 6 chars total)
+      const baseKeyLength = Math.max(0, 6 - String(counter).length);
+      const baseKeyPart = baseKey.substring(0, baseKeyLength);
+      uniqueKey = baseKeyPart + counter;
+      counter++;
+      if (counter > 999) break; // Safety limit
+    }
+
+    return null; // Could not generate unique key
+  }
 
   static async getServices(
     req: AuthenticatedClientRequest,
@@ -320,6 +394,7 @@ export default class ClientPortalServicesController extends ClientPortalControll
         price,
         currency,
         category,
+        service_key,
         // Image upload fields
         imageData,
         imageName,
@@ -332,6 +407,7 @@ export default class ClientPortalServicesController extends ClientPortalControll
         price,
         currency,
         category,
+        service_key,
         hasImageData: !!imageData,
         imageName,
         imageType,
@@ -343,6 +419,29 @@ export default class ClientPortalServicesController extends ClientPortalControll
         return res
           .status(400)
           .json(new ServerResponse(false, null, "Service name is required"));
+      }
+
+      // Validate and process service_key
+      let finalServiceKey: string | null = null;
+      if (!organizationId) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Organization ID is required"));
+      }
+      if (service_key) {
+        const keyValidation = await ClientPortalServicesController.validateServiceKey(
+          service_key,
+          organizationId
+        );
+        if (!keyValidation.isValid) {
+          return res
+            .status(400)
+            .json(new ServerResponse(false, null, keyValidation.error || "Invalid service key"));
+        }
+        finalServiceKey = keyValidation.finalKey;
+      } else {
+        // Auto-generate service_key from name if not provided
+        finalServiceKey = await ClientPortalServicesController.generateServiceKey(name, organizationId);
       }
 
       let finalServiceData = { ...service_data };
@@ -387,7 +486,13 @@ export default class ClientPortalServicesController extends ClientPortalControll
         const uniqueFileName = `service_${Date.now()}_${Math.random()
           .toString(36)
           .substr(2, 9)}${fileExtension}`;
-        const storageKey = `client-portal/service-images/${organizationId}/${uniqueFileName}`;
+        // Use getClientPortalStorageKey to ensure files are stored under organizations/{orgId}/client-portal/
+        if (!organizationId) {
+          return res
+            .status(400)
+            .json(new ServerResponse(false, null, "Organization ID is required"));
+        }
+        const storageKey = getClientPortalStorageKey("service-images", organizationId, uniqueFileName);
 
         try {
           // Upload to S3
@@ -438,9 +543,9 @@ export default class ClientPortalServicesController extends ClientPortalControll
       const query = `
         INSERT INTO client_portal_services (
           name, description, service_data, is_public, allowed_client_ids,
-          price, currency, category,
+          price, currency, category, service_key,
           team_id, organization_team_id, created_by
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING *
       `;
 
@@ -453,6 +558,7 @@ export default class ClientPortalServicesController extends ClientPortalControll
         price,
         currency,
         category,
+        finalServiceKey,
         organizationId, // team_id
         organizationId, // organization_team_id
         clientUserId,
@@ -480,6 +586,7 @@ export default class ClientPortalServicesController extends ClientPortalControll
             price: service.price,
             currency: service.currency,
             category: service.category,
+            serviceKey: service.service_key,
             createdAt: service.created_at,
             updatedAt: service.updated_at,
           },
@@ -510,6 +617,7 @@ export default class ClientPortalServicesController extends ClientPortalControll
         price,
         currency,
         category,
+        service_key,
         // Image upload fields
         imageData,
         imageName,
@@ -523,6 +631,7 @@ export default class ClientPortalServicesController extends ClientPortalControll
         price,
         currency,
         category,
+        service_key,
         hasImageData: !!imageData,
         imageName,
         imageType,
@@ -538,6 +647,27 @@ export default class ClientPortalServicesController extends ClientPortalControll
         return res
           .status(404)
           .json(new ServerResponse(false, null, "Service not found"));
+      }
+
+      // Validate service_key if provided
+      let finalServiceKey: string | null | undefined = undefined;
+      if (!organizationId) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Organization ID is required"));
+      }
+      if (service_key !== undefined) {
+        const keyValidation = await ClientPortalServicesController.validateServiceKey(
+          service_key,
+          organizationId,
+          id
+        );
+        if (!keyValidation.isValid) {
+          return res
+            .status(400)
+            .json(new ServerResponse(false, null, keyValidation.error || "Invalid service key"));
+        }
+        finalServiceKey = keyValidation.finalKey;
       }
 
       let finalServiceData = service_data ? { ...service_data } : undefined;
@@ -582,7 +712,13 @@ export default class ClientPortalServicesController extends ClientPortalControll
         const uniqueFileName = `service_${Date.now()}_${Math.random()
           .toString(36)
           .substr(2, 9)}${fileExtension}`;
-        const storageKey = `client-portal/service-images/${organizationId}/${uniqueFileName}`;
+        // Use getClientPortalStorageKey to ensure files are stored under organizations/{orgId}/client-portal/
+        if (!organizationId) {
+          return res
+            .status(400)
+            .json(new ServerResponse(false, null, "Organization ID is required"));
+        }
+        const storageKey = getClientPortalStorageKey("service-images", organizationId, uniqueFileName);
 
         try {
           // Upload to S3
@@ -719,6 +855,11 @@ export default class ClientPortalServicesController extends ClientPortalControll
         updateFields.push(`category = $${paramCount}`);
         queryParams.push(category);
       }
+      if (finalServiceKey !== undefined) {
+        paramCount++;
+        updateFields.push(`service_key = $${paramCount}`);
+        queryParams.push(finalServiceKey);
+      }
 
       if (updateFields.length === 0) {
         return res
@@ -769,6 +910,7 @@ export default class ClientPortalServicesController extends ClientPortalControll
             price: service.price,
             currency: service.currency,
             category: service.category,
+            serviceKey: service.service_key,
             createdAt: service.created_at,
             updatedAt: service.updated_at,
           },
@@ -858,9 +1000,19 @@ export default class ClientPortalServicesController extends ClientPortalControll
         imageUrls.forEach(async (imageUrl: string) => {
           try {
             // Extract storage key from URL
-            // URL format: https://s3-bucket/client-portal/service-images/orgId/filename
+            // URL format: https://s3-bucket/{env}/organizations/{orgId}/client-portal/service-images/filename
+            // or: https://s3-bucket/client-portal/service-images/orgId/filename (legacy)
             const urlParts = imageUrl.split("/");
-            const storageKey = urlParts.slice(-4).join("/"); // client-portal/service-images/orgId/filename
+            // Check if it's the new format (contains "organizations")
+            const orgIndex = urlParts.findIndex(part => part === "organizations");
+            let storageKey;
+            if (orgIndex !== -1) {
+              // New format: extract from organizations onwards
+              storageKey = urlParts.slice(orgIndex).join("/");
+            } else {
+              // Legacy format: extract last 4 parts
+              storageKey = urlParts.slice(-4).join("/");
+            }
 
             console.log("Deleting image from S3:", {
               imageUrl,

@@ -1,22 +1,22 @@
 import bcrypt from "bcrypt";
 import passport from "passport";
-import {NextFunction} from "express";
+import { NextFunction } from "express";
 
-import {sendResetEmail, sendResetSuccessEmail} from "../shared/email-templates";
+import { sendResetEmail, sendResetSuccessEmail } from "../shared/email-templates";
 
-import {ServerResponse} from "../models/server-response";
-import {AuthResponse} from "../models/auth-response";
+import { ServerResponse } from "../models/server-response";
+import { AuthResponse } from "../models/auth-response";
 
-import {IWorkLenzRequest} from "../interfaces/worklenz-request";
-import {IWorkLenzResponse} from "../interfaces/worklenz-response";
+import { IWorkLenzRequest } from "../interfaces/worklenz-request";
+import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import db from "../config/db";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-import {PasswordStrengthChecker} from "../shared/password-strength-check";
+import { PasswordStrengthChecker } from "../shared/password-strength-check";
 import FileConstants from "../shared/file-constants";
 import axios from "axios";
-import {log_error} from "../shared/utils";
-import {DEFAULT_ERROR_MESSAGE} from "../shared/constants";
+import { log_error } from "../shared/utils";
+import { DEFAULT_ERROR_MESSAGE } from "../shared/constants";
 
 export default class AuthController extends WorklenzControllerBase {
   /** This just send ok response to the client when the request came here through the sign-up-validator */
@@ -62,7 +62,7 @@ export default class AuthController extends WorklenzControllerBase {
         console.error("Logout error:", err);
         return res.status(500).send(new AuthResponse(null, true, {}, "Logout failed", null));
       }
-      
+
       req.session.destroy((destroyErr) => {
         if (destroyErr) {
           console.error("Session destroy error:", destroyErr);
@@ -70,7 +70,7 @@ export default class AuthController extends WorklenzControllerBase {
         res.status(200).send(new AuthResponse(null, req.isAuthenticated(), {}, null, null));
       });
     });
-  }  
+  }
 
   private static async destroyOtherSessions(userId: string, sessionId: string) {
     try {
@@ -110,76 +110,151 @@ export default class AuthController extends WorklenzControllerBase {
     }
   }
 
-  @HandleExceptions({logWithError: "body"})
+  @HandleExceptions({ logWithError: "body" })
   public static async reset_password(req: IWorkLenzRequest, res: IWorkLenzResponse) {
-    const {email} = req.body;
+    const { email } = req.body;
 
     // Normalize email to lowercase for case-insensitive comparison
     const normalizedEmail = email ? email.toLowerCase().trim() : null;
 
+    // Security: Always return the same generic message to prevent email enumeration
+    const GENERIC_SUCCESS_MESSAGE = "If an account with that email exists, a password reset link has been sent to your email.";
+
     const q = `SELECT id, email, google_id, apple_id, password FROM users WHERE LOWER(email) = $1;`;
     const result = await db.query(q, [normalizedEmail]);
 
-    if (!result.rowCount)
-      return res.status(200).send(new ServerResponse(false, null, "Account does not exists!"));
+    // If email doesn't exist, return generic message without revealing account status
+    if (!result.rowCount) {
+      return res.status(200).send(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
+    }
 
     const [data] = result.rows;
 
-    if (data?.google_id) {
-      return res.status(200).send(new ServerResponse(false, "oauth_user", "This account uses Google Sign-In. Please sign in with Google instead."));
+    // For OAuth-only accounts (Google/Apple), don't send reset email but still return generic message
+    // Log internally for monitoring purposes
+    if (data?.google_id || data?.apple_id) {
+      log_error(`Password reset attempted for OAuth account: ${normalizedEmail}`, null);
+      return res.status(200).send(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
     }
 
-    if (data?.apple_id) {
-      return res.status(200).send(new ServerResponse(false, "oauth_user", "This account uses Apple Sign-In. Please sign in with Apple instead."));
-    }
-
+    // Only send reset email if account exists and has a password
     if (data?.password) {
-      const userIdBase64 = Buffer.from(data.id, "utf8").toString("base64");
+      try {
+        const userIdBase64 = Buffer.from(data.id, "utf8").toString("base64");
 
-      const salt = bcrypt.genSaltSync(10);
-      const hashedUserData = bcrypt.hashSync(data.id + data.email + data.password, salt);
-      const hashedString = hashedUserData.toString().replace(/\//g, "-");
+        const salt = bcrypt.genSaltSync(10);
+        const hashedUserData = bcrypt.hashSync(data.id + data.email + data.password, salt);
+        const hashedString = hashedUserData.toString().replace(/\//g, "-");
 
-      sendResetEmail(email, userIdBase64, hashedString);
-      return res.status(200).send(new ServerResponse(true, null, "Password reset email has been sent to your email. Please check your email."));
+        // Invalidate all previous unused tokens for this user
+        await db.query(
+          `UPDATE password_reset_tokens 
+           SET is_used = TRUE 
+           WHERE user_id = $1 AND is_used = FALSE`,
+          [data.id]
+        );
+
+        // Store the new token in the database with 1 hour expiration
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 1);
+
+        await db.query(
+          `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+           VALUES ($1, $2, $3)`,
+          [data.id, hashedString, expiresAt]
+        );
+
+        sendResetEmail(email, userIdBase64, hashedString);
+      } catch (error) {
+        // Log error internally but don't expose to client
+        log_error(`Failed to send password reset email for: ${normalizedEmail}`, error);
+      }
     }
-    return res.status(200).send(new ServerResponse(false, null, "Email not found!"));
+
+    // Always return the same generic success message to prevent email enumeration
+    return res.status(200).send(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
   }
 
-  @HandleExceptions({logWithError: "body"})
+  @HandleExceptions({ logWithError: "body" })
   public static async verify_reset_email(req: IWorkLenzRequest, res: IWorkLenzResponse) {
-    const {user, hash, password} = req.body;
+    const { user, hash, password } = req.body;
     const hashedString = hash.replace(/\-/g, "/");
 
     const userId = Buffer.from(user as string, "base64").toString("ascii");
 
+    // First, verify the token exists, is not used, and is not expired
+    const tokenCheck = await db.query(
+      `SELECT id, user_id, expires_at, is_used
+       FROM password_reset_tokens
+       WHERE token_hash = $1 AND is_used = FALSE AND expires_at > NOW()`,
+      [hashedString]
+    );
+
+    if (!tokenCheck.rowCount) {
+      return res.status(200).send(new ServerResponse(false, null, "Invalid or expired reset link. Please request a new password reset."));
+    }
+
+    const tokenData = tokenCheck.rows[0];
+
+    // Verify the user ID matches
+    if (tokenData.user_id !== userId) {
+      return res.status(200).send(new ServerResponse(false, null, "Invalid reset link. Please request a new password reset."));
+    }
+
+    // Get user data
     const q = `SELECT id, email, google_id, password FROM users WHERE id = $1;`;
     const result = await db.query(q, [userId || null]);
+
+    if (!result.rowCount) {
+      return res.status(200).send(new ServerResponse(false, null, "User not found. Please request a new password reset."));
+    }
+
     const [data] = result.rows;
 
+    // Verify the token hash matches the current user data (for additional security)
     const salt = bcrypt.genSaltSync(10);
-
-    if (bcrypt.compareSync(data.id + data.email + data.password, hashedString)) {
-      const encryptedPassword = bcrypt.hashSync(password, salt);
-      const updatePasswordQ = `UPDATE users SET password = $1 WHERE id = $2;`;
-      await db.query(updatePasswordQ, [encryptedPassword, userId || null]);
-
-      sendResetSuccessEmail(data.email);
-      return res.status(200).send(new ServerResponse(true, null, "Password updated successfully"));
+    if (!bcrypt.compareSync(data.id + data.email + data.password, hashedString)) {
+      // Token doesn't match - mark as used to prevent further attempts
+      await db.query(
+        `UPDATE password_reset_tokens SET is_used = TRUE, used_at = NOW() WHERE id = $1`,
+        [tokenData.id]
+      );
+      return res.status(200).send(new ServerResponse(false, null, "Invalid reset link. Please request a new password reset."));
     }
-    return res.status(200).send(new ServerResponse(false, null, "Invalid Request. Please try again."));
+
+    // Update password
+    const encryptedPassword = bcrypt.hashSync(password, salt);
+    const updatePasswordQ = `UPDATE users SET password = $1 WHERE id = $2;`;
+    await db.query(updatePasswordQ, [encryptedPassword, userId || null]);
+
+    // Mark token as used
+    await db.query(
+      `UPDATE password_reset_tokens SET is_used = TRUE, used_at = NOW() WHERE id = $1`,
+      [tokenData.id]
+    );
+
+    // Invalidate all other unused tokens for this user (defense in depth)
+    await db.query(
+      `UPDATE password_reset_tokens 
+       SET is_used = TRUE 
+       WHERE user_id = $1 AND is_used = FALSE AND id != $2`,
+      [userId, tokenData.id]
+    );
+
+    sendResetSuccessEmail(data.email);
+    return res.status(200).send(new ServerResponse(true, null, "Password updated successfully"));
   }
 
-  @HandleExceptions({logWithError: "body"})
+  @HandleExceptions({ logWithError: "body" })
   public static async verifyCaptcha(req: IWorkLenzRequest, res: IWorkLenzResponse) {
-    const {token} = req.body;
+    const { token } = req.body;
     const secretKey = process.env.GOOGLE_CAPTCHA_SECRET_KEY;
     try {
       const response = await axios.post(
         `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`
       );
 
-      const {success, score} = response.data;
+      const { success, score } = response.data;
 
       if (success && score > 0.5) {
         return res.status(200).send(new ServerResponse(true, null, null));
@@ -192,7 +267,7 @@ export default class AuthController extends WorklenzControllerBase {
   }
 
   public static googleMobileAuthPassport(req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) {
-    
+
     const mobileOptions = {
       session: true,
       failureFlash: true,
@@ -201,53 +276,65 @@ export default class AuthController extends WorklenzControllerBase {
 
     passport.authenticate("google-mobile", mobileOptions, (err: any, user: any, info: any) => {
       if (err) {
+        log_error("Google mobile authentication error:", err);
         return res.status(500).send({
           done: false,
           message: "Authentication failed",
-          body: null
+          body: null,
+          errorCode: "AUTHENTICATION_ERROR"
         });
       }
-      
+
       if (!user) {
-        return res.status(400).send({
+        // Extract error code if present
+        const errorCode = info?.ERROR_KEY || "AUTHENTICATION_FAILED";
+        const statusCode = errorCode === "USER_NOT_FOUND" ? 404 : 400;
+
+        return res.status(statusCode).send({
           done: false,
           message: info?.message || "Authentication failed",
-          body: null
+          body: null,
+          errorCode
         });
       }
+
       // Log the user in (create session)
       req.login(user, (loginErr) => {
         if (loginErr) {
+          log_error("Google login session creation error:", loginErr);
           return res.status(500).send({
             done: false,
             message: "Session creation failed",
-            body: null
+            body: null,
+            errorCode: "SESSION_CREATION_FAILED"
           });
         }
-        
+
         // Add build version
         user.build_v = FileConstants.getRelease();
-        
+
         // Ensure session is saved and cookie is set
         req.session.save((saveErr) => {
           if (saveErr) {
+            log_error("Google login session save error:", saveErr);
             return res.status(500).send({
               done: false,
               message: "Session save failed",
-              body: null
+              body: null,
+              errorCode: "SESSION_SAVE_FAILED"
             });
           }
-          
+
           // Get session cookie details
           const sessionName = process.env.SESSION_NAME || 'connect.sid';
-          
+
           // Return response with session info for mobile app to handle
           res.setHeader('X-Session-ID', req.sessionID);
           res.setHeader('X-Session-Name', sessionName);
-          
+
           return res.status(200).send({
             done: true,
-            message: "Login successful",
+            message: info?.message || "Login successful",
             user,
             authenticated: true,
             sessionId: req.sessionID,
@@ -255,7 +342,7 @@ export default class AuthController extends WorklenzControllerBase {
             newSessionId: req.sessionID
           });
         });
-      }); // Close login callback
+      });
     })(req, res, next);
   }
 
@@ -278,16 +365,22 @@ export default class AuthController extends WorklenzControllerBase {
         return res.status(500).send({
           done: false,
           message: "Authentication failed",
-          body: null
+          body: null,
+          errorCode: "AUTHENTICATION_ERROR"
         });
       }
 
       // Handle authentication failure (invalid token, user not found, etc.)
       if (!user) {
-        return res.status(400).send({
+        // Extract error code if present
+        const errorCode = info?.ERROR_KEY || "AUTHENTICATION_FAILED";
+        const statusCode = errorCode === "USER_NOT_FOUND" ? 404 : 400;
+
+        return res.status(statusCode).send({
           done: false,
           message: info?.message || "Apple authentication failed",
-          body: null
+          body: null,
+          errorCode
         });
       }
 
@@ -298,7 +391,8 @@ export default class AuthController extends WorklenzControllerBase {
           return res.status(500).send({
             done: false,
             message: "Session creation failed",
-            body: null
+            body: null,
+            errorCode: "SESSION_CREATION_FAILED"
           });
         }
 
@@ -312,7 +406,8 @@ export default class AuthController extends WorklenzControllerBase {
             return res.status(500).send({
               done: false,
               message: "Session save failed",
-              body: null
+              body: null,
+              errorCode: "SESSION_SAVE_FAILED"
             });
           }
 
@@ -337,10 +432,10 @@ export default class AuthController extends WorklenzControllerBase {
     })(req, res, next);
   }
 
-  @HandleExceptions({logWithError: "body"})
+  @HandleExceptions({ logWithError: "body" })
   public static async googleMobileAuth(req: IWorkLenzRequest, res: IWorkLenzResponse) {
-    const {idToken} = req.body;
-    
+    const { idToken } = req.body;
+
     if (!idToken) {
       return res.status(400).send(new ServerResponse(false, null, "ID token is required"));
     }
@@ -355,14 +450,14 @@ export default class AuthController extends WorklenzControllerBase {
         process.env.GOOGLE_ANDROID_CLIENT_ID, // Android client ID
         process.env.GOOGLE_IOS_CLIENT_ID, // iOS client ID
       ].filter(Boolean); // Remove undefined values
-      
+
       console.log("Token audience (aud):", profile.aud);
       console.log("Allowed client IDs:", allowedClientIds);
       console.log("Environment variables check:");
       console.log("- GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID ? "Set" : "Not set");
       console.log("- GOOGLE_ANDROID_CLIENT_ID:", process.env.GOOGLE_ANDROID_CLIENT_ID ? "Set" : "Not set");
       console.log("- GOOGLE_IOS_CLIENT_ID:", process.env.GOOGLE_IOS_CLIENT_ID ? "Set" : "Not set");
-      
+
       if (!allowedClientIds.includes(profile.aud)) {
         return res.status(400).send(new ServerResponse(false, null, "Invalid token audience"));
       }
@@ -383,9 +478,9 @@ export default class AuthController extends WorklenzControllerBase {
 
       const normalizedProfileEmail = profile.email.toLowerCase().trim();
 
-      // Check if user exists
+      // Check if user exists (exclude deleted accounts)
       const userResult = await db.query(
-        "SELECT id, google_id, name, email, active_team FROM users WHERE google_id = $1 OR LOWER(email) = $2;",
+        "SELECT id, google_id, name, email, active_team FROM users WHERE (google_id = $1 OR LOWER(email) = $2) AND is_deleted = FALSE;",
         [profile.sub, normalizedProfileEmail]
       );
 
@@ -422,7 +517,7 @@ export default class AuthController extends WorklenzControllerBase {
           log_error(err);
           return res.status(500).send(new ServerResponse(false, null, "Authentication failed"));
         }
-        
+
         user.build_v = FileConstants.getRelease();
         return res.status(200).send(new AuthResponse("Login Successful!", true, user, null, "User successfully logged in"));
       });

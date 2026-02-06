@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, Checkbox, Divider, Flex, Form, Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -20,7 +20,7 @@ const NotificationsSettings = () => {
 
   useDocumentTitle(t('title'));
 
-  const fetchNotificationsSettings = async () => {
+  const fetchNotificationsSettings = useCallback(async () => {
     try {
       setIsLoading(true);
       const res = await profileSettingsApiService.getNotificationSettings();
@@ -32,29 +32,42 @@ const NotificationsSettings = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const updateNotificationSettings = async (settings: INotificationSettings) => {
-    setIsLoading(true);
+  const updateNotificationSettings = useCallback(async (settings: INotificationSettings) => {
     try {
       const res = await profileSettingsApiService.updateNotificationSettings(settings);
       if (res.done) {
-        fetchNotificationsSettings();
+        // Update with server response if available
+        setNotificationsSettings(prev => res.body || prev);
+        return true;
       }
+      return false;
     } catch (error) {
       logger.error('Error updating notifications settings', error);
-    } finally {
-      setIsLoading(false);
+      // On error, refetch to revert to server state
+      await fetchNotificationsSettings();
+      return false;
     }
-  };
+  }, [fetchNotificationsSettings]);
 
-  const toggleNotificationSetting = async (key: keyof INotificationSettings) => {
-    const newSettings = { ...notificationsSettings, [key]: !notificationsSettings[key] };
-    await updateNotificationSettings(newSettings);
+  const toggleNotificationSetting = useCallback(async (key: keyof INotificationSettings) => {
+    // Optimistic update - update UI immediately using functional update
+    setNotificationsSettings(prev => {
+      const newValue = !prev[key];
+      const newSettings = { ...prev, [key]: newValue };
+      
+      // Sync with server in the background (don't block UI)
+      updateNotificationSettings(newSettings);
+      
+      return newSettings;
+    });
+    
+    // Handle push notification permission
     if (key === 'popup_notifications_enabled') {
       askPushPermission();
     }
-  };
+  }, [updateNotificationSettings]);
 
   const askPushPermission = () => {
     if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
@@ -74,7 +87,7 @@ const NotificationsSettings = () => {
   useEffect(() => {
     trackMixpanelEvent(evt_settings_notifications_visit);
     fetchNotificationsSettings();
-  }, [trackMixpanelEvent]);
+  }, [trackMixpanelEvent, fetchNotificationsSettings]);
 
   return (
     <Card style={{ width: '100%' }}>
@@ -82,7 +95,7 @@ const NotificationsSettings = () => {
         <Flex gap={8} align="center">
           <Checkbox
             disabled={isLoading}
-            checked={notificationsSettings.email_notifications_enabled}
+            checked={!!notificationsSettings.email_notifications_enabled}
             onChange={() => toggleNotificationSetting('email_notifications_enabled')}
           >
             <Typography.Title level={4} style={{ marginBlockEnd: 0 }}>
@@ -101,10 +114,8 @@ const NotificationsSettings = () => {
         <Flex gap={8} align="center">
           <Checkbox
             disabled={isLoading}
-            checked={notificationsSettings.daily_digest_enabled}
-            onChange={() => {
-              toggleNotificationSetting('daily_digest_enabled');
-            }}
+            checked={!!notificationsSettings.daily_digest_enabled}
+            onChange={() => toggleNotificationSetting('daily_digest_enabled')}
           >
             <Typography.Title level={4} style={{ marginBlockEnd: 0 }}>
               {t('dailyDigestTitle')}
@@ -122,10 +133,8 @@ const NotificationsSettings = () => {
         <Flex gap={8} align="center">
           <Checkbox
             disabled={isLoading}
-            checked={notificationsSettings.popup_notifications_enabled}
-            onChange={() => {
-              toggleNotificationSetting('popup_notifications_enabled');
-            }}
+            checked={!!notificationsSettings.popup_notifications_enabled}
+            onChange={() => toggleNotificationSetting('popup_notifications_enabled')}
           >
             <Typography.Title level={4} style={{ marginBlockEnd: 0 }}>
               {t('popupTitle')}
@@ -143,10 +152,8 @@ const NotificationsSettings = () => {
         <Flex gap={8} align="center">
           <Checkbox
             disabled={isLoading}
-            checked={notificationsSettings.show_unread_items_count}
-            onChange={() => {
-              toggleNotificationSetting('show_unread_items_count');
-            }}
+            checked={!!notificationsSettings.show_unread_items_count}
+            onChange={() => toggleNotificationSetting('show_unread_items_count')}
           >
             <Typography.Title level={4} style={{ marginBlockEnd: 0 }}>
               {t('unreadItemsTitle')}

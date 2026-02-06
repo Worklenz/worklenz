@@ -194,6 +194,32 @@
     "client": "Klienti",
     "pressEnterToSend": "Shtypni Enter për të dërguar, Shift+Enter për rresht të ri"
   },
+  "chats": {
+    "title": "Bisedat",
+    "description": "Komunikoni me ofruesit tuaj të shërbimeve",
+    "conversations": "Bisedat",
+    "chatTitle": "Bisedë - {{date}}",
+    "chatMessages": "Mesazhet e Bisedës",
+    "selectConversation": "Zgjidhni një bisedë",
+    "selectToStart": "Zgjidhni një bisedë për të filluar bisedën",
+    "noMessagesYet": "Ende nuk ka mesazhe. Filloni bisedën!",
+    "typeMessage": "Shkruani mesazhin tuaj...",
+    "send": "Dërgo",
+    "retry": "Provo Përsëri",
+    "downloadFile": "Shkarko Skedar",
+    "sharedFile": "Ndau një skedar: {{fileName}}",
+    "messageSentSuccess": "Mesazhi u dërgua me sukses",
+    "messageSendError": "Dështoi dërgimi i mesazhit",
+    "messageSendRetry": "Dështoi dërgimi i mesazhit. Ju lutem provoni përsëri.",
+    "fileUploadSuccess": "Skedari u ngarkua dhe u dërgua me sukses",
+    "fileUploadError": "Dështoi ngarkimi i skedarit",
+    "noMessagesYetDescription": "Ende nuk ka mesazhe",
+    "errorLoading": "Gabim",
+    "errorLoadingMessages": "Dështoi ngarkimi i mesazheve",
+    "errorLoadingMessagesRetry": "Dështoi ngarkimi i mesazheve. Ju lutem provoni përsëri më vonë.",
+    "errorLoadingChats": "Dështoi ngarkimi i bisedave",
+    "errorLoadingChatsRetry": "Dështoi ngarkimi i bisedave. Ju lutem provoni përsëri më vonë."
+  },
   "common": {
     "loading": "Duke u ngarkuar...",
     "error": "Gabim",
@@ -238,6 +264,6 @@
     "network_error": "Gabim rrjeti. Ju lutem kontrolloni lidhjen tuaj.",
     "server_error": "Gabim serveri. Ju lutem provoni përsëri më vonë.",
     "worklenz_account_found_title": "U gjet llogari Worklenz",
-    "worklenz_account_found_message": "Ky email është tashmë i regjistruar me një llogari Worklenz. Ju lutem përdorni fjalëkalimin tuaj të Worklenz për t'u regjistruar në portalin e klientit."
+    "worklenz_account_found_message": "Ky email është tashmë i regjistruar me një llogari Worklenz. Ju lutem përdorni fjalëkalimin tuaj ekzistues të Worklenz për t'u regjistruar në portalin e klientit."
   }
 }

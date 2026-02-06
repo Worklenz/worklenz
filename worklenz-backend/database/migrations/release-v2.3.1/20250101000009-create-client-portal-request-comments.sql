@@ -35,3 +35,4 @@ COMMENT ON COLUMN client_portal_request_comments.sender_type IS 'Indicates wheth
 COMMENT ON COLUMN client_portal_request_comments.sender_id IS 'ID of the sender (user_id for team_member, client_relationship_id for client)';
 COMMENT ON COLUMN client_portal_request_comments.sender_name IS 'Cached name of the sender for quick display without joins';
 
+

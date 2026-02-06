@@ -987,10 +987,12 @@ const UpgradePlans = () => {
         display: 'flex',
         flexDirection: 'column',
       }}
-      bodyStyle={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
+      styles={{
+        body: {
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+        }
       }}
       onClick={() => {
         setSelectedPlanType(planType);

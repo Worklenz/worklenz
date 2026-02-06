@@ -6,7 +6,7 @@ import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { NotificationsService } from "../services/notifications/notifications.service";
-import { humanFileSize, log_error, megabytesToBytes } from "../shared/utils";
+import { humanFileSize, log_error, megabytesToBytes, sanitizeCommentContent, sanitizePlainText } from "../shared/utils";
 import { HTML_TAG_REGEXP, S3_URL } from "../shared/constants";
 import { getBaseUrl } from "../cron_jobs/helpers";
 import { ICommentEmailNotification } from "../interfaces/comment-email-notification";
@@ -105,9 +105,13 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     const { mentions, attachments, task_id } = req.body;
     const url = `${S3_URL}/${getRootDir()}`;
 
-    let commentContent = req.body.content;
+    // Content is already sanitized by the validator middleware
+    // Process mentions after sanitization to ensure safe HTML
+    let commentContent = req.body.content || '';
     if (mentions.length > 0) {
       commentContent = this.replaceContent(commentContent, mentions);
+      // Re-sanitize after mention processing to ensure no XSS was introduced
+      commentContent = sanitizeCommentContent(commentContent);
     }
 
     req.body.content = commentContent;
@@ -149,12 +153,14 @@ export default class TaskCommentsController extends WorklenzControllerBase {
       }
     }
 
-    const mentionMessage = `<b>${req.user?.name}</b> has mentioned you in a comment on <b>${response.task_name}</b> (${response.team_name})`;
+    // Sanitize user name to prevent XSS attacks in notification messages
+    const safeName = sanitizePlainText(req.user?.name || "Unknown User");
+    const mentionMessage = `<b>${safeName}</b> has mentioned you in a comment on <b>${response.task_name}</b> (${response.team_name})`;
     // const mentions = [...new Set(req.body.mentions || [])] as string[]; // remove duplicates
 
     const assignees = await getAssignees(req.body.task_id);
 
-    const commentMessage = `<b>${req.user?.name}</b> added a comment on <b>${response.task_name}</b> (${response.team_name})`;
+    const commentMessage = `<b>${safeName}</b> added a comment on <b>${response.task_name}</b> (${response.team_name})`;
     for (const member of assignees || []) {
       if (member.user_id && member.user_id === req.user?.id) continue;
 
@@ -282,9 +288,13 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     req.body.team_id = req.user?.team_id;
     const { mentions, comment_id } = req.body;
 
-    let commentContent = req.body.content;
+    // Content is already sanitized by the validator middleware
+    // Process mentions after sanitization to ensure safe HTML
+    let commentContent = req.body.content || '';
     if (mentions.length > 0) {
       commentContent = await this.replaceContent(commentContent, mentions);
+      // Re-sanitize after mention processing to ensure no XSS was introduced
+      commentContent = sanitizeCommentContent(commentContent);
     }
 
     req.body.content = commentContent;
@@ -295,12 +305,14 @@ export default class TaskCommentsController extends WorklenzControllerBase {
 
     const response = data.comment;
 
-    const mentionMessage = `<b>${req.user?.name}</b> has mentioned you in a comment on <b>${response.task_name}</b> (${response.team_name})`;
+    // Sanitize user name to prevent XSS attacks in notification messages
+    const safeName = sanitizePlainText(req.user?.name || "Unknown User");
+    const mentionMessage = `<b>${safeName}</b> has mentioned you in a comment on <b>${response.task_name}</b> (${response.team_name})`;
     // const mentions = [...new Set(req.body.mentions || [])] as string[]; // remove duplicates
 
     const assignees = await getAssignees(req.body.task_id);
 
-    const commentMessage = `<b>${req.user?.name}</b> added a comment on <b>${response.task_name}</b> (${response.team_name})`;
+    const commentMessage = `<b>${safeName}</b> added a comment on <b>${response.task_name}</b> (${response.team_name})`;
     for (const member of assignees || []) {
       if (member.user_id && member.user_id === req.user?.id) continue;
 
@@ -546,7 +558,9 @@ export default class TaskCommentsController extends WorklenzControllerBase {
       await db.query(q, [id, req.user?.id, req.user?.team_member_id]);
 
       const getTaskCommentData = await TaskCommentsController.getTaskCommentData(id);
-      const commentMessage = `<b>${getTaskCommentData.reactor_name}</b> liked your comment on <b>${getTaskCommentData.task_name}</b> (${getTaskCommentData.team_name})`;
+      // Sanitize reactor name to prevent XSS attacks
+      const safeReactorName = sanitizePlainText(getTaskCommentData.reactor_name || "Unknown User");
+      const commentMessage = `<b>${safeReactorName}</b> liked your comment on <b>${getTaskCommentData.task_name}</b> (${getTaskCommentData.team_name})`;
 
       if (getTaskCommentData && getTaskCommentData.user_id !== req.user?.id) {
         void NotificationsService.createNotification({
@@ -621,7 +635,9 @@ export default class TaskCommentsController extends WorklenzControllerBase {
 
     const assignees = await getAssignees(task_id);
 
-    const commentMessage = `<b>${req.user?.name}</b> added a new attachment as a comment on <b>${commentId.task_name}</b> (${commentId.team_name})`;
+    // Sanitize user name to prevent XSS attacks in notification messages
+    const safeName = sanitizePlainText(req.user?.name || "Unknown User");
+    const commentMessage = `<b>${safeName}</b> added a new attachment as a comment on <b>${commentId.task_name}</b> (${commentId.team_name})`;
 
     for (const member of assignees || []) {
       if (member.user_id && member.user_id === req.user?.id) continue;

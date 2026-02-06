@@ -9,6 +9,8 @@ import {
   Typography,
   Spin,
   Skeleton,
+  Space,
+  Modal,
 } from '@/shared/antd-imports';
 import { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -40,6 +42,11 @@ const ProfileSettings = () => {
   const [uploading, setUploading] = useState(false);
   const [updating, setUpdating] = useState(false);
 
+  // New states for preview functionality
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [pendingFile, setPendingFile] = useState<{ base64: string; name: string; size: number } | null>(null);
+  const [isPreviewModalVisible, setIsPreviewModalVisible] = useState(false);
+
   const [imageUrl, setImageUrl] = useState<string>();
   const [form] = Form.useForm();
   const currentSession = useAuthService().getCurrentSession();
@@ -55,32 +62,70 @@ const ProfileSettings = () => {
     if (uploading || !event.target.files || event.target.files.length === 0) return;
 
     const file = event.target.files[0];
-    setUploading(true);
 
     try {
       const base64 = await getBase64(file);
-      const res = await taskAttachmentsApiService.createAvatarAttachment({
-        file: base64 as string,
-        file_name: file.name,
+      
+      // Store the file data and preview for user confirmation
+      setPendingFile({
+        base64: base64 as string,
+        name: file.name,
         size: file.size,
       });
+      setPreviewImage(base64 as string);
+      setIsPreviewModalVisible(true);
+    } catch (e) {
+      logger.error('Error reading file', e);
+    }
+
+    // Reset file input
+    const dt = new DataTransfer();
+    event.target.files = dt.files;
+  };
+
+  const handleSaveAvatar = async () => {
+    if (!pendingFile) return;
+
+    setUploading(true);
+    
+    try {
+      const res = await taskAttachmentsApiService.createAvatarAttachment({
+        file: pendingFile.base64,
+        file_name: pendingFile.name,
+        size: pendingFile.size,
+      });
+      
       if (res.done) {
         trackMixpanelEvent(evt_settings_profile_picture_update);
-        const authorizeResponse = await authApiService.verify();
-        if (authorizeResponse.authenticated) {
-          setSession(authorizeResponse.user);
-          dispatch(setUser(authorizeResponse.user));
-        }
+        
+        // Update session with the latest data from API response
+        const updatedUser = {
+          ...currentSession,
+          avatar_url: res.body.url,
+          updated_at: res.body.updated_at || new Date().toISOString()
+        };
+        setSession(updatedUser);
+        dispatch(setUser(updatedUser));
+        
+        // Update local image URL
+        setImageUrl(res.body.url);
+        
+        // Close modal and clear pending data
+        setIsPreviewModalVisible(false);
+        setPendingFile(null);
+        setPreviewImage(null);
       }
     } catch (e) {
       logger.error('Error uploading avatar', e);
     } finally {
       setUploading(false);
     }
+  };
 
-    // Reset file input
-    const dt = new DataTransfer();
-    event.target.files = dt.files;
+  const handleCancelAvatar = () => {
+    setIsPreviewModalVisible(false);
+    setPendingFile(null);
+    setPreviewImage(null);
   };
 
   const triggerFileInput = () => {
@@ -147,12 +192,15 @@ const ProfileSettings = () => {
       if (res.done) {
         trackMixpanelEvent(evt_settings_profile_name_change, { newName: name });
         dispatch(changeUserName(name));
-        // Refresh user session to get updated data
-        const authorizeResponse = await authApiService.verify();
-        if (authorizeResponse.authenticated) {
-          setSession(authorizeResponse.user);
-          dispatch(setUser(authorizeResponse.user));
-        }
+        
+        // Update session with the latest data from API response
+        const updatedUser = {
+          ...currentSession,
+          ...res.body,
+          updated_at: res.body.updated_at || new Date().toISOString()
+        };
+        setSession(updatedUser);
+        dispatch(setUser(updatedUser));
       }
     } catch (error) {
       logger.error('Error changing name', error);
@@ -162,89 +210,124 @@ const ProfileSettings = () => {
   };
 
   return (
-    <Card style={{ width: '100%' }}>
-      {updating ? (
-        <Skeleton />
-      ) : (
-        <Form
-          form={form}
-          onFinish={handleFormSubmit}
-          layout="vertical"
-          initialValues={{
-            name: currentSession?.name,
-            email: currentSession?.email,
-          }}
-          style={{ width: '100%', maxWidth: 350 }}
-        >
-          <Form.Item>
-            <Tooltip title={t('avatarTooltip') || 'Click to upload an avatar'} placement="topLeft">
-              {avatarPreview}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png, image/jpg, image/jpeg"
-                onChange={handleFileChange}
-                style={{ display: 'none' }}
-              />
-            </Tooltip>
-          </Form.Item>
-          <Form.Item
-            name="name"
-            label={t('nameLabel')}
-            rules={[
-              {
-                required: true,
-                message: t('nameRequiredError'),
-              },
-              {
-                min: 2,
-                message: t('nameMinLengthError') || 'Name must be at least 2 characters',
-              },
-              {
-                max: 50,
-                message: t('nameMaxLengthError') || 'Name cannot exceed 50 characters',
-              },
-            ]}
+    <>
+      <Card style={{ width: '100%' }}>
+        {updating ? (
+          <Skeleton />
+        ) : (
+          <Form
+            form={form}
+            onFinish={handleFormSubmit}
+            layout="vertical"
+            initialValues={{
+              name: currentSession?.name,
+              email: currentSession?.email,
+            }}
+            style={{ width: '100%', maxWidth: 350 }}
           >
-            <Input style={{ borderRadius: 4 }} />
-          </Form.Item>
-          <Form.Item
-            name="email"
-            label={t('emailLabel')}
-            rules={[
-              {
-                required: true,
-                message: t('emailRequiredError'),
-              },
-            ]}
-          >
-            <Input style={{ borderRadius: 4 }} disabled />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={updating}>
-              {t('saveChanges')}
-            </Button>
-          </Form.Item>
-        </Form>
-      )}
+            <Form.Item>
+              <Tooltip title={t('avatarTooltip') || 'Click to upload an avatar'} placement="topLeft">
+                {avatarPreview}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png, image/jpg, image/jpeg"
+                  onChange={handleFileChange}
+                  style={{ display: 'none' }}
+                />
+              </Tooltip>
+            </Form.Item>
+            <Form.Item
+              name="name"
+              label={t('nameLabel')}
+              rules={[
+                {
+                  required: true,
+                  message: t('nameRequiredError'),
+                },
+                {
+                  min: 2,
+                  message: t('nameMinLengthError') || 'Name must be at least 2 characters',
+                },
+                {
+                  max: 50,
+                  message: t('nameMaxLengthError') || 'Name cannot exceed 50 characters',
+                },
+              ]}
+            >
+              <Input style={{ borderRadius: 4 }} />
+            </Form.Item>
+            <Form.Item
+              name="email"
+              label={t('emailLabel')}
+              rules={[
+                {
+                  required: true,
+                  message: t('emailRequiredError'),
+                },
+              ]}
+            >
+              <Input style={{ borderRadius: 4 }} disabled />
+            </Form.Item>
+            <Form.Item>
+              <Button type="primary" htmlType="submit" loading={updating}>
+                {t('saveChanges')}
+              </Button>
+            </Form.Item>
+          </Form>
+        )}
 
-      <Flex vertical gap={4} style={{ marginTop: 16 }}>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {t('profileJoinedText', {
-            date: currentSession?.created_at
-              ? new Date(currentSession.created_at).toLocaleDateString()
-              : '',
-          })}
-        </Typography.Text>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {t('profileLastUpdatedText', {
-            date: currentSession?.updated_at
-              ? new Date(currentSession.updated_at).toLocaleDateString()
-              : '',
-          })}
-        </Typography.Text>
-      </Flex>
-    </Card>
+        <Flex vertical gap={4} style={{ marginTop: 16 }}>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {t('profileJoinedText', {
+              date: currentSession?.created_at
+                ? new Date(currentSession.created_at).toLocaleDateString()
+                : '',
+            })}
+          </Typography.Text>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {t('profileLastUpdatedText', {
+              date: currentSession?.updated_at
+                ? new Date(currentSession.updated_at).toLocaleDateString()
+                : '',
+            })}
+          </Typography.Text>
+        </Flex>
+      </Card>
+
+      {/* Preview Modal */}
+      <Modal
+        title="Confirm Profile Picture"
+        open={isPreviewModalVisible}
+        onCancel={handleCancelAvatar}
+        footer={[
+          <Button key="cancel" onClick={handleCancelAvatar} disabled={uploading}>
+            Cancel
+          </Button>,
+          <Button key="save" type="primary" onClick={handleSaveAvatar} loading={uploading}>
+            Save
+          </Button>,
+        ]}
+        centered
+      >
+        <Flex vertical align="center" gap={16} style={{ padding: '20px 0' }}>
+          <Typography.Text>Do you want to set this as your profile picture?</Typography.Text>
+          {previewImage && (
+            <img
+              src={previewImage}
+              alt="Preview"
+              style={{
+                width: '200px',
+                height: '200px',
+                objectFit: 'cover',
+                borderRadius: '8px',
+                border: '1px solid #d9d9d9',
+              }}
+            />
+          )}
+        </Flex>
+      </Modal>
+    </>
   );
 };
 

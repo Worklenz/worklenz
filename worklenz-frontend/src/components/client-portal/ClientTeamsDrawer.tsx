@@ -36,8 +36,9 @@ import {
   useInviteTeamMemberMutation,
   useRemoveTeamMemberMutation,
   useResendTeamInvitationMutation,
+  useGenerateClientInvitationLinkMutation,
 } from '../../api/client-portal/client-portal-api';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const { Option } = Select;
 
@@ -53,6 +54,8 @@ const ClientTeamsDrawer = () => {
   // Local state
   const [inviteForm] = Form.useForm();
   const [isInviting, setIsInviting] = useState(false);
+  const [invitationLink, setInvitationLink] = useState<string>('');
+  const [isLoadingInvitationLink, setIsLoadingInvitationLink] = useState(false);
 
   // RTK Query hooks - only load data when drawer is open
   const { data: clientDetails, isLoading: isLoadingClient } = useGetClientDetailsQuery(
@@ -80,11 +83,53 @@ const ClientTeamsDrawer = () => {
   const [inviteTeamMember, { isLoading: isInvitingMember }] = useInviteTeamMemberMutation();
   const [removeTeamMember, { isLoading: isRemovingMember }] = useRemoveTeamMemberMutation();
   const [resendInvitation, { isLoading: isResending }] = useResendTeamInvitationMutation();
+  const [generateInvitationLink, { isLoading: isGeneratingLink }] = useGenerateClientInvitationLinkMutation();
+
+  // Generate invitation link when drawer opens or client changes
+  useEffect(() => {
+    const fetchInvitationLink = async () => {
+      if (!selectedClientId || !isClientTeamsDrawerOpen) {
+        setInvitationLink('');
+        return;
+      }
+
+      try {
+        setIsLoadingInvitationLink(true);
+        const result = await generateInvitationLink({ clientId: selectedClientId }).unwrap();
+        
+        // Handle existing user case - show portal URL instead of invitation link
+        if (result.body?.isExistingUser && result.body?.portalUrl) {
+          setInvitationLink(result.body.portalUrl);
+        } else if (result.body?.invitationLink) {
+          setInvitationLink(result.body.invitationLink);
+        } else {
+          setInvitationLink('');
+          message.error(t('inviteLinkGeneratedError') || 'Failed to generate invitation link');
+        }
+      } catch (error: any) {
+        console.error('Failed to generate invitation link:', error);
+        setInvitationLink('');
+        // Don't show error if it's just missing email - that's handled elsewhere
+        const errorData = error?.data?.body || error?.data || error?.response?.data?.body || error?.response?.data;
+        const errorCode = errorData?.errorCode;
+        if (errorCode !== 'EMAIL_REQUIRED') {
+          message.error(error?.data?.message || t('inviteLinkGeneratedError') || 'Failed to generate invitation link');
+        }
+      } finally {
+        setIsLoadingInvitationLink(false);
+      }
+    };
+
+    fetchInvitationLink();
+  }, [selectedClientId, isClientTeamsDrawerOpen, generateInvitationLink, t]);
 
   // function to copy link to clipboard
   const copyLinkToClipboard = () => {
-    const link = `https://app.worklenz.com/client-portal/${selectedClientId}`;
-    navigator.clipboard.writeText(link);
+    if (!invitationLink) {
+      message.error(t('linkNotReady') || 'Link is not ready yet');
+      return;
+    }
+    navigator.clipboard.writeText(invitationLink);
     message.success(t('linkCopiedMessage') || 'Link copied to clipboard');
   };
 
@@ -258,11 +303,24 @@ const ClientTeamsDrawer = () => {
             </Typography.Text>
             <Flex gap={8} align="center">
               <Input
-                value={`https://app.worklenz.com/client-portal/${selectedClientId}`}
+                value={
+                  invitationLink
+                    ? invitationLink
+                    : isLoadingInvitationLink || isGeneratingLink
+                    ? t('loadingText') || 'Loading...'
+                    : ''
+                }
                 readOnly
                 style={{ flex: 1 }}
+                disabled={isLoadingInvitationLink || isGeneratingLink || !invitationLink}
               />
-              <Button type="default" icon={<CopyOutlined />} onClick={copyLinkToClipboard}>
+              <Button 
+                type="default" 
+                icon={<CopyOutlined />} 
+                onClick={copyLinkToClipboard}
+                disabled={!invitationLink || isLoadingInvitationLink || isGeneratingLink}
+                loading={isLoadingInvitationLink || isGeneratingLink}
+              >
                 {t('copyButton') || 'Copy'}
               </Button>
             </Flex>

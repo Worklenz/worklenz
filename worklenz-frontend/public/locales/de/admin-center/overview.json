@@ -88,5 +88,10 @@
   "logoFormatRecommendation": "PNG-Format mit transparentem Hintergrund wird für beste Ergebnisse empfohlen",
   "logoDeleteConfirm": "Sind Sie sicher, dass Sie das Organisationslogo entfernen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
   "logoUsage": "Wird in der Navigationsleiste verwendet und mit dem Client-Portal synchronisiert",
+  "logoUpgradeToUpload": "Upgraden Sie auf einen kostenpflichtigen Plan, um ein benutzerdefiniertes Logo hochzuladen.",
+  "logoUpgradeToChangeOrRemove": "Upgraden Sie auf einen kostenpflichtigen Plan, um das Organisationslogo zu ändern oder zu entfernen.",
+  "availableOnPaidPlans": "Verfügbar in kostenpflichtigen Plänen",
+  "logoAltText": "Organisationslogo",
+  "logoSupportedFormats": "PNG, JPG, WEBP",
   "organizationProfile": "Organisationsprofil"
 }

@@ -5,7 +5,7 @@ import logger from '@/utils/errorLogger';
 import { Switch, Tooltip } from '@/shared/antd-imports';
 import { CrownOutlined } from '@ant-design/icons';
 import { useAuthService } from '@/hooks/useAuth';
-import { isFreeUser } from '@/utils/subscription-utils';
+import { shouldRestrictProjectHealth } from '@/utils/subscription-utils';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
@@ -20,10 +20,10 @@ const TaskDrawerBillable = ({ task = null }: TaskDrawerBillableProps) => {
   const currentSession = authService.getCurrentSession();
   const { t } = useTranslation('common');
   const dispatch = useAppDispatch();
-  const isFree = isFreeUser(currentSession);
+  const isRestricted = shouldRestrictProjectHealth(currentSession);
 
   const handleBillableChange = (checked: boolean) => {
-    if (isFree) {
+    if (isRestricted) {
       dispatch(toggleUpgradeModal());
       return;
     }
@@ -40,7 +40,7 @@ const TaskDrawerBillable = ({ task = null }: TaskDrawerBillableProps) => {
     }
   };
 
-  if (isFree) {
+  if (isRestricted) {
     return (
       <Tooltip title={t('upgrade-plan')} placement="top">
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }} onClick={() => dispatch(toggleUpgradeModal())}>

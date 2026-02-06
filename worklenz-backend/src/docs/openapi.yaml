@@ -1,0 +1,1094 @@
+openapi: 3.0.3
+info:
+  title: Worklenz API
+  version: 2.2.3
+  description: |
+    Worklenz project management platform API documentation.
+
+    ## Authentication
+    This API uses **session-based authentication** with **CSRF token protection**:
+
+    1. **Session Cookie**: Automatically set after login
+    2. **CSRF Token**: Required for all state-changing operations (POST, PUT, DELETE)
+       - Obtain token from `GET /csrf-token` endpoint
+       - Include in `X-CSRF-Token` header for subsequent requests
+
+    ## Authorization Flow
+    ```
+    1. POST /auth/login → Receive session cookie
+    2. GET /csrf-token → Receive CSRF token
+    3. Use session + CSRF token for protected endpoints
+    ```
+
+    ## Response Format
+    All endpoints return a standardized `ServerResponse<T>` object:
+    ```json
+    {
+      "done": true,
+      "body": { ... },
+      "title": "Optional title",
+      "message": "Optional message"
+    }
+    ```
+
+  contact:
+    name: Worklenz Support
+    url: https://worklenz.com
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:5000
+    description: Development server
+  - url: https://app.worklenz.com
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: Authentication and CSRF token management
+  - name: Tasks
+    description: Task management operations
+  - name: Projects
+    description: Project management operations
+  - name: Teams
+    description: Team and team member management
+  - name: Subtasks
+    description: Subtask management
+  - name: Task Comments
+    description: Task comment operations
+
+security:
+  - sessionAuth: []
+    csrfToken: []
+
+paths:
+  /csrf-token:
+    get:
+      tags:
+        - Authentication
+      summary: Get CSRF token
+      description: |
+        Retrieve a CSRF token for state-changing requests.
+        This endpoint must be called before making POST, PUT, or DELETE requests.
+        The token should be included in the `X-CSRF-Token` header.
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: CSRF token generated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: object
+                        properties:
+                          token:
+                            type: string
+                            description: CSRF token to use in X-CSRF-Token header
+                            example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /tasks:
+    post:
+      tags:
+        - Tasks
+      summary: Create a new task
+      description: Create a new task with the specified properties
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreateRequest'
+      responses:
+        '200':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+  /tasks/info:
+    get:
+      tags:
+        - Tasks
+      summary: Get task by ID
+      description: Retrieve detailed information about a specific task
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: task_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the task to retrieve
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Task details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/Task'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+              example:
+                done: false
+                body: null
+                message: "Task not found"
+
+  /tasks/{id}:
+    put:
+      tags:
+        - Tasks
+      summary: Update task
+      description: Update an existing task's properties
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdateRequest'
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          description: Task not found
+
+    delete:
+      tags:
+        - Tasks
+      summary: Delete task
+      description: Permanently delete a task
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Task deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+              example:
+                done: true
+                body: null
+                message: "Task deleted successfully"
+        '404':
+          description: Task not found
+
+  /tasks/project/{id}:
+    get:
+      tags:
+        - Tasks
+      summary: Get tasks by project
+      description: Retrieve all tasks for a specific project
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Tasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Task'
+
+  /tasks/bulk/status:
+    put:
+      tags:
+        - Tasks
+      summary: Bulk update task status
+      description: Update the status of multiple tasks at once
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tasks
+                - status_id
+              properties:
+                tasks:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: Array of task IDs to update
+                  example: ["550e8400-e29b-41d4-a716-446655440000"]
+                status_id:
+                  type: string
+                  format: uuid
+                  description: New status ID to apply
+      responses:
+        '200':
+          description: Task statuses updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /projects:
+    get:
+      tags:
+        - Projects
+      summary: List all projects
+      description: Retrieve a list of all accessible projects with optional filtering
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Pagination offset
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+          description: Number of projects to return
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search query to filter projects by name
+      responses:
+        '200':
+          description: Projects retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Project'
+
+    post:
+      tags:
+        - Projects
+      summary: Create a new project
+      description: Create a new project (requires team owner or admin role)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreateRequest'
+      responses:
+        '200':
+          description: Project created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/Project'
+        '403':
+          description: Insufficient permissions (requires team owner or admin)
+
+  /projects/{id}:
+    get:
+      tags:
+        - Projects
+      summary: Get project by ID
+      description: Retrieve detailed information about a specific project
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Project details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/Project'
+        '404':
+          description: Project not found
+
+    put:
+      tags:
+        - Projects
+      summary: Update project
+      description: Update an existing project's properties (requires project manager role)
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectUpdateRequest'
+      responses:
+        '200':
+          description: Project updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/Project'
+        '403':
+          description: Insufficient permissions (requires project manager role)
+
+    delete:
+      tags:
+        - Projects
+      summary: Delete project
+      description: Permanently delete a project (requires team owner or admin role)
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Project deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+              example:
+                done: true
+                body: null
+                message: "Project deleted successfully"
+        '403':
+          description: Insufficient permissions
+
+  /teams:
+    get:
+      tags:
+        - Teams
+      summary: List all teams
+      description: Retrieve a list of all teams the user belongs to
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Teams retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Team'
+
+    post:
+      tags:
+        - Teams
+      summary: Create a new team
+      description: Create a new team
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamCreateRequest'
+      responses:
+        '200':
+          description: Team created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/Team'
+
+  /teams/invites:
+    get:
+      tags:
+        - Teams
+      summary: Get team invitations
+      description: Retrieve all pending team invitations for the current user
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Team invitations retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TeamInvitation'
+
+  /sub-tasks/{id}:
+    get:
+      tags:
+        - Subtasks
+      summary: Get subtasks for a task
+      description: Retrieve all subtasks associated with a parent task
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Subtasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Subtask'
+
+  /task-comments:
+    post:
+      tags:
+        - Task Comments
+      summary: Create a comment
+      description: Add a new comment to a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCommentCreateRequest'
+      responses:
+        '200':
+          description: Comment created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/TaskComment'
+
+  /task-comments/{id}:
+    get:
+      tags:
+        - Task Comments
+      summary: Get task comments
+      description: Retrieve all comments for a specific task
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Comments retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TaskComment'
+
+    put:
+      tags:
+        - Task Comments
+      summary: Update comment
+      description: Update an existing task comment
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                  maxLength: 4000
+                  description: Updated comment content (HTML allowed)
+      responses:
+        '200':
+          description: Comment updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/TaskComment'
+
+components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: connect.sid
+      description: Session cookie set after successful login
+
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+      description: |
+        CSRF token obtained from /csrf-token endpoint.
+        Required for all POST, PUT, DELETE requests.
+
+    clientPortalToken:
+      type: apiKey
+      in: header
+      name: x-client-token
+      description: Client portal authentication token (for client-specific endpoints)
+
+  parameters:
+    idParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Resource UUID
+      example: "550e8400-e29b-41d4-a716-446655440000"
+
+  schemas:
+    ServerResponse:
+      type: object
+      required:
+        - done
+        - body
+      properties:
+        done:
+          type: boolean
+          description: Indicates if the operation was successful
+          example: true
+        body:
+          description: Response data (type varies by endpoint, null if no data)
+          nullable: true
+        title:
+          type: string
+          nullable: true
+          description: Optional response title
+        message:
+          type: string
+          nullable: true
+          description: Optional message (error message or success notification)
+          example: "Operation completed successfully"
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Task UUID
+        name:
+          type: string
+          maxLength: 100
+          description: Task name
+          example: "Implement user authentication"
+        description:
+          type: string
+          maxLength: 4000
+          nullable: true
+          description: Task description (supports HTML)
+        project_id:
+          type: string
+          format: uuid
+          description: Associated project UUID
+        status_id:
+          type: string
+          format: uuid
+          description: Task status UUID
+        priority_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Task priority UUID
+        assignees:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Array of assigned user UUIDs
+        labels:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              color:
+                type: string
+          description: Task labels with colors
+        start_date:
+          type: string
+          format: date
+          nullable: true
+          description: Task start date (YYYY-MM-DD)
+        end_date:
+          type: string
+          format: date
+          nullable: true
+          description: Task due date (YYYY-MM-DD)
+        total_minutes:
+          type: integer
+          description: Estimated time in minutes
+          example: 480
+        billable:
+          type: boolean
+          description: Whether the task is billable
+          default: false
+        created_at:
+          type: string
+          format: date-time
+          description: Task creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    TaskCreateRequest:
+      type: object
+      required:
+        - name
+        - project_id
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Task name
+          example: "Implement user authentication"
+        description:
+          type: string
+          maxLength: 4000
+          nullable: true
+          description: Task description (HTML allowed)
+        project_id:
+          type: string
+          format: uuid
+          description: Project UUID this task belongs to
+        status_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Initial status UUID (defaults to project's default status)
+        priority_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Priority UUID
+        assignees:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Array of user UUIDs to assign
+          default: []
+        labels:
+          type: array
+          items:
+            type: string
+          description: Array of label names (will be created if they don't exist)
+          default: []
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        total_hours:
+          type: number
+          minimum: 0
+          maximum: 1000
+          description: Estimated hours
+        total_minutes:
+          type: number
+          minimum: 0
+          maximum: 1000
+          description: Estimated minutes (combined with total_hours)
+        billable:
+          type: boolean
+          default: false
+
+    TaskUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 4000
+          nullable: true
+        status_id:
+          type: string
+          format: uuid
+        priority_id:
+          type: string
+          format: uuid
+          nullable: true
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        billable:
+          type: boolean
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 100
+          example: "Website Redesign"
+        key:
+          type: string
+          maxLength: 10
+          description: Project key (e.g., "WEB")
+          example: "WEB"
+        color_code:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Project color in hex format
+          example: "#3498db"
+        status_id:
+          type: string
+          format: uuid
+          nullable: true
+        category_id:
+          type: string
+          format: uuid
+          nullable: true
+        folder_id:
+          type: string
+          format: uuid
+          nullable: true
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ProjectCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Project name
+          example: "Website Redesign"
+        key:
+          type: string
+          maxLength: 10
+          description: Project key (auto-generated if not provided)
+        color_code:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Project color (random if not provided)
+        category_id:
+          type: string
+          format: uuid
+          nullable: true
+        folder_id:
+          type: string
+          format: uuid
+          nullable: true
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+
+    ProjectUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        key:
+          type: string
+          maxLength: 10
+        color_code:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+        status_id:
+          type: string
+          format: uuid
+          nullable: true
+        category_id:
+          type: string
+          format: uuid
+          nullable: true
+        folder_id:
+          type: string
+          format: uuid
+          nullable: true
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+
+    Team:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 100
+          example: "Engineering Team"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TeamCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Team name
+          example: "Engineering Team"
+
+    TeamInvitation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        team_id:
+          type: string
+          format: uuid
+        team_name:
+          type: string
+          example: "Engineering Team"
+        inviter_name:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        created_at:
+          type: string
+          format: date-time
+
+    Subtask:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        parent_task_id:
+          type: string
+          format: uuid
+          description: UUID of the parent task
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 4000
+          nullable: true
+        done:
+          type: boolean
+          description: Completion status
+          default: false
+        created_at:
+          type: string
+          format: date-time
+
+    TaskComment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        task_id:
+          type: string
+          format: uuid
+        content:
+          type: string
+          maxLength: 4000
+          description: Comment content (supports HTML)
+        user_id:
+          type: string
+          format: uuid
+        user_name:
+          type: string
+          description: Name of the user who created the comment
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    TaskCommentCreateRequest:
+      type: object
+      required:
+        - task_id
+        - content
+      properties:
+        task_id:
+          type: string
+          format: uuid
+          description: Task UUID to comment on
+        content:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          description: Comment content (HTML allowed)
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ServerResponse'
+          example:
+            done: false
+            body: null
+            message: "Authentication required"
+
+    CsrfError:
+      description: CSRF token validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ServerResponse'
+          example:
+            done: false
+            body: null
+            message: "CSRF token validation failed"
+
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ServerResponse'
+          example:
+            done: false
+            body: null
+            message: "Validation error: name is required"

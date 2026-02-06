@@ -57,5 +57,6 @@
   "attachFile": "Datei anhängen",
   "emojiPicker": "Emoji hinzufügen",
   "noChatsWithClient": "Noch keine Konversationen mit diesem Kunden",
-  "startConversationWithClient": "Starten Sie eine Konversation, um diese Anfrage mit dem Kunden zu besprechen."
+  "startConversationWithClient": "Starten Sie eine Konversation, um diese Anfrage mit dem Kunden zu besprechen.",
+  "messageUnavailable": "Nachricht nicht verfügbar"
 }

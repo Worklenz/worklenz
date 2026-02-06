@@ -44,7 +44,7 @@ async function handleAppleWebAuth(
   _refreshToken: string,
   idToken: any,
   profile: any,
-  done: any
+  done: any,
 ) {
   try {
     // Extract data from ID token (more reliable than profile)
@@ -114,7 +114,7 @@ async function handleAppleWebAuth(
     if (email) {
       const localAccountResult = await db.query(
         "SELECT 1 FROM users WHERE LOWER(email) = $1 AND password IS NOT NULL AND is_deleted IS FALSE;",
-        [email]
+        [email],
       );
 
       if (localAccountResult.rowCount) {
@@ -136,17 +136,17 @@ async function handleAppleWebAuth(
       member_id: state.teamMember,
     };
 
-    // Look up user by apple_id (primary) or email (secondary)
+    // Look up user by apple_id (primary) or email (secondary) - exclude deleted accounts
     let userResult;
     if (email) {
       userResult = await db.query(
-        "SELECT id, apple_id, google_id, name, email, active_team FROM users WHERE apple_id = $1 OR LOWER(email) = $2;",
-        [appleId, email]
+        "SELECT id, apple_id, google_id, name, email, active_team FROM users WHERE (apple_id = $1 OR LOWER(email) = $2) AND is_deleted = FALSE;",
+        [appleId, email],
       );
     } else {
       userResult = await db.query(
-        "SELECT id, apple_id, google_id, name, email, active_team FROM users WHERE apple_id = $1;",
-        [appleId]
+        "SELECT id, apple_id, google_id, name, email, active_team FROM users WHERE apple_id = $1 AND is_deleted = FALSE;",
+        [appleId],
       );
     }
 
@@ -200,7 +200,7 @@ async function handleAppleWebAuth(
     // Register new user via database function
     const registerResult = await db.query(
       "SELECT register_apple_user($1) AS user;",
-      [JSON.stringify(body)]
+      [JSON.stringify(body)],
     );
 
     const { user } = registerResult.rows[0];
@@ -221,52 +221,56 @@ async function handleAppleWebAuth(
  * Passport strategy for Apple Sign-In (Web OAuth)
  * Uses passport-apple package for OAuth 2.0 flow
  * @see https://developer.apple.com/documentation/sign_in_with_apple
+ *
+ * This strategy is conditionally exported based on environment configuration
  */
-const requiredEnvVars = [
-  "APPLE_CLIENT_ID",
-  "APPLE_TEAM_ID",
-  "APPLE_KEY_ID",
-  "APPLE_PRIVATE_KEY_PATH",
-  "APPLE_CALLBACK_URL",
-];
 
-const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
+// Check if Apple Sign-In is properly configured
+const isAppleConfigured = () => {
+  return !!(
+    process.env.APPLE_CLIENT_ID &&
+    process.env.APPLE_TEAM_ID &&
+    process.env.APPLE_KEY_ID &&
+    process.env.APPLE_PRIVATE_KEY_PATH &&
+    process.env.APPLE_CALLBACK_URL
+  );
+};
 
-const appleStrategy =
-  missingEnvVars.length === 0
-    ? new AppleStrategy(
-        {
-          clientID: process.env.APPLE_CLIENT_ID as string,
-          teamID: process.env.APPLE_TEAM_ID as string,
-          keyID: process.env.APPLE_KEY_ID as string,
-          privateKeyLocation: process.env.APPLE_PRIVATE_KEY_PATH as string,
-          callbackURL: process.env.APPLE_CALLBACK_URL as string,
-          passReqToCallback: true,
-          scope: ["name", "email"],
-        },
-        (
-          req: any,
-          accessToken: any,
-          refreshToken: any,
-          idToken: any,
-          profile: any,
-          done: any
-        ) =>
-          void handleAppleWebAuth(
-            req,
-            accessToken,
-            refreshToken,
-            idToken,
-            profile,
-            done
-          )
-      )
-    : new CustomStrategy((req: Request, done: any) => {
-        const message = `Apple web auth disabled: missing ${missingEnvVars.join(
-          ", "
-        )}`;
-        log_error(message);
-        return done(null, false, { message });
-      });
+// Only create strategy if Apple is configured
+let appleStrategy: any = null;
+
+if (isAppleConfigured()) {
+  appleStrategy = new AppleStrategy(
+    {
+      clientID: process.env.APPLE_CLIENT_ID as string,
+      teamID: process.env.APPLE_TEAM_ID as string,
+      keyID: process.env.APPLE_KEY_ID as string,
+      privateKeyLocation: process.env.APPLE_PRIVATE_KEY_PATH as string,
+      callbackURL: process.env.APPLE_CALLBACK_URL as string,
+      passReqToCallback: true,
+      scope: ["name", "email"],
+    },
+    (
+      req: any,
+      accessToken: any,
+      refreshToken: any,
+      idToken: any,
+      profile: any,
+      done: any,
+    ) =>
+      void handleAppleWebAuth(
+        req,
+        accessToken,
+        refreshToken,
+        idToken,
+        profile,
+        done,
+      ),
+  );
+} else {
+  console.warn(
+    "⚠️  Apple Sign-In Web OAuth is not configured. Set APPLE_CLIENT_ID, APPLE_TEAM_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY_PATH, and APPLE_CALLBACK_URL in .env to enable it.",
+  );
+}
 
 export default appleStrategy;

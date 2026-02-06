@@ -6,6 +6,7 @@ import db from "../../config/db";
 import { IO } from "../../shared/io";
 import { getBaseUrl } from "../../cron_jobs/helpers";
 import { sendClientPortalNewRequestNotification } from "../../shared/email-notifications";
+import crypto from "crypto";
 
 export default class ClientPortalRequestsController extends ClientPortalControllerBase {
 
@@ -142,9 +143,9 @@ export default class ClientPortalRequestsController extends ClientPortalControll
           .json(new ServerResponse(false, null, "Service ID is required"));
       }
 
-      // Verify service exists and client has access
+      // Verify service exists and client has access, and get service_key
       const serviceCheck = await db.query(
-        `SELECT id, name FROM client_portal_services
+        `SELECT id, name, service_key FROM client_portal_services
          WHERE id = $1 AND organization_team_id = $2
          AND (is_public = true OR $3 = ANY(allowed_client_ids))`,
         [serviceId, organizationId, clientId]
@@ -162,38 +163,88 @@ export default class ClientPortalRequestsController extends ClientPortalControll
           );
       }
 
-      // Generate request number (sequential per organization)
-      const countResult = await db.query(
-        "SELECT COUNT(*) + 1 as next_num FROM client_portal_requests WHERE organization_team_id = $1",
-        [organizationId]
-      );
-      const nextNum = countResult.rows[0]?.next_num || 1;
-      const requestNumber = `REQ-${String(nextNum).padStart(4, '0')}`;
-
-      // Create request
-      const query = `
-        INSERT INTO client_portal_requests (
-          req_no, service_id, client_id, organization_team_id,
-          status, request_data, notes, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-        RETURNING id, req_no, service_id, status, request_data, notes, created_at, updated_at
-      `;
-
-      const values = [
-        requestNumber,
-        serviceId,
-        clientId,
-        organizationId,
-        "pending",
-        requestData ? JSON.stringify(requestData) : null,
-        notes || null,
-      ];
-
-      const result = await db.query(query, values);
-      const newRequest = result.rows[0];
-
-      // Get service name for response
       const service = serviceCheck.rows[0];
+      const serviceKey = service.service_key || 'SVC'; // Default fallback if key is missing
+
+      // Generate request number at application level with transaction and row-level lock
+      // Request numbers are unique per service (format: REQ-{SERVICE_KEY}-0001, REQ-{SERVICE_KEY}-0002, etc.)
+      let reqNo: string;
+      let newRequest: any;
+      const maxRetries = 5;
+      
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        const client = await db.pool.connect();
+        try {
+          await client.query('BEGIN');
+          
+          // Use PostgreSQL advisory lock to prevent concurrent access to sequence
+          // Lock ID is derived from service ID hash to ensure per-service locking
+          const lockId = parseInt(crypto.createHash('md5').update(serviceId).digest('hex').substring(0, 8), 16) % 2147483647;
+          await client.query('SELECT pg_advisory_xact_lock($1)', [lockId]);
+          
+          // Use a single atomic operation to insert or update and get the next number
+          // This CTE ensures the operation is atomic and prevents race conditions
+          const seqResult = await client.query(
+            `WITH inserted AS (
+               INSERT INTO client_portal_request_sequences (service_id, last_request_number)
+               VALUES ($1, 1)
+               ON CONFLICT (service_id) DO UPDATE SET
+                 last_request_number = client_portal_request_sequences.last_request_number + 1,
+                 updated_at = NOW()
+               RETURNING last_request_number
+             )
+             SELECT last_request_number FROM inserted`,
+            [serviceId]
+          );
+          
+          if (!seqResult.rows || seqResult.rows.length === 0) {
+            throw new Error('Failed to generate request sequence number');
+          }
+          
+          const nextNumber = seqResult.rows[0].last_request_number;
+          // Format: REQ-{SERVICE_KEY}-0001, REQ-{SERVICE_KEY}-0002, etc. (unique per service)
+          reqNo = `REQ-${serviceKey}-${String(nextNumber).padStart(4, '0')}`;
+
+          // Create request with generated req_no in same transaction
+          const insertQuery = `
+            INSERT INTO client_portal_requests (
+              req_no, service_id, client_id, organization_team_id,
+              status, request_data, notes, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+            RETURNING id, req_no, service_id, status, request_data, notes, created_at, updated_at
+          `;
+
+          const insertValues = [
+            reqNo,
+            serviceId,
+            clientId,
+            organizationId,
+            "pending",
+            requestData ? JSON.stringify(requestData) : null,
+            notes || null,
+          ];
+
+          const result = await client.query(insertQuery, insertValues);
+          newRequest = result.rows[0];
+          
+          await client.query('COMMIT');
+          client.release();
+          break; // Success, exit retry loop
+          
+        } catch (error: any) {
+          await client.query('ROLLBACK');
+          client.release();
+          
+          // If duplicate key error and not last attempt, retry
+          if (error.code === '23505' && attempt < maxRetries - 1) {
+            await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1))); // Exponential backoff
+            continue;
+          }
+          throw error; // Re-throw if not duplicate or last attempt
+        }
+      }
+
+      // Service already retrieved above, reuse it
 
       // Send email notification to team admins
       try {

@@ -2,6 +2,26 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { scheduleApi } from '@/api/schedule/scheduleApi';
 import { PickerType } from '@/types/schedule/schedule-v2.types';
 
+/**
+ * Interface for segment data containing all information about a project segment
+ * including dates, hours, tasks, and member assignment
+ */
+interface SegmentData {
+  id: string;
+  segment_id?: string;
+  segment_number?: number;
+  memberId?: string;
+  segmentId?: string;
+  date_union?: {
+    start: string;
+    end: string;
+  };
+  total_hours?: number;
+  task_count?: number;
+  hours_per_day?: number;
+  [key: string]: any; // Allow additional properties
+}
+
 interface WorkloadData {
   id: string;
   name: string;
@@ -45,6 +65,10 @@ interface ScheduleState {
 
   // Resource Management State
   selectedMemberId: string | null;
+  selectedProjectId: string | null;
+  selectedDate: string | null;
+  selectedDateRange: { start: string | null; end: string | null } | null;
+  selectedSegmentData: SegmentData | null; // Store complete segment data with proper typing
   workloadData: WorkloadData[];
 
   // Filters and Search
@@ -80,6 +104,10 @@ const initialState: ScheduleState = {
   type: 'month',
   date: new Date(),
   selectedMemberId: null,
+  selectedProjectId: null,
+  selectedDate: null,
+  selectedDateRange: null,
+  selectedSegmentData: null, // Store complete segment data
   workloadData: [],
   searchTerm: '',
   selectedProjects: [],
@@ -139,7 +167,15 @@ const scheduleSlice = createSlice({
       state.isSettingsDrawerOpen = !state.isSettingsDrawerOpen;
     },
 
+    /**
+     * Toggle the schedule drawer open/closed state
+     * Clears segment data when drawer is being closed to reset state
+     */
     toggleScheduleDrawer: state => {
+      // Clear segment data when drawer is being closed
+      if (state.isScheduleDrawerOpen) {
+        state.selectedSegmentData = null;
+      }
       state.isScheduleDrawerOpen = !state.isScheduleDrawerOpen;
     },
 
@@ -153,6 +189,26 @@ const scheduleSlice = createSlice({
 
     setSelectedMember: (state, action: PayloadAction<string | null>) => {
       state.selectedMemberId = action.payload;
+    },
+
+    setSelectedProject: (state, action: PayloadAction<string | null>) => {
+      state.selectedProjectId = action.payload;
+    },
+
+    /**
+     * Set the selected segment data for the schedule drawer
+     * This stores complete segment information including dates, hours, and tasks
+     */
+    setSelectedSegmentData: (state, action: PayloadAction<SegmentData | null>) => {
+      state.selectedSegmentData = action.payload;
+    },
+
+    setSelectedDate: (state, action: PayloadAction<string | null>) => {
+      state.selectedDate = action.payload;
+    },
+
+    setSelectedDateRange: (state, action: PayloadAction<{ start: string | null; end: string | null } | null>) => {
+      state.selectedDateRange = action.payload;
     },
 
     // Filter Actions
@@ -284,6 +340,10 @@ export const {
   setDate,
   setType,
   setSelectedMember,
+  setSelectedProject,
+  setSelectedSegmentData,
+  setSelectedDate,
+  setSelectedDateRange,
 
   // Filter Actions
   setSearchTerm,
@@ -318,6 +378,14 @@ export const selectWorkloadData = (state: { schedule: ScheduleState }) =>
   state.schedule.workloadData;
 export const selectSelectedMemberId = (state: { schedule: ScheduleState }) =>
   state.schedule.selectedMemberId;
+export const selectSelectedProjectId = (state: { schedule: ScheduleState }) =>
+  state.schedule.selectedProjectId;
+export const selectSelectedSegmentData = (state: { schedule: ScheduleState }) =>
+  state.schedule.selectedSegmentData;
+export const selectSelectedDate = (state: { schedule: ScheduleState }) =>
+  state.schedule.selectedDate;
+export const selectSelectedDateRange = (state: { schedule: ScheduleState }) =>
+  state.schedule.selectedDateRange;
 export const selectFilters = (state: { schedule: ScheduleState }) => ({
   searchTerm: state.schedule.searchTerm,
   selectedProjects: state.schedule.selectedProjects,
@@ -326,4 +394,4 @@ export const selectFilters = (state: { schedule: ScheduleState }) => ({
 });
 
 // Export types for use in components
-export type { ScheduleState, UIState, WorkloadData };
+export type { ScheduleState, UIState, WorkloadData, SegmentData };

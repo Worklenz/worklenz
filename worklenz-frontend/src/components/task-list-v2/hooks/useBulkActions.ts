@@ -19,12 +19,14 @@ import {
   evt_project_task_list_bulk_change_status,
   evt_project_task_list_bulk_delete,
   evt_project_task_list_bulk_update_labels,
+  evt_project_task_list_bulk_change_due_date,
 } from '@/shared/worklenz-analytics-events';
 import {
   IBulkTasksLabelsRequest,
   IBulkTasksPhaseChangeRequest,
   IBulkTasksPriorityChangeRequest,
   IBulkTasksStatusChangeRequest,
+  IBulkTasksDueDateChangeRequest,
 } from '@/types/tasks/bulk-action-bar.types';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
@@ -34,7 +36,9 @@ export const useBulkActions = () => {
   const dispatch = useAppDispatch();
   const { projectId } = useParams();
   const { trackMixpanelEvent } = useMixpanelTracking();
-  const archived = useAppSelector(state => state.taskReducer.archived);
+  
+  // FIX: Get archived state from taskManagement slice instead of taskReducer
+  const archived = useAppSelector(state => state.taskManagement.archived);
 
   // Loading states for individual actions
   const [loadingStates, setLoadingStates] = useState({
@@ -272,10 +276,13 @@ export const useBulkActions = () => {
           project_id: projectId,
         };
 
+        // Pass archived state to API - when archived=true, it will unarchive
         const res = await taskListBulkActionsApiService.archiveTasks(body, archived);
         if (res.done) {
           trackMixpanelEvent(evt_project_task_list_bulk_archive);
           dispatch(clearSelection());
+          // Don't refetch tasks immediately - they'll disappear from current view
+          // Tasks will appear in correct list when user switches archive filter
           refetchTasks();
         }
       } catch (error) {
@@ -357,18 +364,30 @@ export const useBulkActions = () => {
 
       try {
         updateLoadingState('dueDate', true);
-        // TODO: Implement bulk set due date API call when available
-        console.log('Bulk set due date:', date, selectedTaskIds);
-        // For now, just clear selection and refetch
-        dispatch(clearSelection());
-        refetchTasks();
+        
+        const body: IBulkTasksDueDateChangeRequest = {
+          tasks: selectedTaskIds,
+          end_date: date || null,
+        };
+
+        const res = await taskListBulkActionsApiService.changeDueDate(body, projectId);
+        if (res.done) {
+          trackMixpanelEvent(evt_project_task_list_bulk_change_due_date);
+          dispatch(clearSelection());
+          refetchTasks();
+          // alertService.success(
+          //   date ? 'Due date updated' : 'Due date cleared',
+          //   date ? 'Due date has been set for selected tasks' : 'Due date has been cleared for selected tasks'
+          // );
+        }
       } catch (error) {
         logger.error('Error setting due date:', error);
+        alertService.error('Error', 'Failed to update due date');
       } finally {
         updateLoadingState('dueDate', false);
       }
     },
-    [projectId, dispatch, refetchTasks, updateLoadingState]
+    [projectId, trackMixpanelEvent, dispatch, refetchTasks, updateLoadingState]
   );
 
   return {

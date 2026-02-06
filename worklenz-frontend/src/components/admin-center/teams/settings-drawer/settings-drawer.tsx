@@ -28,12 +28,14 @@ interface SettingTeamDrawerProps {
   teamId: string;
   isSettingDrawerOpen: boolean;
   setIsSettingDrawerOpen: (value: boolean) => void;
+  reloadTeams?: () => void; // Add this prop
 }
 
 const SettingTeamDrawer: React.FC<SettingTeamDrawerProps> = ({
   teamId,
   isSettingDrawerOpen,
   setIsSettingDrawerOpen,
+  reloadTeams, // Add this prop
 }) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('admin-center/teams');
@@ -74,7 +76,16 @@ const SettingTeamDrawer: React.FC<SettingTeamDrawerProps> = ({
       const response = await adminCenterApiService.updateTeam(teamId, body);
 
       if (response.done) {
+        // Close the drawer first
         setIsSettingDrawerOpen(false);
+        
+        // Reload the teams table to reflect the updated name
+        if (reloadTeams) {
+          // Small delay to ensure smooth UI transition
+          setTimeout(() => {
+            reloadTeams();
+          }, 100);
+        }
       }
     } catch (error) {
       logger.error('Error updating team', error);

@@ -57,5 +57,6 @@
   "attachFile": "Bashkëngjit skedar",
   "emojiPicker": "Shto emoji",
   "noChatsWithClient": "Ende nuk ka biseda me këtë klient",
-  "startConversationWithClient": "Filloni një bisedë për të diskutuar këtë kërkesë me klientin."
+  "startConversationWithClient": "Filloni një bisedë për të diskutuar këtë kërkesë me klientin.",
+  "messageUnavailable": "Mesazhi nuk është i disponueshëm"
 }

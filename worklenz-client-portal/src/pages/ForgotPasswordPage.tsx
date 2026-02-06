@@ -10,7 +10,7 @@ import {
   Result,
   message,
 } from "@/shared/antd-imports";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { useAppSelector } from "@/hooks/useAppSelector";
@@ -101,13 +101,17 @@ const ForgotPasswordPage: React.FC = () => {
                 "If an account exists with this email, you will receive password reset instructions shortly.",
             })}
             extra={[
-              <Link key="login" to="/auth/login">
-                <Button type="primary" size="large" style={styles.button}>
-                  {t("forgotPassword.backToLogin", {
-                    defaultValue: "Back to Login",
-                  })}
-                </Button>
-              </Link>,
+              <Button 
+                key="login" 
+                type="primary" 
+                size="large" 
+                style={styles.button}
+                onClick={() => navigate("/auth/login")}
+              >
+                {t("forgotPassword.backToLogin", {
+                  defaultValue: "Back to Login",
+                })}
+              </Button>,
             ]}
           />
         ) : (
@@ -166,18 +170,17 @@ const ForgotPasswordPage: React.FC = () => {
                   <Typography.Text style={{ textAlign: "center" }}>
                     {t("forgotPassword.orText", { defaultValue: "or" })}
                   </Typography.Text>
-                  <Link to="/auth/login">
-                    <Button
-                      block
-                      type="default"
-                      size="large"
-                      style={styles.button}
-                    >
-                      {t("forgotPassword.returnToLoginButton", {
-                        defaultValue: "Return to Login",
-                      })}
-                    </Button>
-                  </Link>
+                  <Button
+                    block
+                    type="default"
+                    size="large"
+                    style={styles.button}
+                    onClick={() => navigate("/auth/login")}
+                  >
+                    {t("forgotPassword.returnToLoginButton", {
+                      defaultValue: "Return to Login",
+                    })}
+                  </Button>
                 </Flex>
               </Form.Item>
             </Form>

@@ -15,7 +15,6 @@ import {
   message,
   LeftOutlined,
   UploadOutlined,
-  PrinterOutlined,
   DownloadOutlined,
 } from "@/shared/antd-imports";
 import { useNavigate, useParams } from "react-router-dom";
@@ -36,6 +35,7 @@ const InvoiceDetailsPage: React.FC = () => {
   const [paymentNotes, setPaymentNotes] = useState("");
   const [paymentProofFile, setPaymentProofFile] = useState<UploadFile[]>([]);
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -60,6 +60,65 @@ const InvoiceDetailsPage: React.FC = () => {
       console.error("Invoice details API error:", err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDownloadInvoice = async () => {
+    try {
+      setIsDownloading(true);
+
+      // Create a direct fetch request to handle PDF download
+      const token = clientPortalAPI.getToken();
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/client-portal';
+
+      const response = await fetch(`${baseUrl}/invoices/${id}/download?format=pdf`, {
+        method: 'GET',
+        headers: {
+          'x-client-token': token || '',
+        },
+      });
+
+      if (response.ok) {
+        const contentType = response.headers.get('content-type');
+
+        // Get the filename from Content-Disposition header or create a default one
+        const contentDisposition = response.headers.get('content-disposition');
+        let filename = `invoice-${invoice?.invoiceNumber || 'unknown'}.pdf`;
+
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+          if (filenameMatch && filenameMatch[1]) {
+            filename = filenameMatch[1];
+          }
+        }
+
+        // Use arrayBuffer for better binary data handling
+        const arrayBuffer = await response.arrayBuffer();
+        const blob = new Blob([arrayBuffer], { type: contentType || 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        if (contentType?.includes('application/pdf')) {
+          message.success("Invoice PDF downloaded successfully");
+        } else {
+          message.success("Invoice downloaded successfully (HTML format)");
+        }
+      } else {
+        // Handle error response
+        const errorData = await response.json().catch(() => ({}));
+        message.error(errorData.message || "Failed to download invoice");
+      }
+    } catch (err) {
+      console.error("Download error:", err);
+      message.error("Failed to download invoice. Please try again later.");
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -270,7 +329,7 @@ const InvoiceDetailsPage: React.FC = () => {
 
           {/* Action Buttons */}
           <Flex gap={12} wrap="wrap">
-            {invoice.status.toLowerCase() !== "paid" && (
+            {invoice.status.toLowerCase() === "sent" && (
               <Button
                 type="primary"
                 icon={<UploadOutlined />}
@@ -279,9 +338,12 @@ const InvoiceDetailsPage: React.FC = () => {
                 Submit Payment Proof
               </Button>
             )}
-            <Button icon={<DownloadOutlined />}>Download Invoice</Button>
-            <Button icon={<PrinterOutlined />} onClick={() => window.print()}>
-              Print
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={handleDownloadInvoice}
+              loading={isDownloading}
+            >
+              Download Invoice
             </Button>
           </Flex>
         </Card>

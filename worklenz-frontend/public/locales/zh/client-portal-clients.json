@@ -66,6 +66,9 @@
   "addressLabel": "地址",
   "addressPlaceholder": "输入地址（可选）",
   
+  "contactPersonLabel": "联系人",
+  "contactPersonPlaceholder": "输入联系人姓名",
+  
   "statusLabel": "状态",
   
   "createClientSuccessMessage": "客户创建成功！分享组织邀请链接为他们提供门户访问权限。",
@@ -188,11 +191,7 @@
   
   "assignProjectTitle": "分配新项目",
   "assignedProjectsTitle": "已分配项目",
-  "statusColumn": "状态",
-  "removeConfirmationOk": "移除",
-  "removeConfirmationCancel": "取消",
-  "removeProjectTooltip": "移除项目",
-
+  
   "portalStatusColumn": "门户状态",
   "portalStatus": {
     "active": "活跃",
@@ -202,7 +201,6 @@
   },
 
   "inviteToPortalTooltip": "邀请至门户",
-  "resendInvitationTooltip": "重新发送邀请",
   "resendInviteEmailTooltip": "重新发送邀请邮件",
   "copyInviteLinkTooltip": "复制邀请链接",
   "resendInvitationSuccess": "邀请邮件发送成功！",
@@ -221,7 +219,14 @@
   "deactivateClientSuccessMessage": "客户停用成功",
   "deactivateClientErrorMessage": "停用客户失败",
   "deactivateTooltip": "停用客户",
-  "deactivateSelected": "停用选中项",
+  "activateTooltip": "激活客户",
+  "activateConfirmationTitle": "激活客户",
+  "activateConfirmationDescription": "您确定要激活此客户吗？他们将重新获得门户访问权限。",
+  "activateConfirmationOk": "激活",
+  "activateConfirmationCancel": "取消",
+  "activateClientSuccessMessage": "客户激活成功",
+  "activateClientErrorMessage": "激活客户失败",
+  "activateButton": "激活客户",
   "selectClientsToDeactivate": "请选择要停用的客户",
   "bulkDeactivateSuccessMessage": "选中的客户停用成功",
   "bulkDeactivateErrorMessage": "停用选中的客户失败",
@@ -239,5 +244,13 @@
   "emailRequiredTitle": "需要电子邮件",
   "emailRequiredMessage": "此客户没有电子邮件地址。需要电子邮件才能邀请他们访问门户。",
   "emailRequiredQuestion": "您想添加电子邮件地址并再次邀请他们吗？",
+  "clientAlreadyExists": "客户已存在",
+  "invitationAlreadySent": "邀请已发送",
+  "sendInvitationToExistingClient": "发送邀请",
+  "sendInvitationSuccess": "邀请发送成功",
+  "sendInvitationError": "发送邀请失败",
+  "clientAlreadyHasPortalAccess": "客户已有门户访问权限",
+  "clientAlreadyHasPendingInvitation": "邀请已发送。请使用重新发送选项。",
+  "clientEmailRequired": "客户电子邮件是邀请所必需的",
   "addEmailButton": "添加电子邮件并邀请"
 }

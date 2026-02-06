@@ -23,6 +23,8 @@ router.get("/invitation/validate/:slug", safeControllerFunction(ClientPortalAuth
 router.post("/invitation/accept", safeControllerFunction(ClientPortalAuthController.acceptInvitation));
 router.post("/auth/login", safeControllerFunction(ClientPortalAuthController.clientLogin));
 router.post("/auth/refresh", safeControllerFunction(ClientPortalAuthController.refreshClientToken));
+router.post("/auth/forgot-password", safeControllerFunction(ClientPortalAuthController.forgotPassword));
+router.post("/auth/reset-password", safeControllerFunction(ClientPortalAuthController.resetPassword));
 router.post("/handle-organization-invite", safeControllerFunction(ClientPortalAuthController.handleOrganizationInvite));
 
 // Protected routes (authentication required)
@@ -55,6 +57,7 @@ router.delete("/requests/:id", safeControllerFunction(ClientPortalRequestsContro
 
 // Projects
 router.get("/projects", safeControllerFunction(ClientPortalProjectsController.getProjects));
+router.get("/projects/statuses", safeControllerFunction(ClientPortalProjectsController.getProjectStatuses));
 router.get("/projects/:id", safeControllerFunction(ClientPortalProjectsController.getProjectDetails));
 router.get("/projects/:id/tasks", safeControllerFunction(ClientPortalProjectsController.getProjectTasks));
 
@@ -66,8 +69,13 @@ router.get("/tasks/:id", safeControllerFunction(ClientPortalProjectsController.g
 
 // Invoices
 router.get("/invoices", safeControllerFunction(ClientPortalInvoicesController.getInvoices));
+router.post("/invoices", safeControllerFunction(ClientPortalInvoicesController.createInvoice));
 router.get("/invoices/:id", safeControllerFunction(ClientPortalInvoicesController.getInvoiceDetails));
+router.put("/invoices/:id", safeControllerFunction(ClientPortalInvoicesController.updateInvoice));
+router.delete("/invoices/:id", safeControllerFunction(ClientPortalInvoicesController.deleteInvoice));
 router.post("/invoices/:id/pay", safeControllerFunction(ClientPortalInvoicesController.payInvoice));
+router.post("/invoices/:id/send", safeControllerFunction(ClientPortalInvoicesController.sendInvoice));
+router.post("/invoices/:id/mark-paid", safeControllerFunction(ClientPortalInvoicesController.markInvoiceAsPaid));
 router.get("/invoices/:id/download", safeControllerFunction(ClientPortalInvoicesController.downloadInvoice));
 
 // Chat

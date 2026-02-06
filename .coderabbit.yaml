@@ -1,0 +1,25 @@
+# CodeRabbit AI Configuration
+# This file configures CodeRabbit AI to review pull requests
+
+reviews:
+  # Enable review status messages
+  review_status: true
+  
+  # Configure which branches should be reviewed
+  # By default, only the default branch is reviewed
+  # This enables reviews for the development branch as well
+  auto_review:
+    base_branches:
+      - development
+      - main
+      - uat
+
+  # Paths to exclude from reviews
+  path_filters:
+    - "!node_modules/**"
+    - "!dist/**"
+    - "!build/**"
+    - "!.git/**"
+    - "!*.lock"
+    - "!*.log"
+

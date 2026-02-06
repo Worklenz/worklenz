@@ -2,7 +2,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { columnList } from './columns/columnList';
 import AddTaskListRow from './taskListTableRows/AddTaskListRow';
 import { Checkbox, Flex, Tag, Tooltip } from '@/shared/antd-imports';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useSelectedProject } from '@/hooks/useSelectedProject';
 import TaskCell from './taskListTableCells/TaskCell';
 import AddSubTaskListRow from './taskListTableRows/AddSubTaskListRow';
@@ -14,6 +14,11 @@ import { useTranslation } from 'react-i18next';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { HolderOutlined } from '@/shared/antd-imports';
 import CompletedDateCell from './taskListTableCells/CompletedDateCell';
+import { useColumnResize } from '@/hooks/useColumnResize';
+import { COLUMN_MIN_WIDTH, COLUMN_MAX_WIDTH } from '@/hooks/useColumnResizeHandler';
+import { updateColumnWidth } from '@features/projects/singleProject/taskListColumns/taskColumnsSlice';
+import { ColumnResizeHandle } from './ColumnResizeHandle';
+import './column-resize.css';
 
 const TaskListTable = ({
   taskList,
@@ -58,6 +63,54 @@ const TaskListTable = ({
     column => columnsVisibility[column.key as keyof typeof columnsVisibility]
   );
 
+  // Initialize column widths from columnList
+  const initialWidths = useMemo(
+    () =>
+      columnList.reduce(
+        (acc, col) => ({ ...acc, [col.key]: col.width }),
+        {} as Record<string, number>
+      ),
+    []
+  );
+
+  // Column resize functionality
+  const { columnWidths, handleResizeStart, updateColumnWidth } = useColumnResize({
+    initialWidths,
+    minWidth: COLUMN_MIN_WIDTH,
+    maxWidth: COLUMN_MAX_WIDTH,
+    storageKey: `worklenz.taskList.columnWidths.${selectedProject?.id || 'default'}`,
+  });
+
+  // Ref to store debounce timer for Redux sync
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync column widths with Redux when they change (debounced to avoid excessive dispatches during resize)
+  useEffect(() => {
+    // Clear any pending sync
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+
+    // Debounce the Redux sync - wait 200ms after the last columnWidths change
+    syncTimeoutRef.current = setTimeout(() => {
+      Object.entries(columnWidths).forEach(([key, width]) => {
+        const column = columnList.find(col => col.key === key);
+        if (column && column.width !== width) {
+          dispatch(updateColumnWidth({ key, width }));
+        }
+      });
+      syncTimeoutRef.current = null;
+    }, 200);
+
+    // Cleanup: cancel pending sync on unmount or when columnWidths changes again
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+        syncTimeoutRef.current = null;
+      }
+    };
+  }, [columnWidths, dispatch, columnList]);
+
   // toggle subtasks visibility
   const toggleTaskExpansion = (taskId: string) => {
     setExpandedTasks(prev =>
@@ -94,15 +147,11 @@ const TaskListTable = ({
   };
 
   // this use effect for realtime update the selected rows
-  useEffect(() => {
-    console.log('Selected tasks and subtasks:', selectedRows);
-  }, [selectedRows]);
 
   // select one row this triggers only in handle the context menu ==> righ click mouse event
   const selectOneRow = (task: IProjectTask) => {
     setSelectedRows([task.id || '']);
 
-    // log the task object when selected
     if (!selectedRows.includes(task.id || '')) {
       console.log('Selected task:', task);
     }
@@ -267,12 +316,34 @@ const TaskListTable = ({
               {visibleColumns.map(column => (
                 <th
                   key={column.key}
-                  className={`${customHeaderColumnStyles(column.key)}`}
-                  style={{ width: column.width, fontWeight: 500 }}
+                  className={`${customHeaderColumnStyles(column.key)} relative group`}
+                  style={{
+                    width: columnWidths[column.key] || column.width,
+                    fontWeight: 500,
+                    overflow: 'visible',
+                    position: 'relative',
+                  }}
                 >
                   {column.key === 'phases'
                     ? column.columnHeader
                     : t(`${column.columnHeader}Column`)}
+
+                  {/* Column Resize Handle */}
+                  <ColumnResizeHandle
+                    columnKey={column.key}
+                    currentWidth={columnWidths[column.key] || column.width}
+                    onResize={newWidth => {
+                      // Update CSS variable for immediate visual feedback
+                      document.documentElement.style.setProperty(
+                        `--col-width-${column.key}`,
+                        `${newWidth}px`
+                      );
+                      // Update state via hook
+                      updateColumnWidth(column.key, newWidth);
+                    }}
+                    ariaLabel={`Resize ${t(`${column.columnHeader}Column`)} column`}
+                    title={`Drag to resize ${t(`${column.columnHeader}Column`)}`}
+                  />
                 </th>
               ))}
             </tr>
@@ -318,7 +389,7 @@ const TaskListTable = ({
                       key={column.key}
                       className={customBodyColumnStyles(column.key)}
                       style={{
-                        width: column.width,
+                        width: columnWidths[column.key] || column.width,
                         backgroundColor: selectedRows.includes(task.id || '')
                           ? themeMode === 'dark'
                             ? '#000'
@@ -378,7 +449,7 @@ const TaskListTable = ({
                           key={column.key}
                           className={customBodyColumnStyles(column.key)}
                           style={{
-                            width: column.width,
+                            width: columnWidths[column.key] || column.width,
                             backgroundColor: selectedRows.includes(subtask.id || '')
                               ? themeMode === 'dark'
                                 ? '#000'
