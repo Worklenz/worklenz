@@ -7,48 +7,80 @@ import ReportingControllerBase from "../reporting-controller-base";
 import moment from "moment";
 import { DATE_RANGES, TASK_PRIORITY_COLOR_ALPHA } from "../../../shared/constants";
 import { getColor, int, formatDuration, formatLogText } from "../../../shared/utils";
+import { SqlHelper } from "../../../shared/sql-helpers";
 import db from "../../../config/db";
 
 export default class ReportingProjectsController extends ReportingProjectsBase {
 
-  private static flatString(text: string) {
-    return (text || "").split(",").map(s => `'${s}'`).join(",");
-  }
-
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { searchQuery, sortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, ["p.name"]);
+    // teamId is $1, size is $2, offset is $3, so search params start at $4
+    const { searchQuery, searchParams, sortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, ["p.name"], false, 4);
     const archived = req.query.archived === "true";
 
     const teamId = this.getCurrentTeamId(req);
 
-    const statusesClause = req.query.statuses as string
-      ? `AND p.status_id IN (${this.flatString(req.query.statuses as string)})`
-      : "";
+    // Note: teamId is $1, size is $2, offset is $3, search params are $4+, then filter params continue after
+    const filterParams: any[] = [...searchParams];
+    let paramOffset = 4 + searchParams.length; // Start after teamId, size, offset, and search params
 
-    const healthsClause = req.query.healths as string
-      ? `AND p.health_id IN (${this.flatString(req.query.healths as string)})`
-      : "";
+    let statusesClause = "";
+    if (req.query.statuses) {
+      const statusIds = (req.query.statuses as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(statusIds, paramOffset);
+      statusesClause = `AND p.status_id IN (${clause})`;
+      filterParams.push(...statusIds);
+      paramOffset += statusIds.length;
+    }
 
-    const categoriesClause = req.query.categories as string
-      ? `AND p.category_id IN (${this.flatString(req.query.categories as string)})`
-      : "";
+    let healthsClause = "";
+    if (req.query.healths) {
+      const healthIds = (req.query.healths as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(healthIds, paramOffset);
+      healthsClause = `AND p.health_id IN (${clause})`;
+      filterParams.push(...healthIds);
+      paramOffset += healthIds.length;
+    }
 
-    // const projectManagersClause = req.query.project_managers as string
-    //   ? `AND p.id IN (SELECT project_id from project_members WHERE team_member_id IN (${this.flatString(req.query.project_managers as string)}) AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'))`
-    //   : "";
+    let categoriesClause = "";
+    if (req.query.categories) {
+      const categoryIds = (req.query.categories as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(categoryIds, paramOffset);
+      categoriesClause = `AND p.category_id IN (${clause})`;
+      filterParams.push(...categoryIds);
+      paramOffset += categoryIds.length;
+    }
 
-    const projectManagersClause = req.query.project_managers as string
-    ? `AND p.id IN(SELECT project_id FROM project_members WHERE team_member_id IN(SELECT id FROM team_members WHERE user_id IN (${this.flatString(req.query.project_managers as string)})) AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'))`
-    : "";
+    let projectManagersClause = "";
+    if (req.query.project_managers) {
+      const managerIds = (req.query.project_managers as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(managerIds, paramOffset);
+      projectManagersClause = `AND p.id IN(SELECT project_id FROM project_members WHERE team_member_id IN(SELECT id FROM team_members WHERE user_id IN (${clause})) AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'))`;
+      filterParams.push(...managerIds);
+      paramOffset += managerIds.length;
+    }
 
-    const archivedClause = archived
-      ? ""
-      : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
+    let teamsClause = "";
+    if (req.query.teams) {
+      const teamIds = (req.query.teams as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(teamIds, paramOffset);
+      teamsClause = `AND p.team_id IN (${clause})`;
+      filterParams.push(...teamIds);
+      paramOffset += teamIds.length;
+    }
 
-    const teamFilterClause = `in_organization(p.team_id, $1)`;
+    let archivedClause = "";
+    if (!archived) {
+      archivedClause = `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $${paramOffset})`;
+      filterParams.push(req.user?.id);
+      paramOffset++;
+    }
 
-    const result = await ReportingControllerBase.getProjectsByTeam(teamId as string, size, offset, searchQuery, sortField, sortOrder, statusesClause, healthsClause, categoriesClause, archivedClause, teamFilterClause, projectManagersClause);
+    // Add project filtering for Team Leads
+    const projectFilterClause = await this.buildProjectFilterForTeamLead(req);
+    const teamFilterClause = `in_organization(p.team_id, $1) ${projectFilterClause} ${teamsClause}`;
+
+    const result = await ReportingControllerBase.getProjectsByTeam(teamId as string, size, offset, searchQuery, sortField, sortOrder, statusesClause, healthsClause, categoriesClause, archivedClause, teamFilterClause, projectManagersClause, filterParams);
 
     for (const project of result.projects) {
       project.team_color = getColor(project.team_name) + TASK_PRIORITY_COLOR_ALPHA;
@@ -97,25 +129,29 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
     return res.status(200).send(new ServerResponse(true, result));
   }
 
-  protected static getMinMaxDates(key: string, dateRange: string[]) {
+  protected static getMinMaxDates(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Use parameterized queries for dates
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
-      return `,(SELECT '${start}'::DATE )AS start_date, (SELECT '${end}'::DATE )AS end_date`;
+      return {
+        clause: `,(SELECT $${paramOffset}::DATE )AS start_date, (SELECT $${paramOffset + 1}::DATE )AS end_date`,
+        params: [start, end]
+      };
     }
 
     if (key === DATE_RANGES.YESTERDAY)
-      return ",(SELECT (CURRENT_DATE - INTERVAL '1 day')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date";
+      return { clause: ",(SELECT (CURRENT_DATE - INTERVAL '1 day')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date", params: [] };
     if (key === DATE_RANGES.LAST_WEEK)
-      return ",(SELECT (CURRENT_DATE - INTERVAL '1 week')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date";
+      return { clause: ",(SELECT (CURRENT_DATE - INTERVAL '1 week')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date", params: [] };
     if (key === DATE_RANGES.LAST_MONTH)
-      return ",(SELECT (CURRENT_DATE - INTERVAL '1 month')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date";
+      return { clause: ",(SELECT (CURRENT_DATE - INTERVAL '1 month')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date", params: [] };
     if (key === DATE_RANGES.LAST_QUARTER)
-      return ",(SELECT (CURRENT_DATE - INTERVAL '3 months')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date";
+      return { clause: ",(SELECT (CURRENT_DATE - INTERVAL '3 months')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date", params: [] };
     if (key === DATE_RANGES.ALL_TIME)
-      return ",(SELECT (MIN(task_work_log.created_at)::DATE) FROM task_work_log WHERE task_id IN (SELECT id FROM tasks WHERE project_id = $1)) AS start_date, (SELECT (MAX(task_work_log.created_at)::DATE) FROM task_work_log WHERE task_id IN (SELECT id FROM tasks WHERE project_id = $1)) AS end_date";
+      return { clause: ",(SELECT (MIN(task_work_log.created_at)::DATE) FROM task_work_log WHERE task_id IN (SELECT id FROM tasks WHERE project_id = $1)) AS start_date, (SELECT (MAX(task_work_log.created_at)::DATE) FROM task_work_log WHERE task_id IN (SELECT id FROM tasks WHERE project_id = $1)) AS end_date", params: [] };
 
-    return "";
+    return { clause: "", params: [] };
   }
 
   @HandleExceptions()
@@ -124,7 +160,10 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
     const { duration, date_range } = req.body;
 
     const durationClause = this.getDateRangeClause(duration || DATE_RANGES.LAST_WEEK, date_range);
-    const minMaxDateClause = this.getMinMaxDates(duration || DATE_RANGES.LAST_WEEK, date_range);
+    // Extract clause and params from getMinMaxDates
+    const minMaxDateClauseResult = this.getMinMaxDates(duration || DATE_RANGES.LAST_WEEK, date_range, 2);
+    const minMaxDateClause = minMaxDateClauseResult.clause;
+    const minMaxParams = minMaxDateClauseResult.params;
 
     const q = `SELECT
                     (SELECT name FROM projects WHERE projects.id = $1) AS project_name,
@@ -143,7 +182,9 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
                     ${durationClause}
                 ORDER BY task_work_log.created_at DESC`;
 
-    const result = await db.query(q, [projectId]);
+    // Pass all parameters
+    const queryParams = [projectId, ...minMaxParams];
+    const result = await db.query(q, queryParams);
 
     const formattedResult = await this.formatLog(result.rows);
 
@@ -213,6 +254,205 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
     }
 
     return format;
+  }
+
+  @HandleExceptions()
+  public static async getGrouped(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // teamId is $1, so search params start at $2
+    const { searchQuery, searchParams, sortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, ["p.name"], false, 2);
+    const archived = req.query.archived === "true";
+    const groupBy = (req.query.group_by as string) || "category";
+
+    const teamId = this.getCurrentTeamId(req);
+
+    // Note: teamId is $1, search params are $2+, filter params continue after (no LIMIT/OFFSET in grouped query)
+    const filterParams: any[] = [...searchParams];
+    let paramOffset = 2 + searchParams.length; // Start after teamId and search params
+
+    let statusesClause = "";
+    if (req.query.statuses) {
+      const statusIds = (req.query.statuses as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(statusIds, paramOffset);
+      statusesClause = `AND p.status_id IN (${clause})`;
+      filterParams.push(...statusIds);
+      paramOffset += statusIds.length;
+    }
+
+    let healthsClause = "";
+    if (req.query.healths) {
+      const healthIds = (req.query.healths as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(healthIds, paramOffset);
+      healthsClause = `AND p.health_id IN (${clause})`;
+      filterParams.push(...healthIds);
+      paramOffset += healthIds.length;
+    }
+
+    let categoriesClause = "";
+    if (req.query.categories) {
+      const categoryIds = (req.query.categories as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(categoryIds, paramOffset);
+      categoriesClause = `AND p.category_id IN (${clause})`;
+      filterParams.push(...categoryIds);
+      paramOffset += categoryIds.length;
+    }
+
+    let projectManagersClause = "";
+    if (req.query.project_managers) {
+      const managerIds = (req.query.project_managers as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(managerIds, paramOffset);
+      projectManagersClause = `AND p.id IN(SELECT project_id FROM project_members WHERE team_member_id IN(SELECT id FROM team_members WHERE user_id IN (${clause})) AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'))`;
+      filterParams.push(...managerIds);
+      paramOffset += managerIds.length;
+    }
+
+    let teamsClause = "";
+    if (req.query.teams) {
+      const teamIds = (req.query.teams as string).split(",").filter(id => id.trim());
+      const { clause } = SqlHelper.buildInClause(teamIds, paramOffset);
+      teamsClause = `AND p.team_id IN (${clause})`;
+      filterParams.push(...teamIds);
+      paramOffset += teamIds.length;
+    }
+
+    let archivedClause = "";
+    if (!archived) {
+      archivedClause = `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $${paramOffset})`;
+      filterParams.push(req.user?.id);
+      paramOffset++;
+    }
+
+    // Add project filtering for Team Leads
+    const projectFilterClause = await this.buildProjectFilterForTeamLead(req);
+    const teamFilterClause = `in_organization(p.team_id, $1) ${projectFilterClause} ${teamsClause}`;
+
+    // Determine grouping fields based on groupBy parameter
+    let groupField = "";
+    let groupName = "";
+    let groupColor = "";
+    let groupJoin = "";
+    let groupByFields = "";
+    let groupOrderBy = "";
+
+    switch (groupBy) {
+      case "status":
+        groupField = "COALESCE(p.status_id::text, 'no-status')";
+        groupName = "COALESCE(ps.name, 'No Status')";
+        groupColor = "COALESCE(ps.color_code, '#888')";
+        groupByFields = "p.status_id, ps.name, ps.color_code";
+        groupOrderBy = "COALESCE(ps.name, 'No Status')";
+        break;
+      case "health":
+        groupField = "COALESCE(p.health_id::text, 'not-set')";
+        groupName = "COALESCE(sph.name, 'Not Set')";
+        groupColor = "COALESCE(sph.color_code, '#888')";
+        groupJoin = "LEFT JOIN sys_project_healths sph ON p.health_id = sph.id";
+        groupByFields = "p.health_id, sph.name, sph.color_code";
+        groupOrderBy = "COALESCE(sph.name, 'Not Set')";
+        break;
+      case "team":
+        groupField = "COALESCE(p.team_id::text, 'no-team')";
+        groupName = "COALESCE(t.name, 'No Team')";
+        groupColor = "COALESCE('#1890ff', '#888')";
+        groupJoin = "LEFT JOIN teams t ON p.team_id = t.id";
+        groupByFields = "p.team_id, t.name";
+        groupOrderBy = "COALESCE(t.name, 'No Team')";
+        break;
+      case "manager":
+        groupField = "COALESCE((SELECT pm.team_member_id::text FROM project_members pm WHERE pm.project_id = p.id AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER') LIMIT 1), 'no-manager')";
+        groupName = "COALESCE((SELECT name FROM team_member_info_view tmiv WHERE tmiv.team_member_id = (SELECT pm.team_member_id FROM project_members pm WHERE pm.project_id = p.id AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER') LIMIT 1)), 'No Manager')";
+        groupColor = "'#1890ff'";
+        groupByFields = "(SELECT pm.team_member_id FROM project_members pm WHERE pm.project_id = p.id AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER') LIMIT 1), (SELECT name FROM team_member_info_view tmiv WHERE tmiv.team_member_id = (SELECT pm.team_member_id FROM project_members pm WHERE pm.project_id = p.id AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER') LIMIT 1))";
+        groupOrderBy = groupName;
+        break;
+      case "category":
+      default:
+        groupField = "COALESCE(p.category_id::text, 'uncategorized')";
+        groupName = "COALESCE(pc.name, 'Uncategorized')";
+        groupColor = "COALESCE(pc.color_code, '#888')";
+        groupByFields = "p.category_id, pc.name, pc.color_code";
+        groupOrderBy = "COALESCE(pc.name, 'Uncategorized')";
+    }
+
+    // Build optimized query with group-level task aggregations
+    const q = `
+      WITH project_tasks AS (
+        SELECT 
+          t.project_id,
+          COUNT(t.id) AS total_tasks,
+          COUNT(CASE WHEN is_completed(t.status_id, t.project_id) IS TRUE THEN 1 END) AS done_tasks,
+          COUNT(CASE WHEN is_doing(t.status_id, t.project_id) IS TRUE THEN 1 END) AS doing_tasks,
+          COUNT(CASE WHEN is_todo(t.status_id, t.project_id) IS TRUE THEN 1 END) AS todo_tasks
+        FROM tasks t
+        WHERE t.archived IS FALSE
+        GROUP BY t.project_id
+      )
+      SELECT 
+        ${groupField} AS group_id,
+        ${groupName} AS group_name,
+        ${groupColor} AS group_color,
+        COUNT(DISTINCT p.id) AS project_count,
+        COALESCE(SUM(pt.total_tasks), 0)::INT AS total_tasks,
+        COALESCE(SUM(pt.done_tasks), 0)::INT AS done_tasks,
+        COALESCE(SUM(pt.doing_tasks), 0)::INT AS doing_tasks,
+        COALESCE(SUM(pt.todo_tasks), 0)::INT AS todo_tasks,
+        COALESCE(ARRAY_TO_JSON(ARRAY_AGG(
+          JSON_BUILD_OBJECT(
+            'id', p.id,
+            'name', p.name,
+            'color_code', p.color_code,
+            'category_id', pc.id,
+            'category_name', pc.name,
+            'category_color', pc.color_code,
+            'status_id', ps.id,
+            'status_name', ps.name,
+            'status_color', ps.color_code,
+            'health_id', p.health_id,
+            'health_name', sph.name,
+            'health_color', sph.color_code,
+            'team_id', p.team_id,
+            'team_name', (SELECT name FROM teams WHERE id = p.team_id),
+            'start_date', p.start_date,
+            'end_date', p.end_date,
+            'tasks_stat', JSON_BUILD_OBJECT(
+              'total', COALESCE(pt.total_tasks, 0),
+              'todo', COALESCE(pt.todo_tasks, 0),
+              'doing', COALESCE(pt.doing_tasks, 0),
+              'done', COALESCE(pt.done_tasks, 0)
+            )
+          ) ORDER BY p.name
+        )), '[]'::JSON) AS projects
+      FROM projects p
+      LEFT JOIN project_categories pc ON p.category_id = pc.id
+      LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
+      LEFT JOIN sys_project_healths sph ON p.health_id = sph.id
+      LEFT JOIN project_tasks pt ON p.id = pt.project_id
+      ${groupJoin}
+      WHERE ${teamFilterClause} ${searchQuery} ${healthsClause} ${statusesClause} ${categoriesClause} ${projectManagersClause} ${archivedClause}
+      GROUP BY ${groupByFields}
+      ORDER BY ${groupOrderBy}
+    `;
+
+    // Build final params: teamId ($1), searchParams ($2+), then filter params
+    // Note: getGrouped query doesn't use LIMIT/OFFSET
+    const finalParams = [teamId, ...filterParams];
+    const result = await db.query(q, finalParams);
+
+    const groups = result.rows.map(row => ({
+      group_id: row.group_id,
+      group_name: row.group_name,
+      group_color: row.group_color,
+      project_count: int(row.project_count),
+      total_tasks: int(row.total_tasks),
+      done_tasks: int(row.done_tasks),
+      doing_tasks: int(row.doing_tasks),
+      todo_tasks: int(row.todo_tasks),
+      projects: row.projects
+    }));
+
+    return res.status(200).send(new ServerResponse(true, {
+      groups,
+      total_groups: groups.length
+    }));
   }
 
 }

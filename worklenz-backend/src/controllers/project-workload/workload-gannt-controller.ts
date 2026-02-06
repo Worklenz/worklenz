@@ -6,6 +6,7 @@ import HandleExceptions from "../../decorators/handle-exceptions";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
+import { SqlHelper } from "../../shared/sql-helpers";
 import { TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA, UNMAPPED } from "../../shared/constants";
 import { getColor } from "../../shared/utils";
 import WLTasksControllerBase, { GroupBy, IWLTaskGroup } from "./workload-gannt-base";
@@ -137,18 +138,29 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
 
     const today = new Date();
 
-    let startDate = moment(today).clone().startOf("month");
-    let endDate = moment(today).clone().endOf("month");
+    // Use provided date parameters if available, otherwise use existing logic
+    let startDate: moment.Moment;
+    let endDate: moment.Moment;
 
-    this.setChartStartEnd(dateRange, logRange, req.query.timeZone as string);
+    if (req.query.start_date && req.query.end_date) {
+      // Use provided date range directly
+      startDate = moment(req.query.start_date as string);
+      endDate = moment(req.query.end_date as string);
+    } else {
+      // Fall back to existing complex logic
+      startDate = moment(today).clone().startOf("month");
+      endDate = moment(today).clone().endOf("month");
 
-    if (dateRange.start_date && dateRange.end_date) {
-      startDate = this.validateStartDate(moment(dateRange.start_date)) ? moment(dateRange.start_date).startOf("month") : moment(today).clone().startOf("month");
-      endDate = this.validateEndDate(moment(dateRange.end_date)) ? moment(today).clone().endOf("month") : moment(dateRange.end_date).endOf("month");
-    } else if (dateRange.start_date && !dateRange.end_date) {
-      startDate = this.validateStartDate(moment(dateRange.start_date)) ? moment(dateRange.start_date).startOf("month") : moment(today).clone().startOf("month");
-    } else if (!dateRange.start_date && dateRange.end_date) {
-      endDate = this.validateEndDate(moment(dateRange.end_date)) ? moment(today).clone().endOf("month") : moment(dateRange.end_date).endOf("month");
+      this.setChartStartEnd(dateRange, logRange, req.query.timeZone as string);
+
+      if (dateRange.start_date && dateRange.end_date) {
+        startDate = this.validateStartDate(moment(dateRange.start_date)) ? moment(dateRange.start_date).startOf("month") : moment(today).clone().startOf("month");
+        endDate = this.validateEndDate(moment(dateRange.end_date)) ? moment(today).clone().endOf("month") : moment(dateRange.end_date).endOf("month");
+      } else if (dateRange.start_date && !dateRange.end_date) {
+        startDate = this.validateStartDate(moment(dateRange.start_date)) ? moment(dateRange.start_date).startOf("month") : moment(today).clone().startOf("month");
+      } else if (!dateRange.start_date && dateRange.end_date) {
+        endDate = this.validateEndDate(moment(dateRange.end_date)) ? moment(today).clone().endOf("month") : moment(dateRange.end_date).endOf("month");
+      }
     }
 
     const xMonthsBeforeStart = startDate.clone().subtract(1, "months");
@@ -220,7 +232,9 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
   @HandleExceptions()
   public static async getMembers(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
 
-    const expandedMembers: string[] = req.body.expanded_members;
+    const expandedMembers: string[] = req.body?.expanded_members || req.query?.expanded_members || [];
+    const startDate: string | undefined = req.query?.start_date as string;
+    const endDate: string | undefined = req.query?.end_date as string;
 
     const q = `SELECT pm.id AS project_member_id,
                       tmiv.team_member_id,
@@ -228,6 +242,14 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
                       name AS name,
                       avatar_url,
                       TRUE AS project_member,
+                      
+                      -- Organization working settings
+                      (SELECT working_hours FROM organizations WHERE id = (SELECT organization_id FROM teams WHERE id = (SELECT team_id FROM team_members WHERE id = tmiv.team_member_id))) AS org_working_hours,
+                      (SELECT ROW_TO_JSON(wd) FROM (
+                        SELECT monday, tuesday, wednesday, thursday, friday, saturday, sunday
+                        FROM organization_working_days 
+                        WHERE organization_id = (SELECT organization_id FROM teams WHERE id = (SELECT team_id FROM team_members WHERE id = tmiv.team_member_id))
+                      ) wd) AS org_working_days,
 
                       (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
                       FROM (SELECT MIN(LEAST(start_date, end_date)) AS min_date,
@@ -236,25 +258,65 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
                                       INNER JOIN tasks_assignees ta ON tasks.id = ta.task_id
                             WHERE archived IS FALSE
                               AND project_id = $1
-                              AND ta.team_member_id = tmiv.team_member_id) rec) AS duration,
+                              AND ta.team_member_id = tmiv.team_member_id
+                              ${WorkloadGanntController.getTaskDateRangeFilter(startDate, endDate)}) rec) AS duration,
 
                       (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
                       FROM (SELECT  MIN(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS min_date,
-                                    MAX(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS max_date
+                                    MAX(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS max_date,
+                                    SUM(twl.time_spent) AS total_time_spent_seconds
                                   FROM task_work_log twl
                                           INNER JOIN tasks t ON twl.task_id = t.id AND t.archived IS FALSE
                                   WHERE t.project_id = $1
-                                    AND twl.user_id = tmiv.user_id) rec) AS logs_date_union,
+                                    AND twl.user_id = tmiv.user_id
+                                    ${WorkloadGanntController.getLogDateRangeFilter(startDate, endDate)}) rec) AS logs_date_union,
 
                       (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
-                      FROM (SELECT start_date,
-                                    end_date
+                      FROM (
+                            -- Tasks with start/end dates
+                            SELECT tasks.id AS task_id,
+                                   tasks.name AS task_name,
+                                   start_date,
+                                   end_date,
+                                   (SELECT name FROM task_statuses WHERE id = tasks.status_id) AS status_name,
+                                   (SELECT color_code FROM sys_task_status_categories WHERE id = (SELECT category_id FROM task_statuses WHERE id = tasks.status_id)) AS status_color,
+                                   (SELECT name FROM task_priorities WHERE id = tasks.priority_id) AS priority_name,
+                                   (SELECT color_code FROM task_priorities WHERE id = tasks.priority_id) AS priority_color,
+                                   NULL::NUMERIC AS logged_hours,
+                                   'task' AS entry_type
                             FROM tasks
                                       INNER JOIN tasks_assignees ta ON tasks.id = ta.task_id
                             WHERE archived IS FALSE
                               AND project_id = pm.project_id
                               AND ta.team_member_id = tmiv.team_member_id
-                            ORDER BY start_date ASC) rec) AS tasks
+                              ${WorkloadGanntController.getTaskDateRangeFilter(startDate, endDate)}
+
+                            UNION ALL
+
+                            -- Time logs as single-day entries
+                            SELECT DISTINCT ON (twl.created_at::date, t.id)
+                                   t.id AS task_id,
+                                   t.name AS task_name,
+                                   twl.created_at::date AS start_date,
+                                   twl.created_at::date AS end_date,
+                                   (SELECT name FROM task_statuses WHERE id = t.status_id) AS status_name,
+                                   (SELECT color_code FROM sys_task_status_categories WHERE id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) AS status_color,
+                                   (SELECT name FROM task_priorities WHERE id = t.priority_id) AS priority_name,
+                                   (SELECT color_code FROM task_priorities WHERE id = t.priority_id) AS priority_color,
+                                   SUM(twl.time_spent / 3600.0) OVER (PARTITION BY twl.created_at::date, t.id) AS logged_hours,
+                                   'time_log' AS entry_type
+                            FROM task_work_log twl
+                                      INNER JOIN tasks t ON twl.task_id = t.id
+                                      INNER JOIN tasks_assignees ta ON t.id = ta.task_id
+                            WHERE t.archived IS FALSE
+                              AND t.project_id = pm.project_id
+                              AND ta.team_member_id = tmiv.team_member_id
+                              AND twl.user_id = tmiv.user_id
+                              ${startDate ? `AND twl.created_at::date >= '${startDate}'` : ''}
+                              ${endDate ? `AND twl.created_at::date <= '${endDate}'` : ''}
+
+                            ORDER BY start_date ASC
+                      ) rec) AS tasks
               FROM project_members pm
                       INNER JOIN team_member_info_view tmiv ON pm.team_member_id = tmiv.team_member_id
               WHERE project_id = $1
@@ -269,6 +331,18 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
 
     for (const member of result.rows) {
       member.color_code = getColor(member.TaskName);
+      
+      // Set default working settings if organization data is not available
+      member.org_working_hours = member.org_working_hours || 8;
+      member.org_working_days = member.org_working_days || {
+        monday: true,
+        tuesday: true,
+        wednesday: true,
+        thursday: true,
+        friday: true,
+        saturday: false,
+        sunday: false
+      };
 
       this.setMaxMinDate(member, req.query.timeZone as string);
 
@@ -382,33 +456,53 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
     return WorkloadGanntController.isCountsOnly(query) || query.parent_task;
   }
 
-  private static flatString(text: string) {
-    return (text || "").split(" ").map(s => `'${s}'`).join(",");
+  private static getFilterByMembersWhereClosure(text: string, paramOffset: number): { clause: string; params: string[] } {
+    if (!text) return { clause: "", params: [] };
+    const memberIds = text.split(" ").filter(id => id.trim());
+    const { clause } = SqlHelper.buildInClause(memberIds, paramOffset);
+    return {
+      clause: `id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${clause}))`,
+      params: memberIds
+    };
   }
 
-  private static getFilterByDatesWhereClosure(text: string) {
-    let closure = "";
-    switch (text.trim()) {
-      case "":
-        closure = ``;
-        break;
-      case WorkloadGanntController.TASKS_START_DATE_NULL_FILTER:
-        closure = `start_date IS NULL AND end_date IS NOT NULL`;
-        break;
-      case WorkloadGanntController.TASKS_END_DATE_NULL_FILTER:
-        closure = `start_date IS NOT NULL AND end_date IS NULL`;
-        break;
-      case WorkloadGanntController.TASKS_START_END_DATES_NULL_FILTER:
-        closure = `start_date IS NULL AND end_date IS NULL`;
-        break;
+  private static getTaskDateRangeFilter(startDate?: string, endDate?: string): string {
+    if (!startDate && !endDate) return "";
+    const conditions: string[] = [];
+    if (startDate) {
+      conditions.push(`start_date >= '${startDate}'`);
     }
-    return closure;
+    if (endDate) {
+      conditions.push(`end_date <= '${endDate}'`);
+    }
+    return conditions.length > 0 ? `AND ${conditions.join(" AND ")}` : "";
   }
 
-  private static getFilterByMembersWhereClosure(text: string) {
-    return text
-      ? `id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${this.flatString(text)}))`
-      : "";
+  private static getLogDateRangeFilter(startDate?: string, endDate?: string): string {
+    if (!startDate && !endDate) return "";
+    const conditions: string[] = [];
+    if (startDate) {
+      conditions.push(`twl.created_at::date >= '${startDate}'`);
+    }
+    if (endDate) {
+      conditions.push(`twl.created_at::date <= '${endDate}'`);
+    }
+    return conditions.length > 0 ? `AND ${conditions.join(" AND ")}` : "";
+  }
+
+  private static getFilterByDatesWhereClosure(dateChecker?: string): string {
+    if (!dateChecker) return "";
+    
+    switch (dateChecker) {
+      case this.TASKS_START_DATE_NULL_FILTER:
+        return "start_date IS NULL";
+      case this.TASKS_END_DATE_NULL_FILTER:
+        return "end_date IS NULL";
+      case this.TASKS_START_END_DATES_NULL_FILTER:
+        return "start_date IS NULL AND end_date IS NULL";
+      default:
+        return "";
+    }
   }
 
   private static getStatusesQuery(filterBy: string) {
@@ -443,9 +537,17 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
 
     const isSubTasks = !!options.parent_task;
 
+    const queryParams: any[] = [];
+    let paramOffset = 1;
+
     const sortFields = sortField.replace(/ascend/g, "ASC").replace(/descend/g, "DESC") || "sort_order";
     // Filter tasks by its members
-    const membersFilter = WorkloadGanntController.getFilterByMembersWhereClosure(options.members as string);
+    const membersResult = WorkloadGanntController.getFilterByMembersWhereClosure(options.members as string, paramOffset);
+    if (membersResult.params.length > 0) {
+      queryParams.push(...membersResult.params);
+      paramOffset += membersResult.params.length;
+    }
+    const membersFilter = membersResult.clause;
     // Returns statuses of each task as a json array if filterBy === "member"
     const statusesQuery = WorkloadGanntController.getStatusesQuery(options.filterBy as string);
 
