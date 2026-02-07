@@ -93,7 +93,7 @@ Choose your preferred setup method below. Docker is recommended for quick setup 
 
 ### 🚀 Quick Start (Docker - Recommended)
 
-The fastest way to get Worklenz running locally with all dependencies included.
+The fastest way to get Worklenz running locally with all dependencies included. This setup includes **production-ready features** like nginx reverse proxy, SSL/TLS support, Redis caching, and automated backups.
 
 **Prerequisites:**
 - Docker and Docker Compose installed on your system
@@ -101,30 +101,51 @@ The fastest way to get Worklenz running locally with all dependencies included.
 
 **Steps:**
 
-1. Clone the repository:
+#### Option 1: Automated Setup (Easiest)
 ```bash
+# Clone the repository
 git clone https://github.com/Worklenz/worklenz.git
 cd worklenz
+
+# Run the automated setup script
+./quick-setup.sh
 ```
 
-2. Start the Docker containers:
+This script will:
+- Create `.env` file with auto-generated security secrets
+- Configure URLs based on your domain (localhost or production)
+- Set up SSL certificates (self-signed for localhost, Let's Encrypt for production)
+- Install and start all services
+
+#### Option 2: Manual Setup
 ```bash
-docker-compose up -d
+# Clone the repository
+git clone https://github.com/Worklenz/worklenz.git
+cd worklenz
+
+# Copy and configure environment file
+cp .env.example .env
+# Edit .env and set required values (DB_PASSWORD, SESSION_SECRET, etc.)
+
+# Start services (Express mode - includes PostgreSQL, Redis, MinIO)
+docker compose --profile express up -d
 ```
 
-3. Access the application:
-   - **Frontend**: http://localhost:5000
-   - **Backend API**: http://localhost:3000
-   - **MinIO Console**: http://localhost:9001 (login: minioadmin/minioadmin)
+**Access the application:**
+- **Application**: https://localhost (or http://localhost)
+- **MinIO Console**: http://localhost:9001 (login: minioadmin/minioadmin)
 
-4. To stop the services:
+**Management:**
 ```bash
-docker-compose down
+# Use the management script for common operations
+./manage.sh status    # View service status
+./manage.sh logs      # View logs
+./manage.sh backup    # Create database backup
+./manage.sh stop      # Stop all services
+./manage.sh start     # Start all services
 ```
 
-**Alternative startup methods:**
-- **Windows**: Run `start.bat`
-- **Linux/macOS**: Run `./start.sh`
+**For detailed documentation**, see [DOCKER_SETUP.md](DOCKER_SETUP.md)
 
 **Video Guide**: For a visual walkthrough of the local Docker deployment process, check out our [step-by-step video guide](https://www.youtube.com/watch?v=AfwAKxJbqLg).
 
@@ -193,58 +214,115 @@ npm run dev
 
 ## Deployment
 
+### Local Development
+
 For local development, follow the [Quick Start (Docker)](#-quick-start-docker---recommended) section above.
 
-### Remote Server Deployment
+### Production Deployment
 
-When deploying to a remote server:
+The new Docker setup includes production-ready features for secure and scalable deployments.
 
-1. Set up the environment files with your server's hostname:
+#### Quick Production Setup
+
+```bash
+# Clone and navigate to the repository
+git clone https://github.com/Worklenz/worklenz.git
+cd worklenz
+
+# Run the automated setup
+./quick-setup.sh
+# When prompted, enter your production domain (e.g., worklenz.example.com)
+# The script will configure SSL with Let's Encrypt automatically
+```
+
+#### Manual Production Setup
+
+1. **Configure environment for your domain:**
    ```bash
-   # For HTTP/WS
-   ./update-docker-env.sh your-server-hostname
-   
-   # For HTTPS/WSS
-   ./update-docker-env.sh your-server-hostname true
+   cp .env.example .env
+   # Edit .env and set:
+   # - DOMAIN=your-domain.com
+   # - VITE_API_URL=https://your-domain.com
+   # - VITE_SOCKET_URL=wss://your-domain.com
+   # - ENABLE_SSL=true
+   # - LETSENCRYPT_EMAIL=your-email@domain.com
+   # - Generate secure secrets for DB_PASSWORD, SESSION_SECRET, etc.
    ```
 
-2. Pull and run the latest Docker images:
+2. **Point your domain's DNS A record to your server IP**
+
+3. **Start services with SSL:**
    ```bash
-   docker-compose pull
-   docker-compose up -d
+   docker compose --profile express --profile ssl up -d
    ```
 
-3. Access the application through your server's hostname:
-   - Frontend: http://your-server-hostname:5000
-   - Backend API: http://your-server-hostname:3000
+4. **Access your application at:** https://your-domain.com
 
-4. **Video Guide**: For a complete walkthrough of deploying Worklenz to a remote server, check out our [deployment video guide](https://www.youtube.com/watch?v=CAZGu2iOXQs&t=10s).
+#### Management Commands
+
+```bash
+./manage.sh install    # Interactive installation
+./manage.sh upgrade    # Upgrade to latest version
+./manage.sh backup     # Create database backup
+./manage.sh restore    # Restore from backup
+./manage.sh ssl        # Manage SSL certificates
+./manage.sh status     # View service status
+```
+
+#### Deployment Modes
+
+- **Express Mode** (default): All services bundled (PostgreSQL, Redis, MinIO)
+  ```bash
+  docker compose --profile express up -d
+  ```
+
+- **Advanced Mode**: Use external services (AWS S3, Azure Blob, external PostgreSQL)
+  ```bash
+  # Set DEPLOYMENT_MODE=advanced in .env
+  docker compose up -d
+  ```
+
+**For complete deployment documentation**, see [DOCKER_SETUP.md](DOCKER_SETUP.md)
+
+**Video Guide**: For a complete walkthrough of deploying Worklenz to a remote server, check out our [deployment video guide](https://www.youtube.com/watch?v=CAZGu2iOXQs&t=10s).
 
 ## Configuration
 
 ### Environment Variables
 
-Worklenz requires several environment variables to be configured for proper operation. These include:
+Worklenz uses a comprehensive environment configuration system. Copy `.env.example` to `.env` and configure according to your needs.
 
-- Database credentials
-- Session secrets
-- Storage configuration (S3 or Azure)
-- Authentication settings
+**Key Configuration Areas:**
 
-Please refer to the `.env.example` files for a full list of required variables.
+- **Deployment Mode**: `express` (all services bundled) or `advanced` (external services)
+- **Domain & URLs**: Configure for localhost or production domain
+- **Database**: PostgreSQL credentials and connection settings
+- **Security Secrets**: Session, cookie, and JWT secrets (auto-generated by setup scripts)
+- **Storage**: MinIO (default), AWS S3, or Azure Blob Storage
+- **Redis**: Cache configuration (Express mode)
+- **SSL/TLS**: Let's Encrypt for production, self-signed for localhost
+- **Backups**: Automated backup retention settings
+- **Optional Features**: Google OAuth, reCAPTCHA, email notifications
 
-The Docker setup uses environment variables to configure the services:
+**Quick Configuration:**
 
-- **Frontend:**
-  - `VITE_API_URL`: URL of the backend API (default: http://backend:3000 for container networking)
-  - `VITE_SOCKET_URL`: WebSocket URL for real-time communication (default: ws://backend:3000)
+```bash
+# Auto-generate all secrets and configure based on domain
+./manage.sh auto-configure
 
-- **Backend:**
-  - Database connection parameters
-  - Storage configuration
-  - Other backend settings
+# Or manually generate secrets
+openssl rand -hex 32  # Use for SESSION_SECRET, COOKIE_SECRET, JWT_SECRET
+```
 
-For custom configuration, edit the `.env` file or the `update-docker-env.sh` script.
+**Important Variables:**
+
+- `DOMAIN`: Your domain (localhost for local testing)
+- `DEPLOYMENT_MODE`: express or advanced
+- `STORAGE_PROVIDER`: s3 (MinIO/AWS) or azure
+- `ENABLE_SSL`: true/false for SSL/TLS
+- `BACKUP_RETENTION_DAYS`: Days to keep backups (default: 30)
+
+For a complete list of variables with detailed documentation, see `.env.example`.
 
 ## MinIO Integration
 
@@ -273,15 +351,40 @@ export const S3_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "minioadmin";
 export const S3_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "minioadmin";
 ```
 
-### Security Considerations
+### Security Features
 
-For production deployments:
+The new Docker setup includes enterprise-grade security features:
 
-1. Use strong, unique passwords and keys for all services
-2. Do not commit `.env` files to version control
-3. Use a production-grade PostgreSQL setup with proper backup procedures
-4. Enable HTTPS for all public endpoints
-5. Review and update dependencies regularly
+**Built-in Security:**
+- ✅ Non-root containers (all services run as non-privileged users)
+- ✅ Network isolation (backend network is internal-only)
+- ✅ SSL/TLS support (Let's Encrypt for production, self-signed for localhost)
+- ✅ Rate limiting on API and login endpoints
+- ✅ Security headers (HSTS, CSP, X-Frame-Options, etc.)
+- ✅ Auto-generated secure secrets (using `openssl rand -hex 32`)
+
+**Best Practices for Production:**
+
+1. **Use the automated setup** to generate strong, unique passwords and keys
+2. **Never commit `.env` files** to version control
+3. **Enable SSL/TLS** for production deployments (`ENABLE_SSL=true`)
+4. **Configure automated backups** with appropriate retention
+5. **Review and update** dependencies regularly
+6. **Use strong passwords** for all services (DB, Redis, MinIO)
+7. **Restrict network access** using firewall rules
+8. **Monitor logs** regularly using `./manage.sh logs`
+
+**Automated Backups:**
+```bash
+# Enable automated daily backups
+docker compose --profile express --profile backup up -d
+
+# Manual backup
+./manage.sh backup
+
+# Restore from backup
+./manage.sh restore
+```
 
 ## Security
 

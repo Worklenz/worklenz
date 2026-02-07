@@ -1,0 +1,22 @@
+name: Documentation Issue
+description: Report missing or incorrect documentation.
+title: "[Docs]: "
+labels: ["documentation"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What’s wrong or missing?
+      placeholder: Explain the documentation issue.
+    validations:
+      required: true
+  - type: textarea
+    id: location
+    attributes:
+      label: Where is the issue?
+      placeholder: File, page, or section.
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested Fix
+      placeholder: How should it be updated?
