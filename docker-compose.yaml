@@ -1,7 +1,7 @@
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:15-alpine
+    image: postgres:15.10-alpine
     container_name: worklenz-postgres
     restart: unless-stopped
     environment:
@@ -27,7 +27,7 @@ services:
 
   # Database Backup Service
   db-backup:
-    image: postgres:15-alpine
+    image: postgres:15.10-alpine
     container_name: worklenz-db-backup
     restart: unless-stopped
     depends_on:
@@ -80,7 +80,7 @@ services:
 
   # Redis Cache (Express mode - default)
   redis:
-    image: redis:7-alpine
+    image: redis:7.4-alpine
     container_name: worklenz-redis
     restart: unless-stopped
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-worklenz_redis_pass}
@@ -152,7 +152,7 @@ services:
 
   # Backend API
   backend:
-    image: chamikajaycey/worklenz-backend:latest
+    image: chamikajaycey/worklenz-backend:${BACKEND_VERSION:-2.1.6}
     build:
       context: ./worklenz-backend
       dockerfile: Dockerfile
@@ -240,7 +240,7 @@ services:
 
   # Frontend Application
   frontend:
-    image: chamikajaycey/worklenz-frontend:latest
+    image: chamikajaycey/worklenz-frontend:${FRONTEND_VERSION:-2.1.6}
     build:
       context: ./worklenz-frontend
       dockerfile: Dockerfile
@@ -272,7 +272,7 @@ services:
 
   # Nginx Reverse Proxy
   nginx:
-    image: nginx:alpine
+    image: nginx:1.27-alpine
     container_name: worklenz-nginx
     restart: unless-stopped
     depends_on:
@@ -303,7 +303,7 @@ services:
 
   # Certbot for Let's Encrypt SSL
   certbot:
-    image: certbot/certbot:latest
+    image: certbot/certbot:v3.1.0
     container_name: worklenz-certbot
     restart: unless-stopped
     volumes:

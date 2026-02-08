@@ -345,7 +345,7 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
         groupField = "COALESCE(p.health_id::text, 'not-set')";
         groupName = "COALESCE(sph.name, 'Not Set')";
         groupColor = "COALESCE(sph.color_code, '#888')";
-        groupJoin = "LEFT JOIN sys_project_healths sph ON p.health_id = sph.id";
+        // Join already exists at line 427: LEFT JOIN sys_project_healths sph ON p.health_id = sph.id
         groupByFields = "p.health_id, sph.name, sph.color_code";
         groupOrderBy = "COALESCE(sph.name, 'Not Set')";
         break;

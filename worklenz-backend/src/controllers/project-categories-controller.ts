@@ -99,9 +99,15 @@ export default class ProjectCategoriesController extends WorklenzControllerBase 
   ): Promise<IWorkLenzResponse> {
     const teams = await this.getTeamsByOrg(req.user?.team_id as string);
     const teamIds = teams.map((team) => team.id);
+
+    // Handle empty teams array - return empty result
+    if (teamIds.length === 0) {
+      return res.status(200).send(new ServerResponse(true, []));
+    }
+
     const { clause, params } = SqlHelper.buildInClause(teamIds, 1);
 
-    const q = `SELECT id, name, color_code FROM project_categories WHERE team_id IN (${clause})`;
+    const q = `SELECT id, name, color_code FROM project_categories WHERE team_id ${clause}`;
 
     const result = await db.query(q, params);
     return res.status(200).send(new ServerResponse(true, result.rows));
@@ -112,6 +118,11 @@ export default class ProjectCategoriesController extends WorklenzControllerBase 
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
+    // Validate color type first
+    if (typeof req.body.color !== 'string' || !req.body.color) {
+      return res.status(400).send(new ServerResponse(false, "Invalid color"));
+    }
+
     // Validate color - accept both base colors and all shade variations
     const validColors = [
       ...Object.keys(WorklenzColorShades),

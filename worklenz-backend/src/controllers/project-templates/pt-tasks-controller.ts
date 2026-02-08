@@ -34,13 +34,6 @@ export default class PtTasksController extends PtTasksControllerBase {
         return PtTasksController.isCountsOnly(query) || query.parent_task;
     }
 
-    private static getFilterByTemplatsWhereClosure(text: string, paramOffset: number): { clause: string; params: string[] } {
-        if (!text) return { clause: "", params: [] };
-        const templateIds = text.split(" ").filter(id => id.trim());
-        const { clause } = SqlHelper.buildInClause(templateIds, paramOffset);
-        return { clause: `template_id IN (${clause})`, params: templateIds };
-    }
-
     private static getQuery(userId: string, options: ParsedQs) {
 
         const searchField = options.search ? "cptt.name" : "sort_order";

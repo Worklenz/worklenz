@@ -54,8 +54,15 @@ export default abstract class WorklenzControllerBase {
       }
     }
 
-    // Sort
-    const sortField = /null|undefined/.test(queryParams.field as string) ? searchField : queryParams.field;
+    // Sort - validate field and order
+    const field = queryParams.field;
+    let sortField = searchField;
+
+    // Only use provided field if it's NOT literally "null" or "undefined" and is a valid string
+    if (field && field !== "null" && field !== "undefined" && typeof field === 'string' && field.trim().length > 0) {
+      sortField = field;
+    }
+
     const sortOrder = queryParams.order === "descend" ? "desc" : "asc";
 
     return {searchQuery, sortField, sortOrder, size, offset, paging};

@@ -330,7 +330,7 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
     const result = await db.query(q, [req.params.id]);
 
     for (const member of result.rows) {
-      member.color_code = getColor(member.TaskName);
+      member.color_code = getColor(member.name);
       
       // Set default working settings if organization data is not available
       member.org_working_hours = member.org_working_hours || 8;

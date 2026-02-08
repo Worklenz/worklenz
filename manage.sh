@@ -797,21 +797,49 @@ build_images() {
         rm -f "$ENV_FILE.bak"
     fi
 
-    # Image version - always use latest
-    local image_version="latest"
+    # Get version numbers from environment or prompt
+    local backend_version="${BACKEND_VERSION:-}"
+    local frontend_version="${FRONTEND_VERSION:-}"
+
+    echo ""
+    echo -e "${YELLOW}Version Configuration${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    if [ -z "$backend_version" ]; then
+        read -p "Enter backend version (e.g., 2.1.5) [latest]: " backend_version
+        backend_version=${backend_version:-latest}
+    fi
+
+    if [ -z "$frontend_version" ]; then
+        read -p "Enter frontend version (e.g., 2.1.5) [latest]: " frontend_version
+        frontend_version=${frontend_version:-latest}
+    fi
 
     echo ""
     print_info "Docker Hub Username: $docker_username"
-    print_info "Image Version: $image_version"
+    print_info "Backend Version: $backend_version"
+    print_info "Frontend Version: $frontend_version"
     echo ""
 
     # Build backend image
     print_info "Building backend image..."
     echo ""
-    docker build \
-        -f "$SCRIPT_DIR/worklenz-backend/Dockerfile" \
-        -t "${docker_username}/worklenz-backend:${image_version}" \
-        "$SCRIPT_DIR/worklenz-backend"
+
+    if [ "$backend_version" == "latest" ]; then
+        # Build only with latest tag
+        docker build \
+            -f "$SCRIPT_DIR/worklenz-backend/Dockerfile" \
+            -t "${docker_username}/worklenz-backend:latest" \
+            "$SCRIPT_DIR/worklenz-backend"
+    else
+        # Build with both version tag and latest tag
+        docker build \
+            -f "$SCRIPT_DIR/worklenz-backend/Dockerfile" \
+            -t "${docker_username}/worklenz-backend:${backend_version}" \
+            -t "${docker_username}/worklenz-backend:latest" \
+            "$SCRIPT_DIR/worklenz-backend"
+    fi
 
     if [ $? -ne 0 ]; then
         print_error "Backend build failed!"
@@ -819,15 +847,32 @@ build_images() {
     fi
 
     print_success "Backend image built successfully!"
+    if [ "$backend_version" != "latest" ]; then
+        print_info "Tagged as: ${docker_username}/worklenz-backend:${backend_version}"
+        print_info "Tagged as: ${docker_username}/worklenz-backend:latest"
+    else
+        print_info "Tagged as: ${docker_username}/worklenz-backend:latest"
+    fi
     echo ""
 
     # Build frontend image
     print_info "Building frontend image..."
     echo ""
-    docker build \
-        -f "$SCRIPT_DIR/worklenz-frontend/Dockerfile" \
-        -t "${docker_username}/worklenz-frontend:${image_version}" \
-        "$SCRIPT_DIR/worklenz-frontend"
+
+    if [ "$frontend_version" == "latest" ]; then
+        # Build only with latest tag
+        docker build \
+            -f "$SCRIPT_DIR/worklenz-frontend/Dockerfile" \
+            -t "${docker_username}/worklenz-frontend:latest" \
+            "$SCRIPT_DIR/worklenz-frontend"
+    else
+        # Build with both version tag and latest tag
+        docker build \
+            -f "$SCRIPT_DIR/worklenz-frontend/Dockerfile" \
+            -t "${docker_username}/worklenz-frontend:${frontend_version}" \
+            -t "${docker_username}/worklenz-frontend:latest" \
+            "$SCRIPT_DIR/worklenz-frontend"
+    fi
 
     if [ $? -ne 0 ]; then
         print_error "Frontend build failed!"
@@ -835,16 +880,22 @@ build_images() {
     fi
 
     print_success "Frontend image built successfully!"
+    if [ "$frontend_version" != "latest" ]; then
+        print_info "Tagged as: ${docker_username}/worklenz-frontend:${frontend_version}"
+        print_info "Tagged as: ${docker_username}/worklenz-frontend:latest"
+    else
+        print_info "Tagged as: ${docker_username}/worklenz-frontend:latest"
+    fi
     echo ""
 
     # Update docker-compose.yaml to use the new images
     print_info "Updating docker-compose.yaml..."
 
-    # Update backend image
-    sed -i.bak "s|image: worklenz-backend:.*|image: ${docker_username}/worklenz-backend:${image_version}|" "$DOCKER_COMPOSE_FILE"
+    # Update backend image in docker-compose.yaml to match built version
+    sed -i.bak "s|image: .*/worklenz-backend:\${BACKEND_VERSION:-.*}|image: ${docker_username}/worklenz-backend:\${BACKEND_VERSION:-${backend_version}}|" "$DOCKER_COMPOSE_FILE"
 
-    # Update frontend image
-    sed -i.bak "s|image: worklenz-frontend:.*|image: ${docker_username}/worklenz-frontend:${image_version}|" "$DOCKER_COMPOSE_FILE"
+    # Update frontend image in docker-compose.yaml to match built version
+    sed -i.bak "s|image: .*/worklenz-frontend:\${FRONTEND_VERSION:-.*}|image: ${docker_username}/worklenz-frontend:\${FRONTEND_VERSION:-${frontend_version}}|" "$DOCKER_COMPOSE_FILE"
 
     rm -f "$DOCKER_COMPOSE_FILE.bak"
 
@@ -852,8 +903,17 @@ build_images() {
     print_success "Images built successfully!"
     echo ""
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "  ${GREEN}Backend Image:${NC} ${docker_username}/worklenz-backend:${image_version}"
-    echo -e "  ${GREEN}Frontend Image:${NC} ${docker_username}/worklenz-frontend:${image_version}"
+    if [ "$backend_version" != "latest" ]; then
+        echo -e "  ${GREEN}Backend Images:${NC}"
+        echo -e "    - ${docker_username}/worklenz-backend:${backend_version}"
+        echo -e "    - ${docker_username}/worklenz-backend:latest"
+        echo -e "  ${GREEN}Frontend Images:${NC}"
+        echo -e "    - ${docker_username}/worklenz-frontend:${frontend_version}"
+        echo -e "    - ${docker_username}/worklenz-frontend:latest"
+    else
+        echo -e "  ${GREEN}Backend Image:${NC} ${docker_username}/worklenz-backend:latest"
+        echo -e "  ${GREEN}Frontend Image:${NC} ${docker_username}/worklenz-frontend:latest"
+    fi
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
 
@@ -875,34 +935,49 @@ build_images() {
             return 1
         fi
 
-        # Push backend image
-        print_info "Pushing backend image..."
-        docker push "${docker_username}/worklenz-backend:${image_version}"
-
+        # Push backend images
+        print_info "Pushing backend images..."
+        if [ "$backend_version" != "latest" ]; then
+            docker push "${docker_username}/worklenz-backend:${backend_version}"
+            if [ $? -ne 0 ]; then
+                print_error "Backend image push failed!"
+                return 1
+            fi
+        fi
+        docker push "${docker_username}/worklenz-backend:latest"
         if [ $? -ne 0 ]; then
-            print_error "Backend image push failed!"
+            print_error "Backend latest image push failed!"
             return 1
         fi
 
-        print_success "Backend image pushed successfully!"
+        print_success "Backend images pushed successfully!"
         echo ""
 
-        # Push frontend image
-        print_info "Pushing frontend image..."
-        docker push "${docker_username}/worklenz-frontend:${image_version}"
-
+        # Push frontend images
+        print_info "Pushing frontend images..."
+        if [ "$frontend_version" != "latest" ]; then
+            docker push "${docker_username}/worklenz-frontend:${frontend_version}"
+            if [ $? -ne 0 ]; then
+                print_error "Frontend image push failed!"
+                return 1
+            fi
+        fi
+        docker push "${docker_username}/worklenz-frontend:latest"
         if [ $? -ne 0 ]; then
-            print_error "Frontend image push failed!"
+            print_error "Frontend latest image push failed!"
             return 1
         fi
 
-        print_success "Frontend image pushed successfully!"
+        print_success "Frontend images pushed successfully!"
         echo ""
         print_success "Images are now available on Docker Hub!"
         echo ""
         echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
         echo -e "  ${GREEN}Backend:${NC} https://hub.docker.com/r/${docker_username}/worklenz-backend"
         echo -e "  ${GREEN}Frontend:${NC} https://hub.docker.com/r/${docker_username}/worklenz-frontend"
+        if [ "$backend_version" != "latest" ]; then
+            echo -e "  ${GREEN}Tags:${NC} ${backend_version}, latest (backend) | ${frontend_version}, latest (frontend)"
+        fi
         echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     else
         print_info "Images built locally only (not pushed to Docker Hub)"
@@ -948,11 +1023,29 @@ push_images() {
         return 1
     fi
 
-    local image_version="latest"
+    # Get version numbers from environment or prompt
+    local backend_version="${BACKEND_VERSION:-}"
+    local frontend_version="${FRONTEND_VERSION:-}"
+
+    echo ""
+    echo -e "${YELLOW}Version Configuration${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    if [ -z "$backend_version" ]; then
+        read -p "Enter backend version to push (e.g., 2.1.5) [latest]: " backend_version
+        backend_version=${backend_version:-latest}
+    fi
+
+    if [ -z "$frontend_version" ]; then
+        read -p "Enter frontend version to push (e.g., 2.1.5) [latest]: " frontend_version
+        frontend_version=${frontend_version:-latest}
+    fi
 
     echo ""
     print_info "Docker Hub Username: $docker_username"
-    print_info "Image Version: $image_version"
+    print_info "Backend Version: $backend_version"
+    print_info "Frontend Version: $frontend_version"
     echo ""
 
     # Check if images exist locally
@@ -982,32 +1075,55 @@ push_images() {
     print_success "Docker Hub login successful!"
     echo ""
 
-    # Push backend image
-    print_info "Pushing backend image to Docker Hub..."
-    docker push "${docker_username}/worklenz-backend:${image_version}"
-
+    # Push backend images
+    print_info "Pushing backend images to Docker Hub..."
+    if [ "$backend_version" != "latest" ]; then
+        print_info "Pushing ${docker_username}/worklenz-backend:${backend_version}..."
+        docker push "${docker_username}/worklenz-backend:${backend_version}"
+        if [ $? -ne 0 ]; then
+            print_error "Backend version push failed!"
+            return 1
+        fi
+    fi
+    print_info "Pushing ${docker_username}/worklenz-backend:latest..."
+    docker push "${docker_username}/worklenz-backend:latest"
     if [ $? -ne 0 ]; then
-        print_error "Backend push failed!"
+        print_error "Backend latest push failed!"
         return 1
     fi
 
-    print_success "Backend image pushed successfully!"
+    print_success "Backend images pushed successfully!"
     echo ""
 
-    # Push frontend image
-    print_info "Pushing frontend image to Docker Hub..."
-    docker push "${docker_username}/worklenz-frontend:${image_version}"
-
+    # Push frontend images
+    print_info "Pushing frontend images to Docker Hub..."
+    if [ "$frontend_version" != "latest" ]; then
+        print_info "Pushing ${docker_username}/worklenz-frontend:${frontend_version}..."
+        docker push "${docker_username}/worklenz-frontend:${frontend_version}"
+        if [ $? -ne 0 ]; then
+            print_error "Frontend version push failed!"
+            return 1
+        fi
+    fi
+    print_info "Pushing ${docker_username}/worklenz-frontend:latest..."
+    docker push "${docker_username}/worklenz-frontend:latest"
     if [ $? -ne 0 ]; then
-        print_error "Frontend push failed!"
+        print_error "Frontend latest push failed!"
         return 1
     fi
 
-    print_success "Frontend image pushed successfully!"
+    print_success "Frontend images pushed successfully!"
     echo ""
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "  ${GREEN}Backend Image:${NC} ${docker_username}/worklenz-backend:${image_version}"
-    echo -e "  ${GREEN}Frontend Image:${NC} ${docker_username}/worklenz-frontend:${image_version}"
+    echo -e "  ${GREEN}Backend:${NC} https://hub.docker.com/r/${docker_username}/worklenz-backend"
+    echo -e "  ${GREEN}Frontend:${NC} https://hub.docker.com/r/${docker_username}/worklenz-frontend"
+    if [ "$backend_version" != "latest" ]; then
+        echo -e "  ${GREEN}Pushed Tags:${NC}"
+        echo -e "    Backend: ${backend_version}, latest"
+        echo -e "    Frontend: ${frontend_version}, latest"
+    else
+        echo -e "  ${GREEN}Pushed Tags:${NC} latest"
+    fi
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 }
 
@@ -1121,15 +1237,25 @@ install_worklenz() {
             fi
         fi
 
-        local image_version="latest"
+        # Get version numbers
+        local backend_version="${BACKEND_VERSION:-latest}"
+        local frontend_version="${FRONTEND_VERSION:-latest}"
 
         if [ -n "$docker_username" ]; then
             # Build backend image
-            print_info "Building backend image..."
-            docker build \
-                -f "$SCRIPT_DIR/worklenz-backend/Dockerfile" \
-                -t "${docker_username}/worklenz-backend:${image_version}" \
-                "$SCRIPT_DIR/worklenz-backend"
+            print_info "Building backend image (version: ${backend_version})..."
+            if [ "$backend_version" == "latest" ]; then
+                docker build \
+                    -f "$SCRIPT_DIR/worklenz-backend/Dockerfile" \
+                    -t "${docker_username}/worklenz-backend:latest" \
+                    "$SCRIPT_DIR/worklenz-backend"
+            else
+                docker build \
+                    -f "$SCRIPT_DIR/worklenz-backend/Dockerfile" \
+                    -t "${docker_username}/worklenz-backend:${backend_version}" \
+                    -t "${docker_username}/worklenz-backend:latest" \
+                    "$SCRIPT_DIR/worklenz-backend"
+            fi
 
             if [ $? -ne 0 ]; then
                 print_error "Backend build failed!"
@@ -1140,11 +1266,19 @@ install_worklenz() {
             echo ""
 
             # Build frontend image
-            print_info "Building frontend image..."
-            docker build \
-                -f "$SCRIPT_DIR/worklenz-frontend/Dockerfile" \
-                -t "${docker_username}/worklenz-frontend:${image_version}" \
-                "$SCRIPT_DIR/worklenz-frontend"
+            print_info "Building frontend image (version: ${frontend_version})..."
+            if [ "$frontend_version" == "latest" ]; then
+                docker build \
+                    -f "$SCRIPT_DIR/worklenz-frontend/Dockerfile" \
+                    -t "${docker_username}/worklenz-frontend:latest" \
+                    "$SCRIPT_DIR/worklenz-frontend"
+            else
+                docker build \
+                    -f "$SCRIPT_DIR/worklenz-frontend/Dockerfile" \
+                    -t "${docker_username}/worklenz-frontend:${frontend_version}" \
+                    -t "${docker_username}/worklenz-frontend:latest" \
+                    "$SCRIPT_DIR/worklenz-frontend"
+            fi
 
             if [ $? -ne 0 ]; then
                 print_error "Frontend build failed!"
@@ -1156,10 +1290,8 @@ install_worklenz() {
 
             # Update docker-compose.yaml
             print_info "Updating docker-compose.yaml..."
-            sed -i.bak "s|image: worklenz-backend:.*|image: ${docker_username}/worklenz-backend:${image_version}|" "$DOCKER_COMPOSE_FILE"
-            sed -i.bak "s|image: worklenz-frontend:.*|image: ${docker_username}/worklenz-frontend:${image_version}|" "$DOCKER_COMPOSE_FILE"
-            sed -i.bak "s|image: .*/worklenz-backend:.*|image: ${docker_username}/worklenz-backend:${image_version}|" "$DOCKER_COMPOSE_FILE"
-            sed -i.bak "s|image: .*/worklenz-frontend:.*|image: ${docker_username}/worklenz-frontend:${image_version}|" "$DOCKER_COMPOSE_FILE"
+            sed -i.bak "s|image: .*/worklenz-backend:\${BACKEND_VERSION:-.*}|image: ${docker_username}/worklenz-backend:\${BACKEND_VERSION:-${backend_version}}|" "$DOCKER_COMPOSE_FILE"
+            sed -i.bak "s|image: .*/worklenz-frontend:\${FRONTEND_VERSION:-.*}|image: ${docker_username}/worklenz-frontend:\${FRONTEND_VERSION:-${frontend_version}}|" "$DOCKER_COMPOSE_FILE"
             rm -f "$DOCKER_COMPOSE_FILE.bak"
 
             print_success "Custom images ready!"
@@ -1172,11 +1304,19 @@ install_worklenz() {
                 docker login
 
                 if [ $? -eq 0 ]; then
-                    print_info "Pushing backend image..."
-                    docker push "${docker_username}/worklenz-backend:${image_version}"
+                    if [ "$backend_version" != "latest" ]; then
+                        print_info "Pushing backend image (${backend_version})..."
+                        docker push "${docker_username}/worklenz-backend:${backend_version}"
+                    fi
+                    print_info "Pushing backend image (latest)..."
+                    docker push "${docker_username}/worklenz-backend:latest"
 
-                    print_info "Pushing frontend image..."
-                    docker push "${docker_username}/worklenz-frontend:${image_version}"
+                    if [ "$frontend_version" != "latest" ]; then
+                        print_info "Pushing frontend image (${frontend_version})..."
+                        docker push "${docker_username}/worklenz-frontend:${frontend_version}"
+                    fi
+                    print_info "Pushing frontend image (latest)..."
+                    docker push "${docker_username}/worklenz-frontend:latest"
 
                     print_success "Images pushed to Docker Hub!"
                 fi
