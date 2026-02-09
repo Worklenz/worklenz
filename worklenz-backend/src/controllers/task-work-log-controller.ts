@@ -5,11 +5,13 @@ import {IWorkLenzRequest} from "../interfaces/worklenz-request";
 import {IWorkLenzResponse} from "../interfaces/worklenz-response";
 
 import db from "../config/db";
-import {formatDuration, getColor, log_error, toSeconds} from "../shared/utils";
+import {formatDuration, getColor, toSeconds} from "../shared/utils";
 import {ServerResponse} from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import momentTime from "moment-timezone";
+import {SocketEvents} from "../socket.io/events";
+import {IO} from "../shared/io";
 
 export default class TaskWorklogController extends WorklenzControllerBase {
 
@@ -21,6 +23,13 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     const params = [seconds_spent, description, id, req.user?.id, formatted_start];
     const result = await db.query(q, params);
     const [data] = result.rows;
+    
+    // Emit socket event to notify all clients about the time log update
+    const io = IO.getInstance();
+    if (io) {
+      io.emit(SocketEvents.TASK_TIME_LOG_UPDATED.toString(), { task_id: id });
+    }
+    
     return res.status(200).send(new ServerResponse(true, data));
   }
 
@@ -86,11 +95,21 @@ export default class TaskWorklogController extends WorklenzControllerBase {
           description = $4,
           created_at  = $5
       WHERE id = $1
-        AND user_id = $2;
+        AND user_id = $2
+      RETURNING task_id;
     `;
     const params = [req.params.id, req.user?.id, seconds_spent, description || null, formatted_start];
     const result = await db.query(q, params);
     const [data] = result.rows;
+    
+    // Emit socket event to notify all clients about the time log update
+    if (data?.task_id) {
+      const io = IO.getInstance();
+      if (io) {
+        io.emit(SocketEvents.TASK_TIME_LOG_UPDATED.toString(), { task_id: data.task_id });
+      }
+    }
+    
     return res.status(200).send(new ServerResponse(true, data));
   }
 
@@ -100,9 +119,19 @@ export default class TaskWorklogController extends WorklenzControllerBase {
                FROM task_work_log
                WHERE id = $1
                  AND task_id = $2
-                 AND user_id = $3;`;
+                 AND user_id = $3
+               RETURNING task_id;`;
     const result = await db.query(q, [req.params.id, req.query.task, req.user?.id]);
     const [data] = result.rows;
+    
+    // Emit socket event to notify all clients about the time log deletion
+    if (data?.task_id) {
+      const io = IO.getInstance();
+      if (io) {
+        io.emit(SocketEvents.TASK_TIME_LOG_UPDATED.toString(), { task_id: data.task_id });
+      }
+    }
+    
     return res.status(200).send(new ServerResponse(true, data));
   }
 
