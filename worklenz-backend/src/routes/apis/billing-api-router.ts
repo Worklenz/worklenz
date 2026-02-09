@@ -20,6 +20,7 @@ billingApiRouter.post("/directpay/create-card-session", BillingController.create
 billingApiRouter.get("/directpay/list-cards", BillingController.listCards);
 billingApiRouter.post("/directpay/delete-card", BillingController.deleteCard);
 billingApiRouter.post("/directpay/pay-with-card", BillingController.payWithCard);
-billingApiRouter.post("/directpay-card-response", BillingController.handleCardAddResponse);
+// Note: DirectPay card-response webhook is mounted at app level (/webhook/directpay/card-response)
+// to bypass auth/CSRF since it's called by DirectPay's server, not the browser.
 
 export default billingApiRouter;

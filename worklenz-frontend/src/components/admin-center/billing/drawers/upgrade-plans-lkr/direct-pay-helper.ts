@@ -185,16 +185,82 @@ export const openDirectPayPopup = (
     overlay.appendChild(modalContainer);
     document.body.appendChild(overlay);
 
+    let isHandled = false;
+
+    const handleCleanup = () => {
+      isHandled = true;
+      window.removeEventListener('message', handleMessage);
+      if (redirectPollInterval) clearInterval(redirectPollInterval);
+      const existingOverlay = document.getElementById('directpay-modal-overlay');
+      if (existingOverlay && existingOverlay.parentNode) {
+        existingOverlay.parentNode.removeChild(existingOverlay);
+      }
+    };
+
     // Close on overlay click
     overlay.onclick = (e) => {
       if (e.target === overlay) {
-        document.body.removeChild(overlay);
+        handleCleanup();
         callbacks.onCancel();
       }
     };
 
-    // Setup message listener for iframe communication
+    // Parse DirectPay query params from the return_url redirect
+    const handleReturnUrlRedirect = (url: string) => {
+      if (isHandled) return;
+      try {
+        const urlObj = new URL(url);
+        const status = urlObj.searchParams.get('status');
+        const desc = urlObj.searchParams.get('desc') || urlObj.searchParams.get('description');
+        const trnId = urlObj.searchParams.get('trnId');
+        const orderId = urlObj.searchParams.get('orderId');
+
+        const responseData = {
+          status,
+          description: desc,
+          transactionId: trnId,
+          orderId,
+        };
+
+        handleCleanup();
+
+        if (status === 'SUCCESS') {
+          callbacks.onSuccess(responseData);
+        } else if (status === 'CANCELLED') {
+          callbacks.onCancel();
+        } else {
+          callbacks.onError({
+            message: desc || 'Payment failed',
+            ...responseData,
+          });
+        }
+      } catch (e) {
+        // URL parsing failed, ignore
+      }
+    };
+
+    // Poll iframe location to detect redirect to return_url
+    // DirectPay redirects the iframe to return_url with query params after completion
+    const redirectPollInterval = setInterval(() => {
+      if (isHandled) {
+        clearInterval(redirectPollInterval);
+        return;
+      }
+      try {
+        const iframeUrl = iframe.contentWindow?.location?.href;
+        if (iframeUrl && iframeUrl.includes(window.location.origin)) {
+          clearInterval(redirectPollInterval);
+          handleReturnUrlRedirect(iframeUrl);
+        }
+      } catch (_e) {
+        // Cross-origin access blocked — iframe is still on DirectPay domain, keep polling
+      }
+    }, 500);
+
+    // Setup message listener for iframe communication (fallback)
     const handleMessage = (event: MessageEvent) => {
+      if (isHandled) return;
+
       // Verify origin
       const validOrigins = ['directpay.lk', 'test-gateway.directpay.lk'];
       if (!validOrigins.some((origin) => event.origin.includes(origin))) {
@@ -203,12 +269,7 @@ export const openDirectPayPopup = (
 
       if (!event.data) return;
 
-      // Handle response and close modal
-      const existingOverlay = document.getElementById('directpay-modal-overlay');
-      if (existingOverlay) {
-        document.body.removeChild(existingOverlay);
-      }
-      window.removeEventListener('message', handleMessage);
+      handleCleanup();
 
       if (event.data.card && event.data.walletId) {
         // Card add response

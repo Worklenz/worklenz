@@ -22,6 +22,7 @@ import { isInternalServer, isProduction, log_error } from "./shared/utils";
 import sessionMiddleware from "./middlewares/session-middleware";
 import safeControllerFunction from "./shared/safe-controller-function";
 import AwsSesController from "./controllers/aws-ses-controller";
+import BillingController from "./controllers/billing-controller";
 import { CSP_POLICIES } from "./shared/csp";
 import { sqlInjectionDetectorWithBlocking } from "./middlewares/sql-injection-detector";
 import { createCsrfRotation } from "./middlewares/csrf-rotation";
@@ -212,7 +213,8 @@ app.use((req, res, next) => {
   const baseUrl = req.baseUrl || "";
   
   // Always exclude webhooks (external services can't provide CSRF tokens)
-  if (path.startsWith("/webhook/") || originalUrl.startsWith("/webhook/")) {
+  if (path.startsWith("/webhook/") || originalUrl.startsWith("/webhook/") ||
+      originalUrl.includes("/webhook/directpay/")) {
     log_error(`[CSRF] Excluding webhook: ${path}`);
     return next();
   }
@@ -347,6 +349,9 @@ app.post("/webhook/emails/bounce", safeControllerFunction(AwsSesController.handl
 app.post("/webhook/emails/complaints", safeControllerFunction(AwsSesController.handleComplaintResponse));
 app.post("/webhook/emails/delivery", safeControllerFunction(AwsSesController.handleDeliveryEvents));
 app.post("/webhook/emails/reply", safeControllerFunction(AwsSesController.handleReplies));
+
+// DirectPay webhook (no auth/CSRF required - called by DirectPay server)
+app.post("/webhook/directpay/card-response", BillingController.handleCardAddResponse as any);
 
 // Static file serving
 if (isProduction()) {

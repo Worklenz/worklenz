@@ -443,7 +443,7 @@ VALUES ($1, $2, $3);`;
       type: "CARD_ADD",
       order_id: orderId,
       currency: "LKR",
-      response_url: `https://b4e9-2402-d000-8100-2185-557f-1df2-e5f4-fe1f.ngrok-free.app/api/billing/directpay-card-response`,
+      response_url: `${backendBaseUrl}/webhook/directpay/card-response`,
       return_url: `${frontendBaseUrl}/worklenz/admin-center/billing?card_added=true`,
       first_name: firstName,
       email: email,
@@ -641,17 +641,30 @@ VALUES ($1, $2, $3);`;
 
   /**
    * Handle DirectPay card add response (webhook)
-   * Called by DirectPay after card is added
+   * Called by DirectPay server after card is added/payment is processed.
+   * This endpoint is mounted at /webhook/directpay/card-response (outside auth/CSRF).
    */
   @HandleExceptions()
   public static async handleCardAddResponse(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const responseData = req.body;
 
-    // Extract wallet and card information
-    const { walletId, card } = responseData;
+    // Log the full response for debugging
+    console.log("[DirectPay Webhook] Received card-response callback:", JSON.stringify(responseData, null, 2));
+    console.log("[DirectPay Webhook] Headers:", JSON.stringify(req.headers, null, 2));
 
-    if (!walletId || !card) {
-      return res.status(400).send(new ServerResponse(false, null, "Invalid response data"));
+    // DirectPay may send walletId at top level or nested under card
+    const walletId = responseData?.walletId || responseData?.card?.walletId;
+    const card = responseData?.card;
+    const transaction = responseData?.transaction;
+    const status = responseData?.status;
+
+    // Log extracted fields
+    console.log("[DirectPay Webhook] Parsed - status:", status, "walletId:", walletId, "card:", card, "transaction:", transaction);
+
+    if (!walletId && !card && !transaction) {
+      console.error("[DirectPay Webhook] Invalid response data - no walletId, card, or transaction found");
+      // Still return 200 to acknowledge receipt and prevent DirectPay from retrying
+      return res.status(200).send(new ServerResponse(true, { message: "Webhook received (no actionable data)" }));
     }
 
     // TODO: Store walletId and card details in database
@@ -659,8 +672,7 @@ VALUES ($1, $2, $3);`;
     // - Link to user/organization
     // - Store cardId, walletId, masked card number, brand, type, expiry
 
-    log_error("Card add response received", { walletId, card });
-
+    // Always return 200 to acknowledge receipt
     return res.status(200).send(new ServerResponse(true, { message: "Card add response received" }));
   }
 
