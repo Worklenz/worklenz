@@ -1078,12 +1078,22 @@ push_images() {
     # Push backend images
     print_info "Pushing backend images to Docker Hub..."
     if [ "$backend_version" != "latest" ]; then
+        # Verify version-tagged image exists locally
+        if ! docker image inspect "${docker_username}/worklenz-backend:${backend_version}" >/dev/null 2>&1; then
+            print_error "Image ${docker_username}/worklenz-backend:${backend_version} not found locally. Please build it first."
+            return 1
+        fi
         print_info "Pushing ${docker_username}/worklenz-backend:${backend_version}..."
         docker push "${docker_username}/worklenz-backend:${backend_version}"
         if [ $? -ne 0 ]; then
             print_error "Backend version push failed!"
             return 1
         fi
+    fi
+    # Verify latest image exists locally
+    if ! docker image inspect "${docker_username}/worklenz-backend:latest" >/dev/null 2>&1; then
+        print_error "Image ${docker_username}/worklenz-backend:latest not found locally. Please build it first."
+        return 1
     fi
     print_info "Pushing ${docker_username}/worklenz-backend:latest..."
     docker push "${docker_username}/worklenz-backend:latest"

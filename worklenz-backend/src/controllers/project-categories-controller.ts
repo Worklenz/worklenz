@@ -16,12 +16,20 @@ export default class ProjectCategoriesController extends WorklenzControllerBase 
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
+    // Validate name
+    const name =
+      typeof req.body.name === "string" ? req.body.name.trim() : undefined;
+    if (!name || name.length === 0) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, "Category name is required."));
+    }
+
     const q = `
       INSERT INTO project_categories (name, team_id, created_by, color_code)
       VALUES ($1, $2, $3, $4)
       RETURNING id, name, color_code;
     `;
-    const name = req.body.name.trim();
     
     // Validate and use provided color_code, or fall back to generated color
     let colorCode: string | null = null;
@@ -107,7 +115,7 @@ export default class ProjectCategoriesController extends WorklenzControllerBase 
 
     const { clause, params } = SqlHelper.buildInClause(teamIds, 1);
 
-    const q = `SELECT id, name, color_code FROM project_categories WHERE team_id ${clause}`;
+    const q = `SELECT id, name, color_code FROM project_categories WHERE team_id IN (${clause})`;
 
     const result = await db.query(q, params);
     return res.status(200).send(new ServerResponse(true, result.rows));
