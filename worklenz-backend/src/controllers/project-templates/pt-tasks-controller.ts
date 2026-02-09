@@ -5,6 +5,7 @@ import HandleExceptions from "../../decorators/handle-exceptions";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
+import { SqlHelper } from "../../shared/sql-helpers";
 import { TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA, UNMAPPED } from "../../shared/constants";
 import { getColor } from "../../shared/utils";
 import PtTasksControllerBase, { GroupBy, ITaskGroup } from "./pt-tasks-controller-base";
@@ -31,14 +32,6 @@ export default class PtTasksController extends PtTasksControllerBase {
 
     public static isTasksOnlyReq(query: ParsedQs) {
         return PtTasksController.isCountsOnly(query) || query.parent_task;
-    }
-
-    private static flatString(text: string) {
-        return (text || "").split(" ").map(s => `'${s}'`).join(",");
-    }
-
-    private static getFilterByTemplatsWhereClosure(text: string) {
-        return text ? `template_id IN (${this.flatString(text)})` : "";
     }
 
     private static getQuery(userId: string, options: ParsedQs) {
