@@ -5,11 +5,19 @@ import {SocketEvents} from "../events";
 import {getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates} from "../util";
 
 export async function on_task_timer_stop(_io: Server, socket: Socket, data?: string) {
-  const client = await db.pool.connect();
+  let client;
 
   try {
+    client = await db.pool.connect();
+
     const body = JSON.parse(data as string);
     const userId = getLoggedInUserIdFromSocket(socket);
+
+    // Validate userId (authentication check)
+    if (!userId) {
+      socket.emit(SocketEvents.TASK_TIMER_STOP.toString(), null);
+      return;
+    }
 
     // Validate inputs
     if (!body.task_id || typeof body.task_id !== 'string') {
@@ -70,9 +78,10 @@ export async function on_task_timer_stop(_io: Server, socket: Socket, data?: str
     return;
   } catch (error) {
     log_error(error);
+    socket.emit(SocketEvents.TASK_TIMER_STOP.toString(), null);
   } finally {
-    client.release();
+    if (client) {
+      client.release();
+    }
   }
-
-  socket.emit(SocketEvents.TASK_TIMER_STOP.toString(), null);
 }

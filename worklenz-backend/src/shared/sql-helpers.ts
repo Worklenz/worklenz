@@ -22,7 +22,7 @@ export interface ParameterizedQuery {
 export class SqlHelper {
   /**
    * Build a safe IN clause with parameterized values
-   * 
+   *
    * @example
    * const { clause, params } = SqlHelper.buildInClause(['id1', 'id2', 'id3'], 1);
    * // Returns: { clause: '$1, $2, $3', params: ['id1', 'id2', 'id3'] }
@@ -38,6 +38,48 @@ export class SqlHelper {
     return {
       clause: placeholders,
       params: values,
+    };
+  }
+
+  /**
+   * Build an optional parameterized IN clause for SQL queries with column name.
+   * Returns empty clause if values array is empty, making it safe for optional filters.
+   * The column name is validated to prevent SQL injection.
+   *
+   * @param values - Array of values to include in the IN clause (can be empty)
+   * @param columnName - Name of the column for the IN clause (will be validated)
+   * @param startIndex - Starting parameter index
+   * @returns Object with clause string and params array (empty if values is empty)
+   *
+   * @example
+   * const teamIds = []; // Empty array
+   * const result = SqlHelper.buildOptionalInClause(teamIds, 'team_id', 1);
+   * // result.clause: ""
+   * // result.params: []
+   * const query = `SELECT * FROM projects WHERE 1=1 ${result.clause}`;
+   * await db.query(query, result.params);
+   *
+   * @example
+   * const teamIds = ['team1', 'team2'];
+   * const result = SqlHelper.buildOptionalInClause(teamIds, 'team_id', 1);
+   * // result.clause: "AND team_id IN ($1, $2)"
+   * // result.params: ['team1', 'team2']
+   */
+  static buildOptionalInClause(values: any[], columnName: string, startIndex: number): { clause: string; params: any[] } {
+    if (!Array.isArray(values) || values.length === 0) {
+      return {
+        clause: '',
+        params: []
+      };
+    }
+
+    // Validate columnName to prevent SQL injection
+    const safeColumnName = this.escapeIdentifier(columnName);
+
+    const placeholders = values.map((_, index) => `$${startIndex + index}`).join(', ');
+    return {
+      clause: `AND ${safeColumnName} IN (${placeholders})`,
+      params: values
     };
   }
 

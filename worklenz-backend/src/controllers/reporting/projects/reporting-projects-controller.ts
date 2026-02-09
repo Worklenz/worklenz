@@ -27,46 +27,46 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
     let statusesClause = "";
     if (req.query.statuses) {
       const statusIds = (req.query.statuses as string).split(",").filter(id => id.trim());
-      const { clause } = SqlHelper.buildInClause(statusIds, paramOffset);
-      statusesClause = `AND p.status_id IN (${clause})`;
-      filterParams.push(...statusIds);
-      paramOffset += statusIds.length;
+      const { clause, params } = SqlHelper.buildOptionalInClause(statusIds, 'p.status_id', paramOffset);
+      statusesClause = clause;
+      filterParams.push(...params);
+      paramOffset += params.length;
     }
 
     let healthsClause = "";
     if (req.query.healths) {
       const healthIds = (req.query.healths as string).split(",").filter(id => id.trim());
-      const { clause } = SqlHelper.buildInClause(healthIds, paramOffset);
-      healthsClause = `AND p.health_id IN (${clause})`;
-      filterParams.push(...healthIds);
-      paramOffset += healthIds.length;
+      const { clause, params } = SqlHelper.buildOptionalInClause(healthIds, 'p.health_id', paramOffset);
+      healthsClause = clause;
+      filterParams.push(...params);
+      paramOffset += params.length;
     }
 
     let categoriesClause = "";
     if (req.query.categories) {
       const categoryIds = (req.query.categories as string).split(",").filter(id => id.trim());
-      const { clause } = SqlHelper.buildInClause(categoryIds, paramOffset);
-      categoriesClause = `AND p.category_id IN (${clause})`;
-      filterParams.push(...categoryIds);
-      paramOffset += categoryIds.length;
+      const { clause, params } = SqlHelper.buildOptionalInClause(categoryIds, 'p.category_id', paramOffset);
+      categoriesClause = clause;
+      filterParams.push(...params);
+      paramOffset += params.length;
     }
 
     let projectManagersClause = "";
     if (req.query.project_managers) {
       const managerIds = (req.query.project_managers as string).split(",").filter(id => id.trim());
-      const { clause } = SqlHelper.buildInClause(managerIds, paramOffset);
+      const { clause, params } = SqlHelper.buildInClause(managerIds, paramOffset);
       projectManagersClause = `AND p.id IN(SELECT project_id FROM project_members WHERE team_member_id IN(SELECT id FROM team_members WHERE user_id IN (${clause})) AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'))`;
-      filterParams.push(...managerIds);
-      paramOffset += managerIds.length;
+      filterParams.push(...params);
+      paramOffset += params.length;
     }
 
     let teamsClause = "";
     if (req.query.teams) {
       const teamIds = (req.query.teams as string).split(",").filter(id => id.trim());
-      const { clause } = SqlHelper.buildInClause(teamIds, paramOffset);
-      teamsClause = `AND p.team_id IN (${clause})`;
-      filterParams.push(...teamIds);
-      paramOffset += teamIds.length;
+      const { clause, params } = SqlHelper.buildOptionalInClause(teamIds, 'p.team_id', paramOffset);
+      teamsClause = clause;
+      filterParams.push(...params);
+      paramOffset += params.length;
     }
 
     let archivedClause = "";
@@ -272,46 +272,46 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
     let statusesClause = "";
     if (req.query.statuses) {
       const statusIds = (req.query.statuses as string).split(",").filter(id => id.trim());
-      const { clause } = SqlHelper.buildInClause(statusIds, paramOffset);
-      statusesClause = `AND p.status_id IN (${clause})`;
-      filterParams.push(...statusIds);
-      paramOffset += statusIds.length;
+      const { clause, params } = SqlHelper.buildOptionalInClause(statusIds, 'p.status_id', paramOffset);
+      statusesClause = clause;
+      filterParams.push(...params);
+      paramOffset += params.length;
     }
 
     let healthsClause = "";
     if (req.query.healths) {
       const healthIds = (req.query.healths as string).split(",").filter(id => id.trim());
-      const { clause } = SqlHelper.buildInClause(healthIds, paramOffset);
-      healthsClause = `AND p.health_id IN (${clause})`;
-      filterParams.push(...healthIds);
-      paramOffset += healthIds.length;
+      const { clause, params } = SqlHelper.buildOptionalInClause(healthIds, 'p.health_id', paramOffset);
+      healthsClause = clause;
+      filterParams.push(...params);
+      paramOffset += params.length;
     }
 
     let categoriesClause = "";
     if (req.query.categories) {
       const categoryIds = (req.query.categories as string).split(",").filter(id => id.trim());
-      const { clause } = SqlHelper.buildInClause(categoryIds, paramOffset);
-      categoriesClause = `AND p.category_id IN (${clause})`;
-      filterParams.push(...categoryIds);
-      paramOffset += categoryIds.length;
+      const { clause, params } = SqlHelper.buildOptionalInClause(categoryIds, 'p.category_id', paramOffset);
+      categoriesClause = clause;
+      filterParams.push(...params);
+      paramOffset += params.length;
     }
 
     let projectManagersClause = "";
     if (req.query.project_managers) {
       const managerIds = (req.query.project_managers as string).split(",").filter(id => id.trim());
-      const { clause } = SqlHelper.buildInClause(managerIds, paramOffset);
+      const { clause, params } = SqlHelper.buildInClause(managerIds, paramOffset);
       projectManagersClause = `AND p.id IN(SELECT project_id FROM project_members WHERE team_member_id IN(SELECT id FROM team_members WHERE user_id IN (${clause})) AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'))`;
-      filterParams.push(...managerIds);
-      paramOffset += managerIds.length;
+      filterParams.push(...params);
+      paramOffset += params.length;
     }
 
     let teamsClause = "";
     if (req.query.teams) {
       const teamIds = (req.query.teams as string).split(",").filter(id => id.trim());
-      const { clause } = SqlHelper.buildInClause(teamIds, paramOffset);
-      teamsClause = `AND p.team_id IN (${clause})`;
-      filterParams.push(...teamIds);
-      paramOffset += teamIds.length;
+      const { clause, params } = SqlHelper.buildOptionalInClause(teamIds, 'p.team_id', paramOffset);
+      teamsClause = clause;
+      filterParams.push(...params);
+      paramOffset += params.length;
     }
 
     let archivedClause = "";
