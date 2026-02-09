@@ -229,6 +229,47 @@ export const useScheduleSocketHandlers = () => {
     [dispatch]
   );
 
+  // Handler for task timer start
+  const handleTaskTimerStart = useCallback(
+    (data: any) => {
+      if (!data) return;
+
+      // Timer start doesn't affect logged time, but we might want to track active timers
+      dispatch(scheduleApi.util.invalidateTags(['Members']));
+    },
+    [dispatch]
+  );
+
+  // Handler for task timer stop - this creates a new time log entry
+  const handleTaskTimerStop = useCallback(
+    (data: any) => {
+      if (!data) return;
+
+      // Timer stop creates a new time log entry, so we need to invalidate:
+      // - Members cache (to update summary data with new logged time)
+      // - MemberProjects cache (to update task logged time in project view)
+      // - TaskTimeline cache (to update task list with new logged time)
+      // - Workload cache (logged time affects workload calculations)
+      dispatch(scheduleApi.util.invalidateTags(['Members', 'MemberProjects', 'TaskTimeline', 'Workload']));
+    },
+    [dispatch]
+  );
+
+  // Handler for task time log updates (create, update, delete)
+  const handleTaskTimeLogUpdated = useCallback(
+    (data: any) => {
+      if (!data) return;
+
+      // Time log changes affect logged time in schedule views
+      // - Members cache (to update summary data with new logged time)
+      // - MemberProjects cache (to update task logged time in project view)
+      // - TaskTimeline cache (to update task list with new logged time)
+      // - Workload cache (logged time affects workload calculations)
+      dispatch(scheduleApi.util.invalidateTags(['Members', 'MemberProjects', 'TaskTimeline', 'Workload']));
+    },
+    [dispatch]
+  );
+
   // Set up socket event listeners
   useEffect(() => {
     if (!socket || !connected) return;
@@ -250,6 +291,9 @@ export const useScheduleSocketHandlers = () => {
       [SocketEvents.QUICK_TASK.toString()]: handleNewTaskReceived,
       [SocketEvents.TASK_BILLABLE_CHANGE.toString()]: handleTaskBillableChange,
       [SocketEvents.TASK_RECURRING_CHANGE.toString()]: handleTaskRecurringChange,
+      [SocketEvents.TASK_TIMER_START.toString()]: handleTaskTimerStart,
+      [SocketEvents.TASK_TIMER_STOP.toString()]: handleTaskTimerStop,
+      [SocketEvents.TASK_TIME_LOG_UPDATED.toString()]: handleTaskTimeLogUpdated,
     };
 
     // Register all event handlers
@@ -285,6 +329,9 @@ export const useScheduleSocketHandlers = () => {
     handleNewTaskReceived,
     handleTaskBillableChange,
     handleTaskRecurringChange,
+    handleTaskTimerStart,
+    handleTaskTimerStop,
+    handleTaskTimeLogUpdated,
   ]);
 
   return {

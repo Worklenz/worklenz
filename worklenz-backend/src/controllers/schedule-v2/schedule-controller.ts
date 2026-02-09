@@ -301,6 +301,7 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                         WHERE team_members.team_id = (
                             SELECT active_team FROM users WHERE id = $1
                         )
+                        AND team_members.active = TRUE
                         ORDER BY users.email ASC, users.name ASC;`;
 
         const results = await db.query(getDataq, [req.user?.id]);
