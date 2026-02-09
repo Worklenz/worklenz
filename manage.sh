@@ -1108,6 +1108,11 @@ push_images() {
     # Push frontend images
     print_info "Pushing frontend images to Docker Hub..."
     if [ "$frontend_version" != "latest" ]; then
+        # Verify version-tagged image exists locally
+        if ! docker image inspect "${docker_username}/worklenz-frontend:${frontend_version}" >/dev/null 2>&1; then
+            print_error "Image ${docker_username}/worklenz-frontend:${frontend_version} not found locally. Please build it first."
+            return 1
+        fi
         print_info "Pushing ${docker_username}/worklenz-frontend:${frontend_version}..."
         docker push "${docker_username}/worklenz-frontend:${frontend_version}"
         if [ $? -ne 0 ]; then
@@ -1317,16 +1322,32 @@ install_worklenz() {
                     if [ "$backend_version" != "latest" ]; then
                         print_info "Pushing backend image (${backend_version})..."
                         docker push "${docker_username}/worklenz-backend:${backend_version}"
+                        if [ $? -ne 0 ]; then
+                            print_error "Failed to push backend image (${backend_version})"
+                            return 1
+                        fi
                     fi
                     print_info "Pushing backend image (latest)..."
                     docker push "${docker_username}/worklenz-backend:latest"
+                    if [ $? -ne 0 ]; then
+                        print_error "Failed to push backend image (latest)"
+                        return 1
+                    fi
 
                     if [ "$frontend_version" != "latest" ]; then
                         print_info "Pushing frontend image (${frontend_version})..."
                         docker push "${docker_username}/worklenz-frontend:${frontend_version}"
+                        if [ $? -ne 0 ]; then
+                            print_error "Failed to push frontend image (${frontend_version})"
+                            return 1
+                        fi
                     fi
                     print_info "Pushing frontend image (latest)..."
                     docker push "${docker_username}/worklenz-frontend:latest"
+                    if [ $? -ne 0 ]; then
+                        print_error "Failed to push frontend image (latest)"
+                        return 1
+                    fi
 
                     print_success "Images pushed to Docker Hub!"
                 fi
