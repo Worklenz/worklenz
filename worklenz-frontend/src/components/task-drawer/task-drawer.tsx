@@ -64,9 +64,11 @@ const TaskDrawer = () => {
 
   const resetTaskState = () => {
     dispatch(setShowTaskDrawer(false));
-    dispatch(setSelectedTaskId(null));
-    dispatch(setTaskFormViewModel({}));
-    dispatch(setTaskSubscribers([]));
+    setTimeout(() => {
+      dispatch(setSelectedTaskId(null));
+      dispatch(setTaskFormViewModel({}));
+      dispatch(setTaskSubscribers([]));
+    }, 300);
   };
 
   const handleBackToParent = () => {
@@ -85,7 +87,6 @@ const TaskDrawer = () => {
   const handleOnClose = (
     e?: React.MouseEvent<Element, MouseEvent> | React.KeyboardEvent<Element>
   ) => {
-    // Set flag to indicate we're manually closing the drawer
     isClosingManually.current = true;
     setActiveTab('info');
     clearTaskFromUrl();
@@ -96,10 +97,9 @@ const TaskDrawer = () => {
     if (isClickOutsideDrawer || !taskFormViewModel?.task?.is_sub_task) {
       resetTaskState();
     } else {
-      // For sub-tasks, navigate to parent instead of closing
       handleBackToParent();
     }
-    // Reset the flag after a short delay
+    
     setTimeout(() => {
       isClosingManually.current = false;
     }, 100);
