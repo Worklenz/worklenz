@@ -925,6 +925,8 @@ DECLARE
     _priority_id UUID;
     _start_date  TIMESTAMP;
     _end_date    TIMESTAMP;
+    _schedule_id UUID;
+    _description TEXT;
 BEGIN
 
     _parent_task = (_body ->> 'parent_task_id')::UUID;
@@ -939,8 +941,10 @@ BEGIN
     _priority_id = COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM task_priorities WHERE value = 1));
     _start_date = (_body ->> 'start_date')::TIMESTAMP;
     _end_date = (_body ->> 'end_date')::TIMESTAMP;
+    _schedule_id = (_body ->> 'schedule_id')::UUID;
+    _description = (_body ->> 'description')::TEXT;
 
-    INSERT INTO tasks (name, priority_id, project_id, reporter_id, status_id, parent_task_id, sort_order, roadmap_sort_order, start_date, end_date)
+    INSERT INTO tasks (name, priority_id, project_id, reporter_id, status_id, parent_task_id, sort_order, roadmap_sort_order, start_date, end_date, schedule_id, description)
     VALUES (TRIM((_body ->> 'name')::TEXT),
             _priority_id,
             (_body ->> 'project_id')::UUID,
@@ -951,7 +955,9 @@ BEGIN
             COALESCE((SELECT MAX(COALESCE(sort_order, roadmap_sort_order, 0)) + 1 FROM tasks WHERE project_id = (_body ->> 'project_id')::UUID), 0),
             COALESCE((SELECT MAX(COALESCE(roadmap_sort_order, sort_order, 0)) + 1 FROM tasks WHERE project_id = (_body ->> 'project_id')::UUID), 0),
             (_body ->> 'start_date')::TIMESTAMP,
-            (_body ->> 'end_date')::TIMESTAMP)
+            (_body ->> 'end_date')::TIMESTAMP,
+            _schedule_id,
+            _description)
     RETURNING id INTO _task_id;
 
     PERFORM handle_on_task_phase_change(_task_id, (_body ->> 'phase_id')::UUID);
@@ -6291,8 +6297,11 @@ BEGIN
         end_date,
         priority_id,
         project_id,
+        reporter_id,
+        status_id,
         assignees,
-        labels
+        labels,
+        duration_days
     )
     SELECT
         uuid_generate_v4(),
@@ -6303,6 +6312,8 @@ BEGIN
         t.end_date,
         t.priority_id,
         t.project_id,
+        t.reporter_id,
+        t.status_id,
         COALESCE(
             (SELECT JSONB_AGG(JSONB_BUILD_OBJECT('project_member_id', tas.project_member_id, 'team_member_id', tas.team_member_id))
              FROM tasks_assignees tas
@@ -6314,7 +6325,12 @@ BEGIN
              FROM task_labels tla
              WHERE tla.task_id = t.id),
             '[]'::JSONB
-        ) AS labels
+        ) AS labels,
+        CASE 
+            WHEN t.start_date IS NOT NULL AND t.end_date IS NOT NULL 
+            THEN (t.end_date::DATE - t.start_date::DATE)
+            ELSE NULL
+        END AS duration_days
     FROM tasks t
     WHERE t.id = p_task_id
     RETURNING id INTO v_new_id;

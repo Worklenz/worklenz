@@ -48,10 +48,11 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
   const repeatOptions: IRepeatOption[] = [
     { label: t('daily'), value: ITaskRecurring.Daily },
     { label: t('weekly'), value: ITaskRecurring.Weekly },
+    { label: t('monthly'), value: ITaskRecurring.Monthly },
+    { label: t('yearly'), value: ITaskRecurring.Yearly },
     { label: t('everyXDays'), value: ITaskRecurring.EveryXDays },
     { label: t('everyXWeeks'), value: ITaskRecurring.EveryXWeeks },
     { label: t('everyXMonths'), value: ITaskRecurring.EveryXMonths },
-    { label: t('monthly'), value: ITaskRecurring.Monthly },
   ];
 
   const daysOfWeek = [
@@ -143,12 +144,6 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
     setSelectedDays(checkedValues);
   };
 
-  const getSelectedDays = () => {
-    return daysOfWeek
-      .filter(day => day.checked) // Get only the checked days
-      .map(day => day.value); // Extract their numeric values
-  };
-
   const getUpdateBody = () => {
     if (!task.id || !task.schedule_id || !repeatOption.value) return;
 
@@ -159,18 +154,15 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
 
     switch (repeatOption.value) {
       case ITaskRecurring.Weekly:
-        body.days_of_week = getSelectedDays();
+        body.days_of_week = selectedDays;
         break;
 
       case ITaskRecurring.Monthly:
         if (monthlyOption === 'date') {
           body.date_of_month = selectedMonthlyDate;
-          setSelectedMonthlyDate(0);
-          setSelectedMonthlyDay(0);
         } else {
           body.week_of_month = selectedMonthlyWeek;
           body.day_of_month = selectedMonthlyDay;
-          setSelectedMonthlyDate(0);
         }
         break;
 
@@ -211,8 +203,8 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
 
   const updateDaysOfWeek = (data?: ITaskRecurringSchedule) => {
     const daysData = data?.days_of_week || scheduleData.days_of_week;
-    for (let i = 0; i < daysOfWeek.length; i++) {
-      daysOfWeek[i].checked = daysData?.includes(daysOfWeek[i].value) ?? false;
+    if (daysData && Array.isArray(daysData)) {
+      setSelectedDays(daysData);
     }
   };
 

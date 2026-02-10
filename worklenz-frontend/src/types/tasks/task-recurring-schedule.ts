@@ -2,6 +2,7 @@ export enum ITaskRecurring {
   Daily = 'daily',
   Weekly = 'weekly',
   Monthly = 'monthly',
+  Yearly = 'yearly',
   EveryXDays = 'every_x_days',
   EveryXWeeks = 'every_x_weeks',
   EveryXMonths = 'every_x_months',
@@ -18,6 +19,11 @@ export interface ITaskRecurringSchedule {
   interval_weeks?: number | null;
   schedule_type?: ITaskRecurring;
   week_of_month?: number | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  max_occurrences?: number | null;
+  occurrence_count?: number | null;
+  is_active?: boolean;
 }
 
 export interface IRepeatOption {
@@ -29,9 +35,4 @@ export interface ITaskRecurringScheduleData {
   task_id?: string;
   id?: string;
   schedule_type?: string;
-}
-
-export interface IRepeatOption {
-  value?: ITaskRecurring;
-  label?: string;
 }

@@ -2076,35 +2076,68 @@ ALTER TABLE task_dependencies
             ON DELETE CASCADE;
 
 CREATE TABLE IF NOT EXISTS task_recurring_schedules (
-    id              UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    schedule_type   SCHEDULE_TYPE            DEFAULT 'daily'::SCHEDULE_TYPE,
-    days_of_week    INTEGER[],
-    day_of_month    INTEGER,
-    week_of_month   INTEGER,
-    interval_days   INTEGER,
-    interval_weeks  INTEGER,
-    interval_months INTEGER,
-    start_date      DATE,
-    end_date        DATE,
-    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    id                          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    schedule_type               SCHEDULE_TYPE            DEFAULT 'daily'::SCHEDULE_TYPE,
+    days_of_week                INTEGER[],
+    day_of_month                INTEGER,
+    date_of_month               INTEGER,
+    week_of_month               INTEGER,
+    interval_days               INTEGER,
+    interval_weeks              INTEGER,
+    interval_months             INTEGER,
+    start_date                  DATE,
+    end_date                    DATE,
+    last_checked_at             TIMESTAMP WITH TIME ZONE,
+    last_created_task_end_date  DATE,
+    max_occurrences             INTEGER,
+    occurrence_count            INTEGER                  DEFAULT 0,
+    is_active                   BOOLEAN                  DEFAULT TRUE,
+    timezone_id                 UUID,
+    created_by                  UUID,
+    created_at                  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 ALTER TABLE task_recurring_schedules
     ADD CONSTRAINT task_recurring_schedules_pk
         PRIMARY KEY (id);
 
+ALTER TABLE task_recurring_schedules
+    ADD CONSTRAINT task_recurring_schedules_timezone_id_fk
+        FOREIGN KEY (timezone_id) REFERENCES timezones(id)
+        ON DELETE SET NULL;
+
+ALTER TABLE task_recurring_schedules
+    ADD CONSTRAINT task_recurring_schedules_created_by_fk
+        FOREIGN KEY (created_by) REFERENCES users(id)
+        ON DELETE SET NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_schedule_end_date_unique
+ON tasks (schedule_id, (end_date::DATE))
+WHERE schedule_id IS NOT NULL AND end_date IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_task_recurring_schedules_timezone_id
+ON task_recurring_schedules(timezone_id)
+WHERE timezone_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_task_recurring_schedules_active_schedules
+ON task_recurring_schedules(is_active, end_date, occurrence_count, max_occurrences)
+WHERE is_active IS NOT FALSE;
+
 CREATE TABLE IF NOT EXISTS task_recurring_templates (
-    id          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    task_id     UUID                                                NOT NULL,
-    schedule_id UUID                                                NOT NULL,
-    name        TEXT                                                NOT NULL,
-    description TEXT,
-    end_date    TIMESTAMP WITH TIME ZONE,
-    priority_id UUID                                                NOT NULL,
-    project_id  UUID                                                NOT NULL,
-    assignees   JSONB,
-    labels      JSONB,
-    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    id            UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    task_id       UUID                                                NOT NULL,
+    schedule_id   UUID                                                NOT NULL,
+    name          TEXT                                                NOT NULL,
+    description   TEXT,
+    end_date      TIMESTAMP WITH TIME ZONE,
+    priority_id   UUID                                                NOT NULL,
+    project_id    UUID                                                NOT NULL,
+    reporter_id   UUID,
+    status_id     UUID,
+    assignees     JSONB,
+    labels        JSONB,
+    duration_days INTEGER,
+    created_at    TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 ALTER TABLE task_recurring_templates
