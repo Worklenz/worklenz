@@ -2,51 +2,47 @@ import {
   Button,
   Card,
   Flex,
-  Form,
+  Input,
   Modal,
   Popconfirm,
-  Select,
   Space,
-  Segmented,
   Table,
   TableProps,
   Tooltip,
   Typography,
   Upload,
   UploadProps,
+  Progress,
   message,
-} from '@/shared/antd-imports';
-import { useEffect, useState } from 'react';
-import { colors } from '@/styles/colors';
-import {
-  AppstoreOutlined,
-  BarsOutlined,
   CloudDownloadOutlined,
   DeleteOutlined,
-  ExclamationCircleFilled,
-  ExclamationCircleOutlined,
-  PaperClipOutlined,
+  InboxOutlined,
+  ImportOutlined,
+  SearchOutlined,
+  CheckCircleTwoTone,
+  CloseCircleTwoTone,
+  ClockCircleOutlined,
 } from '@/shared/antd-imports';
-import { useTranslation } from 'react-i18next';
-import { durationDateFormat } from '@utils/durationDateFormat';
-import { DEFAULT_PAGE_SIZE, IconsMap } from '@/shared/constants';
-import {
-  IProjectAttachmentsViewModel,
-  ITaskAttachmentViewModel,
-  ITaskAttachment,
-} from '@/types/tasks/task-attachment-view-model';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { attachmentsApiService } from '@/api/attachments/attachments.api.service';
-import taskAttachmentsApiService from '@/api/tasks/task-attachments.api.service';
-import { tasksApiService } from '@/api/tasks/tasks.api.service';
-import logger from '@/utils/errorLogger';
-import { evt_file_uploaded, evt_project_files_visit } from '@/shared/worklenz-analytics-events';
-import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { getBase64 } from '@/utils/file-utils';
 import type { UploadFile } from 'antd/es/upload/interface';
-import { getFileType } from '@/types/mixpanel-events.types';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
-const MAX_FILE_SIZE_BYTES = 52_430_000; // ~50 MB
+import projectFilesApiService from '@/api/projects/project-files.api.service';
+import { DEFAULT_PAGE_SIZE, IconsMap } from '@/shared/constants';
+import { evt_file_uploaded, evt_project_files_visit } from '@/shared/worklenz-analytics-events';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { colors } from '@/styles/colors';
+import {
+  ProjectFile,
+  ProjectFilesSortField,
+  ProjectFilesSortOrder,
+} from '@/types/projects/project-files.types';
+import { getFileType } from '@/types/mixpanel-events.types';
+import { durationDateFormat } from '@utils/durationDateFormat';
+import logger from '@/utils/errorLogger';
+
+const MAX_FILE_SIZE_BYTES = 104_857_600; // 100 MB
 const BLOCKED_EXTENSIONS = [
   'exe',
   'bat',
@@ -66,123 +62,126 @@ const BLOCKED_EXTENSIONS = [
   'ps1',
   'dll',
   'msi',
-  'hta',
-  'cpl',
-  'msc',
-  'vb',
-  'wsf',
-  'wsh',
-  'scf',
-  'lnk',
-  'inf',
 ];
+
+const formatFileSize = (bytes?: number): string => {
+  if (bytes === undefined || bytes === null) return '--';
+
+  const thresh = 1024;
+  if (bytes < thresh) return `${bytes} B`;
+
+  const units = ['KB', 'MB', 'GB', 'TB'];
+  let u = -1;
+  let value = bytes;
+
+  do {
+    value /= thresh;
+    ++u;
+  } while (value >= thresh && u < units.length - 1);
+
+  const precision = value >= 10 ? 0 : 1;
+  return `${value.toFixed(precision)} ${units[u]}`;
+};
 
 const ProjectViewFiles = () => {
   const { t } = useTranslation('project-view-files');
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { projectId, refreshTimestamp } = useAppSelector(state => state.projectReducer);
-  const [attachments, setAttachments] = useState<IProjectAttachmentsViewModel>({});
-  const [loading, setLoading] = useState(false);
-  const [downloading, setDownloading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [isUploaderOpen, setIsUploaderOpen] = useState(false);
-  const [pendingFiles, setPendingFiles] = useState<UploadFile[]>([]);
-  const [taskOptions, setTaskOptions] = useState<{ label: string; value: string }[]>([]);
-  const [taskSearchLoading, setTaskSearchLoading] = useState(false);
-  const [form] = Form.useForm();
+  type PendingUploadFile = UploadFile & { errorMessage?: string };
 
+  const [files, setFiles] = useState<ProjectFile[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isUploaderOpen, setIsUploaderOpen] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<PendingUploadFile[]>([]);
+  const [searchValue, setSearchValue] = useState('');
+  const [storageUsage, setStorageUsage] = useState({ used: 0, fileCount: 0 });
+  const [sorter, setSorter] = useState<{
+    field: ProjectFilesSortField;
+    order: ProjectFilesSortOrder;
+  }>({
+    field: 'created_at',
+    order: 'desc',
+  });
   const [paginationConfig, setPaginationConfig] = useState({
     total: 0,
     pageIndex: 1,
-    showSizeChanger: true,
-    defaultPageSize: DEFAULT_PAGE_SIZE,
+    pageSize: DEFAULT_PAGE_SIZE,
   });
 
-  const fetchAttachments = async () => {
+  const formattedStorage = useMemo(
+    () =>
+      t('storageUsage', {
+        defaultValue: 'Total Storage: {{used}} ({{count}} files)',
+        used: formatFileSize(storageUsage.used),
+        count: storageUsage.fileCount,
+      }),
+    [storageUsage, t]
+  );
+
+  const getFileTypeIcon = (type?: string) => {
+    if (!type) return IconsMap['search'];
+    return IconsMap[type] || IconsMap['search'];
+  };
+
+  const fetchFiles = async () => {
     if (!projectId) return;
     try {
       setLoading(true);
-      const response = await attachmentsApiService.getProjectAttachments(
-        projectId,
-        paginationConfig.pageIndex,
-        paginationConfig.defaultPageSize
-      );
-      if (response.done) {
-        setAttachments(response.body || {});
-        setPaginationConfig(prev => ({ ...prev, total: response.body?.total || 0 }));
+      const response = await projectFilesApiService.list(projectId, {
+        page: paginationConfig.pageIndex,
+        size: paginationConfig.pageSize,
+        sort: sorter.field,
+        order: sorter.order,
+        search: searchValue.trim() || undefined,
+      });
+
+      if (response.done && response.body) {
+        setFiles(response.body.files || []);
+        setPaginationConfig(prev => ({ ...prev, total: response.body.total || 0 }));
+        setStorageUsage({
+          used: Number(response.body.storage_used) || 0,
+          fileCount: Number(response.body.file_count) || 0,
+        });
       }
     } catch (error) {
-      logger.error('Error fetching project attachments', error);
+      logger.error('Error fetching project files', error);
+      message.error(t('loadError', { defaultValue: 'Unable to load files. Please try again.' }));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchAttachments();
-  }, [refreshTimestamp]);
-
-  const getFileTypeIcon = (type: string | undefined) => {
-    if (!type) return IconsMap['search'];
-    return IconsMap[type as string] || IconsMap['search'];
-  };
-
-  const downloadAttachment = async (id: string | undefined, filename: string | undefined) => {
-    if (!id || !filename) return;
-    try {
-      setDownloading(true);
-
-      const response = await attachmentsApiService.downloadAttachment(id, filename);
-
-      if (response.done) {
-        const link = document.createElement('a');
-        link.href = response.body || '';
-        link.download = filename;
-        link.click();
-        link.remove();
-      }
-    } catch (error) {
-      logger.error('Error downloading attachment', error);
-    } finally {
-      setDownloading(false);
-    }
-  };
-
-  const deleteAttachment = async (id: string | undefined) => {
-    if (!id) return;
-    try {
-      const response = await attachmentsApiService.deleteAttachment(id);
-      if (response.done) {
-        fetchAttachments();
-      }
-    } catch (error) {
-      logger.error('Error deleting attachment', error);
-    }
-  };
-
-  const openAttachment = (url: string | undefined) => {
-    if (!url) return;
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.target = '_blank';
-    a.style.display = 'none';
-    a.click();
-  };
+    trackMixpanelEvent(evt_project_files_visit);
+  }, [trackMixpanelEvent]);
 
   useEffect(() => {
-    trackMixpanelEvent(evt_project_files_visit);
-    fetchAttachments();
-  }, [paginationConfig.pageIndex, projectId]);
+    void fetchFiles();
+  }, [
+    projectId,
+    paginationConfig.pageIndex,
+    paginationConfig.pageSize,
+    sorter.field,
+    sorter.order,
+    searchValue,
+    refreshTimestamp,
+  ]);
+
+  const isBlockedExtension = (fileName: string) => {
+    const ext = fileName.split('.').pop()?.toLowerCase() || '';
+    return BLOCKED_EXTENSIONS.includes(ext);
+  };
 
   const resetUploader = () => {
     setPendingFiles([]);
-    form.resetFields();
   };
 
   const openUploader = () => {
     setIsUploaderOpen(true);
-    void handleTaskSearch('');
+    resetUploader();
   };
 
   const closeUploader = () => {
@@ -190,34 +189,10 @@ const ProjectViewFiles = () => {
     resetUploader();
   };
 
-  const handleTaskSearch = async (searchQuery: string) => {
-    if (!projectId) return;
-    const term = searchQuery?.trim() ?? '';
-
-    try {
-      setTaskSearchLoading(true);
-      const res = await tasksApiService.searchTask(undefined, projectId, term);
-      if (res.done) {
-        setTaskOptions(res.body || []);
-      }
-    } catch (error) {
-      logger.error('Error searching tasks for attachments', error);
-      message.error(
-        t('taskSearchError', { defaultValue: 'Unable to search tasks. Please try again.' })
-      );
-    } finally {
-      setTaskSearchLoading(false);
-    }
-  };
-
-  const isBlockedExtension = (fileName: string) => {
-    const ext = fileName.split('.').pop()?.toLowerCase() || '';
-    return BLOCKED_EXTENSIONS.includes(ext);
-  };
-
   const beforeUpload: UploadProps['beforeUpload'] = file => {
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+
     if (isBlockedExtension(file.name)) {
-      const ext = file.name.split('.').pop()?.toLowerCase() || '';
       message.error(
         t('blockedFileType', {
           defaultValue: 'Files with .{{ext}} extensions are not allowed.',
@@ -230,7 +205,7 @@ const ProjectViewFiles = () => {
     if (file.size > MAX_FILE_SIZE_BYTES) {
       message.error(
         t('fileTooLarge', {
-          defaultValue: '{{file}} exceeds the 50 MB limit.',
+          defaultValue: '{{file}} exceeds the 100 MB limit.',
           file: file.name,
         })
       );
@@ -248,23 +223,30 @@ const ProjectViewFiles = () => {
           uid: file.uid,
           name: file.name,
           size: file.size,
-          status: 'done',
+          status: 'ready',
+          percent: 0,
           originFileObj: file,
         },
       ]);
     }
 
-    return false; // prevent auto-upload
+    return false;
   };
 
-  const handleRemoveFile = (file: UploadFile) => {
+  const handleRemoveFile = (file: PendingUploadFile) => {
     setPendingFiles(prev => prev.filter(item => item.uid !== file.uid));
     return true;
   };
 
+  const updatePendingFile = (
+    uid: string,
+    updater: (file: PendingUploadFile) => PendingUploadFile
+  ) => {
+    setPendingFiles(prev => prev.map(file => (file.uid === uid ? updater(file) : file)));
+  };
+
   const uploadAttachments = async () => {
     if (!projectId) return;
-    const values = await form.validateFields();
 
     if (!pendingFiles.length) {
       message.warning(t('noFilesSelected', { defaultValue: 'Add at least one file.' }));
@@ -273,123 +255,227 @@ const ProjectViewFiles = () => {
 
     try {
       setUploading(true);
-      await Promise.all(
-        pendingFiles.map(async file => {
-          const rawFile = file.originFileObj as File;
-          const base64 = await getBase64(rawFile);
-          const body: ITaskAttachment = {
-            file: base64 as string,
-            file_name: rawFile.name,
-            task_id: values.taskId,
-            project_id: projectId,
-            size: rawFile.size,
-          };
 
-          const response = await taskAttachmentsApiService.createTaskAttachment(body);
+      let hasError = false;
+
+      for (const file of pendingFiles) {
+        const rawFile = file.originFileObj as File;
+
+        updatePendingFile(file.uid, current => ({
+          ...current,
+          status: 'uploading',
+          percent: 0,
+          errorMessage: undefined,
+        }));
+
+        try {
+          const response = await projectFilesApiService.upload(projectId, rawFile, percent => {
+            updatePendingFile(file.uid, current => ({ ...current, status: 'uploading', percent }));
+          });
 
           if (!response.done) {
             throw new Error('Upload failed');
           }
 
           trackMixpanelEvent(evt_file_uploaded, { file_type: getFileType(rawFile.name) });
-        })
-      );
 
-      message.success(t('uploadSuccess', { defaultValue: 'Files uploaded successfully.' }));
-      closeUploader();
-      setPaginationConfig(prev => ({ ...prev, pageIndex: 1 }));
-      fetchAttachments();
+          updatePendingFile(file.uid, current => ({
+            ...current,
+            status: 'done',
+            percent: 100,
+          }));
+        } catch (error: unknown) {
+          hasError = true;
+          const serverMessage = (error as any)?.response?.data?.message as string | undefined;
+          const tooLarge = serverMessage?.toLowerCase().includes('max file size') || false;
+          const errorMessage = tooLarge
+            ? t('fileTooLargeLabel', { defaultValue: 'File too large' })
+            : serverMessage || t('uploadFailedShort', { defaultValue: 'Upload failed' });
+
+          updatePendingFile(file.uid, current => ({
+            ...current,
+            status: 'error',
+            percent: undefined,
+            errorMessage,
+          }));
+        }
+      }
+
+      if (!hasError) {
+        message.success(t('uploadSuccess', { defaultValue: 'Files uploaded successfully.' }));
+        closeUploader();
+        setPaginationConfig(prev => ({ ...prev, pageIndex: 1 }));
+        void fetchFiles();
+      } else {
+        message.error(t('uploadFailed', { defaultValue: 'Upload failed. Please try again.' }));
+      }
     } catch (error) {
-      logger.error('Error uploading attachments', error);
+      logger.error('Error uploading files', error);
       message.error(t('uploadFailed', { defaultValue: 'Upload failed. Please try again.' }));
     } finally {
       setUploading(false);
     }
   };
 
-  const columns: TableProps<ITaskAttachmentViewModel>['columns'] = [
+  const handleSearch = (value: string) => {
+    setPaginationConfig(prev => ({ ...prev, pageIndex: 1 }));
+    setSearchValue(value.trim());
+  };
+
+  const downloadFile = async (file: ProjectFile) => {
+    if (!projectId || !file.id) return;
+
+    try {
+      setDownloadingId(file.id);
+      const response = await projectFilesApiService.download(projectId, file.id, file.name);
+
+      if (response.done && response.body?.url) {
+        const link = document.createElement('a');
+        link.href = response.body.url;
+        link.download = file.name;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
+    } catch (error) {
+      logger.error('Error downloading file', error);
+      message.error(t('downloadFailed', { defaultValue: 'Unable to download file.' }));
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const deleteFile = async (fileId?: string) => {
+    if (!projectId || !fileId) return;
+
+    try {
+      setDeletingId(fileId);
+      const response = await projectFilesApiService.delete(projectId, fileId);
+
+      if (response.done) {
+        message.success(t('deleteSuccess', { defaultValue: 'File deleted successfully.' }));
+        // Reset to first page after deletion for better UX
+        setPaginationConfig(prev => ({ ...prev, pageIndex: 1 }));
+        void fetchFiles();
+      }
+    } catch (error) {
+      logger.error('Error deleting file', error);
+      message.error(t('deleteFailed', { defaultValue: 'Unable to delete file.' }));
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleTableChange: TableProps<ProjectFile>['onChange'] = (
+    pagination,
+    _filters,
+    sorterParam
+  ) => {
+    setPaginationConfig(prev => ({
+      ...prev,
+      pageIndex: pagination.current || 1,
+      pageSize: pagination.pageSize || DEFAULT_PAGE_SIZE,
+    }));
+
+    if (!Array.isArray(sorterParam)) {
+      const sortField = (sorterParam.field as ProjectFilesSortField) || 'created_at';
+      const sortOrder: ProjectFilesSortOrder =
+        sorterParam.order === 'ascend'
+          ? 'asc'
+          : sorterParam.order === 'descend'
+            ? 'desc'
+            : sorter.order;
+      setSorter({ field: sortField, order: sortOrder });
+    }
+  };
+
+  const columns: TableProps<ProjectFile>['columns'] = [
     {
-      key: 'fileName',
-      title: t('nameColumn'),
-      render: (record: ITaskAttachmentViewModel) => (
-        <Flex
-          gap={4}
-          align="center"
-          style={{ cursor: 'pointer' }}
-          onClick={() => openAttachment(record.url)}
-        >
+      key: 'name',
+      title: t('nameColumn', { defaultValue: 'Name' }),
+      dataIndex: 'name',
+      sorter: true,
+      render: (_: string, record) => (
+        <Flex align="center" gap={6} style={{ cursor: 'pointer' }}>
           <img
             src={`/file-types/${getFileTypeIcon(record.type)}`}
             alt={t('fileIconAlt')}
-            style={{ width: '100%', maxWidth: 25 }}
+            style={{ width: '100%', maxWidth: 24 }}
           />
-          <Typography.Text>
-            [{record.task_key}] {record.name}
-          </Typography.Text>
+          <Typography.Text>{record.name}</Typography.Text>
         </Flex>
       ),
     },
     {
-      key: 'attachedTask',
-      title: t('attachedTaskColumn'),
-      render: (record: ITaskAttachmentViewModel) => (
-        <Typography.Text style={{ cursor: 'pointer' }} onClick={() => openAttachment(record.url)}>
-          {record.task_name}
-        </Typography.Text>
-      ),
-    },
-    {
       key: 'size',
-      title: t('sizeColumn'),
-      render: (record: ITaskAttachmentViewModel) => (
-        <Typography.Text style={{ cursor: 'pointer' }} onClick={() => openAttachment(record.url)}>
-          {record.size}
+      title: t('sizeColumn', { defaultValue: 'Size' }),
+      dataIndex: 'size',
+      sorter: true,
+      width: 120,
+      render: (size: number) => <Typography.Text>{formatFileSize(size)}</Typography.Text>,
+    },
+    {
+      key: 'uploaded_by',
+      title: t('uploadedByColumn', { defaultValue: 'Uploaded By' }),
+      dataIndex: 'uploaded_by',
+      sorter: true,
+      width: 180,
+      render: (uploadedBy: string | undefined) => (
+        <Typography.Text>
+          {uploadedBy || t('unknownUploader', { defaultValue: 'Unknown' })}
         </Typography.Text>
       ),
     },
     {
-      key: 'uploadedBy',
-      title: t('uploadedByColumn'),
-      render: (record: ITaskAttachmentViewModel) => (
-        <Typography.Text style={{ cursor: 'pointer' }} onClick={() => openAttachment(record.url)}>
-          {record.uploader_name}
-        </Typography.Text>
+      key: 'created_at',
+      title: t('uploadedAtColumn', { defaultValue: 'Date' }),
+      dataIndex: 'created_at',
+      sorter: true,
+      width: 140,
+      render: (date: string) => (
+        <Tooltip title={date}>
+          <Typography.Text>{durationDateFormat(date)}</Typography.Text>
+        </Tooltip>
       ),
     },
     {
-      key: 'uploadedAt',
-      title: t('uploadedAtColumn'),
-      render: (record: ITaskAttachmentViewModel) => (
-        <Typography.Text style={{ cursor: 'pointer' }} onClick={() => openAttachment(record.url)}>
-          <Tooltip title={record.created_at}>{durationDateFormat(record.created_at)}</Tooltip>
-        </Typography.Text>
-      ),
-    },
-    {
-      key: 'actionBtns',
-      width: 80,
-      render: (record: ITaskAttachmentViewModel) => (
-        <Flex gap={8} style={{ padding: 0 }}>
-          <Popconfirm
-            title={t('deleteConfirmationTitle')}
-            icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
-            okText={t('deleteConfirmationOk')}
-            cancelText={t('deleteConfirmationCancel')}
-            onConfirm={() => deleteAttachment(record.id)}
-          >
-            <Tooltip title={t('deleteTooltip', { defaultValue: 'Delete' })}>
-              <Button shape="default" icon={<DeleteOutlined />} size="small" />
-            </Tooltip>
-          </Popconfirm>
-
+      key: 'actions',
+      title: t('actionsColumn', { defaultValue: 'Actions' }),
+      width: 120,
+      render: (_: unknown, record: ProjectFile) => (
+        <Flex gap={8} align="center" style={{ padding: 0 }}>
           <Tooltip title={t('downloadTooltip', { defaultValue: 'Download' })}>
             <Button
               size="small"
               icon={<CloudDownloadOutlined />}
-              onClick={() => downloadAttachment(record.id, record.name)}
-              loading={downloading}
+              loading={downloadingId === record.id}
+              onClick={event => {
+                event.stopPropagation();
+                void downloadFile(record);
+              }}
             />
           </Tooltip>
+
+          <Popconfirm
+            title={t('deleteConfirmationTitle', { defaultValue: 'Are you sure?' })}
+            okText={t('deleteConfirmationOk', { defaultValue: 'Yes' })}
+            cancelText={t('deleteConfirmationCancel', { defaultValue: 'Cancel' })}
+            icon={<DeleteOutlined style={{ color: colors.vibrantOrange }} />}
+            onConfirm={event => {
+              event?.stopPropagation();
+              void deleteFile(record.id);
+            }}
+          >
+            <Tooltip title={t('deleteTooltip', { defaultValue: 'Delete' })}>
+              <Button
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                loading={deletingId === record.id}
+                onClick={event => event.stopPropagation()}
+              />
+            </Tooltip>
+          </Popconfirm>
         </Flex>
       ),
     },
@@ -399,136 +485,175 @@ const ProjectViewFiles = () => {
     <Card
       style={{ width: '100%' }}
       title={
-        <Flex justify="space-between">
-          <Typography.Text
-            style={{
-              display: 'flex',
-              gap: 4,
-              alignItems: 'center',
-              color: colors.lightGray,
-              fontSize: 13,
-              lineHeight: 1,
-            }}
-          >
-            <ExclamationCircleOutlined />
-            {t('titleDescriptionText')}
-          </Typography.Text>
+        <Flex justify="space-between" align="center">
+          <Typography.Title level={4} style={{ margin: 0 }}>
+            {t('title', { defaultValue: 'Project Files' })}
+          </Typography.Title>
 
           <Space size={8}>
-            <Tooltip title={t('segmentedTooltip')}>
-              <Segmented
-                options={[
-                  { value: 'listView', icon: <BarsOutlined /> },
-                  { value: 'thumbnailView', icon: <AppstoreOutlined /> },
-                ]}
-                defaultValue={'listView'}
-                disabled={true}
-              />
-            </Tooltip>
-
+            <Input.Search
+              allowClear
+              placeholder={t('searchPlaceholder', { defaultValue: 'Search files...' })}
+              style={{ width: 280 }}
+              onSearch={handleSearch}
+              onChange={e => setSearchValue(e.target.value)}
+              value={searchValue}
+              enterButton={<SearchOutlined />}
+            />
             <Button
               type="primary"
-              icon={<PaperClipOutlined />}
+              icon={<ImportOutlined />}
               onClick={openUploader}
               disabled={!projectId}
             >
-              {t('uploadButton', { defaultValue: 'Upload files' })}
+              {t('uploadButton', { defaultValue: 'Upload' })}
             </Button>
           </Space>
         </Flex>
       }
     >
-      <Table<ITaskAttachmentViewModel>
-        className="custom-two-colors-row-table"
-        dataSource={attachments.data}
-        locale={{ emptyText: t('emptyText') }}
+      <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+        {formattedStorage}
+      </Typography.Text>
+
+      <Table<ProjectFile>
+        dataSource={files}
         columns={columns}
-        rowKey={record => record.id || ''}
+        rowKey={record => record.id}
         loading={loading}
+        locale={{ emptyText: t('emptyText', { defaultValue: 'There are no files yet.' }) }}
         pagination={{
-          showSizeChanger: paginationConfig.showSizeChanger,
-          defaultPageSize: paginationConfig.defaultPageSize,
           total: paginationConfig.total,
           current: paginationConfig.pageIndex,
+          pageSize: paginationConfig.pageSize,
+          showSizeChanger: true,
           onChange: (page, pageSize) =>
-            setPaginationConfig(prev => ({
-              ...prev,
-              pageIndex: page,
-              defaultPageSize: pageSize,
-            })),
+            setPaginationConfig(prev => ({ ...prev, pageIndex: page, pageSize })),
         }}
+        onChange={handleTableChange}
+        onRow={record => ({
+          onClick: () => void downloadFile(record),
+          style: { cursor: 'pointer' },
+        })}
       />
 
       <Modal
         open={isUploaderOpen}
         onCancel={closeUploader}
-        title={t('uploaderTitle', { defaultValue: 'Attach files to a task' })}
+        title={t('uploaderTitle', { defaultValue: 'Upload Files' })}
         okText={t('uploadActionCta', { defaultValue: 'Upload' })}
         cancelText={t('cancelActionCta', { defaultValue: 'Cancel' })}
         onOk={uploadAttachments}
         confirmLoading={uploading}
         destroyOnClose
       >
-        <Form layout="vertical" form={form} initialValues={{ taskId: undefined }}>
-          <Form.Item
-            name="taskId"
-            label={t('taskSelectLabel', { defaultValue: 'Attach to task' })}
-            rules={[
-              {
-                required: true,
-                message: t('taskRequired', { defaultValue: 'Please select a task.' }),
-              },
-            ]}
-          >
-            <Select
-              showSearch
-              placeholder={t('taskSelectPlaceholder', {
-                defaultValue: 'Search by task name or key',
-              })}
-              onSearch={handleTaskSearch}
-              onFocus={() => handleTaskSearch('')}
-              options={taskOptions}
-              loading={taskSearchLoading}
-              filterOption={false}
-              notFoundContent={
-                taskSearchLoading
-                  ? t('searchingTasks', { defaultValue: 'Searching tasks...' })
-                  : t('taskSearchEmpty', { defaultValue: 'No matching tasks' })
-              }
-            />
-          </Form.Item>
+        <Typography.Paragraph style={{ marginBottom: 16 }}>
+          {t('uploadDescription', {
+            defaultValue: 'Drag & Drop files or click to browse. Max 100 MB per file.',
+          })}
+        </Typography.Paragraph>
 
-          <Form.Item
-            label={t('filePickerLabel', { defaultValue: 'Files' })}
-            required
-            extra={t('uploadHintLimit', {
-              defaultValue: 'Up to 50 MB per file. Executable file types are blocked for security.',
+        <Upload.Dragger
+          multiple
+          beforeUpload={beforeUpload}
+          onRemove={handleRemoveFile}
+          fileList={pendingFiles}
+          disabled={uploading}
+          showUploadList
+          itemRender={(originNode, file, _fileList, actions) => {
+            const typedFile = file as PendingUploadFile;
+
+            const renderStatus = () => {
+              if (typedFile.status === 'uploading') {
+                return (
+                  <Flex align="center" gap={6}>
+                    <ClockCircleOutlined style={{ color: '#8c8c8c' }} />
+                    <Typography.Text type="secondary">
+                      {typedFile.percent
+                        ? `${typedFile.percent}%`
+                        : t('uploadingLabel', { defaultValue: 'Uploading' })}
+                    </Typography.Text>
+                    <Progress
+                      percent={typedFile.percent ?? 0}
+                      size="small"
+                      style={{ width: 90, marginBottom: 0 }}
+                      showInfo={false}
+                    />
+                  </Flex>
+                );
+              }
+
+              if (typedFile.status === 'done') {
+                return (
+                  <Flex align="center" gap={6}>
+                    <CheckCircleTwoTone twoToneColor="#52c41a" />
+                    <Typography.Text>
+                      {t('uploadedLabel', { defaultValue: 'Uploaded' })}
+                    </Typography.Text>
+                  </Flex>
+                );
+              }
+
+              if (typedFile.status === 'error') {
+                return (
+                  <Flex align="center" gap={6}>
+                    <CloseCircleTwoTone twoToneColor={colors.vibrantOrange} />
+                    <Typography.Text type="danger">
+                      {typedFile.errorMessage ||
+                        t('uploadFailedShort', { defaultValue: 'Upload failed' })}
+                    </Typography.Text>
+                  </Flex>
+                );
+              }
+
+              return null;
+            };
+
+            return (
+              <Flex
+                justify="space-between"
+                align="center"
+                style={{ width: '100%', padding: '4px 8px' }}
+              >
+                <Space size={8} align="center">
+                  <Typography.Text>{typedFile.name}</Typography.Text>
+                  <Typography.Text type="secondary">
+                    {formatFileSize(typedFile.size)}
+                  </Typography.Text>
+                </Space>
+
+                <Space size={12} align="center">
+                  {renderStatus()}
+                  {!uploading && (
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      onClick={event => {
+                        event.stopPropagation();
+                        actions.remove?.(file);
+                      }}
+                    />
+                  )}
+                </Space>
+              </Flex>
+            );
+          }}
+        >
+          <p className="ant-upload-drag-icon">
+            <InboxOutlined />
+          </p>
+          <p className="ant-upload-text">
+            {t('filePickerHint', {
+              defaultValue: 'Drag & Drop files or click to browse',
             })}
-          >
-            <Upload.Dragger
-              multiple
-              beforeUpload={beforeUpload}
-              onRemove={handleRemoveFile}
-              fileList={pendingFiles}
-              disabled={uploading}
-            >
-              <p className="ant-upload-drag-icon">
-                <PaperClipOutlined />
-              </p>
-              <p className="ant-upload-text">
-                {t('filePickerHint', {
-                  defaultValue: 'Drag and drop files here or click to browse.',
-                })}
-              </p>
-              <p className="ant-upload-hint">
-                {t('uploadHintLimit', {
-                  defaultValue:
-                    'Up to 50 MB per file. Executable file types are blocked for security.',
-                })}
-              </p>
-            </Upload.Dragger>
-          </Form.Item>
-        </Form>
+          </p>
+          <p className="ant-upload-hint">
+            {t('uploadHintLimit', {
+              defaultValue: 'PDF, images, documents, archives. Max 100 MB per file.',
+            })}
+          </p>
+        </Upload.Dragger>
       </Modal>
     </Card>
   );
