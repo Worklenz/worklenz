@@ -4,23 +4,20 @@ import {
   Empty,
   Flex,
   Form,
-  Mentions,
   Popconfirm,
   Space,
   Spin,
   theme,
   Tooltip,
   Input,
-  Dropdown
+  Dropdown,
+  message
 } from '@/shared/antd-imports';
 import {
   SendOutlined,
-  UserOutlined,
-  MessageOutlined,
   EditOutlined,
   MoreOutlined,
-  DeleteOutlined,
-  SmileOutlined
+  DeleteOutlined
 } from '@ant-design/icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -41,18 +38,16 @@ import {
 } from '@/features/projects/singleProject/updates/updatesSlice';
 import { getAllProjectMembers } from '@/features/projects/singleProject/members/projectMembersSlice';
 import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
-import EmojiPicker from '@/components/project-updates/EmojiPicker';
-import { getUserSession } from '@/utils/session-helper';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import { colors } from '@/styles/colors';
+import CustomMentionsInput from './CustomMentionsInput';
 import './project-view-updates.css';
 
 dayjs.extend(relativeTime);
 
 const { useToken } = theme;
 
-// Helper function from task-comments.tsx
 const formatDateForSeparator = (date: string) => {
   const today = dayjs();
   const commentDate = dayjs(date);
@@ -70,6 +65,12 @@ const isDifferentDay = (date1: string, date2: string) => {
   return !dayjs(date1).isSame(dayjs(date2), 'day');
 };
 
+const escapeHtml = (text: string) => {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+};
+
 const ProjectViewUpdates = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const dispatch = useAppDispatch();
@@ -79,7 +80,6 @@ const ProjectViewUpdates = () => {
   const { token } = useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
-  // Ref for auto-scrolling
   const listRef = useRef<HTMLDivElement>(null);
 
   const { updatesList, loading } = useAppSelector(state => state.updatesReducer);
@@ -89,8 +89,11 @@ const ProjectViewUpdates = () => {
   const [submitting, setSubmitting] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [commentValue, setCommentValue] = useState('');
+  const [selectedMembers, setSelectedMembers] = useState<
+    { id: string; team_member_id: string; name: string; user_id?: string }[]
+  >([]);
 
-  // Initial fetch
   useEffect(() => {
     if (projectId) {
       dispatch(getProjectComments(projectId));
@@ -98,7 +101,6 @@ const ProjectViewUpdates = () => {
     }
   }, [projectId, dispatch]);
 
-  // Socket listener for real-time updates
   useEffect(() => {
     if (!socket || !projectId) return;
 
@@ -140,38 +142,93 @@ const ProjectViewUpdates = () => {
     };
   }, [socket, projectId, dispatch]);
 
-  // Scroll to bottom on new updates
   useEffect(() => {
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
     }
   }, [updatesList]);
 
-  const onFinish = async (values: any) => {
-    if (!projectId || !values.comment?.trim()) return;
+  const mentionsOptions = useMemo(() => 
+    projectMembers
+      .filter(member => member.name && (member.user_id || member.id))
+      .map(member => ({
+        value: member.name,
+        label: (
+          <Space>
+            <SingleAvatar 
+              avatarUrl={member.avatar_url} 
+              name={member.name} 
+              size={24}
+            />
+            <span>{member.name}</span>
+            {member.role && (
+              <span style={{ color: '#999', fontSize: '12px' }}>
+                ({member.role})
+              </span>
+            )}
+          </Space>
+        ),
+        key: member.user_id || member.id,
+      })), 
+    [projectMembers]
+  );
+
+  const memberSelectHandler = useCallback(
+    (member: any) => {
+      if (!member?.value || !member?.key) return;
+
+      const selectedMember = projectMembers.find(m => 
+        (m.user_id || m.id) === member.key
+      );
+      
+      if (!selectedMember) return;
+
+      const memberId = selectedMember.user_id || selectedMember.id;
+
+      const mentionObject = { 
+        id: memberId, // Backend expects this as 'informed_by' field
+        team_member_id: memberId, 
+        name: selectedMember.name,
+        user_id: selectedMember.user_id
+      };
+
+      setSelectedMembers(prev => {
+        if (prev.some(m => m.id === memberId)) {
+          return prev;
+        }
+        return [...prev, mentionObject];
+      });
+    },
+    [projectMembers]
+  );
+
+  const handleCommentChange = useCallback((value: string) => {
+    setCommentValue(value);
+  }, []);
+
+  const onFinish = async () => {
+    if (!projectId || !commentValue?.trim()) {
+      message.error(t('emptyCommentError', { defaultValue: 'Please enter a comment' }));
+      return;
+    }
 
     setSubmitting(true);
 
-    const content = values.comment;
-
-    // Detect mentions from text
-    const mentionedMembers = projectMembers
-      .filter(member => member.name && content.includes(`@${member.name}`) && (member.user_id || member.id))
-      .map(m => ({
-        id: m.user_id || m.id,
-        name: m.name,
-        team_member_id: m.team_member_id
-      }));
-
     try {
+      // Remove duplicates based on id
+      const uniqueMentions = Array.from(
+        new Map(selectedMembers.map(member => [member.id, member])).values()
+      );
+
       const result = await dispatch(createProjectComment({
         project_id: projectId,
-        content: content,
-        mentions: mentionedMembers
+        content: commentValue,
+        mentions: uniqueMentions,
       })).unwrap();
-      form.resetFields();
       
-      // Scroll to bottom after posting
+      setCommentValue('');
+      setSelectedMembers([]);
+      
       setTimeout(() => {
         if (listRef.current) {
           listRef.current.scrollTop = listRef.current.scrollHeight;
@@ -179,15 +236,16 @@ const ProjectViewUpdates = () => {
       }, 100);
     } catch (error) {
       console.error('Failed to send comment', error);
+      message.error(t('commentError', { defaultValue: 'Failed to send comment' }));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && e.shiftKey) {
       e.preventDefault();
-      form.submit();
+      onFinish();
     }
   };
 
@@ -195,8 +253,10 @@ const ProjectViewUpdates = () => {
     if (!commentId) return;
     try {
       await dispatch(deleteProjectComment(commentId)).unwrap();
+      message.success(t('deleteSuccess', { defaultValue: 'Comment deleted successfully' }));
     } catch (error) {
       console.error('Failed to delete comment', error);
+      message.error(t('deleteError', { defaultValue: 'Failed to delete comment' }));
     }
   };
 
@@ -223,14 +283,15 @@ const ProjectViewUpdates = () => {
       await projectCommentsApiService.editComment(commentId, editContent);
       setEditingCommentId(null);
       setEditContent('');
+      message.success(t('editSuccess', { defaultValue: 'Comment updated successfully' }));
     } catch (error) {
       console.error('Failed to edit comment', error);
+      message.error(t('editError', { defaultValue: 'Failed to edit comment' }));
     }
   };
 
   const startEdit = (commentId: string, content: string) => {
     setEditingCommentId(commentId);
-    // Strip HTML tags for editing
     const textContent = content.replace(/<[^>]*>/g, '');
     setEditContent(textContent);
   };
@@ -254,7 +315,7 @@ const ProjectViewUpdates = () => {
             const userName = mentions[index].user_name || mentions[index].name;
             processedContent = processedContent.replace(
               placeholder,
-              `<span class='mentions'>@${userName}</span>`
+              `<span class='mentions'>@${escapeHtml(userName)}</span>`
             );
           }
         }
@@ -279,7 +340,7 @@ const ProjectViewUpdates = () => {
     <div className="comment-time-separator">
       <span
         style={{
-          backgroundColor: token.colorBgContainer, // Match container background
+          backgroundColor: token.colorBgContainer,
           color: token.colorTextSecondary
         }}
       >
@@ -288,19 +349,6 @@ const ProjectViewUpdates = () => {
     </div>
   );
 
-  const mentionsOptions = useMemo(() => projectMembers
-    .filter(member => member.user_id || member.id)
-    .map(member => ({
-      value: member.name || '',
-      label: (
-        <Space>
-          <SingleAvatar avatarUrl={member.avatar_url} name={member.name} />
-          <span>{member.name}</span>
-        </Space>
-      ),
-    })), [projectMembers]);
-
-  // Styles from task-comments.tsx logic
   const authorStyle = {
     color: themeWiseColor(colors.lightGray, colors.deepLightGray, themeMode),
     fontSize: '12px',
@@ -312,20 +360,12 @@ const ProjectViewUpdates = () => {
     marginLeft: '8px'
   };
 
-  const actionStyle = {
-    color: themeWiseColor(colors.lightGray, colors.deepLightGray, themeMode),
-    cursor: 'pointer',
-    fontSize: '11px'
-  };
-
-  // Helper function to check if messages should be grouped
   const shouldGroupWithPrevious = (currentIndex: number) => {
     if (currentIndex === 0) return false;
     
     const current = updatesList[currentIndex];
     const previous = updatesList[currentIndex - 1];
     
-    // Group if same user and within 2 minutes
     const isSameUser = current.user_id === previous.user_id;
     const timeDiff = dayjs(current.created_at).diff(dayjs(previous.created_at), 'minute');
     const isWithinTimeWindow = timeDiff < 2;
@@ -359,7 +399,6 @@ const ProjectViewUpdates = () => {
               const isUserComment = item.user_id === user.id;
               const isGrouped = shouldGroupWithPrevious(index);
 
-              // Render time separator logic
               const showTimeSeparator = index === 0 ||
                 (index > 0 && isDifferentDay(item.created_at || '', updatesList[index - 1].created_at || ''));
 
@@ -484,7 +523,6 @@ const ProjectViewUpdates = () => {
                             </>
                           )}
                         
-                          {/* Reactions */}
                           {item.reactions && item.reactions.length > 0 && (
                             <div style={{ marginTop: 6, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                               {item.reactions.map((reaction: any) => {
@@ -532,29 +570,40 @@ const ProjectViewUpdates = () => {
         }}
       >
         <div style={{ maxWidth: '900px', margin: '0 auto', width: '100%' }}>
-          <Form form={form} onFinish={onFinish}>
-            <Form.Item name="comment" style={{ marginBottom: 8 }}>
-              <Mentions
-                rows={2}
-                placeholder={`${t('inputPlaceholder')} (Shift+Enter to send)`}
-                options={mentionsOptions}
-                autoSize={{ minRows: 1, maxRows: 4 }}
-                style={{ borderRadius: '8px' }}
-                onKeyDown={handleKeyDown}
-              />
-            </Form.Item>
-            <Flex justify="flex-end">
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={submitting}
-                icon={<SendOutlined />}
-                size="small"
-              >
-                {t('addButton')}
-              </Button>
-            </Flex>
-          </Form>
+          <div style={{ marginBottom: 8 }}>
+            <CustomMentionsInput
+              placeholder={t('inputPlaceholder')}
+              options={mentionsOptions}
+              value={commentValue}
+              onSelect={memberSelectHandler}
+              onChange={handleCommentChange}
+              onKeyDown={handleKeyDown}
+              prefix="@"
+              filterOption={(input: string, option: any) => {
+                if (!input) return true;
+                const optionLabel = option?.label?.props?.children?.[1]?.props?.children || option?.value || '';
+                return optionLabel.toLowerCase().includes(input.toLowerCase());
+              }}
+              style={{
+                minHeight: 60,
+                maxHeight: 120,
+                borderRadius: '8px',
+              }}
+              themeMode={themeMode}
+            />
+          </div>
+          <Flex justify="flex-end">
+            <Button
+              type="primary"
+              onClick={onFinish}
+              loading={submitting}
+              icon={<SendOutlined />}
+              size="small"
+              disabled={!commentValue.trim()}
+            >
+              {t('addButton')}
+            </Button>
+          </Flex>
         </div>
       </div>
     </Card>

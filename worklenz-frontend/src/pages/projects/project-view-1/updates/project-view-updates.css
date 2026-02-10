@@ -18,6 +18,115 @@
   border: 1px solid #2a4a6d;
 }
 
+/* ========== MENTION INPUT HIGHLIGHTING STYLES ========== */
+
+/* Mention dropdown menu item styling */
+.ant-mentions-dropdown-menu-item {
+  padding: 8px 12px;
+  transition: background-color 0.2s;
+}
+
+.ant-mentions-dropdown-menu-item:hover {
+  background-color: #f5f5f5;
+}
+
+.theme-dark .ant-mentions-dropdown-menu-item:hover {
+  background-color: #2a2a2a;
+}
+
+/* Selected item in dropdown */
+.ant-mentions-dropdown-menu-item-selected {
+  background-color: #e6f4ff;
+}
+
+.theme-dark .ant-mentions-dropdown-menu-item-selected {
+  background-color: #1e3a5f;
+}
+
+/* Active/focused item */
+.ant-mentions-dropdown-menu-item-active {
+  background-color: #e6f4ff;
+}
+
+.theme-dark .ant-mentions-dropdown-menu-item-active {
+  background-color: #1e3a5f;
+}
+
+/* The measure div is what shows the highlighted text overlay */
+.ant-mentions-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow: hidden;
+  color: transparent;
+  z-index: 1;
+}
+
+/* Highlighted mention text in the measure overlay - Light theme */
+.theme-light .ant-mentions-measure mark,
+.theme-light .ant-mentions .ant-mentions-measure mark {
+  color: #1890ff !important;
+  background-color: #e6f4ff !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  font-weight: 500 !important;
+  border: 1px solid #91caff !important;
+  margin: 0 2px !important;
+}
+
+/* Highlighted mention text in the measure overlay - Dark theme */
+.theme-dark .ant-mentions-measure mark,
+.theme-dark .ant-mentions .ant-mentions-measure mark {
+  color: #40a9ff !important;
+  background-color: #1e3a5f !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  font-weight: 500 !important;
+  border: 1px solid #2a4a6d !important;
+  margin: 0 2px !important;
+}
+
+/* Make sure the textarea is positioned correctly */
+.ant-mentions > textarea {
+  position: relative;
+  z-index: 2;
+  background: transparent !important;
+}
+
+/* Style for @ symbol prefix in mentions */
+.theme-light .ant-mentions-prefix {
+  color: #1890ff;
+  font-weight: 600;
+}
+
+.theme-dark .ant-mentions-prefix {
+  color: #40a9ff;
+  font-weight: 600;
+}
+
+/* Mention input focus state */
+.theme-light .ant-mentions:focus-within {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.theme-dark .ant-mentions:focus-within {
+  border-color: #40a9ff;
+  box-shadow: 0 0 0 2px rgba(64, 169, 255, 0.1);
+}
+
+/* Ensure mentions container has correct positioning */
+.ant-mentions {
+  position: relative;
+}
+
+/* ========== END MENTION INPUT HIGHLIGHTING ========== */
+
 /* Conversation-like styles */
 .project-view-updates {
   padding: 0;
