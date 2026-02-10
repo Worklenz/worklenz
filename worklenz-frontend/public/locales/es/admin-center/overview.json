@@ -85,7 +85,7 @@
   "logoTooLarge": "Las dimensiones del logo son muy grandes. Tamaño máximo recomendado: 800×240px",
   "logoVerticalWarning": "Los logos verticales pueden aparecer pequeños en la barra de navegación. Se recomienda orientación horizontal",
   "logoFileSizeWarning": "El tamaño del archivo es grande. Recomendado: menos de 500KB para un rendimiento óptimo",
-  "logoFormatRecommendation": "Se recomienda formato PNG con fondo transparente para mejores resultados",
+  "logoFormatRecommendation": "Formato PNG recomendado: 400×120px, fondo transparente, menos de 500KB",
   "logoDeleteConfirm": "¿Está seguro de que desea eliminar el logo de la organización? Esta acción no se puede deshacer.",
   "logoUsage": "Se usa en la barra de navegación y se sincroniza con el portal del cliente",
   "logoUpgradeToUpload": "Actualice a un plan de pago para subir un logo personalizado.",
