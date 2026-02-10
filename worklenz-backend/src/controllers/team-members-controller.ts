@@ -1247,22 +1247,23 @@ export default class TeamMembersController extends WorklenzControllerBase {
         }
       }
 
-      // Check seat availability for active subscriptions
+      // Check seat availability for active subscriptions (Business plans override LTD limits)
       if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
         const currentCount = parseInt(subscriptionData.current_count) || 0;
-        if (currentCount >= subscriptionData.quantity) {
+        const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
+        if (currentCount >= effectiveUserLimit) {
           const requiredSeats = 1; // At least 1 more seat needed
           const obj = {
             seats_enough: false,
             required_count: requiredSeats,
-            current_seat_amount: subscriptionData.quantity
+            current_seat_amount: effectiveUserLimit
           };
           return res.status(200).send(new ServerResponse(false, obj, "Insufficient seats available. Please upgrade your subscription before generating invitation links."));
         }
       }
 
-      // Check LTD user limits
-      if (subscriptionData.is_ltd && subscriptionData.current_count) {
+      // Check LTD user limits - only applies if not on Business plan
+      if (subscriptionData.is_ltd && subscriptionData.current_count && subscriptionData.subscription_type !== 'ANNUAL_BUSINESS') {
         const currentCount = parseInt(subscriptionData.current_count) || 0;
         const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
         if (currentCount >= ltdLimit) {
