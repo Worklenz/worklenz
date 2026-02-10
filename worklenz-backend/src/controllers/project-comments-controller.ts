@@ -140,7 +140,8 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
                     AND notification_settings.user_id = $1),
                   (SELECT color_code FROM projects WHERE id = $2) AS project_color
               FROM users
-              WHERE id = $1;
+              WHERE id = $1
+                AND users.is_deleted IS NOT TRUE;
     `;
     const result = await db.query(q, [informedBy, projectId, team_id]);
     const [data] = result.rows;
@@ -166,6 +167,7 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
                 INNER JOIN team_members tm ON project_members.team_member_id = tm.id
                 LEFT JOIN users u ON tm.user_id = u.id
             WHERE project_id = $1 AND tm.user_id IS NOT NULL
+              AND u.is_deleted IS NOT TRUE
             ORDER BY name
     `;
     const result = await db.query(q, [projectId]);
