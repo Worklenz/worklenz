@@ -166,7 +166,9 @@ DECLARE
     _auto_assign_task_creator BOOLEAN;
     _reporter_id              UUID;
     _project_id               UUID;
+    _team_id                  UUID;
     _team_member_id           UUID;
+    _is_admin                 BOOLEAN;
 BEGIN
     _parent_task = (_body ->> 'parent_task_id')::UUID;
     _reporter_id = (_body ->> 'reporter_id')::UUID;
@@ -200,24 +202,35 @@ BEGIN
     PERFORM handle_on_task_phase_change(_task_id, (_body ->> 'phase_id')::UUID);
 
     -- Check if auto-assign is enabled for this project
-    SELECT auto_assign_task_creator INTO _auto_assign_task_creator
+    SELECT auto_assign_task_creator, team_id INTO _auto_assign_task_creator, _team_id
     FROM projects
     WHERE id = _project_id;
 
     -- If auto-assign is enabled, assign the task creator
     IF _auto_assign_task_creator IS TRUE THEN
-        -- Get the team_member_id for the reporter
-        SELECT team_member_id INTO _team_member_id
-        FROM project_members
-        WHERE project_id = _project_id
-          AND team_member_id IN (
-              SELECT id FROM team_members WHERE user_id = _reporter_id
-          )
-        LIMIT 1;
+        -- Get the team_member_id and check if their role is admin or owner
+        SELECT tm.id, (r.admin_role OR r.owner) INTO _team_member_id, _is_admin
+        FROM team_members tm
+        INNER JOIN roles r ON tm.role_id = r.id
+        WHERE tm.user_id = _reporter_id
+          AND tm.team_id = _team_id;
 
-        -- Assign the creator if they are a project member
         IF _team_member_id IS NOT NULL THEN
-            PERFORM create_task_assignee(_team_member_id, _project_id, _task_id, _reporter_id);
+            -- Check if user is already a project member
+            IF NOT EXISTS (
+                SELECT 1 FROM project_members 
+                WHERE project_id = _project_id 
+                  AND team_member_id = _team_member_id
+            ) THEN
+                -- Only auto-add and assign if user is admin or owner
+                -- create_task_assignee will automatically add them to project_members
+                IF _is_admin IS TRUE THEN
+                    PERFORM create_task_assignee(_team_member_id, _project_id, _task_id, _reporter_id);
+                END IF;
+            ELSE
+                -- User is already a project member, assign them to the task
+                PERFORM create_task_assignee(_team_member_id, _project_id, _task_id, _reporter_id);
+            END IF;
         END IF;
     END IF;
 
@@ -239,11 +252,14 @@ DECLARE
     _auto_assign_task_creator BOOLEAN;
     _reporter_id              UUID;
     _project_id               UUID;
+    _team_id                  UUID;
     _team_member_id           UUID;
+    _is_admin                 BOOLEAN;
     _already_assigned         BOOLEAN := FALSE;
 BEGIN
     _reporter_id = (_body ->> 'reporter_id')::UUID;
     _project_id = (_body ->> 'project_id')::UUID;
+    _team_id = (_body ->> 'team_id')::UUID;
 
     INSERT INTO tasks (name, done, priority_id, project_id, reporter_id, start_date, end_date, total_minutes,
                        description, parent_task_id, status_id, sort_order)
@@ -281,7 +297,7 @@ BEGIN
 
     FOR _label IN SELECT * FROM JSON_ARRAY_ELEMENTS((_body ->> 'labels')::JSON)
         LOOP
-            PERFORM assign_or_create_label((_body ->> 'team_id')::UUID, _task_id, (_label ->> 'name')::TEXT,
+            PERFORM assign_or_create_label(_team_id, _task_id, (_label ->> 'name')::TEXT,
                                            (_label ->> 'color')::TEXT);
         END LOOP;
 
@@ -293,22 +309,33 @@ BEGIN
 
         -- If auto-assign is enabled, assign the task creator
         IF _auto_assign_task_creator IS TRUE THEN
-            -- Get the team_member_id for the reporter
-            SELECT team_member_id INTO _team_member_id
-            FROM project_members
-            WHERE project_id = _project_id
-              AND team_member_id IN (
-                  SELECT id FROM team_members WHERE user_id = _reporter_id
-              )
-            LIMIT 1;
+            -- Get the team_member_id and check if their role is admin or owner
+            SELECT tm.id, (r.admin_role OR r.owner) INTO _team_member_id, _is_admin
+            FROM team_members tm
+            INNER JOIN roles r ON tm.role_id = r.id
+            WHERE tm.user_id = _reporter_id
+              AND tm.team_id = _team_id;
 
-            -- Assign the creator if they are a project member
             IF _team_member_id IS NOT NULL THEN
-                PERFORM create_task_assignee(_team_member_id, _project_id, _task_id, _reporter_id);
+                -- Check if user is already a project member
+                IF NOT EXISTS (
+                    SELECT 1 FROM project_members 
+                    WHERE project_id = _project_id 
+                      AND team_member_id = _team_member_id
+                ) THEN
+                    -- Only auto-add and assign if user is admin or owner
+                    -- create_task_assignee will automatically add them to project_members
+                    IF _is_admin IS TRUE THEN
+                        PERFORM create_task_assignee(_team_member_id, _project_id, _task_id, _reporter_id);
+                    END IF;
+                ELSE
+                    -- User is already a project member, assign them to the task
+                    PERFORM create_task_assignee(_team_member_id, _project_id, _task_id, _reporter_id);
+                END IF;
             END IF;
         END IF;
     END IF;
 
-    RETURN get_task_form_view_model(_reporter_id, (_body ->> 'team_id')::UUID, _task_id, _project_id);
+    RETURN get_task_form_view_model(_reporter_id, _team_id, _task_id, _project_id);
 END;
 $$;
