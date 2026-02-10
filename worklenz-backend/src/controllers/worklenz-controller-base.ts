@@ -1,11 +1,11 @@
 import { forEach } from "lodash";
-import {DEFAULT_PAGE_SIZE} from "../shared/constants";
-import {toTsQuery} from "../shared/utils";
+import { DEFAULT_PAGE_SIZE } from "../shared/constants";
+import { toTsQuery } from "../shared/utils";
 
 export default abstract class WorklenzControllerBase {
 
   protected static get paginatedDatasetDefaultStruct() {
-    return {total: 0, data: []};
+    return { total: 0, data: [] };
   }
 
   protected static isValidHost(hostname: string) {
@@ -21,13 +21,13 @@ export default abstract class WorklenzControllerBase {
       const remaining = list.slice(max);
       const names = remaining.map(i => i.name);
       data = data.slice(0, max);
-      data.push({name: `+${remaining.length}`, end: true, names: names as string[]});
+      data.push({ name: `+${remaining.length}`, end: true, names: names as string[] });
     }
 
     return data;
   }
 
-  protected static toPaginationOptions(queryParams: any, searchField: string | string[], isMemberFilter = false) {
+  protected static toPaginationOptions(queryParams: any, searchField: string | string[], isMemberFilter = false, paramOffset?: number) {
     // Pagination
     const size = +(queryParams.size || DEFAULT_PAGE_SIZE);
     const index = +(queryParams.index || 1);
@@ -37,11 +37,30 @@ export default abstract class WorklenzControllerBase {
     const search = (queryParams.search as string || "").trim();
 
     let searchQuery = "";
+    const searchParams: any[] = [];
 
-    if (search) {
-      // Properly escape single quotes to prevent SQL syntax errors
+    if (search && paramOffset !== undefined) {
+      // Use parameterized queries when paramOffset is provided
       const escapedSearch = search.replace(/'/g, "''");
-      
+
+      let s = "";
+      if (typeof searchField === "string") {
+        s = ` ${searchField} ILIKE $${paramOffset}`;
+        searchParams.push(`%${escapedSearch}%`);
+      } else if (Array.isArray(searchField)) {
+        s = searchField.map((field, idx) => {
+          searchParams.push(`%${escapedSearch}%`);
+          return ` ${field} ILIKE $${paramOffset + idx}`;
+        }).join(" OR ");
+      }
+
+      if (s) {
+        searchQuery = isMemberFilter ? ` (${s})  AND ` : ` AND (${s}) `;
+      }
+    } else if (search) {
+      // Fallback to inline search for backward compatibility
+      const escapedSearch = search.replace(/'/g, "''");
+
       let s = "";
       if (typeof searchField === "string") {
         s = ` ${searchField} ILIKE '%${escapedSearch}%'`;
@@ -65,7 +84,7 @@ export default abstract class WorklenzControllerBase {
 
     const sortOrder = queryParams.order === "descend" ? "desc" : "asc";
 
-    return {searchQuery, sortField, sortOrder, size, offset, paging};
+    return { searchQuery, searchParams, sortField, sortOrder, size, offset, paging };
   }
 
 }
