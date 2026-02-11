@@ -566,7 +566,10 @@ const ProjectViewUpdates = () => {
         className="updates-input-container"
         style={{
           borderTop: `1px solid ${token.colorBorderSecondary}`,
-          backgroundColor: token.colorBgContainer
+          backgroundColor: token.colorBgContainer,
+          position: 'relative',
+          zIndex: 10,
+          overflow: 'visible'
         }}
       >
         <div style={{ maxWidth: '900px', margin: '0 auto', width: '100%' }}>

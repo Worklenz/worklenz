@@ -246,7 +246,7 @@ const CustomMentionsInput = ({
     selection.addRange(newRange);
   };
 
-  // Handle input changes
+  // Handle input changes - MODIFIED TO FIX BUG
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
     if (isComposingRef.current || isUpdatingRef.current) return;
     
@@ -277,19 +277,25 @@ const CustomMentionsInput = ({
       const charBeforeAt = beforeAt.slice(-1);
       if (!charBeforeAt || /\s/.test(charBeforeAt) || charBeforeAt === '\u00A0' || /[.,;:!?()]/.test(charBeforeAt)) {
         const textAfterAt = afterAt.slice(1); // Remove @
-        const spaceIndex = textAfterAt.indexOf(' ');
+        const spaceOrSpecialCharIndex = textAfterAt.search(/[\s,;:!?()]/);
         
-        if (spaceIndex === -1) {
-          // No space yet, filter options
-          const searchText = textAfterAt.toLowerCase();
+        // If there's no space/special char yet, or we're still before it, show dropdown
+        if (spaceOrSpecialCharIndex === -1 || currentCursorPos <= lastAtIndex + 1 + spaceOrSpecialCharIndex) {
+          const searchText = spaceOrSpecialCharIndex === -1 
+            ? textAfterAt 
+            : textAfterAt.slice(0, spaceOrSpecialCharIndex);
+          
           const filtered = options.filter((opt: any) => {
             if (filterOption) {
-              return filterOption(searchText, opt);
+              return filterOption(searchText.toLowerCase(), opt);
             }
             // Default filter: check if option value includes search text
             const optionValue = opt.value?.toLowerCase() || '';
-            return optionValue.includes(searchText);
+            // Show all options when search is empty (just typed @)
+            if (searchText === '') return true;
+            return optionValue.includes(searchText.toLowerCase());
           });
+          
           setFilteredOptions(filtered);
           setIsDropdownOpen(filtered.length > 0);
           setSelectedIndex(0);
@@ -434,14 +440,13 @@ const CustomMentionsInput = ({
     }
   };
 
-  // Handle option selection
+  // Handle option selection - MODIFIED TO FIX BUG
   const selectOption = (option: any) => {
     const plainText = value || '';
     const lastAtIndex = plainText.lastIndexOf('@', cursorPosition);
     
     if (lastAtIndex !== -1) {
       const beforeAt = plainText.slice(0, lastAtIndex);
-      const textAfterAt = plainText.slice(lastAtIndex + 1, cursorPosition);
       const afterCursor = plainText.slice(cursorPosition);
       
       // Ensure there's a space after the mention
@@ -449,6 +454,10 @@ const CustomMentionsInput = ({
       
       onChange(newText);
       if (onSelect) onSelect(option);
+      
+      // Calculate new cursor position
+      const newCursorPos = (beforeAt + '@' + option.value + ' ').length;
+      setCursorPosition(newCursorPos);
     }
     
     setIsDropdownOpen(false);
@@ -457,8 +466,8 @@ const CustomMentionsInput = ({
     setTimeout(() => {
       if (editableRef.current) {
         editableRef.current.focus();
-        // Ensure cursor is placed after the mention with a space
-        moveCursorAfterMentionWithSpace();
+        // Restore cursor position
+        restoreCursorPosition(cursorPosition);
       }
     }, 10);
   };
@@ -662,15 +671,15 @@ const CustomMentionsInput = ({
             border: `1px solid ${themeWiseColor('#d9d9d9', '#434343', themeMode)}`,
             color: themeWiseColor('rgba(0, 0, 0, 0.85)', 'rgba(255, 255, 255, 0.85)', themeMode),
             position: 'absolute',
-            top: '100%',
+            bottom: '100%',
             left: 0,
             right: 0,
-            marginTop: 4,
-            zIndex: 1050,
+            marginBottom: 4,
+            zIndex: 9999,
             maxHeight: 200,
             overflowY: 'auto',
             borderRadius: 8,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            boxShadow: '0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05)',
           }}
         >
           {filteredOptions.map((option, index) => (
@@ -683,6 +692,9 @@ const CustomMentionsInput = ({
                 padding: '8px 12px',
                 cursor: 'pointer',
                 transition: 'background-color 0.2s',
+                minHeight: '40px',
+                display: 'flex',
+                alignItems: 'center',
               }}
             >
               {option.label}
