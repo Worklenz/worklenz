@@ -1624,6 +1624,7 @@ BEGIN
                     (SELECT get_daily_digest_overdue(u.id)) AS overdue,
                     (SELECT get_daily_digest_recently_completed(u.id)) AS recently_completed
              FROM users u
+             WHERE u.is_deleted IS NOT TRUE
              --
          ) rec;
     RETURN _result;
@@ -2125,7 +2126,8 @@ BEGIN
                         WHERE id = (SELECT user_id
                                     FROM project_subscribers
                                     WHERE project_id = projects.id
-                                      AND user_id = users.id)) rec) AS subscribers
+                                      AND user_id = users.id)
+                          AND users.is_deleted IS NOT TRUE) rec) AS subscribers
 
           FROM projects
           WHERE EXISTS(SELECT 1 FROM project_subscribers WHERE project_id = projects.id)
@@ -3681,7 +3683,8 @@ BEGIN
                                WHERE team_id = teams.id
                                  AND user_id = users.id) IS TRUE) r)
           FROM users
-          WHERE EXISTS(SELECT 1 FROM task_updates WHERE user_id = users.id)) rec;
+          WHERE EXISTS(SELECT 1 FROM task_updates WHERE user_id = users.id)
+            AND users.is_deleted IS NOT TRUE) rec;
 
     UPDATE task_updates SET is_sent = TRUE;
 

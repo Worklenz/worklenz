@@ -286,7 +286,8 @@ export class PlanTrialService {
         WHERE pt.is_active = TRUE
           AND pt.trial_end_date > NOW()
           AND pt.trial_end_date <= NOW() + INTERVAL '${hoursBeforeExpiry} hours'
-          AND NOT pt.converted_to_paid`,
+          AND NOT pt.converted_to_paid
+          AND u.is_deleted IS NOT TRUE`,
         []
       );
 
