@@ -82,7 +82,8 @@ export default class TaskCommentsController extends WorklenzControllerBase {
              (SELECT color_code FROM projects WHERE id = $3) AS project_color
       FROM users
       WHERE id != $1
-        AND id IN (SELECT user_id FROM team_members WHERE id = $2);
+        AND id IN (SELECT user_id FROM team_members WHERE id = $2)
+        AND users.is_deleted IS NOT TRUE;
     `;
     const result = await db.query(q, [senderUserId, teamMemberId, projectId]);
     const [data] = result.rows;

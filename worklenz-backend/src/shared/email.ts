@@ -140,6 +140,10 @@ async function filterBouncedEmails(emails: string[]): Promise<void> {
   await removeMails("SELECT email FROM bounced_emails ORDER BY email;", emails);
 }
 
+async function filterDeletedAccountEmails(emails: string[]): Promise<void> {
+  await removeMails("SELECT email FROM users WHERE is_deleted IS TRUE ORDER BY email;", emails);
+}
+
 export async function sendEmail(email: IEmail): Promise<string | null> {
   const result = await sendEmailEnhanced(email);
   return result.success ? result.messageId || null : null;
@@ -161,6 +165,7 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
     if (options.to.length) {
       await filterBouncedEmails(options.to);
       await filterSpamEmails(options.to);
+      await filterDeletedAccountEmails(options.to);
     }
 
     // Double-check that we still have valid emails after filtering
