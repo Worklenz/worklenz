@@ -210,16 +210,12 @@ async function onRecurringTaskJobTick() {
 
         // "Create next 1 only" model:
         // Only create if there are no future tasks already created for this schedule
+        // Use day-level comparison since last_task_end_date is a DATE field (no time component)
         const hasFutureTask = template.last_task_end_date
-          ? moment(template.last_task_end_date).tz(tz).isAfter(now)
+          ? moment(template.last_task_end_date).tz(tz).isSameOrAfter(now, 'day')
           : false;
 
         if (hasFutureTask) {
-          continue;
-        }
-
-        // Only create tasks that are due (today or earlier in the schedule's timezone)
-        if (nextEndDate.isAfter(now.clone().add(1, "day").startOf("day"))) {
           continue;
         }
 
