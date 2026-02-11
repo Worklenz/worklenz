@@ -211,9 +211,10 @@ class ClientPortalAPI {
     return response.data;
   }
 
-  async resetPassword(resetData: { 
-    token: string; 
-    password: string; 
+  async resetPassword(resetData: {
+    user: string;     // base64 encoded user ID
+    hash: string;     // token hash
+    password: string;
   }): Promise<ApiResponse<{ message: string }>> {
     const response = await this.api.post('/auth/reset-password', resetData);
     return response.data;

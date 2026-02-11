@@ -24,6 +24,7 @@
   "lastUpdatedColumn": "最后更新",
   "lastupdatedColumn": "最后更新",
   "reporterColumn": "报告人",
+  "moveColumnHandle": "移动列",
   "dueTimeColumn": "截止时间",
   "todoSelectorText": "待办",
   "doingSelectorText": "进行中",
@@ -49,7 +50,7 @@
   "manageLabelsPath": "设置 → 标签",
   "pendingInvitation": "待处理邀请",
   "contextMenu": {
-    "duplicateTask":"重复任务",
+    "duplicateTask": "重复任务",
     "assignToMe": "分配给我",
     "copyLink": "复制任务链接",
     "linkCopied": "链接已复制到剪贴板",

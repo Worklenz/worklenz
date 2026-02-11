@@ -147,6 +147,7 @@ const TeamsTable: React.FC<TeamsTableProps> = ({
         teamId={selectedTeam}
         isSettingDrawerOpen={isSettingDrawerOpen}
         setIsSettingDrawerOpen={setIsSettingDrawerOpen}
+        reloadTeams={reloadTeams} // Pass the reloadTeams prop here
       />
     </>
   );

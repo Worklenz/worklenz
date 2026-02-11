@@ -19,6 +19,7 @@ interface AuthState {
     clientName?: string;
     companyName?: string;
     isOrganizationInvite?: boolean;
+    isExistingWorklenzUser?: boolean;
   } | null;
   tokenExpiry: string | null;
   organizations: ClientOrganization[];

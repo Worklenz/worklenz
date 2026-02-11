@@ -26,10 +26,13 @@ import {
   KeyboardSensor,
   TouchSensor,
 } from '@dnd-kit/core';
+import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
 import {
   SortableContext,
   verticalListSortingStrategy,
   sortableKeyboardCoordinates,
+  horizontalListSortingStrategy,
+  arrayMove,
 } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
 import { DragOverEvent } from '@dnd-kit/core';
@@ -186,6 +189,45 @@ const CustomColumnHeader: React.FC<{
         }}
       />
     </Flex>
+  );
+};
+
+const SortableColumnHeader: React.FC<{
+  column: any;
+  isDropTarget: boolean;
+  className: string;
+  style: React.CSSProperties;
+  children: (params: {
+    attributes: any;
+    listeners: any;
+    setActivatorNodeRef: (el: HTMLElement | null) => void;
+    isDragging: boolean;
+  }) => React.ReactNode;
+}> = ({ column, isDropTarget, className, style, children }) => {
+  const {
+    setNodeRef,
+    setActivatorNodeRef,
+    attributes,
+    listeners,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: column.id || column.key || '' });
+
+  const dragStyle = {
+    transform: transform ? CSS.Transform.toString(transform) : undefined,
+    transition,
+  };
+
+  return (
+    <th
+      ref={setNodeRef}
+      className={`${className} ${isDropTarget ? 'column-drop-target' : ''}`}
+      style={{ ...style, ...dragStyle }}
+      data-column-id={column.id || column.key || ''}
+    >
+      {children({ attributes, listeners, setActivatorNodeRef, isDragging })}
+    </th>
   );
 };
 
@@ -1323,9 +1365,92 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
     })
   );
 
+  const columnSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 6,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const columnList = useAppSelector(state => state.taskReducer.columns);
-  const visibleColumns = columnList.filter(column => column.pinned);
+  const columnStorageKey = React.useMemo(
+    () => `worklenz.taskList.columnOrder.${project?.id || 'default'}.${tableId}`,
+    [project?.id, tableId]
+  );
+  const pinnedColumns = useMemo(() => columnList.filter(column => column.pinned), [columnList]);
+
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+    try {
+      const stored = columnStorageKey ? localStorage.getItem(columnStorageKey) : null;
+      return stored ? (JSON.parse(stored) as string[]) : [];
+    } catch (error) {
+      console.error('Failed to load column order from localStorage:', error);
+      return [];
+    }
+  });
+
+  const [activeColumnId, setActiveColumnId] = useState<string | null>(null);
+  const [overColumnId, setOverColumnId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!columnStorageKey) return;
+    try {
+      const stored = localStorage.getItem(columnStorageKey);
+      setColumnOrder(stored ? (JSON.parse(stored) as string[]) : []);
+    } catch (error) {
+      console.error('Failed to reload column order from localStorage:', error);
+      setColumnOrder([]);
+    }
+  }, [columnStorageKey]);
+
+  useEffect(() => {
+    const reorderableIds = pinnedColumns
+      .filter(column => column.key !== 'KEY')
+      .map(column => column.id || column.key || '');
+
+    setColumnOrder(prev => {
+      const filtered = prev.filter(id => reorderableIds.includes(id));
+      const missing = reorderableIds.filter(id => !filtered.includes(id));
+      const next = [...filtered, ...missing];
+      const hasChanged =
+        next.length !== prev.length || next.some((id, index) => id !== prev[index]);
+      return hasChanged ? next : prev;
+    });
+  }, [pinnedColumns]);
+
+  useEffect(() => {
+    if (columnStorageKey && columnOrder.length) {
+      try {
+        localStorage.setItem(columnStorageKey, JSON.stringify(columnOrder));
+      } catch (error) {
+        console.error('Failed to save column order to localStorage:', error);
+      }
+    }
+  }, [columnOrder, columnStorageKey]);
+
+  const visibleColumns = useMemo(() => {
+    const keyColumn = pinnedColumns.filter(column => column.key === 'KEY');
+    const reorderableColumns = pinnedColumns.filter(column => column.key !== 'KEY');
+
+    const orderedIds = columnOrder.length
+      ? columnOrder
+      : reorderableColumns.map(column => column.id || column.key || '');
+
+    const orderedReorderable = orderedIds
+      .map(id => reorderableColumns.find(column => (column.id || column.key || '') === id))
+      .filter(Boolean) as typeof reorderableColumns;
+
+    const missingColumns = reorderableColumns.filter(
+      column => !orderedIds.includes(column.id || column.key || '')
+    );
+
+    return [...keyColumn, ...orderedReorderable, ...missingColumns];
+  }, [pinnedColumns, columnOrder]);
   const taskGroups = useAppSelector(state => state.taskReducer.taskGroups);
   const { project } = useAppSelector(state => state.projectReducer);
   const { selectedTaskIdsList, selectedTasks } = useAppSelector(state => state.bulkActionReducer);
@@ -1485,6 +1610,36 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
     setContextMenuPosition({ x: e.clientX, y: e.clientY });
     setContextMenuVisible(true);
   };
+
+  const handleColumnDragStart = useCallback((event: any) => {
+    setActiveColumnId(event?.active?.id || null);
+  }, []);
+
+  const handleColumnDragOver = useCallback((event: any) => {
+    setOverColumnId(event?.over?.id || null);
+  }, []);
+
+  const handleColumnDragEnd = useCallback(
+    (event: any) => {
+      setActiveColumnId(null);
+      setOverColumnId(null);
+
+      const { active, over } = event || {};
+      if (!active || !over || active.id === over.id) return;
+
+      const reorderableIds = visibleColumns
+        .filter(column => column.key !== 'KEY')
+        .map(column => column.id || column.key || '');
+
+      const oldIndex = reorderableIds.indexOf(String(active.id));
+      const newIndex = reorderableIds.indexOf(String(over.id));
+
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      setColumnOrder(arrayMove(reorderableIds, oldIndex, newIndex));
+    },
+    [visibleColumns]
+  );
 
   useEffect(() => {
     const tableContainer = document.querySelector<HTMLElement>(`.tasklist-container-${tableId}`);
@@ -1834,64 +1989,137 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                       <Checkbox checked={isSelectAll} onChange={toggleSelectAll} />
                     </Flex>
                   </th>
-                  {visibleColumns.map(column => {
-                    const isKeyColumn = column.key === 'KEY';
-                    const stickyStyle = isKeyColumn
-                      ? {
-                          position: 'sticky' as const,
-                          left: '56px',
-                          zIndex: 40,
-                          fontWeight: 500,
-                          backgroundColor: isDarkMode ? '#1d1d1d' : '#fafafa',
-                          width: '100px',
-                          minWidth: '100px',
-                        }
-                      : { fontWeight: 500 };
+                  <DndContext
+                    sensors={columnSensors}
+                    modifiers={[restrictToHorizontalAxis]}
+                    onDragStart={handleColumnDragStart}
+                    onDragOver={handleColumnDragOver}
+                    onDragEnd={handleColumnDragEnd}
+                  >
+                    <SortableContext
+                      items={visibleColumns
+                        .filter(column => column.key !== 'KEY')
+                        .map(column => column.id || column.key || '')}
+                      strategy={horizontalListSortingStrategy}
+                    >
+                      {visibleColumns.map(column => {
+                        const columnId = column.id || column.key || '';
+                        const isKeyColumn = column.key === 'KEY';
+                        const isDropTarget =
+                          overColumnId === columnId && activeColumnId !== columnId;
+                        const stickyStyle = isKeyColumn
+                          ? {
+                              position: 'sticky' as const,
+                              left: '56px',
+                              zIndex: 40,
+                              fontWeight: 500,
+                              backgroundColor: isDarkMode ? '#1d1d1d' : '#fafafa',
+                              width: '100px',
+                              minWidth: '100px',
+                            }
+                          : { fontWeight: 500 };
 
-                    return (
-                      <th
-                        key={column.key}
-                        className={`${getColumnStyles(column.key, true)} ${isKeyColumn ? 'sticky-key-column' : ''}`}
-                        style={stickyStyle}
-                      >
-                        <Flex align="center" gap={4}>
-                          {column.key === 'PHASE' && (
-                            <Flex className="w-full min-w-[120px]">
-                              {project?.phase_label}
-                              <ConfigPhaseButton />
+                        const headerClassName = `${getColumnStyles(column.key, true)} ${
+                          isKeyColumn ? 'sticky-key-column' : ''
+                        }`;
+
+                        const renderHeaderContent = (dragParams?: {
+                          attributes: any;
+                          listeners: any;
+                          setActivatorNodeRef: (el: HTMLElement | null) => void;
+                          isDragging: boolean;
+                        }) => (
+                          <>
+                            <Flex align="center" gap={4} className="column-header-cell">
+                              {column.key === 'PHASE' && (
+                                <Flex className="w-full min-w-[120px]">
+                                  {project?.phase_label}
+                                  <ConfigPhaseButton />
+                                </Flex>
+                              )}
+                              {column.key !== 'PHASE' &&
+                                (column.custom_column && column.pinned ? (
+                                  <CustomColumnHeader
+                                    column={column}
+                                    onSettingsClick={() =>
+                                      handleCustomColumnSettings(column.id || '')
+                                    }
+                                  />
+                                ) : (
+                                  t(`${column.key?.replace('_', '').toLowerCase()}Column`)
+                                ))}
+
+                              {/* Column drag handle */}
+                              {!isKeyColumn && (
+                                <span
+                                  className="column-drag-handle"
+                                  ref={dragParams?.setActivatorNodeRef}
+                                  {...dragParams?.attributes}
+                                  {...dragParams?.listeners}
+                                  aria-label={t('moveColumnHandle')}
+                                  title={t('moveColumnHandle')}
+                                >
+                                  <HolderOutlined style={{ fontSize: 12 }} />
+                                </span>
+                              )}
                             </Flex>
-                          )}
-                          {column.key !== 'PHASE' &&
-                            (column.custom_column && column.pinned ? (
-                              <CustomColumnHeader
-                                column={column}
-                                onSettingsClick={() => handleCustomColumnSettings(column.id || '')}
-                              />
-                            ) : (
-                              t(`${column.key?.replace('_', '').toLowerCase()}Column`)
-                            ))}
-                        </Flex>
 
-                        {/* Column Resize Handle */}
-                        <div
-                          className="column-resize-handle"
-                          role="separator"
-                          aria-orientation="vertical"
-                          aria-label={`Resize ${column.name || column.key} column`}
-                          tabIndex={0}
-                          onMouseDown={e => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            const th = e.currentTarget.closest('th');
-                            const measured = th ? th.getBoundingClientRect().width : undefined;
-                            // Delegate resize start to shared hook with the live measured width to avoid any jump/lag
-                            handleResizeStart(e, column.key || '', measured);
-                          }}
-                          title={`Drag to resize ${column.name || column.key}`}
-                        />
-                      </th>
-                    );
-                  })}
+                            {/* Column Resize Handle */}
+                            <div
+                              className="column-resize-handle"
+                              role="separator"
+                              aria-orientation="vertical"
+                              aria-label={`Resize ${column.name || column.key} column`}
+                              tabIndex={0}
+                              onMouseDown={e => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const th = e.currentTarget.closest('th');
+                                const measured = th ? th.getBoundingClientRect().width : undefined;
+                                // Delegate resize start to shared hook with the live measured width to avoid any jump/lag
+                                handleResizeStart(e, column.key || '', measured);
+                              }}
+                              title={`Drag to resize ${column.name || column.key}`}
+                            />
+                          </>
+                        );
+
+                        if (isKeyColumn) {
+                          return (
+                            <th
+                              key={columnId}
+                              className={headerClassName}
+                              style={stickyStyle}
+                              data-column-id={columnId}
+                            >
+                              {renderHeaderContent()}
+                            </th>
+                          );
+                        }
+
+                        return (
+                          <SortableColumnHeader
+                            key={columnId}
+                            column={column}
+                            isDropTarget={isDropTarget}
+                            className={headerClassName}
+                            style={stickyStyle}
+                          >
+                            {({ attributes, listeners, setActivatorNodeRef, isDragging }) => (
+                              <div style={isDragging ? { opacity: 0.85 } : undefined}>
+                                {renderHeaderContent({
+                                  attributes,
+                                  listeners,
+                                  setActivatorNodeRef,
+                                  isDragging,
+                                })}
+                              </div>
+                            )}
+                          </SortableColumnHeader>
+                        );
+                      })}
+                    </SortableContext>
+                  </DndContext>
                   <th className={getColumnStyles('customColumn', true)}>
                     <Flex justify="flex-start" style={{ marginInlineStart: 22 }}>
                       <AddCustomColumnButton />

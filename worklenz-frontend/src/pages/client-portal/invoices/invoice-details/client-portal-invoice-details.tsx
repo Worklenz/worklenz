@@ -34,12 +34,16 @@ import {
   DownloadOutlined,
   ExclamationCircleOutlined,
   EyeOutlined,
+  EditOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import { FileImageOutlined, FilePdfOutlined } from '@ant-design/icons';
 import { 
   useGetInvoiceDetailsQuery,
   useSendInvoiceMutation,
   useMarkInvoiceAsPaidMutation,
+  useUpdateInvoiceMutation,
+  useDeleteInvoiceMutation,
 } from '@/api/client-portal/client-portal-api';
 import InvoicePreviewModal from './invoice-preview-modal';
 
@@ -55,6 +59,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
   // Mutations
   const [sendInvoice, { isLoading: isSending }] = useSendInvoiceMutation();
   const [markAsPaid, { isLoading: isMarkingPaid }] = useMarkInvoiceAsPaidMutation();
+  const [deleteInvoice, { isLoading: isDeleting }] = useDeleteInvoiceMutation();
 
   const {
     data,
@@ -146,6 +151,31 @@ const ClientPortalInvoiceDetails: React.FC = () => {
     });
   };
 
+  // Handle edit invoice
+  const handleEditInvoice = () => {
+    navigate(`/worklenz/client-portal/invoices/${invoiceId}/edit`);
+  };
+
+  // Handle delete invoice
+  const handleDeleteInvoice = async () => {
+    Modal.confirm({
+      title: t('deleteInvoice.title', { defaultValue: 'Delete Invoice' }),
+      content: t('deleteInvoice.confirm', { defaultValue: 'Are you sure you want to delete this invoice? This action cannot be undone.' }),
+      okText: t('deleteInvoice.okText', { defaultValue: 'Delete' }),
+      okType: 'danger',
+      cancelText: t('deleteInvoice.cancelText', { defaultValue: 'Cancel' }),
+      onOk: async () => {
+        try {
+          await deleteInvoice(invoiceId!).unwrap();
+          message.success(t('deleteInvoice.success', { defaultValue: 'Invoice deleted successfully' }));
+          navigate('/worklenz/client-portal/invoices');
+        } catch (error) {
+          message.error(t('deleteInvoice.failure', { defaultValue: 'Failed to delete invoice' }));
+        }
+      },
+    });
+  };
+
   // Handle download invoice
   const handleDownloadInvoice = () => {
     window.open(`/api/v1/clients/portal/invoices/${invoiceId}/download`, '_blank');
@@ -213,6 +243,14 @@ const ClientPortalInvoiceDetails: React.FC = () => {
           <Button icon={<EyeOutlined />} onClick={() => setPreviewOpen(true)}>
             {t('previewInvoice', { defaultValue: 'Preview Invoice' })}
           </Button>
+          {invoice.status !== 'paid' && (
+            <Button 
+              icon={<EditOutlined />} 
+              onClick={handleEditInvoice}
+            >
+              {t('editInvoice', { defaultValue: 'Edit' })}
+            </Button>
+          )}
           {invoice.status === 'draft' && (
             <Button 
               icon={<SendOutlined />} 
@@ -230,6 +268,16 @@ const ClientPortalInvoiceDetails: React.FC = () => {
               loading={isMarkingPaid}
             >
               {t('markAsPaid', { defaultValue: 'Mark as Paid' })}
+            </Button>
+          )}
+          {invoice.status !== 'paid' && (
+            <Button 
+              icon={<DeleteOutlined />} 
+              danger
+              onClick={handleDeleteInvoice}
+              loading={isDeleting}
+            >
+              {t('deleteInvoice', { defaultValue: 'Delete' })}
             </Button>
           )}
           <Tooltip title={t('downloadInvoice', { defaultValue: 'Download Invoice' })}>
