@@ -150,7 +150,7 @@ const ProjectViewUpdates = () => {
 
   const mentionsOptions = useMemo(() => 
     projectMembers
-      .filter(member => member.name && (member.user_id || member.id))
+      .filter(member => member.name && member.user_id)
       .map(member => ({
         value: member.name,
         label: (
@@ -168,7 +168,7 @@ const ProjectViewUpdates = () => {
             )}
           </Space>
         ),
-        key: member.user_id || member.id,
+        key: member.user_id,
       })), 
     [projectMembers]
   );
@@ -178,22 +178,20 @@ const ProjectViewUpdates = () => {
       if (!member?.value || !member?.key) return;
 
       const selectedMember = projectMembers.find(m => 
-        (m.user_id || m.id) === member.key
+        m.user_id === member.key
       );
       
-      if (!selectedMember) return;
-
-      const memberId = selectedMember.user_id || selectedMember.id;
+      if (!selectedMember || !selectedMember.user_id) return;
 
       const mentionObject = { 
-        id: memberId, // Backend expects this as 'informed_by' field
-        team_member_id: memberId, 
+        id: selectedMember.user_id,
+        team_member_id: selectedMember.id, 
         name: selectedMember.name,
         user_id: selectedMember.user_id
       };
 
       setSelectedMembers(prev => {
-        if (prev.some(m => m.id === memberId)) {
+        if (prev.some(m => m.id === selectedMember.user_id)) {
           return prev;
         }
         return [...prev, mentionObject];
@@ -215,15 +213,31 @@ const ProjectViewUpdates = () => {
     setSubmitting(true);
 
     try {
-      // Remove duplicates based on id
       const uniqueMentions = Array.from(
         new Map(selectedMembers.map(member => [member.id, member])).values()
       );
 
-      const result = await dispatch(createProjectComment({
+      const validMentions = uniqueMentions.filter(mention => 
+        mention.id && mention.user_id && mention.name
+      );
+
+      if (validMentions.length !== uniqueMentions.length) {
+        message.warning('Some invalid mentions were removed');
+      }
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const mentionsWithValidUUIDs = validMentions.filter(mention => 
+        uuidRegex.test(mention.id)
+      );
+
+      if (mentionsWithValidUUIDs.length !== validMentions.length) {
+        message.error('Some mentions have invalid user IDs and were removed');
+      }
+
+      await dispatch(createProjectComment({
         project_id: projectId,
         content: commentValue,
-        mentions: uniqueMentions,
+        mentions: mentionsWithValidUUIDs,
       })).unwrap();
       
       setCommentValue('');
@@ -234,9 +248,13 @@ const ProjectViewUpdates = () => {
           listRef.current.scrollTop = listRef.current.scrollHeight;
         }
       }, 100);
-    } catch (error) {
-      console.error('Failed to send comment', error);
-      message.error(t('commentError', { defaultValue: 'Failed to send comment' }));
+    } catch (error: any) {
+      if (error?.message?.includes('foreign_key_violation') || 
+          error?.message?.includes('informed_by')) {
+        message.error('Failed to send comment: Invalid user reference. Please try again.');
+      } else {
+        message.error(t('commentError', { defaultValue: 'Failed to send comment' }));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -255,7 +273,6 @@ const ProjectViewUpdates = () => {
       await dispatch(deleteProjectComment(commentId)).unwrap();
       message.success(t('deleteSuccess', { defaultValue: 'Comment deleted successfully' }));
     } catch (error) {
-      console.error('Failed to delete comment', error);
       message.error(t('deleteError', { defaultValue: 'Failed to delete comment' }));
     }
   };
@@ -285,7 +302,6 @@ const ProjectViewUpdates = () => {
       setEditContent('');
       message.success(t('editSuccess', { defaultValue: 'Comment updated successfully' }));
     } catch (error) {
-      console.error('Failed to edit comment', error);
       message.error(t('editError', { defaultValue: 'Failed to edit comment' }));
     }
   };
@@ -566,7 +582,10 @@ const ProjectViewUpdates = () => {
         className="updates-input-container"
         style={{
           borderTop: `1px solid ${token.colorBorderSecondary}`,
-          backgroundColor: token.colorBgContainer
+          backgroundColor: token.colorBgContainer,
+          position: 'relative',
+          zIndex: 10,
+          overflow: 'visible'
         }}
       >
         <div style={{ maxWidth: '900px', margin: '0 auto', width: '100%' }}>
