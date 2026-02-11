@@ -371,14 +371,6 @@ const ProjectViewHeader = memo(() => {
       );
     }
 
-    if (selectedProject.notes) {
-      elements.push(
-        <Typography.Text key="notes" type="secondary">
-          {selectedProject.notes}
-        </Typography.Text>
-      );
-    }
-
     return (
       <Flex gap={4} align="center">
         {elements}
