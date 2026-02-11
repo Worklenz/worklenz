@@ -71,7 +71,7 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
                          WHERE lus2.user_id = ud.user_id AND lus2.status IN ('active', 'trialing')
                          ORDER BY CASE WHEN lus2.status = 'trialing' THEN 1 ELSE 2 END
                          LIMIT 1),
-                        (SELECT user_limit FROM licensing_plan_trials pt
+                        (SELECT max_users FROM licensing_plan_trials pt
                          JOIN licensing_plan_tiers lpt ON pt.plan_tier_id = lpt.id
                          WHERE pt.user_id = ud.user_id AND pt.is_active = true AND pt.trial_end_date > NOW()
                          LIMIT 1)
