@@ -2,169 +2,255 @@ import { CronJob } from "cron";
 import { calculateNextEndDate, log_error } from "../shared/utils";
 import db from "../config/db";
 import { IRecurringSchedule, ITaskTemplate } from "../interfaces/recurring-tasks";
-import moment from "moment";
+import moment from "moment-timezone";
 import TasksController from "../controllers/tasks-controller";
 
-// At 11:00+00 (4.30pm+530) on every day-of-month if it's on every day-of-week from Monday through Friday.
-// const TIME = "0 11 */1 * 1-5";
-const TIME = process.env.RECURRING_JOBS_INTERVAL || "0 11 */1 * 1-5";
+const TIME = process.env.RECURRING_JOBS_INTERVAL || "0 11 * * *";
 const TIME_FORMAT = "YYYY-MM-DD";
-// const TIME = "0 0 * * *"; // Runs at midnight every day
 
-const log = (value: any) => console.log("recurring-task-cron-job:", value);
+// Advisory lock ID for preventing concurrent cron execution across instances
+const ADVISORY_LOCK_ID = 900100;
 
-// Define future limits for different schedule types
-// More conservative limits to prevent task list clutter
-const FUTURE_LIMITS = {
-  daily: moment.duration(3, "days"),
-  weekly: moment.duration(1, "week"),
-  monthly: moment.duration(1, "month"),
-  every_x_days: (interval: number) => moment.duration(interval, "days"),
-  every_x_weeks: (interval: number) => moment.duration(interval, "weeks"),
-  every_x_months: (interval: number) => moment.duration(interval, "months")
-};
+// Maximum number of tasks created per single cron tick (across all schedules)
+const MAX_TASKS_PER_TICK = 50;
 
-// Helper function to get the future limit based on schedule type
-function getFutureLimit(scheduleType: string, interval?: number): moment.Duration {
-  switch (scheduleType) {
-    case "daily":
-      return FUTURE_LIMITS.daily;
-    case "weekly":
-      return FUTURE_LIMITS.weekly;
-    case "monthly":
-      return FUTURE_LIMITS.monthly;
-    case "every_x_days":
-      return FUTURE_LIMITS.every_x_days(interval || 1);
-    case "every_x_weeks":
-      return FUTURE_LIMITS.every_x_weeks(interval || 1);
-    case "every_x_months":
-      return FUTURE_LIMITS.every_x_months(interval || 1);
-    default:
-      return moment.duration(3, "days"); // Default to 3 days
-  }
+const log = (value: string) => console.log("recurring-task-cron-job:", value);
+
+// Acquire a PostgreSQL advisory lock to prevent concurrent execution
+async function acquireAdvisoryLock(): Promise<boolean> {
+  const result = await db.query("SELECT pg_try_advisory_lock($1) AS acquired;", [ADVISORY_LOCK_ID]);
+  return result.rows[0]?.acquired === true;
 }
 
-// Helper function to batch create tasks
-async function createBatchTasks(template: ITaskTemplate & IRecurringSchedule, endDates: moment.Moment[]) {
-  const createdTasks = [];
-  
-  for (const nextEndDate of endDates) {
-    const existingTaskQuery = `
-      SELECT id FROM tasks 
-      WHERE schedule_id = $1 AND end_date::DATE = $2::DATE;
-    `;
-    const existingTaskResult = await db.query(existingTaskQuery, [template.schedule_id, nextEndDate.format(TIME_FORMAT)]);
+// Release the advisory lock
+async function releaseAdvisoryLock(): Promise<void> {
+  await db.query("SELECT pg_advisory_unlock($1);", [ADVISORY_LOCK_ID]);
+}
 
-    if (existingTaskResult.rows.length === 0) {
-      const createTaskQuery = `SELECT create_quick_task($1::json) as task;`;
-      const taskData = {
-        name: template.name,
-        priority_id: template.priority_id,
-        project_id: template.project_id,
-        reporter_id: template.reporter_id,
-        status_id: template.status_id || null,
-        end_date: nextEndDate.format(TIME_FORMAT),
-        schedule_id: template.schedule_id
-      };
-      const createTaskResult = await db.query(createTaskQuery, [JSON.stringify(taskData)]);
-      const createdTask = createTaskResult.rows[0].task;
+// Create a single recurring task from a template
+async function createSingleRecurringTask(
+  template: ITaskTemplate & IRecurringSchedule,
+  nextEndDate: moment.Moment
+): Promise<boolean> {
+  const client = await db.pool.connect();
+  try {
+    await client.query("BEGIN");
 
-      if (createdTask) {
-        createdTasks.push(createdTask);
-
-        for (const assignee of template.assignees) {
-          await TasksController.createTaskBulkAssignees(assignee.team_member_id, template.project_id, createdTask.id, assignee.assigned_by); 
-        }
-
-        for (const label of template.labels) {
-          const q = `SELECT add_or_remove_task_label($1, $2) AS labels;`;
-          await db.query(q, [createdTask.id, label.label_id]);
-        }
-        
-        console.log(`Created task for template ${template.name} with end date ${nextEndDate.format(TIME_FORMAT)}`);
-      }
-    } else {
-      console.log(`Skipped creating task for template ${template.name} with end date ${nextEndDate.format(TIME_FORMAT)} - task already exists`);
+    const createTaskQuery = `SELECT create_quick_task($1::json) as task;`;
+    
+    // Calculate start_date based on original task's duration
+    let startDate = null;
+    if (template.duration_days != null && template.duration_days > 0) {
+      startDate = nextEndDate.clone().subtract(template.duration_days, 'days').format(TIME_FORMAT);
     }
-  }
+    
+    const taskData = {
+      name: template.name,
+      description: template.description || null,
+      priority_id: template.priority_id,
+      project_id: template.project_id,
+      reporter_id: template.reporter_id || null,
+      status_id: template.status_id || null,
+      start_date: startDate,
+      end_date: nextEndDate.format(TIME_FORMAT),
+      schedule_id: template.schedule_id
+    };
 
-  return createdTasks;
+    const createTaskResult = await client.query(createTaskQuery, [JSON.stringify(taskData)]);
+    const createdTask = createTaskResult.rows[0]?.task;
+
+    if (!createdTask) {
+      await client.query("ROLLBACK");
+      return false;
+    }
+
+    // Assign team members
+    if (template.assignees && Array.isArray(template.assignees)) {
+      for (const assignee of template.assignees) {
+        if (assignee.team_member_id && assignee.assigned_by) {
+          const assignQuery = `SELECT create_bulk_task_assignees($1,$2,$3,$4)`;
+          await client.query(assignQuery, [
+            assignee.team_member_id,
+            template.project_id,
+            createdTask.id,
+            assignee.assigned_by
+          ]);
+        }
+      }
+    }
+
+    // Assign labels
+    if (template.labels && Array.isArray(template.labels)) {
+      for (const label of template.labels) {
+        if (label.label_id) {
+          const labelQuery = `SELECT add_or_remove_task_label($1, $2) AS labels;`;
+          await client.query(labelQuery, [createdTask.id, label.label_id]);
+        }
+      }
+    }
+
+    // Update schedule tracking
+    const updateScheduleQuery = `
+      UPDATE task_recurring_schedules
+      SET last_checked_at = NOW(),
+          last_created_task_end_date = $1::DATE,
+          occurrence_count = COALESCE(occurrence_count, 0) + 1
+      WHERE id = $2;
+    `;
+    await client.query(updateScheduleQuery, [nextEndDate.format(TIME_FORMAT), template.schedule_id]);
+
+    await client.query("COMMIT");
+    log(`Created recurring task "${template.name}" due ${nextEndDate.format(TIME_FORMAT)}`);
+    return true;
+  } catch (error: any) {
+    await client.query("ROLLBACK");
+    
+    // Handle unique constraint violation gracefully (duplicate task for same date)
+    if (error?.code === "23505") {
+      log(`Skipped duplicate: "${template.name}" for ${nextEndDate.format(TIME_FORMAT)}`);
+      return false;
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 async function onRecurringTaskJobTick() {
-    try {
-        log("(cron) Recurring tasks job started.");
+  let lockAcquired = false;
 
-        const templatesQuery = `
-            SELECT t.*, s.*, (SELECT MAX(end_date) FROM tasks WHERE schedule_id = s.id) as last_task_end_date
-            FROM task_recurring_templates t
-            JOIN task_recurring_schedules s ON t.schedule_id = s.id;
-        `;
-        const templatesResult = await db.query(templatesQuery);
-        const templates = templatesResult.rows as (ITaskTemplate & IRecurringSchedule)[];
-
-        const now = moment();
-        let createdTaskCount = 0;
-
-        for (const template of templates) {
-            const lastTaskEndDate = template.last_task_end_date 
-                ? moment(template.last_task_end_date)
-                : moment(template.created_at);
-            
-            // Calculate future limit based on schedule type
-            const futureLimit = moment(template.last_checked_at || template.created_at)
-                .add(getFutureLimit(
-                    template.schedule_type,
-                    template.interval_days || template.interval_weeks || template.interval_months || 1
-                ));
-
-            let nextEndDate = calculateNextEndDate(template, lastTaskEndDate);
-            const endDatesToCreate: moment.Moment[] = [];
-
-            // Find all future occurrences within the limit
-            while (nextEndDate.isSameOrBefore(futureLimit)) {
-                if (nextEndDate.isAfter(now)) {
-                    endDatesToCreate.push(moment(nextEndDate));
-                }
-                nextEndDate = calculateNextEndDate(template, nextEndDate);
-            }
-
-            // Batch create tasks for all future dates
-            if (endDatesToCreate.length > 0) {
-                const createdTasks = await createBatchTasks(template, endDatesToCreate);
-                createdTaskCount += createdTasks.length;
-
-                // Update the last_checked_at in the schedule
-                const updateScheduleQuery = `
-                    UPDATE task_recurring_schedules 
-                    SET last_checked_at = $1::DATE, 
-                        last_created_task_end_date = $2 
-                    WHERE id = $3;
-                `;
-                await db.query(updateScheduleQuery, [
-                    moment().format(TIME_FORMAT),
-                    endDatesToCreate[endDatesToCreate.length - 1].format(TIME_FORMAT),
-                    template.schedule_id
-                ]);
-            } else {
-                console.log(`No tasks created for template ${template.name} - next occurrence is beyond the future limit`);
-            }
-        }
-        
-        log(`(cron) Recurring tasks job ended with ${createdTaskCount} new tasks created.`);
-    } catch (error) {
-        log_error(error);
-        log("(cron) Recurring task job ended with errors.");
+  try {
+    // Safeguard 1: Advisory lock — prevent concurrent execution
+    lockAcquired = await acquireAdvisoryLock();
+    if (!lockAcquired) {
+      log("(cron) Skipped — another instance is already running.");
+      return;
     }
+
+    log("(cron) Recurring tasks job started.");
+
+    // Safeguard 2: Only fetch active schedules for non-archived, non-deleted projects
+    // Join with timezones to get the timezone name for timezone-aware date calculations
+    const templatesQuery = `
+      SELECT
+        t.*,
+        s.schedule_type,
+        s.days_of_week,
+        s.day_of_month,
+        s.date_of_month,
+        s.week_of_month,
+        s.interval_days,
+        s.interval_weeks,
+        s.interval_months,
+        s.start_date AS schedule_start_date,
+        s.end_date AS schedule_end_date,
+        s.max_occurrences,
+        s.occurrence_count,
+        s.is_active,
+        s.last_checked_at,
+        s.last_created_task_end_date,
+        s.created_at AS schedule_created_at,
+        COALESCE(tz.name, 'UTC') AS timezone_name,
+        (SELECT MAX(end_date) FROM tasks WHERE schedule_id = s.id) AS last_task_end_date
+      FROM task_recurring_templates t
+      JOIN task_recurring_schedules s ON t.schedule_id = s.id
+      JOIN projects p ON t.project_id = p.id
+      LEFT JOIN timezones tz ON s.timezone_id = tz.id
+      WHERE s.is_active IS NOT FALSE
+        AND (s.end_date IS NULL OR s.end_date >= CURRENT_DATE)
+        AND (s.max_occurrences IS NULL OR COALESCE(s.occurrence_count, 0) < s.max_occurrences)
+        AND (p.is_archived IS NOT TRUE)
+      ORDER BY s.created_at ASC;
+    `;
+
+    const templatesResult = await db.query(templatesQuery);
+    const templates = templatesResult.rows as (ITaskTemplate & IRecurringSchedule & {
+      schedule_start_date: Date | null;
+      schedule_end_date: Date | null;
+      max_occurrences: number | null;
+      occurrence_count: number | null;
+      is_active: boolean;
+      schedule_created_at: Date;
+      timezone_name: string;
+    })[];
+
+    let createdTaskCount = 0;
+
+    for (const template of templates) {
+      // Safeguard 3: Per-tick global cap
+      if (createdTaskCount >= MAX_TASKS_PER_TICK) {
+        log(`(cron) Reached per-tick cap of ${MAX_TASKS_PER_TICK} tasks. Remaining will be processed next tick.`);
+        break;
+      }
+
+      try {
+        // Use the schedule's timezone for all date comparisons
+        const tz = template.timezone_name || "UTC";
+        const now = moment.tz(tz);
+
+        // Determine the reference date: latest existing task's end_date, or schedule creation date
+        const lastTaskEndDate = template.last_task_end_date
+          ? moment(template.last_task_end_date).tz(tz)
+          : moment(template.schedule_created_at).tz(tz);
+
+        // Calculate the next occurrence date
+        const nextEndDate = calculateNextEndDate(template, lastTaskEndDate);
+
+        // Safeguard 4: End condition — don't create past the schedule's end_date
+        if (template.schedule_end_date && nextEndDate.isAfter(moment(template.schedule_end_date).tz(tz))) {
+          log(`Skipped "${template.name}" (schedule_id: ${template.schedule_id}): past end_date ${template.schedule_end_date}`);
+          continue;
+        }
+
+        // Check max_occurrences (already filtered in WHERE, but double-check for safety)
+        if (template.max_occurrences && (template.occurrence_count || 0) >= template.max_occurrences) {
+          log(`Skipped "${template.name}" (schedule_id: ${template.schedule_id}): reached max_occurrences ${template.max_occurrences}`);
+          continue;
+        }
+
+        // "Create next 1 only" model:
+        // Only create if there are no future tasks already created for this schedule
+        const hasFutureTask = template.last_task_end_date
+          ? moment(template.last_task_end_date).tz(tz).isAfter(now)
+          : false;
+
+        if (hasFutureTask) {
+          continue;
+        }
+
+        // Only create tasks that are due (today or earlier in the schedule's timezone)
+        if (nextEndDate.isAfter(now.clone().add(1, "day").startOf("day"))) {
+          continue;
+        }
+
+        const created = await createSingleRecurringTask(template, nextEndDate);
+        if (created) {
+          createdTaskCount++;
+        }
+      } catch (templateError) {
+        log_error(`Error processing template "${template.name}" (schedule: ${template.schedule_id})`);
+        log_error(templateError);
+      }
+    }
+
+    log(`(cron) Recurring tasks job ended. Created ${createdTaskCount} task(s).`);
+  } catch (error) {
+    log_error(error);
+    log("(cron) Recurring task job ended with errors.");
+  } finally {
+    if (lockAcquired) {
+      await releaseAdvisoryLock();
+    }
+  }
 }
 
 export function startRecurringTasksJob() {
-    log("(cron) Recurring task job ready.");
-    const job = new CronJob(
-        TIME,
-        () => void onRecurringTaskJobTick(),
-        () => log("(cron) Recurring task job successfully executed."),
-        true
-    );
-    job.start();
+  log("(cron) Recurring task job ready.");
+  const job = new CronJob(
+    TIME,
+    () => void onRecurringTaskJobTick(),
+    () => log("(cron) Recurring task job successfully executed."),
+    true
+  );
+  job.start();
 }
