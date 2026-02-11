@@ -1267,6 +1267,17 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
     // Check subscription status
     const subscriptionData = await checkTeamSubscriptionStatus(teamId);
+    
+    // DEBUG: Log subscription data to troubleshoot Business plan trial issue
+    console.log('=== SUBSCRIPTION DEBUG ===');
+    console.log('subscription_type:', subscriptionData.subscription_type);
+    console.log('plan_name:', subscriptionData.plan_name);
+    console.log('subscription_status:', subscriptionData.subscription_status);
+    console.log('is_ltd:', subscriptionData.is_ltd);
+    console.log('ltd_users:', subscriptionData.ltd_users);
+    console.log('current_count:', subscriptionData.current_count);
+    console.log('effective_user_limit:', subscriptionData.effective_user_limit);
+    console.log('========================');
 
     // Handle self-hosted subscriptions - allow link generation
     if (subscriptionData.subscription_type === 'SELF_HOSTED') {
