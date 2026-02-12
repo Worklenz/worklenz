@@ -1,12 +1,11 @@
 import { useSocket } from '@/socket/socketContext';
 import { ITaskPhase } from '@/types/tasks/taskPhase.types';
-import { Select } from '@/shared/antd-imports';
+import { Select, Form } from '@/shared/antd-imports';
 import { SocketEvents } from '@/shared/socket-events';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setTaskPhase } from '@/features/task-drawer/task-drawer.slice';
 import { useEffect, useState } from 'react';
-import { theme } from 'antd';
 
 interface TaskDrawerPhaseSelectorProps {
   phases: ITaskPhase[];
@@ -16,7 +15,6 @@ interface TaskDrawerPhaseSelectorProps {
 const TaskDrawerPhaseSelector = ({ phases, task }: TaskDrawerPhaseSelectorProps) => {
   const { socket } = useSocket();
   const dispatch = useAppDispatch();
-  const { token } = theme.useToken();
   
   // Use controlled state for the selected phase
   const [selectedPhase, setSelectedPhase] = useState<string | undefined>(task?.phase_id);
@@ -53,20 +51,7 @@ const TaskDrawerPhaseSelector = ({ phases, task }: TaskDrawerPhaseSelectorProps)
   };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      alignItems: 'center', 
-      marginBottom: 24,
-      gap: 8
-    }}>
-      <div style={{ 
-        minWidth: 165,
-        textAlign: 'right',
-        fontSize: 14,
-        color: token.colorText  // Use theme token for text color
-      }}>
-        Phase :
-      </div>
+    <Form.Item name="phase" label="Phase">
       <Select
         allowClear
         placeholder="Select Phase"
@@ -75,7 +60,7 @@ const TaskDrawerPhaseSelector = ({ phases, task }: TaskDrawerPhaseSelectorProps)
         style={{ width: 'fit-content', minWidth: 145 }}
         onChange={handlePhaseChange}
       />
-    </div>
+    </Form.Item>
   );
 };
 

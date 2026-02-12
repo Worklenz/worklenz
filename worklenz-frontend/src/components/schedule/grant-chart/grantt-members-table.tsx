@@ -122,9 +122,6 @@ const GranttMembersTable = React.memo(
           style={{
             position: 'fixed',
             top: 0,
-            zIndex: 100,
-            width: 370,
-            height: '60px',
             backgroundColor: themeMode === 'dark' ? '#141414' : '#fff',
           }}
         ></div>

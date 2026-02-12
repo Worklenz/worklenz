@@ -83,7 +83,7 @@ const ProjectViewWorkload = React.memo(() => {
       };
       dispatch(setDateRange(defaultRange));
     }
-  }, [dateRange.startDate, dateRange.endDate, dispatch]); // Run when date range is missing
+  }, [dateRange.startDate, dateRange.endDate, dispatch]);
 
   // Debug logging and state monitoring
   useEffect(() => {
@@ -103,7 +103,6 @@ const ProjectViewWorkload = React.memo(() => {
   useEffect(() => {
     if (projectId) {
       console.log('Project or date range changed, refetching workload data for:', projectId);
-      // Small delay to ensure component is fully mounted and state is updated
       const timeoutId = setTimeout(() => {
         finalRefetch();
       }, 100);
@@ -130,10 +129,7 @@ const ProjectViewWorkload = React.memo(() => {
     });
     
     try {
-      // Invalidate cache first to ensure fresh data
       dispatch(projectWorkloadApi.util.invalidateTags(['ProjectWorkload']));
-      
-      // Force a fresh refetch
       finalRefetch();
       console.log('Refetch completed successfully');
     } catch (error) {
@@ -236,54 +232,63 @@ const ProjectViewWorkload = React.memo(() => {
   };
 
   return (
-    <div 
-      className="workload-scroll-container" 
-      style={{ 
+    <Flex
+      vertical
+      style={{
         height: 'calc(100vh - 220px)', // Adjust based on your header height
-        overflowY: 'auto',
-        overflowX: 'hidden',
         paddingLeft: '24px',
         paddingRight: '24px',
+        paddingTop: '16px',
       }}
     >
-      <Flex
-        vertical
-        gap={16}
-        style={{
-          paddingTop: '16px',
-          paddingBottom: '24px',
+      {/* Fixed Header Section - View Tabs and Filters */}
+      <Flex justify="space-between" align="center" wrap="wrap" gap={16} style={{ marginBottom: '16px' }}>
+        <Segmented
+          value={localView}
+          onChange={handleViewChange}
+          options={[
+            { label: t('chartView'), value: 'chart' },
+            { label: t('calendarView'), value: 'calendar' },
+            { label: t('tableView'), value: 'table' },
+          ]}
+        />
+        <WorkloadFilters
+          onRefresh={handleRefresh}
+          isLoading={finalLoading}
+          isFetching={finalFetching}
+        />
+      </Flex>
+
+      {/* Scrollable Content Section */}
+      <div 
+        className="workload-scroll-container" 
+        style={{ 
+          flex: 1,
+          overflowY: 'auto',
+          overflowX: 'hidden',
         }}
       >
-        <Flex justify="space-between" align="center" wrap="wrap" gap={16}>
-          <Segmented
-            value={localView}
-            onChange={handleViewChange}
-            options={[
-              { label: t('chartView'), value: 'chart' },
-              { label: t('calendarView'), value: 'calendar' },
-              { label: t('tableView'), value: 'table' },
-            ]}
-          />
-          <WorkloadFilters
-            onRefresh={handleRefresh}
-            isLoading={finalLoading}
-            isFetching={finalFetching}
-          />
+        <Flex
+          vertical
+          gap={16}
+          style={{
+            paddingBottom: '24px',
+          }}
+        >
+          {finalLoading || finalFetching ? (
+            <Skeleton active paragraph={{ rows: 4 }} style={{ paddingTop: 16 }} />
+          ) : (
+            <>
+              <WorkloadOverview data={finalData as any} isLoading={finalLoading} />
+
+              <Card>
+                {renderContent()}
+              </Card>
+            </>
+          )}
         </Flex>
-
-        {finalLoading || finalFetching ? <Skeleton active paragraph={{ rows: 4 }} style={{ paddingTop: 16 }} /> : <>
-          <WorkloadOverview data={finalData as any} isLoading={finalLoading} />
-
-          <Card
-            style={{
-              flex: 1,
-            }}
-          >
-            {renderContent()}
-          </Card>
-        </>}
-      </Flex>
-    </div>
+      </div>
+    </Flex>
   );
 });
 

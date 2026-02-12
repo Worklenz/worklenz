@@ -1267,6 +1267,17 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
     // Check subscription status
     const subscriptionData = await checkTeamSubscriptionStatus(teamId);
+    
+    // DEBUG: Log subscription data to troubleshoot Business plan trial issue
+    console.log('=== SUBSCRIPTION DEBUG ===');
+    console.log('subscription_type:', subscriptionData.subscription_type);
+    console.log('plan_name:', subscriptionData.plan_name);
+    console.log('subscription_status:', subscriptionData.subscription_status);
+    console.log('is_ltd:', subscriptionData.is_ltd);
+    console.log('ltd_users:', subscriptionData.ltd_users);
+    console.log('current_count:', subscriptionData.current_count);
+    console.log('effective_user_limit:', subscriptionData.effective_user_limit);
+    console.log('========================');
 
     // Handle self-hosted subscriptions - allow link generation
     if (subscriptionData.subscription_type === 'SELF_HOSTED') {
@@ -1277,11 +1288,14 @@ export default class TeamMembersController extends WorklenzControllerBase {
         return res.status(200).send(new ServerResponse(false, null, "Unable to generate invitation link! Please check your subscription status."));
       }
 
-      // Check trial user limit - warn if close to limit
+      // Check trial user limit - warn if close to limit (skip for Business plan trials)
       if (subscriptionData.subscription_status === "trialing") {
-        const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
-        if (currentTrialMembers >= TRIAL_MEMBER_LIMIT) {
-          return res.status(200).send(new ServerResponse(false, null, `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`));
+        const isBusinessPlanTrial = subscriptionData.plan_name?.toLowerCase().includes("business");
+        if (!isBusinessPlanTrial) {
+          const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
+          if (currentTrialMembers >= TRIAL_MEMBER_LIMIT) {
+            return res.status(200).send(new ServerResponse(false, null, `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`));
+          }
         }
       }
 
@@ -1300,8 +1314,10 @@ export default class TeamMembersController extends WorklenzControllerBase {
         }
       }
 
-      // Check LTD user limits - only applies if not on Business plan
-      if (subscriptionData.is_ltd && subscriptionData.current_count && subscriptionData.subscription_type !== 'ANNUAL_BUSINESS') {
+      // Check LTD user limits - only applies if not on Business plan (check both subscription_type and plan_name)
+      const isBusinessPlan = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' || 
+                             subscriptionData.plan_name?.toLowerCase().includes("business");
+      if (subscriptionData.is_ltd && subscriptionData.current_count && !isBusinessPlan) {
         const currentCount = parseInt(subscriptionData.current_count) || 0;
         const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
         if (currentCount >= ltdLimit) {
