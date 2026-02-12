@@ -8,6 +8,11 @@ export enum ITaskRecurring {
   EveryXMonths = 'every_x_months',
 }
 
+export enum IRecurringMode {
+  CreateTask = 'create_task',
+  ChangeStatus = 'change_status',
+}
+
 export interface ITaskRecurringSchedule {
   created_at?: string;
   day_of_month?: number | null;
@@ -24,6 +29,8 @@ export interface ITaskRecurringSchedule {
   max_occurrences?: number | null;
   occurrence_count?: number | null;
   is_active?: boolean;
+  recurring_mode?: IRecurringMode;
+  target_status_id?: string | null;
 }
 
 export interface IRepeatOption {

@@ -30,7 +30,9 @@ export default class TaskRecurringController extends WorklenzControllerBase {
                     created_by,
                     last_checked_at,
                     last_created_task_end_date,
-                    created_at
+                    created_at,
+                    recurring_mode,
+                    target_status_id
               FROM task_recurring_schedules WHERE id = $1;`;
     const result = await db.query(q, [id]);
     const [data] = result.rows;
@@ -110,7 +112,21 @@ export default class TaskRecurringController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async updateSchedule(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { id } = req.params;
-    const { schedule_type, days_of_week, day_of_month, week_of_month, interval_days, interval_weeks, interval_months, date_of_month, start_date, end_date, max_occurrences } = req.body;
+    const { 
+      schedule_type, 
+      days_of_week, 
+      day_of_month, 
+      week_of_month, 
+      interval_days, 
+      interval_weeks, 
+      interval_months, 
+      date_of_month, 
+      start_date, 
+      end_date, 
+      max_occurrences,
+      recurring_mode,
+      target_status_id
+    } = req.body;
 
     // Input validation
     if (schedule_type && !VALID_SCHEDULE_TYPES.includes(schedule_type)) {
@@ -156,6 +172,10 @@ export default class TaskRecurringController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null, "max_occurrences must be between 1 and 1000."));
     }
 
+    if (recurring_mode && !['create_task', 'change_status'].includes(recurring_mode)) {
+      return res.status(400).send(new ServerResponse(false, null, "recurring_mode must be 'create_task' or 'change_status'."));
+    }
+
     // Wrap in transaction to prevent race conditions with cron job
     const client = await db.pool.connect();
     try {
@@ -172,8 +192,10 @@ export default class TaskRecurringController extends WorklenzControllerBase {
                       interval_months  = $8,
                       start_date       = $9,
                       end_date         = $10,
-                      max_occurrences  = $11
-                  WHERE id = $12;`;
+                      max_occurrences  = $11,
+                      recurring_mode   = $12,
+                      target_status_id = $13
+                  WHERE id = $14;`;
       await client.query(q, [
         schedule_type,
         days_of_week || null,
@@ -186,6 +208,8 @@ export default class TaskRecurringController extends WorklenzControllerBase {
         start_date || null,
         end_date || null,
         max_occurrences || null,
+        recurring_mode || 'create_task',
+        target_status_id || null,
         id
       ]);
 
