@@ -58,7 +58,32 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
       return done(null, false, { message: "User not found" });
     }
 
-    // Register
+    // Check if a soft-deleted user exists with this email
+    const deletedCheck = await db.query(
+      "SELECT id, email FROM users WHERE LOWER(email) = LOWER($1) AND is_deleted = TRUE;",
+      [body.email]
+    );
+
+    if (deletedCheck.rowCount) {
+      // Reactivate the soft-deleted account and link Google ID
+      const [deletedUser] = deletedCheck.rows;
+      console.log("[Google OAuth] Found soft-deleted user, reactivating:", deletedUser.id);
+      await db.query(
+        "UPDATE users SET is_deleted = FALSE, google_id = $1, name = COALESCE($2, name) WHERE id = $3;",
+        [body.id, body.displayName, deletedUser.id]
+      );
+
+      // Update active team if from invitation
+      try {
+        await db.query("SELECT set_active_team($1, $2);", [deletedUser.id, state.team || null]);
+      } catch (error) {
+        log_error(error);
+      }
+
+      return done(null, { id: deletedUser.id, email: deletedUser.email, google_id: body.id });
+    }
+
+    // Register new user
     console.log("[Google OAuth] New user, calling register_google_user...");
     const q2 = `SELECT register_google_user($1) AS user;`;
     const result2 = await db.query(q2, [JSON.stringify(body)]);
