@@ -9,6 +9,7 @@ import updatePasswordValidator from "../../middlewares/validators/update-passwor
 import passwordValidator from "../../middlewares/validators/password-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import FileConstants from "../../shared/file-constants";
+import { log_error } from "../../shared/utils";
 
 const authRouter = express.Router();
 
@@ -43,16 +44,33 @@ authRouter.get("/google", (req, res, next) => {
 });
 
 authRouter.get("/google/verify", (req, res, next) => {
-  let error = "";
+  let sessionError = "";
   if ((req.session as any).error) {
-    error = `?error=${encodeURIComponent((req.session as any).error as string)}`;
+    sessionError = `?error=${encodeURIComponent((req.session as any).error as string)}`;
     delete (req.session as any).error;
   }
 
-  const failureRedirect = process.env.LOGIN_FAILURE_REDIRECT + error;
-  return passport.authenticate("google", {
-    failureRedirect,
-    successRedirect: process.env.LOGIN_SUCCESS_REDIRECT
+  const failureRedirect = process.env.LOGIN_FAILURE_REDIRECT + sessionError;
+  const successRedirect = process.env.LOGIN_SUCCESS_REDIRECT as string;
+
+  passport.authenticate("google", (err: any, user: any, info: any) => {
+    if (err) {
+      log_error("Google OAuth verify error:", err);
+      return res.redirect(failureRedirect || "/");
+    }
+
+    if (!user) {
+      log_error("Google OAuth verify - no user returned:", info);
+      return res.redirect(failureRedirect || "/");
+    }
+
+    req.logIn(user, (loginErr) => {
+      if (loginErr) {
+        log_error("Google OAuth session login error:", loginErr);
+        return res.redirect(failureRedirect || "/");
+      }
+      return res.redirect(successRedirect || "/");
+    });
   })(req, res, next);
 });
 

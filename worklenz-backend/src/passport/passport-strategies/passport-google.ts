@@ -58,6 +58,8 @@ async function handleGoogleLogin(req: Request, _accessToken: string, _refreshTok
     sendWelcomeEmail(data.user.email, body.displayName);
     return done(null, data.user, { message: "User successfully logged in" });
   } catch (error: any) {
+    log_error("Google OAuth handleGoogleLogin error:", error);
+    log_error("Google OAuth error details:", { message: error?.message, code: error?.code, stack: error?.stack });
     return done(error);
   }
 }
