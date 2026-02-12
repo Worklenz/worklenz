@@ -667,7 +667,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
           const setActiveTeamQuery = `SELECT set_active_team($1, $2)`;
           await db.query(setActiveTeamQuery, [userId, teamId]);
         }
-        return res.status(200).send(new ServerResponse(false, null, "You are already a member of this project."));
+        return res.status(200).send(new ServerResponse(true, { team_id: teamId, project_id: projectId }, "You are already a member of this project."));
       }
 
       // Add to project
@@ -705,7 +705,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
         }
       }
 
-      return res.status(200).send(new ServerResponse(true, projectMemberResult, "Successfully joined the project!"));
+      return res.status(200).send(new ServerResponse(true, { team_id: teamId, project_id: projectId, member: projectMemberResult }, "Successfully joined the project!"));
 
     } catch (error) {
       console.error('Error accepting project invitation:', error);

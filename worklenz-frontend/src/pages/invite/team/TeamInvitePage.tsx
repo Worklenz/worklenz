@@ -5,7 +5,9 @@ import { CheckCircleOutlined, LoadingOutlined, UserAddOutlined, CloseOutlined } 
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { invitationRedirectService } from '@/services/invitation-redirect.service';
+import { setActiveTeam } from '@/features/teams/teamSlice';
 import { useTranslation } from 'react-i18next';
 
 const { Title, Paragraph } = Typography;
@@ -17,6 +19,7 @@ interface FormValues {
 
 const TeamInvitePage: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const { token } = useParams<{ token: string }>();
   const authService = useAuthService();
   const currentUser = authService.getCurrentSession();
@@ -77,10 +80,21 @@ const TeamInvitePage: React.FC = () => {
         invitationRedirectService.clearPendingInvitation();
         console.log('[TeamInvite] Cleared invitation context after successful join');
         
+        const teamId = response.body?.team_id;
+        
         // Redirect to login or dashboard after a delay
-        setTimeout(() => {
-          if (currentUser) {
-            navigate('/worklenz/projects');
+        setTimeout(async () => {
+          if (currentUser && teamId) {
+            // Switch to the invited team and reload to refresh the session
+            try {
+              await dispatch(setActiveTeam(teamId));
+            } catch (error) {
+              console.error('[TeamInvite] Failed to set active team:', error);
+            }
+            window.location.href = '/worklenz/projects';
+          } else if (currentUser) {
+            // Fallback: reload to pick up the active team set by backend
+            window.location.href = '/worklenz/projects';
           } else {
             navigate('/auth/login', {
               state: {
