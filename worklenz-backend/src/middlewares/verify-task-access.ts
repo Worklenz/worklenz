@@ -318,6 +318,64 @@ export function verifyTaskAccessViaWorkLog(
 }
 
 /**
+ * Middleware to verify task access via attachment ID
+ * This is useful for endpoints that operate on attachments but need to verify task access
+ * 
+ * @param location - Where to find the attachment ID ('params', 'body', or 'query')
+ * @param fieldName - The name of the field containing the attachment ID
+ */
+export function verifyTaskAccessViaAttachment(
+  location: 'params' | 'body' | 'query' = 'params',
+  fieldName: string = 'id'
+) {
+  return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
+    const userId = req.user?.id;
+    const teamId = req.user?.team_id;
+    
+    const attachmentId = req[location]?.[fieldName];
+
+    if (!attachmentId) {
+      return res.status(400).send(
+        new ServerResponse(false, null, "Attachment ID is required")
+      );
+    }
+
+    if (!userId || !teamId) {
+      return res.status(401).send(
+        new ServerResponse(false, null, "Authentication required")
+      );
+    }
+
+    try {
+      // Verify that the attachment belongs to a task in a project in the user's team
+      const q = `
+        SELECT 1
+        FROM task_attachments ta
+        INNER JOIN tasks t ON ta.task_id = t.id
+        INNER JOIN projects p ON t.project_id = p.id
+        WHERE ta.id = $1 AND p.team_id = $2
+        LIMIT 1;
+      `;
+      
+      const result = await db.query(q, [attachmentId, teamId]);
+      
+      if (result.rowCount && result.rowCount > 0) {
+        return next();
+      }
+      
+      return res.status(403).send(
+        new ServerResponse(false, null, "You do not have permission to access this attachment")
+      );
+    } catch (error) {
+      log_error(error);
+      return res.status(500).send(
+        new ServerResponse(false, null, "An error occurred while verifying attachment access")
+      );
+    }
+  };
+}
+
+/**
  * Middleware to verify task access via dependency ID
  * This is useful for endpoints that operate on dependencies but need to verify task access
  *
