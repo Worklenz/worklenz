@@ -1053,7 +1053,7 @@ export default class ProjectsController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getGrouped(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     // Use qualified field name for projects to avoid ambiguity
-    const {searchQuery, searchParams = [], sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, ["projects.name"], false, 1);
+    const {searchQuery, searchParams = [], sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, ["projects.name"], false, 2);
     const groupBy = req.query.groupBy as string || "category";
     const userId = req.user?.id;
     
