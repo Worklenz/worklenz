@@ -1543,7 +1543,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
             const setActiveTeamQuery = `SELECT set_active_team($1, $2)`;
             await db.query(setActiveTeamQuery, [userId, teamId]);
           }
-          return res.status(200).send(new ServerResponse(false, null, "You are already a member of this team."));
+          return res.status(200).send(new ServerResponse(true, { team_id: teamId }, "You are already a member of this team."));
         }
       }
 
@@ -1563,7 +1563,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
           const setActiveTeamQuery = `SELECT set_active_team($1, $2)`;
           await db.query(setActiveTeamQuery, [userId, teamId]);
         }
-        return res.status(200).send(new ServerResponse(false, null, "A team member with this email already exists."));
+        return res.status(200).send(new ServerResponse(true, { team_id: teamId }, "You are already a member of this team."));
       }
 
       // Create team member using the existing function
@@ -1612,7 +1612,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
         }
       }
 
-      return res.status(200).send(new ServerResponse(true, newMembers, "Successfully joined the team!"));
+      return res.status(200).send(new ServerResponse(true, { team_id: teamId, members: newMembers }, "Successfully joined the team!"));
 
     } catch (error) {
       console.error('Error accepting team invitation:', error);
