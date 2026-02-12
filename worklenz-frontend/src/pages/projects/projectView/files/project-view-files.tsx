@@ -491,14 +491,14 @@ const ProjectViewFiles = () => {
           </Typography.Title>
 
           <Space size={8}>
-            <Input.Search
+            <Input
               allowClear
               placeholder={t('searchPlaceholder', { defaultValue: 'Search files...' })}
               style={{ width: 280 }}
-              onSearch={handleSearch}
-              onChange={e => setSearchValue(e.target.value)}
+              onChange={e => handleSearch(e.target.value)}
               value={searchValue}
-              enterButton={<SearchOutlined />}
+              suffix={<SearchOutlined style={{ color: 'rgba(0,0,0,.45)' }} />}
+              onPressEnter={e => handleSearch((e.target as HTMLInputElement).value)}
             />
             <Button
               type="primary"
@@ -545,6 +545,7 @@ const ProjectViewFiles = () => {
         cancelText={t('cancelActionCta', { defaultValue: 'Cancel' })}
         onOk={uploadAttachments}
         confirmLoading={uploading}
+        width={700}
         destroyOnClose
       >
         <Typography.Paragraph style={{ marginBottom: 16 }}>
