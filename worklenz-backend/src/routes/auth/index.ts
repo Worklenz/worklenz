@@ -55,18 +55,21 @@ authRouter.get("/google/verify", (req, res, next) => {
 
   passport.authenticate("google", (err: any, user: any, info: any) => {
     if (err) {
-      log_error("Google OAuth verify error:", err);
+      console.error("[Google OAuth] verify callback error:", err?.message || err);
+      console.error("[Google OAuth] verify error object:", JSON.stringify(err, Object.getOwnPropertyNames(err || {})));
+      log_error(err);
       return res.redirect(failureRedirect || "/");
     }
 
     if (!user) {
-      log_error("Google OAuth verify - no user returned:", info);
+      console.error("[Google OAuth] verify - no user returned. info:", JSON.stringify(info));
       return res.redirect(failureRedirect || "/");
     }
 
     req.logIn(user, (loginErr) => {
       if (loginErr) {
-        log_error("Google OAuth session login error:", loginErr);
+        console.error("[Google OAuth] session login error:", loginErr?.message || loginErr);
+        log_error(loginErr);
         return res.redirect(failureRedirect || "/");
       }
       return res.redirect(successRedirect || "/");
