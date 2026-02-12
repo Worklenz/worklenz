@@ -251,7 +251,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
         value={selectedCountry}
         onChange={handleCountryChange}
         disabled={disabled}
-        style={{ width: '35%' }}
+        style={{ width: '40%' }}
         popupMatchSelectWidth={false}
         optionFilterProp="children"
         filterOption={(input, option) =>
@@ -264,7 +264,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
         onChange={handlePhoneChange}
         placeholder={placeholder}
         disabled={disabled}
-        style={{ width: '65%' }}
+        style={{ width: '60%' }}
       />
     </Input.Group>
   );
