@@ -254,7 +254,27 @@ export default class ProjectsController extends WorklenzControllerBase {
       'start_date': 'start_date',
       'end_date': 'end_date',
       'status': 'status_id',
-      'category': 'category_id',
+      'status_id': 'status_id',
+      // For category sorting, use natural sort by extracting and padding numbers
+      // This ensures "Category 2" comes before "Category 10"
+      'category': `(
+        SELECT 
+          REGEXP_REPLACE(
+            REGEXP_REPLACE(name, '([0-9]+)', LPAD('\\1', 20, '0'), 'g'),
+            '\\s+', ' ', 'g'
+          )
+        FROM project_categories 
+        WHERE id = projects.category_id
+      )`,
+      'category_id': `(
+        SELECT 
+          REGEXP_REPLACE(
+            REGEXP_REPLACE(name, '([0-9]+)', LPAD('\\1', 20, '0'), 'g'),
+            '\\s+', ' ', 'g'
+          )
+        FROM project_categories 
+        WHERE id = projects.category_id
+      )`,
       'client_name': 'client_id',
       'project_owner': 'owner_id',
     };
