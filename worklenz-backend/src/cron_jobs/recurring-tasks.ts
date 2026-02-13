@@ -116,6 +116,118 @@ async function createSingleRecurringTask(
   }
 }
 
+// Change status of the original task based on recurring schedule
+async function changeTaskStatus(
+  template: ITaskTemplate & IRecurringSchedule & { target_status_id: string | null },
+  nextEndDate: moment.Moment
+): Promise<boolean> {
+  const client = await db.pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Get the original task ID from the template
+    const getTaskQuery = `SELECT task_id FROM task_recurring_templates WHERE schedule_id = $1 LIMIT 1;`;
+    const taskResult = await client.query(getTaskQuery, [template.schedule_id]);
+    const taskId = taskResult.rows[0]?.task_id;
+
+    if (!taskId) {
+      await client.query("ROLLBACK");
+      log(`No task found for schedule ${template.schedule_id}`);
+      return false;
+    }
+
+    // Determine target status: use target_status_id if provided, otherwise get default Todo status
+    let targetStatusId = template.target_status_id;
+    
+    if (!targetStatusId) {
+      // Get the default Todo status for this project
+      const defaultStatusQuery = `
+        SELECT id FROM task_statuses 
+        WHERE project_id = $1 
+          AND category_id IN (SELECT id FROM sys_task_status_categories WHERE is_todo IS TRUE)
+        LIMIT 1;
+      `;
+      const statusResult = await client.query(defaultStatusQuery, [template.project_id]);
+      targetStatusId = statusResult.rows[0]?.id;
+
+      if (!targetStatusId) {
+        await client.query("ROLLBACK");
+        log(`No Todo status found for project ${template.project_id}`);
+        return false;
+      }
+    }
+
+    // Get the status category information to determine if it's a "done" status
+    const statusCategoryQuery = `
+      SELECT sc.is_done, sc.is_todo, sc.is_doing
+      FROM task_statuses ts
+      JOIN sys_task_status_categories sc ON ts.category_id = sc.id
+      WHERE ts.id = $1;
+    `;
+    const categoryResult = await client.query(statusCategoryQuery, [targetStatusId]);
+    const statusCategory = categoryResult.rows[0];
+
+    // Get current progress value
+    const progressQuery = `
+      SELECT progress_value, manual_progress
+      FROM tasks
+      WHERE id = $1;
+    `;
+    const progressResult = await client.query(progressQuery, [taskId]);
+    const currentProgress = progressResult.rows[0]?.progress_value;
+
+    // Handle progress updates based on status category
+    if (statusCategory?.is_done) {
+      // Moving to "done" status - set progress to 100% if not already
+      if (currentProgress !== 100) {
+        await client.query(`
+          UPDATE tasks
+          SET progress_value = 100, manual_progress = TRUE
+          WHERE id = $1;
+        `, [taskId]);
+        log(`Task ${taskId} moved to done status - progress set to 100%`);
+      }
+    } else {
+      // Moving from "done" to "todo" or "doing" - reset manual_progress to FALSE
+      // so progress can be recalculated based on subtasks
+      await client.query(`
+        UPDATE tasks
+        SET manual_progress = FALSE
+        WHERE id = $1;
+      `, [taskId]);
+      log(`Task ${taskId} moved from done status - manual_progress reset to FALSE`);
+    }
+
+    // Update the task status
+    const updateTaskQuery = `
+      UPDATE tasks 
+      SET status_id = $1,
+          updated_at = NOW()
+      WHERE id = $2;
+    `;
+    await client.query(updateTaskQuery, [targetStatusId, taskId]);
+
+    // Update schedule tracking
+    const updateScheduleQuery = `
+      UPDATE task_recurring_schedules
+      SET last_checked_at = NOW(),
+          last_created_task_end_date = $1::DATE,
+          occurrence_count = COALESCE(occurrence_count, 0) + 1
+      WHERE id = $2;
+    `;
+    await client.query(updateScheduleQuery, [nextEndDate.format(TIME_FORMAT), template.schedule_id]);
+
+    await client.query("COMMIT");
+    log(`Changed status for recurring task "${template.name}" on ${nextEndDate.format(TIME_FORMAT)}`);
+    return true;
+  } catch (error: any) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function onRecurringTaskJobTick() {
   let lockAcquired = false;
 
@@ -150,6 +262,8 @@ async function onRecurringTaskJobTick() {
         s.last_checked_at,
         s.last_created_task_end_date,
         s.created_at AS schedule_created_at,
+        s.recurring_mode,
+        s.target_status_id,
         COALESCE(tz.name, 'UTC') AS timezone_name,
         (SELECT MAX(end_date) FROM tasks WHERE schedule_id = s.id) AS last_task_end_date
       FROM task_recurring_templates t
@@ -172,6 +286,8 @@ async function onRecurringTaskJobTick() {
       is_active: boolean;
       schedule_created_at: Date;
       timezone_name: string;
+      recurring_mode: 'create_task' | 'change_status';
+      target_status_id: string | null;
     })[];
 
     let createdTaskCount = 0;
@@ -219,7 +335,16 @@ async function onRecurringTaskJobTick() {
           continue;
         }
 
-        const created = await createSingleRecurringTask(template, nextEndDate);
+        // Handle based on recurring mode
+        const recurringMode = template.recurring_mode || 'create_task';
+        let created = false;
+
+        if (recurringMode === 'change_status') {
+          created = await changeTaskStatus(template, nextEndDate);
+        } else {
+          created = await createSingleRecurringTask(template, nextEndDate);
+        }
+
         if (created) {
           createdTaskCount++;
         }
