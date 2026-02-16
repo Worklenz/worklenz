@@ -1,4 +1,4 @@
-import { Drawer, Empty, Segmented, Typography, Spin, Button, Flex } from '@/shared/antd-imports';
+import { Drawer, Empty, Segmented, Typography, Spin, Button, Flex, theme } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -33,6 +33,7 @@ import { createAuthService } from '@/services/auth/auth.service';
 const HTML_TAG_REGEXP = /<[^>]*>/g;
 
 const NotificationDrawer = () => {
+  const { token } = theme.useToken();
   const { isDrawerOpen, notificationType, notifications, invitations } = useAppSelector(
     state => state.notificationReducer
   );
@@ -41,6 +42,12 @@ const NotificationDrawer = () => {
   const { socket, connected } = useSocket();
   const [notificationsSettings, setNotificationsSettings] = useState<INotificationSettings>({});
   const [showBrowserPush, setShowBrowserPush] = useState(false);
+  const [isMarkAllHovered, setIsMarkAllHovered] = useState(false);
+
+  const isDarkMode =
+    token.colorBgContainer === '#141414' ||
+    token.colorBgContainer.includes('dark') ||
+    document.documentElement.getAttribute('data-theme') === 'dark';
 
   const notificationCount = notifications?.length || 0;
   const [isLoading, setIsLoading] = useState(false);
@@ -259,6 +266,11 @@ const NotificationDrawer = () => {
     dispatch(fetchUnreadCount()); // Fetch unread count when notification type changes
   }, [notificationType, dispatch]);
 
+  // Determine hover color based on theme
+  const getMarkAllHoverColor = () => {
+    return isDarkMode ? '#69b1ff' : '#1677ff';
+  };
+
   return (
     <Drawer
       title={
@@ -285,7 +297,16 @@ const NotificationDrawer = () => {
           }}
         />
 
-        <Button type="link" onClick={handleMarkAllAsRead}>
+        <Button 
+          type="link" 
+          onClick={handleMarkAllAsRead}
+          onMouseEnter={() => setIsMarkAllHovered(true)}
+          onMouseLeave={() => setIsMarkAllHovered(false)}
+          style={{
+            color: isMarkAllHovered ? getMarkAllHoverColor() : 'var(--ant-primary-color)',
+            transition: 'color 0.3s ease',
+          }}
+        >
           {t('notificationsDrawer.markAsRead')}
         </Button>
       </Flex>
