@@ -58,12 +58,14 @@ import {
   evt_project_task_list_bulk_change_status,
   evt_project_task_list_bulk_delete,
   evt_project_task_list_bulk_update_labels,
+  evt_project_task_list_bulk_change_due_date,
 } from '@/shared/worklenz-analytics-events';
 import {
   IBulkTasksLabelsRequest,
   IBulkTasksPhaseChangeRequest,
   IBulkTasksPriorityChangeRequest,
   IBulkTasksStatusChangeRequest,
+  IBulkTasksDueDateChangeRequest,
 } from '@/types/tasks/bulk-action-bar.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
@@ -749,9 +751,29 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   const handleBulkSetDueDate = useCallback(
     async (date: string) => {
-      // This would need to be implemented in the API service
+      if (!projectId) return;
+      try {
+        const body: IBulkTasksDueDateChangeRequest = {
+          tasks: selectedTaskIds,
+          end_date: date || null,
+        };
+        const res = await taskListBulkActionsApiService.changeDueDate(body, projectId);
+        if (res.done) {
+          trackMixpanelEvent(evt_project_task_list_bulk_change_due_date);
+          dispatch(deselectAllBulk());
+          dispatch(clearSelection());
+          dispatch(fetchTasksV3(projectId));
+          // alertService.success(
+          //   date ? 'Due date updated' : 'Due date cleared',
+          //   date ? 'Due date has been set for selected tasks' : 'Due date has been cleared for selected tasks'
+          // );
+        }
+      } catch (error) {
+        logger.error('Error changing due date:', error);
+        alertService.error('Error', 'Failed to update due date');
+      }
     },
-    [selectedTaskIds]
+    [selectedTaskIds, projectId, trackMixpanelEvent, dispatch]
   );
 
   // Cleanup effect

@@ -10,10 +10,18 @@ import {getTaskDetails, logProgressChange, logStatusChange} from "../../services
 import { assignMemberIfNot } from "./on-quick-assign-or-remove";
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
 import { log_error } from "../../shared/utils";
+import {verifyTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
 
 export async function on_task_status_change(_io: Server, socket: Socket, data?: string) {
   try {
     const body = JSON.parse(data as string);
+    
+    const hasAccess = await verifyTaskAccessSocket(socket, body.task_id);
+    if (!hasAccess) {
+      logUnauthorizedSocketAccess(socket, 'TASK_STATUS_CHANGE', 'task', body.task_id);
+      return;
+    }
+    
     const userId = getLoggedInUserIdFromSocket(socket);
     const taskData = await getTaskDetails(body.task_id, "status_id");
 

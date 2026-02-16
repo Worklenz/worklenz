@@ -1,17 +1,18 @@
 import { Navigate, RouteObject } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
+import ChunkErrorHandler from '@/utils/chunk-error-handler';
 
 const OrganizationInvitePage = lazy(
-  () => import('@/pages/client-view/organization-invite/organization-invite')
+  ChunkErrorHandler.wrapLazyImport(() => import('@/pages/client-view/organization-invite/organization-invite'), 'OrganizationInvitePage')
 );
 
 const TeamInvitePage = lazy(
-  () => import('@/pages/invite/team/TeamInvitePage')
+  ChunkErrorHandler.wrapLazyImport(() => import('@/pages/invite/team/TeamInvitePage'), 'TeamInvitePage')
 );
 
 const ProjectInvitePage = lazy(
-  () => import('@/pages/invite/project/ProjectInvitePage')
+  ChunkErrorHandler.wrapLazyImport(() => import('@/pages/invite/project/ProjectInvitePage'), 'ProjectInvitePage')
 );
 
 const rootRoutes: RouteObject[] = [

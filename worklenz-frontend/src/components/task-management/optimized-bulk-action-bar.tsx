@@ -9,6 +9,7 @@ import {
   Space,
   Badge,
   Divider,
+  DatePicker,
 } from '@/shared/antd-imports';
 import {
   DeleteOutlined,
@@ -21,6 +22,7 @@ import {
   FlagOutlined,
   BulbOutlined,
   MoreOutlined,
+  CalendarOutlined,
 } from '@/shared/antd-imports';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/app/store';
@@ -39,6 +41,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import { isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { CrownOutlined } from '@/shared/antd-imports';
+import type { Dayjs } from 'dayjs';
 
 const { Text } = Typography;
 
@@ -178,7 +181,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     onBulkSetDueDate,
   }) => {
     const { t } = useTranslation(['tasks/task-table-bulk-actions', 'task-management']);
-  const { t: tCommon } = useTranslation('common');
+    const { t: tCommon } = useTranslation('common');
     const dispatch = useDispatch();
     const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
 
@@ -189,6 +192,9 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     const labelsList = useAppSelector(state => state.taskLabelsReducer.labels);
     const members = useAppSelector(state => state.teamMembersReducer.teamMembers);
     const tasks = useAppSelector(state => state.taskManagement.entities);
+    
+    // Add archived selector as requested
+    const archived = useAppSelector(state => state.taskManagement.archived);
 
     // Performance state management
     const [isVisible, setIsVisible] = useState(false);
@@ -213,6 +219,9 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
 
     // Assignees dropdown state
     const [assigneeDropdownOpen, setAssigneeDropdownOpen] = useState(false);
+
+    // Due date dropdown state
+    const [dueDateDropdownOpen, setDueDateDropdownOpen] = useState(false);
 
     // Task template state
     const [showDrawer, setShowDrawer] = useState(false);
@@ -533,6 +542,26 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
       }
     }, [onBulkExport, updateLoadingState]);
 
+    // Due date change handler
+    const handleDueDateChange = useCallback(
+      async (date: Dayjs | null) => {
+        updateLoadingState('dueDate', true);
+        try {
+          const dateString = date ? date.format('YYYY-MM-DD') : '';
+          await onBulkSetDueDate?.(dateString);
+          setDueDateDropdownOpen(false);
+        } finally {
+          updateLoadingState('dueDate', false);
+        }
+      },
+      [onBulkSetDueDate, updateLoadingState]
+    );
+
+    // Due date dropdown open change handler
+    const onDueDateDropdownOpenChange = useCallback((open: boolean) => {
+      setDueDateDropdownOpen(open);
+    }, []);
+
     // Memoized styles for better performance
     const containerStyle = useMemo(
       (): React.CSSProperties => ({
@@ -792,8 +821,70 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
             </Dropdown>
           </Tooltip>
 
+          {/* Set Due Date */}
+          <Tooltip title={t('SET_DUE_DATE')} placement="top">
+            <Dropdown
+              open={dueDateDropdownOpen}
+              onOpenChange={onDueDateDropdownOpenChange}
+              trigger={['click']}
+              placement="top"
+              arrow
+              dropdownRender={() => (
+                <div
+                  style={{
+                    padding: '8px',
+                    background: isDarkMode ? '#1f2937' : '#ffffff',
+                    borderRadius: '8px',
+                    boxShadow: isDarkMode
+                      ? '0 4px 12px rgba(0, 0, 0, 0.3)'
+                      : '0 4px 12px rgba(0, 0, 0, 0.1)',
+                  }}
+                >
+                  <DatePicker
+                    open
+                    onChange={handleDueDateChange}
+                    style={{ width: '100%' }}
+                    getPopupContainer={trigger => trigger.parentElement || document.body}
+                    allowClear
+                    placeholder={t('SET_DUE_DATE')}
+                  />
+                </div>
+              )}
+            >
+              <Button
+                icon={<CalendarOutlined />}
+                style={{
+                  background: 'transparent',
+                  color: isDarkMode ? '#e5e7eb' : '#374151',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '6px',
+                  height: '32px',
+                  width: '32px',
+                  fontSize: '14px',
+                  borderRadius: '6px',
+                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+                size="small"
+                type="text"
+                loading={loadingStates.dueDate}
+              />
+            </Dropdown>
+          </Tooltip>
+
           {/* Archive */}
-          <Tooltip title={isFree ? tCommon('upgrade-plan') : t('ARCHIVE')} placement="top">
+          <Tooltip 
+            title={
+              isFree && !archived 
+                ? tCommon('upgrade-plan') 
+                : archived 
+                  ? t('Unarchive') 
+                  : t('Archive')
+            } 
+            placement="top"
+          >
             <Button
               icon={<InboxOutlined />}
               style={{

@@ -64,7 +64,7 @@ const EditTeamNameModal = ({ team, isModalOpen, onCancel }: EditTeamNameModalPro
         form.resetFields();
       }}
       confirmLoading={updating}
-      destroyOnClose={true}
+      destroyOnHidden={true}
     >
       <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
         <Form.Item

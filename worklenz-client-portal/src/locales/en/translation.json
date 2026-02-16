@@ -134,7 +134,7 @@
     "network_error": "Network error. Please check your connection.",
     "server_error": "Server error. Please try again later.",
     "worklenz_account_found_title": "Worklenz Account Found",
-    "worklenz_account_found_message": "This email is already registered with a Worklenz account. Please use your Worklenz password to sign up for the client portal."
+    "worklenz_account_found_message": "This email is already registered with a Worklenz account. Please use your existing Worklenz account password to sign up for the client portal."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -288,6 +288,7 @@
     "title": "Chats",
     "description": "Communicate with your service providers",
     "conversations": "Conversations",
+    "chatTitle": "Chat - {{date}}",
     "chatMessages": "Chat Messages",
     "selectConversation": "Select a conversation",
     "selectToStart": "Select a conversation to start chatting",
@@ -375,5 +376,32 @@
     "fileTypeError": "File type not allowed. Accepted types: {{types}}",
     "maxFilesError": "You can only upload up to {{count}} files",
     "uploadedOn": "Uploaded on {{date}}"
+  },
+  "tasks": {
+    "taskDetails": "Task Details",
+    "detailsTab": "Details",
+    "commentsTab": "Comments",
+    "taskInformation": "Task Information",
+    "teamAndPriority": "Team & Priority",
+    "attachments": "Attachments",
+    "status": "Status",
+    "description": "Description",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "created": "Created",
+    "lastUpdated": "Last Updated",
+    "priority": "Priority",
+    "assignedTo": "Assigned To",
+    "noAssignees": "No assignees",
+    "noAttachments": "No attachments",
+    "noComments": "No comments yet. Be the first to comment!",
+    "commentPlaceholder": "Type your comment... (Shift+Enter for new line)",
+    "commentRequired": "Please enter a comment",
+    "commentAdded": "Comment added successfully",
+    "commentError": "Failed to add comment",
+    "loadingTaskDetails": "Loading task details...",
+    "taskNotAvailable": "Task details not available",
+    "failedToLoad": "Failed to load task details",
+    "download": "Download"
   }
 }

@@ -575,6 +575,25 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION escape_html(_text text) RETURNS text
+    LANGUAGE plpgsql IMMUTABLE
+AS $$
+BEGIN
+    IF _text IS NULL THEN
+        RETURN '';
+    END IF;
+    
+    -- Escape HTML special characters to prevent XSS attacks
+    RETURN REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+        _text,
+        '&', '&amp;'),
+        '<', '&lt;'),
+        '>', '&gt;'),
+        '"', '&quot;'),
+        '''', '&#x27;');
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION create_notification(_user_id uuid, _team_id uuid, _task_id uuid, _project_id uuid, _message text) RETURNS json
     LANGUAGE plpgsql
 AS
@@ -638,13 +657,15 @@ BEGIN
     -- insert project
     INSERT INTO projects (name, key, notes, color_code, team_id, client_id, owner_id, status_id, health_id, start_date,
                           end_date,
-                          folder_id, category_id, estimated_working_days, estimated_man_days, hours_per_day)
+                          folder_id, category_id, estimated_working_days, estimated_man_days, hours_per_day,
+                          use_manual_progress, use_weighted_progress, use_time_progress)
     VALUES (_project_name, (_body ->> 'key')::TEXT, (_body ->> 'notes')::TEXT, (_body ->> 'color_code')::TEXT, _team_id,
             _client_id,
             _user_id, (_body ->> 'status_id')::UUID, (_body ->> 'health_id')::UUID,
             (_body ->> 'start_date')::TIMESTAMPTZ,
             (_body ->> 'end_date')::TIMESTAMPTZ, (_body ->> 'folder_id')::UUID, (_body ->> 'category_id')::UUID,
-            (_body ->> 'working_days')::INTEGER, (_body ->> 'man_days')::INTEGER, (_body ->> 'hours_per_day')::INTEGER)
+            (_body ->> 'working_days')::INTEGER, (_body ->> 'man_days')::INTEGER, (_body ->> 'hours_per_day')::INTEGER,
+            (_body ->> 'use_manual_progress')::BOOLEAN, (_body ->> 'use_weighted_progress')::BOOLEAN, (_body ->> 'use_time_progress')::BOOLEAN)
     RETURNING id INTO _project_id;
 
     -- log record
@@ -706,7 +727,6 @@ BEGIN
 
     FOR _mention IN SELECT * FROM JSON_ARRAY_ELEMENTS((_body ->> 'mentions')::JSON)
         LOOP
-
             INSERT INTO project_comment_mentions (comment_id, mentioned_index, mentioned_by, informed_by)
             VALUES (_comment_id, _mention_index, _created_by, (_mention ->> 'id')::UUID);
 
@@ -715,7 +735,7 @@ BEGIN
                     (_team_id)::UUID,
                     null,
                     (_project_id)::UUID,
-                    CONCAT('<b>', _user_name, '</b> has mentioned you in a comment on <b>', _project_name, '</b>')
+                    CONCAT('<b>', escape_html(_user_name), '</b> has mentioned you in a comment on <b>', escape_html(_project_name), '</b>')
                 );
             _mention_index := _mention_index + 1;
 
@@ -724,6 +744,17 @@ BEGIN
     RETURN JSON_BUILD_OBJECT(
             'id', (_comment_id)::UUID,
             'content', (_content)::TEXT,
+            'user_id', (_created_by)::UUID,
+            'created_by', (_user_name)::TEXT,
+            'avatar_url', (SELECT avatar_url FROM users WHERE id = _created_by),
+            'created_at', (SELECT created_at FROM project_comments WHERE id = _comment_id),
+            'updated_at', (SELECT updated_at FROM project_comments WHERE id = _comment_id),
+            'mentions', (SELECT COALESCE(JSON_AGG(rec), '[]'::JSON)
+                        FROM (SELECT u.name  AS user_name,
+                                     u.email AS user_email
+                              FROM project_comment_mentions pcm
+                                    LEFT JOIN users u ON pcm.informed_by = u.id
+                              WHERE pcm.comment_id = _comment_id) rec),
             'project_name', (_project_name)::TEXT,
             'team_name', (SELECT name FROM teams WHERE id = (_team_id)::UUID)
         );
@@ -769,9 +800,9 @@ BEGIN
     IF (_member_user_id != _user_id)
     THEN
         _notification = CONCAT('You have been added to the <b>',
-                               (SELECT name FROM projects WHERE id = _project_id),
+                               escape_html((SELECT name FROM projects WHERE id = _project_id)),
                                '</b> by <b>',
-                               (SELECT name FROM users WHERE id = _user_id), '</b>');
+                               escape_html((SELECT name FROM users WHERE id = _user_id)), '</b>');
         PERFORM create_notification(
                 (SELECT user_id FROM team_members WHERE id = _team_member_id),
                 _team_id,
@@ -905,6 +936,8 @@ DECLARE
     _priority_id UUID;
     _start_date  TIMESTAMP;
     _end_date    TIMESTAMP;
+    _schedule_id UUID;
+    _description TEXT;
 BEGIN
 
     _parent_task = (_body ->> 'parent_task_id')::UUID;
@@ -919,8 +952,10 @@ BEGIN
     _priority_id = COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM task_priorities WHERE value = 1));
     _start_date = (_body ->> 'start_date')::TIMESTAMP;
     _end_date = (_body ->> 'end_date')::TIMESTAMP;
+    _schedule_id = (_body ->> 'schedule_id')::UUID;
+    _description = (_body ->> 'description')::TEXT;
 
-    INSERT INTO tasks (name, priority_id, project_id, reporter_id, status_id, parent_task_id, sort_order, roadmap_sort_order, start_date, end_date)
+    INSERT INTO tasks (name, priority_id, project_id, reporter_id, status_id, parent_task_id, sort_order, roadmap_sort_order, start_date, end_date, schedule_id, description)
     VALUES (TRIM((_body ->> 'name')::TEXT),
             _priority_id,
             (_body ->> 'project_id')::UUID,
@@ -931,7 +966,9 @@ BEGIN
             COALESCE((SELECT MAX(COALESCE(sort_order, roadmap_sort_order, 0)) + 1 FROM tasks WHERE project_id = (_body ->> 'project_id')::UUID), 0),
             COALESCE((SELECT MAX(COALESCE(roadmap_sort_order, sort_order, 0)) + 1 FROM tasks WHERE project_id = (_body ->> 'project_id')::UUID), 0),
             (_body ->> 'start_date')::TIMESTAMP,
-            (_body ->> 'end_date')::TIMESTAMP)
+            (_body ->> 'end_date')::TIMESTAMP,
+            _schedule_id,
+            _description)
     RETURNING id INTO _task_id;
 
     PERFORM handle_on_task_phase_change(_task_id, (_body ->> 'phase_id')::UUID);
@@ -1081,7 +1118,7 @@ BEGIN
                 (_body ->> 'team_id')::UUID,
                 _task_id,
                 (SELECT project_id FROM tasks WHERE id = _task_id),
-                CONCAT('<b>', _user_name, '</b> has mentioned you in a comment on <b>', _task_name, '</b>')
+                CONCAT('<b>', escape_html(_user_name), '</b> has mentioned you in a comment on <b>', escape_html(_task_name), '</b>')
                 );
             _mention_index := _mention_index + 1;
         END LOOP;
@@ -1593,6 +1630,7 @@ BEGIN
                     (SELECT get_daily_digest_overdue(u.id)) AS overdue,
                     (SELECT get_daily_digest_recently_completed(u.id)) AS recently_completed
              FROM users u
+             WHERE u.is_deleted IS NOT TRUE
              --
          ) rec;
     RETURN _result;
@@ -2094,7 +2132,8 @@ BEGIN
                         WHERE id = (SELECT user_id
                                     FROM project_subscribers
                                     WHERE project_id = projects.id
-                                      AND user_id = users.id)) rec) AS subscribers
+                                      AND user_id = users.id)
+                          AND users.is_deleted IS NOT TRUE) rec) AS subscribers
 
           FROM projects
           WHERE EXISTS(SELECT 1 FROM project_subscribers WHERE project_id = projects.id)
@@ -3650,7 +3689,8 @@ BEGIN
                                WHERE team_id = teams.id
                                  AND user_id = users.id) IS TRUE) r)
           FROM users
-          WHERE EXISTS(SELECT 1 FROM task_updates WHERE user_id = users.id)) rec;
+          WHERE EXISTS(SELECT 1 FROM task_updates WHERE user_id = users.id)
+            AND users.is_deleted IS NOT TRUE) rec;
 
     UPDATE task_updates SET is_sent = TRUE;
 
@@ -5206,7 +5246,7 @@ BEGIN
     RETURN JSON_BUILD_OBJECT(
         'id', _removed_user_id,
         'team', _removed_team_name,
-        'socket_id', (SELECT socket_id FROM users WHERE id = _user_id)
+        'socket_id', (SELECT socket_id FROM users WHERE id = _removed_user_id)
         );
 END;
 $$;
@@ -6268,8 +6308,11 @@ BEGIN
         end_date,
         priority_id,
         project_id,
+        reporter_id,
+        status_id,
         assignees,
-        labels
+        labels,
+        duration_days
     )
     SELECT
         uuid_generate_v4(),
@@ -6280,6 +6323,8 @@ BEGIN
         t.end_date,
         t.priority_id,
         t.project_id,
+        t.reporter_id,
+        t.status_id,
         COALESCE(
             (SELECT JSONB_AGG(JSONB_BUILD_OBJECT('project_member_id', tas.project_member_id, 'team_member_id', tas.team_member_id))
              FROM tasks_assignees tas
@@ -6291,7 +6336,12 @@ BEGIN
              FROM task_labels tla
              WHERE tla.task_id = t.id),
             '[]'::JSONB
-        ) AS labels
+        ) AS labels,
+        CASE 
+            WHEN t.start_date IS NOT NULL AND t.end_date IS NOT NULL 
+            THEN (t.end_date::DATE - t.start_date::DATE)
+            ELSE NULL
+        END AS duration_days
     FROM tasks t
     WHERE t.id = p_task_id
     RETURNING id INTO v_new_id;

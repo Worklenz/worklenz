@@ -64,9 +64,11 @@ const TaskDrawer = () => {
 
   const resetTaskState = () => {
     dispatch(setShowTaskDrawer(false));
-    dispatch(setSelectedTaskId(null));
-    dispatch(setTaskFormViewModel({}));
-    dispatch(setTaskSubscribers([]));
+    setTimeout(() => {
+      dispatch(setSelectedTaskId(null));
+      dispatch(setTaskFormViewModel({}));
+      dispatch(setTaskSubscribers([]));
+    }, 300);
   };
 
   const handleBackToParent = () => {
@@ -85,7 +87,6 @@ const TaskDrawer = () => {
   const handleOnClose = (
     e?: React.MouseEvent<Element, MouseEvent> | React.KeyboardEvent<Element>
   ) => {
-    // Set flag to indicate we're manually closing the drawer
     isClosingManually.current = true;
     setActiveTab('info');
     clearTaskFromUrl();
@@ -96,10 +97,9 @@ const TaskDrawer = () => {
     if (isClickOutsideDrawer || !taskFormViewModel?.task?.is_sub_task) {
       resetTaskState();
     } else {
-      // For sub-tasks, navigate to parent instead of closing
       handleBackToParent();
     }
-    // Reset the flag after a short delay
+    
     setTimeout(() => {
       isClosingManually.current = false;
     }, 100);
@@ -150,32 +150,32 @@ const TaskDrawer = () => {
   const tabItems: TabsProps['items'] = [
     {
       key: 'info',
-      label: t('taskInfoTab.title'),
+      label: t('taskInfoTab.title', { defaultValue: 'Task Info' }),
       children: <TaskDrawerInfoTab t={t} />,
     },
     {
       key: 'timeLog',
       label: isFree ? (
-        <Tooltip title={tCommon('upgrade-plan')} placement="top">
+        <Tooltip title={tCommon('upgrade-plan', { defaultValue: 'Upgrade Plan' })} placement="top">
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }} onClick={handlePremiumTabClick}>
-            <span>{t('taskTimeLogTab.title')}</span>
+            <span>{t('taskTimeLogTab.title', { defaultValue: 'Time Log' })}</span>
             <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
           </div>
         </Tooltip>
-      ) : t('taskTimeLogTab.title'),
+      ) : t('taskTimeLogTab.title', { defaultValue: 'Time Log' }),
       children: <TaskDrawerTimeLog t={t} refreshTrigger={refreshTimeLogTrigger} />,
       disabled: isFree,
     },
     {
       key: 'activityLog',
       label: isFree ? (
-        <Tooltip title={tCommon('upgrade-plan')} placement="top">
+        <Tooltip title={tCommon('upgrade-plan', { defaultValue: 'Upgrade Plan' })} placement="top">
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }} onClick={handlePremiumTabClick}>
-            <span>{t('taskActivityLogTab.title')}</span>
+            <span>{t('taskActivityLogTab.title', { defaultValue: 'Activity Log' })}</span>
             <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
           </div>
         </Tooltip>
-      ) : t('taskActivityLogTab.title'),
+      ) : t('taskActivityLogTab.title', { defaultValue: 'Activity Log' }),
       children: <TaskDrawerActivityLog />,
       disabled: isFree,
     },
@@ -204,7 +204,7 @@ const TaskDrawer = () => {
               onClick={handleAddTimeLog}
               style={{ width: '100%' }}
             >
-              {t('taskTimeLogTab.addTimeLog')}
+              {t('taskTimeLogTab.addTimeLog', { defaultValue: 'Add Time Log' })}
             </Button>
           </Flex>
         );
@@ -275,8 +275,10 @@ const TaskDrawer = () => {
     destroyOnClose: true,
     title: <TaskDrawerHeader inputRef={taskNameInputRef} t={t} />,
     footer: renderFooter(),
-    bodyStyle: getBodyStyle(),
-    footerStyle: getFooterStyle(),
+    styles: {
+      body: getBodyStyle(),
+      footer: getFooterStyle(),
+    },
     closeIcon: getCloseIcon(),
   };
 

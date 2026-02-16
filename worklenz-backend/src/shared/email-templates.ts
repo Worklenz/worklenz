@@ -1,7 +1,7 @@
 import {IEmailTemplateType} from "../interfaces/email-template-type";
 import {IPassportSession} from "../interfaces/passport-session";
 import {sendEmail} from "./email";
-import {sanitize} from "./utils";
+import {sanitize, sanitizePlainText} from "./utils";
 import FileConstants from "./file-constants";
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "worklenz.com";
@@ -10,7 +10,9 @@ export function sendWelcomeEmail(email: string, name: string) {
   let content = FileConstants.getEmailTemplate(IEmailTemplateType.Welcome) as string;
   if (!content) return;
 
-  content = content.replace("[VAR_USER_NAME]", sanitize(name));
+  // Use sanitizePlainText for user names to prevent HTML injection
+  // Names should never contain HTML markup
+  content = content.replace("[VAR_USER_NAME]", sanitizePlainText(name));
   content = content.replace("[VAR_HOSTNAME]", sanitize(FRONTEND_URL));
 
   sendEmail({
@@ -36,8 +38,9 @@ export function sendJoinTeamInvitation(myName: string, teamName: string, teamId:
   let content = FileConstants.getEmailTemplate(IEmailTemplateType.TeamMemberInvitation) as string;
   if (!content) return;
 
-  content = content.replaceAll("[VAR_USER_NAME]", sanitize(userName));
-  content = content.replaceAll("[VAR_TEAM_NAME]", sanitize(teamName));
+  // Use sanitizePlainText for user/team names to prevent HTML injection
+  content = content.replaceAll("[VAR_USER_NAME]", sanitizePlainText(userName));
+  content = content.replaceAll("[VAR_TEAM_NAME]", sanitizePlainText(teamName));
   content = content.replaceAll("[VAR_HOSTNAME]", sanitize(FRONTEND_URL));
   content = content.replaceAll("[VAR_TEAM_ID]", sanitize(teamId));
   content = content.replaceAll("[VAR_USER_ID]", sanitize(userId));
@@ -45,7 +48,7 @@ export function sendJoinTeamInvitation(myName: string, teamName: string, teamId:
 
   sendEmail({
     to: [toEmail],
-    subject: `${myName} has invited you to work with ${teamName} in Worklenz`,
+    subject: `${sanitizePlainText(myName)} has invited you to work with ${sanitizePlainText(teamName)} in Worklenz`,
     html: content
   });
 }
@@ -54,17 +57,18 @@ export function sendRegisterAndJoinTeamInvitation(myName: string, userName: stri
   let content = FileConstants.getEmailTemplate(IEmailTemplateType.UnregisteredTeamMemberInvitation) as string;
   if (!content) return;
 
+  // Use sanitizePlainText for user/team names to prevent HTML injection
   content = content.replaceAll("[VAR_EMAIL]", sanitize(toEmail));
   content = content.replaceAll("[VAR_USER_ID]", sanitize(userId));
-  content = content.replaceAll("[VAR_USER_NAME]", sanitize(userName));
-  content = content.replaceAll("[VAR_TEAM_NAME]", sanitize(teamName));
+  content = content.replaceAll("[VAR_USER_NAME]", sanitizePlainText(userName));
+  content = content.replaceAll("[VAR_TEAM_NAME]", sanitizePlainText(teamName));
   content = content.replaceAll("[VAR_HOSTNAME]", sanitize(FRONTEND_URL));
   content = content.replaceAll("[VAR_TEAM_ID]", sanitize(teamId));
   content = content.replaceAll("[PROJECT_ID]", projectId ? sanitize(projectId as string) : "");
 
   sendEmail({
     to: [toEmail],
-    subject: `${myName} has invited you to work with ${teamName} in Worklenz`,
+    subject: `${sanitizePlainText(myName)} has invited you to work with ${sanitizePlainText(teamName)} in Worklenz`,
     html: content
   });
 }
@@ -92,6 +96,25 @@ export function sendResetSuccessEmail(toEmail: string) {
   sendEmail({
     to: [toEmail],
     subject: "Your password was reset.",
+    html: content
+  });
+}
+
+export function sendClientPortalResetEmail(toEmail: string, user_id: string, hash: string) {
+  let content = FileConstants.getEmailTemplate(IEmailTemplateType.ResetPassword) as string;
+  if (!content) return;
+
+  const CLIENT_PORTAL_HOSTNAME = process.env.CLIENT_PORTAL_HOSTNAME
+    ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}`
+    : "http://localhost:5174";
+
+  content = content.replace("[VAR_HOSTNAME]", sanitize(CLIENT_PORTAL_HOSTNAME));
+  content = content.replace("[VAR_USER_ID]", sanitize(user_id));
+  content = content.replace("[VAR_HASH]", hash);
+
+  sendEmail({
+    to: [toEmail],
+    subject: "Reset your Client Portal password.",
     html: content
   });
 }

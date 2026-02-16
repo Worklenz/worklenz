@@ -14,9 +14,11 @@ import router from './app/routes';
 
 // Hooks & Utils
 import { useAppSelector } from './hooks/useAppSelector';
+import { useSentryIntegration } from './hooks/useSentryIntegration';
 import { initMixpanel } from './utils/mixpanelInit';
 import { initializeCsrfToken } from './api/api-client';
 import CacheCleanup from './utils/cache-cleanup';
+import ChunkErrorHandler from './utils/chunk-error-handler';
 import { consentManager } from './utils/consentManager';
 
 // Types & Constants
@@ -49,6 +51,9 @@ import { registerSW } from './utils/serviceWorkerRegistration';
 const App: React.FC = memo(() => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const language = useAppSelector(state => state.localesReducer.lng);
+
+  // Initialize Sentry integration for user context tracking
+  useSentryIntegration();
 
   // Memoize mixpanel initialization to prevent re-initialization
   const mixpanelToken = useMemo(() => import.meta.env.VITE_MIXPANEL_TOKEN as string, []);
@@ -127,51 +132,14 @@ const App: React.FC = memo(() => {
 
   // Global error handlers for module loading issues
   useEffect(() => {
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      const error = event.reason;
+    // Setup global chunk error handlers
+    ChunkErrorHandler.setupGlobalHandlers();
 
-      // Check if this is a module loading error
-      if (
-        error?.message?.includes('Failed to fetch dynamically imported module') ||
-        error?.message?.includes('Loading chunk') ||
-        error?.name === 'ChunkLoadError'
-      ) {
-        console.error('Unhandled module loading error:', error);
-        event.preventDefault(); // Prevent default browser error handling
-
-        // Clear caches and reload
-        CacheCleanup.clearAllCaches()
-          .then(() => CacheCleanup.forceReload('/auth/login'))
-          .catch(() => window.location.reload());
-      }
-    };
-
-    const handleError = (event: ErrorEvent) => {
-      const error = event.error;
-
-      // Check if this is a module loading error
-      if (
-        error?.message?.includes('Failed to fetch dynamically imported module') ||
-        error?.message?.includes('Loading chunk') ||
-        error?.name === 'ChunkLoadError'
-      ) {
-        console.error('Global module loading error:', error);
-        event.preventDefault(); // Prevent default browser error handling
-
-        // Clear caches and reload
-        CacheCleanup.clearAllCaches()
-          .then(() => CacheCleanup.forceReload('/auth/login'))
-          .catch(() => window.location.reload());
-      }
-    };
-
-    // Add global error handlers
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-    window.addEventListener('error', handleError);
+    // Reset retry count on successful mount
+    ChunkErrorHandler.resetRetryCount();
 
     return () => {
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-      window.removeEventListener('error', handleError);
+      // Cleanup is handled internally by ChunkErrorHandler
     };
   }, []);
 

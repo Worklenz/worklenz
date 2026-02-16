@@ -1,13 +1,9 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   Modal,
-  Form,
   Input,
   Button,
-  Space,
-  Divider,
   Typography,
-  Flex,
   ColorPicker,
   Tooltip,
 } from '@/shared/antd-imports';
@@ -154,9 +150,18 @@ const SortablePhaseItem: React.FC<PhaseItemProps & { id: string }> = ({
           <ColorPicker
             value={color}
             onChange={value => setColor(value.toHexString())}
-            onChangeComplete={handleColorChangeComplete}
+            // onChangeComplete={handleColorChangeComplete}
             size="small"
             className="phase-color-picker"
+            // disabledAlpha
+            panelRender={panel => (
+              <div className="flex flex-col gap-2">
+                {panel}
+                <Button type="primary" size="small" block onClick={handleColorChangeComplete}>
+                  {t('apply')}
+                </Button>
+              </div>
+            )}
           />
           <div
             className="w-2.5 h-2.5 rounded border shadow-sm"

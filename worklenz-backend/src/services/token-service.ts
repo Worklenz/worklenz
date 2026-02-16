@@ -200,8 +200,8 @@ class TokenService {
     try {
       await client.query("BEGIN");
 
-      // Always hash password and attach to invitation object for use in subsequent queries
-      const passwordHash = crypto.createHash("sha256").update(userData.password).digest("hex");
+      // Always hash password with bcrypt and attach to invitation object for use in subsequent queries
+      const passwordHash = this.hashClientPassword(userData.password);
       (invitation as any).password_hash = passwordHash;
 
       let userResult: any;
@@ -226,7 +226,7 @@ class TokenService {
             [userData.userId, invitation.client_id, userData.name, invitation.role, invitation.team_id, actualClientUserId]
           );
         } else {
-          // Standalone client portal user - update with password_hash
+          // Standalone client portal user - update with password_hash (bcrypt)
           await client.query(
             `UPDATE client_users 
              SET client_id = $1, name = $2, password_hash = $3, role = $4, team_id = $5, status = 'active', updated_at = NOW()
@@ -261,7 +261,7 @@ class TokenService {
             invitation.team_id
           ];
         } else {
-          // Standalone client portal user - create with password_hash
+          // Standalone client portal user - create with password_hash (bcrypt)
           createUserQuery = `
             INSERT INTO client_users (
               client_id, email, name, password_hash, role, team_id, status, created_at, updated_at
@@ -272,7 +272,7 @@ class TokenService {
             invitation.client_id,
             invitation.email,
             userData.name,
-            passwordHash, // Use the hash created earlier
+            passwordHash, // Bcrypt hash created earlier
             invitation.role,
             invitation.team_id
           ];
@@ -333,56 +333,137 @@ class TokenService {
     }
   }
 
+  // Verify client password - supports both bcrypt and SHA256 with lazy migration
+  async verifyClientPassword(password: string, storedHash: string): Promise<{ isValid: boolean; needsMigration: boolean }> {
+    try {
+      // Try bcrypt first (modern hashing)
+      try {
+        const bcryptMatch = bcrypt.compareSync(password, storedHash);
+        if (bcryptMatch) {
+          return { isValid: true, needsMigration: false };
+        }
+      } catch (bcryptError) {
+        // Not a valid bcrypt hash, continue to SHA256 check
+      }
+
+      // Try SHA256 (legacy hashing)
+      const sha256Hash = crypto.createHash("sha256").update(password).digest("hex");
+      if (storedHash === sha256Hash) {
+        return { isValid: true, needsMigration: true }; // Valid but needs migration to bcrypt
+      }
+
+      return { isValid: false, needsMigration: false };
+    } catch (error) {
+      console.error("Error verifying client password:", error);
+      return { isValid: false, needsMigration: false };
+    }
+  }
+
+  // Hash client password using bcrypt (modern standard)
+  hashClientPassword(password: string): string {
+    const salt = bcrypt.genSaltSync(10);
+    return bcrypt.hashSync(password, salt);
+  }
+
+  // Migrate password hash from SHA256 to bcrypt
+  async migratePasswordHash(clientUserId: string, newPassword: string): Promise<void> {
+    try {
+      const newHash = this.hashClientPassword(newPassword);
+      await db.query(
+        "UPDATE client_users SET password_hash = $1, updated_at = NOW() WHERE id = $2",
+        [newHash, clientUserId]
+      );
+    } catch (error) {
+      console.error("Error migrating password hash:", error);
+    }
+  }
+
   // Authenticate client user
   async authenticateClient(email: string, password: string): Promise<any> {
-    const passwordHash = crypto.createHash("sha256").update(password).digest("hex");
+    try {
+      const normalizedEmail = email.toLowerCase().trim();
 
-    // First, try to find the client user by email
-    const clientUserQuery = `
-      SELECT cu.*, c.name as client_name, c.company_name, c.team_id
-      FROM client_users cu
-      JOIN clients c ON cu.client_id = c.id
-      WHERE LOWER(cu.email) = LOWER($1) AND cu.status = 'active'
-    `;
-
-    const clientUserResult = await db.query(clientUserQuery, [email]);
-
-    if (clientUserResult.rows.length === 0) {
-      return null; // No client user found with this email
-    }
-
-    const clientUser = clientUserResult.rows[0];
-
-    // Check if this is a linked Worklenz user (has user_id)
-    if (clientUser.user_id) {
-      // Authenticate against Worklenz users table
-      const worklenzAuthQuery = `
-        SELECT u.id, u.email, u.name, u.password
-        FROM users u
-        WHERE u.id = $1
+      // First, check if user exists
+      const userExistsQuery = `
+        SELECT cu.*, c.name as client_name, c.company_name, c.team_id, c.status as client_status
+        FROM client_users cu
+        LEFT JOIN clients c ON cu.client_id = c.id
+        WHERE LOWER(cu.email) = LOWER($1)
       `;
-      const worklenzUserResult = await db.query(worklenzAuthQuery, [clientUser.user_id]);
 
-      if (worklenzUserResult.rows.length === 0) {
-        return null; // Linked Worklenz user not found
+      const userExistsResult = await db.query(userExistsQuery, [normalizedEmail]);
+
+      if (userExistsResult.rows.length === 0) {
+        return null; // No client user found with this email
       }
 
-      const worklenzUser = worklenzUserResult.rows[0];
+      const clientUser = userExistsResult.rows[0];
 
-      // Verify password against Worklenz user password (bcrypt)
-      const passwordMatch = bcrypt.compareSync(password, worklenzUser.password);
-      if (passwordMatch) {
-        return clientUser; // Password matches, return client user info
+      // Check user status
+      if (clientUser.status !== 'active') {
+        return null; // User is not active
       }
 
-      return null; // Password doesn't match
-    } else {
-      // Standalone client portal user - authenticate against password_hash (SHA256)
-      if (clientUser.password_hash === passwordHash) {
-        return clientUser; // Password matches
+      // Check if client exists (required for authentication)
+      if (!clientUser.client_id) {
+        return null; // User has no associated client
       }
 
-      return null; // Password doesn't match
+      // Check if client exists in clients table
+      if (!clientUser.client_name) {
+        return null; // Client doesn't exist
+      }
+
+      // Check if this is a linked Worklenz user (has user_id)
+      if (clientUser.user_id) {
+        // Authenticate against Worklenz users table
+        const worklenzAuthQuery = `
+          SELECT u.id, u.email, u.name, u.password
+          FROM users u
+          WHERE u.id = $1 AND u.is_deleted = FALSE
+        `;
+        const worklenzUserResult = await db.query(worklenzAuthQuery, [clientUser.user_id]);
+
+        if (worklenzUserResult.rows.length === 0) {
+          return null; // Linked Worklenz user not found
+        }
+
+        const worklenzUser = worklenzUserResult.rows[0];
+
+        if (!worklenzUser.password) {
+          return null; // No password set for linked user
+        }
+
+        // Verify password against Worklenz user password (bcrypt)
+        const passwordMatch = bcrypt.compareSync(password, worklenzUser.password);
+        if (passwordMatch) {
+          return clientUser; // Password matches, return client user info
+        }
+
+        return null; // Password doesn't match
+      } else {
+        // Standalone client portal user - authenticate against password_hash (supports both bcrypt and SHA256)
+        if (!clientUser.password_hash) {
+          return null; // No password hash set
+        }
+
+        // Verify password using centralized method (supports both bcrypt and SHA256)
+        const verificationResult = await this.verifyClientPassword(password, clientUser.password_hash);
+        
+        if (verificationResult.isValid) {
+          // Lazy migration: if password is SHA256, migrate to bcrypt
+          if (verificationResult.needsMigration) {
+            await this.migratePasswordHash(clientUser.id, password);
+          }
+          
+          return clientUser; // Password matches
+        }
+
+        return null; // Password doesn't match
+      }
+    } catch (error) {
+      console.error(`[Client Auth] Error during authentication for email: ${email}`, error);
+      return null;
     }
   }
 

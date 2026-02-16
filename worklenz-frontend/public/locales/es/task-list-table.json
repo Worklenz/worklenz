@@ -24,6 +24,7 @@
   "lastUpdatedColumn": "Última actualización",
   "lastupdatedColumn": "Última actualización",
   "reporterColumn": "Reportador",
+  "moveColumnHandle": "Mover columna",
   "dueTimeColumn": "Hora de vencimiento",
   "todoSelectorText": "Por hacer",
   "doingSelectorText": "En progreso",
@@ -56,7 +57,7 @@
   "pendingInvitation": "Invitación pendiente",
 
   "contextMenu": {
-    "duplicateTask":"Tarea duplicada",
+    "duplicateTask": "Tarea duplicada",
     "assignToMe": "Asignar a mí",
     "copyLink": "Copiar enlace a la tarea",
     "linkCopied": "Enlace copiado al portapapeles",

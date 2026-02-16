@@ -201,7 +201,7 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
             }
             open={isDrawerOpen}
             onCancel={handleClose}
-            destroyOnClose={false}
+            destroyOnHidden={false}
             width={500}
             loading={loading}
             footer={

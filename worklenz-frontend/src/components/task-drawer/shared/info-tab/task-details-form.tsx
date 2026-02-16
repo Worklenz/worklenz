@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   Form,
   ConfigProvider,
@@ -70,29 +70,42 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
   const { t } = useTranslation('task-drawer/task-drawer');
   const [form] = Form.useForm();
   const { project } = useAppSelector(state => state.projectReducer);
+  
+  // Use ref to track the current task ID to prevent unnecessary form resets
+  const previousTaskIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!taskFormViewModel) {
       form.resetFields();
+      previousTaskIdRef.current = null;
       return;
     }
 
     const { task } = taskFormViewModel;
-    form.setFieldsValue({
-      taskId: task?.id,
-      phase: task?.phase_id,
-      assignees: task?.assignees,
-      dueDate: task?.end_date ?? null,
-      hours: task?.total_hours || 0,
-      minutes: task?.total_minutes || 0,
-      priority: task?.priority || 'medium',
-      labels: task?.labels || [],
-      billable: task?.billable || false,
-      notify: [],
-      progress_value: task?.progress_value || null,
-      weight: task?.weight || null,
-    });
-  }, [taskFormViewModel, form]);
+    const currentTaskId = task?.id;
+
+    // Only reset form fields when the task ID changes (different task loaded)
+    // This prevents form resets when individual fields are updated via socket
+    if (currentTaskId && currentTaskId !== previousTaskIdRef.current) {
+      form.setFieldsValue({
+        taskId: task?.id,
+        phase: task?.phase_id,
+        assignees: task?.assignees,
+        dueDate: task?.end_date ?? null,
+        hours: task?.total_hours || 0,
+        minutes: task?.total_minutes || 0,
+        priority: task?.priority || 'medium',
+        labels: task?.labels || [],
+        billable: task?.billable || false,
+        notify: [],
+        progress_value: task?.progress_value || null,
+        weight: task?.weight || null,
+      });
+      
+      // Update the ref to track the current task
+      previousTaskIdRef.current = currentTaskId;
+    }
+  }, [taskFormViewModel?.task?.id, form]);
 
   const priorityMenuItems = taskFormViewModel?.priorities?.map(priority => ({
     key: priority.id,

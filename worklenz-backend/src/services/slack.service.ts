@@ -57,7 +57,6 @@ interface SlackOAuthResponse {
 }
 
 export class SlackService {
-
   /**
    * Create or update Slack workspace connection
    * Tokens are encrypted before storage
@@ -69,7 +68,9 @@ export class SlackService {
   ): Promise<SlackWorkspace> {
     try {
       // Encrypt sensitive tokens
-      const encryptedAccessToken = EncryptionService.encrypt(slackData.access_token);
+      const encryptedAccessToken = EncryptionService.encrypt(
+        slackData.access_token
+      );
       const encryptedBotToken = slackData.bot?.bot_access_token
         ? EncryptionService.encrypt(slackData.bot.bot_access_token)
         : null;
@@ -102,7 +103,7 @@ export class SlackService {
         encryptedBotToken,
         slackData.scope,
         slackData.authed_user?.id,
-        userId
+        userId,
       ]);
 
       const workspace = result.rows[0];
@@ -115,7 +116,7 @@ export class SlackService {
         {
           workspace_id: workspace.id,
           team_id: slackData.team_id,
-          team_name: slackData.team_name
+          team_name: slackData.team_name,
         }
       );
 
@@ -151,7 +152,9 @@ export class SlackService {
    * Get decrypted bot token for sending messages
    * ONLY use this internally for API calls
    */
-  private static async getDecryptedBotToken(workspaceId: string): Promise<string | null> {
+  private static async getDecryptedBotToken(
+    workspaceId: string
+  ): Promise<string | null> {
     try {
       const q = `
         SELECT bot_access_token_encrypted
@@ -160,11 +163,16 @@ export class SlackService {
       `;
       const result = await db.query(q, [workspaceId]);
 
-      if (result.rows.length === 0 || !result.rows[0].bot_access_token_encrypted) {
+      if (
+        result.rows.length === 0 ||
+        !result.rows[0].bot_access_token_encrypted
+      ) {
         return null;
       }
 
-      return EncryptionService.decrypt(result.rows[0].bot_access_token_encrypted);
+      return EncryptionService.decrypt(
+        result.rows[0].bot_access_token_encrypted
+      );
     } catch (error) {
       log_error(error);
       throw new Error("Failed to retrieve bot token");
@@ -217,7 +225,7 @@ export class SlackService {
           organizationId || null,
           {
             workspace_id: workspaceId,
-            team_name: result.rows[0].team_name
+            team_name: result.rows[0].team_name,
           }
         );
       }
@@ -232,7 +240,12 @@ export class SlackService {
    */
   public static async syncChannels(
     workspaceId: string,
-    channels: { id: string; name: string; is_private?: boolean; is_archived?: boolean }[]
+    channels: {
+      id: string;
+      name: string;
+      is_private?: boolean;
+      is_archived?: boolean;
+    }[]
   ): Promise<void> {
     const client: PoolClient = await db.pool.connect();
 
@@ -255,7 +268,7 @@ export class SlackService {
             channel.id,
             channel.name,
             channel.is_private || false,
-            channel.is_archived || false
+            channel.is_archived || false,
           ]
         );
       }
@@ -289,7 +302,7 @@ export class SlackService {
       const response = await fetch(url.toString(), {
         method: "GET",
         headers: {
-          "Authorization": `Bearer ${botToken}`,
+          Authorization: `Bearer ${botToken}`,
           "Content-Type": "application/json",
         },
       });
@@ -302,12 +315,13 @@ export class SlackService {
       }
 
       // Map and sync channels
-      const channels = data.channels?.map((ch: any) => ({
-        id: ch.id,
-        name: ch.name,
-        is_private: ch.is_private || false,
-        is_archived: ch.is_archived || false,
-      })) || [];
+      const channels =
+        data.channels?.map((ch: any) => ({
+          id: ch.id,
+          name: ch.name,
+          is_private: ch.is_private || false,
+          is_archived: ch.is_archived || false,
+        })) || [];
 
       await this.syncChannels(workspaceId, channels);
     } catch (error) {
@@ -352,12 +366,12 @@ export class SlackService {
           `SELECT COUNT(*) as total FROM slack_channels
            WHERE slack_workspace_id = $1 AND is_archived = false`,
           [workspaceId]
-        )
+        ),
       ]);
 
       return {
         channels: channelsResult.rows,
-        total: parseInt(totalCountResult.rows[0].total)
+        total: parseInt(totalCountResult.rows[0].total),
       };
     } catch (error) {
       log_error(error);
@@ -398,7 +412,10 @@ export class SlackService {
    * Join a Slack channel using conversations.join API
    * Only works for public channels
    */
-  public static async joinChannel(workspaceId: string, channelId: string): Promise<{
+  public static async joinChannel(
+    workspaceId: string,
+    channelId: string
+  ): Promise<{
     success: boolean;
     message: string;
     alreadyInChannel?: boolean;
@@ -408,7 +425,7 @@ export class SlackService {
       if (!botToken) {
         return {
           success: false,
-          message: "Bot token not found for workspace"
+          message: "Bot token not found for workspace",
         };
       }
 
@@ -416,10 +433,10 @@ export class SlackService {
 
       try {
         const result = await slack.conversations.join({ channel: channelId });
-        
+
         return {
           success: true,
-          message: "Successfully joined channel"
+          message: "Successfully joined channel",
         };
       } catch (error: any) {
         // Check if bot is already in the channel
@@ -427,15 +444,19 @@ export class SlackService {
           return {
             success: true,
             message: "Bot is already in the channel",
-            alreadyInChannel: true
+            alreadyInChannel: true,
           };
         }
 
         // Check if channel is private
-        if (error.data?.error === "channel_not_found" || error.data?.error === "is_private") {
+        if (
+          error.data?.error === "channel_not_found" ||
+          error.data?.error === "is_private"
+        ) {
           return {
             success: false,
-            message: "Cannot auto-join private channels. Please manually invite the bot using /invite @worklenz in the channel."
+            message:
+              "Cannot auto-join private channels. Please manually invite the bot using /invite @worklenz in the channel.",
           };
         }
 
@@ -443,20 +464,21 @@ export class SlackService {
         if (error.data?.error === "missing_scope") {
           return {
             success: false,
-            message: "Missing permissions. Please reconnect the Slack workspace."
+            message:
+              "Missing permissions. Please reconnect the Slack workspace.",
           };
         }
 
         return {
           success: false,
-          message: error.data?.error || "Failed to join channel"
+          message: error.data?.error || "Failed to join channel",
         };
       }
     } catch (error) {
       log_error(error);
       return {
         success: false,
-        message: "An unexpected error occurred"
+        message: "An unexpected error occurred",
       };
     }
   }
@@ -470,18 +492,29 @@ export class SlackService {
     results: Array<{ channelName: string; success: boolean; message: string }>;
   }> {
     try {
-      const { channels } = await this.getChannelsByWorkspace(workspaceId, 1, 500);
-      const results: Array<{ channelName: string; success: boolean; message: string }> = [];
+      const { channels } = await this.getChannelsByWorkspace(
+        workspaceId,
+        1,
+        500
+      );
+      const results: Array<{
+        channelName: string;
+        success: boolean;
+        message: string;
+      }> = [];
       let joinedCount = 0;
       let failedCount = 0;
 
       for (const channel of channels) {
         if (!channel.is_private && !channel.is_archived) {
-          const result = await this.joinChannel(workspaceId, channel.channel_id);
+          const result = await this.joinChannel(
+            workspaceId,
+            channel.channel_id
+          );
           results.push({
             channelName: channel.channel_name,
             success: result.success,
-            message: result.message
+            message: result.message,
           });
 
           if (result.success) {
@@ -491,10 +524,10 @@ export class SlackService {
           }
 
           // Add delay to avoid rate limits
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
       }
-      
+
       return { joinedCount, failedCount, results };
     } catch (error) {
       log_error(error);
@@ -511,7 +544,9 @@ export class SlackService {
     notificationTypes: string[],
     createdBy?: string,
     autoJoin: boolean = true
-  ): Promise<SlackChannelConfig & { joinResult?: { success: boolean; message: string } }> {
+  ): Promise<
+    SlackChannelConfig & { joinResult?: { success: boolean; message: string } }
+  > {
     try {
       // First, create or update the channel config
       const q = `
@@ -525,26 +560,39 @@ export class SlackService {
         RETURNING *;
       `;
 
-      const result = await db.query(q, [projectId, slackChannelId, notificationTypes, createdBy]);
+      const result = await db.query(q, [
+        projectId,
+        slackChannelId,
+        notificationTypes,
+        createdBy,
+      ]);
       const config = result.rows[0];
 
       // Attempt to auto-join the channel if requested
       let joinResult;
       if (autoJoin) {
         const channelInfo = await this.getChannelInfo(slackChannelId);
-        if (channelInfo && !channelInfo.is_private && !channelInfo.is_archived) {
-          joinResult = await this.joinChannel(channelInfo.workspace_id, channelInfo.channel_id);
+        if (
+          channelInfo &&
+          !channelInfo.is_private &&
+          !channelInfo.is_archived
+        ) {
+          joinResult = await this.joinChannel(
+            channelInfo.workspace_id,
+            channelInfo.channel_id
+          );
         } else if (channelInfo?.is_private) {
           joinResult = {
             success: false,
-            message: "Private channel - manual invitation required. Use /invite @worklenz in the channel."
+            message:
+              "Private channel - manual invitation required. Use /invite @worklenz in the channel.",
           };
         }
       }
 
       return {
         ...config,
-        joinResult
+        joinResult,
       };
     } catch (error) {
       log_error(error);
@@ -598,7 +646,7 @@ export class SlackService {
         WHERE scc.project_id = $1
         ORDER BY scc.is_active DESC, scc.created_at DESC;
       `;
-      
+
       const result = await db.query(q, [projectId]);
       return result.rows;
     } catch (error) {
@@ -716,9 +764,9 @@ export class SlackService {
 
       const messagePayload = {
         channel: config.channel_id,
-        text: message.text as string || "Worklenz Notification",
-        blocks: message.blocks as any[] || undefined,
-        ...message
+        text: (message.text as string) || "Worklenz Notification",
+        blocks: (message.blocks as any[]) || undefined,
+        ...message,
       };
 
       const result = await slack.chat.postMessage(messagePayload);
@@ -736,7 +784,7 @@ export class SlackService {
         message,
         "sent",
         null,
-        result.ts as string || null
+        (result.ts as string) || null
       );
     } catch (error) {
       log_error(error);
@@ -772,7 +820,7 @@ export class SlackService {
   ): Promise<void> {
     try {
       const sentAt = status === "sent" ? new Date().toISOString() : null;
-      
+
       const q = `
         INSERT INTO slack_notifications (
           slack_channel_config_id,
@@ -797,7 +845,7 @@ export class SlackService {
         status,
         errorMessage,
         slackMessageTs,
-        sentAt
+        sentAt,
       ]);
     } catch (error) {
       log_error(error);
@@ -835,7 +883,7 @@ export class SlackService {
         organizationId,
         JSON.stringify(details),
         null, // IP address would need to be passed from controller
-        null  // User agent would need to be passed from controller
+        null, // User agent would need to be passed from controller
       ]);
     } catch (error) {
       // Log but don't throw - audit logging failure shouldn't break operations

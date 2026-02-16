@@ -136,7 +136,7 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
           position: 'relative',
           overflow: 'hidden'
         }}
-        bodyStyle={{ padding: 24 }}
+        styles={{ body: { padding: 24 } }}
       >
         {/* Animated background pattern */}
         <div style={{
@@ -247,7 +247,7 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
         border: 'none',
         boxShadow: '0 4px 20px rgba(102, 126, 234, 0.25)'
       }}
-      bodyStyle={{ padding: 24 }}
+      styles={{ body: { padding: 24 } }}
     >
       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
         {/* Simple badge and title */}

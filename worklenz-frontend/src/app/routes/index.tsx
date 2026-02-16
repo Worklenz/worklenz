@@ -11,9 +11,10 @@ import { useAuthService } from '@/hooks/useAuth';
 import { AuthenticatedLayout } from '@/layouts/AuthenticatedLayout';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
+import ChunkErrorHandler from '@/utils/chunk-error-handler';
 
 // Lazy load the NotFoundPage component for better code splitting
-const NotFoundPage = lazy(() => import('@/pages/404-page/404-page'));
+const NotFoundPage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/404-page/404-page'), 'NotFoundPage'));
 
 interface GuardProps {
   children: React.ReactNode;

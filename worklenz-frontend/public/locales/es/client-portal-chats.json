@@ -57,5 +57,6 @@
   "attachFile": "Adjuntar archivo",
   "emojiPicker": "Agregar emoji",
   "noChatsWithClient": "Aún no hay conversaciones con este cliente",
-  "startConversationWithClient": "Inicia una conversación para discutir esta solicitud con el cliente."
+  "startConversationWithClient": "Inicia una conversación para discutir esta solicitud con el cliente.",
+  "messageUnavailable": "Mensaje no disponible"
 }

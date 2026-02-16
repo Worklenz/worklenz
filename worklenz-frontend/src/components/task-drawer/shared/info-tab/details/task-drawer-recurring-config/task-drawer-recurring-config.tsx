@@ -21,6 +21,7 @@ import {
   ITaskRecurring,
   ITaskRecurringSchedule,
   ITaskRecurringScheduleData,
+  IRecurringMode,
 } from '@/types/tasks/task-recurring-schedule';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { useTranslation } from 'react-i18next';
@@ -33,6 +34,8 @@ import { setTaskRecurringSchedule } from '@/features/task-drawer/task-drawer.sli
 import { useAuthService } from '@/hooks/useAuth';
 import { isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
+import { ITaskStatus } from '@/types/tasks/taskStatus.types';
 
 const monthlyDateOptions = Array.from({ length: 28 }, (_, i) => i + 1);
 
@@ -48,10 +51,11 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
   const repeatOptions: IRepeatOption[] = [
     { label: t('daily'), value: ITaskRecurring.Daily },
     { label: t('weekly'), value: ITaskRecurring.Weekly },
+    { label: t('monthly'), value: ITaskRecurring.Monthly },
+    { label: t('yearly'), value: ITaskRecurring.Yearly },
     { label: t('everyXDays'), value: ITaskRecurring.EveryXDays },
     { label: t('everyXWeeks'), value: ITaskRecurring.EveryXWeeks },
     { label: t('everyXMonths'), value: ITaskRecurring.EveryXMonths },
-    { label: t('monthly'), value: ITaskRecurring.Monthly },
   ];
 
   const daysOfWeek = [
@@ -88,6 +92,10 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
   const [loadingData, setLoadingData] = useState(false);
   const [updatingData, setUpdatingData] = useState(false);
   const [scheduleData, setScheduleData] = useState<ITaskRecurringSchedule>({});
+  const [recurringMode, setRecurringMode] = useState<IRecurringMode>(IRecurringMode.CreateTask);
+  const [targetStatusId, setTargetStatusId] = useState<string | null>(null);
+  const [taskStatuses, setTaskStatuses] = useState<ITaskStatus[]>([]);
+  const [loadingStatuses, setLoadingStatuses] = useState(false);
 
   const handleChange = (checked: boolean) => {
     if (isFree) {
@@ -143,34 +151,27 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
     setSelectedDays(checkedValues);
   };
 
-  const getSelectedDays = () => {
-    return daysOfWeek
-      .filter(day => day.checked) // Get only the checked days
-      .map(day => day.value); // Extract their numeric values
-  };
-
   const getUpdateBody = () => {
     if (!task.id || !task.schedule_id || !repeatOption.value) return;
 
     const body: ITaskRecurringSchedule = {
       id: task.id,
       schedule_type: repeatOption.value,
+      recurring_mode: recurringMode,
+      target_status_id: recurringMode === IRecurringMode.ChangeStatus ? targetStatusId : null,
     };
 
     switch (repeatOption.value) {
       case ITaskRecurring.Weekly:
-        body.days_of_week = getSelectedDays();
+        body.days_of_week = selectedDays;
         break;
 
       case ITaskRecurring.Monthly:
         if (monthlyOption === 'date') {
           body.date_of_month = selectedMonthlyDate;
-          setSelectedMonthlyDate(0);
-          setSelectedMonthlyDay(0);
         } else {
           body.week_of_month = selectedMonthlyWeek;
           body.day_of_month = selectedMonthlyDay;
-          setSelectedMonthlyDate(0);
         }
         break;
 
@@ -209,9 +210,10 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
     }
   };
 
-  const updateDaysOfWeek = () => {
-    for (let i = 0; i < daysOfWeek.length; i++) {
-      daysOfWeek[i].checked = scheduleData.days_of_week?.includes(daysOfWeek[i].value) ?? false;
+  const updateDaysOfWeek = (data?: ITaskRecurringSchedule) => {
+    const daysData = data?.days_of_week || scheduleData.days_of_week;
+    if (daysData && Array.isArray(daysData)) {
+      setSelectedDays(daysData);
     }
   };
 
@@ -224,18 +226,21 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
         setScheduleData(res.body);
         if (!res.body) {
           setRepeatOption(repeatOptions[0]);
+          setRecurringMode(IRecurringMode.CreateTask);
         } else {
           const selected = repeatOptions.find(e => e.value == res.body.schedule_type);
           if (selected) {
             setRepeatOption(selected);
-            setSelectedMonthlyDate(scheduleData.date_of_month || 1);
-            setSelectedMonthlyDay(scheduleData.day_of_month || 0);
-            setSelectedMonthlyWeek(scheduleData.week_of_month || 0);
-            setIntervalDays(scheduleData.interval_days || 1);
-            setIntervalWeeks(scheduleData.interval_weeks || 1);
-            setIntervalMonths(scheduleData.interval_months || 1);
-            setMonthlyOption(selectedMonthlyDate ? 'date' : 'day');
-            updateDaysOfWeek();
+            setSelectedMonthlyDate(res.body.date_of_month || 1);
+            setSelectedMonthlyDay(res.body.day_of_month || 0);
+            setSelectedMonthlyWeek(res.body.week_of_month || 0);
+            setIntervalDays(res.body.interval_days || 1);
+            setIntervalWeeks(res.body.interval_weeks || 1);
+            setIntervalMonths(res.body.interval_months || 1);
+            setMonthlyOption(res.body.date_of_month ? 'date' : 'day');
+            setRecurringMode(res.body.recurring_mode || IRecurringMode.CreateTask);
+            setTargetStatusId(res.body.target_status_id || null);
+            updateDaysOfWeek(res.body);
           }
         }
       }
@@ -243,6 +248,26 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
       logger.error('getScheduleData', e);
     } finally {
       setLoadingData(false);
+    }
+  };
+
+  const fetchTaskStatuses = async () => {
+    if (!task.project_id) return;
+    setLoadingStatuses(true);
+    try {
+      const res = await statusApiService.getStatuses(task.project_id);
+      if (res.done && res.body) {
+        setTaskStatuses(res.body);
+        
+        // Set default to first status if not already set
+        if (!targetStatusId && res.body.length > 0) {
+          setTargetStatusId(res.body[0].id || null);
+        }
+      }
+    } catch (e) {
+      logger.error('fetchTaskStatuses', e);
+    } finally {
+      setLoadingStatuses(false);
     }
   };
 
@@ -255,6 +280,7 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
 
     if (task) setRecurring(!!task.schedule_id);
     if (task.schedule_id) void getScheduleData();
+    if (task.project_id) void fetchTaskStatuses();
     socket?.on(SocketEvents.TASK_RECURRING_CHANGE.toString(), handleResponse);
   }, [task?.schedule_id]);
 
@@ -279,6 +305,38 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
               content={
                 <Skeleton loading={loadingData} active>
                   <Form layout="vertical">
+                    <Form.Item label={t('recurringMode', { defaultValue: 'Recurring Mode' })}>
+                      <Radio.Group
+                        value={recurringMode}
+                        onChange={e => setRecurringMode(e.target.value)}
+                      >
+                        <Radio.Button value={IRecurringMode.CreateTask}>
+                          {t('createNewTask', { defaultValue: 'Create New Task' })}
+                        </Radio.Button>
+                        <Radio.Button value={IRecurringMode.ChangeStatus}>
+                          {t('changeTaskStatus', { defaultValue: 'Change Task Status' })}
+                        </Radio.Button>
+                      </Radio.Group>
+                    </Form.Item>
+
+                    {recurringMode === IRecurringMode.ChangeStatus && (
+                      <Form.Item label={t('targetStatus', { defaultValue: 'Target Status' })}>
+                        <Select
+                          value={targetStatusId}
+                          onChange={setTargetStatusId}
+                          loading={loadingStatuses}
+                          placeholder={t('selectStatus', { defaultValue: 'Select Status' })}
+                          style={{ width: '100%' }}
+                        >
+                          {taskStatuses.map(status => (
+                            <Select.Option key={status.id} value={status.id}>
+                              {status.name}
+                            </Select.Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                    )}
+
                     <Form.Item label={t('repeats')}>
                       <Select
                         value={repeatOption.value}

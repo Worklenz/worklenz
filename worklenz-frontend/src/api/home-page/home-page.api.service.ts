@@ -5,7 +5,7 @@ import { toQueryString } from '@/utils/toQueryString';
 import { IHomeTasksModel, IHomeTasksConfig } from '@/types/home/home-page.types';
 import { IMyTask } from '@/types/home/my-tasks.types';
 import { IProject } from '@/types/project/project.types';
-import { getCsrfToken, refreshCsrfToken } from '../api-client';
+import { getCsrfToken, ensureCsrfToken } from '../api-client';
 import config from '@/config/env';
 
 const rootUrl = '/home';
@@ -18,7 +18,11 @@ const api = createApi({
       // Get CSRF token, refresh if needed
       let token = getCsrfToken();
       if (!token) {
-        token = await refreshCsrfToken();
+        try {
+          token = await ensureCsrfToken();
+        } catch (error) {
+          console.error('[CSRF] Failed to refresh CSRF token:', error);
+        }
       }
 
       if (token) {

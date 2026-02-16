@@ -5,15 +5,14 @@ import RecivedChatItem from './recived-chat-item';
 import { SendOutlined, PaperClipOutlined, SmileOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { TempChatsType } from './chat-box-wrapper';
-import { useAppDispatch } from '../../../../../hooks/useAppDispatch';
-import { sendMessage } from '../../../../../features/clients-portal/chats/chats-slice';
-import { useAppSelector } from '../../../../../hooks/useAppSelector';
-import { themeWiseColor } from '../../../../../utils/themeWiseColor';
-import CustomAvatar from '../../../../../components/CustomAvatar';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { sendMessage } from '@features/clients-portal/chats/chats-slice';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { themeWiseColor } from '@utils/themeWiseColor';
+import CustomAvatar from '@components/CustomAvatar';
 import {
-  useGetMessagesQuery,
-  useSendMessageMutation,
-  ClientPortalMessage,
+  useGetOrganizationMessagesQuery,
+  useSendOrganizationMessageMutation,
 } from '../../../../../api/client-portal/client-portal-api';
 
 type ChatBoxProps = {
@@ -29,17 +28,70 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const dispatch = useAppDispatch();
 
-  const { data: messages, isLoading, error, refetch } = useGetMessagesQuery(openedChat.id);
-  const [sendMessageMutation, { isLoading: isSending }] = useSendMessageMutation();
+  // Get clientId from chat object or extract from chatId
+  const clientId = React.useMemo(() => {
+    if (openedChat.clientId) {
+      return openedChat.clientId;
+    }
+    // Fallback: Extract clientId from chatId (format: clientId-date)
+    if (!openedChat.id || !openedChat.id.includes('-')) return null;
+    const parts = openedChat.id.split('-');
+    if (parts.length >= 4) {
+      const dateParts = parts.slice(-3);
+      const dateStrTest = dateParts.join('-');
+      // Validate date format (YYYY-MM-DD)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStrTest)) {
+        return parts.slice(0, -3).join('-');
+      }
+    }
+    return null;
+  }, [openedChat.id, openedChat.clientId]);
+
+  const { data: messagesData, isLoading, error, refetch } = useGetOrganizationMessagesQuery(
+    { chatId: openedChat.id, clientId: clientId || '' },
+    { 
+      skip: !clientId,
+      refetchOnMountOrArgChange: true, // Always refetch when chat is opened
+      refetchOnFocus: true, // Refetch when window regains focus
+    }
+  );
+  const [sendMessageMutation, { isLoading: isSending }] = useSendOrganizationMessageMutation();
+
+  // Extract messages from response
+  const messages = React.useMemo(() => {
+    if (messagesData) {
+      // Handle different response formats
+      if (Array.isArray(messagesData)) {
+        return messagesData;
+      }
+      // getChatDetails returns { date, messages, total, page, limit }
+      if ('messages' in messagesData && Array.isArray(messagesData.messages)) {
+        return messagesData.messages;
+      }
+      // Some APIs wrap in body - check with type guard
+      const dataWithBody = messagesData as any;
+      if (dataWithBody.body) {
+        if (Array.isArray(dataWithBody.body)) {
+          return dataWithBody.body;
+        }
+        if (dataWithBody.body.messages && Array.isArray(dataWithBody.body.messages)) {
+          return dataWithBody.body.messages;
+        }
+      }
+    }
+    return [];
+  }, [messagesData]);
 
   const chatData = React.useMemo(() => {
     try {
-      if (messages && Array.isArray(messages)) {
-        return messages.map((msg: ClientPortalMessage) => ({
+      if (messages && Array.isArray(messages) && messages.length > 0) {
+        // Get current user ID from store or context
+        const currentUserId = (window as any).__WORKLENZ_USER__?.id;
+        return messages.map((msg: any) => ({
           id: msg.id || '',
-          content: msg.content || '',
+          content: msg.message || msg.content || '',
           time: new Date(msg.created_at || Date.now()),
-          is_me: msg.sender_id === 'current_user',
+          is_me: msg.senderType === 'team_member' || (currentUserId && msg.senderId === currentUserId),
         }));
       }
       return Array.isArray(openedChat.chats_data) ? openedChat.chats_data : [];
@@ -50,10 +102,11 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
   }, [messages, openedChat.chats_data]);
 
   const handleSendMessage = async () => {
-    if (message.trim()) {
+    if (message.trim() && clientId) {
       try {
         await sendMessageMutation({
           chatId: openedChat.id,
+          clientId: clientId,
           messageData: {
             content: message.trim(),
             attachments: [],
@@ -61,7 +114,7 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
         }).unwrap();
 
         setMessage('');
-        refetch();
+        // The mutation's invalidatesTags will automatically trigger a refetch of the messages query
       } catch (err) {
         console.error('Error sending message:', err);
         dispatch(sendMessage({ chatId: openedChat.id, message }));
@@ -107,11 +160,6 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
             }}
           >
             {openedChat.name}
-          </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {openedChat.participants?.length
-              ? `${openedChat.participants.length} participants`
-              : t('online')}
           </Typography.Text>
         </Flex>
         <Tooltip title={t('refresh')}>

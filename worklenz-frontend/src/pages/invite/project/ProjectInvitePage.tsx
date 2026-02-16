@@ -5,7 +5,9 @@ import { CheckCircleOutlined, LoadingOutlined, ProjectOutlined, CloseOutlined } 
 import { projectMembersApiService } from '@/api/project-members/project-members.api.service';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { invitationRedirectService } from '@/services/invitation-redirect.service';
+import { setActiveTeam } from '@/features/teams/teamSlice';
 import { useTranslation } from 'react-i18next';
 
 const { Title, Paragraph } = Typography;
@@ -17,6 +19,7 @@ interface FormValues {
 
 const ProjectInvitePage: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const { token } = useParams<{ token: string }>();
   const authService = useAuthService();
   const currentUser = authService.getCurrentSession();
@@ -51,15 +54,6 @@ const ProjectInvitePage: React.FC = () => {
       
       if (response.done) {
         setProjectInfo(response.body);
-        
-        // If user is already logged in, pre-fill the form
-        if (currentUser) {
-          form.setFieldsValue({
-            name: currentUser.name || '',
-            email: currentUser.email || ''
-          });
-        }
-        
         setStatus('form');
       } else {
         setStatus('error');
@@ -86,10 +80,22 @@ const ProjectInvitePage: React.FC = () => {
         invitationRedirectService.clearPendingInvitation();
         console.log('[ProjectInvite] Cleared invitation context after successful join');
         
+        const teamId = response.body?.team_id;
+        const projectId = response.body?.project_id || projectInfo?.project?.id;
+        
         // Redirect to login or project after a delay
-        setTimeout(() => {
-          if (currentUser) {
-            navigate(`/worklenz/projects/${projectInfo?.project?.id}`);
+        setTimeout(async () => {
+          if (currentUser && teamId) {
+            // Switch to the invited team and reload to refresh the session
+            try {
+              await dispatch(setActiveTeam(teamId));
+            } catch (error) {
+              console.error('[ProjectInvite] Failed to set active team:', error);
+            }
+            window.location.href = `/worklenz/projects/${projectId}`;
+          } else if (currentUser) {
+            // Fallback: reload to pick up the active team set by backend
+            window.location.href = `/worklenz/projects/${projectId}`;
           } else {
             navigate('/auth/login', {
               state: {
@@ -171,82 +177,105 @@ const ProjectInvitePage: React.FC = () => {
               </Paragraph>
             </div>
             
-            {currentUser && (
-              <div style={{ 
-                marginBottom: 16, 
-                padding: '8px 12px', 
-                backgroundColor: themeMode === 'dark' ? '#1c3a5e' : '#e6f7ff',
-                border: `1px solid ${themeMode === 'dark' ? '#2a5a8a' : '#91d5ff'}`,
-                borderRadius: '6px' 
-              }}>
-                <Typography.Text style={{ 
-                  fontSize: '12px', 
-                  color: themeMode === 'dark' ? '#91d5ff' : '#1890ff' 
+            {currentUser ? (
+              // Logged in user - show confirmation UI without form fields
+              <div style={{ maxWidth: 400, margin: '0 auto' }}>
+                <div style={{ 
+                  marginBottom: 24, 
+                  padding: '16px', 
+                  backgroundColor: themeMode === 'dark' ? '#1c3a5e' : '#e6f7ff',
+                  border: `1px solid ${themeMode === 'dark' ? '#2a5a8a' : '#91d5ff'}`,
+                  borderRadius: '8px' 
                 }}>
-                  {t('loggedInAs', { name: currentUser.name })}
-                </Typography.Text>
-              </div>
-            )}
-            
-            <Form
-              form={form}
-              onFinish={handleSubmit}
-              layout="vertical"
-              style={{ textAlign: 'left', maxWidth: 400, margin: '0 auto' }}
-            >
-              <Form.Item
-                name="name"
-                label={t('fullName')}
-                rules={[
-                  { required: true, message: t('fullNameRequired') },
-                  { min: 2, message: t('fullNameMinLength') }
-                ]}
-              >
-                <Input 
-                  placeholder={t('fullNamePlaceholder')}
-                  disabled={!!currentUser}
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="email"
-                label={t('emailAddress')}
-                rules={[
-                  { required: true, message: t('emailRequired') },
-                  { type: 'email', message: t('emailInvalid') }
-                ]}
-              >
-                <Input 
-                  placeholder={t('emailPlaceholder')}
-                  disabled={!!currentUser}
-                />
-              </Form.Item>
-
-              <Form.Item style={{ marginTop: 24, textAlign: 'center' }}>
-                <Button 
-                  type="primary" 
-                  htmlType="submit" 
-                  loading={submitting}
-                  size="large"
-                  style={{ minWidth: 120, marginRight: 8 }}
-                >
-                  {t('joinProjectButton')}
-                </Button>
-                <Tooltip title={t('skipInvitationTooltip')}>
+                  <Typography.Text style={{ 
+                    fontSize: '14px', 
+                    color: themeMode === 'dark' ? '#91d5ff' : '#1890ff' 
+                  }}>
+                    {t('joiningAs', { name: currentUser.name, email: currentUser.email })}
+                  </Typography.Text>
+                </div>
+                
+                <div style={{ marginTop: 24 }}>
                   <Button 
-                    onClick={handleSkipInvitation}
+                    type="primary" 
+                    onClick={() => handleSubmit({ name: currentUser.name || '', email: currentUser.email || '' })}
+                    loading={submitting}
                     size="large"
-                    style={{ minWidth: 120 }}
+                    style={{ minWidth: 120, marginRight: 8 }}
                   >
-                    {t('skipInvitation')}
+                    {t('joinProjectButton')}
                   </Button>
-                </Tooltip>
-              </Form.Item>
-            </Form>
+                  <Tooltip title={t('skipInvitationTooltip')}>
+                    <Button 
+                      onClick={handleSkipInvitation}
+                      size="large"
+                      style={{ minWidth: 120 }}
+                    >
+                      {t('skipInvitation')}
+                    </Button>
+                  </Tooltip>
+                </div>
+                
+                <Paragraph type="secondary" style={{ fontSize: 12, marginTop: 16 }}>
+                  {t('projectTermsAgreement')}
+                </Paragraph>
+              </div>
+            ) : (
+              // Not logged in - show form for guest users
+              <Form
+                form={form}
+                onFinish={handleSubmit}
+                layout="vertical"
+                style={{ textAlign: 'left', maxWidth: 400, margin: '0 auto' }}
+              >
+                <Form.Item
+                  name="name"
+                  label={t('fullName')}
+                  rules={[
+                    { required: true, message: t('fullNameRequired') },
+                    { min: 2, message: t('fullNameMinLength') }
+                  ]}
+                >
+                  <Input placeholder={t('fullNamePlaceholder')} />
+                </Form.Item>
 
-            <Paragraph type="secondary" style={{ fontSize: 12, marginTop: 16 }}>
-              {t('projectTermsAgreement')}
-            </Paragraph>
+                <Form.Item
+                  name="email"
+                  label={t('emailAddress')}
+                  rules={[
+                    { required: true, message: t('emailRequired') },
+                    { type: 'email', message: t('emailInvalid') }
+                  ]}
+                >
+                  <Input placeholder={t('emailPlaceholder')} />
+                </Form.Item>
+
+                <Form.Item style={{ marginTop: 24, textAlign: 'center' }}>
+                  <Button 
+                    type="primary" 
+                    htmlType="submit" 
+                    loading={submitting}
+                    size="large"
+                    style={{ minWidth: 120, marginRight: 8 }}
+                  >
+                    {t('joinProjectButton')}
+                  </Button>
+                  <Tooltip title={t('skipInvitationTooltip')}>
+                    <Button 
+                      onClick={handleSkipInvitation}
+                      size="large"
+                      style={{ minWidth: 120 }}
+                    >
+                      {t('skipInvitation')}
+                    </Button>
+                  </Tooltip>
+                </Form.Item>
+
+                <Paragraph type="secondary" style={{ fontSize: 12, marginTop: 16 }}>
+                  {t('projectTermsAgreement')}
+                </Paragraph>
+              </Form>
+            )}
           </div>
         );
 

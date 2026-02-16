@@ -82,7 +82,7 @@ const initialState: ProjectState = {
     field: 'name',
     order: 'ascend',
     search: '',
-    groupBy: '',
+    groupBy: 'category',
     filter: 0,
     statuses: null,
     categories: null,

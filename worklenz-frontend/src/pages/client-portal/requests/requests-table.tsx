@@ -94,7 +94,14 @@ const RequestsTable = () => {
 
   // Extract requests from API response - backend returns IServerResponse with {total, data} structure
   const requestsResponse = requestsData?.body || { total: 0, data: [] };
-  const requests = requestsResponse.data || [];
+  const requests = (requestsResponse as any).data || (requestsResponse as any).requests || [];
+
+  // Sort requests by created date (newest first)
+  const sortedRequests = [...requests].sort((a, b) => {
+    const dateA = new Date(a.created_at).getTime();
+    const dateB = new Date(b.created_at).getTime();
+    return dateB - dateA;
+  });
 
   // Handle empty state
   if (!requests || requests.length === 0) {
@@ -126,7 +133,7 @@ const RequestsTable = () => {
     <Card style={{ height: 'calc(100vh - 280px)' }}>
       <Table
         columns={columns}
-        dataSource={requests}
+        dataSource={sortedRequests}
         rowKey="id"
         pagination={{
           size: 'small',

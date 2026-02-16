@@ -32,6 +32,7 @@
   "shareTooltip": "Share",
   "deleteTooltip": "Delete",
   "deactivateTooltip": "Deactivate Client",
+  "activateTooltip": "Activate Client",
 
   "deleteConfirmationTitle": "Delete Client",
   "deleteConfirmationDescription": "Are you sure you want to delete this client? This action cannot be undone.",
@@ -42,6 +43,11 @@
   "deactivateConfirmationDescription": "Are you sure you want to deactivate this client? They will lose access to the portal, but all data will be preserved.",
   "deactivateConfirmationOk": "Deactivate",
   "deactivateConfirmationCancel": "Cancel",
+
+  "activateConfirmationTitle": "Activate Client",
+  "activateConfirmationDescription": "Are you sure you want to activate this client? They will regain access to the portal.",
+  "activateConfirmationOk": "Activate",
+  "activateConfirmationCancel": "Cancel",
 
   "searchClientsPlaceholder": "Search clients...",
   "portalStatusFilterPlaceholder": "Filter by portal status",
@@ -75,6 +81,9 @@
   "addressLabel": "Address",
   "addressPlaceholder": "Enter address (optional)",
 
+  "contactPersonLabel": "Contact Person",
+  "contactPersonPlaceholder": "Enter contact person name",
+
   "statusLabel": "Status",
 
   "createClientSuccessMessage": "Client created successfully! Share the organization invite link to give them portal access.",
@@ -86,6 +95,8 @@
   "deleteClientErrorMessage": "Failed to delete client",
   "deactivateClientSuccessMessage": "Client deactivated successfully",
   "deactivateClientErrorMessage": "Failed to deactivate client",
+  "activateClientSuccessMessage": "Client activated successfully",
+  "activateClientErrorMessage": "Failed to activate client",
 
   "clientPortalAccessTitle": "Client Portal Access",
   "clientPortalAccessDescription": "Share this link with your client to give them access to their portal",
@@ -107,22 +118,20 @@
   "linkGenerating": "Generating invite link...",
   "linkExpired": "This invite link has expired",
   "linkActive": "Active",
-  "inviteButton": "Invite",
   "generatingLink": "Generating invite link...",
 
   "closeButton": "Close",
   "deleteButton": "Delete Client",
   "deactivateButton": "Deactivate Client",
+  "activateButton": "Activate Client",
 
   "clientInformationTitle": "Client Information",
   "createdAtLabel": "Created",
   "updatedAtLabel": "Updated",
 
   "statisticsTitle": "Statistics",
-  "totalProjectsLabel": "Total Projects",
   "activeProjectsLabel": "Active Projects",
   "completedProjectsLabel": "Completed Projects",
-  "totalTeamMembersLabel": "Team Members",
   "activeTeamMembersLabel": "Active Team Members",
   "totalRequestsLabel": "Total Requests",
   "pendingRequestsLabel": "Pending Requests",
@@ -130,13 +139,14 @@
   "unpaidInvoicesLabel": "Unpaid Invoices",
 
   "teamMembersTitle": "Team Members",
+  "teamMembersLabel": "Team Members",
+  "teamMembersDescription": "Manage team members who have access to this client",
   "noTeamMembersText": "No team members found",
 
   "projectsTitle": "Projects",
   "noProjectsText": "No projects found",
   "viewProjectTooltip": "View Project",
   "viewButton": "View",
-  "tasksCompletedText": "tasks completed",
 
   "overviewTab": "Overview",
   "teamTab": "Team",
@@ -144,7 +154,6 @@
 
   "inviteMemberButton": "Invite Member",
   "editButton": "Edit",
-  "removeButton": "Remove",
 
   "assignedProjectsTitle": "Assigned Projects",
   "assignProjectButton": "Assign Project",
@@ -153,12 +162,9 @@
 
   "nameLabel": "Name",
   "companyLabel": "Company",
-  "phoneLabel": "Phone",
-  "addressLabel": "Address",
 
   "copyLinkLabel": "Copy Link",
   "addTeamMembersLabel": "Add Team Members",
-  "teamMembersLabel": "Team Members",
   "assignProjectLabel": "Assign Project",
   "searchProjectPlaceholder": "Search Project",
 
@@ -187,17 +193,28 @@
   "clientSettingsTitle": "Client Settings",
 
   "inviteTeamMemberTitle": "Invite Team Member",
+  "inviteTeamMemberLabel": "Invite Team Member",
   "inviteTeamMemberDescription": "Send an invitation to join this client's team",
   "inviteEmailLabel": "Email Address",
   "inviteEmailPlaceholder": "Enter email address",
   "inviteEmailRequired": "Please enter email address",
   "inviteEmailInvalid": "Please enter a valid email address",
   "inviteRoleLabel": "Role",
+  "roleLabel": "Role",
   "inviteRolePlaceholder": "Select role",
+  "rolePlaceholder": "Select role",
   "inviteRoleRequired": "Please select a role",
   "inviteButton": "Send Invitation",
   "inviteSuccessMessage": "Invitation sent successfully",
   "inviteErrorMessage": "Failed to send invitation",
+  "nameRequired": "Please enter name",
+  "namePlaceholder": "Enter full name",
+  "roleAdmin": "Admin",
+  "roleMember": "Member",
+  "roleViewer": "Viewer",
+  "nameColumn": "Name",
+  "roleColumn": "Role",
+  "noRole": "No Role",
 
   "resendInvitationButton": "Resend Invitation",
   "resendInvitationSuccessMessage": "Invitation resent successfully",
@@ -208,7 +225,6 @@
   "removeTeamMemberSuccessMessage": "Team member removed successfully",
   "removeTeamMemberErrorMessage": "Failed to remove team member",
 
-  "assignProjectTitle": "Assign Project",
   "assignProjectDescription": "Select projects to assign to this client",
   "assignProjectSuccessMessage": "Projects assigned successfully",
   "assignProjectErrorMessage": "Failed to assign projects",
@@ -224,13 +240,10 @@
   "retryButton": "Retry",
 
   "errorLoadingClient": "Error loading client data",
-  "clientNameMinLength": "Name must be at least 2 characters",
-  "phoneInvalid": "Please enter a valid phone number",
 
   "teamManagementTitle": "Team Management",
   "clientPortalLinkLabel": "Client Portal Link",
   "clientPortalLinkDescription": "Share this link with your client to give them access to their portal",
-  "linkCopiedMessage": "Link copied to clipboard",
   "noClientsTitle": "No Clients Found",
   "noClientsDescription": "You haven't added any clients yet. Add your first client to start managing their portal access.",
   "noClientsMatchingFilters": "No clients match the current filters.",
@@ -242,20 +255,13 @@
   "selectProjectLabel": "Select Project",
   "selectProjectPlaceholder": "Choose a project to assign",
   "assignButton": "Assign Project",
-  "assignedProjectsTitle": "Assigned Projects",
   "projectNameColumn": "Project Name",
-  "statusColumn": "Status",
   "progressColumn": "Progress",
   "tasksCompletedText": "tasks",
   "actionsColumn": "Actions",
-  "viewProjectTooltip": "View Project",
-  "viewButton": "View",
   "removeProjectConfirmationTitle": "Remove Project",
   "removeProjectConfirmationDescription": "Are you sure you want to remove this project from the client?",
-  "removeConfirmationOk": "Remove",
-  "removeConfirmationCancel": "Cancel",
   "removeProjectTooltip": "Remove Project",
-  "removeButton": "Remove",
   "noAssignedProjectsText": "No projects assigned to this client",
   "projectAssignedSuccessMessage": "Project assigned successfully",
   "projectAssignedErrorMessage": "Failed to assign project",
@@ -296,5 +302,13 @@
   "emailRequiredTitle": "Email Required",
   "emailRequiredMessage": "This client does not have an email address. An email is required to invite them to the portal.",
   "emailRequiredQuestion": "Would you like to add an email address and invite them again?",
+  "clientAlreadyExists": "Client already exists",
+  "invitationAlreadySent": "Invitation already sent",
+  "sendInvitationToExistingClient": "Send Invitation",
+  "sendInvitationSuccess": "Invitation sent successfully",
+  "sendInvitationError": "Failed to send invitation",
+  "clientAlreadyHasPortalAccess": "Client has already joined the portal",
+  "clientAlreadyHasPendingInvitation": "Invitation already sent. Please use the resend option if needed.",
+  "clientEmailRequired": "Client email is required for invitation",
   "addEmailButton": "Add Email & Invite"
 }

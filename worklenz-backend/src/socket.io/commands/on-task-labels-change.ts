@@ -5,10 +5,17 @@ import {SocketEvents} from "../events";
 
 import {log_error, notifyProjectUpdates} from "../util";
 import {logLabelsUpdate} from "../../services/activity-logs/activity-logs.service";
+import {verifyTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
 
 export async function on_task_label_change(_io: Server, socket: Socket, data?: string) {
   try {
     const body = JSON.parse(data as string);
+    
+    const hasAccess = await verifyTaskAccessSocket(socket, body.task_id);
+    if (!hasAccess) {
+      logUnauthorizedSocketAccess(socket, 'TASK_LABELS_CHANGE', 'task', body.task_id);
+      return;
+    }
     const q = `SELECT add_or_remove_task_label($1, $2) AS labels;`;
     const result = await db.query(q, [body.task_id, body.label_id]);
     const [d] = result.rows;

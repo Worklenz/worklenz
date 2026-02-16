@@ -68,6 +68,9 @@
   "addressLabel": "Adresse",
   "addressPlaceholder": "Adresse eingeben (optional)",
 
+  "contactPersonLabel": "Kontaktperson",
+  "contactPersonPlaceholder": "Namen der Kontaktperson eingeben",
+
   "statusLabel": "Status",
 
   "createClientSuccessMessage": "Kunde erfolgreich erstellt! Teilen Sie den Organisations-Einladungslink, um ihm Portal-Zugang zu gewähren.",
@@ -107,10 +110,8 @@
   "updatedAtLabel": "Aktualisiert",
 
   "statisticsTitle": "Statistiken",
-  "totalProjectsLabel": "Gesamtprojekte",
   "activeProjectsLabel": "Aktive Projekte",
   "completedProjectsLabel": "Abgeschlossene Projekte",
-  "totalTeamMembersLabel": "Teammitglieder",
   "activeTeamMembersLabel": "Aktive Teammitglieder",
   "totalRequestsLabel": "Gesamtanfragen",
   "pendingRequestsLabel": "Ausstehende Anfragen",
@@ -122,9 +123,6 @@
 
   "projectsTitle": "Projekte",
   "noProjectsText": "Keine Projekte gefunden",
-  "viewProjectTooltip": "Projekt anzeigen",
-  "viewButton": "Anzeigen",
-  "tasksCompletedText": "Aufgaben abgeschlossen",
 
   "overviewTab": "Übersicht",
   "teamTab": "Team",
@@ -132,7 +130,6 @@
 
   "inviteMemberButton": "Mitglied einladen",
   "editButton": "Bearbeiten",
-  "removeButton": "Entfernen",
 
   "assignedProjectsTitle": "Zugewiesene Projekte",
   "assignProjectButton": "Projekt zuweisen",
@@ -141,8 +138,6 @@
 
   "nameLabel": "Name",
   "companyLabel": "Firma",
-  "phoneLabel": "Telefon",
-  "addressLabel": "Adresse",
 
   "copyLinkLabel": "Link kopieren",
   "addTeamMembersLabel": "Teammitglieder hinzufügen",
@@ -193,7 +188,6 @@
   "removeTeamMemberSuccessMessage": "Teammitglied erfolgreich entfernt",
   "removeTeamMemberErrorMessage": "Fehler beim Entfernen des Teammitglieds",
 
-  "assignProjectTitle": "Projekt zuweisen",
   "assignProjectDescription": "Wählen Sie Projekte aus, die diesem Kunden zugewiesen werden sollen",
   "assignProjectSuccessMessage": "Projekte erfolgreich zugewiesen",
   "assignProjectErrorMessage": "Fehler beim Zuweisen der Projekte",
@@ -209,13 +203,10 @@
   "retryButton": "Wiederholen",
 
   "errorLoadingClient": "Fehler beim Laden der Kundendaten",
-  "clientNameMinLength": "Name muss mindestens 2 Zeichen lang sein",
-  "phoneInvalid": "Bitte geben Sie eine gültige Telefonnummer ein",
 
   "teamManagementTitle": "Team-Management",
   "clientPortalLinkLabel": "Kundenportal-Link",
   "clientPortalLinkDescription": "Teilen Sie diesen Link mit Ihrem Kunden, um ihm Zugang zu seinem Portal zu gewähren",
-  "linkCopiedMessage": "Link in die Zwischenablage kopiert",
   "noClientsTitle": "Keine Kunden gefunden",
   "noClientsDescription": "Sie haben noch keine Kunden hinzugefügt. Fügen Sie Ihren ersten Kunden hinzu, um die Verwaltung des Portalzugangs zu beginnen.",
   "noClientsMatchingFilters": "Keine Kunden entsprechen den aktuellen Filtern.",
@@ -227,20 +218,11 @@
   "roleAdmin": "Administrator",
   "roleMember": "Mitglied",
   "roleViewer": "Betrachter",
-  "inviteSuccessMessage": "Teammitglied erfolgreich eingeladen",
-  "inviteErrorMessage": "Fehler beim Einladen des Teammitglieds",
-  "removeMemberSuccessMessage": "Teammitglied erfolgreich entfernt",
-  "removeMemberErrorMessage": "Fehler beim Entfernen des Teammitglieds",
-  "resendInvitationSuccessMessage": "Einladung erfolgreich erneut gesendet",
-  "resendInvitationErrorMessage": "Fehler beim erneuten Senden der Einladung",
   "nameColumn": "Name",
   "roleColumn": "Rolle",
   "noRole": "Keine Rolle",
-  "resendInvitationTooltip": "Einladung erneut senden",
   "removeMemberConfirmationTitle": "Teammitglied entfernen",
   "removeMemberConfirmationDescription": "Sind Sie sicher, dass Sie dieses Teammitglied entfernen möchten?",
-  "removeConfirmationOk": "Entfernen",
-  "removeConfirmationCancel": "Abbrechen",
   "removeMemberTooltip": "Mitglied entfernen",
 
   "projectSettingsTitle": "Projekteinstellungen",
@@ -251,7 +233,6 @@
   "actionsColumn": "Aktionen",
   "removeProjectConfirmationTitle": "Projekt entfernen",
   "removeProjectConfirmationDescription": "Sind Sie sicher, dass Sie dieses Projekt vom Kunden entfernen möchten?",
-  "removeProjectTooltip": "Projekt entfernen",
   "projectAssignedSuccessMessage": "Projekt erfolgreich zugewiesen",
   "projectAssignedErrorMessage": "Fehler beim Zuweisen des Projekts",
   "projectRemovedSuccessMessage": "Projekt erfolgreich entfernt",
@@ -286,7 +267,14 @@
   "deactivateClientSuccessMessage": "Kunde erfolgreich deaktiviert",
   "deactivateClientErrorMessage": "Fehler beim Deaktivieren des Kunden",
   "deactivateTooltip": "Kunde deaktivieren",
-  "deactivateSelected": "Ausgewählte deaktivieren",
+  "activateTooltip": "Kunde aktivieren",
+  "activateConfirmationTitle": "Kunde aktivieren",
+  "activateConfirmationDescription": "Sind Sie sicher, dass Sie diesen Kunden aktivieren möchten? Er erhält wieder Zugang zum Portal.",
+  "activateConfirmationOk": "Aktivieren",
+  "activateConfirmationCancel": "Abbrechen",
+  "activateClientSuccessMessage": "Kunde erfolgreich aktiviert",
+  "activateClientErrorMessage": "Fehler beim Aktivieren des Kunden",
+  "activateButton": "Kunde aktivieren",
   "selectClientsToDeactivate": "Bitte wählen Sie Kunden zum Deaktivieren aus",
   "bulkDeactivateSuccessMessage": "Ausgewählte Kunden erfolgreich deaktiviert",
   "bulkDeactivateErrorMessage": "Fehler beim Deaktivieren der ausgewählten Kunden",
@@ -304,17 +292,22 @@
   "emailRequiredTitle": "E-Mail erforderlich",
   "emailRequiredMessage": "Dieser Kunde hat keine E-Mail-Adresse. Eine E-Mail ist erforderlich, um ihn zum Portal einzuladen.",
   "emailRequiredQuestion": "Möchten Sie eine E-Mail-Adresse hinzufügen und ihn erneut einladen?",
-  "addEmailButton": "E-Mail hinzufügen & einladen",
-
   "assignProjectTitle": "Neues Projekt zuweisen",
   "assignButton": "Projekt zuweisen",
-  "assignedProjectsTitle": "Zugewiesene Projekte",
-  "statusColumn": "Status",
   "tasksCompletedText": "Aufgaben",
   "viewProjectTooltip": "Projekt anzeigen",
   "viewButton": "Anzeigen",
   "removeConfirmationOk": "Entfernen",
   "removeConfirmationCancel": "Abbrechen",
   "removeProjectTooltip": "Projekt entfernen",
-  "removeButton": "Entfernen"
+  "removeButton": "Entfernen",
+  "clientAlreadyExists": "Kunde existiert bereits",
+  "invitationAlreadySent": "Einladung bereits gesendet",
+  "sendInvitationToExistingClient": "Einladung senden",
+  "sendInvitationSuccess": "Einladung erfolgreich gesendet",
+  "sendInvitationError": "Einladung konnte nicht gesendet werden",
+  "clientAlreadyHasPortalAccess": "Kunde hat bereits Portal-Zugang",
+  "clientAlreadyHasPendingInvitation": "Einladung bereits gesendet. Bitte verwenden Sie die Option \"Erneut senden\".",
+  "clientEmailRequired": "Client-E-Mail ist für Einladung erforderlich",
+  "addEmailButton": "E-Mail hinzufügen & einladen"
 }

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { TFunction } from 'i18next';
 import {
   Button,
@@ -15,37 +15,44 @@ import {
 import { PlusOutlined, CrownOutlined } from '@/shared/antd-imports';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import {
-  addCategory,
   createProjectCategory,
+  fetchProjectCategories,
 } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
 import { colors } from '@/styles/colors';
-import { IProjectCategory } from '@/types/project/projectCategory.types';
 import { useAuthService } from '@/hooks/useAuth';
 import { isFreeUser } from '@/utils/subscription-utils';
 import { useTranslation } from 'react-i18next';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 
 interface ProjectCategorySectionProps {
-  categories: IProjectCategory[];
   form: FormInstance;
   t: TFunction;
   disabled: boolean;
 }
 
-const defaultColorCode = '#ee87c5';
-
-const ProjectCategorySection = ({ categories, form, t, disabled }: ProjectCategorySectionProps) => {
+const ProjectCategorySection = ({ form, t, disabled }: ProjectCategorySectionProps) => {
   const dispatch = useAppDispatch();
   const { t: tCommon } = useTranslation('common');
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
   const isFree = isFreeUser(currentSession);
 
+  // Read categories directly from Redux - this will auto-update when categories change
+  const categories = useAppSelector(state => state.projectCategoriesReducer.projectCategories);
+
   const [isAddCategoryInputShow, setIsAddCategoryInputShow] = useState(false);
   const [categoryText, setCategoryText] = useState('');
   const [creating, setCreating] = useState(false);
   const categoryInputRef = useRef<InputRef>(null);
+
+  // Fetch categories on mount if not already loaded
+  useEffect(() => {
+    if (categories.length === 0) {
+      dispatch(fetchProjectCategories());
+    }
+  }, [dispatch, categories.length]);
 
   const categoryOptions = categories.map((category, index) => ({
     key: index,
@@ -71,6 +78,13 @@ const ProjectCategorySection = ({ categories, form, t, disabled }: ProjectCatego
   const handleSelectClick = () => {
     if (isFree) {
       dispatch(toggleUpgradeModal());
+    }
+  };
+
+  // Refresh categories when dropdown opens to get latest updates
+  const handleDropdownVisibleChange = (open: boolean) => {
+    if (open) {
+      dispatch(fetchProjectCategories());
     }
   };
 
@@ -146,6 +160,7 @@ const ProjectCategorySection = ({ categories, form, t, disabled }: ProjectCatego
             placeholder={t('addCategory')}
             loading={creating}
             allowClear
+            onDropdownVisibleChange={handleDropdownVisibleChange}
             dropdownRender={menu => (
               <>
                 {menu}

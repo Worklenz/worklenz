@@ -69,21 +69,7 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ visible, onClos
         <Text style={{ fontSize: '14px', color: '#8c8c8c' }}>{t('update-instruction')}</Text>
       </div>
 
-      <div
-        style={{
-          background: '#f6ffed',
-          border: '1px solid #b7eb8f',
-          borderRadius: '6px',
-          padding: '12px',
-          marginBottom: '20px',
-        }}
-      >
-        <Text style={{ fontSize: '13px', color: '#389e0d' }}>
-          {t('update-whats-new', {
-            interpolation: { escapeValue: false },
-          })}
-        </Text>
-      </div>
+
 
       <Space
         style={{

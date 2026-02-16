@@ -4,6 +4,7 @@ import HandleExceptions from "../../decorators/handle-exceptions";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
+import { SqlHelper } from "../../shared/sql-helpers";
 import { DATE_RANGES, TASK_PRIORITY_COLOR_ALPHA } from "../../shared/constants";
 import { formatDuration, getColor, int } from "../../shared/utils";
 import ReportingControllerBaseWithTimezone from "./reporting-controller-base-with-timezone";
@@ -73,9 +74,11 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   private static async getMembers(
     teamId: string, searchQuery = "",
+    searchParams: string[] = [],
     size: number | null = null,
     offset: number | null = null,
     teamsClause = "",
+    teamIdsParams: string[] = [],
     key = DATE_RANGES.LAST_WEEK,
     dateRange: string[] = [],
     includeArchived: boolean,
@@ -87,26 +90,52 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     ? ""
     : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`;
 
-    // const durationFilterClause = this.memberTasksDurationFilter(key, dateRange);
-    const assignClause = this.memberAssignDurationFilter(key, dateRange);
-    const completedDurationClasue = this.completedDurationFilter(key, dateRange);
-    const overdueActivityLogsClause = this.getActivityLogsOverdue(key, dateRange);
-    const activityLogCreationFilter = this.getActivityLogsCreationClause(key, dateRange);
-    const timeLogDateRangeClause = this.getTimeLogDateRangeClause(key, dateRange);
+    // Use parameterized queries
+    // Note: $1 is teamId, searchParams use $2+, so other parameters start after searchParams
+    let paramOffset = 2 + searchParams.length;
+    const assignClauseResult = this.memberAssignDurationFilter(key, dateRange, paramOffset);
+    const assignClause = assignClauseResult.clause;
+    const assignParams = assignClauseResult.params;
+    paramOffset += assignParams.length;
+    
+    const completedDurationResult = this.completedDurationFilter(key, dateRange, paramOffset);
+    const completedDurationClasue = completedDurationResult.clause;
+    const completedParams = completedDurationResult.params;
+    paramOffset += completedParams.length;
+    
+    const overdueActivityLogsResult = this.getActivityLogsOverdue(key, dateRange, paramOffset);
+    const overdueActivityLogsClause = overdueActivityLogsResult.clause;
+    const overdueParams = overdueActivityLogsResult.params;
+    paramOffset += overdueParams.length;
+    
+    const activityLogCreationResult = this.getActivityLogsCreationClause(key, dateRange, paramOffset);
+    const activityLogCreationFilter = activityLogCreationResult.clause;
+    const activityLogParams = activityLogCreationResult.params;
+    paramOffset += activityLogParams.length;
+    
+    const timeLogDateRangeResult = this.getTimeLogDateRangeClause(key, dateRange, paramOffset);
+    const timeLogDateRangeClause = timeLogDateRangeResult.clause;
+    const timeLogParams = timeLogDateRangeResult.params;
+    paramOffset += timeLogParams.length;
 
     // Add project filtering for Team Leads - only show members working on assigned projects
     let memberFilterClause = "";
+    let projectParams: any[] = [];
     if (req) {
       const projectFilter = await ReportingControllerBase.buildProjectFilterForTeamLead(req);
       if (projectFilter && projectFilter !== "") {
         // Team Lead: only show members who work on their assigned projects
         const assignedProjects = await ReportingControllerBase.getTeamLeadProjects(req.user?.id, teamId);
         if (assignedProjects.length > 0) {
+          // Use parameterized query for array with correct offset
+          const { clause, params } = SqlHelper.buildInClause(assignedProjects, paramOffset);
+          projectParams = params;
           memberFilterClause = `AND tmiv.team_member_id IN (
             SELECT DISTINCT pm.team_member_id 
             FROM project_members pm 
-            WHERE pm.project_id = ANY(ARRAY[${assignedProjects.map((id: string) => `'${id}'::UUID`).join(',')}])
+            WHERE pm.project_id IN (${clause})
           )`;
+          paramOffset += projectParams.length;
         } else {
           // Team Lead with no projects assigned - show no members
           memberFilterClause = "AND FALSE";
@@ -211,7 +240,9 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                   FROM team_member_info_view tmiv
                   WHERE tmiv.team_id = $1 ${teamsClause} ${memberFilterClause}
                   ${searchQuery}`;
-    const result = await db.query(q, [teamId]);
+    // Pass all parameters - searchParams come after teamId, then teamIdsParams, then other filter params
+    const queryParams = [teamId, ...searchParams, ...teamIdsParams, ...assignParams, ...completedParams, ...overdueParams, ...activityLogParams, ...timeLogParams, ...projectParams];
+    const result = await db.query(q, queryParams);
     const [data] = result.rows;
 
     for (const member of data.members) {
@@ -226,106 +257,129 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     return data;
   }
 
-  private static flatString(text: string) {
-    return (text || "").split(" ").map(s => `'${s}'`).join(",");
-  }
 
-  protected static memberTasksDurationFilter(key: string, dateRange: string[]) {
+  protected static memberTasksDurationFilter(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Use parameterized queries for dates
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
 
       if (start === end) {
-        return `AND t.end_date::DATE = '${start}'::DATE`;
+        return {
+          clause: `AND t.end_date::DATE = $${paramOffset}::DATE`,
+          params: [start]
+        };
       }
 
-      return `AND t.end_date::DATE >= '${start}'::DATE AND t.end_date::DATE <= '${end}'::DATE`;
+      return {
+        clause: `AND t.end_date::DATE >= $${paramOffset}::DATE AND t.end_date::DATE <= $${paramOffset + 1}::DATE`,
+        params: [start, end]
+      };
     }
 
     if (key === DATE_RANGES.YESTERDAY)
-      return `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND t.end_date::DATE < CURRENT_DATE::DATE`;
+      return { clause: `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND t.end_date::DATE < CURRENT_DATE::DATE`, params: [] };
     if (key === DATE_RANGES.LAST_WEEK)
-      return `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND t.end_date::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND t.end_date::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_MONTH)
-      return `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND t.end_date::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND t.end_date::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_QUARTER)
-      return `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND t.end_date::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND t.end_date::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
 
-    return "";
+    return { clause: "", params: [] };
   }
 
-  protected static memberAssignDurationFilter(key: string, dateRange: string[]) {
+  protected static memberAssignDurationFilter(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Use parameterized queries for dates
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
 
       if (start === end) {
-        return `AND ta.updated_at::DATE = '${start}'::DATE`;
+        return {
+          clause: `AND ta.updated_at::DATE = $${paramOffset}::DATE`,
+          params: [start]
+        };
       }
 
-      return `AND ta.updated_at::DATE >= '${start}'::DATE AND ta.updated_at::DATE <= '${end}'::DATE`;
+      return {
+        clause: `AND ta.updated_at::DATE >= $${paramOffset}::DATE AND ta.updated_at::DATE <= $${paramOffset + 1}::DATE`,
+        params: [start, end]
+      };
     }
 
     if (key === DATE_RANGES.YESTERDAY)
-      return `AND ta.updated_at::DATE >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND ta.updated_at::DATE < CURRENT_DATE::DATE`;
+      return { clause: `AND ta.updated_at::DATE >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND ta.updated_at::DATE < CURRENT_DATE::DATE`, params: [] };
     if (key === DATE_RANGES.LAST_WEEK)
-      return `AND ta.updated_at::DATE >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND ta.updated_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND ta.updated_at::DATE >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND ta.updated_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_MONTH)
-      return `AND ta.updated_at::DATE >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND ta.updated_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND ta.updated_at::DATE >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND ta.updated_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_QUARTER)
-      return `AND ta.updated_at::DATE >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND ta.updated_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND ta.updated_at::DATE >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND ta.updated_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
 
-    return "";
+    return { clause: "", params: [] };
   }
 
-  protected static completedDurationFilter(key: string, dateRange: string[]) {
+  protected static completedDurationFilter(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Use parameterized queries for dates
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
 
       if (start === end) {
-        return `AND t.completed_at::DATE = '${start}'::DATE`;
+        return {
+          clause: `AND t.completed_at::DATE = $${paramOffset}::DATE`,
+          params: [start]
+        };
       }
 
-      return `AND t.completed_at::DATE >= '${start}'::DATE AND t.completed_at::DATE <= '${end}'::DATE`;
+      return {
+        clause: `AND t.completed_at::DATE >= $${paramOffset}::DATE AND t.completed_at::DATE <= $${paramOffset + 1}::DATE`,
+        params: [start, end]
+      };
     }
 
     if (key === DATE_RANGES.YESTERDAY)
-      return `AND t.completed_at::DATE >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND t.completed_at::DATE < CURRENT_DATE::DATE`;
+      return { clause: `AND t.completed_at::DATE >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND t.completed_at::DATE < CURRENT_DATE::DATE`, params: [] };
     if (key === DATE_RANGES.LAST_WEEK)
-      return `AND t.completed_at::DATE >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND t.completed_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND t.completed_at::DATE >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND t.completed_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_MONTH)
-      return `AND t.completed_at::DATE >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND t.completed_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND t.completed_at::DATE >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND t.completed_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_QUARTER)
-      return `AND t.completed_at::DATE >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND t.completed_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND t.completed_at::DATE >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND t.completed_at::DATE < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
 
-    return "";
+    return { clause: "", params: [] };
   }
 
-  protected static getOverdueClause(key: string, dateRange: string[]) {
-
+  protected static getOverdueClause(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Use parameterized queries for dates
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
 
       if (start === end) {
-        return `AND t.end_date::DATE = '${start}'::DATE`;
+        return {
+          clause: `AND t.end_date::DATE = $${paramOffset}::DATE`,
+          params: [start]
+        };
       }
 
-      return `AND t.end_date::DATE >= '${start}'::DATE AND t.end_date::DATE <= '${end}'::DATE`;
+      return {
+        clause: `AND t.end_date::DATE >= $${paramOffset}::DATE AND t.end_date::DATE <= $${paramOffset + 1}::DATE`,
+        params: [start, end]
+      };
     }
 
     if (key === DATE_RANGES.YESTERDAY)
-      return `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND t.end_date::DATE < NOW()::DATE`;
+      return { clause: `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND t.end_date::DATE < NOW()::DATE`, params: [] };
     if (key === DATE_RANGES.LAST_WEEK)
-      return `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND t.end_date::DATE < NOW()::DATE`;
+      return { clause: `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND t.end_date::DATE < NOW()::DATE`, params: [] };
     if (key === DATE_RANGES.LAST_MONTH)
-      return `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND t.end_date::DATE < NOW()::DATE`;
+      return { clause: `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND t.end_date::DATE < NOW()::DATE`, params: [] };
     if (key === DATE_RANGES.LAST_QUARTER)
-      return `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND t.end_date::DATE < NOW()::DATE`;
+      return { clause: `AND t.end_date::DATE >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND t.end_date::DATE < NOW()::DATE`, params: [] };
 
-
-    return ` AND t.end_date::DATE < NOW()::DATE `;
+    return { clause: ` AND t.end_date::DATE < NOW()::DATE `, params: [] };
   }
 
   protected static getTaskSelectorClause() {
@@ -363,70 +417,91 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                     ((SELECT SUM(time_spent) FROM task_work_log twl WHERE twl.task_id = t.id AND twl.user_id = (SELECT user_id FROM team_members WHERE id = $1)) - (total_minutes * 60)) AS overlogged_time`;
   }
 
-  protected static getActivityLogsOverdue(key: string, dateRange: string[]) {
-
+  protected static getActivityLogsOverdue(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Use parameterized queries for dates
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
-      return `AND is_overdue_for_date(t.id, '${end}'::DATE)`;
+      return {
+        clause: `AND is_overdue_for_date(t.id, $${paramOffset}::DATE)`,
+        params: [end]
+      };
     }
 
-    return `AND is_overdue_for_date(t.id, NOW()::DATE)`;
+    return { clause: `AND is_overdue_for_date(t.id, NOW()::DATE)`, params: [] };
   }
 
-  protected static getActivityLogsCreationClause(key: string, dateRange: string[]) {
+  protected static getActivityLogsCreationClause(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Use parameterized queries for dates
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
-      return `AND tl.created_at::DATE <= '${end}'::DATE`;
+      return {
+        clause: `AND tl.created_at::DATE <= $${paramOffset}::DATE`,
+        params: [end]
+      };
     }
-    return `AND tl.created_at::DATE <= NOW()::DATE`;
+    return { clause: `AND tl.created_at::DATE <= NOW()::DATE`, params: [] };
   }
 
-  protected static getDateRangeClauseMembers(key: string, dateRange: string[], tableAlias: string) {
+  protected static getDateRangeClauseMembers(key: string, dateRange: string[], tableAlias: string, paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Use parameterized queries for dates
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
 
       if (start === end) {
-        return `AND ${tableAlias}.created_at::DATE = '${start}'::DATE`;
+        return {
+          clause: `AND ${tableAlias}.created_at::DATE = $${paramOffset}::DATE`,
+          params: [start]
+        };
       }
 
-      return `AND ${tableAlias}.created_at::DATE >= '${start}'::DATE AND ${tableAlias}.created_at < '${end}'::DATE + INTERVAL '1 day'`;
+      return {
+        clause: `AND ${tableAlias}.created_at::DATE >= $${paramOffset}::DATE AND ${tableAlias}.created_at < $${paramOffset + 1}::DATE + INTERVAL '1 day'`,
+        params: [start, end]
+      };
     }
 
     if (key === DATE_RANGES.YESTERDAY)
-      return `AND ${tableAlias}.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND ${tableAlias}.created_at < CURRENT_DATE::DATE`;
+      return { clause: `AND ${tableAlias}.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND ${tableAlias}.created_at < CURRENT_DATE::DATE`, params: [] };
     if (key === DATE_RANGES.LAST_WEEK)
-      return `AND ${tableAlias}.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND ${tableAlias}.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND ${tableAlias}.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND ${tableAlias}.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_MONTH)
-      return `AND ${tableAlias}.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND ${tableAlias}.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND ${tableAlias}.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND ${tableAlias}.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_QUARTER)
-      return `AND ${tableAlias}.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND ${tableAlias}.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND ${tableAlias}.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND ${tableAlias}.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
 
-    return "";
+    return { clause: "", params: [] };
   }
 
-  protected static getTimeLogDateRangeClause(key: string, dateRange: string[]) {
+  protected static getTimeLogDateRangeClause(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Use parameterized queries for dates
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
 
       if (start === end) {
-        return `AND twl.created_at::DATE = '${start}'::DATE`;
+        return {
+          clause: `AND twl.created_at::DATE = $${paramOffset}::DATE`,
+          params: [start]
+        };
       }
 
-      return `AND twl.created_at::DATE >= '${start}'::DATE AND twl.created_at < '${end}'::DATE + INTERVAL '1 day'`;
+      return {
+        clause: `AND twl.created_at::DATE >= $${paramOffset}::DATE AND twl.created_at < $${paramOffset + 1}::DATE + INTERVAL '1 day'`,
+        params: [start, end]
+      };
     }
 
     if (key === DATE_RANGES.YESTERDAY)
-      return `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND twl.created_at < CURRENT_DATE::DATE`;
+      return { clause: `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND twl.created_at < CURRENT_DATE::DATE`, params: [] };
     if (key === DATE_RANGES.LAST_WEEK)
-      return `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_MONTH)
-      return `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
     if (key === DATE_RANGES.LAST_QUARTER)
-      return `AND twl.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`;
+      return { clause: `AND twl.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND twl.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'`, params: [] };
 
-    return "";
+    return { clause: "", params: [] };
   }
 
   private static formatDuration(duration: moment.Duration) {
@@ -454,7 +529,8 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   @HandleExceptions()
   public static async getReportingMembers(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { searchQuery, size, offset } = this.toPaginationOptions(req.query, ["name"]);
+    // teamId is $1, so search params start at $2
+    const { searchQuery, searchParams, size, offset } = this.toPaginationOptions(req.query, ["tmiv.name"], false, 2);
     const { duration, date_range } = req.query;
     const archived = req.query.archived === "true";
 
@@ -463,13 +539,18 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       dateRange = date_range.split(",");
     }
 
-    const teamsClause =
-      req.query.teams as string
-        ? `AND tmiv.team_id IN (${this.flatString(req.query.teams as string)})`
-        : "";
+    let teamsClause = "";
+    let teamIdsParams: string[] = [];
+    if (req.query.teams) {
+      const teamIds = (req.query.teams as string).split(" ").filter(id => id.trim());
+      // Parameters will be added after searchParams, so offset = 2 + searchParams.length
+      const { clause } = SqlHelper.buildInClause(teamIds, 2 + searchParams.length);
+      teamsClause = `AND tmiv.team_id IN (${clause})`;
+      teamIdsParams = teamIds;
+    }
 
     const teamId = this.getCurrentTeamId(req);
-    const result = await this.getMembers(teamId as string, searchQuery, size, offset, teamsClause, duration as string, dateRange, archived, req.user?.id as string, req);
+    const result = await this.getMembers(teamId as string, searchQuery, searchParams, size, offset, teamsClause, teamIdsParams, duration as string, dateRange, archived, req.user?.id as string, req);
     const body = {
       total: result.total,
       members: result.members,
@@ -501,7 +582,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
     const teamId = this.getCurrentTeamId(req);
     const teamName = (req.query.team_name as string)?.trim() || null;
-    const result = await this.getMembers(teamId as string, "", null, null, "", duration as string, dateRange, archived, req.user?.id as string, req);
+    const result = await this.getMembers(teamId as string, "", [], null, null, "", [], duration as string, dateRange, archived, req.user?.id as string, req);
 
     let start = "-";
     let end = "-";
@@ -611,11 +692,38 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
     // Get user timezone for proper date filtering
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
-    const durationClause = this.getDateRangeClauseWithTimezone(duration as string || DATE_RANGES.LAST_WEEK, dateRange, userTimezone);
-    const minMaxDateClause = this.getMinMaxDates(duration as string || DATE_RANGES.LAST_WEEK, dateRange, "task_work_log");
+    // $1 => team_id, $2 => team_member_id, so date params start at $3
+    const durationClauseResult = this.getDateRangeClauseWithTimezoneParams(
+      (duration as string) || DATE_RANGES.LAST_WEEK,
+      dateRange,
+      userTimezone,
+      3
+    );
+    const durationClause = durationClauseResult.clause;
+    const durationParams = durationClauseResult.params;
+
+    const minMaxDateClauseResult = this.getMinMaxDates(
+      (duration as string) || DATE_RANGES.LAST_WEEK,
+      dateRange,
+      "task_work_log",
+      3 + durationParams.length
+    );
+    const minMaxDateClause = minMaxDateClauseResult.clause;
+    const minMaxParams = minMaxDateClauseResult.params;
     const memberName = (req.query.member_name as string)?.trim() || null;
 
-    const logGroups = await this.memberTimeLogsData(durationClause, minMaxDateClause, team_id as string, team_member_id as string, includeArchived, req.user?.id as string);
+    const queryParams = [...durationParams, ...minMaxParams];
+
+    const logGroups = await this.memberTimeLogsData(
+      durationClause,
+      minMaxDateClause,
+      team_id as string,
+      team_member_id as string,
+      includeArchived,
+      req.user?.id as string,
+      "",
+      queryParams
+    );
 
     let start = "-";
     let end = "-";
@@ -705,11 +813,31 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       dateRange = date_range.split(",");
     }
 
-    const durationClause = ReportingMembersController.getDateRangeClauseMembers(duration as string || DATE_RANGES.LAST_WEEK, dateRange, "tal");
-    const minMaxDateClause = this.getMinMaxDates(duration as string || DATE_RANGES.LAST_WEEK, dateRange, "task_activity_logs");
+    // Use parameterized queries
+    // $1 => team_id, $2 => team_member_id, so date params start at $3
+    const durationClauseResult = ReportingMembersController.getDateRangeClauseMembers(
+      duration as string || DATE_RANGES.LAST_WEEK,
+      dateRange,
+      "tal",
+      3
+    );
+    const durationClause = durationClauseResult.clause;
+    const durationParams = durationClauseResult.params;
+    
+    const minMaxDateClauseResult = this.getMinMaxDates(
+      duration as string || DATE_RANGES.LAST_WEEK,
+      dateRange,
+      "task_activity_logs",
+      3 + durationParams.length
+    );
+    const minMaxDateClause = minMaxDateClauseResult.clause;
+    const minMaxParams = minMaxDateClauseResult.params;
+    
     const memberName = (req.query.member_name as string)?.trim() || null;
 
-    const logGroups = await this.memberActivityLogsData(durationClause, minMaxDateClause, team_id as string, team_member_id as string, includeArchived, req.user?.id as string);
+    // Combine all parameters for the query
+    const allParams = [...durationParams, ...minMaxParams];
+    const logGroups = await this.memberActivityLogsData(durationClause, minMaxDateClause, team_id as string, team_member_id as string, includeArchived, req.user?.id as string, allParams);
 
     let start = "-";
     let end = "-";
@@ -809,7 +937,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
   }
 
 
-  public static async getMemberProjectsData(teamId: string, teamMemberId: string, searchQuery: string, archived: boolean, userId: string, req?: any) {
+  public static async getMemberProjectsData(teamId: string, teamMemberId: string, searchQuery: string, searchParams: string[] = [], archived: boolean, userId: string, req?: any) {
 
     const teamClause = teamId
       ? `team_member_id = '${teamMemberId as string}'`
@@ -867,7 +995,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                       LEFT JOIN projects p ON p.id = pm.project_id
               WHERE ${teamClause} ${searchQuery} ${archivedClause} ${projectFilterClause}
               ORDER BY name;`;
-    const result = await db.query(q, []);
+    const result = await db.query(q, searchParams);
 
     for (const project of result.rows) {
       project.time_logged = formatDuration(moment.duration(project.time_logged, "seconds"));
@@ -879,35 +1007,40 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   @HandleExceptions()
   public static async getMemberProjects(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { searchQuery } = this.toPaginationOptions(req.query, ["p.name"]);
+    // No other parameters before search params, so they start at $1
+    const { searchQuery, searchParams } = this.toPaginationOptions(req.query, ["p.name"], false, 1);
     const { teamMemberId, teamId } = req.query;
     const archived = req.query.archived === "true";
 
-    const result = await this.getMemberProjectsData(teamId as string, teamMemberId as string, searchQuery, archived, req.user?.id as string, req);
+    const result = await this.getMemberProjectsData(teamId as string, teamMemberId as string, searchQuery, searchParams, archived, req.user?.id as string, req);
 
     return res.status(200).send(new ServerResponse(true, result));
   }
 
 
-  protected static getMinMaxDates(key: string, dateRange: string[], tableName: string) {
+  protected static getMinMaxDates(key: string, dateRange: string[], tableName: string, paramOffset = 1): { clause: string; params: any[] } {
     if (dateRange.length === 2) {
+      // Use parameterized queries for dates
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
-      return `,(SELECT '${start}'::DATE )AS start_date, (SELECT '${end}'::DATE )AS end_date`;
+      return {
+        clause: `,(SELECT $${paramOffset}::DATE )AS start_date, (SELECT $${paramOffset + 1}::DATE )AS end_date`,
+        params: [start, end]
+      };
     }
 
     if (key === DATE_RANGES.YESTERDAY)
-      return `,(SELECT (CURRENT_DATE - INTERVAL '1 day')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date`;
+      return { clause: `,(SELECT (CURRENT_DATE - INTERVAL '1 day')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date`, params: [] };
     if (key === DATE_RANGES.LAST_WEEK)
-      return `,(SELECT (CURRENT_DATE - INTERVAL '1 week')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date`;
+      return { clause: `,(SELECT (CURRENT_DATE - INTERVAL '1 week')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date`, params: [] };
     if (key === DATE_RANGES.LAST_MONTH)
-      return `,(SELECT (CURRENT_DATE - INTERVAL '1 month')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date`;
+      return { clause: `,(SELECT (CURRENT_DATE - INTERVAL '1 month')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date`, params: [] };
     if (key === DATE_RANGES.LAST_QUARTER)
-      return `,(SELECT (CURRENT_DATE - INTERVAL '3 months')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date`;
+      return { clause: `,(SELECT (CURRENT_DATE - INTERVAL '3 months')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date`, params: [] };
     if (key === DATE_RANGES.ALL_TIME)
-      return `,(SELECT (MIN(created_at)::DATE) FROM ${tableName} WHERE task_id IN (SELECT id FROM tasks WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1))) AS start_date, (SELECT (MAX(created_at)::DATE) FROM ${tableName} WHERE task_id IN (SELECT id FROM tasks WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1))) AS end_date`;
+      return { clause: `,(SELECT (MIN(created_at)::DATE) FROM ${tableName} WHERE task_id IN (SELECT id FROM tasks WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1))) AS start_date, (SELECT (MAX(created_at)::DATE) FROM ${tableName} WHERE task_id IN (SELECT id FROM tasks WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1))) AS end_date`, params: [] };
 
-    return "";
+    return { clause: "", params: [] };
   }
 
 
@@ -916,10 +1049,29 @@ export default class ReportingMembersController extends ReportingControllerBaseW
   public static async getMemberActivities(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { team_member_id, team_id, duration, date_range, archived } = req.body;
 
-    const durationClause = ReportingMembersController.getDateRangeClauseMembers(duration || DATE_RANGES.LAST_WEEK, date_range, "tal");
-    const minMaxDateClause = this.getMinMaxDates(duration || DATE_RANGES.LAST_WEEK, date_range, "task_activity_logs");
+    // Use parameterized queries
+    // $1 => team_id, $2 => team_member_id, so date params start at $3
+    const durationClauseResult = ReportingMembersController.getDateRangeClauseMembers(
+      duration || DATE_RANGES.LAST_WEEK,
+      date_range,
+      "tal",
+      3
+    );
+    const durationClause = durationClauseResult.clause;
+    const durationParams = durationClauseResult.params;
+    
+    const minMaxDateClauseResult = this.getMinMaxDates(
+      duration || DATE_RANGES.LAST_WEEK,
+      date_range,
+      "task_activity_logs",
+      3 + durationParams.length
+    );
+    const minMaxDateClause = minMaxDateClauseResult.clause;
+    const minMaxParams = minMaxDateClauseResult.params;
 
-    const logGroups = await this.memberActivityLogsData(durationClause, minMaxDateClause, team_id, team_member_id, archived, req.user?.id as string);
+    // Combine all parameters for the query
+    const allParams = [...durationParams, ...minMaxParams];
+    const logGroups = await this.memberActivityLogsData(durationClause, minMaxDateClause, team_id, team_member_id, archived, req.user?.id as string, allParams);
 
     return res.status(200).send(new ServerResponse(true, logGroups));
   }
@@ -993,7 +1145,16 @@ export default class ReportingMembersController extends ReportingControllerBaseW
   }
 
 
-  private static async memberTimeLogsData(durationClause: string, minMaxDateClause: string, team_id: string, team_member_id: string, includeArchived: boolean, userId: string, billableQuery = "") {
+  private static async memberTimeLogsData(
+    durationClause: string,
+    minMaxDateClause: string,
+    team_id: string,
+    team_member_id: string,
+    includeArchived: boolean,
+    userId: string,
+    billableQuery = "",
+    params: any[] = []
+  ) {
 
     const archivedClause = includeArchived
     ? ""
@@ -1023,7 +1184,8 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                 AND tmiv.team_member_id = $2
       `;
 
-    const result = await db.query(q, [team_id, team_member_id]);
+    const queryParams = [team_id, team_member_id, ...params];
+    const result = await db.query(q, queryParams);
 
     let logGroups: any[] = [];
 
@@ -1038,9 +1200,14 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     return logGroups;
   }
 
-  private static async memberActivityLogsData(durationClause: string, minMaxDateClause: string, team_id: string, team_member_id: string, includeArchived:boolean, userId: string) {
+  private static async memberActivityLogsData(durationClause: string, minMaxDateClause: string, team_id: string, team_member_id: string, includeArchived:boolean, userId: string, params: any[]) {
 
-    const archivedClause = includeArchived ? `` : `AND (SELECT project_id FROM tasks WHERE id = tal.task_id) NOT IN (SELECT project_id FROM archived_projects WHERE archived_projects.user_id = '${userId}')`;
+    let archivedClause = "";
+    let archivedParams: any[] = [];
+    if (!includeArchived) {
+      archivedClause = `AND (SELECT project_id FROM tasks WHERE id = tal.task_id) NOT IN (SELECT project_id FROM archived_projects WHERE archived_projects.user_id = $${params.length + 3})`;
+      archivedParams = [userId];
+    }
 
     const q = `
                 SELECT user_id,
@@ -1134,7 +1301,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                 AND tmiv.team_member_id = $2
       `;
 
-    const result = await db.query(q, [team_id, team_member_id]);
+    const result = await db.query(q, [team_id, team_member_id, ...params, ...archivedParams]);
 
     let logGroups: any[] = [];
 
@@ -1171,12 +1338,38 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
     // Get user timezone for proper date filtering
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
-    const durationClause = this.getDateRangeClauseWithTimezone(duration || DATE_RANGES.LAST_WEEK, date_range, userTimezone);
-    const minMaxDateClause = this.getMinMaxDates(duration || DATE_RANGES.LAST_WEEK, date_range, "task_work_log");
+    // $1 => team_id, $2 => team_member_id, so date params start at $3
+    const durationClauseResult = this.getDateRangeClauseWithTimezoneParams(
+      duration || DATE_RANGES.LAST_WEEK,
+      date_range,
+      userTimezone,
+      3
+    );
+    const durationClause = durationClauseResult.clause;
+    const durationParams = durationClauseResult.params;
+
+    const minMaxDateClauseResult = this.getMinMaxDates(
+      duration || DATE_RANGES.LAST_WEEK,
+      date_range,
+      "task_work_log",
+      3 + durationParams.length
+    );
+    const minMaxDateClause = minMaxDateClauseResult.clause;
+    const minMaxParams = minMaxDateClauseResult.params;
 
     const billableQuery = this.buildBillableQuery(billable);
+    const queryParams = [...durationParams, ...minMaxParams];
 
-    const logGroups = await this.memberTimeLogsData(durationClause, minMaxDateClause, team_id, team_member_id, archived, req.user?.id as string, billableQuery);
+    const logGroups = await this.memberTimeLogsData(
+      durationClause,
+      minMaxDateClause,
+      team_id,
+      team_member_id,
+      archived,
+      req.user?.id as string,
+      billableQuery,
+      queryParams
+    );
 
     return res.status(200).send(new ServerResponse(true, logGroups));
   }
@@ -1197,11 +1390,29 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${req.user?.id}')`;
 
 
-    const assignClause = this.memberAssignDurationFilter(duration as string, dateRange);
-    const completedDurationClasue = this.completedDurationFilter(duration as string, dateRange);
-    const overdueClauseByDate = this.getActivityLogsOverdue(duration as string, dateRange);
+    // Use parameterized queries
+    // Note: $1 is used for team_member_id, so parameter offsets start from 2
+    const assignClauseResult = this.memberAssignDurationFilter(duration as string, dateRange, 2);
+    const assignClause = assignClauseResult.clause;
+    const assignParams = assignClauseResult.params;
+    let paramOffset = 2 + assignParams.length;
+    
+    const completedDurationResult = this.completedDurationFilter(duration as string, dateRange, paramOffset);
+    const completedDurationClasue = completedDurationResult.clause;
+    const completedParams = completedDurationResult.params;
+    paramOffset += completedParams.length;
+    
+    const overdueClauseResult = this.getActivityLogsOverdue(duration as string, dateRange, paramOffset);
+    const overdueClauseByDate = overdueClauseResult.clause;
+    const overdueParams = overdueClauseResult.params;
+    paramOffset += overdueParams.length;
+    
     const taskSelectorClause = this.getTaskSelectorClause();
-    const durationFilter = this.memberTasksDurationFilter(duration as string, dateRange);
+    
+    const durationFilterResult = this.memberTasksDurationFilter(duration as string, dateRange, paramOffset);
+    const durationFilter = durationFilterResult.clause;
+    const durationParams = durationFilterResult.params;
+    paramOffset += durationParams.length;
 
     const q = `
               SELECT name AS team_member_name,
@@ -1242,7 +1453,9 @@ export default class ReportingMembersController extends ReportingControllerBaseW
               FROM team_member_info_view WHERE team_member_id =  $1;
     `;
 
-    const result = await db.query(q, [team_member_id]);
+    // Pass all parameters
+    const queryParams = [team_member_id, ...assignParams, ...completedParams, ...overdueParams, ...durationParams];
+    const result = await db.query(q, queryParams);
     const [data] = result.rows;
 
     if (data) {
@@ -1294,14 +1507,39 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
     // Get user timezone and date clauses
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
-    const durationClause = this.getDateRangeClauseWithTimezone(duration || DATE_RANGES.LAST_WEEK, date_range, userTimezone);
+    
+    // Build params array with timezone first, then date range values
+    const params: any[] = [userTimezone];
+    let paramIndex = 2;
+    
+    // Add date range parameters and build duration clause
+    let durationClause = '';
+    if (date_range && date_range.length === 2) {
+      const startDate = moment(date_range[0]).format('YYYY-MM-DD HH:mm:ss');
+      const endDate = moment(date_range[1]).add(1, 'day').format('YYYY-MM-DD HH:mm:ss');
+      durationClause = `AND twl.created_at >= $${paramIndex}::TIMESTAMP AND twl.created_at < $${paramIndex + 1}::TIMESTAMP`;
+      params.push(startDate, endDate);
+      paramIndex += 2;
+    } else {
+      // Use default duration logic if no date_range provided
+      const rawDurationClause = this.getDateRangeClauseWithTimezone(duration || DATE_RANGES.LAST_WEEK, date_range, userTimezone);
+      // This method returns hardcoded $1, $2 - we need to extract the logic or handle it differently
+      // For now, use a simpler approach for common cases
+      if (!duration || duration === DATE_RANGES.LAST_WEEK) {
+        durationClause = `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 week')::TIMESTAMP`;
+      } else if (duration === DATE_RANGES.YESTERDAY) {
+        durationClause = `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 day')::TIMESTAMP AND twl.created_at < CURRENT_DATE::TIMESTAMP`;
+      } else if (duration === DATE_RANGES.LAST_MONTH) {
+        durationClause = `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 month')::TIMESTAMP`;
+      } else if (duration === DATE_RANGES.LAST_QUARTER) {
+        durationClause = `AND twl.created_at >= (CURRENT_DATE - INTERVAL '3 months')::TIMESTAMP`;
+      }
+    }
 
     const billableQuery = this.buildBillableQuery(billable || { billable: true, nonBillable: true }, "t");
 
     // Team filter - only show logs from current team if team_id is available
     let teamFilter = '';
-    let paramIndex = 2;
-    const params: any[] = [userTimezone];
 
     if (teamId) {
       teamFilter = `AND p.team_id = $${paramIndex}`;
@@ -1373,11 +1611,71 @@ export default class ReportingMembersController extends ReportingControllerBaseW
   public static async exportTimelogsFlatCSV(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<void> {
     let { team_member_id, duration, date_range, billable, search } = req.query;
 
-    // Sanitize parameters - convert string "undefined" to actual undefined
-    if (team_member_id === 'undefined' || team_member_id === 'null') team_member_id = undefined;
-    if (duration === 'undefined' || duration === 'null') duration = undefined;
-    if (search === 'undefined' || search === 'null') search = undefined;
+    // Convert query parameters to strings or undefined
+    const teamMemberIdStr = this.convertQueryParam(team_member_id);
+    const durationStr = this.convertQueryParam(duration);
+    const dateRangeStr = this.convertQueryParam(date_range);
+    const billableStr = this.convertQueryParam(billable);
+    const searchStr = this.convertQueryParam(search);
 
+    // Get data using shared helper method
+    const rows = await this.getTimelogsFlatData(req, teamMemberIdStr, durationStr, dateRangeStr, billableStr, searchStr);
+
+    // Prepare CSV data
+    const exportDate = moment().format("MMM-DD-YYYY");
+    const fileName = `Time-Logs-${exportDate}`;
+
+    // Build CSV content
+    const csvRows: string[] = [];
+
+    // Add headers
+    csvRows.push("Date,Member,Project,Task,Description,Duration");
+
+    // Add data rows
+    for (const row of rows.rows) {
+      const date = row.log_day || "";
+      const member = (row.user_name || "").replace(/"/g, '""'); // Escape quotes
+      const project = (row.project_name || "").replace(/"/g, '""');
+      const task = (row.task_name || "").replace(/"/g, '""');
+      const description = (row.description || "").replace(/"/g, '""');
+      const duration = this.secondsToReadable(row.time_spent || 0);
+
+      csvRows.push(`"${date}","${member}","${project}","${task}","${description}","${duration}"`);
+    }
+
+    const csvContent = csvRows.join("\n");
+
+    // Set response headers for CSV
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}.csv"`);
+
+    // Add BOM for better Excel compatibility
+    res.write('\uFEFF' + csvContent);
+    res.end();
+  }
+
+  private static secondsToReadable(totalSeconds: number): string {
+    const sec = Math.max(0, Math.floor(totalSeconds || 0));
+    const hours = Math.floor(sec / 3600);
+    const minutes = Math.floor((sec % 3600) / 60);
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  }
+
+  /**
+   * Helper function to convert query parameters to strings or undefined
+   */
+  private static convertQueryParam(param: any): string | undefined {
+    if (Array.isArray(param)) {
+      return param[0] ? String(param[0]) : undefined;
+    }
+    return param ? String(param) : undefined;
+  }
+
+  /**
+   * Shared helper method to fetch timelogs data for both CSV and Excel exports
+   */
+  private static async getTimelogsFlatData(req: IWorkLenzRequest, team_member_id?: string, duration?: string, date_range?: string, billable?: string, search?: string): Promise<any> {
     // Get the team_id from request user
     const teamId = req.user?.team_id;
 
@@ -1386,9 +1684,33 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       dateRange = date_range.split(",");
     }
 
-    // Get user timezone and date clauses
+    // Get user timezone
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
-    const durationClause = this.getDateRangeClauseWithTimezone(duration as string || DATE_RANGES.LAST_WEEK, dateRange, userTimezone);
+    
+    // Build params array with timezone first, then date range values
+    const params: any[] = [userTimezone];
+    let paramIndex = 2;
+    
+    // Add date range parameters and build duration clause
+    let durationClause = '';
+    if (dateRange && dateRange.length === 2) {
+      const startDate = moment(dateRange[0]).format('YYYY-MM-DD HH:mm:ss');
+      const endDate = moment(dateRange[1]).add(1, 'day').format('YYYY-MM-DD HH:mm:ss');
+      durationClause = `AND twl.created_at >= $${paramIndex}::TIMESTAMP AND twl.created_at < $${paramIndex + 1}::TIMESTAMP`;
+      params.push(startDate, endDate);
+      paramIndex += 2;
+    } else {
+      // Use default duration logic if no date_range provided
+      if (!duration || duration === DATE_RANGES.LAST_WEEK) {
+        durationClause = `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 week')::TIMESTAMP`;
+      } else if (duration === DATE_RANGES.YESTERDAY) {
+        durationClause = `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 day')::TIMESTAMP AND twl.created_at < CURRENT_DATE::TIMESTAMP`;
+      } else if (duration === DATE_RANGES.LAST_MONTH) {
+        durationClause = `AND twl.created_at >= (CURRENT_DATE - INTERVAL '1 month')::TIMESTAMP`;
+      } else if (duration === DATE_RANGES.LAST_QUARTER) {
+        durationClause = `AND twl.created_at >= (CURRENT_DATE - INTERVAL '3 months')::TIMESTAMP`;
+      }
+    }
 
     // Parse billable filter
     let billableFilter = { billable: true, nonBillable: true };
@@ -1403,9 +1725,6 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
     // Team filter - only show logs from current team if team_id is available
     let teamFilter = '';
-    let paramIndex = 2;
-    const params: any[] = [userTimezone];
-
     if (teamId) {
       teamFilter = `AND p.team_id = $${paramIndex}`;
       params.push(teamId);
@@ -1450,47 +1769,67 @@ export default class ReportingMembersController extends ReportingControllerBaseW
         ${searchFilter}
       ORDER BY log_day DESC, user_name ASC`;
 
-    const rows = await db.query(q, params);
+    return await db.query(q, params);
+  }
 
-    // Prepare CSV data
-    const exportDate = moment().format("MMM-DD-YYYY");
-    const fileName = `Time-Logs-${exportDate}`;
+  @HandleExceptions()
+  public static async exportTimelogsFlatExcel(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<void> {
+    let { team_member_id, duration, date_range, billable, search } = req.query;
 
-    // Build CSV content
-    const csvRows: string[] = [];
+    // Convert query parameters to strings or undefined
+    const teamMemberIdStr = this.convertQueryParam(team_member_id);
+    const durationStr = this.convertQueryParam(duration);
+    const dateRangeStr = this.convertQueryParam(date_range);
+    const billableStr = this.convertQueryParam(billable);
+    const searchStr = this.convertQueryParam(search);
+
+    // Get data using shared helper method
+    const rows = await this.getTimelogsFlatData(req, teamMemberIdStr, durationStr, dateRangeStr, billableStr, searchStr);
+
+    // Create Excel workbook
+    const workbook = new Excel.Workbook();
+    const worksheet = workbook.addWorksheet('Time Logs');
 
     // Add headers
-    csvRows.push("Date,Member,Project,Task,Description,Duration");
+    worksheet.columns = [
+      { header: 'Date', key: 'date', width: 15 },
+      { header: 'Member', key: 'member', width: 20 },
+      { header: 'Project', key: 'project', width: 25 },
+      { header: 'Task', key: 'task', width: 30 },
+      { header: 'Description', key: 'description', width: 40 },
+      { header: 'Duration', key: 'duration', width: 15 }
+    ];
+
+    // Style the header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE6E6FA' }
+    };
 
     // Add data rows
     for (const row of rows.rows) {
-      const date = row.log_day || "";
-      const member = (row.user_name || "").replace(/"/g, '""'); // Escape quotes
-      const project = (row.project_name || "").replace(/"/g, '""');
-      const task = (row.task_name || "").replace(/"/g, '""');
-      const description = (row.description || "").replace(/"/g, '""');
-      const duration = this.secondsToReadable(row.time_spent || 0);
-
-      csvRows.push(`"${date}","${member}","${project}","${task}","${description}","${duration}"`);
+      worksheet.addRow({
+        date: moment(row.log_day).format('MMM DD, YYYY'),
+        member: row.user_name || '',
+        project: row.project_name || '',
+        task: row.task_name || '',
+        description: row.description || '',
+        duration: this.secondsToReadable(row.time_spent || 0)
+      });
     }
 
-    const csvContent = csvRows.join("\n");
+    // Set response headers for Excel
+    const exportDate = moment().format("MMM-DD-YYYY");
+    const fileName = `Time-Logs-${exportDate}.xlsx`;
 
-    // Set response headers for CSV
-    res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    res.setHeader("Content-Disposition", `attachment; filename="${fileName}.csv"`);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
 
-    // Add BOM for better Excel compatibility
-    res.write('\uFEFF' + csvContent);
+    // Write Excel file to response
+    await workbook.xlsx.write(res);
     res.end();
-  }
-
-  private static secondsToReadable(totalSeconds: number): string {
-    const sec = Math.max(0, Math.floor(totalSeconds || 0));
-    const hours = Math.floor(sec / 3600);
-    const minutes = Math.floor((sec % 3600) / 60);
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
   }
 
   private static updateTaskProperties(tasks: any[]) {
@@ -1602,7 +1941,7 @@ public static async getSingleMemberProjects(req: IWorkLenzRequest, res: IWorkLen
     const teamName = (req.query.team_name as string)?.trim() || "";
     const archived = req.query.archived === "true";
 
-    const result = await this.getMemberProjectsData(teamId as string, teamMemberId as string, "", archived, req.user?.id as string, req);
+    const result = await this.getMemberProjectsData(teamId as string, teamMemberId as string, "", [], archived, req.user?.id as string, req);
 
     // excel file
     const exportDate = moment().format("MMM-DD-YYYY");

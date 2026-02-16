@@ -65,6 +65,7 @@ const taskDrawerSlice = createSlice({
       state.loadingTask = action.payload;
     },
     setTaskStatus: (state, action: PayloadAction<ITaskListStatusChangeResponse>) => {
+      if (!action.payload) return;
       const { status_id, color_code, id: taskId, color_code_dark } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
         state.taskFormViewModel.task.status_id = status_id;
@@ -73,18 +74,21 @@ const taskDrawerSlice = createSlice({
       }
     },
     setStartDate: (state, action: PayloadAction<IProjectTask>) => {
+      if (!action.payload) return;
       const { start_date, id: taskId } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
         state.taskFormViewModel.task.start_date = start_date;
       }
     },
     setTaskEndDate: (state, action: PayloadAction<IProjectTask>) => {
+      if (!action.payload) return;
       const { end_date, id: taskId } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
         state.taskFormViewModel.task.end_date = end_date;
       }
     },
     setTaskAssignee: (state, action: PayloadAction<IProjectTask>) => {
+      if (!action.payload) return;
       const { assignees, id: taskId, names } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
         state.taskFormViewModel.task.assignees = (assignees || []).map(m => m.team_member_id);
@@ -92,12 +96,20 @@ const taskDrawerSlice = createSlice({
       }
     },
     setTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
+      if (!action.payload) return;
       const { priority_id, id: taskId } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
         state.taskFormViewModel.task.priority_id = priority_id;
       }
     },
+    setTaskPhase: (state, action: PayloadAction<{ phase_id: string | null; id: string }>) => {
+      const { phase_id, id: taskId } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        state.taskFormViewModel.task.phase_id = phase_id;
+      }
+    },
     setTaskLabels: (state, action: PayloadAction<ILabelsChangeResponse>) => {
+      if (!action.payload) return;
       const { all_labels, id: taskId } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
         state.taskFormViewModel.task.labels = all_labels || [];
@@ -122,6 +134,7 @@ const taskDrawerSlice = createSlice({
         task_id: string;
       }>
     ) => {
+      if (!action.payload) return;
       const { schedule_id, task_id } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === task_id) {
         state.taskFormViewModel.task.schedule_id = schedule_id;
@@ -193,6 +206,7 @@ export const {
   setTaskEndDate,
   setTaskAssignee,
   setTaskPriority,
+  setTaskPhase,
   setTaskLabels,
   setTaskSubscribers,
   setTimeLogEditing,

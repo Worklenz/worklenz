@@ -53,7 +53,7 @@ const TodoList = () => {
     };
 
     const res = await createPersonalTask(newTodo);
-    if (res.data) {
+    if (res.data?.done) {
       refetch();
     }
 
@@ -64,7 +64,7 @@ const TodoList = () => {
   const handleCompleteTodo = async (id: string | undefined) => {
     if (!id) return;
     const res = await markPersonalTaskAsDone(id);
-    if (res.data) {
+    if (res.data?.done) {
       refetch();
     }
   };
@@ -104,7 +104,7 @@ const TodoList = () => {
   ];
 
   return (
-    <Card style={{ width: '100%' }} bodyStyle={{ padding: 0 }}>
+    <Card style={{ width: '100%' }} styles={{ body: { padding: 0 } }}>
       <style>{`
         .todo-collapse .ant-collapse-header {
           display: flex !important;

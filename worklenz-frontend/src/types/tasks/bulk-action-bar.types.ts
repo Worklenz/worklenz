@@ -41,3 +41,8 @@ export interface IBulkAssignMembersRequest {
   project_id: string;
   members: ITaskAssignee[];
 }
+
+export interface IBulkTasksDueDateChangeRequest {
+  tasks: string[];
+  end_date: string | null;
+}

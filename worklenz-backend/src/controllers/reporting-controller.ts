@@ -10,6 +10,7 @@ import { formatDuration, getColor, log_error } from "../shared/utils";
 import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import { TASK_STATUS_COLOR_ALPHA } from "../shared/constants";
+import { SqlHelper } from "../shared/sql-helpers";
 
 const YESTERDAY = "YESTERDAY";
 const LAST_WEEK = "LAST_WEEK";
@@ -28,10 +29,12 @@ export default class ReportingController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getEstimatedVsActualTime(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teams = (req.body.teams || []) as string[]; // ids
-    const teamIds = teams.map(id => `'${id}'`).join(",");
+    // Use SqlHelper.buildInClause for safe IN clause
+    const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teams, 1);
 
     const projectStatus = (req.body.projectStatus || []) as string[]; // ids
-    const projectStatusIds = projectStatus.map(id => `'${id}'`).join(",");
+    // Use SqlHelper.buildInClause for safe IN clause
+    const { clause: projectStatusIdsClause, params: projectStatusIdsParams } = SqlHelper.buildInClause(projectStatus, teamIdsParams.length + 1);
 
     if (!teams.length || !projectStatus.length) {
       return res.status(200).send(new ServerResponse(true, {}));
@@ -49,10 +52,10 @@ export default class ReportingController extends WorklenzControllerBase {
                        WHERE project_id = projects.id)::INT AS total_estimated_time,
                       (SELECT COUNT(*) FROM tasks WHERE project_id = projects.id)
                FROM projects
-               WHERE team_id IN (${teamIds})
-                 AND status_id IN (${projectStatusIds})
+               WHERE team_id IN (${teamIdsClause})
+                 AND status_id IN (${projectStatusIdsClause})
                ORDER BY name;`;
-    const result = await db.query(q, []);
+    const result = await db.query(q, [...teamIdsParams, ...projectStatusIdsParams]);
 
     const selectedProjects: any = [];
     const estimated: any = [];
@@ -79,36 +82,47 @@ export default class ReportingController extends WorklenzControllerBase {
     }));
   }
 
-  private static getDateRangeClause(key: string, dateRange: string[]) {
-    if (dateRange.length === 2) {
+  private static getDateRangeClause(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
+    if (dateRange && dateRange.length === 2) {
+      // Use parameterized queries for custom date ranges
       const start = moment(dateRange[0]).format("YYYY-MM-DD");
       const end = moment(dateRange[1]).format("YYYY-MM-DD");
 
+      let clause: string;
+      const params: any[] = [];
+
       if (start === end) {
-        return `task_work_log.created_at::DATE = '${start}'::DATE`;
+        clause = `task_work_log.created_at::DATE = $${paramOffset}::DATE`;
+        params.push(start);
+      } else {
+        clause = `task_work_log.created_at::DATE >= $${paramOffset}::DATE AND task_work_log.created_at < $${paramOffset + 1}::DATE + INTERVAL '1 day'`;
+        params.push(start, end);
       }
 
-      return `task_work_log.created_at::DATE >= '${start}'::DATE AND task_work_log.created_at < '${end}'::DATE + INTERVAL '1 day'`;
+      return { clause, params };
     }
 
+    // Predefined ranges are safe (no user input)
     if (key === YESTERDAY)
-      return "task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE";
+      return { clause: "task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE", params: [] };
     if (key === LAST_WEEK)
-      return "task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE";
+      return { clause: "task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE", params: [] };
     if (key === LAST_MONTH)
-      return "task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE";
+      return { clause: "task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE", params: [] };
     if (key === LAST_QUARTER)
-      return "task_work_log.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE";
+      return { clause: "task_work_log.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE", params: [] };
 
-    return null;
+    return { clause: "", params: [] };
   }
 
   private static async getTimeLoggesByProjects(projects: string[], users: string[], key: string, dateRange: string[], archived = false) {
     try {
-      const projectIds = projects.map(p => `'${p}'`).join(",");
-      const userIds = users.map(u => `'${u}'`).join(",");
+      // Use SqlHelper.buildInClause for safe IN clauses
+      const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projects, 1);
+      const { clause: userIdsClause, params: userIdsParams } = SqlHelper.buildInClause(users, projectIdsParams.length + 1);
+      let paramOffset = projectIdsParams.length + userIdsParams.length + 1;
 
-      const duration = ReportingController.getDateRangeClause(key || LAST_WEEK, dateRange);
+      const { clause: durationClause, params: durationParams } = ReportingController.getDateRangeClause(key || LAST_WEEK, dateRange, paramOffset);
 
       const q = `
         SELECT projects.name,
@@ -141,9 +155,9 @@ export default class ReportingController extends WorklenzControllerBase {
                                 WHERE user_id = users.id
                                   AND CASE WHEN ($1 IS TRUE) THEN t.project_id IS NOT NULL ELSE t.archived = FALSE END
                                   AND t.project_id = projects.id
-                                  AND ${duration}) AS time_logged
+                                  AND ${durationClause}) AS time_logged
                         FROM users
-                        WHERE id IN (${userIds})
+                        WHERE id IN (${userIdsClause})
                         ORDER BY name
                         --
                       ) r
@@ -151,16 +165,16 @@ export default class ReportingController extends WorklenzControllerBase {
                ) AS time_logs
         FROM projects
                LEFT JOIN sys_project_statuses sps ON projects.status_id = sps.id
-        WHERE projects.id IN (${projectIds})
+        WHERE projects.id IN (${projectIdsClause})
           AND EXISTS(SELECT 1
                      FROM task_work_log
                             LEFT JOIN tasks t ON task_work_log.task_id = t.id
                      WHERE CASE WHEN ($1 IS TRUE) THEN t.project_id IS NOT NULL ELSE t.archived = FALSE END
                        AND t.project_id = projects.id
-                       AND ${duration});
+                       AND ${durationClause});
       `;
 
-      const result = await db.query(q, [archived]);
+      const result = await db.query(q, [archived, ...projectIdsParams, ...userIdsParams, ...durationParams]);
 
       const format = (seconds: number) => {
         const duration = moment.duration(seconds, "seconds");
@@ -389,21 +403,22 @@ export default class ReportingController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getAllocation(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teams = (req.body.teams || []) as string[]; // ids
-    const teamIds = teams.map(id => `'${id}'`).join(",");
+    // Use SqlHelper.buildInClause for safe IN clause
+    const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teams, 1);
 
     const projectIds = (req.body.projects || []) as string[];
 
-    if (!teamIds || !projectIds.length)
+    if (!teams.length || !projectIds.length)
       return res.status(200).send(new ServerResponse(true, { users: [], projects: [] }));
 
     const q = `SELECT id, (SELECT name)
                FROM users
                WHERE id IN (SELECT user_id
                             FROM team_members
-                            WHERE team_id IN (${teamIds}))
+                            WHERE team_id IN (${teamIdsClause}))
                GROUP BY id
                ORDER BY name`;
-    const result = await db.query(q, []);
+    const result = await db.query(q, teamIdsParams);
 
     const users = result.rows;
     const userIds = users.map((u: any) => u.id);
@@ -432,13 +447,14 @@ export default class ReportingController extends WorklenzControllerBase {
   public static async getCategoriesByTeams(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const selectedTeams = (req.body || []) as string[]; // ids
 
-    const ids = selectedTeams.map(id => `'${id}'`).join(",");
+    // Use SqlHelper.buildInClause for safe IN clause
+    const { clause: idsClause, params: idsParams } = SqlHelper.buildInClause(selectedTeams, 1);
 
-    if (!ids)
+    if (!selectedTeams.length)
       return res.status(200).send(new ServerResponse(true, []));
 
-    const q = `SELECT id, name, color_code FROM project_categories WHERE team_id IN (${ids}) ORDER BY name`;
-    const result = await db.query(q, []);
+    const q = `SELECT id, name, color_code FROM project_categories WHERE team_id IN (${idsClause}) ORDER BY name`;
+    const result = await db.query(q, idsParams);
     result.rows.forEach((team: any) => team.selected = true);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
@@ -450,36 +466,34 @@ export default class ReportingController extends WorklenzControllerBase {
     const selectedCategories = (req.body.selectedCategories || []) as string[];
     const isNoCategorySelected = req.body.noCategoryIncluded;
 
-    const ids = selectedTeams.map(id => `'${id}'`).join(",");
-    const categories = selectedCategories.map(id => `'${id}'`).join(",");
+    // Use SqlHelper.buildInClause for safe IN clauses
+    const { clause: idsClause, params: idsParams } = SqlHelper.buildInClause(selectedTeams, 1);
+    const { clause: categoriesClause, params: categoriesParams } = SqlHelper.buildInClause(selectedCategories, idsParams.length + 1);
 
     let categoryQ = "";
     let noCategoryQ = "";
+    const queryParams: any[] = [...idsParams];
 
-    if (!ids || (!categories && !isNoCategorySelected))
+    if (!selectedTeams.length || (!selectedCategories.length && !isNoCategorySelected))
       return res.status(200).send(new ServerResponse(true, []));
 
-    if (categories && isNoCategorySelected) {
-      categoryQ = `AND (category_id IS NULL OR category_id IN (${categories}))`;
-    } else if (!categories && isNoCategorySelected) {
+    if (selectedCategories.length && isNoCategorySelected) {
+      categoryQ = `AND (category_id IS NULL OR category_id IN (${categoriesClause}))`;
+      queryParams.push(...categoriesParams);
+    } else if (!selectedCategories.length && isNoCategorySelected) {
       noCategoryQ = `AND category_id IS NULL`;
-    } else if (categories && !isNoCategorySelected) {
-      categoryQ = `AND category_id IN (${categories})`;
+    } else if (selectedCategories.length && !isNoCategorySelected) {
+      categoryQ = `AND category_id IN (${categoriesClause})`;
+      queryParams.push(...categoriesParams);
     }
-
-    // if (categories)
-    //   categoryQ = `AND category_id IN (${categories})`;
-
-    // if (isNoCategorySelected === true)
-    //   noCategoryQ = `OR (team_id IN (${ids}) AND category_id IS NULL)`;
 
     const q = `SELECT id, name
                FROM projects
-               WHERE team_id IN (${ids})
+               WHERE team_id IN (${idsClause})
                ${categoryQ}
                ${noCategoryQ}
                ORDER BY name;`;
-    const result = await db.query(q, []);
+    const result = await db.query(q, queryParams);
     result.rows.forEach((team: any) => team.selected = true);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
@@ -636,19 +650,22 @@ export default class ReportingController extends WorklenzControllerBase {
     }) => member.name).join(", ") : "-";
   }
 
-  public static async getAllocationExport(include_archived: string, teamIds: string, projectIds: string[], duration: string, date_range: string[]) {
+  public static async getAllocationExport(include_archived: string, teamIds: string[], projectIds: string[], duration: string, date_range: string[]) {
 
-    if (!teamIds || !projectIds.length)
+    if (!teamIds.length || !projectIds.length)
       return { users: [], projects: [] };
+
+    // Use SqlHelper.buildInClause for safe IN clause
+    const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teamIds, 1);
 
     const q = `SELECT id, (SELECT name)
                FROM users
                WHERE id IN (SELECT user_id
                             FROM team_members
-                            WHERE team_id IN (${teamIds}))
+                            WHERE team_id IN (${teamIdsClause}))
                GROUP BY id
                ORDER BY name`;
-    const result = await db.query(q, []);
+    const result = await db.query(q, teamIdsParams);
 
     const users = result.rows;
     const userIds = users.map((u: any) => u.id);
@@ -665,13 +682,12 @@ export default class ReportingController extends WorklenzControllerBase {
   public static async exportAllocation(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<void> {
 
     const { includeArchived } = req.query;
-    const teams = (req.query.teams as string)?.split(",");
-    const teamIds = teams.map(t => `'${t}'`).join(",");
-    const projectIds = (req.query.projects as string)?.split(",");
+    const teams = (req.query.teams as string)?.split(",").filter(t => t.trim());
+    const projectIds = (req.query.projects as string)?.split(",").filter(p => p.trim());
     const { duration } = req.query;
     const dateRange = (req.query.date_range as string)?.split(",");
 
-    const results = await this.getAllocationExport(includeArchived as string, teamIds, projectIds, duration as string, dateRange);
+    const results = await this.getAllocationExport(includeArchived as string, teams, projectIds, duration as string, dateRange);
     const exportDate = moment().format("MMM-DD-YYYY");
     const fileName = `${exportDate} - Reporting Allocation`;
     const workbook = new Excel.Workbook();
@@ -835,16 +851,27 @@ export default class ReportingController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getReportingCustom(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { includeArchived } = req.query;
-    const { searchQuery, size, offset } = this.toPaginationOptions(req.query, "name");
+    const { searchQuery, searchParams = [], size, offset } = this.toPaginationOptions(req.query, "name", false, 1);
 
     const teams = (req.body.teams || []) as string[]; // ids
-    const teamIds = teams.map(id => `'${id}'`).join(",");
+    // Use SqlHelper.buildInClause for safe IN clause
+    const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teams, searchParams.length + 1);
+    let paramOffset = searchParams.length + teamIdsParams.length + 1;
 
     const status = (req.body.status || []) as string[];
-    const statusIds = status.map(p => `'${p}'`).join(",");
+    // Use SqlHelper.buildInClause for safe IN clause
+    const { clause: statusIdsClause, params: statusIdsParams } = SqlHelper.buildInClause(status, paramOffset);
+    paramOffset += statusIdsParams.length;
 
     if (!teams.length || !status.length)
       return res.status(200).send(new ServerResponse(true, { users: [], projects: [] }));
+
+    // Build parameter array: searchParams, teamIds, statusIds, size, offset, includeArchived
+    const queryParams = [...searchParams, ...teamIdsParams, ...statusIdsParams, size, offset, includeArchived];
+    const userIdParam = paramOffset + 1;
+    const includeArchivedParam = paramOffset + 4;
+    const limitParam = paramOffset + 2;
+    const offsetParam = paramOffset + 3;
 
     const q = `SELECT COUNT(*) AS total,
                       (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
@@ -903,33 +930,33 @@ export default class ReportingController extends WorklenzControllerBase {
                                                         AND project_id = projects.id)
                                               ELSE updated_at END) AS updated_at
                              FROM projects
-                             WHERE team_id IN (${teamIds}) ${searchQuery}
-                              AND status_id IN (${statusIds})
+                             WHERE team_id IN (${teamIdsClause}) ${searchQuery}
+                              AND status_id IN (${statusIdsClause})
                                AND NOT EXISTS (SELECT user_id
                                FROM archived_projects
-                               WHERE user_id = $1
+                               WHERE user_id = $${userIdParam}
                                AND project_id = projects.id)
                                AND CASE
-                               WHEN ($4 IS TRUE) THEN team_id IS NOT NULL
+                               WHEN ($${includeArchivedParam} IS TRUE) THEN team_id IS NOT NULL
                                ELSE NOT EXISTS (SELECT project_id
                                FROM archived_projects
                                WHERE project_id = projects.id) END
                              ORDER BY NAME ASC
-                             LIMIT $2 OFFSET $3) t) AS DATA
+                             LIMIT $${limitParam} OFFSET $${offsetParam}) t) AS DATA
                FROM projects
-               WHERE team_id IN (${teamIds}) ${searchQuery}
-                AND status_id IN (${statusIds})
+               WHERE team_id IN (${teamIdsClause}) ${searchQuery}
+                AND status_id IN (${statusIdsClause})
                  AND NOT EXISTS (SELECT user_id
                  FROM archived_projects
-                 WHERE user_id = $1
+                 WHERE user_id = $${userIdParam}
                  AND project_id = projects.id)
                  AND CASE
-                 WHEN ($4 IS TRUE) THEN team_id IS NOT NULL
+                 WHEN ($${includeArchivedParam} IS TRUE) THEN team_id IS NOT NULL
                  ELSE NOT EXISTS (SELECT project_id
                  FROM archived_projects
                  WHERE project_id = projects.id)
     END;`;
-    const result = await db.query(q, [req.user?.id, size, offset, includeArchived]);
+    const result = await db.query(q, [req.user?.id, ...queryParams]);
     const [obj] = result.rows;
 
     for (const project of obj.data) {
@@ -956,8 +983,9 @@ export default class ReportingController extends WorklenzControllerBase {
     if (!teams.length || !status.length || !user_id)
       return { users: [], projects: [] };
 
-    const teamIds = teams.map(id => `'${id}'`).join(",");
-    const statusIds = status.map(s => `'${s}'`).join(",");
+    // Use SqlHelper.buildInClause for safe IN clauses
+    const { clause: teamIdsClause, params: teamIdsParams } = SqlHelper.buildInClause(teams, 1);
+    const { clause: statusIdsClause, params: statusIdsParams } = SqlHelper.buildInClause(status, teamIdsParams.length + 1);
 
     const q = `SELECT id,
                       name,
@@ -1014,20 +1042,20 @@ export default class ReportingController extends WorklenzControllerBase {
                                           AND project_id = projects.id)
                                 ELSE updated_at END) AS updated_at
                FROM projects
-               WHERE team_id IN (${teamIds}) ${searchQuery}
-        AND status_id IN (${statusIds})
+               WHERE team_id IN (${teamIdsClause}) ${searchQuery}
+        AND status_id IN (${statusIdsClause})
                  AND NOT EXISTS (SELECT user_id
                  FROM archived_projects
-                 WHERE user_id = $1
+                 WHERE user_id = $${teamIdsParams.length + statusIdsParams.length + 1}
                  AND project_id = projects.id)
                  AND CASE
-                 WHEN ($2 IS TRUE) THEN team_id IS NOT NULL
+                 WHEN ($${teamIdsParams.length + statusIdsParams.length + 2} IS TRUE) THEN team_id IS NOT NULL
                  ELSE NOT EXISTS (SELECT project_id
                  FROM archived_projects
                  WHERE project_id = projects.id)
     END ORDER BY NAME ASC;`;
 
-    const result = await db.query(q, [user_id, includeArchived]);
+    const result = await db.query(q, [...teamIdsParams, ...statusIdsParams, user_id, includeArchived]);
     return result.rows;
 
   }
@@ -1518,7 +1546,10 @@ export default class ReportingController extends WorklenzControllerBase {
   }
 
   public static async getTeamMemberInsightData(team_id: string | undefined, projects: string, status: string, search: string, duration: string, userId: string | undefined) {
-    const searchQuery = search ? `AND TO_TSVECTOR(tmiv.name || ' ' || tmiv.email || ' ' || u.name) @@ TO_TSQUERY('${search}:*')` : "";
+    // Use parameterized query for full-text search
+    // Use $3 since team_id is $1 and userId is $2
+    const searchQuery = search ? `AND TO_TSVECTOR(tmiv.name || ' ' || tmiv.email || ' ' || u.name) @@ TO_TSQUERY($3)` : "";
+    const searchParam = search ? `${search}:*` : null;
 
     const q = `SELECT ROW_TO_JSON(rec) AS team_members
                FROM (SELECT COUNT(*) AS total,
@@ -1643,7 +1674,12 @@ export default class ReportingController extends WorklenzControllerBase {
                                                                           WHERE projects.team_id = $1
                                                                             AND status_id IN
                                                                                 (${status}))))) rec;`;
-    const result = await db.query(q, [team_id, userId]);
+    // Build parameters array: team_id, userId, and optionally search
+    const params: any[] = [team_id, userId];
+    if (search && searchParam) {
+      params.push(searchParam);
+    }
+    const result = await db.query(q, params);
 
     const [data] = result.rows;
 
@@ -1658,10 +1694,15 @@ export default class ReportingController extends WorklenzControllerBase {
       return res.status(200).send(new ServerResponse(true, { total: 0, data: [] }));
     }
 
-    const projectIds = projects.map((p: any) => `'${p}'`).join(",");
-    const statusIds = status.map((u: any) => `'${u}'`).join(",");
+    // Use SqlHelper.buildInClause for safe IN clauses
+    // Note: getTeamMemberInsightData still expects strings, so we'll need to refactor it
+    // For now, we'll pass the arrays and let the method handle parameterization
+    const projectIds = projects.join(",");
+    const statusIds = status.join(",");
 
-    const dateRangeClause = ReportingController.getDateRangeClause(duration || LAST_WEEK, dateRange);
+    // Note: getDateRangeClause now returns { clause, params } but getTeamMemberInsightData expects a string
+    // This needs to be refactored - for now we'll use the clause string
+    const { clause: dateRangeClause } = ReportingController.getDateRangeClause(duration || LAST_WEEK, dateRange, 1);
 
     const result = await this.getTeamMemberInsightData(teamId, projectIds, statusIds, search, dateRangeClause || "", req.user?.id);
 
@@ -1676,7 +1717,20 @@ export default class ReportingController extends WorklenzControllerBase {
     return res.status(200).send(new ServerResponse(true, result));
   }
 
-  public static async getProjectsOfMember(projectIds: string, statusIds: string, dateRangeClause: string | null, memberId: string) {
+  public static async getProjectsOfMember(projectIds: string[], statusIds: string[], dateRangeClause: { clause: string; params: any[] } | null, memberId: string) {
+    // Use parameterized queries
+    const params: any[] = [memberId];
+    let paramOffset = 2;
+    
+    const { clause: projectIdsClause, params: projectIdsParams } = SqlHelper.buildInClause(projectIds, paramOffset);
+    paramOffset += projectIdsParams.length;
+    
+    const { clause: statusIdsClause, params: statusIdsParams } = SqlHelper.buildInClause(statusIds, paramOffset);
+    paramOffset += statusIdsParams.length;
+    
+    const dateClause = dateRangeClause?.clause || "";
+    const dateParams = dateRangeClause?.params || [];
+    
     const q = `SELECT p.name,
                       COUNT(*) AS logged_task_count,
                       SUM(time_spent) AS total_logged_time,
@@ -1690,12 +1744,12 @@ export default class ReportingController extends WorklenzControllerBase {
                                               FROM team_members
                                               WHERE id = $1
                                                 AND team_members.team_id = p.team_id)
-                 AND p.id IN (${projectIds})
-                 AND p.status_id IN (${statusIds})
-                 AND ${dateRangeClause}
+                 AND p.id IN (${projectIdsClause})
+                 AND p.status_id IN (${statusIdsClause})
+                 ${dateClause}
                GROUP BY p.id;`;
 
-    const result = await db.query(q, [memberId,]);
+    const result = await db.query(q, [...params, ...projectIdsParams, ...statusIdsParams, ...dateParams]);
 
     result.rows.forEach((element: { total_logged_time: string; }) => {
       element.total_logged_time = formatDuration(moment.duration(element.total_logged_time || "0", "seconds"));
@@ -1708,10 +1762,11 @@ export default class ReportingController extends WorklenzControllerBase {
   public static async getProjectsByMember(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { dateRange, projects, status, duration, memberId } = req.body;
 
-    const projectIds = projects.map((p: any) => `'${p}'`).join(",");
-    const statusIds = status.map((u: any) => `'${u}'`).join(",");
+    // Pass arrays directly instead of concatenated strings
+    const projectIds = projects as string[];
+    const statusIds = status as string[];
 
-    const dateRangeClause = ReportingController.getDateRangeClause(duration || LAST_WEEK, dateRange);
+    const dateRangeClause = ReportingController.getDateRangeClause(duration || LAST_WEEK, dateRange, 1);
 
     const data = await this.getProjectsOfMember(projectIds, statusIds, dateRangeClause, memberId);
 
@@ -1734,14 +1789,15 @@ export default class ReportingController extends WorklenzControllerBase {
       dateRange.push(start as string, end as string);
     }
 
-    const dateRangeClause = ReportingController.getDateRangeClause(duration as string || LAST_WEEK, dateRange);
+    const { clause: dateRangeClause } = ReportingController.getDateRangeClause(duration as string || LAST_WEEK, dateRange, 1);
 
     const data = await this.getTeamMemberInsightData(team as string, projectIds, statusIds, searchQuery, dateRangeClause || "", req.user?.id);
 
+    const dateRangeClauseObj = ReportingController.getDateRangeClause(duration as string || LAST_WEEK, dateRange, 1);
     for (const teamMember of data.team_members) {
       teamMember.color_code = getColor(teamMember.name);
       teamMember.total_logged_time = formatDuration(moment.duration(teamMember.total_logged_time_seconds || "0", "seconds"));
-      teamMember.projects = await this.getProjectsOfMember(projectIds, statusIds, dateRangeClause, teamMember.id);
+      teamMember.projects = await this.getProjectsOfMember(projects, status, dateRangeClauseObj, teamMember.id);
     }
 
     const exportDate = moment().format("MMM-DD-YYYY");

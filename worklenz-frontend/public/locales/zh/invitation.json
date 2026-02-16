@@ -9,6 +9,7 @@
   "in": "在",
   "accessLevel": "访问级别",
   "loggedInAs": "您已登录为 {{name}}。您的详细信息已预填。",
+  "joiningAs": "您将以 {{name}} ({{email}}) 的身份加入",
   "fullName": "全名",
   "fullNameRequired": "请输入您的全名",
   "fullNameMinLength": "名称必须至少为2个字符",

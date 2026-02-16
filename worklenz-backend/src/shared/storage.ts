@@ -1,5 +1,7 @@
 import path from "path";
 import {
+  CopyObjectCommand,
+  CopyObjectCommandInput,
   DeleteObjectCommand,
   DeleteObjectCommandInput,
   GetObjectCommand,
@@ -37,7 +39,7 @@ import {
 const getEndpointFromUrl = () => {
   try {
     if (!S3_URL) return undefined;
-    
+
     // Extract the endpoint URL (e.g., http://minio:9000 from http://minio:9000/bucket)
     const url = new URL(S3_URL);
     return `${url.protocol}//${url.host}`;
@@ -74,18 +76,21 @@ if (STORAGE_PROVIDER === "azure") {
     } else {
       const sharedKeyCredential = new StorageSharedKeyCredential(
         AZURE_STORAGE_ACCOUNT_NAME,
-        AZURE_STORAGE_ACCOUNT_KEY
+        AZURE_STORAGE_ACCOUNT_KEY,
       );
-      
+
       azureBlobServiceClient = new BlobServiceClient(
         `https://${AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net`,
-        sharedKeyCredential
+        sharedKeyCredential,
       );
-      
+
       const containerName = AZURE_STORAGE_CONTAINER || "ifinitycdn";
-      azureContainerClient = azureBlobServiceClient.getContainerClient(containerName);
-      
-      console.log(`Azure Blob Storage initialized with account: ${AZURE_STORAGE_ACCOUNT_NAME}, container: ${containerName}`);
+      azureContainerClient =
+        azureBlobServiceClient.getContainerClient(containerName);
+
+      console.log(
+        `Azure Blob Storage initialized with account: ${AZURE_STORAGE_ACCOUNT_NAME}, container: ${containerName}`,
+      );
     }
   } catch (error) {
     console.error("Failed to initialize Azure Blob Storage:", error);
@@ -102,12 +107,32 @@ export function getKey(
   teamId: string,
   projectId: string,
   attachmentId: string,
-  type: string
+  type: string,
 ) {
   const keyPath = path
     .join(getRootDir(), teamId, projectId, `${attachmentId}.${type}`)
     .replace(/\\/g, "/");
-  
+
+  return keyPath;
+}
+
+export function getProjectFileStorageKey(
+  teamId: string,
+  projectId: string,
+  fileId: string,
+  extension: string,
+) {
+  const keyPath = path
+    .join(
+      getEnvironmentPrefix(),
+      teamId,
+      "projects",
+      projectId,
+      "files",
+      `${fileId}.${extension}`,
+    )
+    .replace(/\\/g, "/");
+
   return keyPath;
 }
 
@@ -117,7 +142,7 @@ export function getTaskAttachmentKey(
   taskId: string,
   commentId: string,
   attachmentId: string,
-  type: string
+  type: string,
 ) {
   const keyPath = path
     .join(
@@ -126,10 +151,10 @@ export function getTaskAttachmentKey(
       projectId,
       taskId,
       commentId,
-      `${attachmentId}.${type}`
+      `${attachmentId}.${type}`,
     )
     .replace(/\\/g, "/");
-  
+
   return keyPath;
 }
 
@@ -137,7 +162,7 @@ export function getAvatarKey(userId: string, type: string) {
   const keyPath = path
     .join("avatars", getRootDir(), `${userId}.${type}`)
     .replace(/\\/g, "/");
-  
+
   return keyPath;
 }
 
@@ -145,7 +170,22 @@ export function getClientPortalLogoKey(teamId: string, type: string) {
   const keyPath = path
     .join("client-portal-logos", getRootDir(), `${teamId}.${type}`)
     .replace(/\\/g, "/");
-  
+
+  return keyPath;
+}
+
+export function getOrganizationLogoKey(
+  organizationId: string,
+  fileExtension: string,
+) {
+  const keyPath = path
+    .join(
+      "organization-logos",
+      getRootDir(),
+      `${organizationId}.${fileExtension}`,
+    )
+    .replace(/\\/g, "/");
+
   return keyPath;
 }
 
@@ -163,27 +203,35 @@ export function getEnvironmentPrefix(): string {
 /**
  * Client Portal Storage Purposes
  */
-export type ClientPortalStoragePurpose = 
+export type ClientPortalStoragePurpose =
   | "request-attachments"
   | "chat-files"
   | "avatars"
   | "service-images"
   | "documents"
+  | "payment-proofs"
   | "general";
 
 /**
  * Generate a storage key for client portal files with environment-based directories
- * Structure: {env}/client-portal/{purpose}/{organizationId}/{...pathSegments}
- * 
+ * All files are stored under organizations/{organizationId}/client-portal/{purpose}/...
+ * This structure allows easy tracking of storage usage per organization/team
+ *
+ * Structure: {env}/organizations/{organizationId}/client-portal/{purpose}/{...pathSegments}
+ *
  * @param purpose - The purpose/category of the file (request-attachments, chat-files, etc.)
  * @param organizationId - The organization team ID
  * @param pathSegments - Additional path segments (e.g., clientId, requestId, filename)
  * @returns Full storage key path
- * 
+ *
  * @example
  * // For request attachment:
  * getClientPortalStorageKey("request-attachments", "org-123", "client-456", "file.pdf")
- * // Returns: "prod/client-portal/request-attachments/org-123/client-456/file.pdf"
+ * // Returns: "prod/organizations/org-123/client-portal/request-attachments/client-456/file.pdf"
+ *
+ * // For payment proof:
+ * getClientPortalStorageKey("payment-proofs", "org-123", "client-456", "proof.jpg")
+ * // Returns: "prod/organizations/org-123/client-portal/payment-proofs/client-456/proof.jpg"
  */
 export function getClientPortalStorageKey(
   purpose: ClientPortalStoragePurpose,
@@ -191,23 +239,38 @@ export function getClientPortalStorageKey(
   ...pathSegments: string[]
 ): string {
   const env = getEnvironmentPrefix();
+
+  // All client portal files are stored under organizations/{orgId}/client-portal/{purpose}/
+  // This allows easy tracking of storage usage per organization/team
   const keyPath = path
-    .join(env, "client-portal", purpose, organizationId, ...pathSegments)
+    .join(
+      env,
+      "organizations",
+      organizationId,
+      "client-portal",
+      purpose,
+      ...pathSegments,
+    )
     .replace(/\\/g, "/");
-  
+
   return keyPath;
 }
 
 /**
  * Generate a unique filename for client portal uploads
  * Format: {prefix}_{timestamp}_{randomId}.{extension}
- * 
+ *
  * @param originalFilename - Original filename with extension
  * @param prefix - Optional prefix (e.g., "client", "request")
  * @returns Unique filename
  */
-export function generateUniqueFilename(originalFilename: string, prefix = "file"): string {
-  const extension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toLowerCase();
+export function generateUniqueFilename(
+  originalFilename: string,
+  prefix = "file",
+): string {
+  const extension = originalFilename
+    .substring(originalFilename.lastIndexOf(".") + 1)
+    .toLowerCase();
   const timestamp = Date.now();
   const randomId = Math.random().toString(36).substring(2, 11);
   return `${prefix}_${timestamp}_${randomId}.${extension}`;
@@ -227,7 +290,7 @@ export function getFileExtension(filename: string): string {
 async function uploadBufferToS3(
   buffer: Buffer,
   type: string,
-  location: string
+  location: string,
 ): Promise<string | null> {
   try {
     const bucketParams: PutObjectCommandInput = {
@@ -239,14 +302,14 @@ async function uploadBufferToS3(
     };
 
     await s3Client.send(new PutObjectCommand(bucketParams));
-    
+
     // Create proper URL depending on whether we're using S3 or MinIO
     const endpointUrl = getEndpointFromUrl();
     if (endpointUrl) {
       // For MinIO or custom S3 endpoint
       return `${endpointUrl}/${BUCKET}/${location}`;
     }
-    
+
     // For standard AWS S3
     return `${S3_URL}/${location}`;
   } catch (error) {
@@ -258,7 +321,7 @@ async function uploadBufferToS3(
 async function uploadBufferToAzure(
   buffer: Buffer,
   type: string,
-  location: string
+  location: string,
 ): Promise<string | null> {
   try {
     if (!azureContainerClient) {
@@ -285,7 +348,7 @@ async function uploadBufferToAzure(
 export async function uploadBuffer(
   buffer: Buffer,
   type: string,
-  location: string
+  location: string,
 ): Promise<string | null> {
   if (STORAGE_PROVIDER === "azure") {
     return uploadBufferToAzure(buffer, type, location);
@@ -297,7 +360,7 @@ export async function uploadBase64(base64Data: string, location: string) {
   try {
     const buffer = Buffer.from(
       base64Data.replace(/^data:(.*?);base64,/, ""),
-      "base64"
+      "base64",
     );
     const type = base64Data.split(";")[0].split(":")[1] || null;
 
@@ -342,6 +405,53 @@ export async function deleteObject(key: string) {
     return deleteObjectFromAzure(key);
   }
   return deleteObjectFromS3(key);
+}
+
+async function copyObjectInS3(sourceKey: string, destinationKey: string) {
+  try {
+    const copyParams: CopyObjectCommandInput = {
+      Bucket: BUCKET,
+      CopySource: `${BUCKET}/${sourceKey}`,
+      Key: destinationKey,
+    };
+    await s3Client.send(new CopyObjectCommand(copyParams));
+    return true;
+  } catch (error) {
+    log_error(error);
+    return false;
+  }
+}
+
+async function copyObjectInAzure(sourceKey: string, destinationKey: string) {
+  try {
+    if (!azureContainerClient) {
+      throw new Error("Azure Blob Storage not configured properly");
+    }
+
+    const sourceBlobClient = azureContainerClient.getBlockBlobClient(sourceKey);
+    const destinationBlobClient =
+      azureContainerClient.getBlockBlobClient(destinationKey);
+
+    // Azure Blob Storage copy operation - beginCopyFromURL returns a Promise that resolves to a poller
+    const poller = await destinationBlobClient.beginCopyFromURL(
+      sourceBlobClient.url,
+    );
+
+    // Wait for the copy operation to complete
+    await poller.pollUntilDone();
+
+    return true;
+  } catch (error) {
+    log_error(error);
+    return false;
+  }
+}
+
+export async function copyObject(sourceKey: string, destinationKey: string) {
+  if (STORAGE_PROVIDER === "azure") {
+    return copyObjectInAzure(sourceKey, destinationKey);
+  }
+  return copyObjectInS3(sourceKey, destinationKey);
 }
 
 async function calculateStorageS3(prefix: string) {
@@ -432,7 +542,7 @@ async function createPresignedUrlWithAzureClient(key: string, file: string) {
     // Create a SAS token that's valid for one hour
     const sharedKeyCredential = new StorageSharedKeyCredential(
       AZURE_STORAGE_ACCOUNT_NAME,
-      AZURE_STORAGE_ACCOUNT_KEY
+      AZURE_STORAGE_ACCOUNT_KEY,
     );
 
     const fileExtension = path.extname(key).toLowerCase();
@@ -451,7 +561,7 @@ async function createPresignedUrlWithAzureClient(key: string, file: string) {
 
     const sasToken = generateBlobSASQueryParameters(
       sasOptions,
-      sharedKeyCredential
+      sharedKeyCredential,
     ).toString();
 
     // Generate URL with container name in the path

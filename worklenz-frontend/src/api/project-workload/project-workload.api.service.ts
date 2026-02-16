@@ -6,7 +6,7 @@ import {
   ITaskAllocation,
   IMemberAvailability,
 } from '@/types/workload/workload.types';
-import { getCsrfToken, refreshCsrfToken } from '../api-client';
+import { getCsrfToken, ensureCsrfToken } from '../api-client';
 import config from '@/config/env';
 
 // Helper function to calculate working days per week from organization settings
@@ -291,7 +291,11 @@ const projectWorkloadApi = createApi({
     prepareHeaders: async headers => {
       let token = getCsrfToken();
       if (!token) {
-        token = await refreshCsrfToken();
+        try {
+          token = await ensureCsrfToken();
+        } catch (error) {
+          console.error('[CSRF] Failed to refresh CSRF token:', error);
+        }
       }
       if (token) {
         headers.set('X-CSRF-Token', token);

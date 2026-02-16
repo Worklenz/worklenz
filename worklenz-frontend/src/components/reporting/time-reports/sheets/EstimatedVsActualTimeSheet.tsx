@@ -111,13 +111,17 @@ const EstimatedVsActualTimeSheet = forwardRef<
         label: 'Estimated Days',
         data: estimatedDays,
         backgroundColor: jsonData.map((_, index) => getProjectColor(index) + '80'), // 80 for opacity
-        barThickness: 50,
+        maxBarThickness: 40, // Changed from barThickness to maxBarThickness
+        barPercentage: 0.9, // Add bar percentage for better spacing
+        categoryPercentage: 0.8, // Add category percentage for group spacing
       },
       {
         label: 'Actual Days',
         data: actualDays,
         backgroundColor: jsonData.map((_, index) => getProjectColor(index)),
-        barThickness: 50,
+        maxBarThickness: 40, // Changed from barThickness to maxBarThickness
+        barPercentage: 0.9,
+        categoryPercentage: 0.8,
       },
     ],
   };
@@ -125,6 +129,7 @@ const EstimatedVsActualTimeSheet = forwardRef<
   // Chart options
   const options = {
     maintainAspectRatio: false,
+    responsive: true,
     plugins: {
       tooltip: {
         callbacks: {
@@ -148,6 +153,9 @@ const EstimatedVsActualTimeSheet = forwardRef<
         borderColor: '#000',
         textStrokeColor: 'black',
         textStrokeWidth: 4,
+        font: {
+          size: 11, // Reduced font size for better fit
+        },
       },
       legend: {
         display: false,
@@ -171,6 +179,10 @@ const EstimatedVsActualTimeSheet = forwardRef<
           font: {
             size: 11,
           },
+          autoSkip: false, // Don't skip labels
+        },
+        grid: {
+          offset: true, // Add offset to prevent bars from overlapping grid
         },
       },
       y: {
@@ -183,6 +195,17 @@ const EstimatedVsActualTimeSheet = forwardRef<
             family: 'Helvetica',
           },
         },
+        ticks: {
+          precision: 0, // Show whole numbers
+        },
+      },
+    },
+    layout: {
+      padding: {
+        left: 10,
+        right: 10,
+        top: 20,
+        bottom: 10,
       },
     },
   };
@@ -213,8 +236,22 @@ const EstimatedVsActualTimeSheet = forwardRef<
         // Update chart dimensions based on data
         if (dataArray.length) {
           const containerWidth = window.innerWidth - 300;
-          const virtualWidth = dataArray.length * 120;
-          setChartWidth(virtualWidth > containerWidth ? virtualWidth : window.innerWidth - 250);
+          
+          // FIXED: Better calculation for chart width
+          // Each project group needs space for 2 bars + gap + label
+          // Minimum 100px per project group (2 bars of ~40px each + spacing)
+          const MIN_SPACE_PER_PROJECT = 100;
+          const PADDING = 100; // Extra padding for labels and margins
+          
+          const calculatedWidth = (dataArray.length * MIN_SPACE_PER_PROJECT) + PADDING;
+          
+          // Use the larger of calculated width or container width
+          const finalWidth = Math.max(calculatedWidth, containerWidth, 1080);
+          
+          setChartWidth(finalWidth);
+        } else {
+          // Default width when no data
+          setChartWidth(window.innerWidth - 250);
         }
       }
     } catch (error) {
@@ -279,7 +316,7 @@ const EstimatedVsActualTimeSheet = forwardRef<
 
   return (
     <div style={{ position: 'relative' }}>
-      {/* Outer container with fixed width */}
+      {/* Outer container with horizontal scroll */}
       <div
         style={{
           width: '100%',
@@ -288,12 +325,12 @@ const EstimatedVsActualTimeSheet = forwardRef<
           overflowY: 'hidden',
         }}
       >
-        {/* Chart container */}
+        {/* Chart container with dynamic width */}
         <div
           style={{
             width: `${chartWidth}px`,
             height: `${chartHeight}px`,
-            minWidth: 'max-content',
+            minWidth: '100%', // Changed from 'max-content' to ensure minimum width
           }}
         >
           <Bar

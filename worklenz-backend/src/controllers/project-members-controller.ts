@@ -177,10 +177,6 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       return res.status(200).send(new ServerResponse(false, null, "Unable to add user! Please check your subscription status."));
     }
 
-    if (!userExists && subscriptionData.is_ltd && subscriptionData.current_count && (parseInt(subscriptionData.current_count) + 1 > parseInt(subscriptionData.ltd_users))) {
-      return res.status(200).send(new ServerResponse(false, null, "Maximum number of life time users reached."));
-    }
-
     /**
    * Checks trial user team member limit
    */
@@ -192,7 +188,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       }
     }
 
-    // if (subscriptionData.status === "trialing") break;
+    // Check Business plan limits first - Business plans override AppSumo lifetime limits
     if (!userExists && !subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status !== "trialing") {
       // if (subscriptionData.subscription_status === "active") {
       //   const response = await updateUsers(subscriptionData.subscription_id, (subscriptionData.quantity + 1));
@@ -209,6 +205,11 @@ export default class ProjectMembersController extends WorklenzControllerBase {
         };
         return res.status(200).send(new ServerResponse(false, obj, `Insufficient seats available. You need ${requiredSeats} more seat${requiredSeats > 1 ? 's' : ''} to add this member. Please upgrade your subscription.`));
       }
+    }
+
+    // Check AppSumo lifetime limits - only applies if not on Business plan
+    if (!userExists && subscriptionData.is_ltd && subscriptionData.current_count && (parseInt(subscriptionData.current_count) + 1 > parseInt(subscriptionData.ltd_users))) {
+      return res.status(200).send(new ServerResponse(false, null, "Maximum number of life time users reached."));
     }
 
     // Adding as a team member
@@ -251,6 +252,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     const q = `
       SELECT project_members.id,
              tm.id AS team_member_id,
+             tm.user_id,
              (SELECT email FROM team_member_info_view WHERE team_member_info_view.team_member_id = tm.id),
              (SELECT name FROM team_member_info_view WHERE team_member_id = project_members.team_member_id) AS name,
              u.avatar_url,
@@ -337,15 +339,18 @@ export default class ProjectMembersController extends WorklenzControllerBase {
         return res.status(200).send(new ServerResponse(false, null, "Unable to generate invitation link! Please check your subscription status."));
       }
 
-      // Check trial user limit - warn if close to limit
+      // Check trial user limit - warn if close to limit (skip for Business plan trials)
       if (subscriptionData.subscription_status === "trialing") {
-        const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
-        if (currentTrialMembers >= TRIAL_MEMBER_LIMIT) {
-          return res.status(200).send(new ServerResponse(false, null, `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`));
+        const isBusinessPlanTrial = subscriptionData.plan_name?.toLowerCase().includes("business");
+        if (!isBusinessPlanTrial) {
+          const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
+          if (currentTrialMembers >= TRIAL_MEMBER_LIMIT) {
+            return res.status(200).send(new ServerResponse(false, null, `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`));
+          }
         }
       }
 
-      // Check seat availability for active subscriptions
+      // Check seat availability for active subscriptions (Business plans override LTD limits)
       if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
         const currentCount = parseInt(subscriptionData.current_count) || 0;
         const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
@@ -360,8 +365,10 @@ export default class ProjectMembersController extends WorklenzControllerBase {
         }
       }
 
-      // Check LTD user limits
-      if (subscriptionData.is_ltd && subscriptionData.current_count) {
+      // Check LTD user limits - only applies if not on Business plan (check both subscription_type and plan_name)
+      const isBusinessPlan = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' || 
+                             subscriptionData.plan_name?.toLowerCase().includes("business");
+      if (subscriptionData.is_ltd && subscriptionData.current_count && !isBusinessPlan) {
         const currentCount = parseInt(subscriptionData.current_count) || 0;
         const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
         if (currentCount >= ltdLimit) {
@@ -589,8 +596,23 @@ export default class ProjectMembersController extends WorklenzControllerBase {
           return res.status(200).send(new ServerResponse(false, null, "Unable to join project! Please check team subscription status."));
         }
 
-        // Check LTD user limits
-        if (incrementBy > 0 && subscriptionData.is_ltd && subscriptionData.current_count) {
+        // Check seat availability for active subscriptions (Business plans override LTD limits)
+        if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
+          const updatedCount = parseInt(subscriptionData.current_count) + incrementBy;
+          const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
+          const requiredSeats = updatedCount - effectiveUserLimit;
+          if (updatedCount > effectiveUserLimit) {
+            const obj = {
+              seats_enough: false,
+              required_count: requiredSeats,
+              current_seat_amount: effectiveUserLimit
+            };
+            return res.status(200).send(new ServerResponse(false, obj, `Insufficient seats available. The team needs ${requiredSeats} more seat${requiredSeats > 1 ? 's' : ''} to add you. Please ask the team owner to upgrade.`));
+          }
+        }
+
+        // Check LTD user limits - only applies if not on Business plan
+        if (incrementBy > 0 && subscriptionData.is_ltd && subscriptionData.current_count && subscriptionData.subscription_type !== 'ANNUAL_BUSINESS') {
           const currentCount = parseInt(subscriptionData.current_count) || 0;
           const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
           if (currentCount + incrementBy > ltdLimit) {
@@ -603,21 +625,6 @@ export default class ProjectMembersController extends WorklenzControllerBase {
           const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
           if (currentTrialMembers + incrementBy > TRIAL_MEMBER_LIMIT) {
             return res.status(200).send(new ServerResponse(false, null, `Trial teams cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please ask the team owner to upgrade.`));
-          }
-        }
-
-        // Check seat availability for active subscriptions
-        if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
-          const updatedCount = parseInt(subscriptionData.current_count) + incrementBy;
-          const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
-          const requiredSeats = updatedCount - effectiveUserLimit;
-          if (updatedCount > effectiveUserLimit) {
-            const obj = {
-              seats_enough: false,
-              required_count: requiredSeats,
-              current_seat_amount: effectiveUserLimit
-            };
-            return res.status(200).send(new ServerResponse(false, obj, `Insufficient seats available. The team needs ${requiredSeats} more seat${requiredSeats > 1 ? 's' : ''} to add you. Please ask the team owner to upgrade.`));
           }
         }
       }
@@ -665,7 +672,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
           const setActiveTeamQuery = `SELECT set_active_team($1, $2)`;
           await db.query(setActiveTeamQuery, [userId, teamId]);
         }
-        return res.status(200).send(new ServerResponse(false, null, "You are already a member of this project."));
+        return res.status(200).send(new ServerResponse(true, { team_id: teamId, project_id: projectId }, "You are already a member of this project."));
       }
 
       // Add to project
@@ -703,7 +710,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
         }
       }
 
-      return res.status(200).send(new ServerResponse(true, projectMemberResult, "Successfully joined the project!"));
+      return res.status(200).send(new ServerResponse(true, { team_id: teamId, project_id: projectId, member: projectMemberResult }, "Successfully joined the project!"));
 
     } catch (error) {
       console.error('Error accepting project invitation:', error);

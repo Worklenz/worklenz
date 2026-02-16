@@ -366,7 +366,7 @@ const InviteTeamMembers = () => {
       }
       open={isDrawerOpen}
       onCancel={handleClose}
-      destroyOnClose={false}
+      destroyOnHidden={false}
       // afterOpenChange={visible => visible && handleSearch('')}
       width={500}
       loading={loading && activeTab === 'email'}

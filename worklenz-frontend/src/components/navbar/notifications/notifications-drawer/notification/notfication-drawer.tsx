@@ -7,6 +7,7 @@ import {
   fetchNotifications,
   setNotificationType,
   toggleDrawer,
+  fetchUnreadCount,
 } from '../../../../../features/navbar/notificationSlice';
 import { NOTIFICATION_OPTION_READ, NOTIFICATION_OPTION_UNREAD } from '@/shared/constants';
 import { useTranslation } from 'react-i18next';
@@ -28,6 +29,7 @@ import { getUserSession } from '@/utils/session-helper';
 import { setUser } from '@/features/user/userSlice';
 import { useNavigate } from 'react-router-dom';
 import { createAuthService } from '@/services/auth/auth.service';
+
 const HTML_TAG_REGEXP = /<[^>]*>/g;
 
 const NotificationDrawer = () => {
@@ -75,11 +77,13 @@ const NotificationDrawer = () => {
 
   const handleInvitationsUpdate = (data: ITeamInvitationViewModel[]) => {
     dispatch(fetchInvitations());
+    dispatch(fetchUnreadCount()); // Fetch updated unread count
   };
 
   const handleNotificationsUpdate = async (notification: IWorklenzNotification) => {
     dispatch(fetchNotifications(notificationType));
     dispatch(fetchInvitations());
+    dispatch(fetchUnreadCount()); // Fetch updated unread count
 
     if (isPushEnabled()) {
       const title = notification.team ? `${notification.team} | Worklenz` : 'Worklenz';
@@ -115,6 +119,28 @@ const NotificationDrawer = () => {
     // Show notification using the template
     showNotification(notification);
     dispatch(fetchInvitations());
+    dispatch(fetchUnreadCount()); // Fetch updated unread count
+  };
+
+  const handleTeamMemberRemoved = async (data: { teamId: string; message: string }) => {
+    const notification: IWorklenzNotification = {
+      id: '',
+      team: '',
+      team_id: data.teamId,
+      message: data.message,
+    };
+
+    if (isPushEnabled()) {
+      createPush(
+        notification.message,
+        'Worklenz',
+        notification.team_id || null
+      );
+    }
+
+    showNotification(notification);
+    // Don't fetch invitations - this is a removal, not an invitation
+    dispatch(fetchUnreadCount()); // Still update unread count
   };
 
   const askPushPermission = () => {
@@ -142,8 +168,10 @@ const NotificationDrawer = () => {
     if (res.done) {
       dispatch(fetchNotifications(notificationType));
       dispatch(fetchInvitations());
+      dispatch(fetchUnreadCount()); // Fetch updated unread count
     }
   };
+
   const handleVerifyAuth = async () => {
     const result = await dispatch(verifyAuthentication()).unwrap();
     if (result.authenticated) {
@@ -167,6 +195,10 @@ const NotificationDrawer = () => {
           navigate(
             `${notification.url}${toQueryString({ task: notification.params?.task, tab: notification.params?.tab })}`
           );
+        } else if (notification.project){
+          navigate(
+            `${notification.url}`
+          )
         }
       } catch (error) {
         console.error('Error navigating to URL:', error);
@@ -194,14 +226,16 @@ const NotificationDrawer = () => {
     await notificationsApiService.readAllNotifications();
     dispatch(fetchNotifications(notificationType));
     dispatch(fetchInvitations());
+    dispatch(fetchUnreadCount()); // Fetch updated unread count
   };
 
   useEffect(() => {
     socket?.on(SocketEvents.INVITATIONS_UPDATE.toString(), handleInvitationsUpdate);
     socket?.on(SocketEvents.NOTIFICATIONS_UPDATE.toString(), handleNotificationsUpdate);
-    socket?.on(SocketEvents.TEAM_MEMBER_REMOVED.toString(), handleTeamInvitationsUpdate);
+    socket?.on(SocketEvents.TEAM_MEMBER_REMOVED.toString(), handleTeamMemberRemoved);
     fetchNotificationsSettings();
     askPushPermission();
+    dispatch(fetchUnreadCount()); // Initial fetch of unread count
 
     return () => {
       socket?.removeListener(SocketEvents.INVITATIONS_UPDATE.toString(), handleInvitationsUpdate);
@@ -211,10 +245,10 @@ const NotificationDrawer = () => {
       );
       socket?.removeListener(
         SocketEvents.TEAM_MEMBER_REMOVED.toString(),
-        handleTeamInvitationsUpdate
+        handleTeamMemberRemoved
       );
     };
-  }, [socket]);
+  }, [socket, dispatch]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -222,6 +256,7 @@ const NotificationDrawer = () => {
     if (notificationType) {
       dispatch(fetchNotifications(notificationType)).finally(() => setIsLoading(false));
     }
+    dispatch(fetchUnreadCount()); // Fetch unread count when notification type changes
   }, [notificationType, dispatch]);
 
   return (

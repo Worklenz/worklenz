@@ -4,6 +4,7 @@ import HandleExceptions from "../../decorators/handle-exceptions";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
+import { SqlHelper } from "../../shared/sql-helpers";
 import { TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA, UNMAPPED } from "../../shared/constants";
 import { getColor } from "../../shared/utils";
 import moment, { Moment } from "moment";
@@ -130,39 +131,57 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
 
 
   private static async getFirstLastDates(teamId: string, userId: string) {
-    const q = `SELECT MIN(LEAST(allocated_from, allocated_to)) AS start_date,
-                      MAX(GREATEST(allocated_from, allocated_to)) AS end_date,
-                      (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
-                      FROM (SELECT MIN(min_date) AS start_date, MAX(max_date) AS end_date
-                            FROM (SELECT MIN(start_date) AS min_date, MAX(start_date) AS max_date
-                                  FROM tasks
-                                  WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1)
-                                    AND project_id NOT IN
-                                        (SELECT project_id
-                                          FROM archived_projects
-                                          WHERE user_id = $2)
-                                    AND tasks.archived IS FALSE
-                                  UNION
-                                  SELECT MIN(end_date) AS min_date, MAX(end_date) AS max_date
-                                  FROM tasks
-                                  WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1)
-                                    AND project_id NOT IN
-                                        (SELECT project_id
-                                          FROM archived_projects
-                                          WHERE user_id = $2)
-                                    AND tasks.archived IS FALSE) AS dates) rec) AS date_union,
-                      (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
-                      FROM (SELECT MIN(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS start_date,
-                                    MAX(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS end_date
-                            FROM task_work_log twl
-                                      INNER JOIN tasks t ON twl.task_id = t.id AND t.archived IS FALSE
-                            WHERE t.project_id IN (SELECT id FROM projects WHERE team_id = $1)
-                              AND project_id NOT IN
-                                  (SELECT project_id
-                                    FROM archived_projects
-                                    WHERE user_id = $2)) rec) AS logs_date_union
-                  FROM project_member_allocations
-                  WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1)`;
+    const q = `WITH all_member_dates AS (
+                    -- Get dates from project_member_allocations
+                    SELECT allocated_from AS date_value, allocated_to AS date_value_2
+                    FROM project_member_allocations
+                    WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1)
+                    
+                    UNION
+                    
+                    -- Get dates from task assignments
+                    SELECT t.start_date AS date_value, t.end_date AS date_value_2
+                    FROM tasks t
+                    INNER JOIN tasks_assignees ta ON t.id = ta.task_id
+                    INNER JOIN project_members pm ON ta.project_member_id = pm.id
+                    WHERE t.project_id IN (SELECT id FROM projects WHERE team_id = $1)
+                      AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE user_id = $2)
+                      AND t.archived IS FALSE
+                      AND t.start_date IS NOT NULL
+                      AND t.end_date IS NOT NULL
+                  )
+                  SELECT MIN(LEAST(date_value, date_value_2)) AS start_date,
+                        MAX(GREATEST(date_value, date_value_2)) AS end_date,
+                        (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
+                        FROM (SELECT MIN(min_date) AS start_date, MAX(max_date) AS end_date
+                              FROM (SELECT MIN(start_date) AS min_date, MAX(start_date) AS max_date
+                                    FROM tasks
+                                    WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1)
+                                      AND project_id NOT IN
+                                          (SELECT project_id
+                                            FROM archived_projects
+                                            WHERE user_id = $2)
+                                      AND tasks.archived IS FALSE
+                                    UNION
+                                    SELECT MIN(end_date) AS min_date, MAX(end_date) AS max_date
+                                    FROM tasks
+                                    WHERE project_id IN (SELECT id FROM projects WHERE team_id = $1)
+                                      AND project_id NOT IN
+                                          (SELECT project_id
+                                            FROM archived_projects
+                                            WHERE user_id = $2)
+                                      AND tasks.archived IS FALSE) AS dates) rec) AS date_union,
+                        (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
+                        FROM (SELECT MIN(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS start_date,
+                                      MAX(twl.created_at - INTERVAL '1 second' * twl.time_spent) AS end_date
+                              FROM task_work_log twl
+                                        INNER JOIN tasks t ON twl.task_id = t.id AND t.archived IS FALSE
+                              WHERE t.project_id IN (SELECT id FROM projects WHERE team_id = $1)
+                                AND project_id NOT IN
+                                    (SELECT project_id
+                                      FROM archived_projects
+                                      WHERE user_id = $2)) rec) AS logs_date_union
+                    FROM all_member_dates`;
 
     const res = await db.query(q, [teamId, userId]);
     return res.rows[0];
@@ -349,13 +368,29 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
 
                       (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
                       FROM (SELECT MIN(min_date) AS start_date, MAX(max_date) AS end_date
-                            FROM (SELECT MIN(allocated_from) AS min_date, MAX(allocated_from) AS max_date
+                            FROM (
+                                  -- Dates from project_member_allocations
+                                  SELECT MIN(allocated_from) AS min_date, MAX(allocated_from) AS max_date
                                   FROM project_member_allocations
                                   WHERE project_id = p.id
                                   UNION
                                   SELECT MIN(allocated_to) AS min_date, MAX(allocated_to) AS max_date
                                   FROM project_member_allocations
-                                  WHERE project_id = p.id) AS dates) rec) AS date_union,
+                                  WHERE project_id = p.id
+                                  UNION
+                                  -- Dates from task assignments
+                                  SELECT MIN(t.start_date) AS min_date, MAX(t.start_date) AS max_date
+                                  FROM tasks t
+                                  WHERE t.project_id = p.id
+                                    AND t.archived IS FALSE
+                                    AND t.start_date IS NOT NULL
+                                  UNION
+                                  SELECT MIN(t.end_date) AS min_date, MAX(t.end_date) AS max_date
+                                  FROM tasks t
+                                  WHERE t.project_id = p.id
+                                    AND t.archived IS FALSE
+                                    AND t.end_date IS NOT NULL
+                                ) AS dates) rec) AS date_union,
 
                       (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                       FROM (SELECT pm.id AS project_member_id,
@@ -458,13 +493,29 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
                       allocated_to,
                       (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
                       FROM (SELECT MIN(min_date) AS start_date, MAX(max_date) AS end_date
-                            FROM (SELECT MIN(allocated_from) AS min_date, MAX(allocated_from) AS max_date
+                            FROM (
+                                  -- Dates from project_member_allocations
+                                  SELECT MIN(allocated_from) AS min_date, MAX(allocated_from) AS max_date
                                   FROM project_member_allocations
                                   WHERE project_id = $1
                                   UNION
                                   SELECT MIN(allocated_to) AS min_date, MAX(allocated_to) AS max_date
                                   FROM project_member_allocations
-                                  WHERE project_id = $1) AS dates) rec) AS date_union
+                                  WHERE project_id = $1
+                                  UNION
+                                  -- Dates from task assignments
+                                  SELECT MIN(t.start_date) AS min_date, MAX(t.start_date) AS max_date
+                                  FROM tasks t
+                                  WHERE t.project_id = $1
+                                    AND t.archived IS FALSE
+                                    AND t.start_date IS NOT NULL
+                                  UNION
+                                  SELECT MIN(t.end_date) AS min_date, MAX(t.end_date) AS max_date
+                                  FROM tasks t
+                                  WHERE t.project_id = $1
+                                    AND t.archived IS FALSE
+                                    AND t.end_date IS NOT NULL
+                                ) AS dates) rec) AS date_union
                FROM project_member_allocations
                WHERE team_member_id = $2
                      AND project_id = $1`;
@@ -502,13 +553,29 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
                         allocated_to,
                         (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
                         FROM (SELECT MIN(min_date) AS start_date, MAX(max_date) AS end_date
-                              FROM (SELECT MIN(allocated_from) AS min_date, MAX(allocated_from) AS max_date
+                              FROM (
+                                    -- Dates from project_member_allocations
+                                    SELECT MIN(allocated_from) AS min_date, MAX(allocated_from) AS max_date
                                     FROM project_member_allocations
                                     WHERE project_id = $1
                                     UNION
                                     SELECT MIN(allocated_to) AS min_date, MAX(allocated_to) AS max_date
                                     FROM project_member_allocations
-                                    WHERE project_id = $1) AS dates) rec) AS date_union
+                                    WHERE project_id = $1
+                                    UNION
+                                    -- Dates from task assignments
+                                    SELECT MIN(t.start_date) AS min_date, MAX(t.start_date) AS max_date
+                                    FROM tasks t
+                                    WHERE t.project_id = $1
+                                      AND t.archived IS FALSE
+                                      AND t.start_date IS NOT NULL
+                                    UNION
+                                    SELECT MIN(t.end_date) AS min_date, MAX(t.end_date) AS max_date
+                                    FROM tasks t
+                                    WHERE t.project_id = $1
+                                      AND t.archived IS FALSE
+                                      AND t.end_date IS NOT NULL
+                                  ) AS dates) rec) AS date_union
                   FROM project_member_allocations
                   WHERE project_id = $1`;
 
@@ -550,13 +617,29 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
                       allocated_to,
                       (SELECT COALESCE(ROW_TO_JSON(rec), '{}'::JSON)
                       FROM (SELECT MIN(min_date) AS start_date, MAX(max_date) AS end_date
-                            FROM (SELECT MIN(allocated_from) AS min_date, MAX(allocated_from) AS max_date
+                            FROM (
+                                  -- Dates from project_member_allocations
+                                  SELECT MIN(allocated_from) AS min_date, MAX(allocated_from) AS max_date
                                   FROM project_member_allocations
                                   WHERE project_id = $1
                                   UNION
                                   SELECT MIN(allocated_to) AS min_date, MAX(allocated_to) AS max_date
                                   FROM project_member_allocations
-                                  WHERE project_id = $1) AS dates) rec) AS date_union
+                                  WHERE project_id = $1
+                                  UNION
+                                  -- Dates from task assignments
+                                  SELECT MIN(t.start_date) AS min_date, MAX(t.start_date) AS max_date
+                                  FROM tasks t
+                                  WHERE t.project_id = $1
+                                    AND t.archived IS FALSE
+                                    AND t.start_date IS NOT NULL
+                                  UNION
+                                  SELECT MIN(t.end_date) AS min_date, MAX(t.end_date) AS max_date
+                                  FROM tasks t
+                                  WHERE t.project_id = $1
+                                    AND t.archived IS FALSE
+                                    AND t.end_date IS NOT NULL
+                                ) AS dates) rec) AS date_union
                FROM project_member_allocations
                WHERE team_member_id = $2
                      AND project_id = $1`;
@@ -668,9 +751,20 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
 
   @HandleExceptions()
   public static async deleteMemberAllocations(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const ids = req.body.toString() as string;
-    const q = `DELETE FROM project_member_allocations WHERE id IN (${(ids || "").split(",").map(s => `'${s}'`).join(",")})`;
-    await db.query(q);
+    // Use parameterized queries for DELETE statement
+    const ids = Array.isArray(req.body.ids) 
+      ? req.body.ids 
+      : typeof req.body.ids === 'string' 
+        ? req.body.ids.split(",").filter((id: string) => id.trim())
+        : [];
+    
+    if (ids.length === 0) {
+      return res.status(400).send(new ServerResponse(false, null, "No IDs provided"));
+    }
+    
+    const { clause, params } = SqlHelper.buildInClause(ids, 1);
+    const q = `DELETE FROM project_member_allocations WHERE id IN (${clause})`;
+    await db.query(q, params);
     return res.status(200).send(new ServerResponse(true, []));
   }
 
@@ -684,14 +778,15 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
     return ScheduleControllerV2.isCountsOnly(query) || query.parent_task;
   }
 
-  private static flatString(text: string) {
-    return (text || "").split(" ").map(s => `'${s}'`).join(",");
-  }
-
-  private static getFilterByMembersWhereClosure(text: string) {
-    return text
-      ? `id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${this.flatString(text)}))`
-      : "";
+  private static getFilterByMembersWhereClosure(text: string, paramOffset: number): { clause: string; params: string[] } {
+    if (!text) return { clause: "", params: [] };
+    const memberIds = text.split(" ").filter(id => id.trim());
+    const { clause } = SqlHelper.buildInClause(memberIds, paramOffset);
+    const fullClause = `id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${clause}))`;
+    return {
+      clause: fullClause,
+      params: memberIds
+    };
   }
 
   private static getStatusesQuery(filterBy: string) {
@@ -720,18 +815,46 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
     }
   }
 
-  private static getQuery(userId: string, options: ParsedQs) {
+  private static getQuery(userId: string, projectId: string, options: ParsedQs): { query: string; params: any[] } {
     const searchField = options.search ? "t.name" : "sort_order";
     const { searchQuery, sortField } = ScheduleControllerV2.toPaginationOptions(options, searchField);
 
     const isSubTasks = !!options.parent_task;
 
+    // Start with projectId as $1
+    const queryParams: any[] = [projectId];
+    let paramOffset = 2; // Next param will be $2
+
+    // Add parent_task_id if this is subtasks query
+    if (isSubTasks && options.parent_task) {
+      queryParams.push(options.parent_task as string);
+      paramOffset++;
+    }
+
     const sortFields = sortField.replace(/ascend/g, "ASC").replace(/descend/g, "DESC") || "sort_order";
-    const membersFilter = ScheduleControllerV2.getFilterByMembersWhereClosure(options.members as string);
+    const membersResult = ScheduleControllerV2.getFilterByMembersWhereClosure(options.members as string, paramOffset);
+    if (membersResult.params.length > 0) {
+      queryParams.push(...membersResult.params);
+      paramOffset += membersResult.params.length;
+    }
+    const membersFilter = membersResult.clause;
     const statusesQuery = ScheduleControllerV2.getStatusesQuery(options.filterBy as string);
 
     const archivedFilter = options.archived === "true" ? "archived IS TRUE" : "archived IS FALSE";
 
+    // Date range filtering
+    let dateRangeFilter = "";
+    if (options.startDate && options.endDate) {
+      // Filter tasks that overlap with the selected date range
+      // A task overlaps if: task.start_date <= range.endDate AND task.end_date >= range.startDate
+      dateRangeFilter = `(
+        (start_date IS NOT NULL AND end_date IS NOT NULL) AND
+        (start_date <= $${paramOffset} AND end_date >= $${paramOffset + 1})
+      )`;
+      queryParams.push(options.endDate as string);
+      queryParams.push(options.startDate as string);
+      paramOffset += 2;
+    }
 
     let subTasksFilter;
 
@@ -744,12 +867,35 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
     const filters = [
       subTasksFilter,
       (isSubTasks ? "1 = 1" : archivedFilter),
-      membersFilter
+      membersFilter,
+      dateRangeFilter
     ].filter(i => !!i).join(" AND ");
 
-    return `
+    // Build member-specific time spent query
+    let timeSpentQuery = "(SELECT ROUND(SUM(time_spent) / 60.0, 2) FROM task_work_log WHERE task_id = t.id) AS total_minutes_spent";
+    
+    // If specific members are selected, filter time logs by those members
+    if (options.members && typeof options.members === 'string') {
+      const memberIds = options.members.split(" ").filter(id => id.trim());
+      if (memberIds.length > 0) {
+        // Create placeholders for member IDs in the time spent query
+        const memberPlaceholders = memberIds.map((_, index) => `$${paramOffset + index}`).join(', ');
+        timeSpentQuery = `(SELECT ROUND(SUM(twl.time_spent) / 60.0, 2)
+                         FROM task_work_log twl 
+                         INNER JOIN team_members tm ON twl.user_id = tm.user_id 
+                         WHERE twl.task_id = t.id 
+                         AND tm.id IN (${memberPlaceholders})) AS total_minutes_spent`;
+        
+        // Add member IDs to query params
+        queryParams.push(...memberIds);
+        paramOffset += memberIds.length;
+      }
+    }
+
+    const query = `
       SELECT id,
              name,
+             CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no) AS task_key,
              t.project_id AS project_id,
              t.parent_task_id,
              t.parent_task_id IS NOT NULL AS is_sub_task,
@@ -793,12 +939,15 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
              (SELECT id FROM task_priorities WHERE id = t.priority_id) AS priority,
              (SELECT value FROM task_priorities WHERE id = t.priority_id) AS priority_value,
              total_minutes,
+             ${timeSpentQuery},
              start_date,
              end_date ${statusesQuery}
       FROM tasks t
       WHERE ${filters} ${searchQuery} AND project_id = $1
       ORDER BY end_date DESC NULLS LAST
     `;
+
+    return { query, params: queryParams };
   }
 
   public static async getGroups(groupBy: string, projectId: string): Promise<IScheduleTaskGroup[]> {
@@ -813,8 +962,8 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
                  category_id
           FROM task_statuses
           WHERE project_id = $1
-          ORDER BY sort_order;
-        `;
+          ORDER BY sort_order
+    `;
         params = [projectId];
         break;
       case GroupBy.PRIORITY:
@@ -860,34 +1009,110 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
     const isSubTasks = !!req.query.parent_task;
     const groupBy = (req.query.group || GroupBy.STATUS) as string;
 
-    const q = ScheduleControllerV2.getQuery(req.user?.id as string, req.query);
-    const params = isSubTasks ? [req.params.id || null, req.query.parent_task] : [req.params.id || null];
-
+    const { query: q, params } = ScheduleControllerV2.getQuery(req.user?.id as string, req.params.id, req.query);
+    
     const result = await db.query(q, params);
     const tasks = [...result.rows];
 
+    // Get groups metadata from database
     const groups = await this.getGroups(groupBy, req.params.id);
-    const map = groups.reduce((g: { [x: string]: IScheduleTaskGroup }, group) => {
-      if (group.id)
-        g[group.id] = new IScheduleTaskListGroup(group);
-      return g;
-    }, {});
 
-    this.updateMapByGroup(tasks, groupBy, map);
+    // Transform tasks with necessary preprocessing
+    const transformedTasks = tasks.map((task, index) => {
+      task.index = index;
+      ScheduleControllerV2.updateTaskViewModel(task);
+      return task;
+    });
 
-    const updatedGroups = Object.keys(map).map(key => {
-      const group = map[key];
+    // Initialize grouped response structure
+    const groupedResponse: Record<string, any> = {};
 
-      if (groupBy === GroupBy.PHASE)
-        group.color_code = getColor(group.name) + TASK_PRIORITY_COLOR_ALPHA;
-
-      return {
-        id: key,
-        ...group
+    // Initialize groups from database data
+    groups.forEach((group) => {
+      if (!group.id) return;
+      
+      const groupKey = group.id;
+      
+      groupedResponse[groupKey] = {
+        id: group.id,
+        name: group.name,
+        category_id: group.category_id || null,
+        color_code: group.color_code + TASK_STATUS_COLOR_ALPHA,
+        tasks: [],
+        isExpand: true,
+        // Additional metadata (safely access optional properties)
+        start_date: (group as any).start_date || null,
+        end_date: (group as any).end_date || null,
       };
     });
 
-    return res.status(200).send(new ServerResponse(true, updatedGroups));
+    // Distribute tasks into groups
+    const unmappedTasks: any[] = [];
+
+    transformedTasks.forEach((task) => {
+      let taskAssigned = false;
+
+      if (groupBy === GroupBy.STATUS) {
+        if (task.status && groupedResponse[task.status]) {
+          groupedResponse[task.status].tasks.push(task);
+          taskAssigned = true;
+        }
+      } else if (groupBy === GroupBy.PRIORITY) {
+        if (task.priority && groupedResponse[task.priority]) {
+          groupedResponse[task.priority].tasks.push(task);
+          taskAssigned = true;
+        }
+      } else if (groupBy === GroupBy.PHASE) {
+        if (task.phase_id && groupedResponse[task.phase_id]) {
+          groupedResponse[task.phase_id].tasks.push(task);
+          taskAssigned = true;
+        }
+      }
+
+      if (!taskAssigned) {
+        unmappedTasks.push(task);
+      }
+    });
+
+    // Add unmapped group if there are tasks without proper assignment
+    if (unmappedTasks.length > 0) {
+      groupedResponse[UNMAPPED] = {
+        id: UNMAPPED,
+        name: UNMAPPED,
+        category_id: null,
+        color_code: "#f0f0f0",
+        tasks: unmappedTasks,
+        isExpand: true,
+        start_date: null,
+        end_date: null,
+      };
+    }
+
+    // Apply color adjustments for phase grouping
+    Object.values(groupedResponse).forEach((group: any) => {
+      if (groupBy === GroupBy.PHASE && group.id !== UNMAPPED) {
+        group.color_code = getColor(group.name) + TASK_PRIORITY_COLOR_ALPHA;
+      }
+    });
+
+    // Convert to array format, maintaining database order
+    // Include ALL groups, even those without tasks
+    const responseGroups = groups
+      .filter((group) => group.id) // Filter out groups without id
+      .map((group) => groupedResponse[group.id!]); // Use non-null assertion since we filtered
+
+    // Add unmapped group to the end if it exists
+    if (groupedResponse[UNMAPPED]) {
+      responseGroups.push(groupedResponse[UNMAPPED]);
+    }
+
+    // Return structured response similar to getTasksV3
+    return res.status(200).send(new ServerResponse(true, {
+      groups: responseGroups,
+      allTasks: transformedTasks,
+      grouping: groupBy,
+      totalTasks: transformedTasks.length,
+    }));
   }
 
   public static updateMapByGroup(tasks: any[], groupBy: string, map: { [p: string]: IScheduleTaskGroup }) {
@@ -921,9 +1146,7 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
 
   @HandleExceptions()
   public static async getTasksOnly(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const isSubTasks = !!req.query.parent_task;
-    const q = ScheduleControllerV2.getQuery(req.user?.id as string, req.query);
-    const params = isSubTasks ? [req.params.id || null, req.query.parent_task] : [req.params.id || null];
+    const { query: q, params } = ScheduleControllerV2.getQuery(req.user?.id as string, req.params.id, req.query);
     const result = await db.query(q, params);
 
     let data: any[] = [];
