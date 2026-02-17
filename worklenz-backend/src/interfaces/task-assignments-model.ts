@@ -1,7 +1,9 @@
 export interface ITaskAssignmentModelTask {
   id?: string;
   task_name?: string;
-  updater_name?: string;
+  update_id?: string;
+  attempts?: number;
+    updater_name?: string;
   members?: string;
   url?: string;
 }

@@ -10,22 +10,64 @@ import {ITaskMovedToDoneRecord} from "../interfaces/task-moved-to-done";
 import {IProjectDigest} from "../interfaces/project-digest";
 import {ICommentEmailNotification, IProjectCommentEmailNotification} from "../interfaces/comment-email-notification";
 
-async function updateTaskUpdatesStatus(isSent: boolean) {
-  try {
-    const q = isSent
-      ? "DELETE FROM task_updates WHERE is_sent IS TRUE;"
-      : "UPDATE task_updates SET is_sent = FALSE;";
+const MAX_RETRY_ATTEMPTS = 3;
 
-    await db.query(q, []);
+async function deleteTaskUpdate(updateId: string) {
+  try {
+    const q = "DELETE FROM task_updates WHERE id = $1;";
+    await db.query(q, [updateId]);
   } catch (error) {
     log_error(error);
   }
 }
 
+async function incrementAttempts(updateId: string) {
+  try {
+    const q = "UPDATE task_updates SET attempts = attempts + 1 WHERE id = $1;";
+    await db.query(q, [updateId]);
+  } catch (error) {
+    log_error(error);
+  }
+}
+
+async function moveToFailedNotifications(updateId: string, errorMessage: string) {
+  try {
+    const q = `
+      INSERT INTO failed_task_notifications (
+        task_update_id, user_id, task_id, project_id, type, email, attempts, last_error, created_at
+      )
+      SELECT
+        tu.id, tu.user_id, tu.task_id, tu.project_id, tu.type, u.email, tu.attempts, $2, tu.created_at
+      FROM task_updates tu
+      JOIN users u ON tu.user_id = u.id
+      WHERE tu.id = $1
+      ON CONFLICT (task_update_id) DO NOTHING;
+    `;
+    await db.query(q, [updateId, errorMessage]);
+  } catch (error) {
+    log_error(error);
+  }
+}
+
+async function checkAndHandleMaxAttempts(updateId: string, currentAttempts: number) {
+  if (currentAttempts >= MAX_RETRY_ATTEMPTS - 1) {
+    // This was the last attempt, move to failed notifications
+    await moveToFailedNotifications(updateId, 'Max retry attempts exceeded');
+    await deleteTaskUpdate(updateId);
+    return true; // Exceeded max attempts
+  }
+  return false; // Still within retry limit
+}
 
 
 
-export async function sendAssignmentUpdate(toEmail: string, assignment: ITaskAssignmentsModel) {
+
+export async function sendAssignmentUpdate(
+  toEmail: string,
+  assignment: ITaskAssignmentsModel,
+  updateIds: string[] = [],
+  attempts: number = 0
+) {
   try {
     const template = FileConstants.getEmailTemplate(IEmailTemplateType.TaskAssigneeChange) as compileTemplate;
     const isSent = assignment.teams?.length
@@ -36,10 +78,31 @@ export async function sendAssignmentUpdate(toEmail: string, assignment: ITaskAss
       })
       : true;
 
-    await updateTaskUpdatesStatus(!!isSent);
+    // Delete successfully sent task updates
+    if (isSent && updateIds.length > 0) {
+      for (const updateId of updateIds) {
+        await deleteTaskUpdate(updateId);
+      }
+    }
+
+    return isSent;
   } catch (e) {
     log_error(e);
-    await updateTaskUpdatesStatus(false);
+
+    // Increment attempt counter for failed emails
+    if (updateIds.length > 0) {
+      for (const updateId of updateIds) {
+        await incrementAttempts(updateId);
+
+        // Check if max attempts reached and handle accordingly
+        const exceededMax = await checkAndHandleMaxAttempts(updateId, attempts);
+        if (exceededMax) {
+          log_error(`Notification ${updateId} exceeded max retry attempts and was moved to failed_task_notifications`);
+        }
+      }
+    }
+
+    return false;
   }
 }
 

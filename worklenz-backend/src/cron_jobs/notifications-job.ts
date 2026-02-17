@@ -30,6 +30,38 @@ function getModel(model: ITaskAssignmentsModel): ITaskAssignmentsModel {
   return mappedModel;
 }
 
+function collectUpdateIds(model: ITaskAssignmentsModel): string[] {
+  const updateIds: string[] = [];
+
+  for (const team of model.teams || []) {
+    for (const project of team.projects || []) {
+      for (const task of project.tasks || []) {
+        if (task.update_id) {
+          updateIds.push(task.update_id);
+        }
+      }
+    }
+  }
+
+  return updateIds;
+}
+
+function getMaxAttempts(model: ITaskAssignmentsModel): number {
+  let maxAttempts = 0;
+
+  for (const team of model.teams || []) {
+    for (const project of team.projects || []) {
+      for (const task of project.tasks || []) {
+        if (task.attempts !== undefined && task.attempts > maxAttempts) {
+          maxAttempts = task.attempts;
+        }
+      }
+    }
+  }
+
+  return maxAttempts;
+}
+
 async function onNotificationJobTick() {
   try {
     log("(cron) Notifications job started.");
@@ -39,17 +71,34 @@ async function onNotificationJobTick() {
     const updates = (data.updates || []) as ITaskAssignmentsModel[];
 
     let sentCount = 0;
+    let failedCount = 0;
+    let maxAttemptsReached = 0;
 
     for (const item of updates) {
       if (item.email) {
         const model = getModel(item);
         if (model.teams?.length) {
-          sentCount++;
-          void sendAssignmentUpdate(item.email, model);
+          const updateIds = collectUpdateIds(item);
+          const attempts = getMaxAttempts(item);
+          const isSent = await sendAssignmentUpdate(item.email, model, updateIds, attempts);
+          if (isSent) {
+            sentCount++;
+          } else {
+            failedCount++;
+            // Check if this was the last attempt
+            if (attempts >= 2) {
+              maxAttemptsReached++;
+            }
+          }
         }
       }
     }
-    log(`(cron) Notifications job ended with ${sentCount} emails.`);
+
+    const logMessage = maxAttemptsReached > 0
+      ? `(cron) Notifications job ended with ${sentCount} emails sent, ${failedCount} failed (${maxAttemptsReached} reached max attempts).`
+      : `(cron) Notifications job ended with ${sentCount} emails sent, ${failedCount} failed.`;
+
+    log(logMessage);
   } catch (error) {
     log_error(error);
     log("(cron) Notifications job ended with errors.");
