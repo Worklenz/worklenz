@@ -48,12 +48,18 @@ export const fetchTask = createAsyncThunk(
   }
 );
 
+const resetTimeLogEditing = {
+  isEditing: false,
+  logBeingEdited: null,
+};
+
 const taskDrawerSlice = createSlice({
   name: 'taskDrawer',
   initialState,
   reducers: {
     setSelectedTaskId: (state, action) => {
       state.selectedTaskId = action.payload;
+      state.timeLogEditing = resetTimeLogEditing; // ← reset when switching tasks
     },
     setShowTaskDrawer: (state, action) => {
       state.showTaskDrawer = action.payload;
@@ -158,6 +164,7 @@ const taskDrawerSlice = createSlice({
         const nextIndex = currentIndex + 1;
         state.selectedTaskId = taskIds[nextIndex];
         state.navigationContext.currentIndex = nextIndex;
+        state.timeLogEditing = resetTimeLogEditing; // ← reset when switching tasks
       }
     },
     navigateToPreviousTask: state => {
@@ -167,10 +174,10 @@ const taskDrawerSlice = createSlice({
         const prevIndex = currentIndex - 1;
         state.selectedTaskId = taskIds[prevIndex];
         state.navigationContext.currentIndex = prevIndex;
+        state.timeLogEditing = resetTimeLogEditing; // ← reset when switching tasks
       }
     },
     syncNavigationIndex: state => {
-      // Sync the current index with the selected task ID
       if (!state.navigationContext || !state.selectedTaskId) return;
       const { taskIds } = state.navigationContext;
       const actualIndex = taskIds.indexOf(state.selectedTaskId);
