@@ -826,7 +826,11 @@ const ProjectList: React.FC = () => {
             <Tooltip title={t('refreshProjects', { defaultValue: 'Refresh projects' })}>
               <Button
                 shape="circle"
-                icon={<SyncOutlined spin={isFetchingProjects} />}
+                icon={
+                  <SyncOutlined
+                    spin={isFetchingProjects || groupedProjects.loading}
+                  />
+                }
                 onClick={handleRefresh}
                 aria-label="Refresh projects"
               />
