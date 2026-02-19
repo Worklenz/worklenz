@@ -91,3 +91,24 @@
 .custom-template-list .selected-custom-template:hover {
   background-color: var(--color-paleBlue);
 }
+
+/* ✅ FIX: Constrain Ant Design Tabs content so it doesn't create
+   overflow/extra scroll space inside the modal */
+.ant-tabs-content-holder {
+  overflow: hidden !important;
+}
+
+.ant-tabs-tabpane {
+  height: 100%;
+}
+
+.ant-tabs.ant-tabs-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.ant-tabs-content {
+  height: 100%;
+  overflow: hidden;
+}
