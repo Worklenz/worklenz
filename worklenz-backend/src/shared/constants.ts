@@ -18,6 +18,13 @@ export const LOG_DESCRIPTIONS = {
   PROJECT_MEMBER_REMOVED: "was removed from the project by",
 };
 
+export const LOG_I18N_KEYS = {
+  PROJECT_MANAGER_ASSIGNED: "project_manager_assigned",
+  PROJECT_FAVORITED: "project_favorited",
+  PROJECT_UNFAVORITED: "project_unfavorited",
+  PROJECT_UNARCHIVED: "project_unarchived",
+};
+
 export const WorklenzColorShades = {
   "#154c9b": ["#0D2A50", "#112E54", "#153258", "#19365C", "#1D3A60", "#213E64", "#254268", "#29466C", "#2D4A70", "#314E74"],
   "#3b7ad4": ["#224884", "#26528A", "#2A5C90", "#2E6696", "#32709C", "#367AA2", "#3A84A8", "#3E8EAE", "#4298B4", "#46A2BA"],

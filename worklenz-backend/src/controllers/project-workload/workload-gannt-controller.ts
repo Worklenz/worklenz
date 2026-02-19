@@ -220,10 +220,10 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
     if (logsRange.max_date)
       logsRange.max_date = momentTime.tz(logsRange.max_date, `${timeZone}`).format("YYYY-MM-DD");
 
-    if (moment(logsRange.min_date ).isBefore(dateRange.start_date))
+    if (moment(logsRange.min_date).isBefore(dateRange.start_date))
       dateRange.start_date = logsRange.min_date;
 
-    if (moment(logsRange.max_date ).isAfter(dateRange.endDate))
+    if (moment(logsRange.max_date).isAfter(dateRange.endDate))
       dateRange.end_date = logsRange.max_date;
 
     return dateRange;
@@ -331,7 +331,7 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
 
     for (const member of result.rows) {
       member.color_code = getColor(member.name);
-      
+
       // Set default working settings if organization data is not available
       member.org_working_hours = member.org_working_hours || 8;
       member.org_working_days = member.org_working_days || {
@@ -492,7 +492,7 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
 
   private static getFilterByDatesWhereClosure(dateChecker?: string): string {
     if (!dateChecker) return "";
-    
+
     switch (dateChecker) {
       case this.TASKS_START_DATE_NULL_FILTER:
         return "start_date IS NULL";
@@ -540,7 +540,7 @@ export default class WorkloadGanntController extends WLTasksControllerBase {
     const queryParams: any[] = [];
     let paramOffset = 1;
 
-    const sortFields = sortField.replace(/ascend/g, "ASC").replace(/descend/g, "DESC") || "sort_order";
+    const sortFields = (sortField as string).replace(/ascend/g, "ASC").replace(/descend/g, "DESC") || "sort_order";
     // Filter tasks by its members
     const membersResult = WorkloadGanntController.getFilterByMembersWhereClosure(options.members as string, paramOffset);
     if (membersResult.params.length > 0) {

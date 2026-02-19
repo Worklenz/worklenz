@@ -39,7 +39,7 @@ export default class PtTasksController extends PtTasksControllerBase {
         const searchField = options.search ? "cptt.name" : "sort_order";
         const { searchQuery, sortField } = PtTasksController.toPaginationOptions(options, searchField);
 
-        const sortFields = sortField.replace(/ascend/g, "ASC").replace(/descend/g, "DESC") || "sort_order";
+        const sortFields = (sortField as string).replace(/ascend/g, "ASC").replace(/descend/g, "DESC") || "sort_order";
 
         const isSubTasks = !!options.parent_task;
 
@@ -230,13 +230,13 @@ export default class PtTasksController extends PtTasksControllerBase {
 
     @HandleExceptions()
     public static async bulkDelete(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-      const deletedTasks = req.body.tasks.map((t: any) => t.id);
+        const deletedTasks = req.body.tasks.map((t: any) => t.id);
 
-      const result: any = {deleted_tasks: deletedTasks};
+        const result: any = { deleted_tasks: deletedTasks };
 
-      const q = `SELECT bulk_delete_pt_tasks($1) AS task;`;
-      await db.query(q, [JSON.stringify(req.body)]);
-      return res.status(200).send(new ServerResponse(true, result));
+        const q = `SELECT bulk_delete_pt_tasks($1) AS task;`;
+        await db.query(q, [JSON.stringify(req.body)]);
+        return res.status(200).send(new ServerResponse(true, result));
     }
 
 }

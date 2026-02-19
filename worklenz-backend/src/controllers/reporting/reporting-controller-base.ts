@@ -111,7 +111,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
 
   protected static buildBillableQuery(selectedStatuses: { billable: boolean; nonBillable: boolean }): string {
     const { billable, nonBillable } = selectedStatuses;
-  
+
     if (billable && nonBillable) {
       // Both are enabled, no need to filter
       return "";
@@ -121,7 +121,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
     } else if (nonBillable) {
       // Only non-billable is enabled
       return " AND tasks.billable IS FALSE";
-    } 
+    }
 
     return "";
   }
@@ -166,6 +166,67 @@ export default abstract class ReportingControllerBase extends WorklenzController
   }
 
 
+  /**
+   * Build project filter clause for Team Leads
+   * Team Leads can only see projects they are assigned to as project managers
+   */
+  public static async buildProjectFilterForTeamLead(req: IWorkLenzRequest): Promise<string> {
+    // Check if user is a Team Lead (not Admin or Owner)
+    const userId = req.user?.id;
+    const teamId = req.user?.team_id;
+
+    if (!userId || !teamId) return "";
+
+    // Check user's role
+    const roleQuery = `
+      SELECT r.key 
+      FROM roles r
+      JOIN team_members tm ON tm.role_id = r.id
+      WHERE tm.user_id = $1 AND tm.team_id = $2
+    `;
+    const roleResult = await db.query(roleQuery, [userId, teamId]);
+
+    if (roleResult.rows.length === 0) return "";
+
+    const roleKey = roleResult.rows[0].key;
+
+    // Only apply filter for Team Leads
+    if (roleKey === 'TEAM_LEAD') {
+      // Team Leads can only see projects they manage
+      return `AND p.id IN (
+        SELECT pm.project_id 
+        FROM project_members pm 
+        WHERE pm.team_member_id IN (
+          SELECT id FROM team_members WHERE user_id = '${userId}'
+        ) 
+        AND pm.project_access_level_id = (
+          SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'
+        )
+      )`;
+    }
+
+    // Admins and Owners can see all projects
+    return "";
+  }
+
+  /**
+   * Get project IDs that a Team Lead is assigned to
+   */
+  public static async getTeamLeadProjects(userId: string, teamId: string): Promise<string[]> {
+    const q = `
+      SELECT DISTINCT pm.project_id 
+      FROM project_members pm
+      JOIN team_members tm ON pm.team_member_id = tm.id
+      WHERE tm.user_id = $1 
+        AND tm.team_id = $2
+        AND pm.project_access_level_id = (
+          SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'
+        )
+    `;
+    const result = await db.query(q, [userId, teamId]);
+    return result.rows.map(row => row.project_id);
+  }
+
   public static async getProjectsByTeam(
     teamId: string,
     size: string | number | null,
@@ -178,7 +239,8 @@ export default abstract class ReportingControllerBase extends WorklenzController
     categoryClause: string,
     archivedClause = "",
     teamFilterClause: string,
-    projectManagersClause: string) {
+    projectManagersClause: string,
+    filterParams: any[] = []) {
 
     const q = `SELECT COUNT(*) AS total,
              (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
@@ -315,7 +377,9 @@ export default abstract class ReportingControllerBase extends WorklenzController
                LEFT JOIN project_categories pc ON pc.id = p.category_id
                LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
       WHERE ${teamFilterClause} ${searchQuery} ${healthClause} ${statusClause} ${categoryClause} ${projectManagersClause} ${archivedClause};`;
-    const result = await db.query(q, [teamId, size, offset]);
+    // Combine all parameters: teamId, size, offset, then filter params
+    const queryParams = [teamId, size, offset, ...filterParams];
+    const result = await db.query(q, queryParams);
     const [data] = result.rows;
 
     for (const project of data.projects) {
