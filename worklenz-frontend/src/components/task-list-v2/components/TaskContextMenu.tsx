@@ -1,5 +1,3 @@
-//C:\Users\CNNCOMPUTERS\Desktop\Office\worklenz-business\worklenz-frontend\src\components\task-list-v2\components\TaskContextMenu.tsx
-
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -75,8 +73,49 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   const archived = useAppSelector(state => state.taskManagement.archived);
 
   const [updatingAssignToMe, setUpdatingAssignToMe] = useState(false);
+  const [adjustedPosition, setAdjustedPosition] = useState(position);
 
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Calculate optimal position to prevent overflow
+  useEffect(() => {
+    if (menuRef.current) {
+      const menuRect = menuRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
+      
+      let newX = position.x;
+      let newY = position.y;
+
+      // Check if menu goes beyond right edge
+      if (position.x + menuRect.width > viewportWidth) {
+        newX = viewportWidth - menuRect.width - 10; // 10px margin from edge
+      }
+
+      // Check if menu goes beyond bottom edge
+      if (position.y + menuRect.height > viewportHeight) {
+        // Open above the cursor instead of below
+        newY = position.y - menuRect.height;
+        
+        // If opening above would go beyond top edge, position at top with margin
+        if (newY < 10) {
+          newY = 10;
+        }
+      }
+
+      // Check if menu goes beyond top edge
+      if (newY < 10) {
+        newY = 10;
+      }
+
+      // Ensure menu doesn't go beyond left edge
+      if (newX < 10) {
+        newX = 10;
+      }
+
+      setAdjustedPosition({ x: newX, y: newY });
+    }
+  }, [position]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -615,9 +654,11 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
       ref={menuRef}
       className="fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg py-1 min-w-48"
       style={{
-        top: position.y,
-        left: position.x,
+        top: adjustedPosition.y,
+        left: adjustedPosition.x,
         zIndex: 9999,
+        maxHeight: 'calc(100vh - 20px)',
+        overflowY: 'auto',
       }}
     >
       <ul className="list-none p-0 m-0">
