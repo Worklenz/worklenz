@@ -90,7 +90,7 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
 
     const teamFilterClause = `p.team_id = $1`;
 
-    const result = await ReportingControllerBase.getProjectsByTeam(teamId, size, offset, searchQuery, sortField, sortOrder, "", "", "", archivedClause, teamFilterClause, "");
+    const result = await ReportingControllerBase.getProjectsByTeam(teamId, size, offset, searchQuery, sortField as string, sortOrder, "", "", "", archivedClause, teamFilterClause, "");
 
 
     for (const project of result.projects) {
