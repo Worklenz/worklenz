@@ -16,7 +16,7 @@ import { authApiService } from '@/api/auth/auth.api.service';
 import { setUser } from '@/features/user/userSlice';
 import { billingApiService } from '@/api/admin-center/billing.api.service';
 import { ILocalPlans } from '@/shared/constants';
-import { loadDirectPaySDK, initializeDirectPaySDK, openDirectPayPopup } from './direct-pay-helper';
+import { DirectPayModal } from './DirectPayModal';
 
 const UpgradePlansLKR: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -29,6 +29,8 @@ const UpgradePlansLKR: React.FC = () => {
   const [switchingToFreePlan, setSwitchingToFreePlan] = useState(false);
   const [directPayLoading, setDirectPayLoading] = useState<boolean>(false);
   const [directPayError, setDirectPayError] = useState<string | null>(null);
+  const [showDirectPayModal, setShowDirectPayModal] = useState<boolean>(false);
+  const [directPayUrl, setDirectPayUrl] = useState<string>('');
 
   const [lkrPricingLoading, setLkrPricingLoading] = useState<boolean>(true);
   const [lkrPricingError, setLkrPricingError] = useState<string | null>(null);
@@ -99,7 +101,7 @@ const UpgradePlansLKR: React.FC = () => {
       fontWeight: 400,
     },
     featuresContainer: {
-      textAlign: 'left',
+      textAlign: 'left' as const,
       marginTop: '20px',
     },
     featureText: {
@@ -214,47 +216,31 @@ const UpgradePlansLKR: React.FC = () => {
         throw new Error(response.message || 'Failed to create card add session');
       }
 
-      const { sessionData, stage } = response.body;
+      const { sessionData } = response.body;
 
       if (!sessionData) {
         throw new Error('Invalid session data received from server');
       }
 
-      // Define callbacks for DirectPay
-      const callbacks = {
-        onSuccess: (response: any) => {
-          logger.info('DirectPay payment successful', response);
-          setDirectPayLoading(false);
-          message.success('Payment processed successfully!');
+      // Extract payment URL from session data
+      let paymentUrl = '';
+      if (sessionData?.data?.link) {
+        paymentUrl = sessionData.data.link;
+      } else if (sessionData?.link) {
+        paymentUrl = sessionData.link;
+      } else if (sessionData?.redirect_url) {
+        paymentUrl = sessionData.redirect_url;
+      } else if (sessionData?.url) {
+        paymentUrl = sessionData.url;
+      }
 
-          // Refresh billing info and close modal
-          dispatch(fetchBillingInfo());
-          setTimeout(() => {
-            dispatch(toggleUpgradeModal());
-            // Refresh user session
-            authApiService.verify().then((authResponse) => {
-              if (authResponse.authenticated) {
-                setSession(authResponse.user);
-                dispatch(setUser(authResponse.user));
-              }
-            });
-          }, 2000);
-        },
-        onError: (error: any) => {
-          logger.error('DirectPay payment error', error);
-          setDirectPayLoading(false);
-          const errorMsg = error?.message || 'Payment failed. Please try again.';
-          setDirectPayError(errorMsg);
-          message.error(errorMsg);
-        },
-        onCancel: () => {
-          setDirectPayLoading(false);
-          message.info('Payment was cancelled.');
-        },
-      };
+      if (!paymentUrl) {
+        throw new Error('No payment URL available from session data');
+      }
 
-      // Use popup method directly for v3 API (SDK doesn't support v3 response format)
-      openDirectPayPopup({ sessionData, stage }, callbacks);
+      // Open DirectPay modal
+      setDirectPayUrl(paymentUrl);
+      setShowDirectPayModal(true);
       setDirectPayLoading(false);
     } catch (error: any) {
       setDirectPayLoading(false);
@@ -263,6 +249,38 @@ const UpgradePlansLKR: React.FC = () => {
       message.error(errorMessage);
       logger.error('Error initializing DirectPay checkout', error);
     }
+  };
+
+  const handleDirectPaySuccess = async (response: any) => {
+    logger.info('DirectPay payment successful', response);
+    setShowDirectPayModal(false);
+    message.success('Payment processed successfully!');
+
+    // Refresh billing info and close modal
+    dispatch(fetchBillingInfo());
+    setTimeout(() => {
+      dispatch(toggleUpgradeModal());
+      // Refresh user session
+      authApiService.verify().then((authResponse) => {
+        if (authResponse.authenticated) {
+          setSession(authResponse.user);
+          dispatch(setUser(authResponse.user));
+        }
+      });
+    }, 2000);
+  };
+
+  const handleDirectPayError = (error: any) => {
+    logger.error('DirectPay payment error', error);
+    setShowDirectPayModal(false);
+    const errorMsg = error?.message || 'Payment failed. Please try again.';
+    setDirectPayError(errorMsg);
+    message.error(errorMsg);
+  };
+
+  const handleDirectPayCancel = () => {
+    setShowDirectPayModal(false);
+    message.info('Payment was cancelled.');
   };
 
   const handleUpgradeNow = async (e: React.MouseEvent) => {
@@ -275,10 +293,11 @@ const UpgradePlansLKR: React.FC = () => {
   };
 
   return (
-    <div className="upgrade-plans">
-      <Typography.Title level={2} style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        {t('modalTitle')}
-      </Typography.Title>
+    <>
+      <div className="upgrade-plans">
+        <Typography.Title level={2} style={{ textAlign: 'center' as const, marginBottom: '2rem' }}>
+          {t('modalTitle')}
+        </Typography.Title>
 
       {lkrPricingLoading && (
         <Typography.Paragraph style={{ marginBottom: '1rem' }}>
@@ -336,7 +355,7 @@ const UpgradePlansLKR: React.FC = () => {
                   {plans.free.features.map((f, index) => renderFeature(f, index))}
                 </div>
               </div>
-              <div style={{ marginTop: 'auto', paddingTop: '20px', textAlign: 'center' }}>
+              <div style={{ marginTop: 'auto', paddingTop: '20px', textAlign: 'center' as const }}>
                 <Button
                   type="primary"
                   size="large"
@@ -391,7 +410,7 @@ const UpgradePlansLKR: React.FC = () => {
                       )}
                     </>
                   ) : (
-                    <div style={{ textAlign: 'center' }}>
+                    <div style={{ textAlign: 'center' as const }}>
                       <Typography.Title level={3} style={{ margin: 0, color: '#8c8c8c' }}>
                         Contact Sales
                       </Typography.Title>
@@ -405,7 +424,7 @@ const UpgradePlansLKR: React.FC = () => {
                   {plans.startup.features.map((f, index) => renderFeature(f, index))}
                 </div>
               </div>
-              <div style={{ marginTop: 'auto', paddingTop: '20px', textAlign: 'center' }}>
+              <div style={{ marginTop: 'auto', paddingTop: '20px', textAlign: 'center' as const }}>
                 <Button
                   type="primary"
                   size="large"
@@ -422,7 +441,17 @@ const UpgradePlansLKR: React.FC = () => {
           </Card>
         </Col>
       </Row>
-    </div>
+      </div>
+
+      {/* DirectPay Modal */}
+      <DirectPayModal
+        isOpen={showDirectPayModal}
+        paymentUrl={directPayUrl}
+        onSuccess={handleDirectPaySuccess}
+        onError={handleDirectPayError}
+        onCancel={handleDirectPayCancel}
+      />
+    </>
   );
 };
 
