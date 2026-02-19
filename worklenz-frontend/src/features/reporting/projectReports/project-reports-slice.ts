@@ -87,6 +87,14 @@ export const fetchProjectData = createAsyncThunk(
   'projectReports/fetchProjectData',
   async (_, { getState }) => {
     const state = (getState() as any).projectReportsReducer;
+    const teams = selectedTeams(state);
+
+    // If teams have been loaded but none are selected, return empty result immediately
+    // This handles the "Clear All" case where user deselects all teams
+    if (state.teams.length > 0 && teams.length === 0) {
+      return { total: 0, projects: [] };
+    }
+
     const body: IGetProjectsRequestBody = {
       index: state.index,
       size: state.pageSize,
@@ -99,7 +107,7 @@ export const fetchProjectData = createAsyncThunk(
       categories: state.selectedProjectCategories.map((c: IProjectCategory) => c.id || ''),
       project_managers: state.selectedProjectManagers.map((m: IProjectManager) => m.id || ''),
       archived: state.archived,
-      teams: selectedTeams(state),
+      teams,
     };
     const response = await reportingProjectsApiService.getProjects(body);
     return response.body;
@@ -112,6 +120,13 @@ export const fetchMoreProjectsForGroupedView = createAsyncThunk(
   'projectReports/fetchMoreProjectsForGroupedView',
   async (_, { getState }) => {
     const state = (getState() as any).projectReportsReducer;
+    const teams = selectedTeams(state);
+
+    // If teams have been loaded but none are selected, return empty result immediately
+    if (state.teams.length > 0 && teams.length === 0) {
+      return { total: 0, projects: [] };
+    }
+
     const body: IGetProjectsRequestBody = {
       index: state.index,
       size: state.pageSize,
@@ -124,7 +139,7 @@ export const fetchMoreProjectsForGroupedView = createAsyncThunk(
       categories: state.selectedProjectCategories.map((c: IProjectCategory) => c.id || ''),
       project_managers: state.selectedProjectManagers.map((m: IProjectManager) => m.id || ''),
       archived: state.archived,
-      teams: selectedTeams(state),
+      teams,
     };
     const response = await reportingProjectsApiService.getProjects(body);
     return response.body;
@@ -136,6 +151,13 @@ export const fetchGroupedProjects = createAsyncThunk(
   'projectReports/fetchGroupedProjects',
   async (_, { getState }) => {
     const state = (getState() as any).projectReportsReducer;
+    const teams = selectedTeams(state);
+
+    // If teams have been loaded but none are selected, return empty result immediately
+    if (state.teams.length > 0 && teams.length === 0) {
+      return { groups: [], total_groups: 0 };
+    }
+
     const params = {
       group_by: state.groupBy,
       search: state.searchQuery,
@@ -145,7 +167,7 @@ export const fetchGroupedProjects = createAsyncThunk(
       healths: state.selectedProjectHealths.map((h: IProjectHealth) => h.id || '').join(','),
       categories: state.selectedProjectCategories.map((c: IProjectCategory) => c.id || '').join(','),
       project_managers: state.selectedProjectManagers.map((m: IProjectManager) => m.id || '').join(','),
-      teams: selectedTeams(state).join(','),
+      teams: teams.join(','),
       archived: state.archived,
     };
     const response = await reportingProjectsApiService.getProjectsGrouped(params);
