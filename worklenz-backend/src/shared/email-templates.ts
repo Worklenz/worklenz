@@ -112,6 +112,15 @@ export function sendClientPortalResetEmail(toEmail: string, user_id: string, has
   content = content.replace("[VAR_USER_ID]", sanitize(user_id));
   content = content.replace("[VAR_HASH]", hash);
 
+  // For development: Log the reset password link to console
+  const resetLink = `${CLIENT_PORTAL_HOSTNAME}/auth/reset-password?user=${user_id}&hash=${hash}`;
+  console.log('\n========================================');
+  console.log('🔐 CLIENT PORTAL PASSWORD RESET EMAIL');
+  console.log('========================================');
+  console.log(`To: ${toEmail}`);
+  console.log(`Reset Link: ${resetLink}`);
+  console.log('========================================\n');
+
   sendEmail({
     to: [toEmail],
     subject: "Reset your Client Portal password.",
