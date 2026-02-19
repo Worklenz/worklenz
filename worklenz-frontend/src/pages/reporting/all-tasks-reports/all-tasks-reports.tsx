@@ -107,7 +107,10 @@ const AllTasksReports = () => {
             <Button>
               <Checkbox
                 checked={includeArchived}
-                onChange={() => dispatch(setIncludeArchived(!includeArchived))}
+                onChange={() => {
+                  dispatch(setIncludeArchived(!includeArchived));
+                  dispatch(fetchAllTasks());
+                }}
               >
                 <Typography.Text>{t('archivedFilter', { defaultValue: 'Include Archived' })}</Typography.Text>
               </Checkbox>
