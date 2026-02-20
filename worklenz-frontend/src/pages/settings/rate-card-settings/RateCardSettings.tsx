@@ -34,6 +34,7 @@ import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
 import { RatecardType } from '@/types/project/ratecard.types';
 import { useAppSelector } from '../../../hooks/useAppSelector';
 import RateCardDrawer from '@/components/projects/project-finance/rate-card-drawer/RateCardDrawer';
+import { DEFAULT_CURRENCY } from '@/shared/currencies';
 
 interface PaginationType {
   current: number;
@@ -122,7 +123,7 @@ const RatecardSettings: React.FC = () => {
         createRateCard({
           name: 'Untitled Rate Card',
           jobRolesList: [],
-          currency: 'lkr', // ✅ FIXED: Changed from 'LKR' to 'lkr' to match CURRENCY_OPTIONS
+          currency: DEFAULT_CURRENCY,
         }) as any
       );
 
