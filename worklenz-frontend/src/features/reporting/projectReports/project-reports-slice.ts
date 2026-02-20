@@ -343,7 +343,26 @@ const projectReportsSlice = createSlice({
       }
     },
     setViewMode: (state, action) => {
-      state.viewMode = action.payload;
+      const newViewMode = action.payload;
+      const previousViewMode = state.viewMode;
+      
+      state.viewMode = newViewMode;
+      
+      // Reset data when switching between views to ensure fresh data
+      if (previousViewMode !== newViewMode) {
+        if (newViewMode === 'grouped') {
+          // Clear table data when switching to grouped view
+          state.projectList = [];
+          state.total = 0;
+        } else {
+          // Clear grouped data when switching to table view
+          state.groupedProjects = [];
+          state.totalGroups = 0;
+        }
+        // Reset loading state for the new view
+        state.isLoading = false;
+        state.error = null;
+      }
     },
     setGroupBy: (state, action) => {
       state.groupBy = action.payload;
