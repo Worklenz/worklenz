@@ -129,9 +129,18 @@ const RatecardSettings: React.FC = () => {
 
       if (createRateCard.fulfilled.match(resultAction)) {
         const created = resultAction.payload;
-        setRatecardDrawerType('update');
-        setSelectedRatecardId(created.id ?? null);
-        dispatch(toggleRatecardDrawer());
+
+        // Verify the payload has an ID before proceeding
+        if (created && created.id) {
+          setRatecardDrawerType('update');
+          setSelectedRatecardId(created.id);
+          dispatch(toggleRatecardDrawer());
+        } else {
+          // If no ID, refresh the list and show success message
+          console.warn('Rate card created but no ID returned, refreshing list');
+          await fetchRateCards();
+          messageApi.success(t('createSuccess') || 'Rate card created successfully');
+        }
       } else {
         messageApi.error(t('createError') || 'Failed to create rate card');
       }
@@ -139,7 +148,7 @@ const RatecardSettings: React.FC = () => {
       console.error('Failed to create rate card:', error);
       messageApi.error(t('createError') || 'Failed to create rate card');
     }
-  }, [dispatch, t, messageApi]);
+  }, [dispatch, t, messageApi, fetchRateCards]);
 
   // Handle rate card update
   const handleRatecardUpdate = useCallback(
@@ -213,14 +222,20 @@ const RatecardSettings: React.FC = () => {
               okText={t('deleteConfirmationOk')}
               cancelText={t('deleteConfirmationCancel')}
               onConfirm={async () => {
+                if (!record.id) {
+                  console.error('Cannot delete rate card: ID is missing', record);
+                  messageApi.error('Cannot delete rate card: ID is missing');
+                  return;
+                }
+
                 setLoading(true);
                 try {
-                  if (record.id) {
-                    await dispatch(deleteRateCard(record.id));
-                    await fetchRateCards();
-                  }
+                  await dispatch(deleteRateCard(record.id));
+                  await fetchRateCards();
+                  messageApi.success(t('deleteSuccess') || 'Rate card deleted successfully');
                 } catch (error) {
                   console.error('Failed to delete rate card:', error);
+                  messageApi.error(t('deleteError') || 'Failed to delete rate card');
                 } finally {
                   setLoading(false);
                 }
