@@ -41,10 +41,12 @@ const ProjectsReports = () => {
     dispatch(fetchProjectData());
   }, [dispatch]);
 
-  // Fetch data when archived state changes
+  // Fetch data when archived state changes, but only for table view
   useEffect(() => {
-    dispatch(fetchProjectData());
-  }, [archived, dispatch]);
+    if (viewMode === 'table') {
+      dispatch(fetchProjectData());
+    }
+  }, [archived, dispatch, viewMode]);
 
   // Memoize the title to prevent recalculation on every render
   const pageTitle = useMemo(() => {

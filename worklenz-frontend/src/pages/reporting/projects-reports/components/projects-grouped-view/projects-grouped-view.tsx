@@ -419,13 +419,16 @@ const ProjectsGroupedView = () => {
     [transformedGroups, t, getVisibleCount, handleLoadMore, renderProjectItem]
   );
 
-  // Show spinner while loading (either grouped projects or teams) OR if we have no data yet
-  if (isLoading || loadingTeams || groupedProjects.length === 0) {
-    // Only show empty state if we're done loading and confirmed no data
-    if (!isLoading && !loadingTeams && groupedProjects.length === 0) {
-      return <Empty description={t('noProjectsText')} />;
-    }
-    // Otherwise show spinner
+  // Show spinner while loading OR if teams haven't loaded yet (needed for filter validation)
+  // Only show empty state if we're completely done loading and have no data
+  const showEmptyState = !isLoading && !loadingTeams && groupedProjects.length === 0;
+  const showLoadingSpinner = isLoading || loadingTeams;
+
+  if (showEmptyState) {
+    return <Empty description={t('noProjectsText')} />;
+  }
+
+  if (showLoadingSpinner) {
     return (
       <Flex justify="center" align="center" style={{ minHeight: 200 }}>
         <Spin size="large" />
