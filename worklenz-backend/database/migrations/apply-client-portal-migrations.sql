@@ -45,9 +45,6 @@
 \echo 'Applying: 005-create-organization-invitations.sql'
 \i database/migrations/release-v2.2.0/005-create-organization-invitations.sql
 
--- Migration 11: Add password reset tokens (required for forgot password)
-\echo 'Applying: 20251231000000-add-password-reset-tokens.sql'
-\i database/migrations/20251231000000-add-password-reset-tokens.sql
 
 \echo ''
 \echo 'Client Portal Migrations Completed Successfully!'

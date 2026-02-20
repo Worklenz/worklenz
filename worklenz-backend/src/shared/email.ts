@@ -4,22 +4,8 @@ import { QueryResult } from "pg";
 import { log_error, isValidateEmail } from "./utils";
 import emailRequestSchema from "../json_schemas/email-request-schema";
 import db from "../config/db";
-import * as nodemailer from "nodemailer";
 
 const sesClient = new SESClient({ region: process.env.AWS_REGION });
-
-// Create Nodemailer transporter for Mailtrap (development)
-const mailtrapTransporter =
-  process.env.USE_MAILTRAP === "true"
-    ? nodemailer.createTransport({
-        host: process.env.MAILTRAP_HOST || "sandbox.smtp.mailtrap.io",
-        port: parseInt(process.env.MAILTRAP_PORT || "2525"),
-        auth: {
-          user: process.env.MAILTRAP_USER,
-          pass: process.env.MAILTRAP_PASS,
-        },
-      })
-    : null;
 
 export interface IEmail {
   to?: string[];
@@ -233,50 +219,35 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
 
     let messageId: string | undefined;
 
-    // Use Mailtrap for development, AWS SES for production
-    if (process.env.USE_MAILTRAP === "true" && mailtrapTransporter) {
-      // Send via Mailtrap (development)
-      console.log("\n📧 Sending email via Mailtrap...");
-      console.log("To:", options.to.join(", "));
-      console.log("Subject:", options.subject);
+    // Send via AWS SES
+    console.log("\n📧 Sending email via AWS SES...");
+    console.log("To:", options.to.join(", "));
+    console.log("Subject:", options.subject);
 
-      const info = await mailtrapTransporter.sendMail({
-        from: '"Worklenz" <noreply@worklenz.com>',
-        to: options.to.join(", "),
-        subject: options.subject,
-        html: options.html,
-      });
-
-      messageId = info.messageId;
-      console.log("✅ Email sent successfully!");
-      console.log("Message ID:", messageId);
-      console.log("Preview URL:", nodemailer.getTestMessageUrl(info));
-      console.log("Check your Mailtrap inbox: https://mailtrap.io/inboxes\n");
-    } else {
-      // Send via AWS SES (production)
-      const charset = "UTF-8";
-      const command = new SendEmailCommand({
-        Destination: {
-          ToAddresses: options.to,
+    const charset = "UTF-8";
+    const command = new SendEmailCommand({
+      Destination: {
+        ToAddresses: options.to,
+      },
+      Message: {
+        Subject: {
+          Charset: charset,
+          Data: options.subject,
         },
-        Message: {
-          Subject: {
+        Body: {
+          Html: {
             Charset: charset,
-            Data: options.subject,
-          },
-          Body: {
-            Html: {
-              Charset: charset,
-              Data: options.html,
-            },
+            Data: options.html,
           },
         },
-        Source: "Worklenz <noreply@worklenz.com>",
-      });
+      },
+      Source: "Worklenz <noreply@worklenz.com>",
+    });
 
-      const res = await sesClient.send(command);
-      messageId = res.MessageId;
-    }
+    const res = await sesClient.send(command);
+    messageId = res.MessageId;
+    console.log("✅ Email sent successfully!");
+    console.log("Message ID:", messageId);
 
     // Update log status to sent
     // Append index to messageId to make it unique per recipient when sending to multiple
