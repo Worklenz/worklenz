@@ -179,6 +179,10 @@ export const fetchGroupedProjects = createAsyncThunk(
         .join(','),
       teams: teams.join(','),
       archived: state.archived,
+      // Add pagination parameters (using large size to load all groups for now)
+      // TODO: Implement proper "Load More" functionality in future iteration
+      index: 1,
+      size: 1000,
     };
     const response = await reportingProjectsApiService.getProjectsGrouped(params);
     // Ensure we return a valid structure even if response.body is null
@@ -345,9 +349,9 @@ const projectReportsSlice = createSlice({
     setViewMode: (state, action) => {
       const newViewMode = action.payload;
       const previousViewMode = state.viewMode;
-      
+
       state.viewMode = newViewMode;
-      
+
       // Reset data when switching between views to ensure fresh data
       if (previousViewMode !== newViewMode) {
         if (newViewMode === 'grouped') {
@@ -359,8 +363,8 @@ const projectReportsSlice = createSlice({
           state.groupedProjects = [];
           state.totalGroups = 0;
         }
-        // Reset loading state for the new view
-        state.isLoading = false;
+        // Set loading state to true so component shows spinner instead of empty state
+        state.isLoading = true;
         state.error = null;
       }
     },

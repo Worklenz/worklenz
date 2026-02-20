@@ -38,6 +38,24 @@ const ProjectsGroupedView = () => {
   // Track visible items per group for client-side pagination
   const [groupPagination, setGroupPagination] = useState<Record<string, number>>({});
 
+  /**
+   * Translates group names from backend translation keys to localized strings.
+   * Maps backend keys like "no_manager" to frontend translation keys like "noManagerText".
+   * Falls back to original name if not a translation key (e.g., actual team/manager names).
+   */
+  const translateGroupName = useCallback((name: string): string => {
+    const translationKeyMap: Record<string, string> = {
+      'no_manager': 'noManagerText',
+      'no_team': 'noTeamText',
+      'no_status': 'noStatusText',
+      'not_set': 'notSetText',
+      'uncategorized': 'uncategorizedText',
+    };
+
+    const translationKey = translationKeyMap[name];
+    return translationKey ? t(translationKey) : name;
+  }, [t]);
+
   const {
     groupedProjects,
     groupBy,
@@ -95,7 +113,7 @@ const ProjectsGroupedView = () => {
   const transformedGroups = useMemo(() => {
     return groupedProjects.map(group => ({
       id: group.group_id,
-      name: group.group_name,
+      name: translateGroupName(group.group_name), // Translate backend keys to localized strings
       color: group.group_color,
       projects: group.projects,
       totalTasks: group.total_tasks,
@@ -107,7 +125,7 @@ const ProjectsGroupedView = () => {
         ? Math.round((group.done_tasks / group.total_tasks) * 100)
         : 0,
     }));
-  }, [groupedProjects]);
+  }, [groupedProjects, translateGroupName]);
 
   const renderProjectItem = useCallback(
     (project: IRPTProject) => {
