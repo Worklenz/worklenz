@@ -280,7 +280,7 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
   };
 
   const menuContent = (
-    <div style={{ display: 'flex', backgroundColor: token.colorBgContainer }}>
+    <div style={{ display: 'flex', height: '100%', backgroundColor: token.colorBgContainer }}>
       {/* Menu Area */}
       <div
         style={{
@@ -311,7 +311,8 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
         className="temp-details"
         style={{
           flex: 1,
-          maxHeight: 'calc(100vh - 200px)',
+          // ✅ FIXED: was 'calc(100vh - 200px)' which caused overflow/extra scroll space
+          maxHeight: '100%',
           padding: '16px',
           backgroundColor: token.colorBgContainer,
           color: token.colorText,
@@ -421,38 +422,30 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
     }
   };
 
+  // ✅ FIXED: Removed height: '100vh' (overcounts inside modal) and position: 'sticky' wrapper
+  // which left dead space below. Now uses height: '100%' and renders content directly.
   return (
     <div
       style={{
-        height: '100vh',
+        height: '100%',
         overflow: 'hidden',
         backgroundColor: token.colorBgLayout,
       }}
     >
-      <div
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-          backgroundColor: token.colorBgContainer,
-          overflow: 'hidden',
-          borderBottom: `1px solid ${token.colorBorder}`,
-        }}
-      >
-        {showBothTabs ? (
-          <Tabs
-            type="card"
-            items={tabs}
-            onChange={handleTabChange}
-            destroyOnHidden
-            style={{
-              backgroundColor: token.colorBgContainer,
-            }}
-          />
-        ) : (
-          menuContent
-        )}
-      </div>
+      {showBothTabs ? (
+        <Tabs
+          type="card"
+          items={tabs}
+          onChange={handleTabChange}
+          destroyOnHidden
+          style={{
+            height: '100%',
+            backgroundColor: token.colorBgContainer,
+          }}
+        />
+      ) : (
+        menuContent
+      )}
     </div>
   );
 };
