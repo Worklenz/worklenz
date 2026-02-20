@@ -24,7 +24,13 @@ const selectedTeams = (state: ProjectReportsState) => {
 };
 
 export type ProjectReportsViewMode = 'table' | 'grouped';
-export type ProjectReportsGroupBy = 'category' | 'status' | 'health' | 'team' | 'client' | 'manager';
+export type ProjectReportsGroupBy =
+  | 'category'
+  | 'status'
+  | 'health'
+  | 'team'
+  | 'client'
+  | 'manager';
 
 export interface IProjectReportGroup {
   group_id: string;
@@ -165,8 +171,12 @@ export const fetchGroupedProjects = createAsyncThunk(
       order: state.order,
       statuses: state.selectedProjectStatuses.map((s: IProjectStatus) => s.id || '').join(','),
       healths: state.selectedProjectHealths.map((h: IProjectHealth) => h.id || '').join(','),
-      categories: state.selectedProjectCategories.map((c: IProjectCategory) => c.id || '').join(','),
-      project_managers: state.selectedProjectManagers.map((m: IProjectManager) => m.id || '').join(','),
+      categories: state.selectedProjectCategories
+        .map((c: IProjectCategory) => c.id || '')
+        .join(','),
+      project_managers: state.selectedProjectManagers
+        .map((m: IProjectManager) => m.id || '')
+        .join(','),
       teams: teams.join(','),
       archived: state.archived,
     };
@@ -351,11 +361,10 @@ const projectReportsSlice = createSlice({
       state.order = 'asc';
       state.searchQuery = '';
       state.filterIndex = filterIndex();
-      state.archived = false;
+      // Note: archived state is preserved to maintain user preference across view changes
     },
     resetAllFilters: state => {
       state.searchQuery = '';
-      state.archived = false;
       state.index = 1;
       state.viewMode = 'table';
       state.groupBy = 'category';
@@ -366,6 +375,7 @@ const projectReportsSlice = createSlice({
       state.selectedProjectHealths = [];
       state.selectedProjectCategories = [];
       state.selectedProjectManagers = [];
+      // Note: archived state is preserved to maintain user preference across view changes
     },
   },
   extraReducers: builder => {
@@ -373,7 +383,13 @@ const projectReportsSlice = createSlice({
       .addCase(fetchReportingTeams.fulfilled, (state, action) => {
         const teams = [];
         for (const team of action.payload) {
-          teams.push({ selected: true, name: team.name, id: team.id, projects_count: team.projects_count, members: team.members });
+          teams.push({
+            selected: true,
+            name: team.name,
+            id: team.id,
+            projects_count: team.projects_count,
+            members: team.members,
+          });
         }
         state.teams = teams;
         state.loadingTeams = false;
