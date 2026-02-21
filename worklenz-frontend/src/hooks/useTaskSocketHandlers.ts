@@ -706,7 +706,7 @@ export const useTaskSocketHandlers = () => {
     (response: any) => {
       // Use enhanced kanban grouping if available, otherwise fall back to task-management grouping
       const currentGrouping = enhancedKanbanGroupBy || currentGroupingV3;
-      
+
       handleTaskReceivedUtil(response, {
         dispatch,
         currentGroupingV3: currentGrouping,
@@ -951,6 +951,14 @@ export const useTaskSocketHandlers = () => {
     [dispatch]
   );
 
+  // Handler for PROJECT_UPDATES_AVAILABLE event (e.g., task deletion)
+  const handleProjectUpdatesAvailable = useCallback(() => {
+    // Refresh task list when project updates are available (includes task deletion, creation, etc.)
+    if (projectId) {
+      dispatch(fetchTasksV3(projectId));
+    }
+  }, [dispatch, projectId]);
+
   // Register socket event listeners
   useEffect(() => {
     if (!socket) return;
@@ -989,6 +997,10 @@ export const useTaskSocketHandlers = () => {
       { event: SocketEvents.TASK_TIMER_START.toString(), handler: handleTimerStart },
       { event: SocketEvents.TASK_TIMER_STOP.toString(), handler: handleTimerStop },
       { event: SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), handler: handleTaskSortOrderChange },
+      {
+        event: SocketEvents.PROJECT_UPDATES_AVAILABLE.toString(),
+        handler: handleProjectUpdatesAvailable,
+      },
     ];
 
     // Register all event listeners
@@ -1023,5 +1035,6 @@ export const useTaskSocketHandlers = () => {
     handleTimerStart,
     handleTimerStop,
     handleTaskSortOrderChange,
+    handleProjectUpdatesAvailable,
   ]);
 };
