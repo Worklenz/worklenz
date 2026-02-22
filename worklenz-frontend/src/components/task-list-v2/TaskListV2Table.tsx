@@ -393,9 +393,16 @@ const TaskListV2Section: React.FC = () => {
   const rawVisibleColumns = useMemo(() => {
     // Start with base columns
     const baseVisibleColumns = BASE_COLUMNS.filter(column => {
-      // Always show drag handle and title (sticky columns)
-      if (column.isSticky) return true;
+      // Always show essential UI controls (drag handle, checkbox, title)
+      // These are required for task list functionality
+      if (
+        column.isSticky &&
+        (column.id === 'dragHandle' || column.id === 'checkbox' || column.id === 'title')
+      ) {
+        return true;
+      }
 
+      // For other columns (including taskKey), respect the visibility settings
       // Primary: Check local fields configuration
       const field = fields.find(f => f.key === column.key);
       if (field) {
