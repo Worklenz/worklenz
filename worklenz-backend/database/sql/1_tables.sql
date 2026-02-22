@@ -1112,7 +1112,7 @@ ALTER TABLE pt_task_statuses
 
 CREATE TABLE IF NOT EXISTS task_activity_logs (
     id             UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    task_id        UUID                                                NOT NULL,
+    task_id        UUID,
     team_id        UUID                                                NOT NULL,
     attribute_type TEXT                                                NOT NULL,
     user_id        UUID                                                NOT NULL,
@@ -1424,7 +1424,7 @@ ALTER TABLE tasks
 ALTER TABLE task_activity_logs
     ADD CONSTRAINT task_activity_logs_tasks_id_fk
         FOREIGN KEY (task_id) REFERENCES tasks
-            ON DELETE CASCADE;
+            ON DELETE SET NULL;
 
 ALTER TABLE task_attachments
     ADD CONSTRAINT task_attachments_task_id_fk
