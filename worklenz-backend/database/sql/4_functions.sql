@@ -3,11 +3,23 @@ CREATE OR REPLACE FUNCTION accept_invitation(_email text, _team_member_id uuid, 
 AS
 $$
 DECLARE
+    _team_id UUID;
 BEGIN
     IF _team_member_id IS NOT NULL
     THEN
+        -- Get the team_id before updating
+        SELECT team_id FROM team_members WHERE id = _team_member_id INTO _team_id;
+        
         UPDATE team_members SET user_id = _user_id WHERE id = _team_member_id;
         DELETE FROM email_invitations WHERE email = _email AND team_member_id = _team_member_id;
+        
+        -- Mark all related team invitation notifications as read
+        UPDATE user_notifications 
+        SET read = TRUE 
+        WHERE user_id = _user_id 
+          AND team_id = _team_id 
+          AND message LIKE '%invited you to work with%'
+          AND read = FALSE;
     END IF;
 
     RETURN JSON_BUILD_OBJECT(
