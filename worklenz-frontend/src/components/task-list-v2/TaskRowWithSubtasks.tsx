@@ -82,6 +82,7 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(
           parentTaskId,
           name: subtaskName.trim(),
           projectId,
+          reporterName: currentSession.name || '', // Pass current user's name for reporter field
         })
       );
 
@@ -282,14 +283,16 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
 
     // Get active filters from Redux (tasks.slice - used by improved-task-filters)
     const activeFilters = useAppSelector(state => ({
-      members: state.taskReducer?.taskAssignees?.filter((m: any) => m.selected).map((m: any) => m.id) || [],
+      members:
+        state.taskReducer?.taskAssignees?.filter((m: any) => m.selected).map((m: any) => m.id) ||
+        [],
       labels: state.taskReducer?.labels?.filter((l: any) => l.selected).map((l: any) => l.id) || [],
-      priorities: state.taskReducer?.priorities || []
+      priorities: state.taskReducer?.priorities || [],
     }));
 
     // Get all priorities to create ID-to-name mapping
     const allPriorities = useAppSelector(state => state.priorityReducer?.priorities || []);
-    
+
     // Create priority ID to name mapping
     const priorityIdToName = React.useMemo(() => {
       const map: Record<string, string> = {};
@@ -304,10 +307,23 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
 
     // Auto-fetch subtasks when task has filtered children and is expanded
     useEffect(() => {
-      if (task?.has_filtered_children && task?.show_sub_tasks && (!task.sub_tasks || task.sub_tasks.length === 0) && !isLoadingSubtasks) {
+      if (
+        task?.has_filtered_children &&
+        task?.show_sub_tasks &&
+        (!task.sub_tasks || task.sub_tasks.length === 0) &&
+        !isLoadingSubtasks
+      ) {
         dispatch(fetchSubTasks({ taskId, projectId }));
       }
-    }, [task?.has_filtered_children, task?.show_sub_tasks, task?.sub_tasks, isLoadingSubtasks, dispatch, taskId, projectId]);
+    }, [
+      task?.has_filtered_children,
+      task?.show_sub_tasks,
+      task?.sub_tasks,
+      isLoadingSubtasks,
+      dispatch,
+      taskId,
+      projectId,
+    ]);
 
     const handleSubtaskAdded = useCallback(() => {
       // After adding a subtask, the AddSubtaskRow will handle its own state reset
@@ -326,9 +342,9 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
       if (!task.sub_tasks || task.sub_tasks.length === 0) return [];
 
       // If no filters are active, show all subtasks
-      const hasActiveFilters = 
-        activeFilters.members.length > 0 || 
-        activeFilters.labels.length > 0 || 
+      const hasActiveFilters =
+        activeFilters.members.length > 0 ||
+        activeFilters.labels.length > 0 ||
         activeFilters.priorities.length > 0;
 
       if (!hasActiveFilters) {
@@ -345,7 +361,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
         if (subtask.has_filtered_children) {
           return true;
         }
-        
+
         // If subtask has descendants with matching filters, always show it
         // The backend's sub_tasks_count already accounts for filtered descendants
         if (subtask.sub_tasks_count && subtask.sub_tasks_count > 0) {
@@ -359,7 +375,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
         if (activeFilters.members.length > 0) {
           const hasMatchingMember = subtask.assignees?.some((a: any) => {
             // Assignees can be either strings (IDs) or objects with team_member_id/id
-            const assigneeId = typeof a === 'string' ? a : (a.team_member_id || a.id);
+            const assigneeId = typeof a === 'string' ? a : a.team_member_id || a.id;
             return activeFilters.members.includes(assigneeId);
           });
           if (!hasMatchingMember) matchesFilters = false;
@@ -367,7 +383,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
 
         // Check label filter
         if (matchesFilters && activeFilters.labels.length > 0) {
-          const hasMatchingLabel = subtask.labels?.some((l: any) => 
+          const hasMatchingLabel = subtask.labels?.some((l: any) =>
             activeFilters.labels.includes(l.id)
           );
           if (!hasMatchingLabel) matchesFilters = false;
@@ -380,7 +396,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
           const filterPriorityNames = activeFilters.priorities
             .map(id => priorityIdToName[id])
             .filter(Boolean);
-          
+
           if (!filterPriorityNames.includes(subtask.priority)) {
             matchesFilters = false;
           }
