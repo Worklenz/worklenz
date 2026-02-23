@@ -37,7 +37,11 @@ type UpdateMemberDrawerProps = {
   initialRoleName?: string;
 };
 
-const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate, initialRoleName }: UpdateMemberDrawerProps) => {
+const UpdateMemberDrawer = ({
+  selectedMemberId,
+  onRoleUpdate,
+  initialRoleName,
+}: UpdateMemberDrawerProps) => {
   const { t } = useTranslation('settings/team-members');
   const dispatch = useAppDispatch();
   const auth = useAuthService();
@@ -63,6 +67,11 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate, initialRoleName }:
     }
     return canManageUserRole(currentUser?.role_name, teamMember?.role_name, currentUser?.owner);
   }, [currentUser?.role_name, currentUser?.owner, currentUser?.is_admin, teamMember?.role_name]);
+
+  // Allow Owners to edit their own role (but not other roles)
+  const canEditOwnAccount = useMemo(() => {
+    return isOwnAccount && currentUser?.owner;
+  }, [isOwnAccount, currentUser?.owner]);
 
   const availableRoles = useMemo(() => {
     if (currentUser?.is_admin && !currentUser?.owner) {
@@ -98,10 +107,10 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate, initialRoleName }:
 
         // Determine access level based on role_name (with fallback to initialRoleName)
         let accessLevel = 'member';
-        
+
         const roleNameToUse = res.body.role_name || initialRoleName;
         const roleName = (roleNameToUse || '').toLowerCase().trim();
-        
+
         if (roleName === 'owner') {
           accessLevel = 'owner';
         } else if (roleName === 'admin') {
@@ -202,7 +211,7 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate, initialRoleName }:
       const roleNameToUse = teamMember.role_name || initialRoleName;
       const roleName = (roleNameToUse || '').toLowerCase().trim();
       let accessLevel = 'member';
-      
+
       if (roleName === 'owner') {
         accessLevel = 'owner';
       } else if (roleName === 'admin') {
@@ -257,11 +266,7 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate, initialRoleName }:
       loading={loading}
       destroyOnClose
     >
-      <Form
-        form={form}
-        onFinish={handleFormSubmit}
-        layout="vertical"
-      >
+      <Form form={form} onFinish={handleFormSubmit} layout="vertical">
         <Form.Item label={t('jobTitleLabel')} name="jobTitle">
           <Select
             optionLabelProp="label"
@@ -289,7 +294,7 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate, initialRoleName }:
 
         <Form.Item label={t('memberAccessLabel')} name="access" rules={[{ required: true }]}>
           <Select
-            disabled={isOwnAccount || !canManageTarget}
+            disabled={isOwnAccount ? !canEditOwnAccount : !canManageTarget}
             options={availableRoles.map(role => ({
               value:
                 role.value === 'Member'
@@ -310,7 +315,7 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate, initialRoleName }:
               type="primary"
               style={{ width: '100%' }}
               htmlType="submit"
-              disabled={!canManageTarget}
+              disabled={isOwnAccount ? !canEditOwnAccount : !canManageTarget}
             >
               {t('updateButton')}
             </Button>
@@ -332,7 +337,7 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate, initialRoleName }:
               >
                 {t('addedText')}
                 <Tooltip title={formatDateTimeWithLocale(teamMember?.created_at || '')}>
-                   {calculateTimeDifference(teamMember?.created_at || '')}
+                  {calculateTimeDifference(teamMember?.created_at || '')}
                 </Tooltip>
               </Typography.Text>
               <Typography.Text
@@ -343,7 +348,7 @@ const UpdateMemberDrawer = ({ selectedMemberId, onRoleUpdate, initialRoleName }:
               >
                 {t('updatedText')}
                 <Tooltip title={formatDateTimeWithLocale(teamMember?.updated_at || '')}>
-                   {calculateTimeDifference(teamMember?.updated_at || '')}
+                  {calculateTimeDifference(teamMember?.updated_at || '')}
                 </Tooltip>
               </Typography.Text>
             </Flex>
