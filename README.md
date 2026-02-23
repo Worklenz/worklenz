@@ -1,10 +1,9 @@
 <h1 align="center">
     <a href="https://worklenz.com" target="_blank" rel="noopener noreferrer">
-        <img src="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/icon-144x144.png" alt="Worklenz Logo" width="75">
-    </a>
-    <br>
-    Worklenz    
+        <img src="https://s3.dualstack.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-light-mode.png" alt="Worklenz Logo" width="400">
+    </a>  
 </h1>
+<h3 align="center">All-in-one open-source project management for efficient teams</h3>
 
 <p align="center">
     <a href="https://github.com/Worklenz/worklenz/blob/main/LICENSE">
@@ -28,26 +27,15 @@
 </p>
 
 <p align="center">
-    <a href="https://worklenz.com/task-management/">Task Management</a> |
-    <a href="https://worklenz.com/time-tracking/">Time Tracking</a> |
-    <a href="https://worklenz.com/analytics/">Analytics</a> |
-    <a href="https://worklenz.com/resource-management/">Resource Management</a> |
-    <a href="https://worklenz.com/templates/">Project Templates</a>
+    <a href="https://worklenz.com"><b>Website</b></a> •
+    <a href="https://worklenz.com"><b>Free sign up</b></a> •
+    <a href="https://github.com/Worklenz/worklenz/releases"><b>Releases</b></a> •
+    <a href="https://docs.worklenz.com/en/start/introduction/"><b>Documentation</b></a>
 </p>
 
-<p align="center">
-    <a href="https://worklenz.com" target="_blank">
-      <img
-        src="https://worklenz.s3.amazonaws.com/assets/screenshots/hero-view.png"
-        alt="Worklenz"
-        width="1200"
-      />
-    </a>
-</p>
 
-Worklenz is a project management tool designed to help organizations improve their efficiency. It provides a
-comprehensive solution for managing projects, tasks, and collaboration within teams.
-
+Meet [Worklenz](https://worklenz.com) a powerful, open-source project management platform built to help teams plan smarter, collaborate better, and ship faster. No bloated tools. No unnecessary complexity. Just everything your team needs, in one place. 🚀
+> Worklenz is growing every day. Your bug reports, feature ideas, and feedback shape what we build next. Jump into [Discord](https://discord.gg/AVbkGXHA) or open a GitHub issue - we read everything!
 ## Table of Contents
 
 - [Features](#features)
