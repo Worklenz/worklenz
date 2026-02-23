@@ -189,9 +189,8 @@ export const useTaskSocketHandlers = () => {
         dispatch(updateTaskLabel(labels)),
         dispatch(setTaskLabels(labels)),
         labels.is_new && dispatch(fetchLabels()),
-        // Remove unnecessary refetches - real-time updates handle this
-        // dispatch(fetchLabels()),
-        // projectId && dispatch(fetchLabelsByProject(projectId)),
+        // When a new label is created, update the labels filter dropdown by fetching project labels
+        labels.is_new && projectId && dispatch(fetchLabelsByProject(projectId)),
       ]);
 
       // Update enhanced kanban slice
