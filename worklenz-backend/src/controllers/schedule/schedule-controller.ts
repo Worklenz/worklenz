@@ -752,16 +752,16 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
   @HandleExceptions()
   public static async deleteMemberAllocations(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     // Use parameterized queries for DELETE statement
-    const ids = Array.isArray(req.body.ids) 
-      ? req.body.ids 
-      : typeof req.body.ids === 'string' 
+    const ids = Array.isArray(req.body.ids)
+      ? req.body.ids
+      : typeof req.body.ids === 'string'
         ? req.body.ids.split(",").filter((id: string) => id.trim())
         : [];
-    
+
     if (ids.length === 0) {
       return res.status(400).send(new ServerResponse(false, null, "No IDs provided"));
     }
-    
+
     const { clause, params } = SqlHelper.buildInClause(ids, 1);
     const q = `DELETE FROM project_member_allocations WHERE id IN (${clause})`;
     await db.query(q, params);
@@ -831,7 +831,7 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
       paramOffset++;
     }
 
-    const sortFields = sortField.replace(/ascend/g, "ASC").replace(/descend/g, "DESC") || "sort_order";
+    const sortFields = (sortField as string).replace(/ascend/g, "ASC").replace(/descend/g, "DESC") || "sort_order";
     const membersResult = ScheduleControllerV2.getFilterByMembersWhereClosure(options.members as string, paramOffset);
     if (membersResult.params.length > 0) {
       queryParams.push(...membersResult.params);
@@ -873,7 +873,7 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
 
     // Build member-specific time spent query
     let timeSpentQuery = "(SELECT ROUND(SUM(time_spent) / 60.0, 2) FROM task_work_log WHERE task_id = t.id) AS total_minutes_spent";
-    
+
     // If specific members are selected, filter time logs by those members
     if (options.members && typeof options.members === 'string') {
       const memberIds = options.members.split(" ").filter(id => id.trim());
@@ -885,7 +885,7 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
                          INNER JOIN team_members tm ON twl.user_id = tm.user_id 
                          WHERE twl.task_id = t.id 
                          AND tm.id IN (${memberPlaceholders})) AS total_minutes_spent`;
-        
+
         // Add member IDs to query params
         queryParams.push(...memberIds);
         paramOffset += memberIds.length;
@@ -1010,7 +1010,7 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
     const groupBy = (req.query.group || GroupBy.STATUS) as string;
 
     const { query: q, params } = ScheduleControllerV2.getQuery(req.user?.id as string, req.params.id, req.query);
-    
+
     const result = await db.query(q, params);
     const tasks = [...result.rows];
 
@@ -1030,9 +1030,9 @@ AND p.id NOT IN (SELECT project_id FROM archived_projects)`;
     // Initialize groups from database data
     groups.forEach((group) => {
       if (!group.id) return;
-      
+
       const groupKey = group.id;
-      
+
       groupedResponse[groupKey] = {
         id: group.id,
         name: group.name,

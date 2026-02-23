@@ -107,22 +107,22 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     const assignClause = assignClauseResult.clause;
     const assignParams = assignClauseResult.params;
     paramOffset += assignParams.length;
-    
+
     const completedDurationResult = this.completedDurationFilter(key, dateRange, paramOffset);
     const completedDurationClasue = completedDurationResult.clause;
     const completedParams = completedDurationResult.params;
     paramOffset += completedParams.length;
-    
+
     const overdueActivityLogsResult = this.getActivityLogsOverdue(key, dateRange, paramOffset);
     const overdueActivityLogsClause = overdueActivityLogsResult.clause;
     const overdueParams = overdueActivityLogsResult.params;
     paramOffset += overdueParams.length;
-    
+
     const activityLogCreationResult = this.getActivityLogsCreationClause(key, dateRange, paramOffset);
     const activityLogCreationFilter = activityLogCreationResult.clause;
     const activityLogParams = activityLogCreationResult.params;
     paramOffset += activityLogParams.length;
-    
+
     const timeLogDateRangeResult = this.getTimeLogDateRangeClause(key, dateRange, paramOffset);
     const timeLogDateRangeClause = timeLogDateRangeResult.clause;
     const timeLogParams = timeLogDateRangeResult.params;
@@ -703,14 +703,12 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     // Get user timezone for proper date filtering
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
     // $1 => team_id, $2 => team_member_id, so date params start at $3
-    const durationClauseResult = this.getDateRangeClauseWithTimezoneParams(
+    const durationClause = this.getDateRangeClauseWithTimezone(
       (duration as string) || DATE_RANGES.LAST_WEEK,
       dateRange,
-      userTimezone,
-      3
+      userTimezone
     );
-    const durationClause = durationClauseResult.clause;
-    const durationParams = durationClauseResult.params;
+    const durationParams: any[] = [];
 
     const minMaxDateClauseResult = this.getMinMaxDates(
       (duration as string) || DATE_RANGES.LAST_WEEK,
@@ -833,7 +831,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     );
     const durationClause = durationClauseResult.clause;
     const durationParams = durationClauseResult.params;
-    
+
     const minMaxDateClauseResult = this.getMinMaxDates(
       duration as string || DATE_RANGES.LAST_WEEK,
       dateRange,
@@ -842,7 +840,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     );
     const minMaxDateClause = minMaxDateClauseResult.clause;
     const minMaxParams = minMaxDateClauseResult.params;
-    
+
     const memberName = (req.query.member_name as string)?.trim() || null;
 
     // Combine all parameters for the query
@@ -1078,7 +1076,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     );
     const durationClause = durationClauseResult.clause;
     const durationParams = durationClauseResult.params;
-    
+
     const minMaxDateClauseResult = this.getMinMaxDates(
       duration || DATE_RANGES.LAST_WEEK,
       date_range,
@@ -1179,8 +1177,8 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     // Parameters: $1 = team_id, $2 = team_member_id, $3+ = params, then userId
     const userIdParamIndex = 3 + params.length;
     const archivedClause = includeArchived
-    ? ""
-    : `AND project_id NOT IN (SELECT project_id FROM archived_projects WHERE archived_projects.user_id = $${userIdParamIndex})`;
+      ? ""
+      : `AND project_id NOT IN (SELECT project_id FROM archived_projects WHERE archived_projects.user_id = $${userIdParamIndex})`;
 
     const q = `
                 SELECT user_id,
@@ -1224,7 +1222,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     return logGroups;
   }
 
-  private static async memberActivityLogsData(durationClause: string, minMaxDateClause: string, team_id: string, team_member_id: string, includeArchived:boolean, userId: string, params: any[]) {
+  private static async memberActivityLogsData(durationClause: string, minMaxDateClause: string, team_id: string, team_member_id: string, includeArchived: boolean, userId: string, params: any[]) {
 
     let archivedClause = "";
     let archivedParams: any[] = [];
@@ -1341,7 +1339,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   protected static buildBillableQuery(selectedStatuses: { billable: boolean; nonBillable: boolean }, tableAlias = "tasks"): string {
     const { billable, nonBillable } = selectedStatuses;
-  
+
     if (billable && nonBillable) {
       // Both are enabled, no need to filter
       return "";
@@ -1351,7 +1349,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     } else if (nonBillable) {
       // Only non-billable is enabled
       return ` AND ${tableAlias}.billable IS FALSE`;
-    } 
+    }
 
     return "";
   }
@@ -1363,14 +1361,12 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     // Get user timezone for proper date filtering
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
     // $1 => team_id, $2 => team_member_id, so date params start at $3
-    const durationClauseResult = this.getDateRangeClauseWithTimezoneParams(
+    const durationClause = this.getDateRangeClauseWithTimezone(
       duration || DATE_RANGES.LAST_WEEK,
       date_range,
-      userTimezone,
-      3
+      userTimezone
     );
-    const durationClause = durationClauseResult.clause;
-    const durationParams = durationClauseResult.params;
+    const durationParams: any[] = [];
 
     const minMaxDateClauseResult = this.getMinMaxDates(
       duration || DATE_RANGES.LAST_WEEK,
@@ -1410,8 +1406,8 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     }
 
     const archivedClause = includeArchived
-    ? ""
-    : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${req.user?.id}')`;
+      ? ""
+      : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${req.user?.id}')`;
 
 
     // Use parameterized queries
@@ -1420,19 +1416,19 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     const assignClause = assignClauseResult.clause;
     const assignParams = assignClauseResult.params;
     let paramOffset = 2 + assignParams.length;
-    
+
     const completedDurationResult = this.completedDurationFilter(duration as string, dateRange, paramOffset);
     const completedDurationClasue = completedDurationResult.clause;
     const completedParams = completedDurationResult.params;
     paramOffset += completedParams.length;
-    
+
     const overdueClauseResult = this.getActivityLogsOverdue(duration as string, dateRange, paramOffset);
     const overdueClauseByDate = overdueClauseResult.clause;
     const overdueParams = overdueClauseResult.params;
     paramOffset += overdueParams.length;
-    
+
     const taskSelectorClause = this.getTaskSelectorClause();
-    
+
     const durationFilterResult = this.memberTasksDurationFilter(duration as string, dateRange, paramOffset);
     const durationFilter = durationFilterResult.clause;
     const durationParams = durationFilterResult.params;
@@ -1531,11 +1527,11 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
     // Get user timezone and date clauses
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
-    
+
     // Build params array with timezone first, then date range values
     const params: any[] = [userTimezone];
     let paramIndex = 2;
-    
+
     // Add date range parameters and build duration clause
     let durationClause = '';
     if (date_range && date_range.length === 2) {
@@ -1710,11 +1706,11 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
     // Get user timezone
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
-    
+
     // Build params array with timezone first, then date range values
     const params: any[] = [userTimezone];
     let paramIndex = 2;
-    
+
     // Add date range parameters and build duration clause
     let durationClause = '';
     if (dateRange && dateRange.length === 2) {
@@ -1858,24 +1854,24 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   private static updateTaskProperties(tasks: any[]) {
     for (const task of tasks) {
-        task.project_color = getColor(task.project_name);
-        task.estimated_string = formatDuration(moment.duration(~~(task.total_minutes), "seconds"));
-        task.time_spent_string = formatDuration(moment.duration(~~(task.time_logged), "seconds"));
-        task.overlogged_time_string = formatDuration(moment.duration(~~(task.overlogged_time), "seconds"));
-        task.overdue_days = task.days_overdue ? task.days_overdue : null;
+      task.project_color = getColor(task.project_name);
+      task.estimated_string = formatDuration(moment.duration(~~(task.total_minutes), "seconds"));
+      task.time_spent_string = formatDuration(moment.duration(~~(task.time_logged), "seconds"));
+      task.overlogged_time_string = formatDuration(moment.duration(~~(task.overlogged_time), "seconds"));
+      task.overdue_days = task.days_overdue ? task.days_overdue : null;
     }
-}
+  }
 
-@HandleExceptions()
-public static async getSingleMemberProjects(req: IWorkLenzRequest, res: IWorkLenzResponse) {
-  const { team_member_id } = req.query;
-  const includeArchived = req.query.archived === "true";
+  @HandleExceptions()
+  public static async getSingleMemberProjects(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    const { team_member_id } = req.query;
+    const includeArchived = req.query.archived === "true";
 
-  const archivedClause = includeArchived
-    ? ""
-    : `AND projects.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND archived_projects.user_id = '${req.user?.id}')`;
+    const archivedClause = includeArchived
+      ? ""
+      : `AND projects.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND archived_projects.user_id = '${req.user?.id}')`;
 
-  const q = `SELECT id,
+    const q = `SELECT id,
                     name,
                     color_code,
                     start_date,
@@ -1926,36 +1922,36 @@ public static async getSingleMemberProjects(req: IWorkLenzRequest, res: IWorkLen
               FROM projects
               WHERE projects.id IN (SELECT project_id FROM project_members WHERE team_member_id = $1) ${archivedClause};`;
 
-  const result = await db.query(q, [team_member_id]);
-  const data = result.rows;
+    const result = await db.query(q, [team_member_id]);
+    const data = result.rows;
 
-  for (const row of data) {
-    row.estimated_time = int(row.estimated_time);
-    row.actual_time = int(row.actual_time);
-    row.estimated_time_string = this.convertMinutesToHoursAndMinutes(int(row.estimated_time));
-    row.actual_time_string = this.convertSecondsToHoursAndMinutes(int(row.actual_time));
-    row.days_left = this.getDaysLeft(row.end_date);
-    row.is_overdue = this.isOverdue(row.end_date);
-    if (row.days_left && row.is_overdue) {
-      row.days_left = row.days_left.toString().replace(/-/g, "");
+    for (const row of data) {
+      row.estimated_time = int(row.estimated_time);
+      row.actual_time = int(row.actual_time);
+      row.estimated_time_string = this.convertMinutesToHoursAndMinutes(int(row.estimated_time));
+      row.actual_time_string = this.convertSecondsToHoursAndMinutes(int(row.actual_time));
+      row.days_left = this.getDaysLeft(row.end_date);
+      row.is_overdue = this.isOverdue(row.end_date);
+      if (row.days_left && row.is_overdue) {
+        row.days_left = row.days_left.toString().replace(/-/g, "");
+      }
+      row.is_today = this.isToday(row.end_date);
+      if (row.project_manager) {
+        row.project_manager.name = row.project_manager.project_manager_info.name;
+        row.project_manager.avatar_url = row.project_manager.project_manager_info.avatar_url;
+        row.project_manager.color_code = getColor(row.project_manager.name);
+      }
+      row.project_health = row.health_name ? row.health_name : null;
     }
-    row.is_today = this.isToday(row.end_date);
-    if (row.project_manager) {
-      row.project_manager.name = row.project_manager.project_manager_info.name;
-      row.project_manager.avatar_url = row.project_manager.project_manager_info.avatar_url;
-      row.project_manager.color_code = getColor(row.project_manager.name);
-    }
-    row.project_health = row.health_name ? row.health_name : null;
+
+    const body = {
+      team_member_name: data[0].team_member_name,
+      projects: data
+    };
+
+    return res.status(200).send(new ServerResponse(true, body));
+
   }
-
-  const body = {
-    team_member_name: data[0].team_member_name,
-    projects: data
-  };
-
-  return res.status(200).send(new ServerResponse(true, body));
-
-}
 
   @HandleExceptions()
   public static async exportMemberProjects(req: IWorkLenzRequest, res: IWorkLenzResponse) {
