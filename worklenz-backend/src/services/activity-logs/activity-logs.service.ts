@@ -22,18 +22,6 @@ export async function insertToActivityLogs(activityLog: IActivityLog) {
       next_string,
     } = activityLog;
 
-    // Use provided team_id and project_id if available, otherwise query from database
-    console.log("insertToActivityLogs called with:", {
-      task_id,
-      team_id,
-      project_id,
-      attribute_type,
-      user_id,
-      log_type,
-      old_value,
-      new_value,
-    });
-
     const q = `
       INSERT INTO task_activity_logs (task_id, team_id, attribute_type, user_id, log_type, old_value, new_value, next_string, project_id)
       VALUES (
@@ -58,12 +46,7 @@ export async function insertToActivityLogs(activityLog: IActivityLog) {
       next_string,
       project_id,
     ]);
-    console.log(
-      "✓ Activity log inserted into database, rows affected:",
-      queryResult.rowCount,
-    );
   } catch (e) {
-    console.error("❌ Error inserting activity log:", e);
     log_error(e);
   }
 }

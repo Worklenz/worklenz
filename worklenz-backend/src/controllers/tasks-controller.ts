@@ -544,24 +544,13 @@ export default class TasksController extends TasksControllerBase {
       new_value: null,
     };
 
-    console.log("=== TASK DELETION DEBUG ===");
-    console.log("Task ID:", taskId);
-    console.log("User ID:", userId);
-    console.log("Team ID:", taskDetails.team_id);
-    console.log("Project ID:", taskDetails.project_id);
-    console.log("Task Name:", taskDetails.name);
-    console.log("Activity Log Object:", JSON.stringify(activityLog, null, 2));
-
     await insertToActivityLogs(activityLog);
-    console.log("✓ Activity log inserted successfully");
 
     // Now delete the task
     const q = `DELETE
                FROM tasks
                WHERE id = $1;`;
     const result = await db.query(q, [taskId]);
-    console.log("✓ Task deleted from database");
-    console.log("========================");
 
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
