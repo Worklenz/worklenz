@@ -23,10 +23,7 @@ interface HandleNewTaskReceivedOptions {
  * Shared handler for processing new task data received from API or Socket.IO
  * Handles both subtask and regular task creation
  */
-export const handleNewTaskReceived = (
-  response: any,
-  options: HandleNewTaskReceivedOptions
-) => {
+export const handleNewTaskReceived = (response: any, options: HandleNewTaskReceivedOptions) => {
   const { dispatch, currentGroupingV3, trackEvent, subtaskEventName, taskEventName } = options;
 
   // Handle array format response [index, taskData]
@@ -97,6 +94,7 @@ export const handleNewTaskReceived = (
       attachments_count: data.attachments_count || 0,
       has_subscribers: data.has_subscribers || false,
       has_dependencies: data.has_dependencies || false,
+      reporter: data.reporter || '',
     };
 
     // Before adding the real subtask, remove any temporary subtasks with the same name
@@ -190,6 +188,7 @@ export const handleNewTaskReceived = (
       attachments_count: data.attachments_count || 0,
       has_subscribers: data.has_subscribers || false,
       has_dependencies: data.has_dependencies || false,
+      reporter: data.reporter || '',
     };
 
     // Extract the group UUID from the backend response based on current grouping
