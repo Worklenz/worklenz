@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useCallback, useRef, useMemo, useState } from 'react';
 import { Button, Card, Checkbox, Dropdown, Flex, Space, Typography } from '@/shared/antd-imports';
 import { DownOutlined, ReloadOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -28,12 +28,14 @@ const AllTasksReports = () => {
 
   const state = useAppSelector(state => state.allTasksReportsReducer);
   const { total, isLoading, includeArchived, sortField, sortOrder, searchQuery } = state;
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleRefresh = useCallback(() => {
     dispatch(fetchAllTasks());
   }, [dispatch]);
 
   const handleExport = useCallback(async (key: string) => {
+    setIsExporting(true);
     try {
       const body = {
         index: 1, // Reset to first page for export (though backend handles size)
@@ -81,6 +83,8 @@ const AllTasksReports = () => {
     } catch (error) {
       console.error('Export failed:', error);
       // Ideally show a notification here
+    } finally {
+      setIsExporting(false);
     }
   }, [state, total, sortField, sortOrder, searchQuery]);
 
@@ -127,8 +131,9 @@ const AllTasksReports = () => {
                 items: exportMenuItems,
                 onClick: ({ key }) => handleExport(key),
               }}
+              disabled={isExporting}
             >
-              <Button type="primary" icon={<DownOutlined />} iconPosition="end">
+              <Button type="primary" icon={<DownOutlined />} iconPosition="end" loading={isExporting}>
                 {t('exportButton', { defaultValue: 'Export' })}
               </Button>
             </Dropdown>

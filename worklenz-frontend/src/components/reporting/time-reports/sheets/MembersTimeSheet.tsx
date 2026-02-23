@@ -254,6 +254,30 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         const selectedMembers = members.filter(member => member.selected);
         const selectedUtilization = utilization.filter(item => item.selected);
 
+        // If no projects are selected, show empty chart
+        // Projects are the primary filter - without projects, there should be no data
+        if (selectedProjects.length === 0) {
+          setJsonData([]);
+          onTotalsUpdate({
+            total_time_logs: '0',
+            total_estimated_hours: '0',
+            total_utilization: '0',
+          });
+          return;
+        }
+
+        // If no teams are selected, show empty chart
+        // Teams are also a primary filter - without teams, there should be no data
+        if (selectedTeams.length === 0) {
+          setJsonData([]);
+          onTotalsUpdate({
+            total_time_logs: '0',
+            total_estimated_hours: '0',
+            total_utilization: '0',
+          });
+          return;
+        }
+
         // Format dates using date-fns
         const formattedDateRange = dateRange
           ? [
@@ -278,9 +302,11 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
 
         if (res.done) {
           // Ensure filteredRows is always an array, even if API returns null/undefined
-          setJsonData(res.body?.filteredRows || []);
+          // The API response structure includes filteredRows and totals properties
+          const responseData = res.body as any;
+          setJsonData(responseData?.filteredRows || []);
 
-          const totalsRaw = res.body?.totals || {};
+          const totalsRaw = responseData?.totals || {};
           const totals = {
             total_time_logs: totalsRaw.total_time_logs ?? '0',
             total_estimated_hours: totalsRaw.total_estimated_hours ?? '0',
