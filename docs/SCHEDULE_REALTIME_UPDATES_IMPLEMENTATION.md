@@ -65,7 +65,7 @@ Custom React hook that listens to task-related socket events and invalidates RTK
 
 **Cache Tags Invalidated:**
 - `Members` - Triggers refetch of member summary data (allocated hours, logged hours)
-- `TaskTimeline` - Triggers refetch of task timeline data
+- `TaskTimeline` - Triggers refetch of task timeline data and task list (includes logged time)
 - `MemberProjects` - Triggers refetch of member project allocations
 - `Workload` - Triggers refetch of workload data
 
@@ -218,6 +218,7 @@ This automatically triggers refetch for all active queries that provide these ta
 - [x] Task date changes trigger schedule data update
 - [x] Task status change triggers schedule data update
 - [x] Time log updates trigger schedule summary update
+- [x] Time log updates trigger task list logged time update (ScheduleTaskRow)
 - [x] Multiple users see updates in real-time
 - [x] No TypeScript errors
 - [x] Socket cleanup on component unmount
@@ -447,3 +448,88 @@ This ensures:
 - The implementation follows the existing patterns used in the codebase for real-time updates
 - All socket event listeners are properly cleaned up on component unmount to prevent memory leaks
 - The solution is compatible with the existing RTK Query setup and doesn't require changes to the API layer
+
+## Bug Fix: Task List Logged Time Not Updating in Real-Time
+
+### Problem
+When users added a new time log from the task drawer, the schedule summary section (allocated hours, total logged, billable/non-billable hours) updated correctly in real-time. However, the "Logged Time" column in the task list (`ScheduleTaskRow` component) did not update until the page was manually refreshed.
+
+### Root Cause
+The issue was in the socket event handler for time log updates. When a time log was added/updated/deleted:
+
+1. The backend emitted `TASK_TIME_LOG_UPDATED` socket event
+2. The `useScheduleSocketHandlers` hook received the event
+3. The handler invalidated `Members` and `Workload` cache tags
+4. This triggered refetch of `useFetchMemberScheduleSummaryQuery` (which provides the summary data)
+5. **BUT** it did NOT invalidate the `TaskTimeline` tag
+6. Therefore, `useFetchProjectMemberTasksQuery` (which provides task list data including `total_minutes_spent`) was NOT refetched
+7. Result: Summary updated, but task list logged time remained stale
+
+### Solution
+
+**File: `worklenz-frontend/src/hooks/useScheduleSocketHandlers.ts`**
+
+Added `TaskTimeline` to the list of invalidated tags in the `handleTimeLogUpdate` handler:
+
+```typescript
+// Handler for task time log updates
+const handleTimeLogUpdate = (data: { task_id: string }) => {
+  logger.info('Task time log updated, refreshing schedule data', { taskId: data.task_id });
+
+  dispatch(
+    scheduleApi.util.invalidateTags([
+      'Members', // Member summary includes logged hours
+      'Workload',
+      'TaskTimeline', // Task list includes logged time (total_minutes_spent) ← ADDED
+    ])
+  );
+};
+```
+
+### How It Works
+
+1. **User adds time log** in task drawer
+2. **Backend emits** `TASK_TIME_LOG_UPDATED` event
+3. **Socket handler receives** event and invalidates cache tags:
+   - `Members` → Refetches `useFetchMemberScheduleSummaryQuery` (summary card)
+   - `Workload` → Refetches workload data
+   - `TaskTimeline` → Refetches `useFetchProjectMemberTasksQuery` (task list)
+4. **RTK Query automatically refetches** all queries with invalidated tags
+5. **Components re-render** with fresh data:
+   - Summary card shows updated logged hours
+   - Task list shows updated logged time per task
+6. **All updates happen automatically** without manual refresh
+
+### Data Flow
+
+```
+Task Drawer (Add Time Log)
+    ↓
+Backend (Update DB + Emit Socket Event)
+    ↓
+useScheduleSocketHandlers (Receive Event)
+    ↓
+Invalidate Cache Tags: ['Members', 'Workload', 'TaskTimeline']
+    ↓
+RTK Query Auto-Refetch
+    ├─→ useFetchMemberScheduleSummaryQuery (Summary Card)
+    └─→ useFetchProjectMemberTasksQuery (Task List)
+    ↓
+Components Re-render with Fresh Data
+    ├─→ WithStartAndEndDates (Summary Section) ✓
+    └─→ ScheduleTaskRow (Logged Time Column) ✓
+```
+
+### Result
+✓ Summary card updates in real-time (already working)  
+✓ Task list logged time updates in real-time (now fixed)  
+✓ No manual refresh needed  
+✓ Consistent real-time behavior across all schedule components  
+✓ Leverages existing RTK Query cache invalidation system  
+✓ No changes needed to `ScheduleTaskRow` component (automatic via RTK Query)
+
+### Related Components
+- `worklenz-frontend/src/hooks/useScheduleSocketHandlers.ts` (UPDATED)
+- `worklenz-frontend/src/components/schedule-old/tabs/withStartAndEndDates/WithStartAndEndDates.tsx` (uses the query)
+- `worklenz-frontend/src/components/schedule/ScheduleTaskRow.tsx` (displays the data)
+- `worklenz-frontend/src/api/schedule/scheduleApi.ts` (defines the query and tags)

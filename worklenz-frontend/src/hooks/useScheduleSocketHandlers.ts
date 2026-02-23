@@ -103,6 +103,7 @@ export const useScheduleSocketHandlers = () => {
         scheduleApi.util.invalidateTags([
           'Members', // Member summary includes logged hours
           'Workload',
+          'TaskTimeline', // Task list includes logged time (total_minutes_spent)
         ])
       );
     };
