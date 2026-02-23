@@ -436,6 +436,21 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
           });
         }
       }
+
+      // Set progress_value = 100 for all tasks that are in a "Done" status category
+      const progressUpdateQ = `
+        UPDATE tasks
+        SET progress_value = 100, manual_progress = TRUE
+        WHERE project_id = $1
+          AND status_id IN (
+            SELECT ts.id
+            FROM task_statuses ts
+            JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
+            WHERE ts.project_id = $1
+              AND stsc.is_done IS TRUE
+          )
+      `;
+      await db.query(progressUpdateQ, [project_id]);
     } catch (error) {
       log_error(error);
     }
@@ -802,6 +817,21 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
           await db.query(updateQ, [newParentId, newId]);
         }
       }
+
+      // Set progress_value = 100 for all tasks that are in a "Done" status category
+      const progressUpdateQ = `
+        UPDATE tasks
+        SET progress_value = 100, manual_progress = TRUE
+        WHERE project_id = $1
+          AND status_id IN (
+            SELECT ts.id
+            FROM task_statuses ts
+            JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
+            WHERE ts.project_id = $1
+              AND stsc.is_done IS TRUE
+          )
+      `;
+      await db.query(progressUpdateQ, [project_id]);
     } catch (error) {
       log_error(error);
     }
