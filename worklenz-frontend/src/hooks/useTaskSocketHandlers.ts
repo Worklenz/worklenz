@@ -822,6 +822,37 @@ export const useTaskSocketHandlers = () => {
     if (!data || !data.assigneeIds) return;
   }, []);
 
+  // Handler for billable status changes
+  const handleBillableChange = useCallback(
+    (data: { id: string; billable: boolean; error?: string }) => {
+      if (!data || data.error) return;
+
+      // Update the task drawer if this task is currently open
+      const state = store.getState();
+      const currentTaskId = state.taskDrawerReducer?.selectedTaskId;
+      
+      if (currentTaskId === data.id) {
+        // Import the action dynamically to avoid circular dependencies
+        import('@/features/task-drawer/task-drawer.slice').then(({ setTaskBillable }) => {
+          dispatch(setTaskBillable({ id: data.id, billable: data.billable }));
+        });
+      }
+
+      // Update the task-management slice for task-list-v2 components
+      const currentTask = state.taskManagement.entities[data.id];
+      if (currentTask) {
+        const updatedTask: Task = {
+          ...currentTask,
+          billable: data.billable,
+          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        dispatch(updateTask(updatedTask));
+      }
+    },
+    [dispatch]
+  );
+
   // Handler for timer start events
   const handleTimerStart = useCallback(
     (data: string) => {
@@ -965,6 +996,7 @@ export const useTaskSocketHandlers = () => {
     const eventHandlers = [
       { event: SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), handler: handleAssigneesUpdate },
       { event: SocketEvents.TASK_ASSIGNEES_CHANGE.toString(), handler: handleTaskAssigneesChange },
+      { event: SocketEvents.TASK_BILLABLE_CHANGE.toString(), handler: handleBillableChange },
       { event: SocketEvents.TASK_LABELS_CHANGE.toString(), handler: handleLabelsChange },
       { event: SocketEvents.CREATE_LABEL.toString(), handler: handleLabelsChange },
       { event: SocketEvents.TASK_STATUS_CHANGE.toString(), handler: handleTaskStatusChange },
@@ -1017,6 +1049,7 @@ export const useTaskSocketHandlers = () => {
     socket,
     handleAssigneesUpdate,
     handleTaskAssigneesChange,
+    handleBillableChange,
     handleLabelsChange,
     handleTaskStatusChange,
     handleTaskProgress,
