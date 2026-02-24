@@ -323,7 +323,7 @@ const ProjectViewHeader = memo(() => {
           <Tag
             key="category"
             color={selectedProject.category_color || colors.vibrantOrange}
-            style={{ borderRadius: 24, paddingInline: 8, margin: 0 }}
+            style={{ borderRadius: 24, paddingInline: 8, margin: 0, color: '#000000' }}
           >
             {selectedProject.category_name}
           </Tag>
