@@ -525,7 +525,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                (SELECT COUNT(*) FROM tasks WHERE archived IS FALSE AND project_id = project_members.project_id AND id IN (SELECT task_id FROM tasks_assignees WHERE tasks_assignees.project_member_id = project_members.id)) AS all_tasks_count,
                (SELECT COUNT(*) FROM tasks WHERE archived IS FALSE AND project_id = project_members.project_id AND id IN (SELECT task_id FROM tasks_assignees WHERE tasks_assignees.project_member_id = project_members.id) AND status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_done IS TRUE))) AS completed_tasks_count,
                EXISTS(SELECT email FROM email_invitations WHERE team_member_id = project_members.team_member_id AND email_invitations.team_id = $2) AS pending_invitation,
-               (SELECT project_access_levels.name FROM project_access_levels WHERE project_access_levels.id = project_members.project_access_level_id) AS access,
+               COALESCE((SELECT name FROM roles WHERE id = tm.role_id), 'Member') AS access,
                (SELECT name FROM job_titles WHERE id = tm.job_title_id) AS job_title
         FROM project_members
         INNER JOIN team_members tm ON project_members.team_member_id = tm.id
@@ -1066,7 +1066,6 @@ export default class ProjectsController extends WorklenzControllerBase {
 
     const q2 = `SELECT update_existing_phase_sort_order($1)`;
     await db.query(q2, [JSON.stringify(body)]);
-    // return phases;
 
   }
 
