@@ -646,11 +646,21 @@ VALUES ($1, $2, $3);`;
    */
   @HandleExceptions()
   public static async handleCardAddResponse(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // CRITICAL: Log immediately at entry point
+    console.log("=".repeat(80));
+    console.log("[DirectPay Webhook] *** WEBHOOK CALLED ***");
+    console.log("[DirectPay Webhook] Timestamp:", new Date().toISOString());
+    console.log("[DirectPay Webhook] Method:", req.method);
+    console.log("[DirectPay Webhook] URL:", req.url);
+    console.log("[DirectPay Webhook] Original URL:", req.originalUrl);
+    console.log("=".repeat(80));
+    
     const responseData = req.body;
 
     // Log the full response for debugging
     console.log("[DirectPay Webhook] Received card-response callback:", JSON.stringify(responseData, null, 2));
     console.log("[DirectPay Webhook] Headers:", JSON.stringify(req.headers, null, 2));
+    console.log("[DirectPay Webhook] Query params:", JSON.stringify(req.query, null, 2));
 
     // DirectPay may send walletId at top level or nested under card
     const walletId = responseData?.walletId || responseData?.card?.walletId;
