@@ -703,12 +703,13 @@ export const useTaskSocketHandlers = () => {
 
   const handleNewTaskReceived = useCallback(
     (response: any) => {
-      // Use enhanced kanban grouping if available, otherwise fall back to task-management grouping
-      const currentGrouping = enhancedKanbanGroupBy || currentGroupingV3;
-
+      // Update BOTH task-management slice (for task list) AND enhanced kanban slice
+      // They should work independently with their own grouping settings
+      
       handleTaskReceivedUtil(response, {
         dispatch,
-        currentGroupingV3: currentGrouping,
+        currentGroupingV3: currentGroupingV3,
+        enhancedKanbanGroupBy: enhancedKanbanGroupBy,
         trackEvent: trackMixpanelEvent,
         subtaskEventName: evt_project_task_list_create_subtask,
         taskEventName: evt_project_task_create,
