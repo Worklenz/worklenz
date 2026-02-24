@@ -146,6 +146,19 @@ const taskDrawerSlice = createSlice({
         state.taskFormViewModel.task.schedule_id = schedule_id;
       }
     },
+    setTaskBillable: (
+      state,
+      action: PayloadAction<{
+        id: string;
+        billable: boolean;
+      }>
+    ) => {
+      if (!action.payload) return;
+      const { id, billable } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === id) {
+        state.taskFormViewModel.task.billable = billable;
+      }
+    },
     setNavigationContext: (
       state,
       action: PayloadAction<{
@@ -218,6 +231,7 @@ export const {
   setTaskSubscribers,
   setTimeLogEditing,
   setTaskRecurringSchedule,
+  setTaskBillable,
   setNavigationContext,
   navigateToNextTask,
   navigateToPreviousTask,

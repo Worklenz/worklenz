@@ -279,11 +279,22 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
     // which clears taskFormViewModel in Redux. So when the drawer reopens the
     // task, every field (phase, priority, labels, assignees, due date,
     // estimation) shows blank until the API round-trip completes again.
-    if (!selectedTaskId) return;
+    if (!selectedTaskId) {
+      // Reset the prevTaskIdRef when drawer closes
+      prevTaskIdRef.current = null;
+      return;
+    }
 
-    // Also skip if it's the same task ID (e.g. a forced re-render) to avoid
-    // unnecessary API calls while the drawer is already showing that task.
-    if (selectedTaskId === prevTaskIdRef.current) return;
+    // Check if we need to fetch data:
+    // 1. If it's a different task than before, OR
+    // 2. If it's the same task but taskFormViewModel is empty (drawer was closed and reopened)
+    const isDifferentTask = selectedTaskId !== prevTaskIdRef.current;
+    const isDataMissing = !taskFormViewModel || !taskFormViewModel.task;
+    
+    if (!isDifferentTask && !isDataMissing) {
+      // Same task and data is already loaded, skip fetch
+      return;
+    }
 
     prevTaskIdRef.current = selectedTaskId;
 
@@ -302,7 +313,7 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
       selectedFilesRef.current = [];
       setTaskComments([]);
     };
-  }, [selectedTaskId, projectId]);
+  }, [selectedTaskId, projectId, taskFormViewModel]);
 
   return (
     <Skeleton active loading={loadingTask}>
