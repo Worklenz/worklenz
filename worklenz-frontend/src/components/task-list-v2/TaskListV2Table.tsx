@@ -1105,7 +1105,15 @@ const TaskListV2Section: React.FC = () => {
                           // Create resize indicator line
                           const indicator = document.createElement('div');
                           indicator.className = 'column-resize-indicator';
-                          tableContainer.style.position = 'relative';
+                          
+                          // Ensure the container has position relative for absolute positioning
+                          const originalPosition = tableContainer.style.position;
+                          if (!originalPosition || originalPosition === 'static') {
+                            tableContainer.style.position = 'relative';
+                          }
+                          
+                          // Set indicator to span full height of container
+                          indicator.style.height = '100%';
                           tableContainer.appendChild(indicator);
 
                           // Create tooltip
@@ -1183,6 +1191,13 @@ const TaskListV2Section: React.FC = () => {
                             document.body.style.cursor = '';
                             document.body.style.userSelect = '';
                             document.body.classList.remove('column-resizing');
+                            
+                            // Restore original position style
+                            if (originalPosition) {
+                              tableContainer.style.position = originalPosition;
+                            } else {
+                              tableContainer.style.position = '';
+                            }
 
                             // Remove indicator and tooltip
                             if (indicator.parentNode) {
