@@ -16,7 +16,6 @@ interface AddTaskRowProps {
     width: string;
     isSticky?: boolean;
   }>;
-  onTaskAdded: (rowId: string) => void;
   rowId: string; // Unique identifier for this add task row
   autoFocus?: boolean; // Whether this row should auto-focus on mount
 }
@@ -28,7 +27,6 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
     groupValue,
     projectId,
     visibleColumns,
-    onTaskAdded,
     rowId,
     autoFocus = false,
   }) => {
@@ -85,8 +83,10 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
         if (socket && connected) {
           socket.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
           setTaskName('');
-          // Keep the input active and notify parent to create new row
-          onTaskAdded(rowId);
+          // Keep the input focused and ready for the next task - don't create new rows
+          setTimeout(() => {
+            inputRef.current?.focus();
+          }, 100);
           // Task refresh will be handled by socket response listener
         } else {
           console.warn('Socket not connected, unable to create task');
@@ -102,8 +102,6 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
       socket,
       connected,
       currentSession,
-      onTaskAdded,
-      rowId,
     ]);
 
     const handleCancel = useCallback(() => {
