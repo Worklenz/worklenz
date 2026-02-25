@@ -293,7 +293,6 @@ const TaskListV2Section: React.FC = () => {
 
   // State hooks
   const [initializedFromDatabase, setInitializedFromDatabase] = useState(false);
-  const [addTaskRows, setAddTaskRows] = useState<{ [groupId: string]: string[] }>({});
   const columnReorderStorageKey = urlProjectId
     ? `worklenz.taskList.columnOrder.${urlProjectId}`
     : null;
@@ -692,25 +691,6 @@ const TaskListV2Section: React.FC = () => {
     [dispatch, visibleColumns]
   );
 
-  // Add callback for task added
-  const handleTaskAdded = useCallback((rowId: string) => {
-    // Task is now added in real-time via socket, no need to refetch
-    // The global socket handler will handle the real-time update
-
-    // Find the group this row belongs to
-    const groupId = rowId.split('-')[2]; // Extract from rowId format: add-task-{groupId}-{index}
-
-    // Add a new add task row to this group
-    setAddTaskRows(prev => {
-      const currentRows = prev[groupId] || [];
-      const newRowId = `add-task-${groupId}-${currentRows.length + 1}`;
-      return {
-        ...prev,
-        [groupId]: [...currentRows, newRowId],
-      };
-    });
-  }, []);
-
   // Handle scroll synchronization - disabled since header is now sticky inside content
   const handleContentScroll = useCallback(() => {
     // No longer needed since header scrolls naturally with content
@@ -764,10 +744,9 @@ const TaskListV2Section: React.FC = () => {
       }));
 
       // Get add task rows for this group
-      const groupAddRows = addTaskRows[group.id] || [];
       const addTaskItems = !isCurrentGroupCollapsed
         ? [
-            // Default add task row
+            // Single add task row per group - reused for all tasks
             {
               id: `add-task-${group.id}-0`,
               isAddTaskRow: true,
@@ -778,17 +757,6 @@ const TaskListV2Section: React.FC = () => {
               rowId: `add-task-${group.id}-0`,
               autoFocus: false,
             },
-            // Additional add task rows
-            ...groupAddRows.map((rowId, index) => ({
-              id: rowId,
-              isAddTaskRow: true,
-              groupId: group.id,
-              groupType: currentGrouping || 'status',
-              groupValue: group.id, // Send the UUID that backend expects
-              projectId: urlProjectId,
-              rowId: rowId,
-              autoFocus: index === groupAddRows.length - 1, // Auto-focus the latest row
-            })),
           ]
         : [];
 
@@ -807,7 +775,7 @@ const TaskListV2Section: React.FC = () => {
       currentTaskIndex += itemsWithAddTask.length;
       return groupData;
     });
-  }, [groups, allTasks, collapsedGroups, currentGrouping, urlProjectId, addTaskRows]);
+  }, [groups, allTasks, collapsedGroups, currentGrouping, urlProjectId]);
 
   const virtuosoGroupCounts = useMemo(() => {
     return virtuosoGroups.map(group => group.count);
@@ -860,7 +828,6 @@ const TaskListV2Section: React.FC = () => {
             groupValue={item.groupValue}
             projectId={urlProjectId}
             visibleColumns={visibleColumns}
-            onTaskAdded={handleTaskAdded}
             rowId={item.rowId}
             autoFocus={item.autoFocus}
           />
@@ -877,7 +844,7 @@ const TaskListV2Section: React.FC = () => {
         />
       );
     },
-    [virtuosoItems, visibleColumns, urlProjectId, handleTaskAdded, updateTaskCustomColumnValue]
+    [virtuosoItems, visibleColumns, urlProjectId, updateTaskCustomColumnValue]
   );
 
   // Render column headers
@@ -1287,19 +1254,7 @@ const TaskListV2Section: React.FC = () => {
   if (groups.length === 0 && !loading) {
     // If grouped by phase, show an unmapped group to allow task creation
     if (currentGrouping === 'phase') {
-      const unmappedGroup = {
-        id: 'Unmapped',
-        title: 'Unmapped',
-        groupType: 'phase',
-        groupValue: 'Unmapped', // Use same ID as groupValue for consistency
-        collapsed: false,
-        tasks: [],
-        taskIds: [],
-        color: '#fbc84c69',
-        actualCount: 0,
-        count: 1, // For the add task row
-        startIndex: 0,
-      };
+      const unmappedGroupId = 'Unmapped';
 
       return (
         <DndContext
@@ -1340,7 +1295,7 @@ const TaskListV2Section: React.FC = () => {
                   <div className="mt-2">
                     <TaskGroupHeader
                       group={{
-                        id: 'Unmapped',
+                        id: unmappedGroupId,
                         name: 'Unmapped',
                         count: 0,
                         color: '#fbc84c69',
@@ -1349,14 +1304,14 @@ const TaskListV2Section: React.FC = () => {
                       onToggle={() => {}}
                       projectId={urlProjectId || ''}
                     />
+                    {/* Single add task row - reused for all tasks */}
                     <AddTaskRow
-                      groupId="Unmapped"
+                      groupId={unmappedGroupId}
                       groupType="phase"
                       groupValue="Unmapped"
                       projectId={urlProjectId || ''}
                       visibleColumns={visibleColumns}
-                      onTaskAdded={handleTaskAdded}
-                      rowId="add-task-Unmapped-0"
+                      rowId={`add-task-${unmappedGroupId}-0`}
                       autoFocus={false}
                     />
                   </div>
