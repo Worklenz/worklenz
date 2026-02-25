@@ -54,7 +54,7 @@
   "weightedProgressTooltip": "Calculate progress based on subtask weights",
   "timeProgress": "Time-based Progress",
   "timeProgressTooltip": "Calculate progress based on estimated time",
-  "autoAssignTaskCreator": "Assign tasks to creator",
+  "autoAssignTaskCreator": "Auto-Task Assign",
   "autoAssignTaskCreatorTooltip": "When enabled, tasks are automatically assigned to the person who creates them",
   "generalTab": "General",
   "advancedSettingsTab": "Advanced Settings",
