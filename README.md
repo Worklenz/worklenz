@@ -23,7 +23,7 @@
         <img src="https://img.shields.io/github/issues/Worklenz/worklenz" alt="Issues">
     </a>
     <a href="https://discord.com/invite/6Qmm839mgr">
-        <img src="https://img.shields.io/discord/1202616582757556276?style=flat&logo=discord&logoColor=white&label=Discord&color=5865F2" alt="Issues">
+        <img src="https://img.shields.io/discord/1202616582757556276?style=flat&logo=discord&logoColor=white&label=Discord&color=5865F2" alt="Discord">
     </a>
 </p>
 
@@ -74,34 +74,34 @@ Prefer full control over your data? Run Worklenz on your own server.
 
 <div align="center">
 
-[![Task List View](https://tinyurl.com/2cd35sk2)](https://worklenz.com/features/task-management/)
+[![Task List View](https://tinyurl.com/2cd35sk2)](https://worklenz.com/task-management/)
 _**Task Management Task List View**_
 
-[![Kanban Board View](https://tinyurl.com/253o4fp7)](https://worklenz.com/features/time-tracking/)
+[![Kanban Board View](https://tinyurl.com/253o4fp7)](https://worklenz.com/task-management/)
 _**Task Management Kanban View**_
 
-[![Resource Management](https://tinyurl.com/228kgt26)](https://worklenz.com/features/templates/)
+[![Resource Management](https://tinyurl.com/228kgt26)](https://worklenz.com/resource-management/)
 _**Resource Management**_
 
-[![Project and Task Templates](https://tinyurl.com/2are8yqt)](https://worklenz.com/features/analytics/)
+[![Project and Task Templates](https://tinyurl.com/2are8yqt)](https://worklenz.com/project-templates/)
 _**Projects & Tasks Templates**_
 
-[![Time Tracking](https://tinyurl.com/28t2gryx)](https://worklenz.com/features/templates/)
+[![Time Tracking](https://tinyurl.com/28t2gryx)](https://worklenz.com/time-tracking/)
 _**Time Tracking**_
 
-[![Advanced Insghts](https://tinyurl.com/23lxzxx9)](https://worklenz.com/features/templates/)
+[![Advanced Insghts](https://tinyurl.com/23lxzxx9)](https://worklenz.com/analytics/)
 _**Project Insights**_
 
-[![Team Utilization](https://tinyurl.com/2xox9a9v)](https://worklenz.com/features/templates/)
+[![Team Utilization](https://tinyurl.com/2xox9a9v)](https://worklenz.com/team-utilization/)
 _**Team Utilization**_
 
-[![Scheduler](https://tinyurl.com/239vjndh)](https://worklenz.com/features/templates/)
+[![Scheduler](https://tinyurl.com/239vjndh)](https://worklenz.com/timesheets/)
 _**Scheduler**_
 
-[![Scheduler](https://tinyurl.com/2y4husx3)](https://worklenz.com/features/resource-management/)
+[![Scheduler](https://tinyurl.com/2y4husx3)](https://worklenz.com/project-finance/)
 _**Project Profitability Monitor**_
 
-[![Templates](https://tinyurl.com/2yepbyt2)](https://worklenz.com/features/templates/)
+[![Templates](https://tinyurl.com/2yepbyt2)](https://worklenz.com/client-portal/)
 _**Client Portal**_
 </div>
 </br>
@@ -260,7 +260,7 @@ npm run dev
 
 ### 🏠 Local Development
 
-For local development, follow the [Quick Start (Docker)](#-quick-start-docker---recommended) section above.
+For local development, follow the [Quick Start (Docker)](#-quick-start-docker-recommended) section above.
 
 ### 🌍 Production Deployment
 
@@ -438,7 +438,7 @@ Please read [CONTRIBUTING.md](https://github.com/Worklenz/worklenz/blob/main/CON
 </br>
 
 ## Contributors
-Thanks to everyone who has made Worklenz better! 💙
+Thanks to everyone who has contributed to Worklenz! 💙
 
 [![Contributors](https://contrib.rocks/image?repo=Worklenz/worklenz)](https://github.com/Worklenz/worklenz/graphs/contributors)
 </br>
