@@ -52,8 +52,9 @@ Prefer full control over your data? Run Worklenz on your own server.
 
 | Method | Guide |
 |--------|-------|
-| 🐳 Docker (Recommended) | [Quick Docker Setup](#-getting-started) | 
-| 🔧 Manual Installation | [Manual Dev Setup](#-manual-installation-for-development) |
+| 🐳 Docker (Recommended) | [Quick Docker Setup](#quick-start-docker) | 
+| 🔧 Manual Installation | [Manual Dev Setup](#manual-installation) |
+
 </br>
 
 ## 🌟 Features
@@ -74,22 +75,22 @@ Prefer full control over your data? Run Worklenz on your own server.
 
 <div align="center">
 
-[![Task List View](https://tinyurl.com/2cd35sk2)](https://worklenz.com/task-management/)
+[![Task Management Task List View](https://tinyurl.com/2cd35sk2)](https://worklenz.com/task-management/)
 _**Task Management Task List View**_
 
-[![Kanban Board View](https://tinyurl.com/253o4fp7)](https://worklenz.com/task-management/)
+[![Task Management Kanban View](https://tinyurl.com/253o4fp7)](https://worklenz.com/task-management/)
 _**Task Management Kanban View**_
 
 [![Resource Management](https://tinyurl.com/228kgt26)](https://worklenz.com/resource-management/)
 _**Resource Management**_
 
-[![Project and Task Templates](https://tinyurl.com/2are8yqt)](https://worklenz.com/project-templates/)
+[![Projects & Tasks Templates](https://tinyurl.com/2are8yqt)](https://worklenz.com/project-templates/)
 _**Projects & Tasks Templates**_
 
 [![Time Tracking](https://tinyurl.com/28t2gryx)](https://worklenz.com/time-tracking/)
 _**Time Tracking**_
 
-[![Advanced Insghts](https://tinyurl.com/23lxzxx9)](https://worklenz.com/analytics/)
+[![Project Insights](https://tinyurl.com/23lxzxx9)](https://worklenz.com/analytics/)
 _**Project Insights**_
 
 [![Team Utilization](https://tinyurl.com/2xox9a9v)](https://worklenz.com/team-utilization/)
@@ -98,10 +99,10 @@ _**Team Utilization**_
 [![Scheduler](https://tinyurl.com/239vjndh)](https://worklenz.com/timesheets/)
 _**Scheduler**_
 
-[![Scheduler](https://tinyurl.com/2y4husx3)](https://worklenz.com/project-finance/)
+[![Project Profitability Monitor](https://tinyurl.com/2y4husx3)](https://worklenz.com/project-finance/)
 _**Project Profitability Monitor**_
 
-[![Templates](https://tinyurl.com/2yepbyt2)](https://worklenz.com/client-portal/)
+[![Client Portal](https://tinyurl.com/2yepbyt2)](https://worklenz.com/client-portal/)
 _**Client Portal**_
 </div>
 </br>
@@ -135,6 +136,7 @@ _**Client Portal**_
 Explore Worklenz's [product documentation](https://docs.worklenz.com/en/start/introduction/) to learn about features, setup, and usage and more.
 </br>
 
+<a id="quick-start-docker"></a>
 ### 🐳 Quick Start (Docker — Recommended)
 
 The fastest way to get Worklenz running locally with all dependencies included. This setup includes **production-ready features** like nginx reverse proxy, SSL/TLS support, Redis caching, and automated backups.
@@ -193,6 +195,7 @@ docker compose --profile express up -d
 
 **Video Guide**: For a visual walkthrough of the local Docker deployment process, check out our [step-by-step video guide](https://www.youtube.com/watch?v=AfwAKxJbqLg).
 
+<a id="manual-installation"></a>
 ### 🛠️ Manual Installation (For Development)
 
 For developers who want to run the services individually or customize the setup.
@@ -260,7 +263,7 @@ npm run dev
 
 ### 🏠 Local Development
 
-For local development, follow the [Quick Start (Docker)](#-quick-start-docker-recommended) section above.
+For local development, follow the [Quick Start (Docker)](#quick-start-docker) section above.
 
 ### 🌍 Production Deployment
 
