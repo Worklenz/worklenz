@@ -52,6 +52,7 @@ export const evt_project_sub_task_duplicate = 'project_sub_task_duplicate';
 export const evt_project_task_create = 'project_task_create';
 export const evt_project_invite_members_click = 'project_invite_members_click';
 export const evt_project_invite_members = 'project_invite_members';
+export const evt_project_invite_sent = 'project_invite_sent';
 export const evt_project_refresh_click = 'project_refresh_click';
 export const evt_project_settings_click = 'project_settings_click';
 export const evt_project_import_tasks_click = 'project_import_tasks_click';
@@ -79,6 +80,8 @@ export const evt_project_board_create_task_click = 'project_board_create_task_cl
 // Task List Management
 export const evt_project_task_list_visit = 'project_task_list_visit';
 export const evt_project_task_list_show_archived = 'project_task_list_show_archived';
+export const evt_task_completed = 'task_completed';
+export const evt_task_assigned = 'task_assigned';
 export const evt_project_task_list_bulk_change_status = 'project_task_list_bulk_change_status';
 export const evt_project_task_list_bulk_change_priority = 'project_task_list_bulk_change_priority';
 export const evt_project_task_list_bulk_change_phase = 'project_task_list_bulk_change_phase';
@@ -101,6 +104,7 @@ export const evt_project_task_list_search_task = 'project_task_list_search_task'
 
 // Team & People Management
 export const evt_people_page_visit = 'people_page_visit';
+export const evt_team_invite_sent = 'team_invite_sent';
 export const evt_people_refresh_click = 'people_refresh_click';
 export const evt_people_search = 'people_search';
 export const evt_people_create_click = 'people_create_click';
@@ -174,6 +178,21 @@ export const evt_billing_view_plans_modal = 'billing_view_plans_modal';
 export const evt_billing_pause_plan = 'billing_pause_plan';
 export const evt_billing_resume_plan = 'billing_resume_plan';
 export const evt_billing_add_more_seats = 'billing_add_more_seats';
+export const evt_business_trial_upgrade_nav_bar = 'business_trial_upgrade_nav_bar';
+export const evt_billing_profile_dropdown_click = 'billing_profile_dropdown_click';
+export const evt_upgrade_plan_click = 'upgrade_plan_click';
+export const evt_current_bill_click = 'current_bill_click';
+export const evt_billing_configuration_click = 'billing_configuration_click';
+export const evt_trial_converted = 'trial_converted';
+
+// Client Portal
+export const evt_client_portal_share = 'client_portal_share';
+
+// Paywall & Restrictions
+export const evt_paywall_hit = 'paywall_hit';
+
+// Signup & Onboarding
+export const evt_signup_completed = 'signup_completed';
 
 // Admin Center
 export const evt_admin_center_teams_visit = 'admin_center_teams_visit';
