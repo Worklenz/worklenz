@@ -43,7 +43,7 @@ Meet [Worklenz](https://worklenz.com), a powerful, open-source project managemen
 ## 🚀 Getting Started
 
 Pick the setup that works best for you:
-</br>
+<br>
 ### ☁️ Worklenz Cloud
 The fastest way to get started - no setup, no infrastructure. Just sign up at [worklenz.com](https://worklenz.com) and start managing projects in minutes.
 
@@ -55,7 +55,7 @@ Prefer full control over your data? Run Worklenz on your own server.
 | 🐳 Docker (Recommended) | [Quick Docker Setup](#quick-start-docker) | 
 | 🔧 Manual Installation | [Manual Dev Setup](#manual-installation) |
 
-</br>
+<br>
 
 ## 🌟 Features
 
@@ -69,7 +69,7 @@ Prefer full control over your data? Run Worklenz on your own server.
 - **🗓️ Resource Management** - Plan team capacity, avoid overallocation, and schedule work with a visual scheduler.
 - **🧩 Project Templates** - Start new projects in seconds using pre-built templates for common workflows.
 - **🤝 Team Collaboration** - Comment on tasks, share files, and keep all communication in context - right where the work is.
-<br></br>
+<br><br>
 
 ## 📸 Screenshots
 
@@ -105,7 +105,7 @@ _**Project Profitability Monitor**_
 [![Client Portal](https://tinyurl.com/2yepbyt2)](https://worklenz.com/client-portal/)
 _**Client Portal**_
 </div>
-</br>
+<br>
 
 ## ⚙️ Tech Stack
 
@@ -134,7 +134,7 @@ _**Client Portal**_
 ## 📝 Documentation
 
 Explore Worklenz's [product documentation](https://docs.worklenz.com/en/start/introduction/) to learn about features, setup, and usage and more.
-</br>
+<br>
 
 <a id="quick-start-docker"></a>
 ### 🐳 Quick Start (Docker — Recommended)
@@ -410,7 +410,7 @@ Worklenz is built with security in mind:
 - 🗝️ Auto-generated secure secrets via `openssl rand -hex 32`
 
 Found a security vulnerability? Please **do not** open a public issue. Email us at [info@worklenz.com](mailto:info@worklenz.com) instead. We take all legitimate reports seriously.
-</br>
+<br>
 
 ## 📈 Analytics
 
@@ -438,13 +438,13 @@ We love contributions from the community! Here's how you can help:
 - 💬 Share Worklenz with your team or write about it
 
 Please read [CONTRIBUTING.md](https://github.com/Worklenz/worklenz/blob/main/CONTRIBUTING.md) before submitting a pull request.
-</br>
+<br>
 
 ## Contributors
 Thanks to everyone who has contributed to Worklenz! 💙
 
 [![Contributors](https://contrib.rocks/image?repo=Worklenz/worklenz)](https://github.com/Worklenz/worklenz/graphs/contributors)
-</br>
+<br>
 
 ## 💙 Community
 Join the Worklenz community:
@@ -454,17 +454,17 @@ Join the Worklenz community:
 - 🐦 Follow updates on our [website](https://worklenz.com)
 
 We follow a [Code of Conduct](https://github.com/Worklenz/worklenz/blob/main/CODE_OF_CONDUCT.md) across all community spaces.
-</br>
+<br>
 
 ## 📄 License
 
 Worklenz is open source, released under the [GNU Affero General Public License v3.0](https://github.com/Worklenz/worklenz/blob/main/LICENSE).
 
 By contributing to Worklenz, you agree your contributions will be licensed under AGPL v3.0.
-</br>
+<br>
 
 ---
-</br>
+<br>
 <div align="center">
   <strong>Built with 💙 by the Worklenz team and amazing contributors around the world.</strong>
   <br/>
