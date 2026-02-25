@@ -97,7 +97,7 @@
   "aboutYouStepName": "Sobre você",
   "yourNeedsStepName": "Suas necessidades",
   "discoveryStepName": "Descoberta",
-  "stepProgress": "Passo {step} de 3: {title}",
+  "stepProgress": "Passo {{step}} de 3: {{title}}",
 
   "projectStepHeader": "Vamos criar seu primeiro projeto",
   "projectStepSubheader": "Comece do zero ou use um modelo para ir mais rápido",
