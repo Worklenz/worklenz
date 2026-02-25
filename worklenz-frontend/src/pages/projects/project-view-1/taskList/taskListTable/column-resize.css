@@ -72,7 +72,6 @@ th.sticky .column-resize-handle {
 .column-resize-indicator {
   position: absolute;
   top: 0;
-  bottom: 0;
   width: 2px;
   background-color: #1890ff;
   pointer-events: none;

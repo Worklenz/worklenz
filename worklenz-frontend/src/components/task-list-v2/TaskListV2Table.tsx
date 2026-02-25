@@ -1112,8 +1112,15 @@ const TaskListV2Section: React.FC = () => {
                             tableContainer.style.position = 'relative';
                           }
                           
-                          // Set indicator to span full height of container
-                          indicator.style.height = '100%';
+                          // Calculate the full scrollable height to span entire table
+                          const scrollHeight = tableContainer.scrollHeight;
+                          const scrollTop = tableContainer.scrollTop;
+                          
+                          // Set indicator to span from current scroll position to end of content
+                          // Use fixed positioning from top of visible area to bottom of scrollable content
+                          indicator.style.top = '0px';
+                          indicator.style.height = `${scrollHeight}px`;
+                          
                           tableContainer.appendChild(indicator);
 
                           // Create tooltip
