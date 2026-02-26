@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { Card, Input, Flex, Checkbox, Button, Typography, Space, Form, message } from '@/shared/antd-imports';
 import { Rule } from 'antd/es/form';
 
@@ -13,6 +13,7 @@ import PageHeader from '@components/AuthPageHeader';
 import googleIcon from '@assets/images/google-icon.png';
 import appleIcon from '@assets/images/apple-icon.svg';
 import { login, verifyAuthentication } from '@/features/auth/authSlice';
+import { setActiveTeam } from '@/features/teams/teamSlice';
 import logger from '@/utils/errorLogger';
 import { setUser } from '@/features/user/userSlice';
 import { setSession } from '@/utils/session-helper';
@@ -49,41 +50,43 @@ const LoginPage: React.FC = () => {
   const currentSession = useAuthService().getCurrentSession();
   const [urlParams, setUrlParams] = useState({
     teamId: '',
+    userId: '',
     projectId: '',
   });
 
   const enableGoogleLogin = import.meta.env.VITE_ENABLE_GOOGLE_LOGIN === 'true' || false;
   const enableAppleLogin = import.meta.env.VITE_ENABLE_APPLE_LOGIN === 'true' || false;
 
+  // Use ref to prevent multiple executions of auth check
+  const hasCheckedAuth = useRef(false);
+
   useDocumentTitle('Login');
 
-  const validationRules = {
-    email: [
-      { required: true, message: t('emailRequired') },
-      { type: 'email', message: t('validationMessages.email') },
-    ],
-    password: [
-      { required: true, message: t('passwordRequired') },
-      { min: 8, message: t('validationMessages.password') },
-    ],
-  };
-
-  const verifyAuthStatus = async () => {
-    try {
-      const session = await dispatch(verifyAuthentication()).unwrap();
-
-      if (session?.authenticated) {
-        setSession(session.user);
-        dispatch(setUser(session.user));
-        navigate('/worklenz/home');
-      }
-    } catch (error) {
-      logger.error('Failed to verify authentication status', error);
-    }
-  };
-
+  // Extract invitation parameters and verify auth status
   useEffect(() => {
-    // Check and unregister ngsw-worker if present
+    // Prevent multiple executions
+    if (hasCheckedAuth.current) {
+      return;
+    }
+    hasCheckedAuth.current = true;
+
+    // First, extract invitation parameters from URL
+    const searchParams = new URLSearchParams(window.location.search);
+    const teamId = searchParams.get('team') || '';
+    const userId = searchParams.get('user') || '';
+    const projectId = searchParams.get('project') || '';
+
+    if (teamId || userId || projectId) {
+      console.log('[LoginPage] Found invitation parameters:', { teamId, userId, projectId });
+      setUrlParams({ teamId, userId, projectId });
+      
+      // Store project ID for redirect after login
+      if (projectId) {
+        localStorage.setItem(WORKLENZ_REDIRECT_PROJ_KEY, projectId);
+      }
+    }
+
+    // Then, check and unregister ngsw-worker if present
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function (registrations) {
         const ngswWorker = registrations.find(reg => reg.active?.scriptURL.includes('ngsw-worker'));
@@ -100,8 +103,65 @@ const LoginPage: React.FC = () => {
       navigate('/worklenz/setup');
       return;
     }
-    void verifyAuthStatus();
-  }, [dispatch, navigate, trackMixpanelEvent]);
+    
+    // Verify auth status with the extracted params
+    const checkAuth = async () => {
+      try {
+        const session = await dispatch(verifyAuthentication()).unwrap();
+
+        if (session?.authenticated) {
+          setSession(session.user);
+          dispatch(setUser(session.user));
+          
+          // Check if user came from invitation link
+          if (teamId && projectId) {
+            console.log('[LoginPage] User already logged in with invitation params');
+            console.log('[LoginPage] Attempting to switch to invited team');
+            
+            // Try to switch to the invited team
+            // If successful, user is already a member - redirect to project
+            // If fails, user is not a member yet - redirect to home with message
+            try {
+              await dispatch(setActiveTeam(teamId)).unwrap();
+              console.log('[LoginPage] Successfully switched to invited team, redirecting to project');
+              
+              // User is already a member, redirect to project
+              window.location.href = `/worklenz/projects/${projectId}`;
+            } catch (error) {
+              console.error('[LoginPage] Could not switch team - user is not a member yet:', error);
+              
+              // User is not a member yet, redirect to home with message
+              message.info('Please check your notifications to accept the team invitation.');
+              
+              // Redirect after showing message
+              setTimeout(() => {
+                window.location.href = '/worklenz/home';
+              }, 2000);
+            }
+          } else {
+            // No invitation params, redirect to home
+            window.location.href = '/worklenz/home';
+          }
+        }
+      } catch (error) {
+        logger.error('Failed to verify authentication status', error);
+      }
+    };
+    
+    void checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array - only run once on mount
+
+  const validationRules = {
+    email: [
+      { required: true, message: t('emailRequired') },
+      { type: 'email', message: t('validationMessages.email') },
+    ],
+    password: [
+      { required: true, message: t('passwordRequired') },
+      { min: 8, message: t('validationMessages.password') },
+    ],
+  };
 
   const onFinish = useCallback(
     async (values: LoginFormValues) => {
@@ -109,15 +169,27 @@ const LoginPage: React.FC = () => {
         trackMixpanelEvent(evt_login_page_login);
         trackMixpanelEvent(evt_login_with_email_click);
 
-        // if (teamId) {
-        //   localStorage.setItem(WORKLENZ_REDIRECT_PROJ_KEY, teamId);
-        // }
+        // Store project ID for redirect after login if present
+        if (urlParams.projectId) {
+          localStorage.setItem(WORKLENZ_REDIRECT_PROJ_KEY, urlParams.projectId);
+          console.log('[LoginPage] Stored project ID for redirect:', urlParams.projectId);
+        }
 
         // Normalize email to lowercase for case-insensitive comparison
         const normalizedValues = {
           ...values,
           email: values.email.toLowerCase().trim(),
+          // Include invitation parameters in login request
+          team_id: urlParams.teamId || undefined,
+          team_member_id: urlParams.userId || undefined,
+          project_id: urlParams.projectId || undefined,
         };
+
+        console.log('[LoginPage] Logging in with invitation params:', {
+          teamId: urlParams.teamId,
+          userId: urlParams.userId,
+          projectId: urlParams.projectId
+        });
 
         const result = await dispatch(login(normalizedValues)).unwrap();
         if (result.authenticated) {
@@ -134,28 +206,46 @@ const LoginPage: React.FC = () => {
         );
       }
     },
-    [dispatch, navigate, t, trackMixpanelEvent]
+    [dispatch, navigate, t, trackMixpanelEvent, urlParams]
   );
 
   const handleGoogleLogin = useCallback(() => {
     try {
       trackMixpanelEvent(evt_login_page_login);
       trackMixpanelEvent(evt_login_with_google_click);
-      window.location.href = `${import.meta.env.VITE_API_URL}/secure/google`;
+      
+      // Include invitation parameters in Google OAuth redirect
+      const params = new URLSearchParams();
+      if (urlParams.teamId) params.append('team', urlParams.teamId);
+      if (urlParams.userId) params.append('teamMember', urlParams.userId);
+      if (urlParams.projectId) params.append('project', urlParams.projectId);
+      
+      const queryString = params.toString();
+      const url = `${import.meta.env.VITE_API_URL}/secure/google${queryString ? `?${queryString}` : ''}`;
+      window.location.href = url;
     } catch (error) {
       logger.error('Google login failed', error);
     }
-  }, [trackMixpanelEvent, t]);
+  }, [trackMixpanelEvent, urlParams]);
 
   const handleAppleLogin = useCallback(() => {
     try {
       trackMixpanelEvent(evt_login_page_login);
       trackMixpanelEvent(evt_login_with_apple_click);
-      window.location.href = `${import.meta.env.VITE_API_URL}/secure/apple`;
+      
+      // Include invitation parameters in Apple OAuth redirect
+      const params = new URLSearchParams();
+      if (urlParams.teamId) params.append('team', urlParams.teamId);
+      if (urlParams.userId) params.append('teamMember', urlParams.userId);
+      if (urlParams.projectId) params.append('project', urlParams.projectId);
+      
+      const queryString = params.toString();
+      const url = `${import.meta.env.VITE_API_URL}/secure/apple${queryString ? `?${queryString}` : ''}`;
+      window.location.href = url;
     } catch (error) {
       logger.error('Apple login failed', error);
     }
-  }, [trackMixpanelEvent]);
+  }, [trackMixpanelEvent, urlParams]);
 
   const handleRememberMeChange = useCallback(
     (checked: boolean) => {
