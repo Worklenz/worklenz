@@ -51,7 +51,7 @@ export const BASE_COLUMNS = [
     width: '250px',
     key: COLUMN_KEYS.LABELS,
     minWidth: '250px',
-    maxWidth: '600px',
+    maxWidth: '350px',
   },
   { id: 'phase', label: 'phaseColumn', width: '120px', key: COLUMN_KEYS.PHASE },
   { id: 'priority', label: 'priorityColumn', width: '120px', key: COLUMN_KEYS.PRIORITY },
