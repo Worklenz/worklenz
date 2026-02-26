@@ -77,7 +77,6 @@ const LoginPage: React.FC = () => {
     const projectId = searchParams.get('project') || '';
 
     if (teamId || userId || projectId) {
-      console.log('[LoginPage] Found invitation parameters:', { teamId, userId, projectId });
       setUrlParams({ teamId, userId, projectId });
       
       // Store project ID for redirect after login
@@ -115,21 +114,15 @@ const LoginPage: React.FC = () => {
           
           // Check if user came from invitation link
           if (teamId && projectId) {
-            console.log('[LoginPage] User already logged in with invitation params');
-            console.log('[LoginPage] Attempting to switch to invited team');
-            
             // Try to switch to the invited team
             // If successful, user is already a member - redirect to project
             // If fails, user is not a member yet - redirect to home with message
             try {
               await dispatch(setActiveTeam(teamId)).unwrap();
-              console.log('[LoginPage] Successfully switched to invited team, redirecting to project');
               
               // User is already a member, redirect to project
               window.location.href = `/worklenz/projects/${projectId}`;
             } catch (error) {
-              console.error('[LoginPage] Could not switch team - user is not a member yet:', error);
-              
               // User is not a member yet, redirect to home with message
               message.info('Please check your notifications to accept the team invitation.');
               
@@ -144,6 +137,9 @@ const LoginPage: React.FC = () => {
           }
         }
       } catch (error) {
+        // Authentication failed or session expired
+        // User is not logged in, so just stay on login page
+        // They can log in with the invitation parameters
         logger.error('Failed to verify authentication status', error);
       }
     };
@@ -172,7 +168,6 @@ const LoginPage: React.FC = () => {
         // Store project ID for redirect after login if present
         if (urlParams.projectId) {
           localStorage.setItem(WORKLENZ_REDIRECT_PROJ_KEY, urlParams.projectId);
-          console.log('[LoginPage] Stored project ID for redirect:', urlParams.projectId);
         }
 
         // Normalize email to lowercase for case-insensitive comparison
@@ -184,12 +179,6 @@ const LoginPage: React.FC = () => {
           team_member_id: urlParams.userId || undefined,
           project_id: urlParams.projectId || undefined,
         };
-
-        console.log('[LoginPage] Logging in with invitation params:', {
-          teamId: urlParams.teamId,
-          userId: urlParams.userId,
-          projectId: urlParams.projectId
-        });
 
         const result = await dispatch(login(normalizedValues)).unwrap();
         if (result.authenticated) {
