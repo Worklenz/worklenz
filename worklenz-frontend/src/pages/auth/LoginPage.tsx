@@ -113,9 +113,8 @@ const LoginPage: React.FC = () => {
           dispatch(setUser(session.user));
           
           // Check if user came from invitation link
-          if (teamId && projectId) {
+          if (teamId) {
             // For already logged-in users, try to switch to the invited team
-            // then redirect to the project
             try {
               // Step 1: Set the invited team as active
               await dispatch(setActiveTeam(teamId)).unwrap();
@@ -124,8 +123,14 @@ const LoginPage: React.FC = () => {
               const updatedSession = await dispatch(verifyAuthentication()).unwrap();
               
               if (updatedSession?.authenticated) {
-                // Step 3: Now redirect to the project with updated session
-                window.location.href = `/worklenz/projects/${projectId}`;
+                // Step 3: Redirect based on whether there's a project ID
+                if (projectId) {
+                  // Redirect to the specific project
+                  window.location.href = `/worklenz/projects/${projectId}`;
+                } else {
+                  // Team-only invitation, redirect to home with the new active team
+                  window.location.href = '/worklenz/home';
+                }
               } else {
                 // Session verification failed after team switch
                 message.error('Failed to update session. Please try again.');

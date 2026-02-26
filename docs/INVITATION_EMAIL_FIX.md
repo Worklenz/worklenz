@@ -332,33 +332,36 @@ setTimeout(() => {
 
 ### Test Case 2: Existing User (Not Logged In) via Invitation ✅ FIXED
 1. Test 1 user invites Test 2 (existing user, not logged in) to a team/project
-2. Test 2 receives invitation email with link containing `?team=xxx&user=yyy&project=zzz`
+2. Test 2 receives invitation email with link containing `?team=xxx&user=yyy&project=zzz` (or just `?team=xxx&user=yyy` for team-only)
 3. Test 2 clicks link and is redirected to login page with parameters
 4. Test 2 enters email and password and logs in
-5. **Expected:** Backend sets active team to invited team during login, Test 2 is redirected to project with correct team context
+5. **Expected:** Backend sets active team to invited team during login, Test 2 is redirected appropriately (to project if projectId exists, or to home if team-only)
 6. **How it works:** 
    - LoginPage extracts invitation parameters from URL
    - Passes `team_id`, `team_member_id`, `project_id` to backend in login request
    - Backend's passport-local-login strategy calls `set_active_team()` before completing login
    - User's session is created with correct active team
-   - AuthenticatingPage redirects to project using stored project ID
+   - If projectId exists: AuthenticatingPage redirects to project using stored project ID
+   - If team-only: AuthenticatingPage redirects to home with new active team
 
 ### Test Case 3: Existing User (Already Logged In) via Invitation ✅ FIXED
 1. Test 1 user invites Test 2 (existing user, already logged in to different team) to a team/project
-2. Test 2 receives invitation email with link containing `?team=xxx&user=yyy&project=zzz`
+2. Test 2 receives invitation email with link containing `?team=xxx&user=yyy&project=zzz` (or just `?team=xxx&user=yyy` for team-only)
 3. Test 2 clicks link while already logged in
-4. **Expected:** Test 2's active team is switched to the invited team, then redirected to the project
+4. **Expected:** Test 2's active team is switched to the invited team, then redirected appropriately
 5. **How it works:**
    - LoginPage detects user is already logged in AND has invitation parameters
    - Step 1: Calls `setActiveTeam(teamId)` to switch to the invited team
    - Step 2: Calls `verifyAuthentication()` again to fetch updated session from backend
    - Step 3: Verifies the session was updated successfully
-   - Step 4: Redirects to project with `window.location.href`
+   - Step 4a: If projectId exists, redirects to project with `window.location.href`
+   - Step 4b: If no projectId (team-only invitation), redirects to home with new active team
    - If team switch fails (user not a team member yet), shows message and redirects to home
    - If user doesn't have project access, the project page will handle the error
 6. **Why this approach:**
    - Sets active team FIRST, then verifies session is updated
    - No arbitrary wait times - verifies the backend actually updated the session
+   - Handles both team+project and team-only invitations
    - Direct redirect to project provides better UX
    - Project page handles access control if user doesn't have project membership
 
@@ -366,7 +369,20 @@ setTimeout(() => {
 1. Test 1 user invites Test 2 to a team/project
 2. Test 2 receives invitation email with link
 3. Test 2 clicks link and logs in with Google/Apple
-4. **Expected:** Test 2 is logged in, active team is set to invited team, redirected to project
+4. **Expected:** Test 2 is logged in, active team is set to invited team, redirected to project (or home if team-only)
+
+### Test Case 5: Team-Only Invitation (No Project) ✅ NEW
+1. Test 1 user invites Test 2 to a team (without specific project)
+2. Test 2 receives invitation email with link containing `?team=xxx&user=yyy` (no project parameter)
+3. **Scenario A - User not logged in:**
+   - Test 2 clicks link and logs in
+   - Backend sets active team during login
+   - User is redirected to home with the invited team active
+4. **Scenario B - User already logged in:**
+   - Test 2 clicks link while logged in
+   - Frontend sets active team and verifies session
+   - User is redirected to home with the invited team active
+5. **Expected:** In both scenarios, the invited team becomes active and user sees home page with correct team context
 
 ## Technical Notes
 
@@ -391,16 +407,30 @@ This database function updates the user's active team in the session.
 
 ## Final Notes
 
+### Supported Invitation Link Formats
+The solution now handles both invitation types:
+
+1. **Team + Project Invitation:**
+   - Format: `?team=xxx&user=yyy&project=zzz`
+   - Behavior: Sets active team and redirects to specific project
+
+2. **Team-Only Invitation:**
+   - Format: `?team=xxx&user=yyy`
+   - Behavior: Sets active team and redirects to home page
+
 ### Code Quality Improvements
 - Removed all console.log statements for production readiness
 - Added proper error handling for authentication failures
 - Users stay on login page if authentication fails (no unexpected redirects)
 - Clean, maintainable code with clear comments
+- Verifies session is updated after team switch (no arbitrary timeouts)
 
 ### Production Ready
 The solution is now production-ready with:
-- ✅ All three user scenarios handled correctly
+- ✅ All user scenarios handled correctly (logged in, not logged in, new user)
+- ✅ Both invitation types supported (team+project, team-only)
 - ✅ No console logs cluttering the browser console
 - ✅ Proper error handling and user feedback
 - ✅ No infinite loops or "Request aborted" errors
+- ✅ Session verification after team switch (no race conditions)
 - ✅ Clean, predictable behavior across all flows
