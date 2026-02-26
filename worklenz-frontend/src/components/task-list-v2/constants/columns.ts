@@ -45,7 +45,14 @@ export const BASE_COLUMNS = [
   { id: 'progress', label: 'progressColumn', width: '120px', key: COLUMN_KEYS.PROGRESS },
   { id: 'status', label: 'statusColumn', width: '120px', key: COLUMN_KEYS.STATUS },
   { id: 'assignees', label: 'assigneesColumn', width: '150px', key: COLUMN_KEYS.ASSIGNEES },
-  { id: 'labels', label: 'labelsColumn', width: '250px', key: COLUMN_KEYS.LABELS },
+  {
+    id: 'labels',
+    label: 'labelsColumn',
+    width: '250px',
+    key: COLUMN_KEYS.LABELS,
+    minWidth: '250px',
+    maxWidth: '600px',
+  },
   { id: 'phase', label: 'phaseColumn', width: '120px', key: COLUMN_KEYS.PHASE },
   { id: 'priority', label: 'priorityColumn', width: '120px', key: COLUMN_KEYS.PRIORITY },
   {
