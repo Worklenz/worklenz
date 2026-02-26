@@ -55,7 +55,10 @@ useEffect(() => {
 ### Fix 2: Handle Already Logged-In Users with Invitation Links
 **File:** `worklenz-frontend/src/pages/auth/LoginPage.tsx`
 
-For already logged-in users who click invitation links, attempt to switch to the invited team. If successful (user is already a member), redirect to project. If failed (user is not a member yet), redirect to home with message. Uses `useRef` to prevent infinite loops:
+For already logged-in users who click invitation links, the code now:
+1. Sets the invited team as active
+2. Waits 1 second for backend session to update
+3. Redirects to the project
 
 ```typescript
 // Use ref to prevent multiple executions of auth check
@@ -78,17 +81,21 @@ useEffect(() => {
 
     if (session?.authenticated) {
       if (teamId && projectId) {
-        // Try to switch to the invited team
+        // For already logged-in users, try to switch to the invited team
+        // then redirect to the project
         try {
+          // Set the invited team as active
           await dispatch(setActiveTeam(teamId)).unwrap();
-          console.log('[LoginPage] Successfully switched to invited team');
           
-          // User is already a member, redirect to project
+          // Wait for the backend to update the session (1 second)
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Redirect to the project
+          // If user doesn't have project access, project page will handle it
           window.location.href = `/worklenz/projects/${projectId}`;
         } catch (error) {
-          console.error('[LoginPage] Could not switch team - user is not a member yet');
-          
-          // User is not a member yet, show message and redirect to home
+          // Could not switch team - user is not a team member yet
+          // Redirect to home with message to accept invitation
           message.info('Please check your notifications to accept the team invitation.');
           
           setTimeout(() => {
@@ -105,13 +112,12 @@ useEffect(() => {
 }, []); // Empty dependency array - only run once on mount
 ```
 
-**Why this approach:**
-- Attempts to switch teams using `setActiveTeam()` API
-- If successful → user is already a member → redirect to project ✅
-- If fails → user is not a member yet → show message and redirect to home ✅
-- Uses `useRef` to prevent infinite loops
-- Empty dependency array ensures effect only runs once
-- Handles both scenarios appropriately
+**How this works:**
+- First sets the active team using `setActiveTeam()` Redux action
+- Waits 1 second for backend to fully update the session
+- Then redirects to the project with `window.location.href`
+- If team switch fails (user not a team member), shows message and redirects to home
+- If user doesn't have project access, the project page will handle the error appropriately
 
 ### Fix 3: Pass Invitation Parameters to Backend During Login
 **File:** `worklenz-frontend/src/pages/auth/LoginPage.tsx`
@@ -341,16 +347,20 @@ setTimeout(() => {
 1. Test 1 user invites Test 2 (existing user, already logged in to different team) to a team/project
 2. Test 2 receives invitation email with link containing `?team=xxx&user=yyy&project=zzz`
 3. Test 2 clicks link while already logged in
-4. **Expected:** 
-   - **If Test 2 is already a member** of the invited team → switches to that team and redirects to project ✅
-   - **If Test 2 is NOT yet a member** → redirects to home with message to accept invitation from notifications ✅
+4. **Expected:** Test 2's active team is switched to the invited team, then redirected to the project
 5. **How it works:**
    - LoginPage detects user is already logged in AND has invitation parameters
-   - Attempts to call `setActiveTeam(teamId)` Redux action
-   - **If successful** → user is already a team member → redirects to project
-   - **If fails** → user needs to accept invitation first → shows message and redirects to home after 2 seconds
-   - Uses `useRef` to prevent infinite loops
-   - Clean error handling with appropriate user feedback
+   - Step 1: Calls `setActiveTeam(teamId)` to switch to the invited team
+   - Step 2: Calls `verifyAuthentication()` again to fetch updated session from backend
+   - Step 3: Verifies the session was updated successfully
+   - Step 4: Redirects to project with `window.location.href`
+   - If team switch fails (user not a team member yet), shows message and redirects to home
+   - If user doesn't have project access, the project page will handle the error
+6. **Why this approach:**
+   - Sets active team FIRST, then verifies session is updated
+   - No arbitrary wait times - verifies the backend actually updated the session
+   - Direct redirect to project provides better UX
+   - Project page handles access control if user doesn't have project membership
 
 ### Test Case 4: OAuth Login via Invitation
 1. Test 1 user invites Test 2 to a team/project

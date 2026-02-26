@@ -114,19 +114,28 @@ const LoginPage: React.FC = () => {
           
           // Check if user came from invitation link
           if (teamId && projectId) {
-            // Try to switch to the invited team
-            // If successful, user is already a member - redirect to project
-            // If fails, user is not a member yet - redirect to home with message
+            // For already logged-in users, try to switch to the invited team
+            // then redirect to the project
             try {
+              // Step 1: Set the invited team as active
               await dispatch(setActiveTeam(teamId)).unwrap();
               
-              // User is already a member, redirect to project
-              window.location.href = `/worklenz/projects/${projectId}`;
+              // Step 2: Verify authentication again to ensure session is updated with new team
+              const updatedSession = await dispatch(verifyAuthentication()).unwrap();
+              
+              if (updatedSession?.authenticated) {
+                // Step 3: Now redirect to the project with updated session
+                window.location.href = `/worklenz/projects/${projectId}`;
+              } else {
+                // Session verification failed after team switch
+                message.error('Failed to update session. Please try again.');
+                window.location.href = '/worklenz/home';
+              }
             } catch (error) {
-              // User is not a member yet, redirect to home with message
+              // Could not switch team - user is not a team member yet
+              // Redirect to home with message to accept invitation
               message.info('Please check your notifications to accept the team invitation.');
               
-              // Redirect after showing message
               setTimeout(() => {
                 window.location.href = '/worklenz/home';
               }, 2000);
