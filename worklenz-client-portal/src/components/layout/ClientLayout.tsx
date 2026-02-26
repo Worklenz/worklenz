@@ -11,8 +11,7 @@ import {
   MoonOutlined,
   SunOutlined,
   TranslationOutlined,
-  Button,
-  Modal,
+  Button
 } from '@/shared/antd-imports';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
