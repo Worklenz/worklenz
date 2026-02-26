@@ -46,5 +46,14 @@
   "manualProgressTooltip": "允许对没有子任务的任务进行手动进度更新",
   "weightedProgress": "加权进度",
   "weightedProgressTooltip": "基于子任务权重计算进度",
-  "timeProgress": "基于时间的进度"
+  "timeProgress": "基于时间的进度",
+  "timeProgressTooltip": "根据估计时间计算进度",
+  "autoAssignTaskCreator": "将任务分配给创建者",
+  "autoAssignTaskCreatorTooltip": "自动将新任务分配给创建它们的团队成员",
+  "generalTab": "常规",
+  "advancedSettingsTab": "高级设置",
+  "progressSettingsDescription": "配置此项目的任务进度计算方式。一次只能激活一种方法。",
+  "taskSettings": "任务设置",
+  "taskSettingsDescription": "配置在此项目中创建的任务的默认行为。",
+  "enterProjectKey": "输入项目密钥"
 }
