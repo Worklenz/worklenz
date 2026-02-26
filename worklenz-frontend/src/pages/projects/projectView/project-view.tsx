@@ -30,7 +30,7 @@ import { resetBoardData } from '@/features/board/board-slice';
 import { resetTaskManagement } from '@/features/task-management/task-management.slice';
 import { resetGrouping } from '@/features/task-management/grouping.slice';
 import { resetSelection } from '@/features/task-management/selection.slice';
-import { resetFields } from '@/features/task-management/taskListFields.slice';
+import { resetFields, setProjectContext } from '@/features/task-management/taskListFields.slice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import {
@@ -201,6 +201,9 @@ const ProjectView = React.memo(() => {
 
           // Load new project data
           dispatch(setProjectId(projectId));
+          
+          // Set project context for field visibility
+          dispatch(setProjectContext(projectId));
 
           // Load project and essential data in parallel
           const [projectResult] = await Promise.allSettled([

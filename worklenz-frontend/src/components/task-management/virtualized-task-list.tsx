@@ -60,7 +60,7 @@ const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = React.memo(
 
     // Get field visibility from taskListFields slice
     const taskListFields = useSelector(
-      (state: RootState) => state.taskManagementFields
+      (state: RootState) => state.taskManagementFields?.fields || []
     ) as TaskListField[];
 
     // Get group collapse state from Redux
