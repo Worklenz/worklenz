@@ -174,7 +174,7 @@ const AllTasksReportsTable = () => {
           <Avatar.Group max={{ count: 3 }} size={22}>
             {assignees.map((assignee, idx) => (
               <Tooltip key={idx} title={assignee.name}>
-                <Avatar size={22} src={assignee.avatar_url}>
+                <Avatar size={22} src={assignee.avatar_url} style={{ backgroundColor: assignee.color_code }}>
                   {!assignee.avatar_url && assignee.name?.charAt(0).toUpperCase()}
                 </Avatar>
               </Tooltip>

@@ -86,7 +86,7 @@ const TaskGroup: React.FC<TaskGroupProps> = React.memo(
 
     // Get field visibility from taskListFields slice
     const taskListFields = useSelector(
-      (state: RootState) => state.taskManagementFields
+      (state: RootState) => state.taskManagementFields?.fields || []
     ) as TaskListField[];
 
     // Define all possible columns

@@ -45,6 +45,7 @@ import {
   updateColumnVisibility,
   setDuplicateTaskModalStatus,
 } from '@/features/task-management/task-management.slice';
+import { setProjectContext } from '@/features/task-management/taskListFields.slice';
 import {
   selectCurrentGrouping,
   selectCollapsedGroups,
@@ -279,7 +280,7 @@ const TaskListV2Section: React.FC = () => {
     state => state.taskManagement.isOpenDuplicateTaskModal
   );
 
-  const fields = useAppSelector(state => state.taskManagementFields) || [];
+  const fields = useAppSelector(state => state.taskManagementFields?.fields) || [];
   const columns = useAppSelector(selectColumns);
   const customColumns = useAppSelector(selectCustomColumns);
   const loadingColumns = useAppSelector(selectLoadingColumns);
@@ -542,6 +543,13 @@ const TaskListV2Section: React.FC = () => {
     });
     return style;
   }, [visibleColumns]);
+
+  // Set project context for field visibility when project changes
+  useEffect(() => {
+    if (urlProjectId) {
+      dispatch(setProjectContext(urlProjectId));
+    }
+  }, [dispatch, urlProjectId]);
 
   // Effects
   useEffect(() => {
