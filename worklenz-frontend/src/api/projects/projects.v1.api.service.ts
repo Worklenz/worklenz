@@ -15,7 +15,6 @@ export const projectsApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: `${config.apiUrl}${API_BASE_URL}`,
     prepareHeaders: async headers => {
-      // Get CSRF token, refresh if needed
       let token = getCsrfToken();
       if (!token) {
         try {
@@ -24,7 +23,6 @@ export const projectsApi = createApi({
           console.error('[CSRF] Failed to refresh CSRF token:', error);
         }
       }
-
       if (token) {
         headers.set('X-CSRF-Token', token);
       }
@@ -61,7 +59,13 @@ export const projectsApi = createApi({
         });
         return `${rootUrl}?${params.toString()}`;
       },
-      providesTags: result => [{ type: 'Projects', id: 'LIST' }],
+      // KEY FIX: Tag every filter variant with the general 'LIST' id.
+      // RTK Query cache entries are keyed by ALL query args, so filter=0
+      // and filter=1 are separate cache entries. By giving all of them the
+      // same { id: 'LIST' } tag, invalidating 'LIST' busts every variant at
+      // once — so switching between "All" and "Favorites" always re-fetches
+      // fresh data after a favorite toggle.
+      providesTags: () => [{ type: 'Projects', id: 'LIST' }],
     }),
 
     getProject: builder.query<IServerResponse<IProjectViewModel>, string>({
@@ -98,12 +102,15 @@ export const projectsApi = createApi({
       invalidatesTags: [{ type: 'Projects', id: 'LIST' }],
     }),
 
+    // ROOT CAUSE FIX: Was invalidating { type: 'Projects', id } — a single
+    // project tag that never matched { id: 'LIST' }, so the list cache was
+    // never invalidated. Now invalidates 'LIST' to bust ALL filter variants.
     toggleFavoriteProject: builder.mutation<IServerResponse<IProjectsViewModel>, string>({
       query: id => ({
         url: `${rootUrl}/favorite/${id}`,
         method: 'GET',
       }),
-      invalidatesTags: (result, error, id) => [{ type: 'Projects', id }],
+      invalidatesTags: [{ type: 'Projects', id: 'LIST' }],
     }),
 
     toggleArchiveProject: builder.mutation<IServerResponse<any>, string>({
