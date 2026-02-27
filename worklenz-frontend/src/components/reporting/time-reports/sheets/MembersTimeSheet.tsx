@@ -204,7 +204,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
               const idx = context[0].dataIndex;
               const member = jsonData[idx];
               const loggedTime = parseFloat(member?.logged_time || '0') / 3600;
-              return `📊 Total Logged: ${formatHours(loggedTime)}`;
+              return `Total Logged: ${formatHours(loggedTime)}`;
             },
           },
         },
