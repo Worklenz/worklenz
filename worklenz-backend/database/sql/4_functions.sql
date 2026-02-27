@@ -6288,6 +6288,22 @@ CREATE OR REPLACE FUNCTION insert_task_dependency(_task_id uuid, _related_task_i
 AS
 $$
 BEGIN
+    -- Prevent self-dependency
+    IF _task_id = _related_task_id THEN
+        RAISE EXCEPTION 'SELF_DEPENDENCY';
+    END IF;
+
+    -- Prevent circular dependency: check if _related_task_id is already blocked by _task_id
+    IF EXISTS (
+        SELECT 1
+        FROM task_dependencies
+        WHERE task_id = _related_task_id
+          AND related_task_id = _task_id
+          AND dependency_type = _dependency_type
+    ) THEN
+        RAISE EXCEPTION 'CIRCULAR_DEPENDENCY';
+    END IF;
+
     -- Attempt to insert into task_dependencies
     INSERT INTO task_dependencies (task_id, related_task_id, dependency_type)
     VALUES (_task_id, _related_task_id, _dependency_type)
@@ -6326,7 +6342,7 @@ BEGIN
         RETURN TRUE;
     END IF;
 
-    -- If the status is "done", check if any dependent tasks are not completed
+    -- If the status is "done", check if any direct dependent tasks are not completed
     SELECT NOT EXISTS (
         SELECT 1
         FROM task_dependencies td
@@ -6342,7 +6358,27 @@ BEGIN
           )
     ) INTO can_continue;
 
-    -- Return whether the update can continue based on the dependent task completion check
+    IF NOT can_continue THEN
+        RETURN FALSE;
+    END IF;
+
+    -- Also check if any subtask of this task has incomplete dependencies
+    SELECT NOT EXISTS (
+        SELECT 1
+        FROM tasks subtask
+        INNER JOIN task_dependencies td ON td.task_id = subtask.id
+        LEFT JOIN tasks dep_task ON dep_task.id = td.related_task_id
+        WHERE subtask.parent_task_id = _task_id
+          AND dep_task.status_id NOT IN (
+              SELECT id
+              FROM task_statuses ts
+              WHERE dep_task.project_id = ts.project_id
+                AND ts.category_id IN (
+                    SELECT id FROM sys_task_status_categories WHERE is_done IS TRUE
+                )
+          )
+    ) INTO can_continue;
+
     RETURN can_continue;
 END;
 $$;
