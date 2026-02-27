@@ -101,7 +101,7 @@ export function sendResetSuccessEmail(toEmail: string) {
 }
 
 export function sendClientPortalResetEmail(toEmail: string, user_id: string, hash: string) {
-  let content = FileConstants.getEmailTemplate(IEmailTemplateType.ResetPassword) as string;
+  let content = FileConstants.getEmailTemplate(IEmailTemplateType.ResetPasswordClientPortal) as string;
   if (!content) return;
 
   const CLIENT_PORTAL_HOSTNAME = process.env.CLIENT_PORTAL_HOSTNAME
