@@ -281,14 +281,28 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
     const isLoadingSubtasks = useAppSelector(state => selectSubtaskLoading(state, taskId));
     const dispatch = useAppDispatch();
 
-    // Get active filters from Redux (tasks.slice - used by improved-task-filters)
-    const activeFilters = useAppSelector(state => ({
-      members:
+    // Get active filters from Redux - memoized to prevent unnecessary re-renders
+    const selectedMemberIds = useAppSelector(
+      state =>
         state.taskReducer?.taskAssignees?.filter((m: any) => m.selected).map((m: any) => m.id) ||
         [],
-      labels: state.taskReducer?.labels?.filter((l: any) => l.selected).map((l: any) => l.id) || [],
-      priorities: state.taskReducer?.priorities || [],
-    }));
+      (a, b) => JSON.stringify(a) === JSON.stringify(b)
+    );
+    const selectedLabelIds = useAppSelector(
+      state =>
+        state.taskReducer?.labels?.filter((l: any) => l.selected).map((l: any) => l.id) || [],
+      (a, b) => JSON.stringify(a) === JSON.stringify(b)
+    );
+    const priorities = useAppSelector(state => state.taskReducer?.priorities || []);
+
+    const activeFilters = React.useMemo(
+      () => ({
+        members: selectedMemberIds,
+        labels: selectedLabelIds,
+        priorities: priorities,
+      }),
+      [selectedMemberIds, selectedLabelIds, priorities]
+    );
 
     // Get all priorities to create ID-to-name mapping
     const allPriorities = useAppSelector(state => state.priorityReducer?.priorities || []);
