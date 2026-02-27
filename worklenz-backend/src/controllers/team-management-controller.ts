@@ -32,20 +32,8 @@ export default class TeamManagementController {
         return res.status(400).send(new ServerResponse(false, null, `Cannot assign ${member.role_name} to report to Team Lead`));
       }
 
-      // Check if member is already assigned to another team lead
-      if (member.reports_to_member_id && member.reports_to_member_id !== managerId) {
-        // Get current team lead name for better error message
-        const currentTeamLeadQuery = `
-          SELECT u.name as current_team_lead_name
-          FROM team_members tm
-          JOIN users u ON tm.user_id = u.id
-          WHERE tm.id = $1::UUID
-        `;
-        const currentTeamLeadResult = await db.query(currentTeamLeadQuery, [member.reports_to_member_id]);
-        const currentTeamLeadName = currentTeamLeadResult.rows[0]?.current_team_lead_name || "another Team Lead";
-        
-        return res.status(400).send(new ServerResponse(false, null, `Member is already assigned to ${currentTeamLeadName}. Please remove the current assignment first.`));
-      }
+      // Allow reassignment - no need to check if already assigned to another manager
+      // The frontend allows direct reassignment via dropdown change
 
       // Verify the target manager is actually a Team Lead
       const managerRoleCheck = `

@@ -18,6 +18,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import { colors } from '@/styles/colors';
 import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.service';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
+import { teamManagementApiService } from '@/api/team-management/team-management.api.service';
 import { toggleUpdateMemberDrawer } from '../../features/settings/member/memberSlice';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
 import { calculateTimeDifference } from '@/utils/calculate-time-difference';
@@ -53,6 +54,8 @@ const UpdateMemberDrawer = ({
   const [jobTitles, setJobTitles] = useState<IJobTitle[]>([]);
   const [selectedJobTitle, setSelectedJobTitle] = useState<string | null>(null);
   const [teamMember, setTeamMember] = useState<ITeamMemberViewModel | null>(null);
+  const [teamLeads, setTeamLeads] = useState<ITeamMemberViewModel[]>([]);
+  const [loadingTeamLeads, setLoadingTeamLeads] = useState(false);
 
   const isDrawerOpen = useAppSelector(state => state.memberReducer.isUpdateMemberDrawerOpen);
 
@@ -96,6 +99,24 @@ const UpdateMemberDrawer = ({
     }
   };
 
+  const getTeamLeads = async () => {
+    try {
+      setLoadingTeamLeads(true);
+      const res = await teamMembersApiService.get(1, 1000, 'name', 'asc', '', true);
+      if (res.done) {
+        // Filter for Team Leads only and exclude the member being assigned
+        const leads = res.body.data?.filter(
+          m => m.id !== selectedMemberId && m.role_name === 'Team Lead'
+        ) || [];
+        setTeamLeads(leads);
+      }
+    } catch (error) {
+      logger.error('Error fetching team leads:', error);
+    } finally {
+      setLoadingTeamLeads(false);
+    }
+  };
+
   const getTeamMember = async () => {
     if (!selectedMemberId) return;
 
@@ -126,6 +147,7 @@ const UpdateMemberDrawer = ({
           form.setFieldsValue({
             jobTitle: res.body?.job_title,
             access: accessLevel,
+            manager: res.body?.reports_to_member_id || null,
           });
         }, 0);
       }
@@ -154,6 +176,22 @@ const UpdateMemberDrawer = ({
 
       const res = await teamMembersApiService.update(selectedMemberId, body);
       if (res.done) {
+        // Handle manager assignment if changed
+        const currentManagerId = teamMember?.reports_to_member_id;
+        const newManagerId = values.manager;
+
+        if (currentManagerId !== newManagerId) {
+          if (newManagerId) {
+            // Assign new manager
+            await teamManagementApiService.assignManager(selectedMemberId, newManagerId);
+            message.success(t('manager_assigned_successfully'));
+          } else if (currentManagerId) {
+            // Remove manager assignment
+            await teamManagementApiService.removeManagerAssignment(selectedMemberId);
+            message.success(t('manager_removed_successfully'));
+          }
+        }
+
         form.resetFields();
         setSelectedJobTitle(null);
         dispatch(toggleUpdateMemberDrawer());
@@ -175,6 +213,7 @@ const UpdateMemberDrawer = ({
       }
     } catch (error) {
       logger.error('Error updating member:', error);
+      message.error(t('updateError'));
     }
   };
 
@@ -198,7 +237,7 @@ const UpdateMemberDrawer = ({
   const afterOpenChange = async (visible: boolean) => {
     if (visible) {
       form.resetFields();
-      await Promise.all([getJobTitles(), getTeamMember()]);
+      await Promise.all([getJobTitles(), getTeamMember(), getTeamLeads()]);
     } else {
       setTeamMember(null);
       setResentSuccess(false);
@@ -223,9 +262,17 @@ const UpdateMemberDrawer = ({
       form.setFieldsValue({
         jobTitle: teamMember.job_title,
         access: accessLevel,
+        manager: teamMember.reports_to_member_id || null,
       });
     }
   }, [teamMember, isDrawerOpen, initialRoleName, form]);
+
+  // Determine if member can be assigned to a manager
+  // Only regular Members can be assigned to Team Leads
+  const canBeAssignedToManager = useMemo(() => {
+    const roleName = teamMember?.role_name || '';
+    return !['Owner', 'Admin', 'Team Lead'].includes(roleName);
+  }, [teamMember?.role_name]);
 
   return (
     <Drawer
@@ -308,6 +355,47 @@ const UpdateMemberDrawer = ({
             }))}
           />
         </Form.Item>
+
+        {/* Manager Assignment - Only show for Members */}
+        {canBeAssignedToManager && (
+          <Form.Item
+            label={
+              <Flex align="center" gap={4}>
+                <span>{t('managerLabel')}</span>
+                <Tooltip title={t('managerTooltip')}>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                    (Optional)
+                  </Typography.Text>
+                </Tooltip>
+              </Flex>
+            }
+            name="manager"
+          >
+            <Select
+              allowClear
+              placeholder={t('selectManagerPlaceholder')}
+              loading={loadingTeamLeads}
+              disabled={!canManageTarget}
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+              }
+              options={teamLeads.map(lead => ({
+                value: lead.id,
+                label: lead.name,
+              }))}
+              notFoundContent={
+                loadingTeamLeads ? (
+                  <Spin size="small" />
+                ) : (
+                  <Typography.Text type="secondary" style={{ padding: 8, display: 'block' }}>
+                    {t('noTeamLeadsAvailable')}
+                  </Typography.Text>
+                )
+              }
+            />
+          </Form.Item>
+        )}
 
         <Form.Item>
           <Flex vertical gap={8}>
