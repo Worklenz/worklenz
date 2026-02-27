@@ -193,12 +193,22 @@ export const BusinessPlanTrialAlert = () => {
   };
 
   const handleUpgrade = () => {
-    // Track upgrade button click
+    // Track upgrade button click (existing event)
     trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_UPGRADE_INITIATED, {
       ...getBaseTrialProperties(),
       trial_active: isOnTrial,
       days_elapsed: isOnTrial ? (7 - trialDaysRemaining) : undefined,
       check_source: 'upgrade_button_click'
+    });
+
+    // Track business trial upgrade nav bar click (new event)
+    trackMixpanelEvent('business_trial_upgrade_nav_bar', {
+      user_type: isOnTrial ? 'trial' : (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.PADDLE ? 'paid' : 'free'),
+      current_plan: currentSession?.plan_name,
+      trial_days_remaining: trialDaysRemaining,
+      trial_active: isOnTrial,
+      days_elapsed: isOnTrial ? (7 - trialDaysRemaining) : undefined,
+      source: 'business_trial_banner'
     });
 
     navigate('/worklenz/admin-center/billing');

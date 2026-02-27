@@ -241,10 +241,9 @@ const GranttMembersTable = React.memo(
                   }, {});
                   
                   return Object.values(groupedProjects).map((project: any, index: any) => {
-                    // Use segment dates if available, otherwise fall back to project dates
-                    // Show individual dates even if only one is set
-                    const startDate = project?.date_union?.start || project?.project_dates?.start;
-                    const endDate = project?.date_union?.end || project?.project_dates?.end;
+                    // Use project dates from projects table only
+                    const startDate = project?.project_dates?.start;
+                    const endDate = project?.project_dates?.end;
                     const hasStartDate = !!startDate;
                     const hasEndDate = !!endDate;
                     const totalHours = project.allSegments.reduce((sum: number, seg: any) => sum + (seg.total_hours || 0), 0);

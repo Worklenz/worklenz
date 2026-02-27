@@ -36,6 +36,8 @@ import {
   BillingFrequency as MixpanelBillingFrequency,
   PricingModel
 } from '@/types/mixpanel-events.types';
+import { evt_trial_converted } from '@/shared/worklenz-analytics-events';
+import { useAuthStatus } from '@/hooks/useAuthStatus';
 import { PlanTrialApiService } from '@/api/admin-center/plan-trial.api.service';
 import { isOnBusinessTrial } from '@/utils/subscription-utils';
 
@@ -77,6 +79,7 @@ const UpgradePlans = () => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation(['admin-center/current-bill', 'pricing-modal']);
   const { trackMixpanelEvent } = useMixpanelTracking();
+  const { isLicenseExpired } = useAuthStatus();
 
   // Redux state
   const { billingInfo } = useAppSelector(state => state.adminCenterReducer);
@@ -605,6 +608,20 @@ const UpgradePlans = () => {
           success: true,
         };
         trackMixpanelEvent(MixpanelBillingEvents.CHECKOUT_COMPLETED, checkoutSuccessProps);
+        
+        // Track trial conversion if user was on trial
+        const wasTrial = currentSession?.subscription_type === 'TRIAL';
+        if (wasTrial) {
+          trackMixpanelEvent(evt_trial_converted, {
+            previous_plan: 'trial',
+            new_plan: selectedPlanType,
+            billing_frequency: billingFrequency,
+            team_size: teamSize,
+            total_amount: checkoutSuccessProps.checkout_amount,
+            trial_expired: isLicenseExpired
+          });
+        }
+        
         // Also track plan upgraded/downgraded (compare current vs selected)
         {
           const fromPlan = getCurrentPlanType;

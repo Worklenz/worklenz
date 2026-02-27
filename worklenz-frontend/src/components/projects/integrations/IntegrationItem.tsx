@@ -1,5 +1,6 @@
-import { Tag } from '@/shared/antd-imports';
+import { Tag, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
+import { useMemo } from 'react';
 import type { IntegrationItemProps } from './integrations.types';
 
 export const IntegrationItem: React.FC<IntegrationItemProps> = ({
@@ -12,32 +13,69 @@ export const IntegrationItem: React.FC<IntegrationItemProps> = ({
   onClick
 }) => {
   const { t } = useTranslation('project-integrations');
+  const { token } = theme.useToken();
+
+  // Better dark mode detection using multiple token properties
+  const isDarkMode =
+    token.colorBgContainer === '#1f1f1f' ||
+    token.colorBgBase === '#141414' ||
+    token.colorBgElevated === '#1f1f1f' ||
+    document.documentElement.getAttribute('data-theme') === 'dark' ||
+    document.body.classList.contains('dark');
+
+  // Memoize item styles with dark mode support
+  const itemStyles = useMemo(() => ({
+    padding: '12px 16px',
+    cursor: comingSoon ? 'not-allowed' : 'pointer',
+    opacity: comingSoon ? 0.6 : 1,
+    borderBottom: `1px solid ${token.colorBorder}`,
+    transition: 'background-color 0.2s',
+    color: token.colorText
+  }), [comingSoon, token.colorBorder, token.colorText]);
+
+  // Memoize hover background color
+  const hoverBgColor = token.colorBgTextHover;
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!comingSoon) {
+      e.currentTarget.style.backgroundColor = hoverBgColor;
+    }
+  };
+
+  const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.currentTarget.style.backgroundColor = 'transparent';
+  };
+
+  // Memoize description styles with dark mode support
+  const descriptionStyles = useMemo(() => ({
+    fontSize: 12,
+    color: token.colorTextSecondary,
+    lineHeight: 1.4
+  }), [token.colorTextSecondary]);
+
+  // Memoize channels styles with dark mode support
+  const channelsStyles = useMemo(() => ({
+    fontSize: 12,
+    color: token.colorPrimary,
+    marginTop: 6,
+    whiteSpace: 'nowrap' as const,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis'
+  }), [token.colorPrimary]);
 
   return (
     <div
       className={`integration-item ${comingSoon ? 'disabled' : 'clickable'}`}
       onClick={!comingSoon ? onClick : undefined}
-      style={{
-        padding: '12px 16px',
-        cursor: comingSoon ? 'not-allowed' : 'pointer',
-        opacity: comingSoon ? 0.6 : 1,
-        borderBottom: '1px solid var(--border-color, #434343)',
-        transition: 'background-color 0.2s'
-      }}
-      onMouseEnter={(e) => {
-        if (!comingSoon) {
-          e.currentTarget.style.backgroundColor = 'var(--hover-bg, #2a2a2a)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'transparent';
-      }}
+      style={itemStyles}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
         <div style={{ fontSize: 24, flexShrink: 0, marginTop: 2 }}>{icon}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <span style={{ fontWeight: 500, fontSize: 14 }}>{title}</span>
+            <span style={{ fontWeight: 500, fontSize: 14, color: token.colorText }}>{title}</span>
             {comingSoon && (
               <Tag color="purple" style={{ margin: 0, fontSize: 11, padding: '0 6px' }}>
                 🔜 {t('comingSoon', { defaultValue: 'Coming Soon' })}
@@ -49,20 +87,11 @@ export const IntegrationItem: React.FC<IntegrationItemProps> = ({
               </Tag>
             )}
           </div>
-          <div style={{ fontSize: 12, color: 'var(--text-secondary, #bfbfbf)', lineHeight: 1.4 }}>
+          <div style={descriptionStyles}>
             {description}
           </div>
           {channels && channels.length > 0 && (
-            <div
-              style={{
-                fontSize: 12,
-                color: 'var(--primary-color, #1890ff)',
-                marginTop: 6,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}
-            >
+            <div style={channelsStyles}>
               {channels.join(' • ')}
             </div>
           )}

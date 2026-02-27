@@ -45,7 +45,6 @@ export const AssignManagerDrawer: React.FC<AssignManagerDrawerProps> = ({
     try {
       const response = await teamManagementApiService.assignManager(member.id!, selectedManager);
       if (response.done) {
-        message.success(t('manager_assigned_successfully'));
         onManagerAssigned();
         onClose();
         setSelectedManager(null);

@@ -30,7 +30,7 @@ import { resetBoardData } from '@/features/board/board-slice';
 import { resetTaskManagement } from '@/features/task-management/task-management.slice';
 import { resetGrouping } from '@/features/task-management/grouping.slice';
 import { resetSelection } from '@/features/task-management/selection.slice';
-import { resetFields } from '@/features/task-management/taskListFields.slice';
+import { resetFields, setProjectContext } from '@/features/task-management/taskListFields.slice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import {
@@ -50,6 +50,8 @@ import { useTranslation } from 'react-i18next';
 import { useTimerInitialization } from '@/hooks/useTimerInitialization';
 import { useAuthService } from '@/hooks/useAuth';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { useAuthStatus } from '@/hooks/useAuthStatus';
+import { evt_paywall_hit } from '@/shared/worklenz-analytics-events';
 
 // Import critical components synchronously to avoid suspense interruptions
 import TaskDrawer from '@components/task-drawer/task-drawer';
@@ -88,6 +90,7 @@ const ProjectView = React.memo(() => {
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
   const { trackMixpanelEvent } = useMixpanelTracking();
+  const { isLicenseExpired } = useAuthStatus();
 
   // Memoize URL params to prevent unnecessary state updates
   const urlParams = useMemo(() => {
@@ -201,6 +204,9 @@ const ProjectView = React.memo(() => {
 
           // Load new project data
           dispatch(setProjectId(projectId));
+          
+          // Set project context for field visibility
+          dispatch(setProjectContext(projectId));
 
           // Load project and essential data in parallel
           const [projectResult] = await Promise.allSettled([
@@ -284,6 +290,16 @@ const ProjectView = React.memo(() => {
 
       // If tab is disabled, open upgrade modal instead of navigating
       if (tabItem?.disabled) {
+        // Track paywall hit for trial expired users clicking Finance tab
+        if (isLicenseExpired && key === 'finance') {
+          trackMixpanelEvent(evt_paywall_hit, {
+            feature_blocked: 'finance',
+            user_type: currentSession?.subscription_type?.toLowerCase(),
+            trial_expired: true,
+            project_id: projectId,
+            source: 'project_finance_tab'
+          });
+        }
         dispatch(toggleUpgradeModal());
         return;
       }
