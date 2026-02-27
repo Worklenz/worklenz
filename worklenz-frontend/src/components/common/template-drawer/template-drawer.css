@@ -93,22 +93,23 @@
 }
 
 /* ✅ FIX: Constrain Ant Design Tabs content so it doesn't create
-   overflow/extra scroll space inside the modal */
-.ant-tabs-content-holder {
+   overflow/extra scroll space inside the template drawer modal.
+   Scoped to .template-drawer-content to avoid breaking other drawers. */
+.template-drawer-content .ant-tabs-content-holder {
   overflow: hidden !important;
 }
 
-.ant-tabs-tabpane {
+.template-drawer-content .ant-tabs-tabpane {
   height: 100%;
 }
 
-.ant-tabs.ant-tabs-card {
+.template-drawer-content .ant-tabs.ant-tabs-card {
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-.ant-tabs-content {
+.template-drawer-content .ant-tabs-content {
   height: 100%;
   overflow: hidden;
 }

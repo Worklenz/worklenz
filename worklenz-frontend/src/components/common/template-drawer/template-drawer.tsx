@@ -426,6 +426,7 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
   // which left dead space below. Now uses height: '100%' and renders content directly.
   return (
     <div
+      className="template-drawer-content"
       style={{
         height: '100%',
         overflow: 'hidden',
