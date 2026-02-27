@@ -184,11 +184,9 @@ const UpdateMemberDrawer = ({
           if (newManagerId) {
             // Assign new manager
             await teamManagementApiService.assignManager(selectedMemberId, newManagerId);
-            message.success(t('manager_assigned_successfully'));
           } else if (currentManagerId) {
             // Remove manager assignment
             await teamManagementApiService.removeManagerAssignment(selectedMemberId);
-            message.success(t('manager_removed_successfully'));
           }
         }
 

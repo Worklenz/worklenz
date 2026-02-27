@@ -7,9 +7,14 @@ export default class TeamManagementController {
   public static async assignManager(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     try {
       const { teamMemberId, managerId } = req.body;
+      const teamId = req.user?.team_id;
 
       if (!teamMemberId || !managerId) {
         return res.status(400).send(new ServerResponse(false, null, "Invalid parameters"));
+      }
+
+      if (!teamId) {
+        return res.status(400).send(new ServerResponse(false, null, "Team context is required"));
       }
 
       // Validate that the member being assigned doesn't have a higher role
@@ -18,18 +23,18 @@ export default class TeamManagementController {
         FROM team_members tm
         JOIN users u ON tm.user_id = u.id
         JOIN roles r ON tm.role_id = r.id
-        WHERE tm.id = $1::UUID AND tm.active = TRUE
+        WHERE tm.id = $1::UUID AND tm.team_id = $2::UUID AND tm.active = TRUE
       `;
       
-      const memberResult = await db.query(roleCheck, [teamMemberId]);
+      const memberResult = await db.query(roleCheck, [teamMemberId, teamId]);
       
       if (memberResult.rows.length === 0) {
-        return res.status(400).send(new ServerResponse(false, null, "Team member not found or inactive"));
+        return res.status(200).send(new ServerResponse(false, null, "Team member not found or inactive"));
       }
 
       const [member] = memberResult.rows;
       if (["Owner", "Admin", "Team Lead"].includes(member.role_name)) {
-        return res.status(400).send(new ServerResponse(false, null, `Cannot assign ${member.role_name} to report to Team Lead`));
+        return res.status(200).send(new ServerResponse(false, null, `Cannot assign ${member.role_name} to report to Team Lead`));
       }
 
       // Allow reassignment - no need to check if already assigned to another manager
@@ -41,10 +46,10 @@ export default class TeamManagementController {
         FROM team_members tm
         JOIN users u ON tm.user_id = u.id
         JOIN roles r ON tm.role_id = r.id
-        WHERE tm.id = $1::UUID AND tm.active = TRUE
+        WHERE tm.id = $1::UUID AND tm.team_id = $2::UUID AND tm.active = TRUE
       `;
       
-      const managerResult = await db.query(managerRoleCheck, [managerId]);
+      const managerResult = await db.query(managerRoleCheck, [managerId, teamId]);
       
       if (managerResult.rows.length === 0) {
         return res.status(400).send(new ServerResponse(false, null, "Target manager not found or inactive"));
