@@ -65,6 +65,17 @@
 
   "addressLabel": "Endereço",
   "addressPlaceholder": "Digite o endereço (opcional)",
+  "addressLine1Label": "Endereço",
+  "addressLine1Placeholder": "Digite o endereço (opcional)",
+  "cityLabel": "Cidade",
+  "cityPlaceholder": "Cidade",
+  "stateLabel": "Estado / Província",
+  "statePlaceholder": "Estado / Província",
+  "zipCodeLabel": "CEP / Código Postal",
+  "zipCodePlaceholder": "Código postal",
+  "countryLabel": "País",
+  "countryPlaceholder": "País",
+  "clientInvitationEmailInfo": "Um e-mail de convite será enviado ao cliente para ingressar no portal. Você também pode compartilhar o link de convite da página de Clientes.",
 
   "contactPersonLabel": "Pessoa de Contato",
   "contactPersonPlaceholder": "Digite o nome da pessoa de contato",

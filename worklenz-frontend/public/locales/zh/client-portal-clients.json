@@ -65,7 +65,18 @@
   
   "addressLabel": "地址",
   "addressPlaceholder": "输入地址（可选）",
-  
+  "addressLine1Label": "街道地址",
+  "addressLine1Placeholder": "输入街道地址（可选）",
+  "cityLabel": "城市",
+  "cityPlaceholder": "城市",
+  "stateLabel": "省 / 州",
+  "statePlaceholder": "省 / 州",
+  "zipCodeLabel": "邮政编码",
+  "zipCodePlaceholder": "邮政编码",
+  "countryLabel": "国家",
+  "countryPlaceholder": "国家",
+  "clientInvitationEmailInfo": "将向客户发送邀请邮件以加入门户。您也可以从客户页面分享邀请链接。",
+
   "contactPersonLabel": "联系人",
   "contactPersonPlaceholder": "输入联系人姓名",
   

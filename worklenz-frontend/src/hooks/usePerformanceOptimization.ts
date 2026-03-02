@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useEffect, useState } from 'react';
 import { useAppSelector } from './useAppSelector';
-import { debounce, throttle } from 'lodash';
+import debounce from 'lodash-es/debounce';
+import throttle from 'lodash-es/throttle';
 
 // Performance optimization utilities
 export const usePerformanceOptimization = () => {

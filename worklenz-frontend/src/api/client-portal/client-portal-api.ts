@@ -849,6 +849,21 @@ export const clientPortalApi = createApi({
       invalidatesTags: ['Chats'],
     }),
 
+    uploadOrganizationChatFile: builder.mutation<
+      { url: string; fileName: string },
+      { fileData: string; fileName: string; fileType: string; clientId?: string }
+    >({
+      query: (body) => ({
+        url: '/clients/portal/chats/upload',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: any) => {
+        if (response?.body) return response.body;
+        return response;
+      },
+    }),
+
     sendOrganizationMessage: builder.mutation<
       any,
       { chatId: string; clientId: string; messageData: { content: string; attachments?: any[] } }
@@ -1428,6 +1443,7 @@ export const {
   useGetOrganizationChatsQuery,
   useGetOrganizationChatByIdQuery,
   useCreateOrganizationChatMutation,
+  useUploadOrganizationChatFileMutation,
   useSendOrganizationMessageMutation,
   useGetOrganizationMessagesQuery,
 

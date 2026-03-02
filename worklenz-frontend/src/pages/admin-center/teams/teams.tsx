@@ -1,5 +1,5 @@
 import { SearchOutlined, SyncOutlined } from '@/shared/antd-imports';
-import { PageHeader } from '@ant-design/pro-components';
+import WorklenzPageHeader from '@/components/common/WorklenzPageHeader';
 import { Button, Flex, Input, Tooltip } from '@/shared/antd-imports';
 
 import React, { useEffect, useState } from 'react';
@@ -102,8 +102,8 @@ const Teams: React.FC = () => {
 
   return (
     <div style={{ width: '100%' }}>
-      <PageHeader title={<span>{t('title')}</span>} style={{ padding: '16px 0' }} />
-      <PageHeader
+      <WorklenzPageHeader title={<span>{t('title')}</span>} style={{ padding: '16px 0' }} />
+      <WorklenzPageHeader
         style={{
           paddingLeft: 0,
           paddingTop: 0,
