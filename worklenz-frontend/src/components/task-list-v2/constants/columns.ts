@@ -1,5 +1,4 @@
 import { COLUMN_KEYS } from '@/features/tasks/tasks.slice';
-import { min } from 'lodash';
 
 export type ColumnStyle = {
   width: string;

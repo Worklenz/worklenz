@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, Suspense, lazy } from 'react';
 import {
   Input,
   InputNumber,
@@ -19,7 +19,7 @@ import { PlusOutlined, DeleteOutlined, UploadOutlined, CheckCircleOutlined } fro
 import { useTranslation } from 'react-i18next';
 import { RcFile } from 'antd/es/upload';
 import { getBase64 } from '@/utils/file-utils';
-import RichTextEditor from '@/components/shared/RichTextEditor';
+const RichTextEditor = lazy(() => import('@/components/shared/RichTextEditor'));
 import { CURRENCY_OPTIONS } from '@/shared/currencies';
 
 interface ServiceDetailsStepProps {
@@ -356,18 +356,20 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
                     Describe your service in detail. Include what's included, your process, and what clients can expect.
                   </Typography.Text>
                   
-                  <div style={{ 
+                  <div style={{
                     border: service.service_data?.description?.trim() ? `1px solid ${token.colorBorder}` : `1px solid ${token.colorError}`,
                     borderRadius: token.borderRadius,
                     overflow: 'hidden'
                   }}>
-                    <RichTextEditor
-                      value={service.service_data?.description || ''}
-                      onChange={handleDescriptionChange}
-                      placeholder="Describe your service in detail... Include what's included, your process, timeline, and what clients can expect."
-                      themeMode={getThemeMode()}
-                      height={200}
-                    />
+                    <Suspense fallback={<div style={{ height: 200 }} />}>
+                      <RichTextEditor
+                        value={service.service_data?.description || ''}
+                        onChange={handleDescriptionChange}
+                        placeholder="Describe your service in detail... Include what's included, your process, timeline, and what clients can expect."
+                        themeMode={getThemeMode()}
+                        height={200}
+                      />
+                    </Suspense>
                   </div>
                   
                   <Alert

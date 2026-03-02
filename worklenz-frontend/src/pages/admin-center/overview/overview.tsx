@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Space, Typography, Row, Col, Divider } from '@/shared/antd-imports';
-import { PageHeader } from '@ant-design/pro-components';
+import WorklenzPageHeader from '@/components/common/WorklenzPageHeader';
 import OrganizationAdminsTable from '@/components/admin-center/overview/organization-admins-table/organization-admins-table';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -65,7 +65,7 @@ const Overview: React.FC = () => {
 
   return (
     <div style={{ width: '100%' }}>
-      <PageHeader title={<span>{t('overview')}</span>} style={{ padding: '16px 0' }} />
+      <WorklenzPageHeader title={<span>{t('overview')}</span>} style={{ padding: '16px 0' }} />
 
       <Space direction="vertical" style={{ width: '100%' }} size={24}>
         {/* Organization Profile Section */}

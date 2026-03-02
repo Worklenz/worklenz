@@ -47,7 +47,6 @@ import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
 import { updateTaskGroupColor } from '@/features/tasks/tasks.slice';
 import { ALPHA_CHANNEL } from '@/shared/constants';
 import { ITaskStatusUpdateModel } from '@/types/tasks/task-status-update-model.types';
-import { update } from 'lodash';
 import logger from '@/utils/errorLogger';
 import { toggleDrawer } from '@/features/projects/status/StatusSlice';
 import {
