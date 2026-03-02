@@ -48,6 +48,9 @@
   "createButton": "Crear Cliente",
   "cancelButton": "Cancelar",
 
+  "basicInformationSection": "Información Básica",
+  "contactInformationSection": "Información de Contacto",
+
   "clientNameLabel": "Nombre del Cliente",
   "clientNamePlaceholder": "Ingresa el nombre del cliente",
   "clientNameRequired": "Por favor ingresa el nombre del cliente",
@@ -305,5 +308,8 @@
   "clientAlreadyHasPortalAccess": "El cliente ya tiene acceso al portal",
   "clientAlreadyHasPendingInvitation": "Invitación ya enviada. Por favor use la opción de reenviar.",
   "clientEmailRequired": "El correo electrónico del cliente es requerido para la invitación",
-  "addEmailButton": "Agregar Correo e Invitar"
+  "addEmailButton": "Agregar Correo e Invitar",
+  "clientExistsWarning": "Ya existe un cliente con este correo electrónico. Usando el registro de cliente existente.",
+  "clientExistsWithInvitationSent": "Ya existe un cliente con este correo electrónico y ya se ha enviado una invitación.",
+  "clientExistsNoInvitation": "Ya existe un cliente con este correo electrónico. Puede enviarle una invitación desde la lista de clientes."
 }

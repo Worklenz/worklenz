@@ -48,6 +48,9 @@
   "createButton": "Kunde erstellen",
   "cancelButton": "Abbrechen",
 
+  "basicInformationSection": "Grundlegende Informationen",
+  "contactInformationSection": "Kontaktinformationen",
+
   "clientNameLabel": "Kundenname",
   "clientNamePlaceholder": "Kundenname eingeben",
   "clientNameRequired": "Bitte geben Sie den Kundennamen ein",
@@ -320,5 +323,8 @@
   "clientAlreadyHasPortalAccess": "Kunde hat bereits Portal-Zugang",
   "clientAlreadyHasPendingInvitation": "Einladung bereits gesendet. Bitte verwenden Sie die Option \"Erneut senden\".",
   "clientEmailRequired": "Client-E-Mail ist für Einladung erforderlich",
-  "addEmailButton": "E-Mail hinzufügen & einladen"
+  "addEmailButton": "E-Mail hinzufügen & einladen",
+  "clientExistsWarning": "Ein Kunde mit dieser E-Mail existiert bereits. Der vorhandene Kundendatensatz wird verwendet.",
+  "clientExistsWithInvitationSent": "Ein Kunde mit dieser E-Mail existiert bereits und eine Einladung wurde bereits gesendet.",
+  "clientExistsNoInvitation": "Ein Kunde mit dieser E-Mail existiert bereits. Sie können ihm eine Einladung aus der Kundenliste senden."
 }

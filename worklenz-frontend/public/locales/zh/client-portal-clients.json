@@ -263,5 +263,8 @@
   "clientAlreadyHasPortalAccess": "客户已有门户访问权限",
   "clientAlreadyHasPendingInvitation": "邀请已发送。请使用重新发送选项。",
   "clientEmailRequired": "客户电子邮件是邀请所必需的",
-  "addEmailButton": "添加电子邮件并邀请"
+  "addEmailButton": "添加电子邮件并邀请",
+  "clientExistsWarning": "此电子邮件的客户已存在。使用现有客户记录。",
+  "clientExistsWithInvitationSent": "此电子邮件的客户已存在，并且已发送邀请。",
+  "clientExistsNoInvitation": "此电子邮件的客户已存在。您可以从客户列表发送邀请。"
 }

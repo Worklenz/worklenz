@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Button,
   Modal,
@@ -12,6 +12,7 @@ import {
   Alert,
   Row,
   Col,
+  Divider,
 } from '@/shared/antd-imports';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
@@ -32,19 +33,24 @@ const AddClientDrawer = () => {
   const dispatch = useAppDispatch();
   const [createClient, { isLoading }] = useCreateClientMutation();
   const [form] = Form.useForm();
+  const [alertMessage, setAlertMessage] = useState<{
+    type: 'success' | 'warning' | 'error';
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       refreshCsrfToken().catch(error => {
         console.error('Failed to refresh CSRF token:', error);
       });
+      setAlertMessage(null);
     }
   }, [isOpen]);
 
   const handleFormSubmit = async (values: any) => {
     try {
       await refreshCsrfToken();
-      await createClient({
+      const result = await createClient({
         name: values.name,
         email: values.email,
         company_name: values.company_name,
@@ -56,13 +62,30 @@ const AddClientDrawer = () => {
         country: values.country,
       }).unwrap();
 
-      form.resetFields();
-      message.success(
-        t('createClientSuccessMessage') ||
-          'Client created successfully! Share the organization invite link to give them portal access.',
-        5
-      );
-      dispatch(toggleAddClientDrawer());
+      // Check if this is an existing client (backend returns body.existing)
+      const responseBody = (result as any)?.body || result;
+      
+      if (responseBody?.existing) {
+        // Show warning alert based on invitation status
+        if (responseBody.invitationAlreadySent) {
+          setAlertMessage({
+            type: 'warning',
+            message: t('clientExistsWithInvitationSent', { defaultValue: 'A client with this email already exists and an invitation has already been sent.' })
+          });
+        } else {
+          setAlertMessage({
+            type: 'warning',
+            message: t('clientExistsNoInvitation', { defaultValue: 'A client with this email already exists. You can send them an invitation from the clients list.' })
+          });
+        }
+      } else {
+        // New client created successfully
+        setAlertMessage({
+          type: 'success',
+          message: t('createClientSuccessMessage', { defaultValue: 'Client created successfully! Share the organization invite link to give them portal access.' })
+        });
+        form.resetFields();
+      }
     } catch (error: any) {
       const errorMessage = error?.data?.message || error?.message || '';
       const isCsrfError =
@@ -71,12 +94,16 @@ const AddClientDrawer = () => {
         error?.status === 403;
 
       if (isCsrfError) {
-        message.error(t('csrfError') || 'Security token expired. Please try again.', 5);
+        setAlertMessage({
+          type: 'error',
+          message: t('csrfError', { defaultValue: 'Security token expired. Please try again.' })
+        });
         refreshCsrfToken().catch(() => {});
       } else {
-        message.error(
-          errorMessage || t('createClientErrorMessage') || 'Failed to create client'
-        );
+        setAlertMessage({
+          type: 'error',
+          message: errorMessage || t('createClientErrorMessage', { defaultValue: 'Failed to create client' })
+        });
       }
     }
   };
@@ -84,6 +111,7 @@ const AddClientDrawer = () => {
   const handleClose = () => {
     dispatch(toggleAddClientDrawer());
     form.resetFields();
+    setAlertMessage(null);
   };
 
   return (
@@ -103,7 +131,21 @@ const AddClientDrawer = () => {
       }
     >
       <Spin spinning={isLoading}>
+        {alertMessage && (
+          <Alert
+            type={alertMessage.type}
+            message={alertMessage.message}
+            showIcon
+            closable
+            onClose={() => setAlertMessage(null)}
+            style={{ marginBottom: 16 }}
+          />
+        )}
         <Form form={form} layout="vertical" onFinish={handleFormSubmit} autoComplete="off">
+          <Divider orientation="left" style={{ marginTop: 0 }}>
+            <Typography.Text strong>{t('basicInformationSection', { defaultValue: 'Basic Information' })}</Typography.Text>
+          </Divider>
+
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -139,19 +181,35 @@ const AddClientDrawer = () => {
             </Col>
             <Col span={12}>
               <Form.Item
-                name="phone"
-                label={t('phoneLabel') || 'Phone Number'}
-                rules={[
-                  {
-                    pattern: /^[\+]?[1-9][\d]{0,15}$/,
-                    message: t('phoneInvalid') || 'Enter a valid phone number',
-                  },
-                ]}
+                name="status"
+                label={t('statusLabel') || 'Status'}
+                initialValue="pending"
               >
-                <Input placeholder={t('phonePlaceholder') || 'Enter phone number'} />
+                <Select>
+                  <Option value="active">{t('statusActive') || 'Active'}</Option>
+                  <Option value="inactive">{t('statusInactive') || 'Inactive'}</Option>
+                  <Option value="pending">{t('statusPending') || 'Pending'}</Option>
+                </Select>
               </Form.Item>
             </Col>
           </Row>
+
+          <Divider orientation="left">
+            <Typography.Text strong>{t('contactInformationSection', { defaultValue: 'Contact Information' })}</Typography.Text>
+          </Divider>
+
+          <Form.Item
+            name="phone"
+            label={t('phoneLabel') || 'Phone Number'}
+            rules={[
+              {
+                pattern: /^[\+]?[1-9][\d]{0,15}$/,
+                message: t('phoneInvalid') || 'Enter a valid phone number',
+              },
+            ]}
+          >
+            <Input placeholder={t('phonePlaceholder') || 'Enter phone number'} />
+          </Form.Item>
 
           <Form.Item name="address_line_1" label={t('addressLine1Label') || 'Street Address'}>
             <Input placeholder={t('addressLine1Placeholder') || 'Enter street address (optional)'} />
@@ -171,27 +229,14 @@ const AddClientDrawer = () => {
           </Row>
 
           <Row gutter={16}>
-            <Col span={8}>
+            <Col span={12}>
               <Form.Item name="zip_code" label={t('zipCodeLabel') || 'Zip / Postal Code'}>
                 <Input placeholder={t('zipCodePlaceholder') || 'Zip code'} />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col span={12}>
               <Form.Item name="country" label={t('countryLabel') || 'Country'}>
                 <Input placeholder={t('countryPlaceholder') || 'Country'} />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item
-                name="status"
-                label={t('statusLabel') || 'Status'}
-                initialValue="pending"
-              >
-                <Select>
-                  <Option value="active">{t('statusActive') || 'Active'}</Option>
-                  <Option value="inactive">{t('statusInactive') || 'Inactive'}</Option>
-                  <Option value="pending">{t('statusPending') || 'Pending'}</Option>
-                </Select>
               </Form.Item>
             </Col>
           </Row>
