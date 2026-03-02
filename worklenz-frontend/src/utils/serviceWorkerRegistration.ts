@@ -316,11 +316,54 @@ export class ServiceWorkerManager {
     }
   }
 
-  // Check for updates
+  // Check for updates by comparing version.json
   async checkForUpdates(): Promise<boolean> {
     try {
-      const response = await this.sendMessage('CHECK_FOR_UPDATES');
-      return response.hasUpdates;
+      // Get current version from localStorage
+      const currentVersion = localStorage.getItem('app_version');
+      
+      // Fetch latest version.json (bypassing all caches)
+      const response = await fetch('/version.json?' + Date.now(), {
+        method: 'GET',
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      });
+
+      if (!response.ok) {
+        console.warn('Failed to fetch version.json:', response.status);
+        return false;
+      }
+
+      const versionData = await response.json();
+      const latestVersion = versionData.buildId || versionData.buildTime;
+
+      if (!latestVersion) {
+        console.warn('Invalid version data received');
+        return false;
+      }
+
+      // First time check - store current version
+      if (!currentVersion) {
+        localStorage.setItem('app_version', latestVersion.toString());
+        console.log('Initial version stored:', latestVersion);
+        return false;
+      }
+
+      // Compare versions
+      const hasUpdate = currentVersion !== latestVersion.toString();
+      
+      if (hasUpdate) {
+        console.log('New version detected:', {
+          current: currentVersion,
+          latest: latestVersion,
+        });
+      }
+
+      return hasUpdate;
     } catch (error) {
       console.error('Failed to check for updates:', error);
       return false;
@@ -332,6 +375,20 @@ export class ServiceWorkerManager {
     if (!this.registration) return;
 
     try {
+      // Update stored version before reload
+      const response = await fetch('/version.json?' + Date.now(), {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
+      
+      if (response.ok) {
+        const versionData = await response.json();
+        const latestVersion = versionData.buildId || versionData.buildTime;
+        if (latestVersion) {
+          localStorage.setItem('app_version', latestVersion.toString());
+        }
+      }
+
       await this.registration.update();
       await this.sendMessage('SKIP_WAITING');
       window.location.reload();
@@ -344,6 +401,20 @@ export class ServiceWorkerManager {
   // Perform hard reload (clear cache and reload)
   async hardReload(): Promise<void> {
     try {
+      // Update stored version before reload
+      const response = await fetch('/version.json?' + Date.now(), {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
+      
+      if (response.ok) {
+        const versionData = await response.json();
+        const latestVersion = versionData.buildId || versionData.buildTime;
+        if (latestVersion) {
+          localStorage.setItem('app_version', latestVersion.toString());
+        }
+      }
+
       // Clear all caches first
       await this.clearCache();
 

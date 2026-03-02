@@ -22,6 +22,24 @@ export default defineConfig(({ command, mode }) => {
         authToken: env.VITE_SENTRY_AUTH_TOKEN,
         telemetry: false,
       }) : []),
+      // Custom plugin to generate version.json for reliable update detection
+      {
+        name: 'generate-version-file',
+        generateBundle() {
+          // Generate version.json with build metadata
+          const versionData = {
+            version: env.npm_package_version || '1.0.0',
+            buildTime: buildTimestamp,
+            buildId: buildTimestamp,
+          };
+
+          this.emitFile({
+            type: 'asset',
+            fileName: 'version.json',
+            source: JSON.stringify(versionData, null, 2),
+          });
+        },
+      },
       // Custom plugin to inject build timestamp into service worker
       {
         name: 'inject-build-timestamp',
