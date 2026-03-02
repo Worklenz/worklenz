@@ -1179,7 +1179,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         ) THEN TRUE -- If status is not in the "done" category, continue immediately (TRUE)
 
         WHEN EXISTS (
-            -- Check if any dependent tasks are not completed
+            -- Check if any direct dependent tasks are not completed
             SELECT 1
             FROM task_dependencies td
             LEFT JOIN public.tasks t ON t.id = td.related_task_id
@@ -1193,6 +1193,23 @@ export default class TasksControllerV2 extends TasksControllerBase {
                     )
               )
         ) THEN FALSE -- If there are incomplete dependent tasks, do not continue (FALSE)
+
+        WHEN EXISTS (
+            -- Check if any subtask dependencies are not completed
+            SELECT 1
+            FROM tasks subtask
+            INNER JOIN task_dependencies td ON td.task_id = subtask.id
+            LEFT JOIN public.tasks dep_task ON dep_task.id = td.related_task_id
+            WHERE subtask.parent_task_id = $1
+              AND dep_task.status_id NOT IN (
+                  SELECT id
+                  FROM task_statuses ts
+                  WHERE dep_task.project_id = ts.project_id
+                    AND ts.category_id IN (
+                        SELECT id FROM sys_task_status_categories WHERE is_done IS TRUE
+                    )
+              )
+        ) THEN FALSE -- If there are incomplete subtask dependencies, do not continue (FALSE)
 
         ELSE TRUE -- Continue if no other conditions block the process
     END AS can_continue;`;

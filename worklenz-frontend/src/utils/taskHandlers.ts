@@ -23,6 +23,7 @@ interface HandleNewTaskReceivedOptions {
 /**
  * Shared handler for processing new task data received from API or Socket.IO
  * Handles both subtask and regular task creation
+ * Updates both task-management slice (task list) and enhanced kanban slice independently
  */
 export const handleNewTaskReceived = (
   response: any,
@@ -98,6 +99,7 @@ export const handleNewTaskReceived = (
       attachments_count: data.attachments_count || 0,
       has_subscribers: data.has_subscribers || false,
       has_dependencies: data.has_dependencies || false,
+      reporter: data.reporter || '',
     };
 
     // Before adding the real subtask, remove any temporary subtasks with the same name
@@ -191,16 +193,15 @@ export const handleNewTaskReceived = (
       attachments_count: data.attachments_count || 0,
       has_subscribers: data.has_subscribers || false,
       has_dependencies: data.has_dependencies || false,
+      reporter: data.reporter || '',
     };
 
-    // Extract the group UUID from the backend response based on current grouping
-    let groupId: string | undefined;
     // Helper function to determine group ID based on grouping type
     const getGroupIdForGrouping = (groupingType: string | null) => {
       const grouping = groupingType || 'status';
       let groupId: string | undefined;
 
-    if (grouping === 'status') {
+      if (grouping === 'status') {
         groupId = data.status;
       } else if (grouping === 'priority') {
         groupId = data.priority_id || data.priority || 'Unmapped';
@@ -244,6 +245,7 @@ export const handleNewTaskReceived = (
     // Update task-management slice (for task list) with its own grouping
     const taskListGroupId = getGroupIdForGrouping(currentGroupingV3);
     dispatch(addTaskToGroup({ task, groupId: taskListGroupId }));
+
 
     // Update enhanced kanban slice with its own grouping (if provided)
     const kanbanGroupId = getGroupIdForGrouping(enhancedKanbanGroupBy || currentGroupingV3);

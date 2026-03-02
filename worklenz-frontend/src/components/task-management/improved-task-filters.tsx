@@ -1070,7 +1070,7 @@ const FieldsDropdown: React.FC<{ themeClasses: any; isDarkMode: boolean }> = ({
   const fieldsRaw = useSelector((state: RootState) => state.taskManagementFields);
   const columns = useSelector(selectColumns);
   const projectId = useAppSelector(state => state.projectReducer.projectId);
-  const fields = Array.isArray(fieldsRaw) ? fieldsRaw : [];
+  const fields = Array.isArray(fieldsRaw) ? fieldsRaw : (fieldsRaw?.fields || []);
   const sortedFields = useMemo(() => [...fields].sort((a, b) => a.order - b.order), [fields]);
 
   const [open, setOpen] = React.useState(false);

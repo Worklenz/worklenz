@@ -9,7 +9,6 @@ import {
   KeyboardSensor,
   TouchSensor,
   closestCenter,
-  Modifier,
 } from '@dnd-kit/core';
 import { restrictToVerticalAxis, restrictToHorizontalAxis } from '@dnd-kit/modifiers';
 import {
@@ -42,9 +41,9 @@ import {
   selectColumns,
   selectCustomColumns,
   selectLoadingColumns,
-  updateColumnVisibility,
   setDuplicateTaskModalStatus,
 } from '@/features/task-management/task-management.slice';
+import { setProjectContext } from '@/features/task-management/taskListFields.slice';
 import {
   selectCurrentGrouping,
   selectCollapsedGroups,
@@ -74,7 +73,6 @@ import AddTaskRow from './components/AddTaskRow';
 import { AddCustomColumnButton, CustomColumnHeader } from './components/CustomColumnComponents';
 import TaskListSkeleton from './components/TaskListSkeleton';
 import ConvertToSubtaskDrawer from '@/components/task-list-common/convert-to-subtask-drawer/convert-to-subtask-drawer';
-import EmptyListPlaceholder from '@/components/EmptyListPlaceholder';
 
 // Drop Spacer Component - creates space between tasks when dragging
 const DropSpacer: React.FC<{ isVisible: boolean; visibleColumns: any[]; isDarkMode?: boolean }> = ({
@@ -279,7 +277,7 @@ const TaskListV2Section: React.FC = () => {
     state => state.taskManagement.isOpenDuplicateTaskModal
   );
 
-  const fields = useAppSelector(state => state.taskManagementFields) || [];
+  const fields = useAppSelector(state => state.taskManagementFields?.fields) || [];
   const columns = useAppSelector(selectColumns);
   const customColumns = useAppSelector(selectCustomColumns);
   const loadingColumns = useAppSelector(selectLoadingColumns);
@@ -392,9 +390,16 @@ const TaskListV2Section: React.FC = () => {
   const rawVisibleColumns = useMemo(() => {
     // Start with base columns
     const baseVisibleColumns = BASE_COLUMNS.filter(column => {
-      // Always show drag handle and title (sticky columns)
-      if (column.isSticky) return true;
+      // Always show essential UI controls (drag handle, checkbox, title)
+      // These are required for task list functionality
+      if (
+        column.isSticky &&
+        (column.id === 'dragHandle' || column.id === 'checkbox' || column.id === 'title')
+      ) {
+        return true;
+      }
 
+      // For other columns (including taskKey), respect the visibility settings
       // Primary: Check local fields configuration
       const field = fields.find(f => f.key === column.key);
       if (field) {
@@ -535,6 +540,13 @@ const TaskListV2Section: React.FC = () => {
     });
     return style;
   }, [visibleColumns]);
+
+  // Set project context for field visibility when project changes
+  useEffect(() => {
+    if (urlProjectId) {
+      dispatch(setProjectContext(urlProjectId));
+    }
+  }, [dispatch, urlProjectId]);
 
   // Effects
   useEffect(() => {
@@ -1269,19 +1281,7 @@ const TaskListV2Section: React.FC = () => {
   if (groups.length === 0 && !loading) {
     // If grouped by phase, show an unmapped group to allow task creation
     if (currentGrouping === 'phase') {
-      const unmappedGroup = {
-        id: 'Unmapped',
-        title: 'Unmapped',
-        groupType: 'phase',
-        groupValue: 'Unmapped', // Use same ID as groupValue for consistency
-        collapsed: false,
-        tasks: [],
-        taskIds: [],
-        color: '#fbc84c69',
-        actualCount: 0,
-        count: 1, // For the add task row
-        startIndex: 0,
-      };
+      const unmappedGroupId = 'Unmapped';
 
       return (
         <DndContext
@@ -1322,7 +1322,7 @@ const TaskListV2Section: React.FC = () => {
                   <div className="mt-2">
                     <TaskGroupHeader
                       group={{
-                        id: 'Unmapped',
+                        id: unmappedGroupId,
                         name: 'Unmapped',
                         count: 0,
                         color: '#fbc84c69',
@@ -1333,12 +1333,12 @@ const TaskListV2Section: React.FC = () => {
                     />
                     {/* Single add task row - reused for all tasks */}
                     <AddTaskRow
-                      groupId="Unmapped"
+                      groupId={unmappedGroupId}
                       groupType="phase"
                       groupValue="Unmapped"
                       projectId={urlProjectId || ''}
                       visibleColumns={visibleColumns}
-                      rowId="add-task-Unmapped-0"
+                      rowId={`add-task-${unmappedGroupId}-0`}
                       autoFocus={false}
                     />
                   </div>

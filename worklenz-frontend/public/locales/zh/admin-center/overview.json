@@ -85,7 +85,7 @@
   "logoTooLarge": "徽标尺寸非常大。推荐最大尺寸：800×240px",
   "logoVerticalWarning": "纵向徽标在导航栏中可能显得很小。建议使用横向方向",
   "logoFileSizeWarning": "文件大小较大。推荐：小于500KB以获得最佳性能",
-  "logoFormatRecommendation": "推荐使用透明背景的PNG格式以获得最佳效果",
+  "logoFormatRecommendation": "推荐PNG格式：400×120px，透明背景，小于500KB",
   "logoDeleteConfirm": "您确定要删除组织徽标吗？此操作无法撤销。",
   "logoUsage": "用于导航栏并同步到客户端门户",
   "logoUpgradeToUpload": "升级到付费计划以上传自定义徽标。",

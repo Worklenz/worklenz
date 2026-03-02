@@ -15,14 +15,19 @@ interface TaskDrawerPhaseSelectorProps {
 const TaskDrawerPhaseSelector = ({ phases, task }: TaskDrawerPhaseSelectorProps) => {
   const { socket } = useSocket();
   const dispatch = useAppDispatch();
-  
-  // Use controlled state for the selected phase
+
   const [selectedPhase, setSelectedPhase] = useState<string | undefined>(task?.phase_id);
 
-  // Sync local state when task.phase_id changes from external updates
   useEffect(() => {
-    setSelectedPhase(task?.phase_id);
-  }, [task?.phase_id]);
+    // FIX: Only sync local phase state when task has a real ID.
+    // Previously this ran whenever task?.phase_id changed — including when
+    // the drawer closes and taskFormViewModel is reset to {} in Redux, which
+    // sets task to an empty object and phase_id to undefined. That caused the
+    // phase selector to flash back to "no selection" during the closing
+    // animation. Now we ignore updates where the task itself is gone.
+    if (!task?.id) return;
+    setSelectedPhase(task.phase_id ?? undefined);
+  }, [task?.phase_id, task?.id]);
 
   const phaseMenuItems = phases?.map(phase => ({
     key: phase.id,
@@ -31,17 +36,14 @@ const TaskDrawerPhaseSelector = ({ phases, task }: TaskDrawerPhaseSelectorProps)
   }));
 
   const handlePhaseChange = (value: string | null) => {
-    // Update local state immediately for UI responsiveness
     setSelectedPhase(value || undefined);
-    
-    // Emit socket event
+
     socket?.emit(SocketEvents.TASK_PHASE_CHANGE.toString(), {
       task_id: task.id,
       phase_id: value,
       parent_task: task.parent_task_id || null,
     });
 
-    // Listen for the response and update Redux state
     socket?.once(
       SocketEvents.TASK_PHASE_CHANGE.toString(),
       (data: { phase_id: string | null; id: string }) => {
