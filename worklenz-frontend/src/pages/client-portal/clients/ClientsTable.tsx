@@ -102,6 +102,7 @@ const ClientsTable = () => {
       page: pagination.page,
       limit: pagination.limit,
       search: filters.search,
+      status: filters.status !== 'all' ? filters.status : undefined,
       sortBy: filters.sortBy,
       sortOrder: filters.sortOrder,
     }),

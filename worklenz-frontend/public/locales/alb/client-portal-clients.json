@@ -65,6 +65,17 @@
 
   "addressLabel": "Adresa",
   "addressPlaceholder": "Shkruani adresën (opsionale)",
+  "addressLine1Label": "Adresa",
+  "addressLine1Placeholder": "Shkruani adresën (opsionale)",
+  "cityLabel": "Qyteti",
+  "cityPlaceholder": "Qyteti",
+  "stateLabel": "Shteti / Provinca",
+  "statePlaceholder": "Shteti / Provinca",
+  "zipCodeLabel": "Kodi Postar",
+  "zipCodePlaceholder": "Kodi postar",
+  "countryLabel": "Vendi",
+  "countryPlaceholder": "Vendi",
+  "clientInvitationEmailInfo": "Një email ftese do t'i dërgohet klientit për t'u bashkuar me portalin. Mund të ndani gjithashtu lidhjen e ftesës nga faqja e Klientëve.",
 
   "contactPersonLabel": "Personi i Kontaktit",
   "contactPersonPlaceholder": "Shkruani emrin e personit të kontaktit",

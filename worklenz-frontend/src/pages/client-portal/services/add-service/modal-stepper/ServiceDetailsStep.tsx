@@ -221,13 +221,18 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
                   <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
                     Choose a clear, descriptive name that clients will easily understand.
                   </Typography.Text>
-                  <Input
-                    placeholder="e.g., Website Design, Logo Creation, Marketing Strategy"
-                    size="large"
-                    value={service.name || ''}
-                    onChange={e => setService({ ...service, name: e.target.value })}
-                    status={service.name?.trim() ? '' : 'warning'}
-                  />
+                  <Row>
+                    <Col xs={24} sm={16}>
+                      <Input
+                        placeholder="e.g., Website Design, Logo Creation, Marketing Strategy"
+                        maxLength={100}
+                        showCount
+                        value={service.name || ''}
+                        onChange={e => setService({ ...service, name: e.target.value })}
+                        status={service.name?.trim() ? '' : 'warning'}
+                      />
+                    </Col>
+                  </Row>
                   <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
                     💡 Good examples: "Custom Logo Design", "SEO Audit & Strategy", "Social Media Management"
                   </Typography.Text>
@@ -252,7 +257,7 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
                     Set pricing information and categorize your service for better organization.
                   </Typography.Text>
                   
-                  <Row gutter={16}>
+                  <Row gutter={[16, 16]}>
                     <Col span={12}>
                       <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
                         Price
@@ -282,21 +287,22 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
                         }
                       />
                     </Col>
+                    <Col span={12}>
+                      <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
+                        Category
+                      </Typography.Text>
+                      <Input
+                        placeholder="e.g., Web Development, Design, Marketing"
+                        maxLength={50}
+                        showCount
+                        value={service.category || ''}
+                        onChange={e => setService({ ...service, category: e.target.value })}
+                      />
+                      <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+                        💡 Categories help organize your services for clients
+                      </Typography.Text>
+                    </Col>
                   </Row>
-                  
-                  <div style={{ marginTop: 16 }}>
-                    <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
-                      Category
-                    </Typography.Text>
-                    <Input
-                      placeholder="e.g., Web Development, Design, Marketing"
-                      value={service.category || ''}
-                      onChange={e => setService({ ...service, category: e.target.value })}
-                    />
-                    <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-                      💡 Categories help organize your services for clients
-                    </Typography.Text>
-                  </div>
                 </div>
               </Card>
 
