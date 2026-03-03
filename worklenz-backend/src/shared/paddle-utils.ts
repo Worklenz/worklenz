@@ -50,12 +50,12 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
                        WHERE pt.user_id = ud.user_id AND pt.is_active = true AND pt.trial_end_date > NOW()
                        LIMIT 1) AS active_plan_trial,
                       COALESCE(
-                        (SELECT name FROM licensing_pricing_plans lpp 
-                         JOIN licensing_user_subscriptions lus2 ON lpp.id = lus2.plan_id 
-                         WHERE lus2.user_id = ud.user_id AND lus2.status IN ('active', 'trialing') 
+                        (SELECT name FROM licensing_pricing_plans lpp
+                         JOIN licensing_user_subscriptions lus2 ON lpp.id = lus2.plan_id
+                         WHERE lus2.user_id = ud.user_id AND lus2.status IN ('active', 'trialing')
                          ORDER BY CASE WHEN lus2.status = 'trialing' THEN 1 ELSE 2 END
                          LIMIT 1),
-                        (SELECT CASE 
+                        (SELECT CASE
                            WHEN tier_name = 'BUSINESS_LARGE' THEN 'business'
                            WHEN tier_name = 'ENTERPRISE' THEN 'enterprise'
                            ELSE LOWER(tier_name)
@@ -63,7 +63,8 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
                          FROM licensing_plan_trials pt
                          JOIN licensing_plan_tiers lpt ON pt.plan_tier_id = lpt.id
                          WHERE pt.user_id = ud.user_id AND pt.is_active = true AND pt.trial_end_date > NOW()
-                         LIMIT 1)
+                         LIMIT 1),
+                        ud.plan_name
                       ) AS plan_name,
                       COALESCE(
                         (SELECT user_limit FROM licensing_pricing_plans lpp 
