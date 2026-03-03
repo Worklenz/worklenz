@@ -287,11 +287,13 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
 
     // Check if we need to fetch data:
     // 1. If it's a different task than before, OR
-    // 2. If it's the same task but taskFormViewModel is empty (drawer was closed and reopened)
+    // 2. If it's the same task but taskFormViewModel is empty (drawer was closed and reopened), OR
+    // 3. If it's the same task but local state is empty (cleanup ran when drawer closed)
     const isDifferentTask = selectedTaskId !== prevTaskIdRef.current;
     const isDataMissing = !taskFormViewModel || !taskFormViewModel.task;
+    const isLocalStateMissing = taskAttachments.length === 0 || subTasks.length === 0 || taskDependencies.length === 0;
     
-    if (!isDifferentTask && !isDataMissing) {
+    if (!isDifferentTask && !isDataMissing && !isLocalStateMissing) {
       // Same task and data is already loaded, skip fetch
       return;
     }
@@ -313,7 +315,7 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
       selectedFilesRef.current = [];
       setTaskComments([]);
     };
-  }, [selectedTaskId, projectId, taskFormViewModel]);
+  }, [selectedTaskId, projectId]);
 
   return (
     <Skeleton active loading={loadingTask}>
