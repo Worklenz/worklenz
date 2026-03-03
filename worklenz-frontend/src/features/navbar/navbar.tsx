@@ -63,7 +63,6 @@ const Navbar = () => {
         if (authorizeResponse.authenticated) {
           authService.setCurrentSession(authorizeResponse.user);
           setIdentity(authorizeResponse.user);
-          // Remove setIsOwnerOrAdmin since it's now computed
         }
       })
       .catch(error => {
@@ -79,8 +78,18 @@ const Navbar = () => {
   }, [currentSession, organization, isOwnerOrAdmin, dispatch]);
 
   useEffect(() => {
+    // Initial load from localStorage
     const storedNavRoutesList: NavRoutesType[] = getJSONFromLocalStorage('navRoutes') || navRoutes;
     setNavRoutesList(storedNavRoutesList);
+
+    // Listen for pin/unpin events from PinRouteToNavbarButton and update sidebar in real-time
+    const handleNavRoutesUpdated = () => {
+      const updated: NavRoutesType[] = getJSONFromLocalStorage('navRoutes') || navRoutes;
+      setNavRoutesList(updated);
+    };
+
+    window.addEventListener('navRoutesUpdated', handleNavRoutesUpdated);
+    return () => window.removeEventListener('navRoutesUpdated', handleNavRoutesUpdated);
   }, []);
 
   useEffect(() => {
@@ -116,9 +125,8 @@ const Navbar = () => {
 
         return {
           key: route.path.split('/').pop() || route.name,
-          disabled: false, // Don't disable the menu item so click events work
+          disabled: false,
           label: shouldDisable ? (
-            // Show all premium features with normal colors and crown icon
             <Tooltip
               title={
                 isFreePlanRoute && isFreePlan
@@ -163,7 +171,6 @@ const Navbar = () => {
   // Move useCallback outside of JSX to prevent hooks error on resize
   const handleMenuClick = useCallback((menuInfo: { key: string }) => {
     const { key } = menuInfo;
-    // Handle clicks on disabled items to open upgrade modal
     const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
     const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
 
@@ -173,7 +180,6 @@ const Navbar = () => {
     });
 
     if (clickedRoute) {
-      // Track navigation clicks for client portal
       if (clickedRoute.name === 'client-portal') {
         trackMixpanelEvent('client_portal_nav_clicked', {
           source: 'navbar',
@@ -188,7 +194,6 @@ const Navbar = () => {
         (isBusinessRoute && !hasBusinessAccess) || (isFreePlanRoute && isFreePlan);
 
       if (shouldOpenModal) {
-        // Track paywall hit for trial expired users clicking Client Portal
         if (isLicenseExpired && clickedRoute.name === 'client-portal') {
           trackMixpanelEvent(evt_paywall_hit, {
             feature_blocked: 'client_portal',
@@ -268,7 +273,6 @@ const Navbar = () => {
                     </Flex>
                   </Flex>
                 </Flex>
-
               )}
               {isTablet && !isDesktop && (
                 <Flex gap={12} align="center">
