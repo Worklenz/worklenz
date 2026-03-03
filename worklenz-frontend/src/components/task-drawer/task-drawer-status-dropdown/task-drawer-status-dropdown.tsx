@@ -67,7 +67,6 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId }: TaskDrawerStatusDr
       SocketEvents.TASK_STATUS_CHANGE.toString(),
       (data: ITaskListStatusChangeResponse) => {
         dispatch(setTaskStatus(data));
-
         // Track task completion if status changed to done category
         if (data.statusCategory?.is_done) {
           trackMixpanelEvent(evt_task_completed, {
@@ -76,7 +75,6 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId }: TaskDrawerStatusDr
             status_id: data.status_id
           });
         }
-
         // Update task-management slice for task-list-v2
         const currentTask = store.getState().taskManagement.entities[task.id];
         if (currentTask) {
