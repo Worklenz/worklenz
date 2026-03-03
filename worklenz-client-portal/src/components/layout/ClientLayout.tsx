@@ -241,24 +241,6 @@ const ClientLayout: React.FC = () => {
             
             <NotificationCenter />
             
-            {/* Upgrade Plan Button */}
-            {!isMobile && (
-              <Button
-                type="primary"
-                size="small"
-                icon={<CrownOutlined />}
-                onClick={handleUpgradeClick}
-                style={{
-                  background: token.colorPrimary,
-                  borderColor: token.colorPrimary,
-                  fontSize: '12px',
-                  height: '32px',
-                }}
-              >
-                {t('upgradePlan', 'Upgrade')}
-              </Button>
-            )}
-            
             <Dropdown
               menu={{ items: userMenuItems }}
               placement="bottomRight"

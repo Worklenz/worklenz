@@ -132,6 +132,7 @@
     "createFirst": "Krijoni Kërkesën Tuaj të Parë",
     "errorLoading": "Gabim në ngarkimin e kërkesave",
     "errorLoadingDescription": "Dështoi ngarkimi i kërkesave. Ju lutem provoni përsëri.",
+    "requestNotFoundDescription": "Artikulli i kërkuar nuk mund të gjendej ose nuk keni akses në të.",
     "showingRange": "{{start}}-{{end}} nga {{total}} kërkesa",
     "pending": "Në Pritje",
     "accepted": "Pranuar",
@@ -190,6 +191,9 @@
     "loadingQuestions": "Duke ngarkuar pyetjet...",
     "enterAnswer": "Shkruani përgjigjen tuaj",
     "noComments": "Ende nuk ka komente. Filloni bisedën!",
+    "startConversation": "Filloni bisedën duke shtuar një koment më poshtë",
+    "requestCompletedNoComments": "Kjo kërkesë është përfunduar. Komentet janë çaktivizuar.",
+    "requestRejectedNoComments": "Kjo kërkesë është refuzuar. Komentet janë çaktivizuar.",
     "teamMember": "Ekipi",
     "client": "Klienti",
     "pressEnterToSend": "Shtypni Enter për të dërguar, Shift+Enter për rresht të ri"

@@ -132,6 +132,7 @@
     "createFirst": "创建您的第一个请求",
     "errorLoading": "加载请求时出错",
     "errorLoadingDescription": "加载请求失败。请重试。",
+    "requestNotFoundDescription": "找不到请求的项目或您无权访问它。",
     "showingRange": "{{start}}-{{end}} / {{total}} 个请求",
     "pending": "待处理",
     "accepted": "已接受",
@@ -190,6 +191,9 @@
     "loadingQuestions": "正在加载问题...",
     "enterAnswer": "请输入您的回答",
     "noComments": "暂无评论。开始对话吧！",
+    "startConversation": "在下方添加评论开始对话",
+    "requestCompletedNoComments": "此请求已完成。评论已禁用。",
+    "requestRejectedNoComments": "此请求已被拒绝。评论已禁用。",
     "teamMember": "团队",
     "client": "客户",
     "pressEnterToSend": "按 Enter 发送，Shift+Enter 换行"
