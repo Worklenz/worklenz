@@ -1,4 +1,4 @@
-import { Drawer, Empty, Segmented, Typography, Spin, Button, Flex } from '@/shared/antd-imports';
+import { Drawer, Empty, Segmented, Typography, Spin, Button, Flex, theme } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -7,6 +7,7 @@ import {
   fetchNotifications,
   setNotificationType,
   toggleDrawer,
+  fetchUnreadCount,
 } from '../../../../../features/navbar/notificationSlice';
 import { NOTIFICATION_OPTION_READ, NOTIFICATION_OPTION_UNREAD } from '@/shared/constants';
 import { useTranslation } from 'react-i18next';
@@ -28,9 +29,11 @@ import { getUserSession } from '@/utils/session-helper';
 import { setUser } from '@/features/user/userSlice';
 import { useNavigate } from 'react-router-dom';
 import { createAuthService } from '@/services/auth/auth.service';
+
 const HTML_TAG_REGEXP = /<[^>]*>/g;
 
 const NotificationDrawer = () => {
+  const { token } = theme.useToken();
   const { isDrawerOpen, notificationType, notifications, invitations } = useAppSelector(
     state => state.notificationReducer
   );
@@ -39,6 +42,12 @@ const NotificationDrawer = () => {
   const { socket, connected } = useSocket();
   const [notificationsSettings, setNotificationsSettings] = useState<INotificationSettings>({});
   const [showBrowserPush, setShowBrowserPush] = useState(false);
+  const [isMarkAllHovered, setIsMarkAllHovered] = useState(false);
+
+  const isDarkMode =
+    token.colorBgContainer === '#141414' ||
+    token.colorBgContainer.includes('dark') ||
+    document.documentElement.getAttribute('data-theme') === 'dark';
 
   const notificationCount = notifications?.length || 0;
   const [isLoading, setIsLoading] = useState(false);
@@ -75,11 +84,13 @@ const NotificationDrawer = () => {
 
   const handleInvitationsUpdate = (data: ITeamInvitationViewModel[]) => {
     dispatch(fetchInvitations());
+    dispatch(fetchUnreadCount()); // Fetch updated unread count
   };
 
   const handleNotificationsUpdate = async (notification: IWorklenzNotification) => {
     dispatch(fetchNotifications(notificationType));
     dispatch(fetchInvitations());
+    dispatch(fetchUnreadCount()); // Fetch updated unread count
 
     if (isPushEnabled()) {
       const title = notification.team ? `${notification.team} | Worklenz` : 'Worklenz';
@@ -115,6 +126,7 @@ const NotificationDrawer = () => {
     // Show notification using the template
     showNotification(notification);
     dispatch(fetchInvitations());
+    dispatch(fetchUnreadCount()); // Fetch updated unread count
   };
 
   const handleTeamMemberRemoved = async (data: { teamId: string; message: string }) => {
@@ -135,6 +147,7 @@ const NotificationDrawer = () => {
 
     showNotification(notification);
     // Don't fetch invitations - this is a removal, not an invitation
+    dispatch(fetchUnreadCount()); // Still update unread count
   };
 
   const askPushPermission = () => {
@@ -162,8 +175,10 @@ const NotificationDrawer = () => {
     if (res.done) {
       dispatch(fetchNotifications(notificationType));
       dispatch(fetchInvitations());
+      dispatch(fetchUnreadCount()); // Fetch updated unread count
     }
   };
+
   const handleVerifyAuth = async () => {
     const result = await dispatch(verifyAuthentication()).unwrap();
     if (result.authenticated) {
@@ -218,6 +233,7 @@ const NotificationDrawer = () => {
     await notificationsApiService.readAllNotifications();
     dispatch(fetchNotifications(notificationType));
     dispatch(fetchInvitations());
+    dispatch(fetchUnreadCount()); // Fetch updated unread count
   };
 
   useEffect(() => {
@@ -226,6 +242,7 @@ const NotificationDrawer = () => {
     socket?.on(SocketEvents.TEAM_MEMBER_REMOVED.toString(), handleTeamMemberRemoved);
     fetchNotificationsSettings();
     askPushPermission();
+    dispatch(fetchUnreadCount()); // Initial fetch of unread count
 
     return () => {
       socket?.removeListener(SocketEvents.INVITATIONS_UPDATE.toString(), handleInvitationsUpdate);
@@ -238,7 +255,7 @@ const NotificationDrawer = () => {
         handleTeamMemberRemoved
       );
     };
-  }, [socket]);
+  }, [socket, dispatch]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -246,7 +263,13 @@ const NotificationDrawer = () => {
     if (notificationType) {
       dispatch(fetchNotifications(notificationType)).finally(() => setIsLoading(false));
     }
+    dispatch(fetchUnreadCount()); // Fetch unread count when notification type changes
   }, [notificationType, dispatch]);
+
+  // Determine hover color based on theme
+  const getMarkAllHoverColor = () => {
+    return isDarkMode ? '#69b1ff' : '#1677ff';
+  };
 
   return (
     <Drawer
@@ -274,7 +297,16 @@ const NotificationDrawer = () => {
           }}
         />
 
-        <Button type="link" onClick={handleMarkAllAsRead}>
+        <Button 
+          type="link" 
+          onClick={handleMarkAllAsRead}
+          onMouseEnter={() => setIsMarkAllHovered(true)}
+          onMouseLeave={() => setIsMarkAllHovered(false)}
+          style={{
+            color: isMarkAllHovered ? getMarkAllHoverColor() : 'var(--ant-primary-color)',
+            transition: 'color 0.3s ease',
+          }}
+        >
           {t('notificationsDrawer.markAsRead')}
         </Button>
       </Flex>

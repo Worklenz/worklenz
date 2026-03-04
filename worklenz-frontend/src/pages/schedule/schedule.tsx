@@ -1,10 +1,9 @@
-import { Button, DatePicker, DatePickerProps, Flex, Select, Space, Radio, message } from '@/shared/antd-imports';
+import { Button, DatePicker, DatePickerProps, Flex, Select, Space } from '@/shared/antd-imports';
 import React, { useRef, useEffect, useState, Suspense, lazy } from 'react';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_schedule_page_visit } from '@/shared/worklenz-analytics-events';
 import { SettingOutlined, ReloadOutlined } from '@ant-design/icons';
-import { useDispatch } from 'react-redux';
-import { setDate, setType, toggleSettingsDrawer } from '@/features/schedule/scheduleSlice';
+import { setDate, setType, toggleSettingsDrawer, getWorking } from '@/features/schedule/scheduleSlice';
 import ScheduleSettingsDrawer from '@/features/schedule/ScheduleSettingsDrawer';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
@@ -12,12 +11,12 @@ import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import ScheduleDrawer from '@/features/schedule/ScheduleDrawer';
 import GranttChart from '@/components/schedule/grant-chart/GranttChart';
 import { TaskTimelineView } from '@/components/schedule/task-timeline';
-import ScheduleDataDebugger from '@/components/schedule/ScheduleDataDebugger';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { PickerType } from '@/types/schedule/schedule-v2.types';
 import { scheduleApi } from '@/api/schedule/scheduleApi';
 import { createPortal } from 'react-dom';
 import { useScheduleSocketHandlers } from '@/hooks/useScheduleSocketHandlers';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 
 // Lazy load TaskDrawer
 const TaskDrawer = lazy(() => import('@/components/task-drawer/task-drawer'));
@@ -40,7 +39,7 @@ const PickerWithType = ({
 
 const Schedule: React.FC = () => {
   const { t } = useTranslation('schedule');
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const granttChartRef = useRef<any>(null);
   const { date, type, error } = useAppSelector(state => state.scheduleReducer);
   const { trackMixpanelEvent } = useMixpanelTracking();
@@ -110,6 +109,12 @@ const Schedule: React.FC = () => {
     }, 1000);
   };
 
+  const handleOpenSettings = () => {
+    // Pre-load settings before opening drawer to avoid loading state in drawer
+    dispatch(getWorking());
+    dispatch(toggleSettingsDrawer());
+  };
+
   return (
     <div style={{ minHeight: '90vh' }}>
       <Flex align="center" justify="space-between">
@@ -156,7 +161,7 @@ const Schedule: React.FC = () => {
           <Button 
             size="small" 
             shape="circle" 
-            onClick={() => dispatch(toggleSettingsDrawer())}
+            onClick={handleOpenSettings}
             title={t('settings', { defaultValue: 'Settings' })}
           >
             <SettingOutlined />

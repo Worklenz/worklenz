@@ -96,38 +96,52 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
       return;
     }
 
-    if (validation.warning) {
-      message.warning(validation.warning);
-    }
-
     setUploading(true);
     setFileSize(file.size);
 
     try {
-      // Read image dimensions
+      // Validate image dimensions before uploading
       const img = new Image();
       const objectUrl = URL.createObjectURL(file);
 
-      img.onload = () => {
-        setImageDimensions({ width: img.width, height: img.height });
+      const dimensionErrors = await new Promise<string[]>((resolve) => {
+        img.onload = () => {
+          const errors: string[] = [];
 
-        // Check dimensions and show warnings
-        if (img.width < 200 || img.height < 60) {
-          message.warning(t('logoTooSmall'));
-        } else if (img.width > 800 || img.height > 240) {
-          message.warning(t('logoTooLarge'));
-        }
+          if (img.width < 200 || img.height < 60) {
+            errors.push(t('logoTooSmall'));
+          } else if (img.width > 800 || img.height > 240) {
+            errors.push(t('logoTooLarge'));
+          }
 
-        // Check aspect ratio
-        const aspectRatio = img.height / img.width;
-        if (aspectRatio > 2) {
-          message.warning(t('logoVerticalWarning'));
-        }
+          const aspectRatio = img.height / img.width;
+          if (aspectRatio > 2) {
+            errors.push(t('logoVerticalWarning'));
+          }
 
-        URL.revokeObjectURL(objectUrl);
-      };
+          setImageDimensions({ width: img.width, height: img.height });
+          URL.revokeObjectURL(objectUrl);
+          resolve(errors);
+        };
 
-      img.src = objectUrl;
+        img.onerror = () => {
+          URL.revokeObjectURL(objectUrl);
+          resolve([t('logoUploadError')]);
+        };
+
+        img.src = objectUrl;
+      });
+
+      // Block upload if dimension/aspect ratio validation fails
+      if (dimensionErrors.length > 0) {
+        dimensionErrors.forEach((err) => message.error(err));
+        return;
+      }
+
+      // Show file size warning (non-blocking) after dimension checks pass
+      if (validation.warning) {
+        message.warning(validation.warning);
+      }
 
       // Convert to base64
       const base64 = await getBase64(file);
@@ -143,7 +157,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
       }
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || error?.message || t('logoUploadError');
-      logger.error('Error uploading logo', error);
+      logger.error('Error uploading logo', errorMessage);
     } finally {
       setUploading(false);
       if (fileInputRef.current) {

@@ -6,6 +6,16 @@ import { setFilteredCategories, setRequestParams } from '@/features/projects/pro
 import '../../TableColumns.css';
 import { useAppSelector } from '@/hooks/useAppSelector';
 
+// Helper function to determine readable text color based on background color luminance
+const getContrastColor = (hexColor: string): string => {
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5 ? '#000000' : '#ffffff';
+};
+
 export const CategoryCell: React.FC<{
   record: IProjectViewModel;
   t: TFunction;
@@ -27,6 +37,8 @@ export const CategoryCell: React.FC<{
       <Tag
         color={record.category_color}
         className="rounded-full table-tag"
+        // ✅ Fixed: override Ant Design's default white text with contrast-aware color
+        style={{ color: record.category_color ? getContrastColor(record.category_color) : undefined }}
         onClick={e => {
           e.stopPropagation();
           filterByCategory(record.category_id);

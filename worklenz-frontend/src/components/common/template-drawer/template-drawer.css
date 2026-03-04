@@ -91,3 +91,25 @@
 .custom-template-list .selected-custom-template:hover {
   background-color: var(--color-paleBlue);
 }
+
+/* ✅ FIX: Constrain Ant Design Tabs content so it doesn't create
+   overflow/extra scroll space inside the template drawer modal.
+   Scoped to .template-drawer-content to avoid breaking other drawers. */
+.template-drawer-content .ant-tabs-content-holder {
+  overflow: hidden !important;
+}
+
+.template-drawer-content .ant-tabs-tabpane {
+  height: 100%;
+}
+
+.template-drawer-content .ant-tabs.ant-tabs-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.template-drawer-content .ant-tabs-content {
+  height: 100%;
+  overflow: hidden;
+}

@@ -21,12 +21,14 @@ const JobTitleDrawer = ({
   const { trackMixpanelEvent } = useMixpanelTracking();
 
   useEffect(() => {
-    if (jobTitleId) {
-      getJobTitleById(jobTitleId);
-    } else {
-      form.resetFields();
+    if (drawerOpen) {
+      if (jobTitleId) {
+        getJobTitleById(jobTitleId);
+      } else {
+        form.resetFields();
+      }
     }
-  }, [jobTitleId, form]);
+  }, [jobTitleId, drawerOpen, form]);
 
   const getJobTitleById = async (id: string) => {
     try {

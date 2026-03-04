@@ -46,7 +46,7 @@ export const projectTemplatesApiService = {
   },
 
   deleteCustomTemplate: async (id: string): Promise<IServerResponse<void>> => {
-    const response = await apiClient.delete(`${rootUrl}/${id}`);
+    const response = await apiClient.delete(`${rootUrl}/custom-template/${id}`);
     return response.data;
   },
 

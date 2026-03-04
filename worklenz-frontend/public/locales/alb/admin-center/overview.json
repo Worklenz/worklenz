@@ -85,7 +85,7 @@
   "logoTooLarge": "Dimensionet e logos janë shumë të mëdha. Madhësia maksimale e rekomanduar: 800×240px",
   "logoVerticalWarning": "Logot vertikale mund të duken të vogla në shiritin e navigimit. Orientimi horizontal është i rekomanduar",
   "logoFileSizeWarning": "Madhësia e skedarit është e madhe. E rekomanduar: më pak se 500KB për performancë optimale",
-  "logoFormatRecommendation": "Formati PNG me sfond transparent rekomandohet për rezultate më të mira",
+  "logoFormatRecommendation": "Format PNG i rekomanduar: 400×120px, sfond transparent, më pak se 500KB",
   "logoDeleteConfirm": "A jeni i sigurt që dëshironi të hiqni logon e organizatës? Ky veprim nuk mund të zhbëhet.",
   "logoUsage": "Përdoret në shiritin e navigimit dhe sinkronizohet me portalin e klientit",
   "logoUpgradeToUpload": "Përmirëso në një plan me pagesë për të ngarkuar një logo të personalizuar.",

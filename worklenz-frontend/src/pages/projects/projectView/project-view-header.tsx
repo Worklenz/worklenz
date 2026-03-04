@@ -93,6 +93,7 @@ const ProjectViewHeader = memo(() => {
 
   const [creatingTask, setCreatingTask] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  const [refreshLoading, setRefreshLoading] = useState(false);
   // State for back button hover effect
   const [isBackButtonHovered, setIsBackButtonHovered] = useState(false);
 
@@ -100,39 +101,49 @@ const ProjectViewHeader = memo(() => {
   const subscriptionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Memoized refresh handler with optimized dependencies
-  const handleRefresh = useCallback(() => {
+  const handleRefresh = useCallback(async () => {
     if (!projectId) return;
 
-    dispatch(getProject(projectId));
+    try {
+      setRefreshLoading(true);
 
-    switch (tab) {
-      case 'tasks-list':
-        dispatch(fetchStatuses(projectId));
-        dispatch(fetchTaskListColumns(projectId));
-        dispatch(fetchPhasesByProjectId(projectId));
-        dispatch(fetchTasksV3(projectId));
-        break;
-      case 'board':
-        dispatch(fetchEnhancedKanbanGroups(projectId));
-        break;
-      case 'workload':
-        // Trigger workload refresh via timestamp
-        dispatch(setRefreshTimestamp());
-        break;
-      case 'roadmap':
-        // Trigger roadmap refresh via timestamp
-        dispatch(setRefreshTimestamp());
-        break;
-      case 'finance':
-        // Finance already listens to refreshTimestamp, but make it explicit
-        dispatch(setRefreshTimestamp());
-        break;
-      case 'project-insights-member-overview':
-      case 'all-attachments':
-      case 'members':
-      case 'updates':
-        dispatch(setRefreshTimestamp());
-        break;
+      // Always refresh project data
+      const projectPromise = dispatch(getProject(projectId)).unwrap();
+
+      switch (tab) {
+        case 'tasks-list':
+          // Dispatch all tasks-list related operations in parallel
+          await Promise.allSettled([
+            projectPromise,
+            dispatch(fetchStatuses(projectId)).unwrap(),
+            dispatch(fetchTaskListColumns(projectId)).unwrap(),
+            dispatch(fetchPhasesByProjectId(projectId)).unwrap(),
+            dispatch(fetchTasksV3(projectId)).unwrap()
+          ]);
+          break;
+        case 'board':
+          // Dispatch board operations
+          await Promise.allSettled([
+            projectPromise,
+            dispatch(fetchEnhancedKanbanGroups(projectId)).unwrap()
+          ]);
+          break;
+        case 'workload':
+        case 'roadmap':
+        case 'finance':
+        case 'project-insights-member-overview':
+        case 'all-attachments':
+        case 'members':
+        case 'updates':
+          // Wait for project data and trigger timestamp refresh
+          await projectPromise;
+          dispatch(setRefreshTimestamp());
+          break;
+      }
+    } catch (error) {
+      logger.error('Error refreshing project data:', error);
+    } finally {
+      setRefreshLoading(false);
     }
   }, [dispatch, projectId, tab]);
 
@@ -323,7 +334,7 @@ const ProjectViewHeader = memo(() => {
           <Tag
             key="category"
             color={selectedProject.category_color || colors.vibrantOrange}
-            style={{ borderRadius: 24, paddingInline: 8, margin: 0 }}
+            style={{ borderRadius: 24, paddingInline: 8, margin: 0, color: '#000000' }}
           >
             {selectedProject.category_name}
           </Tag>
@@ -371,14 +382,6 @@ const ProjectViewHeader = memo(() => {
       );
     }
 
-    if (selectedProject.notes) {
-      elements.push(
-        <Typography.Text key="notes" type="secondary">
-          {selectedProject.notes}
-        </Typography.Text>
-      );
-    }
-
     return (
       <Flex gap={4} align="center">
         {elements}
@@ -395,8 +398,9 @@ const ProjectViewHeader = memo(() => {
       <Tooltip key="refresh" title={t('refreshTooltip', { defaultValue: 'Refresh project data' })}>
         <Button
           shape="circle"
-          icon={<SyncOutlined spin={loadingGroups} />}
+          icon={<SyncOutlined spin={refreshLoading} />}
           onClick={handleRefresh}
+          loading={refreshLoading}
         />
       </Tooltip>
     );
@@ -495,7 +499,7 @@ const ProjectViewHeader = memo(() => {
       </Flex>
     );
   }, [
-    loadingGroups,
+    refreshLoading,
     handleRefresh,
     isOwnerOrAdmin,
     handleSaveAsTemplate,

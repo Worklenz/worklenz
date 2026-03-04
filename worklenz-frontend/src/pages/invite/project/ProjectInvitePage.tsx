@@ -5,7 +5,9 @@ import { CheckCircleOutlined, LoadingOutlined, ProjectOutlined, CloseOutlined } 
 import { projectMembersApiService } from '@/api/project-members/project-members.api.service';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { invitationRedirectService } from '@/services/invitation-redirect.service';
+import { setActiveTeam } from '@/features/teams/teamSlice';
 import { useTranslation } from 'react-i18next';
 
 const { Title, Paragraph } = Typography;
@@ -17,6 +19,7 @@ interface FormValues {
 
 const ProjectInvitePage: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const { token } = useParams<{ token: string }>();
   const authService = useAuthService();
   const currentUser = authService.getCurrentSession();
@@ -77,10 +80,22 @@ const ProjectInvitePage: React.FC = () => {
         invitationRedirectService.clearPendingInvitation();
         console.log('[ProjectInvite] Cleared invitation context after successful join');
         
+        const teamId = response.body?.team_id;
+        const projectId = response.body?.project_id || projectInfo?.project?.id;
+        
         // Redirect to login or project after a delay
-        setTimeout(() => {
-          if (currentUser) {
-            navigate(`/worklenz/projects/${projectInfo?.project?.id}`);
+        setTimeout(async () => {
+          if (currentUser && teamId) {
+            // Switch to the invited team and reload to refresh the session
+            try {
+              await dispatch(setActiveTeam(teamId));
+            } catch (error) {
+              console.error('[ProjectInvite] Failed to set active team:', error);
+            }
+            window.location.href = `/worklenz/projects/${projectId}`;
+          } else if (currentUser) {
+            // Fallback: reload to pick up the active team set by backend
+            window.location.href = `/worklenz/projects/${projectId}`;
           } else {
             navigate('/auth/login', {
               state: {

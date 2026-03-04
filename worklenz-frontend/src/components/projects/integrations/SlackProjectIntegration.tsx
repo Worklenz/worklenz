@@ -29,6 +29,8 @@ export const SlackProjectIntegration: React.FC<SlackProjectIntegrationProps> = (
       message.warning(t('slack.notConnected', { defaultValue: 'Please connect your Slack workspace in Settings first' }));
       return;
     }
+    // Close the parent dropdown when opening the modal
+    onClose();
     setModalOpen(true);
   };
 
