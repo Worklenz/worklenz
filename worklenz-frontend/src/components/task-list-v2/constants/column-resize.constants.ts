@@ -8,6 +8,7 @@ export const COLUMN_WIDTH_CONSTRAINTS = {
   MAX_WIDTH: 800,
   TITLE_MAX_WIDTH: 400,
   DESCRIPTION_MIN_WIDTH: 200,
+  LABELS_MIN_WIDTH: 250,
 } as const;
 
 // Default column widths
@@ -15,7 +16,8 @@ export const COLUMN_WIDTH_CONSTRAINTS = {
 export const DEFAULT_COLUMN_WIDTHS = {
   TITLE: 350, // Matches columns.ts width and is within TITLE_MAX_WIDTH constraint
   DESCRIPTION: 260,
-  DEFAULT: 150,
+  LABELS: 250,
+  DEFAULT: 250,
 } as const;
 
 // Storage key prefix for column widths

@@ -10,8 +10,7 @@ import {
   LogoutOutlined,
   MoonOutlined,
   SunOutlined,
-  TranslationOutlined,
-  Button
+  TranslationOutlined
 } from '@/shared/antd-imports';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -25,7 +24,6 @@ import ClientPortalSidebar from './ClientPortalSidebar';
 import { useResponsive } from '@/hooks/useResponsive';
 import NotificationCenter from '../NotificationCenter';
 import OrganizationSwitcher from '../OrganizationSwitcher';
-import { CrownOutlined } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
 
@@ -92,11 +90,6 @@ const ClientLayout: React.FC = () => {
     } catch (error) {
       console.error('Failed to change language:', error);
     }
-  };
-
-  const handleUpgradeClick = () => {
-    // Redirect to main app's billing page
-    window.open('/worklenz/admin-center/billing', '_blank');
   };
 
   const languageOptions = [
@@ -240,24 +233,6 @@ const ClientLayout: React.FC = () => {
             )}
             
             <NotificationCenter />
-            
-            {/* Upgrade Plan Button */}
-            {!isMobile && (
-              <Button
-                type="primary"
-                size="small"
-                icon={<CrownOutlined />}
-                onClick={handleUpgradeClick}
-                style={{
-                  background: token.colorPrimary,
-                  borderColor: token.colorPrimary,
-                  fontSize: '12px',
-                  height: '32px',
-                }}
-              >
-                {t('upgradePlan', 'Upgrade')}
-              </Button>
-            )}
             
             <Dropdown
               menu={{ items: userMenuItems }}

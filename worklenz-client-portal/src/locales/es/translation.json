@@ -200,6 +200,7 @@
     "createFirst": "Crea Tu Primera Solicitud",
     "errorLoading": "Error al cargar solicitudes",
     "errorLoadingDescription": "Error al cargar solicitudes. Por favor intenta de nuevo.",
+    "requestNotFoundDescription": "El elemento solicitado no se pudo encontrar o no tienes acceso a él.",
     "showingRange": "{{start}}-{{end}} de {{total}} solicitudes",
     "pending": "Pendiente",
     "accepted": "Aceptado",
@@ -258,6 +259,9 @@
     "loadingQuestions": "Cargando preguntas...",
     "enterAnswer": "Ingrese su respuesta",
     "noComments": "Aún no hay comentarios. ¡Inicia la conversación!",
+    "startConversation": "Inicia la conversación agregando un comentario a continuación",
+    "requestCompletedNoComments": "Esta solicitud ha sido completada. Los comentarios están deshabilitados.",
+    "requestRejectedNoComments": "Esta solicitud ha sido rechazada. Los comentarios están deshabilitados.",
     "teamMember": "Equipo",
     "client": "Cliente",
     "pressEnterToSend": "Presiona Enter para enviar, Shift+Enter para nueva línea"

@@ -65,12 +65,10 @@ const clientsSlice = createSlice({
     },
     toggleEditClientDrawer: (state, action: PayloadAction<string | null>) => {
       if (action.payload === null) {
-        // Close the drawer
         state.isEditClientDrawerOpen = false;
-        state.selectedClientId = null;
       } else {
-        // Open the drawer with the selected client
-        state.isEditClientDrawerOpen = true;
+        // Open the combined client modal
+        state.isClientDetailsDrawerOpen = true;
         state.selectedClientId = action.payload;
       }
     },
@@ -98,11 +96,9 @@ const clientsSlice = createSlice({
     },
     toggleClientDetailsDrawer: (state, action: PayloadAction<string | null>) => {
       if (action.payload === null) {
-        // Close the drawer
         state.isClientDetailsDrawerOpen = false;
         state.selectedClientId = null;
       } else {
-        // Open the drawer with the selected client
         state.isClientDetailsDrawerOpen = true;
         state.selectedClientId = action.payload;
       }
