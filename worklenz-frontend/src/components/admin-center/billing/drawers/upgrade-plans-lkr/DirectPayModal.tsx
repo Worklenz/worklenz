@@ -20,6 +20,7 @@ export const DirectPayModal: React.FC<DirectPayModalProps> = ({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isHandledRef = useRef(false);
+  const [isProcessing, setIsProcessing] = React.useState(false);
 
   useEffect(() => {
     if (!isOpen) {
@@ -29,6 +30,7 @@ export const DirectPayModal: React.FC<DirectPayModalProps> = ({
         pollIntervalRef.current = null;
       }
       isHandledRef.current = false;
+      setIsProcessing(false);
       return;
     }
 
@@ -52,6 +54,18 @@ export const DirectPayModal: React.FC<DirectPayModalProps> = ({
         };
 
         isHandledRef.current = true;
+
+        // Show processing state
+        setIsProcessing(true);
+
+        // Stop the iframe from navigating to the return URL
+        if (iframeRef.current?.contentWindow) {
+          try {
+            iframeRef.current.contentWindow.stop();
+          } catch (e) {
+            // Ignore cross-origin errors
+          }
+        }
 
         if (status === 'SUCCESS') {
           onSuccess(responseData);
@@ -80,7 +94,8 @@ export const DirectPayModal: React.FC<DirectPayModalProps> = ({
       }
       try {
         const iframeUrl = iframeRef.current?.contentWindow?.location?.href;
-        if (iframeUrl && iframeUrl.includes(window.location.origin)) {
+        // Check if iframe has redirected to our domain OR if URL contains DirectPay response params
+        if (iframeUrl && (iframeUrl.includes(window.location.origin) || iframeUrl.includes('card_added=true') || iframeUrl.includes('status='))) {
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
             pollIntervalRef.current = null;
@@ -148,20 +163,51 @@ export const DirectPayModal: React.FC<DirectPayModalProps> = ({
         body: {
           padding: 0,
           height: '600px',
+          position: 'relative',
         },
       }}
     >
       {paymentUrl && (
-        <iframe
-          ref={iframeRef}
-          src={paymentUrl}
-          style={{
-            width: '100%',
-            height: '600px',
-            border: 'none',
-          }}
-          title="DirectPay Payment Gateway"
-        />
+        <>
+          <iframe
+            ref={iframeRef}
+            src={paymentUrl}
+            style={{
+              width: '100%',
+              height: '600px',
+              border: 'none',
+              display: isProcessing ? 'none' : 'block',
+            }}
+            title="DirectPay Payment Gateway"
+          />
+          {isProcessing && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#fff',
+                zIndex: 10,
+              }}
+            >
+              <div style={{ fontSize: '16px', marginBottom: '16px' }}>Processing payment...</div>
+              <div className="ant-spin ant-spin-spinning">
+                <span className="ant-spin-dot ant-spin-dot-spin">
+                  <i className="ant-spin-dot-item"></i>
+                  <i className="ant-spin-dot-item"></i>
+                  <i className="ant-spin-dot-item"></i>
+                  <i className="ant-spin-dot-item"></i>
+                </span>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </Modal>
   );

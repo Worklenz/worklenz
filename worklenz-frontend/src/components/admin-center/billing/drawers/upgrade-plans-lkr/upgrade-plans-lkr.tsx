@@ -253,21 +253,26 @@ const UpgradePlansLKR: React.FC = () => {
 
   const handleDirectPaySuccess = async (response: any) => {
     logger.info('DirectPay payment successful', response);
+    
+    // Close modal immediately for better UX
     setShowDirectPayModal(false);
-    message.success('Payment processed successfully!');
+    
+    // Show success message
+    message.success('Payment processed successfully! Updating your subscription...');
 
-    // Refresh billing info and close modal
+    // Refresh billing info and close upgrade modal
     dispatch(fetchBillingInfo());
+    
+    // Refresh user session after a short delay
     setTimeout(() => {
       dispatch(toggleUpgradeModal());
-      // Refresh user session
       authApiService.verify().then((authResponse) => {
         if (authResponse.authenticated) {
           setSession(authResponse.user);
           dispatch(setUser(authResponse.user));
         }
       });
-    }, 2000);
+    }, 1500);
   };
 
   const handleDirectPayError = (error: any) => {
