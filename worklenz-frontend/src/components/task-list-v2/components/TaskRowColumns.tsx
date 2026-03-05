@@ -141,20 +141,24 @@ export const DescriptionColumn: React.FC<DescriptionColumnProps> = memo(
   ({ width, description }) => (
     <div
       className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700"
-      style={{ width }}
+      style={{ width, minHeight: '30px' }}
     >
-      <div
-        className="text-sm text-gray-600 dark:text-gray-400 truncate w-full"
-        style={{
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          maxHeight: '24px',
-          lineHeight: '24px',
-        }}
-        title={description || ''}
-        dangerouslySetInnerHTML={{ __html: description || '' }}
-      />
+      {description && description.trim() ? (
+        <div
+          className="text-sm text-gray-600 dark:text-gray-400 truncate w-full"
+          style={{
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            maxHeight: '24px',
+            lineHeight: '24px',
+          }}
+          title={description}
+          dangerouslySetInnerHTML={{ __html: description }}
+        />
+      ) : (
+        <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
+      )}
     </div>
   )
 );

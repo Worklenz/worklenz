@@ -9,7 +9,6 @@ import {
   KeyboardSensor,
   TouchSensor,
   closestCenter,
-  Modifier,
 } from '@dnd-kit/core';
 import { restrictToVerticalAxis, restrictToHorizontalAxis } from '@dnd-kit/modifiers';
 import {
@@ -42,7 +41,6 @@ import {
   selectColumns,
   selectCustomColumns,
   selectLoadingColumns,
-  updateColumnVisibility,
   setDuplicateTaskModalStatus,
 } from '@/features/task-management/task-management.slice';
 import { setProjectContext } from '@/features/task-management/taskListFields.slice';
@@ -75,7 +73,6 @@ import AddTaskRow from './components/AddTaskRow';
 import { AddCustomColumnButton, CustomColumnHeader } from './components/CustomColumnComponents';
 import TaskListSkeleton from './components/TaskListSkeleton';
 import ConvertToSubtaskDrawer from '@/components/task-list-common/convert-to-subtask-drawer/convert-to-subtask-drawer';
-import EmptyListPlaceholder from '@/components/EmptyListPlaceholder';
 
 // Drop Spacer Component - creates space between tasks when dragging
 const DropSpacer: React.FC<{ isVisible: boolean; visibleColumns: any[]; isDarkMode?: boolean }> = ({
@@ -1087,7 +1084,22 @@ const TaskListV2Section: React.FC = () => {
                           // Create resize indicator line
                           const indicator = document.createElement('div');
                           indicator.className = 'column-resize-indicator';
-                          tableContainer.style.position = 'relative';
+                          
+                          // Ensure the container has position relative for absolute positioning
+                          const originalPosition = tableContainer.style.position;
+                          if (!originalPosition || originalPosition === 'static') {
+                            tableContainer.style.position = 'relative';
+                          }
+                          
+                          // Calculate the full scrollable height to span entire table
+                          const scrollHeight = tableContainer.scrollHeight;
+                          const scrollTop = tableContainer.scrollTop;
+                          
+                          // Set indicator to span from current scroll position to end of content
+                          // Use fixed positioning from top of visible area to bottom of scrollable content
+                          indicator.style.top = '0px';
+                          indicator.style.height = `${scrollHeight}px`;
+                          
                           tableContainer.appendChild(indicator);
 
                           // Create tooltip
@@ -1165,6 +1177,13 @@ const TaskListV2Section: React.FC = () => {
                             document.body.style.cursor = '';
                             document.body.style.userSelect = '';
                             document.body.classList.remove('column-resizing');
+                            
+                            // Restore original position style
+                            if (originalPosition) {
+                              tableContainer.style.position = originalPosition;
+                            } else {
+                              tableContainer.style.position = '';
+                            }
 
                             // Remove indicator and tooltip
                             if (indicator.parentNode) {

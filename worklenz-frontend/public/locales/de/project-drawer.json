@@ -46,5 +46,14 @@
   "manualProgressTooltip": "Manuelle Fortschrittsaktualisierungen für Aufgaben ohne Unteraufgaben erlauben",
   "weightedProgress": "Gewichteter Fortschritt",
   "weightedProgressTooltip": "Fortschritt basierend auf Unteraufgaben-Gewichten berechnen",
-  "timeProgress": "Zeitbasierter Fortschritt"
+  "timeProgress": "Zeitbasierter Fortschritt",
+  "timeProgressTooltip": "Fortschritt basierend auf geschätzter Zeit berechnen",
+  "autoAssignTaskCreator": "Aufgaben dem Ersteller zuweisen",
+  "autoAssignTaskCreatorTooltip": "Neue Aufgaben automatisch dem Teammitglied zuweisen, das sie erstellt",
+  "generalTab": "Allgemein",
+  "advancedSettingsTab": "Erweiterte Einstellungen",
+  "progressSettingsDescription": "Konfigurieren Sie, wie der Aufgabenfortschritt für dieses Projekt berechnet wird. Es kann nur eine Methode gleichzeitig aktiv sein.",
+  "taskSettings": "Aufgabeneinstellungen",
+  "taskSettingsDescription": "Konfigurieren Sie das Standardverhalten für in diesem Projekt erstellte Aufgaben.",
+  "enterProjectKey": "Projektschlüssel eingeben"
 }

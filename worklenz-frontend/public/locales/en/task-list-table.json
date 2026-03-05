@@ -68,7 +68,12 @@
     "convertToSubTask": "Convert to Sub task",
     "convertToTask": "Convert to Task",
     "delete": "Delete",
-    "searchByNameInputPlaceholder": "Search by name"
+    "searchByNameInputPlaceholder": "Search by name",
+    "deleteConfirmTitle": "Delete Task",
+    "deleteConfirmMessage": "Are you sure you want to delete this task? This action cannot be undone.",
+    "deleteSubtaskConfirmMessage": "Are you sure you want to delete this subtask? This action cannot be undone.",
+    "deleteConfirmOk": "Delete",
+    "deleteConfirmCancel": "Cancel"
   },
   "setDueDate": "Set due date",
   "setStartDate": "Set start date",

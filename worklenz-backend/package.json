@@ -38,7 +38,11 @@
     "sonar": "sonar-scanner -Dproject.settings=sonar-project-dev.properties",
     "tsc": "tsc",
     "test:watch": "jest --watch --setupFiles dotenv/config",
-    "validate-docs": "echo 'Note: Install swagger-cli globally (npm install -g @apidevtools/swagger-cli) to validate OpenAPI spec' && echo 'For now, validation happens automatically when Swagger UI loads'"
+    "validate-docs": "echo 'Note: Install swagger-cli globally (npm install -g @apidevtools/swagger-cli) to validate OpenAPI spec' && echo 'For now, validation happens automatically when Swagger UI loads'",
+    "migrate:up": "node scripts/migrate.js up",
+    "migrate:down": "node scripts/migrate.js down 1",
+    "migrate:create": "node scripts/migrate.js create",
+    "migrate:bootstrap": "node scripts/migrate-bootstrap.js"
   },
   "jestSonar": {
     "reportPath": "coverage",
@@ -167,6 +171,7 @@
     "jest": "^28.1.3",
     "jest-sonar-reporter": "^2.0.0",
     "ncp": "^2.0.0",
+    "node-pg-migrate": "^8.0.4",
     "nodeman": "^1.1.2",
     "rimraf": "^6.0.1",
     "swagger-jsdoc": "^6.2.8",

@@ -25,7 +25,10 @@ interface HandleNewTaskReceivedOptions {
  * Handles both subtask and regular task creation
  * Updates both task-management slice (task list) and enhanced kanban slice independently
  */
-export const handleNewTaskReceived = (response: any, options: HandleNewTaskReceivedOptions) => {
+export const handleNewTaskReceived = (
+  response: any,
+  options: HandleNewTaskReceivedOptions
+) => {
   const { dispatch, currentGroupingV3, enhancedKanbanGroupBy, trackEvent, subtaskEventName, taskEventName } = options;
 
   // Handle array format response [index, taskData]
@@ -242,6 +245,7 @@ export const handleNewTaskReceived = (response: any, options: HandleNewTaskRecei
     // Update task-management slice (for task list) with its own grouping
     const taskListGroupId = getGroupIdForGrouping(currentGroupingV3);
     dispatch(addTaskToGroup({ task, groupId: taskListGroupId }));
+
 
     // Update enhanced kanban slice with its own grouping (if provided)
     const kanbanGroupId = getGroupIdForGrouping(enhancedKanbanGroupBy || currentGroupingV3);

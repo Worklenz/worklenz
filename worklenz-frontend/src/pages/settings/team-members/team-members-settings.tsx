@@ -34,7 +34,6 @@ import { useAuthService } from '@/hooks/useAuth';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import UpdateMemberDrawer from '@/components/settings/update-member-drawer';
-import { AssignManagerDrawer } from '@/components/settings/assign-manager-drawer';
 import { BulkAssignManagerDrawer } from '@/components/settings/bulk-assign-manager-drawer';
 import {
   toggleInviteMemberDrawer,
@@ -62,9 +61,6 @@ const TeamMembersSettings = () => {
 
   const [model, setModel] = useState<ITeamMembersViewModel>({ total: 0, data: [] });
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [isDrawerVisible, setDrawerVisible] = useState(false);
-  const [isManagerDrawerVisible, setManagerDrawerVisible] = useState(false);
-  const [selectedMember, setSelectedMember] = useState<ITeamMemberViewModel | null>(null);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [selectedMemberRole, setSelectedMemberRole] = useState<string | null>(null); // Add this
   const [selectedMembers, setSelectedMembers] = useState<ITeamMemberViewModel[]>([]);
@@ -148,11 +144,6 @@ const TeamMembersSettings = () => {
     },
     [dispatch]
   );
-
-  const handleAssignManager = (record: ITeamMemberViewModel) => {
-    setSelectedMember(record);
-    setManagerDrawerVisible(true);
-  };
 
   const handleBulkAssignManager = () => {
     setBulkAssignDrawerVisible(true);
@@ -254,12 +245,6 @@ const TeamMembersSettings = () => {
     (record: ITeamMemberViewModel): MenuProps['items'] => {
       const canManage = canManageUser(record.role_name);
 
-      // Check if member can be assigned to a Team Lead
-      // Only regular Members can be assigned to Team Leads
-      const canBeAssignedToTeamLead = !['Owner', 'Admin', 'Team Lead'].includes(
-        record.role_name || ''
-      );
-
       const menuItems = [
         {
           key: 'edit',
@@ -295,20 +280,9 @@ const TeamMembersSettings = () => {
         },
       ];
 
-      // Only show "Assign Team Lead" option for Members (not for Owner, Admin, or Team Lead)
-      if (canBeAssignedToTeamLead) {
-        menuItems.splice(2, 0, {
-          key: 'assign',
-          label: t('assign_team_lead'),
-          icon: <UsergroupAddOutlined />,
-          disabled: !canManage,
-          onClick: () => canManage && handleAssignManager(record),
-        });
-      }
-
       return menuItems;
     },
-    [t, canManageUser, handleMemberClick, handleAssignManager]
+    [t, canManageUser, handleMemberClick]
   );
 
   const columns: TableProps['columns'] = useMemo(
@@ -634,12 +608,6 @@ const TeamMembersSettings = () => {
         </div>
       )}
 
-      <AssignManagerDrawer
-        open={isManagerDrawerVisible}
-        onClose={() => setManagerDrawerVisible(false)}
-        member={selectedMember}
-        onManagerAssigned={getTeamMembers}
-      />
       <BulkAssignManagerDrawer
         open={isBulkAssignDrawerVisible}
         onClose={() => setBulkAssignDrawerVisible(false)}
@@ -650,7 +618,7 @@ const TeamMembersSettings = () => {
         <UpdateMemberDrawer
           selectedMemberId={selectedMemberId}
           onRoleUpdate={handleRoleUpdate}
-          initialRoleName={selectedMemberRole}
+          initialRoleName={selectedMemberRole || undefined}
         />,
         document.body
       )}

@@ -9,7 +9,9 @@ import HandleExceptions from "../decorators/handle-exceptions";
 export default class TaskdependenciesController extends WorklenzControllerBase {
   @HandleExceptions({
     raisedExceptions: {
-      "DEPENDENCY_EXISTS": `Task dependency already exists.`
+      "DEPENDENCY_EXISTS": `Task dependency already exists.`,
+      "SELF_DEPENDENCY": `A task cannot depend on itself.`,
+      "CIRCULAR_DEPENDENCY": `This dependency would create a circular relationship.`
     }
   })
   public static async saveTaskDependency(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {

@@ -13,7 +13,6 @@ import {
   Alert,
   Row,
   Col,
-  Empty,
   Avatar,
   Flex,
   theme,
@@ -76,6 +75,23 @@ const RequestDetailsPage: React.FC = () => {
         return "error";
       default:
         return "default";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "pending":
+        return t('requests.pending');
+      case "accepted":
+        return t('requests.accepted');
+      case "in_progress":
+        return t('requests.inProgress');
+      case "completed":
+        return t('requests.completed');
+      case "rejected":
+        return t('requests.rejected');
+      default:
+        return status;
     }
   };
 
@@ -153,9 +169,22 @@ const RequestDetailsPage: React.FC = () => {
 
         <Row gutter={24}>
           <Col span={16}>
-            <Title level={2} style={{ marginBottom: 24 }}>
-              Request #{request.req_no}
-            </Title>
+            <Flex align="center" gap={12} style={{ marginBottom: 24 }}>
+              <Title level={2} style={{ margin: 0 }}>
+                Request #{request.req_no}
+              </Title>
+              <Tag 
+                color={getStatusColor(request.status)}
+                style={{ 
+                  fontSize: 14, 
+                  padding: '4px 12px',
+                  fontWeight: 500,
+                  borderRadius: 6
+                }}
+              >
+                {getStatusLabel(request.status)}
+              </Tag>
+            </Flex>
 
             <Descriptions column={2} bordered>
               <Descriptions.Item label={t('requests.service')} span={2}>
@@ -164,19 +193,13 @@ const RequestDetailsPage: React.FC = () => {
               <Descriptions.Item label={t('requests.requestTitle')} span={2}>
                 {request.request_data?.title || '-'}
               </Descriptions.Item>
-              <Descriptions.Item label={t('requests.status')}>
-                <Tag color={getStatusColor(request.status)}>
-                  {request.status.charAt(0).toUpperCase() +
-                    request.status.slice(1).replace("_", " ")}
-                </Tag>
-              </Descriptions.Item>
               <Descriptions.Item label={t('requests.priorityLabel')}>
                 <Tag color={getPriorityColor(request.request_data?.priority || '')}>
                   {request.request_data?.priority ? request.request_data.priority.charAt(0).toUpperCase() +
                     request.request_data.priority.slice(1) : 'N/A'}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label={t('requests.submittedOn')} span={2}>
+              <Descriptions.Item label={t('requests.submittedOn')}>
                 {request.created_at ? new Date(request.created_at).toLocaleString() : 'N/A'}
               </Descriptions.Item>
               <Descriptions.Item label={t('requests.descriptionLabel')} span={2}>
@@ -332,23 +355,36 @@ const RequestDetailsPage: React.FC = () => {
           style={{ 
             flex: 1,
             overflowY: 'auto',
-            padding: '16px 20px',
+            padding: comments.length === 0 ? '24px' : '16px 20px',
             backgroundColor: token.colorBgLayout,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: comments.length === 0 ? 'center' : 'flex-start',
           }}
         >
           {comments.length === 0 ? (
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={
-                <Text type="secondary">{t('requests.noComments') || 'No comments yet. Start the conversation!'}</Text>
-              }
-              style={{ padding: '60px 0' }}
-            />
+            <div style={{ 
+              textAlign: 'center',
+              padding: '40px 20px',
+              backgroundColor: token.colorBgContainer,
+              borderRadius: 12,
+              border: `1px dashed ${token.colorBorder}`,
+            }}>
+              <CommentOutlined style={{ fontSize: 48, color: token.colorTextTertiary, marginBottom: 16 }} />
+              <div>
+                <Text style={{ fontSize: 16, display: 'block', marginBottom: 8 }}>
+                  {t('requests.noComments', { defaultValue: 'No comments yet' })}
+                </Text>
+                <Text type="secondary" style={{ fontSize: 14 }}>
+                  {t('requests.startConversation', { defaultValue: 'Start the conversation by adding a comment below' })}
+                </Text>
+              </div>
+            </div>
           ) : (
             <>
               {comments.map((comment) => {
                 const isTeamMember = comment.sender_type === 'team_member';
-                const isOwnMessage = !isTeamMember; // Client's own messages
+                const isOwnMessage = !isTeamMember;
                 return (
                   <Flex 
                     key={comment.id}
@@ -435,14 +471,11 @@ const RequestDetailsPage: React.FC = () => {
           }}
         >
           {(request.status === "completed" || request.status === "rejected") ? (
-            <Alert
-              message={request.status === "completed" 
-                ? t('requests.requestCompletedMessage') 
-                : t('requests.requestRejectedMessage')}
-              type={request.status === "completed" ? "info" : "warning"}
-              showIcon
-              style={{ marginBottom: 0 }}
-            />
+            <Text type="secondary" style={{ fontSize: 13, fontStyle: 'italic', display: 'block', textAlign: 'center', padding: '8px 0' }}>
+              {request.status === "completed" 
+                ? t('requests.requestCompletedNoComments', { defaultValue: 'This request has been completed. Comments are disabled.' })
+                : t('requests.requestRejectedNoComments', { defaultValue: 'This request has been rejected. Comments are disabled.' })}
+            </Text>
           ) : (
             <Form form={form} onFinish={handleAddComment}>
               <Flex gap={12} align="flex-end">

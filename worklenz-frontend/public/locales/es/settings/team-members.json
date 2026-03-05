@@ -92,5 +92,10 @@
   "projectInvite_emailHelp": "Type email and press Enter",
   "projectInvite_inviteButton": "Invite",
   "projectInvite_teamRoleLabel": "Team role",
-  "projectInvite_teamRoleTooltip": "Team role determines team-wide permissions. Project access level defaults to Member and can be changed later."
+  "projectInvite_teamRoleTooltip": "Team role determines team-wide permissions. Project access level defaults to Member and can be changed later.",
+  "managerLabel": "Gerente",
+  "managerTooltip": "Asignar un líder de equipo para gestionar este miembro. Solo los miembros pueden ser asignados a gerentes.",
+  "selectManagerPlaceholder": "Seleccionar un líder de equipo como gerente",
+  "manager_removed_successfully": "Asignación de gerente eliminada exitosamente",
+  "updateError": "Error al actualizar el miembro del equipo. Por favor, inténtelo de nuevo."
 }

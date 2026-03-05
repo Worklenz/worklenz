@@ -397,9 +397,13 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
 
     try {
       for await (const [key, task] of tasks.entries()) {
-        const q = `INSERT INTO tasks(name, project_id, status_id, priority_id, reporter_id, sort_order)
+        const q = `INSERT INTO tasks(name, project_id, status_id, priority_id, reporter_id,
+                              sort_order, roadmap_sort_order,
+                              status_sort_order, priority_sort_order, phase_sort_order, member_sort_order)
                     VALUES ($1, $2, (SELECT id FROM task_statuses ts WHERE ts.name = $3 AND ts.project_id = $2),
-                            (SELECT id FROM task_priorities tp WHERE tp.name = $4), $5, $6)
+                            (SELECT id FROM task_priorities tp WHERE tp.name = $4), $5,
+                            $6, $6,
+                            $6, $6, $6, $6)
                     RETURNING id, status_id;`;
         const result = await db.query(q, [
           task.name,
@@ -743,9 +747,15 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
 
       // Pass 1: Insert all tasks without parent relationships
       for await (const [key, task] of tasks.entries()) {
-        const q = `INSERT INTO tasks(name, project_id, status_id, priority_id, reporter_id, sort_order, parent_task_id, description, total_minutes, task_no, status_sort_order, priority_sort_order, phase_sort_order)
+        const q = `INSERT INTO tasks(name, project_id, status_id, priority_id, reporter_id, sort_order,
+                              parent_task_id, description, total_minutes, task_no,
+                              status_sort_order, priority_sort_order, phase_sort_order,
+                              roadmap_sort_order, member_sort_order)
                     VALUES ($1, $2, (SELECT id FROM task_statuses ts WHERE ts.name = $3 AND ts.project_id = $2),
-                            (SELECT id FROM task_priorities tp WHERE tp.name = $4), $5, $6, NULL, $7, $8, $9, $10, $11, $12)
+                            (SELECT id FROM task_priorities tp WHERE tp.name = $4), $5, $6,
+                            NULL, $7, $8, $9,
+                            $10, $11, $12,
+                            $13, $14)
                     RETURNING id, status_id;`;
 
         // Use sequential index (key) for ALL sort orders to ensure deterministic ordering
@@ -758,13 +768,15 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
           task.status_name,
           task.priority_name,
           user_id,
-          sortOrderValue,
-          task.description,
-          task.total_minutes ? task.total_minutes : 0,
-          task.task_no,
-          sortOrderValue,
-          sortOrderValue,
-          sortOrderValue,
+          sortOrderValue,   // $6  sort_order
+          task.description, // $7
+          task.total_minutes ? task.total_minutes : 0, // $8
+          task.task_no,     // $9
+          sortOrderValue,   // $10 status_sort_order
+          sortOrderValue,   // $11 priority_sort_order
+          sortOrderValue,   // $12 phase_sort_order
+          sortOrderValue,   // $13 roadmap_sort_order
+          sortOrderValue,   // $14 member_sort_order
         ]);
         const [data] = result.rows;
 

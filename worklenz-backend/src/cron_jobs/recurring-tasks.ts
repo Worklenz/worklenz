@@ -273,7 +273,6 @@ async function onRecurringTaskJobTick() {
       WHERE s.is_active IS NOT FALSE
         AND (s.end_date IS NULL OR s.end_date >= CURRENT_DATE)
         AND (s.max_occurrences IS NULL OR COALESCE(s.occurrence_count, 0) < s.max_occurrences)
-        AND (p.is_archived IS NOT TRUE)
       ORDER BY s.created_at ASC;
     `;
 

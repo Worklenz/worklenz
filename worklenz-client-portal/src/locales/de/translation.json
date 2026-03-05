@@ -202,6 +202,7 @@
     "createFirst": "Erstellen Sie Ihre erste Anfrage",
     "errorLoading": "Fehler beim Laden der Anfragen",
     "errorLoadingDescription": "Fehler beim Laden der Anfragen. Bitte versuchen Sie es erneut.",
+    "requestNotFoundDescription": "Das angeforderte Element konnte nicht gefunden werden oder Sie haben keinen Zugriff darauf.",
     "showingRange": "{{start}}-{{end}} von {{total}} Anfragen",
     "pending": "Ausstehend",
     "accepted": "Akzeptiert",
@@ -260,6 +261,9 @@
     "loadingQuestions": "Fragen werden geladen...",
     "enterAnswer": "Geben Sie Ihre Antwort ein",
     "noComments": "Noch keine Kommentare. Starten Sie das Gespräch!",
+    "startConversation": "Starten Sie das Gespräch, indem Sie unten einen Kommentar hinzufügen",
+    "requestCompletedNoComments": "Diese Anfrage wurde abgeschlossen. Kommentare sind deaktiviert.",
+    "requestRejectedNoComments": "Diese Anfrage wurde abgelehnt. Kommentare sind deaktiviert.",
     "teamMember": "Team",
     "client": "Kunde",
     "pressEnterToSend": "Enter zum Senden, Shift+Enter für neue Zeile"

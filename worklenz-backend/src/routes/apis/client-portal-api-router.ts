@@ -51,6 +51,7 @@ router.get("/requests/status-options", safeControllerFunction(ClientPortalReques
 // Comment routes must come before /:id route to avoid route matching conflicts
 router.get("/requests/:id/comments", safeControllerFunction(ClientPortalCommentsController.getRequestComments));
 router.post("/requests/:id/comments", safeControllerFunction(ClientPortalCommentsController.addRequestComment));
+router.get("/requests/:id/history", safeControllerFunction(ClientPortalRequestsController.getRequestStatusHistory));
 router.get("/requests/:id", safeControllerFunction(ClientPortalRequestsController.getRequestDetails));
 router.put("/requests/:id", safeControllerFunction(ClientPortalRequestsController.updateRequest));
 router.delete("/requests/:id", safeControllerFunction(ClientPortalRequestsController.deleteRequest));

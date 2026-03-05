@@ -32,6 +32,8 @@ import { RootState } from '@/app/store';
 import { toggleUpgradeModal, fetchOrganizationDetails } from '@/features/admin-center/admin-center.slice';
 import { isTeamLeadRole } from '@/types/roles/role.types';
 import { ConnectionStatusIndicator } from '@/components/connection-status/ConnectionStatusIndicator';
+import { useAuthStatus } from '@/hooks/useAuthStatus';
+import { evt_paywall_hit } from '@/shared/worklenz-analytics-events';
 
 const Navbar = () => {
   const dispatch = useAppDispatch();
@@ -49,6 +51,7 @@ const Navbar = () => {
   const isOwnerOrAdmin = useMemo(() => authService.isOwnerOrAdmin(), [authService]);
 
   const { setIdentity, trackMixpanelEvent } = useMixpanelTracking();
+  const { isLicenseExpired } = useAuthStatus();
   const [navRoutesList, setNavRoutesList] = useState<NavRoutesType[]>(navRoutes);
   const showUpgradeTypes = useMemo(() => [ISUBSCRIPTION_TYPE.TRIAL], []);
   const organization = useAppSelector((state: RootState) => state.adminCenterReducer.organization);
@@ -185,6 +188,15 @@ const Navbar = () => {
         (isBusinessRoute && !hasBusinessAccess) || (isFreePlanRoute && isFreePlan);
 
       if (shouldOpenModal) {
+        // Track paywall hit for trial expired users clicking Client Portal
+        if (isLicenseExpired && clickedRoute.name === 'client-portal') {
+          trackMixpanelEvent(evt_paywall_hit, {
+            feature_blocked: 'client_portal',
+            user_type: currentSession?.subscription_type?.toLowerCase(),
+            trial_expired: true,
+            source: 'navbar'
+          });
+        }
         dispatch(toggleUpgradeModal());
       }
     }
