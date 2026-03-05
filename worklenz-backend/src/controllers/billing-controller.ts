@@ -65,16 +65,6 @@ export default class BillingController extends WorklenzControllerBase {
       });
   }
 
-  public static async saveLocalTransaction(signature: string, data: any) {
-    try {
-      const q = `INSERT INTO transactions (status, transaction_id, transaction_status, description, date_time, reference, amount, card_number)
-VALUES ($1, $2, $3);`;
-      const result = await db.query(q, []);
-    } catch (error) {
-      log_error(error);
-    }
-  }
-
   @HandleExceptions()
   public static async upgradeToPaidPlan(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { plan, seatCount } = req.query;
@@ -223,15 +213,15 @@ VALUES ($1, $2, $3);`;
 
   @HandleExceptions()
   public static async getCardList(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { DP_MERCHANT_ID, DP_REFERENCE, DP_STAGE } = process.env;
+
     const payload = {
-      "merchantId": "RT02300",
-      "reference": "1234",
+      "merchantId": DP_MERCHANT_ID,
+      "reference": DP_REFERENCE,
       "type": "LIST_CARD"
     };
 
-    const { DP_STAGE } = process.env;
-
-    const dataString = `RT023001234LIST_CARD`;
+    const dataString = `${DP_MERCHANT_ID}${DP_REFERENCE}LIST_CARD`;
     const pemFile = DP_STAGE === "PROD" ? "src/keys/PRIVATE_KEY_PROD.pem" : `src/keys/PRIVATE_KEY_DEV.pem`;
 
     const privateKeyTest = fs.readFileSync(path.resolve(pemFile), "utf8");

@@ -93,7 +93,19 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
         WHERE ud.user_id = (SELECT user_id FROM teams WHERE id = $1);`;
     const result = await db.query(q, [team_id]);
     const [data] = result.rows;
-    
+
+    // Resolve effective subscription_type to account for active plan trials,
+    // mirroring the logic in deserialize_user so server-side checks are consistent.
+    if (data && data.active_plan_trial) {
+      if (data.active_plan_trial === "BUSINESS_LARGE") {
+        data.subscription_type = "BUSINESS_TRIAL";
+      } else if (data.active_plan_trial === "ENTERPRISE") {
+        data.subscription_type = "ENTERPRISE_TRIAL";
+      } else {
+        data.subscription_type = "PLAN_TRIAL";
+      }
+    }
+
     // If this is a business plan, check if AppSumo user gets special limit
     if (data && data.subscription_type === "PADDLE" && data.plan_name) {
       const appSumoLimit = AppSumoService.getBusinessPlanUserLimit(

@@ -100,6 +100,7 @@ const UpgradePlans = () => {
   const [switchingToFreePlan, setSwitchingToFreePlan] = useState(false);
   const [switchingToPaddlePlan, setSwitchingToPaddlePlan] = useState(false);
   const [paddleLoading, setPaddleLoading] = useState(false);
+  const [loadingPlanType, setLoadingPlanType] = useState<PlanType | null>(null);
 
   // Error states
   const [paddleError, setPaddleError] = useState<string | null>(null);
@@ -130,17 +131,11 @@ const UpgradePlans = () => {
     return (
       planName.includes('appsumo') ||
       planName.includes('life_time_deal') ||
-      planName.includes('lifetime') ||
-      planName.includes('life time') ||
       subscriptionType.includes('appsumo') ||
       subscriptionType.includes('life_time_deal') ||
       subscriptionStatus.includes('life_time_deal') ||
-      subscriptionStatus.includes('lifetime') ||
-      subscriptionStatus.includes('life time') ||
       billingSubscriptionType.includes('appsumo') ||
-      billingSubscriptionType.includes('life_time_deal') ||
-      billingSubscriptionType.includes('lifetime') ||
-      billingSubscriptionType.includes('life time')
+      billingSubscriptionType.includes('life_time_deal')
     );
   }, [billingInfo, currentSession]);
 
@@ -161,10 +156,10 @@ const UpgradePlans = () => {
     calculateOriginalAnnualTotal
   } = usePricingCalculations(teamSize, pricingData, isAppSumoUser);
 
-  // Show a constant "Up to 30% off" label regardless of team size/plan selection
+  // Show "Up to 30% off" label only for annual billing frequency
   const annualSavingsPercent = useMemo(() => {
-    return 30;
-  }, []);
+    return billingFrequency === 'annual' ? 30 : undefined;
+  }, [billingFrequency]);
 
   const minSelectableTeamSize = Math.max(1, billingInfo?.total_used ?? 1);
   const { generateTeamSizeOptions } = useTeamSizeOptions(
@@ -669,6 +664,7 @@ const UpgradePlans = () => {
           dispatch(toggleUpgradeModal());
           setSwitchingToPaddlePlan(false);
           setPaddleLoading(false);
+          setLoadingPlanType(null);
         }, PADDLE_CHECKOUT_DELAY);
         break;
       case 'Checkout.Close':
@@ -683,6 +679,7 @@ const UpgradePlans = () => {
         });
         setSwitchingToPaddlePlan(false);
         setPaddleLoading(false);
+        setLoadingPlanType(null);
         break;
       case 'Checkout.Error':
         // Track checkout failure
@@ -708,6 +705,7 @@ const UpgradePlans = () => {
 
         setSwitchingToPaddlePlan(false);
         setPaddleLoading(false);
+        setLoadingPlanType(null);
         setPaddleError(data.error?.message || 'An error occurred during checkout');
         message.error('Error during checkout: ' + (data.error?.message || 'Unknown error'));
         logger.error('Paddle checkout error', data.error);
@@ -776,6 +774,7 @@ const UpgradePlans = () => {
       setSwitchingToPaddlePlan(true);
       setPaddleLoading(true);
       setPaddleError(null);
+      setLoadingPlanType(selectedPlanType);
       const effectivePricingModel = getEffectivePricingModel(
         selectedPlanType as 'pro' | 'business' | 'enterprise'
       );
@@ -809,6 +808,7 @@ const UpgradePlans = () => {
       const shouldUseUpgradeAPI =
         !billingInfo?.subscription_id ||
         isFreeUser ||
+        currentSession?.subscription_type === 'BUSINESS_TRIAL' ||
         billingInfo?.status === SUBSCRIPTION_STATUS.TRIALING ||
         billingInfo?.status === SUBSCRIPTION_STATUS.PASTDUE ||
         billingInfo?.status === SUBSCRIPTION_STATUS.DELETED;
@@ -828,6 +828,7 @@ const UpgradePlans = () => {
           console.error('Upgrade API failed:', res);
           setSwitchingToPaddlePlan(false);
           setPaddleLoading(false);
+          setLoadingPlanType(null);
           setPaddleError(`Failed to prepare checkout: ${res.message || 'Unknown error'}`);
           message.error(`Failed to prepare checkout: ${res.message || 'Unknown error'}`);
         }
@@ -863,21 +864,25 @@ const UpgradePlans = () => {
           dispatch(toggleUpgradeModal());
           setSwitchingToPaddlePlan(false);
           setPaddleLoading(false);
+          setLoadingPlanType(null);
         } else {
           setSwitchingToPaddlePlan(false);
           setPaddleLoading(false);
+          setLoadingPlanType(null);
           setPaddleError('Failed to change plan');
           message.error('Failed to change subscription plan');
         }
       } else {
         setSwitchingToPaddlePlan(false);
         setPaddleLoading(false);
+        setLoadingPlanType(null);
         setPaddleError('Unable to process plan selection');
         message.error('Unable to process plan selection. Please contact support.');
       }
     } catch (error) {
       setSwitchingToPaddlePlan(false);
       setPaddleLoading(false);
+      setLoadingPlanType(null);
       setPaddleError('Error upgrading to paid plan');
       message.error('Failed to upgrade to paid plan');
       logger.error('Error upgrading to paddle plan', error);
@@ -891,6 +896,7 @@ const UpgradePlans = () => {
     }
 
     try {
+      setLoadingPlanType(planType || selectedPlanType);
       setSwitchingToPaddlePlan(true);
       setPaddleError(null);
       let planId: string | null = null;
@@ -952,12 +958,14 @@ const UpgradePlans = () => {
         await upgradeToPaddlePlan(planId);
       } else {
         setSwitchingToPaddlePlan(false);
+        setLoadingPlanType(null);
         const errorMsg = `Plan not available: ${targetPlanType} (${billingFrequency}) for ${teamSize} users. Please try a different configuration or contact support.`;
         setPaddleError(errorMsg);
         message.error('Selected plan is not available. Please try a different configuration.');
       }
     } catch (error) {
       setSwitchingToPaddlePlan(false);
+      setLoadingPlanType(null);
       setPaddleError('Error processing request');
       message.error('Error processing request');
       logger.error('Error upgrading to paddle plan', error);
@@ -1306,7 +1314,7 @@ const UpgradePlans = () => {
                     void continueWithPaddlePlan('pro');
                   }}
                   primaryActionDisabled={isLoadingPlans}
-                  primaryActionLoading={switchingToPaddlePlan || paddleLoading}
+                  primaryActionLoading={loadingPlanType === 'pro'}
                   footerNote={(() => {
                     if (billingFrequency === 'annual') {
                       const annualTotal = calculateAnnualTotal('pro');
@@ -1367,7 +1375,7 @@ const UpgradePlans = () => {
                 primaryActionLoading={
                   trialEligibilityChecked && canStartBusinessTrial && !isOnBusinessTrial(currentSession)
                     ? businessTrialLoading
-                    : switchingToPaddlePlan || paddleLoading
+                    : loadingPlanType === 'business'
                 }
                 footerNote={(() => {
                   if (billingFrequency === 'annual') {
@@ -1418,7 +1426,7 @@ const UpgradePlans = () => {
                     void continueWithPaddlePlan('enterprise');
                   }}
                   primaryActionDisabled={isLoadingPlans}
-                  primaryActionLoading={switchingToPaddlePlan || paddleLoading}
+                  primaryActionLoading={loadingPlanType === 'enterprise'}
                   footerNote={(() => {
                     if (billingFrequency === 'annual') {
                       const annualTotal = calculateAnnualTotal('enterprise');
