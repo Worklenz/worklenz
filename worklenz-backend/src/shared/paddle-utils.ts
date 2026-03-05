@@ -63,8 +63,7 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
                          FROM licensing_plan_trials pt
                          JOIN licensing_plan_tiers lpt ON pt.plan_tier_id = lpt.id
                          WHERE pt.user_id = ud.user_id AND pt.is_active = true AND pt.trial_end_date > NOW()
-                         LIMIT 1),
-                        ud.plan_name
+                         LIMIT 1)
                       ) AS plan_name,
                       COALESCE(
                         (SELECT user_limit FROM licensing_pricing_plans lpp 
