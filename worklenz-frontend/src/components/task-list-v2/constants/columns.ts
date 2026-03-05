@@ -47,9 +47,9 @@ export const BASE_COLUMNS = [
   {
     id: 'labels',
     label: 'labelsColumn',
-    width: '250px',
+    width: '300px',
     key: COLUMN_KEYS.LABELS,
-    minWidth: '250px',
+    minWidth: '300px',
     maxWidth: '350px',
   },
   { id: 'phase', label: 'phaseColumn', width: '120px', key: COLUMN_KEYS.PHASE },
