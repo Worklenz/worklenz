@@ -13,6 +13,7 @@ import { authApiService } from '@/api/auth/auth.api.service';
 import { setSession } from '@/utils/session-helper';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setUser } from '@/features/user/userSlice';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import logger from '@/utils/errorLogger';
 
 const DISMISS_KEY = 'business-trial-alert-dismissed';
@@ -211,7 +212,8 @@ export const BusinessPlanTrialAlert = () => {
       source: 'business_trial_banner'
     });
 
-    navigate('/worklenz/admin-center/billing');
+    // Open the upgrade plans modal directly
+    dispatch(toggleUpgradeModal());
   };
 
   const handleDismiss = () => {

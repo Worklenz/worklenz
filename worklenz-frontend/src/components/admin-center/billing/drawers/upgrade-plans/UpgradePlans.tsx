@@ -92,7 +92,7 @@ const UpgradePlans = () => {
   const [backendPlans, setBackendPlans] = useState<IPricingPlan[]>([]);
   const [pricingData, setPricingData] = useState<PricingData>(getInitialPricingData());
   const [selectedPlanType, setSelectedPlanType] = useState<PlanType>('pro');
-  const [billingFrequency, setBillingFrequency] = useState<BillingFrequency>('annual');
+  const [billingFrequency, setBillingFrequency] = useState<BillingFrequency>('monthly');
   const [teamSize, setTeamSize] = useState<number>(1);
 
   // Loading states
@@ -819,7 +819,7 @@ const UpgradePlans = () => {
         const res = await billingApiService.upgradeToPaidPlan(
           planId,
           apiPricingModel as 'per_user' | 'regular',
-          effectivePricingModel === 'per_user' ? teamSize : undefined
+          teamSize
         );
 
         if (res.done) {
