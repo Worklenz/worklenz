@@ -331,13 +331,14 @@ const CategoriesDrawer = ({
   const dispatch = useAppDispatch();
 
   useEffect(() => {
+    if (!drawerOpen) return;  // ← guard: only run when opening
     if (categoryId) {
       getCategoryById(categoryId);
     } else {
       form.resetFields();
-      form.setFieldsValue({ color_code: Object.keys(WorklenzColorShades)[0] }); // Set default color
+      form.setFieldsValue({ color_code: Object.keys(WorklenzColorShades)[0] });
     }
-  }, [categoryId, form]);
+  }, [categoryId, drawerOpen, form]);
 
   const getCategoryById = async (id: string) => {
     try {
