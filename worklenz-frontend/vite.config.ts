@@ -141,7 +141,7 @@ export default defineConfig(({ command, mode }) => {
       target: ['es2020'], // Updated to a more modern target, adjust according to your needs
 
       // **Output**
-      outDir: 'build',
+      outDir: process.env.VITE_BUILD_OUTDIR || 'build',
       assetsDir: 'assets',
       cssCodeSplit: true,
 
