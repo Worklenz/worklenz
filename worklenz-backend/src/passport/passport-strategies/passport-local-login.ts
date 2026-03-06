@@ -38,6 +38,29 @@ async function handleLogin(req: Request, email: string, password: string, done: 
     
     if (passwordMatch) {
       delete data.password;
+      
+      // Handle invitation parameters if present
+      const { team_id, team_member_id, project_id } = req.body;
+      
+      if (team_id) {
+        try {
+          // Set the invited team as active for the user
+          const setActiveTeamQuery = `SELECT set_active_team($1, $2)`;
+          await db.query(setActiveTeamQuery, [data.id, team_id]);
+          console.log(`[Login] Set active team ${team_id} for user ${data.id}`);
+          
+          // Store invitation info in session for redirect after login
+          (req.session as any).invitationRedirect = {
+            teamId: team_id,
+            teamMemberId: team_member_id,
+            projectId: project_id
+          };
+        } catch (error) {
+          console.error('[Login] Failed to set active team:', error);
+          log_error(error, { userId: data.id, teamId: team_id });
+        }
+      }
+      
       const successMsg = "User successfully logged in";
       req.flash(SUCCESS_KEY, successMsg);
       return done(null, data);
