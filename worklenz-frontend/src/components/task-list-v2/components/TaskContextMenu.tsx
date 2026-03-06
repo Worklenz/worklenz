@@ -287,8 +287,8 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
           const canContinue = await checkTaskDependencyStatus(task.id, targetId);
           if (!canContinue) {
             alertService.error(
-              'Task is not completed',
-              'Please complete the task dependencies before proceeding'
+              t('errors.taskNotCompleted'),
+              t('errors.completeTaskDependencies')
             );
             onClose();
             return;
@@ -310,7 +310,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
         onClose();
       }
     },
-    [projectId, task.id, task.status, task.parent_task_id, currentSession?.team_id, socket, onClose]
+    [projectId, task.id, task.status, task.parent_task_id, currentSession?.team_id, socket, onClose, t]
   );
 
   const handlePriorityMoveTo = useCallback(

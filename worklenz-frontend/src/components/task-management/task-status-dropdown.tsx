@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -25,6 +26,7 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
   projectId,
   isDarkMode = false,
 }) => {
+  const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
   const [isOpen, setIsOpen] = useState(false);
@@ -83,8 +85,8 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
         const canContinue = await checkTaskDependencyStatus(task.id, statusId);
         if (!canContinue) {
           alertService.error(
-            'Task is not completed',
-            'Please complete the task dependencies before proceeding'
+            t('errors.taskNotCompleted', { defaultValue: 'Task is not completed' }),
+            t('errors.completeTaskDependencies', { defaultValue: 'Please complete the task dependencies before proceeding' })
           );
           setIsOpen(false);
           return;
@@ -137,7 +139,7 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
       socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.id);
       setIsOpen(false);
     },
-    [task, connected, socket, projectId, dispatch, currentGroupingV3, groups]
+    [task, connected, socket, projectId, dispatch, currentGroupingV3, groups, t]
   );
 
   // Calculate dropdown position and handle outside clicks
