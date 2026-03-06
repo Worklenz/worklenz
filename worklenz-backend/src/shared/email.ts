@@ -225,6 +225,15 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
     console.log("Subject:", options.subject);
 
     const charset = "UTF-8";
+    
+    // Generate plain text version by stripping HTML tags
+    const plainText = options.html
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
     const command = new SendEmailCommand({
       Destination: {
         ToAddresses: options.to,
@@ -238,6 +247,10 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
           Html: {
             Charset: charset,
             Data: options.html,
+          },
+          Text: {
+            Charset: charset,
+            Data: plainText,
           },
         },
       },
