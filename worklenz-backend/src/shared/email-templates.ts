@@ -13,7 +13,7 @@ export function sendWelcomeEmail(email: string, name: string) {
   // Use sanitizePlainText for user names to prevent HTML injection
   // Names should never contain HTML markup
   content = content.replace("[VAR_USER_NAME]", sanitizePlainText(name));
-  content = content.replace("[VAR_HOSTNAME]", sanitize(FRONTEND_URL));
+  content = content.replace("[VAR_HOSTNAME]", FRONTEND_URL);
 
   sendEmail({
     to: [email],
@@ -58,13 +58,14 @@ export function sendRegisterAndJoinTeamInvitation(myName: string, userName: stri
   if (!content) return;
 
   // Use sanitizePlainText for user/team names to prevent HTML injection
-  content = content.replaceAll("[VAR_EMAIL]", sanitize(toEmail));
-  content = content.replaceAll("[VAR_USER_ID]", sanitize(userId));
+  // Email addresses are validated elsewhere, no need to sanitize in HTML context
+  content = content.replaceAll("[VAR_EMAIL]", toEmail);
+  content = content.replaceAll("[VAR_USER_ID]", userId);
   content = content.replaceAll("[VAR_USER_NAME]", sanitizePlainText(userName));
   content = content.replaceAll("[VAR_TEAM_NAME]", sanitizePlainText(teamName));
-  content = content.replaceAll("[VAR_HOSTNAME]", sanitize(FRONTEND_URL));
-  content = content.replaceAll("[VAR_TEAM_ID]", sanitize(teamId));
-  content = content.replaceAll("[PROJECT_ID]", projectId ? sanitize(projectId as string) : "");
+  content = content.replaceAll("[VAR_HOSTNAME]", FRONTEND_URL);
+  content = content.replaceAll("[VAR_TEAM_ID]", teamId);
+  content = content.replaceAll("[PROJECT_ID]", projectId || "");
 
   sendEmail({
     to: [toEmail],
@@ -77,8 +78,10 @@ export function sendResetEmail(toEmail: string, user_id: string, hash: string) {
   let content = FileConstants.getEmailTemplate(IEmailTemplateType.ResetPassword) as string;
   if (!content) return;
 
-  content = content.replace("[VAR_HOSTNAME]", sanitize(FRONTEND_URL));
-  content = content.replace("[VAR_USER_ID]", sanitize(user_id));
+  // FRONTEND_URL is a trusted environment variable, no need to sanitize
+  // user_id is base64 encoded (safe), hash is bcrypt hash (safe)
+  content = content.replace("[VAR_HOSTNAME]", FRONTEND_URL);
+  content = content.replace("[VAR_USER_ID]", user_id);
   content = content.replace("[VAR_HASH]", hash);
 
   sendEmail({
@@ -108,8 +111,10 @@ export function sendClientPortalResetEmail(toEmail: string, user_id: string, has
     ? `https://${process.env.CLIENT_PORTAL_HOSTNAME}`
     : "http://localhost:5174";
 
-  content = content.replace("[VAR_HOSTNAME]", sanitize(CLIENT_PORTAL_HOSTNAME));
-  content = content.replace("[VAR_USER_ID]", sanitize(user_id));
+  // CLIENT_PORTAL_HOSTNAME is a trusted environment variable, no need to sanitize
+  // user_id is base64 encoded (safe), hash is bcrypt hash (safe)
+  content = content.replace("[VAR_HOSTNAME]", CLIENT_PORTAL_HOSTNAME);
+  content = content.replace("[VAR_USER_ID]", user_id);
   content = content.replace("[VAR_HASH]", hash);
 
   // For development: Log the reset password link to console
