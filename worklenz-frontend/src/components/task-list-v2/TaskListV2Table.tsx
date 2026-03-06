@@ -86,7 +86,7 @@ const DropSpacer: React.FC<{ isVisible: boolean; visibleColumns: any[]; isDarkMo
     <div
       className="flex items-center min-w-max px-1 border-2 border-dashed border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/20 transition-all duration-200 ease-in-out"
       style={{
-        height: isVisible ? '40px' : '0px',
+        height: isVisible ? '44px' : '0px',
         opacity: isVisible ? 1 : 0,
         marginTop: isVisible ? '2px' : '0px',
         marginBottom: isVisible ? '2px' : '0px',
@@ -94,7 +94,6 @@ const DropSpacer: React.FC<{ isVisible: boolean; visibleColumns: any[]; isDarkMo
       }}
     >
       {visibleColumns.map((column, index) => {
-        // Calculate left position for sticky columns
         let leftPosition = 0;
         if (column.isSticky) {
           for (let i = 0; i < index; i++) {
@@ -112,7 +111,7 @@ const DropSpacer: React.FC<{ isVisible: boolean; visibleColumns: any[]; isDarkMo
             position: 'sticky' as const,
             left: leftPosition,
             zIndex: 10,
-            backgroundColor: 'inherit', // Inherit from parent spacer
+            backgroundColor: 'inherit',
           }),
         };
 
@@ -138,6 +137,8 @@ const DropSpacer: React.FC<{ isVisible: boolean; visibleColumns: any[]; isDarkMo
           />
         );
       })}
+      {/* ✅ FIX: Filler to extend row border across full container width */}
+      <div className="flex-1 border-r border-blue-300 dark:border-blue-600" />
     </div>
   );
 };
@@ -150,10 +151,9 @@ const EmptyGroupMessage: React.FC<{ visibleColumns: any[]; isDarkMode?: boolean 
   return (
     <div
       className="flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700"
-      style={{ height: '40px' }}
+      style={{ height: '44px' }}
     >
       {visibleColumns.map((column, index) => {
-        // Calculate left position for sticky columns
         let leftPosition = 0;
         if (column.isSticky) {
           for (let i = 0; i < index; i++) {
@@ -171,11 +171,10 @@ const EmptyGroupMessage: React.FC<{ visibleColumns: any[]; isDarkMode?: boolean 
             position: 'sticky' as const,
             left: leftPosition,
             zIndex: 10,
-            backgroundColor: 'inherit', // Inherit from parent container
+            backgroundColor: 'inherit',
           }),
         };
 
-        // Show text in the title column
         if (column.id === 'title') {
           return (
             <div
@@ -198,6 +197,8 @@ const EmptyGroupMessage: React.FC<{ visibleColumns: any[]; isDarkMode?: boolean 
           />
         );
       })}
+      {/* ✅ FIX: Filler to extend row border across full container width */}
+      <div className="flex-1 border-r border-gray-200 dark:border-gray-700" />
     </div>
   );
 };
@@ -310,26 +311,19 @@ const TaskListV2Section: React.FC = () => {
   // Configure sensors for drag and drop
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
+      activationConstraint: { distance: 8 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
     useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 250,
-        tolerance: 5,
-      },
+      activationConstraint: { delay: 250, tolerance: 5 },
     })
   );
 
   const columnSensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 6,
-      },
+      activationConstraint: { distance: 6 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -345,19 +339,14 @@ const TaskListV2Section: React.FC = () => {
   useTaskSocketHandlers();
 
   // State to store custom column widths (overrides BASE_COLUMNS widths)
-  // Load from localStorage on mount
   const [columnWidths, setColumnWidths] = useState<Record<string, string>>(() => {
     if (!urlProjectId) return {};
-
     try {
       const stored = localStorage.getItem(`worklenz.taskList.columnWidths.${urlProjectId}`);
       if (!stored) return {};
-
       const parsed = JSON.parse(stored);
-      // Validate stored widths against minWidth and maxWidth constraints
       return validateColumnWidths(parsed, BASE_COLUMNS);
     } catch (error) {
-      // Handle localStorage errors gracefully
       if (error instanceof DOMException && error.name === 'QuotaExceededError') {
         console.warn('localStorage quota exceeded. Column widths not loaded.');
       } else {
@@ -376,7 +365,6 @@ const TaskListV2Section: React.FC = () => {
           JSON.stringify(columnWidths)
         );
       } catch (error) {
-        // Handle quota exceeded or other localStorage errors gracefully
         if (error instanceof DOMException && error.name === 'QuotaExceededError') {
           console.warn('localStorage quota exceeded. Column widths not saved.');
         } else {
@@ -388,63 +376,34 @@ const TaskListV2Section: React.FC = () => {
 
   // Filter visible columns based on local fields (primary) and backend columns (fallback)
   const rawVisibleColumns = useMemo(() => {
-    // Start with base columns
     const baseVisibleColumns = BASE_COLUMNS.filter(column => {
-      // Always show essential UI controls (drag handle, checkbox, title)
-      // These are required for task list functionality
       if (
         column.isSticky &&
         (column.id === 'dragHandle' || column.id === 'checkbox' || column.id === 'title')
       ) {
         return true;
       }
-
-      // For other columns (including taskKey), respect the visibility settings
-      // Primary: Check local fields configuration
       const field = fields.find(f => f.key === column.key);
-      if (field) {
-        return field.visible;
-      }
-
-      // Fallback: Check backend column configuration if local field not found
+      if (field) return field.visible;
       const backendColumn = columns.find(c => c.key === column.key);
-      if (backendColumn) {
-        return backendColumn.pinned ?? false;
-      }
-
-      // Default: hide if neither local field nor backend column found
+      if (backendColumn) return backendColumn.pinned ?? false;
       return false;
     }).map(column => {
-      // Apply custom width if it exists, otherwise use default width
       const rawWidth = columnWidths[column.id] || column.width;
-
-      // Validate width using shared utility function
       const width = validateColumnWidth(column.id, rawWidth, column);
-
-      return {
-        ...column,
-        width,
-      };
+      return { ...column, width };
     });
 
-    // Add visible custom columns
     const visibleCustomColumns =
       customColumns
         ?.filter(column => column.pinned)
         ?.map(column => {
-          // Give selection columns more width for dropdown content
           const fieldType = column.custom_column_obj?.fieldType;
           let defaultWidth = 160;
-          if (fieldType === 'selection') {
-            defaultWidth = 150; // Reduced width for selection dropdowns
-          } else if (fieldType === 'people') {
-            defaultWidth = 170; // Extra width for people with avatars
-          }
+          if (fieldType === 'selection') defaultWidth = 150;
+          else if (fieldType === 'people') defaultWidth = 170;
 
-          // Map the configuration data structure to the expected format
           const customColumnObj = column.custom_column_obj || (column as any).configuration;
-
-          // Transform configuration format to custom_column_obj format if needed
           let transformedColumnObj = customColumnObj;
           if (customColumnObj && !customColumnObj.fieldType && customColumnObj.field_type) {
             transformedColumnObj = {
@@ -455,8 +414,7 @@ const TaskListV2Section: React.FC = () => {
               previewValue: customColumnObj.preview_value,
               firstNumericColumn: customColumnObj.first_numeric_column_key,
               secondNumericColumn: customColumnObj.second_numeric_column_key,
-              selectionsList:
-                customColumnObj.selections_list || customColumnObj.selectionsList || [],
+              selectionsList: customColumnObj.selections_list || customColumnObj.selectionsList || [],
               labelsList: customColumnObj.labels_list || customColumnObj.labelsList || [],
             };
           }
@@ -478,7 +436,7 @@ const TaskListV2Section: React.FC = () => {
     return [...baseVisibleColumns, ...visibleCustomColumns];
   }, [fields, columns, customColumns, t, columnWidths]);
 
-  // Ensure column order includes only visible non-sticky columns and append any newly shown ones
+  // Ensure column order includes only visible non-sticky columns
   useEffect(() => {
     const reorderableIds = rawVisibleColumns.filter(column => !column.isSticky).map(c => c.id);
     setColumnOrder(prev => {
@@ -518,17 +476,13 @@ const TaskListV2Section: React.FC = () => {
   const visibleColumns = useMemo(() => {
     const stickyColumns = rawVisibleColumns.filter(column => column.isSticky);
     const reorderableColumns = rawVisibleColumns.filter(column => !column.isSticky);
-
     const orderedIds = columnOrder.length
       ? columnOrder
       : reorderableColumns.map(column => column.id);
-
     const orderedReorderable = orderedIds
       .map(id => reorderableColumns.find(column => column.id === id))
       .filter(Boolean) as typeof reorderableColumns;
-
     const missingColumns = reorderableColumns.filter(column => !orderedIds.includes(column.id));
-
     return [...stickyColumns, ...orderedReorderable, ...missingColumns];
   }, [rawVisibleColumns, columnOrder]);
 
@@ -543,9 +497,7 @@ const TaskListV2Section: React.FC = () => {
 
   // Set project context for field visibility when project changes
   useEffect(() => {
-    if (urlProjectId) {
-      dispatch(setProjectContext(urlProjectId));
-    }
+    if (urlProjectId) dispatch(setProjectContext(urlProjectId));
   }, [dispatch, urlProjectId]);
 
   // Effects
@@ -555,7 +507,6 @@ const TaskListV2Section: React.FC = () => {
       dispatch(fetchTaskListColumns(urlProjectId));
       dispatch(fetchPhasesByProjectId(urlProjectId));
       dispatch(fetchStatusesCategories());
-
       trackMixpanelEvent(evt_project_task_list_visit, { project_id: urlProjectId });
     }
   }, [dispatch, urlProjectId]);
@@ -563,41 +514,25 @@ const TaskListV2Section: React.FC = () => {
   // Initialize field visibility from database when columns are loaded (only once)
   useEffect(() => {
     if (columns.length > 0 && fields.length > 0 && !initializedFromDatabase) {
-      // Update local fields to match database state only on initial load
       import('@/features/task-management/taskListFields.slice').then(({ setFields }) => {
-        // Create updated fields based on database column state
         const updatedFields = fields.map(field => {
           const backendColumn = columns.find(c => c.key === field.key);
-          if (backendColumn) {
-            return {
-              ...field,
-              visible: backendColumn.pinned ?? field.visible,
-            };
-          }
+          if (backendColumn) return { ...field, visible: backendColumn.pinned ?? field.visible };
           return field;
         });
-
-        // Only update if there are actual changes
         const hasChanges = updatedFields.some(
           (field, index) => field.visible !== fields[index].visible
         );
-
-        if (hasChanges) {
-          dispatch(setFields(updatedFields));
-        }
-
+        if (hasChanges) dispatch(setFields(updatedFields));
         setInitializedFromDatabase(true);
       });
     }
   }, [columns, fields, dispatch, initializedFromDatabase]);
 
-  // Cleanup column resize listeners on unmount to prevent memory leaks
+  // Cleanup column resize listeners on unmount
   useEffect(() => {
     return () => {
-      // If component unmounts during a drag operation, clean up listeners and DOM elements
-      if (resizeCleanupRef.current) {
-        resizeCleanupRef.current();
-      }
+      if (resizeCleanupRef.current) resizeCleanupRef.current();
     };
   }, []);
 
@@ -621,46 +556,26 @@ const TaskListV2Section: React.FC = () => {
   );
 
   const handleGroupCollapse = useCallback(
-    (groupId: string) => {
-      dispatch(toggleGroupCollapsed(groupId));
-    },
+    (groupId: string) => dispatch(toggleGroupCollapsed(groupId)),
     [dispatch]
   );
 
-  // Function to update custom column values
   const updateTaskCustomColumnValue = useCallback(
     (taskId: string, columnKey: string, value: string) => {
       try {
-        if (!urlProjectId) {
-          console.error('Project ID is missing');
-          return;
-        }
-
-        const body = {
-          task_id: taskId,
-          column_key: columnKey,
-          value: value,
-          project_id: urlProjectId,
-        };
-
-        // Update the Redux store immediately for optimistic updates
+        if (!urlProjectId) { console.error('Project ID is missing'); return; }
+        const body = { task_id: taskId, column_key: columnKey, value, project_id: urlProjectId };
         const currentTask = allTasks.find(task => task.id === taskId);
         if (currentTask) {
           const updatedTask = {
             ...currentTask,
-            custom_column_values: {
-              ...currentTask.custom_column_values,
-              [columnKey]: value,
-            },
+            custom_column_values: { ...currentTask.custom_column_values, [columnKey]: value },
             updated_at: new Date().toISOString(),
           };
-
-          // Import and dispatch the updateTask action
           import('@/features/task-management/task-management.slice').then(({ updateTask }) => {
             dispatch(updateTask(updatedTask));
           });
         }
-
         if (socket && connected) {
           socket.emit(SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), JSON.stringify(body));
         } else {
@@ -673,33 +588,18 @@ const TaskListV2Section: React.FC = () => {
     [urlProjectId, socket, connected, allTasks, dispatch]
   );
 
-  // Custom column settings handler
   const handleCustomColumnSettings = useCallback(
     (columnKey: string) => {
       if (!columnKey) return;
-
       const columnData = visibleColumns.find(col => col.key === columnKey || col.id === columnKey);
-
-      // Use the UUID for API calls, not the key (nanoid)
-      // For custom columns, prioritize the uuid field over id field
       const columnId = (columnData as any)?.uuid || columnData?.id || columnKey;
-
-      dispatch(
-        setCustomColumnModalAttributes({
-          modalType: 'edit',
-          columnId: columnId,
-          columnData: columnData,
-        })
-      );
+      dispatch(setCustomColumnModalAttributes({ modalType: 'edit', columnId, columnData }));
       dispatch(toggleCustomColumnModalOpen(true));
     },
     [dispatch, visibleColumns]
   );
 
-  // Handle scroll synchronization - disabled since header is now sticky inside content
-  const handleContentScroll = useCallback(() => {
-    // No longer needed since header scrolls naturally with content
-  }, []);
+  const handleContentScroll = useCallback(() => {}, []);
 
   // Column drag-and-drop handlers
   const handleColumnDragStart = useCallback((event: any) => {
@@ -714,18 +614,13 @@ const TaskListV2Section: React.FC = () => {
     (event: any) => {
       setActiveColumnId(null);
       setOverColumnId(null);
-
       const { active, over } = event || {};
       if (!active || !over || active.id === over.id) return;
-
       const reorderableIds = visibleColumns.filter(column => !column.isSticky).map(c => c.id);
       const oldIndex = reorderableIds.indexOf(active.id as string);
       const newIndex = reorderableIds.indexOf(over.id as string);
-
       if (oldIndex === -1 || newIndex === -1) return;
-
-      const nextOrder = arrayMove(reorderableIds, oldIndex, newIndex);
-      setColumnOrder(nextOrder);
+      setColumnOrder(arrayMove(reorderableIds, oldIndex, newIndex));
     },
     [visibleColumns]
   );
@@ -733,42 +628,32 @@ const TaskListV2Section: React.FC = () => {
   // Memoized values for GroupedVirtuoso
   const virtuosoGroups = useMemo(() => {
     let currentTaskIndex = 0;
-
     return groups.map(group => {
       const isCurrentGroupCollapsed = collapsedGroups.has(group.id);
-
       const visibleTasksInGroup = isCurrentGroupCollapsed
         ? []
         : group.taskIds
             .map(taskId => allTasks.find(task => task.id === taskId))
             .filter((task): task is Task => task !== undefined);
-
       const tasksForVirtuoso = visibleTasksInGroup.map(task => ({
         ...task,
         originalIndex: allTasks.indexOf(task),
       }));
-
-      // Get add task rows for this group
       const addTaskItems = !isCurrentGroupCollapsed
-        ? [
-            // Single add task row per group - reused for all tasks
-            {
-              id: `add-task-${group.id}-0`,
-              isAddTaskRow: true,
-              groupId: group.id,
-              groupType: currentGrouping || 'status',
-              groupValue: group.id, // Send the UUID that backend expects
-              projectId: urlProjectId,
-              rowId: `add-task-${group.id}-0`,
-              autoFocus: false,
-            },
-          ]
+        ? [{
+            id: `add-task-${group.id}-0`,
+            isAddTaskRow: true,
+            groupId: group.id,
+            groupType: currentGrouping || 'status',
+            groupValue: group.id,
+            projectId: urlProjectId,
+            rowId: `add-task-${group.id}-0`,
+            autoFocus: false,
+          }]
         : [];
-
       const itemsWithAddTask = !isCurrentGroupCollapsed
         ? [...tasksForVirtuoso, ...addTaskItems]
         : tasksForVirtuoso;
-
       const groupData = {
         ...group,
         tasks: itemsWithAddTask,
@@ -782,13 +667,9 @@ const TaskListV2Section: React.FC = () => {
     });
   }, [groups, allTasks, collapsedGroups, currentGrouping, urlProjectId]);
 
-  const virtuosoGroupCounts = useMemo(() => {
-    return virtuosoGroups.map(group => group.count);
-  }, [virtuosoGroups]);
+  const virtuosoGroupCounts = useMemo(() => virtuosoGroups.map(group => group.count), [virtuosoGroups]);
 
-  const virtuosoItems = useMemo(() => {
-    return virtuosoGroups.flatMap(group => group.tasks);
-  }, [virtuosoGroups]);
+  const virtuosoItems = useMemo(() => virtuosoGroups.flatMap(group => group.tasks), [virtuosoGroups]);
 
   // Render functions
   const renderGroup = useCallback(
@@ -796,7 +677,6 @@ const TaskListV2Section: React.FC = () => {
       const group = virtuosoGroups[groupIndex];
       const isGroupCollapsed = collapsedGroups.has(group.id);
       const isGroupEmpty = group.actualCount === 0;
-
       return (
         <div className={groupIndex > 0 ? 'mt-2' : ''}>
           <TaskGroupHeader
@@ -822,9 +702,7 @@ const TaskListV2Section: React.FC = () => {
   const renderTask = useCallback(
     (taskIndex: number, isFirstInGroup: boolean = false) => {
       const item = virtuosoItems[taskIndex];
-
       if (!item || !urlProjectId) return null;
-
       if ('isAddTaskRow' in item && item.isAddTaskRow) {
         return (
           <AddTaskRow
@@ -838,7 +716,6 @@ const TaskListV2Section: React.FC = () => {
           />
         );
       }
-
       return (
         <TaskRowWithSubtasks
           taskId={item.id}
@@ -884,11 +761,8 @@ const TaskListV2Section: React.FC = () => {
               {visibleColumns.map((column, index) => {
                 const isDropTarget = overColumnId === column.id && column.id !== activeColumnId;
 
-                // Calculate left position for sticky columns
-                let leftPosition = 4; // Account for px-1 (4px) padding on container
+                let leftPosition = 4;
                 if (column.isSticky) {
-                  // For sticky columns, we need to account for ALL previous columns
-                  // because non-sticky columns between sticky ones still take up space
                   for (let i = 0; i < index; i++) {
                     const prevColumn = visibleColumns[i];
                     leftPosition += parseInt(prevColumn.width.replace('px', ''));
@@ -904,7 +778,7 @@ const TaskListV2Section: React.FC = () => {
                     position: 'sticky' as const,
                     left: leftPosition,
                     zIndex: 15,
-                    backgroundColor: isDarkMode ? '#141414' : '#f9fafb', // custom dark header : bg-gray-50
+                    backgroundColor: isDarkMode ? '#141414' : '#f9fafb',
                   }),
                 };
 
@@ -935,7 +809,6 @@ const TaskListV2Section: React.FC = () => {
                     } ${isDropTarget ? 'column-drop-target' : ''}`}
                     style={{
                       ...columnStyle,
-                      // Add position relative for resize handle positioning, but don't override sticky
                       ...(!column.isSticky && { position: 'relative' }),
                       ...(dragParams?.isDragging ? { opacity: 0.85 } : {}),
                     }}
@@ -983,75 +856,30 @@ const TaskListV2Section: React.FC = () => {
                         aria-label={`Resize ${t(column.label || '')} column`}
                         tabIndex={0}
                         className="column-resize-handle"
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          right: -4,
-                          width: 8,
-                          height: '100%',
-                        }}
+                        style={{ position: 'absolute', top: 0, right: -4, width: 8, height: '100%' }}
                         onKeyDown={e => {
-                          // Only handle ArrowLeft and ArrowRight keys
-                          if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') {
-                            return;
-                          }
-
+                          if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
                           e.preventDefault();
                           e.stopPropagation();
-
                           const columnId = column.id;
-
-                          // Get current width from state or column default
                           const currentWidthString = columnWidths[columnId] || column.width;
                           const currentWidth = parseInt(currentWidthString.replace('px', ''), 10);
-
-                          // Get min/max widths from column config or use defaults
                           const minWidth = (column as any).minWidth
-                            ? parseInt((column as any).minWidth.replace('px', ''), 10)
-                            : 100;
+                            ? parseInt((column as any).minWidth.replace('px', ''), 10) : 100;
                           const maxWidth = (column as any).maxWidth
-                            ? parseInt((column as any).maxWidth.replace('px', ''), 10)
-                            : 1200;
-
-                          // Determine increment: Shift for larger increments (10px), normal for smaller (1px)
+                            ? parseInt((column as any).maxWidth.replace('px', ''), 10) : 1200;
                           const increment = e.shiftKey ? 10 : 1;
-
-                          // Determine direction: ArrowRight increases width, ArrowLeft decreases
                           const direction = e.key === 'ArrowRight' ? 1 : -1;
-
-                          // Calculate new width
-                          const newWidth = Math.max(
-                            minWidth,
-                            Math.min(maxWidth, currentWidth + direction * increment)
-                          );
-
-                          // Update CSS variable for immediate visual feedback
-                          document.documentElement.style.setProperty(
-                            `--col-width-${columnId}`,
-                            `${newWidth}px`
-                          );
-
-                          // Update state to persist the change
-                          setColumnWidths(prev => ({
-                            ...prev,
-                            [columnId]: `${newWidth}px`,
-                          }));
-
-                          // Update aria attributes and visual state for accessibility
+                          const newWidth = Math.max(minWidth, Math.min(maxWidth, currentWidth + direction * increment));
+                          document.documentElement.style.setProperty(`--col-width-${columnId}`, `${newWidth}px`);
+                          setColumnWidths(prev => ({ ...prev, [columnId]: `${newWidth}px` }));
                           const handleElement = e.currentTarget;
                           const atLimit = newWidth <= minWidth || newWidth >= maxWidth;
-
-                          // Update aria attributes for screen readers
                           handleElement.setAttribute('aria-valuenow', `${newWidth}`);
                           handleElement.setAttribute('aria-valuemin', `${minWidth}`);
                           handleElement.setAttribute('aria-valuemax', `${maxWidth}`);
-
-                          // Update visual state
-                          if (atLimit) {
-                            handleElement.classList.add('at-limit');
-                          } else {
-                            handleElement.classList.remove('at-limit');
-                          }
+                          if (atLimit) handleElement.classList.add('at-limit');
+                          else handleElement.classList.remove('at-limit');
                         }}
                         onMouseDown={e => {
                           e.preventDefault();
@@ -1060,59 +888,35 @@ const TaskListV2Section: React.FC = () => {
                           const startWidth = parseInt(column.width.replace('px', ''), 10);
                           const columnId = column.id;
                           const handleElement = e.currentTarget;
-
-                          // Get min/max widths from column config or use defaults
                           const minWidth = column.minWidth
-                            ? parseInt(column.minWidth.replace('px', ''), 10)
-                            : 100;
+                            ? parseInt(column.minWidth.replace('px', ''), 10) : 100;
                           const maxWidth = column.maxWidth
-                            ? parseInt(column.maxWidth.replace('px', ''), 10)
-                            : 1200;
-
-                          // Find the scrollable table container
+                            ? parseInt(column.maxWidth.replace('px', ''), 10) : 1200;
                           const scrollableContainer =
                             contentScrollRef.current ||
                             (e.currentTarget.closest('[style*="overflow"]') as HTMLElement) ||
-                            (document
-                              .getElementById('task-list-container')
+                            (document.getElementById('task-list-container')
                               ?.querySelector('[style*="overflow"]') as HTMLElement) ||
                             document.getElementById('task-list-container') ||
                             (e.currentTarget.closest('.border') as HTMLElement) ||
                             document.body;
                           const tableContainer = scrollableContainer;
-
-                          // Create resize indicator line
                           const indicator = document.createElement('div');
                           indicator.className = 'column-resize-indicator';
-                          
-                          // Ensure the container has position relative for absolute positioning
                           const originalPosition = tableContainer.style.position;
                           if (!originalPosition || originalPosition === 'static') {
                             tableContainer.style.position = 'relative';
                           }
-                          
-                          // Calculate the full scrollable height to span entire table
                           const scrollHeight = tableContainer.scrollHeight;
-                          const scrollTop = tableContainer.scrollTop;
-                          
-                          // Set indicator to span from current scroll position to end of content
-                          // Use fixed positioning from top of visible area to bottom of scrollable content
                           indicator.style.top = '0px';
                           indicator.style.height = `${scrollHeight}px`;
-                          
                           tableContainer.appendChild(indicator);
-
-                          // Create tooltip
                           const tooltip = document.createElement('div');
                           tooltip.className = 'column-resize-tooltip';
                           document.body.appendChild(tooltip);
-
-                          // Add resizing class
                           handleElement.classList.add('resizing');
                           document.body.classList.add('column-resizing');
-
                           const updateIndicator = (x: number, width: number) => {
-                            // Calculate position relative to table container
                             const containerRect = tableContainer.getBoundingClientRect();
                             const relativeX = x - containerRect.left;
                             indicator.style.left = `${relativeX}px`;
@@ -1121,101 +925,43 @@ const TaskListV2Section: React.FC = () => {
                             tooltip.style.left = `${x}px`;
                             tooltip.style.top = `${e.clientY - 40}px`;
                             tooltip.style.opacity = '1';
-
-                            // Check if at limit
                             const atLimit = width <= minWidth || width >= maxWidth;
-                            if (atLimit) {
-                              handleElement.classList.add('at-limit');
-                            } else {
-                              handleElement.classList.remove('at-limit');
-                            }
+                            if (atLimit) handleElement.classList.add('at-limit');
+                            else handleElement.classList.remove('at-limit');
                           };
-
                           const handleMouseMove = (moveEvent: MouseEvent) => {
                             const diff = moveEvent.clientX - startX;
-                            const newWidth = Math.max(
-                              minWidth,
-                              Math.min(maxWidth, startWidth + diff)
-                            );
-
-                            // Update CSS variable once - all elements update together
-                            document.documentElement.style.setProperty(
-                              `--col-width-${columnId}`,
-                              `${newWidth}px`
-                            );
-
-                            // Update indicator and tooltip
+                            const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + diff));
+                            document.documentElement.style.setProperty(`--col-width-${columnId}`, `${newWidth}px`);
                             updateIndicator(moveEvent.clientX, newWidth);
                           };
-
                           const handleMouseUp = (upEvent: MouseEvent) => {
-                            // Calculate final width and update state to persist
                             const diff = upEvent.clientX - startX;
-                            const newWidth = Math.max(
-                              minWidth,
-                              Math.min(maxWidth, startWidth + diff)
-                            );
-                            setColumnWidths(prev => ({
-                              ...prev,
-                              [columnId]: `${newWidth}px`,
-                            }));
-
-                            // Call cleanup function to remove listeners and DOM elements
-                            if (resizeCleanupRef.current) {
-                              resizeCleanupRef.current();
-                            }
+                            const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + diff));
+                            setColumnWidths(prev => ({ ...prev, [columnId]: `${newWidth}px` }));
+                            if (resizeCleanupRef.current) resizeCleanupRef.current();
                           };
-
-                          // Create cleanup function to remove listeners and DOM elements
-                          // Must be defined after handleMouseMove and handleMouseUp
                           const cleanup = () => {
-                            // Remove event listeners
                             document.removeEventListener('mousemove', handleMouseMove);
                             document.removeEventListener('mouseup', handleMouseUp);
-
-                            // Reset body styles
                             document.body.style.cursor = '';
                             document.body.style.userSelect = '';
                             document.body.classList.remove('column-resizing');
-                            
-                            // Restore original position style
-                            if (originalPosition) {
-                              tableContainer.style.position = originalPosition;
-                            } else {
-                              tableContainer.style.position = '';
-                            }
-
-                            // Remove indicator and tooltip
+                            if (originalPosition) tableContainer.style.position = originalPosition;
+                            else tableContainer.style.position = '';
                             if (indicator.parentNode) {
                               indicator.style.opacity = '0';
-                              setTimeout(() => {
-                                if (indicator.parentNode) {
-                                  indicator.remove();
-                                }
-                              }, 150);
+                              setTimeout(() => { if (indicator.parentNode) indicator.remove(); }, 150);
                             }
                             if (tooltip.parentNode) {
                               tooltip.style.opacity = '0';
-                              setTimeout(() => {
-                                if (tooltip.parentNode) {
-                                  tooltip.remove();
-                                }
-                              }, 150);
+                              setTimeout(() => { if (tooltip.parentNode) tooltip.remove(); }, 150);
                             }
-
-                            // Remove resizing classes
                             handleElement.classList.remove('resizing', 'at-limit');
-
-                            // Clear the cleanup ref
                             resizeCleanupRef.current = null;
                           };
-
-                          // Store cleanup function in ref
                           resizeCleanupRef.current = cleanup;
-
-                          // Initial indicator position
                           updateIndicator(e.clientX, startWidth);
-
                           document.body.style.cursor = 'col-resize';
                           document.body.style.userSelect = 'none';
                           document.addEventListener('mousemove', handleMouseMove);
@@ -1228,9 +974,7 @@ const TaskListV2Section: React.FC = () => {
                   </div>
                 );
 
-                if (column.isSticky) {
-                  return headerContent();
-                }
+                if (column.isSticky) return headerContent();
 
                 return (
                   <SortableHeader key={column.id} column={column} isDropTarget={isDropTarget}>
@@ -1240,13 +984,20 @@ const TaskListV2Section: React.FC = () => {
                   </SortableHeader>
                 );
               })}
-              {/* Add Custom Column Button - positioned at the end and scrolls with content */}
+
+              {/* Add Custom Column Button */}
               <div
                 className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
                 style={{ width: '50px', flexShrink: 0 }}
               >
                 <AddCustomColumnButton />
               </div>
+
+              {/* ✅ FIX: Filler div to extend header border across full container width */}
+              <div
+                className="flex-1 border-r border-gray-200 dark:border-gray-700"
+                style={{ minWidth: '20px' }}
+              />
             </div>
           </div>
         </SortableContext>
@@ -1277,12 +1028,10 @@ const TaskListV2Section: React.FC = () => {
       </div>
     );
 
-  // Show message when no data - but for phase grouping, create an unmapped group
+  // Show message when no data
   if (groups.length === 0 && !loading) {
-    // If grouped by phase, show an unmapped group to allow task creation
     if (currentGrouping === 'phase') {
       const unmappedGroupId = 'Unmapped';
-
       return (
         <DndContext
           sensors={sensors}
@@ -1294,44 +1043,24 @@ const TaskListV2Section: React.FC = () => {
           <div className="flex flex-col bg-white dark:bg-gray-900 h-full overflow-hidden">
             <div
               className="border border-gray-200 dark:border-gray-700 rounded-lg"
-              style={{
-                height: 'calc(100vh - 240px)',
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-              }}
+              style={{ height: 'calc(100vh - 240px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
             >
               <div
                 ref={contentScrollRef}
                 className="flex-1 bg-white dark:bg-gray-900 relative"
-                style={{
-                  overflowX: 'auto',
-                  overflowY: 'auto',
-                  minHeight: 0,
-                }}
+                style={{ overflowX: 'auto', overflowY: 'auto', minHeight: 0 }}
               >
-                {/* Sticky Column Headers */}
-                <div
-                  className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800"
-                  style={{ width: '100%', minWidth: 'max-content' }}
-                >
+                <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800" style={{ width: '100%', minWidth: 'max-content' }}>
                   {renderColumnHeaders()}
                 </div>
-
                 <div style={{ minWidth: 'max-content' }}>
                   <div className="mt-2">
                     <TaskGroupHeader
-                      group={{
-                        id: unmappedGroupId,
-                        name: 'Unmapped',
-                        count: 0,
-                        color: '#fbc84c69',
-                      }}
+                      group={{ id: unmappedGroupId, name: 'Unmapped', count: 0, color: '#fbc84c69' }}
                       isCollapsed={false}
                       onToggle={() => {}}
                       projectId={urlProjectId || ''}
                     />
-                    {/* Single add task row - reused for all tasks */}
                     <AddTaskRow
                       groupId={unmappedGroupId}
                       groupType="phase"
@@ -1350,7 +1079,6 @@ const TaskListV2Section: React.FC = () => {
       );
     }
 
-    // For other groupings, show the empty state message
     return (
       <div className="flex flex-col bg-white dark:bg-gray-900 h-full">
         <div className="flex-1 flex items-center justify-center">
@@ -1369,7 +1097,6 @@ const TaskListV2Section: React.FC = () => {
 
   return (
     <>
-      {/* CSS for sticky column hover effects */}
       <style>
         {`
           .hover\\:bg-gray-50:hover .sticky-column-hover,
@@ -1395,22 +1122,13 @@ const TaskListV2Section: React.FC = () => {
           {/* Table Container */}
           <div
             className="border border-gray-200 dark:border-gray-700 rounded-lg"
-            style={{
-              height: 'calc(100vh - 240px)', // Slightly reduce height to ensure scrollbar visibility
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-            }}
+            style={{ height: 'calc(100vh - 240px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
           >
             {/* Task List Content with Sticky Header */}
             <div
               ref={contentScrollRef}
               className="flex-1 bg-white dark:bg-gray-900 relative"
-              style={{
-                overflowX: 'auto',
-                overflowY: 'auto',
-                minHeight: 0,
-              }}
+              style={{ overflowX: 'auto', overflowY: 'auto', minHeight: 0 }}
             >
               {/* Sticky Column Headers */}
               <div
@@ -1427,13 +1145,9 @@ const TaskListV2Section: React.FC = () => {
                 strategy={verticalListSortingStrategy}
               >
                 <div style={{ minWidth: 'max-content' }}>
-                  {/* Render groups manually for debugging */}
                   {virtuosoGroups.map((group, groupIndex) => (
                     <div key={group.id}>
-                      {/* Group Header */}
                       {renderGroup(groupIndex)}
-
-                      {/* Group Tasks */}
                       {!collapsedGroups.has(group.id) &&
                         (group.tasks.length > 0
                           ? group.tasks.map((task, taskIndex) => {
@@ -1441,35 +1155,18 @@ const TaskListV2Section: React.FC = () => {
                                 virtuosoGroups
                                   .slice(0, groupIndex)
                                   .reduce((sum, g) => sum + g.count, 0) + taskIndex;
-
-                              // Check if this is the first actual task in the group (not AddTaskRow)
-                              const isFirstTaskInGroup =
-                                taskIndex === 0 && !('isAddTaskRow' in task);
-
-                              // Check if we should show drop spacer
-                              const isOverThisTask =
-                                activeId && overId === task.id && !('isAddTaskRow' in task);
-                              const showDropSpacerBefore =
-                                isOverThisTask && dropPosition === 'before';
-                              const showDropSpacerAfter =
-                                isOverThisTask && dropPosition === 'after';
-
+                              const isFirstTaskInGroup = taskIndex === 0 && !('isAddTaskRow' in task);
+                              const isOverThisTask = activeId && overId === task.id && !('isAddTaskRow' in task);
+                              const showDropSpacerBefore = isOverThisTask && dropPosition === 'before';
+                              const showDropSpacerAfter = isOverThisTask && dropPosition === 'after';
                               return (
                                 <div key={task.id || `add-task-${group.id}-${taskIndex}`}>
                                   {showDropSpacerBefore && (
-                                    <DropSpacer
-                                      isVisible={true}
-                                      visibleColumns={visibleColumns}
-                                      isDarkMode={isDarkMode}
-                                    />
+                                    <DropSpacer isVisible={true} visibleColumns={visibleColumns} isDarkMode={isDarkMode} />
                                   )}
                                   {renderTask(globalTaskIndex, isFirstTaskInGroup)}
                                   {showDropSpacerAfter && (
-                                    <DropSpacer
-                                      isVisible={true}
-                                      visibleColumns={visibleColumns}
-                                      isDarkMode={isDarkMode}
-                                    />
+                                    <DropSpacer isVisible={true} visibleColumns={visibleColumns} isDarkMode={isDarkMode} />
                                   )}
                                 </div>
                               );
@@ -1483,9 +1180,7 @@ const TaskListV2Section: React.FC = () => {
           </div>
 
           {/* Drag Overlay */}
-          <DragOverlay
-            dropAnimation={{ duration: 200, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}
-          >
+          <DragOverlay dropAnimation={{ duration: 200, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
             {activeId ? (
               <div
                 className="bg-white dark:bg-gray-800 shadow-2xl rounded-lg border-2 border-blue-500 dark:border-blue-400 opacity-95"
@@ -1513,22 +1208,12 @@ const TaskListV2Section: React.FC = () => {
                 totalSelected={selectedTaskIds.length}
                 projectId={urlProjectId}
                 onClearSelection={bulkActions.handleClearSelection}
-                onBulkStatusChange={statusId =>
-                  bulkActions.handleBulkStatusChange(statusId, selectedTaskIds)
-                }
-                onBulkPriorityChange={priorityId =>
-                  bulkActions.handleBulkPriorityChange(priorityId, selectedTaskIds)
-                }
-                onBulkPhaseChange={phaseId =>
-                  bulkActions.handleBulkPhaseChange(phaseId, selectedTaskIds)
-                }
+                onBulkStatusChange={statusId => bulkActions.handleBulkStatusChange(statusId, selectedTaskIds)}
+                onBulkPriorityChange={priorityId => bulkActions.handleBulkPriorityChange(priorityId, selectedTaskIds)}
+                onBulkPhaseChange={phaseId => bulkActions.handleBulkPhaseChange(phaseId, selectedTaskIds)}
                 onBulkAssignToMe={() => bulkActions.handleBulkAssignToMe(selectedTaskIds)}
-                onBulkAssignMembers={memberIds =>
-                  bulkActions.handleBulkAssignMembers(memberIds, selectedTaskIds)
-                }
-                onBulkAddLabels={labelIds =>
-                  bulkActions.handleBulkAddLabels(labelIds, selectedTaskIds)
-                }
+                onBulkAssignMembers={memberIds => bulkActions.handleBulkAssignMembers(memberIds, selectedTaskIds)}
+                onBulkAddLabels={labelIds => bulkActions.handleBulkAddLabels(labelIds, selectedTaskIds)}
                 onBulkArchive={() => bulkActions.handleBulkArchive(selectedTaskIds)}
                 onBulkDelete={() => bulkActions.handleBulkDelete(selectedTaskIds)}
                 onBulkDuplicate={() => bulkActions.handleBulkDuplicate(selectedTaskIds)}
@@ -1538,13 +1223,8 @@ const TaskListV2Section: React.FC = () => {
             </div>
           )}
 
-          {/* Custom Column Modal */}
           {createPortal(<CustomColumnModal />, document.body, 'custom-column-modal')}
-
-          {/* Convert To Subtask Drawer */}
           {createPortal(<ConvertToSubtaskDrawer />, document.body, 'convert-to-subtask-drawer')}
-
-          {/* Duplicate Task Modal */}
           {createPortal(
             <DuplicateTaskModal
               open={isOpenDuplicateTaskModal}

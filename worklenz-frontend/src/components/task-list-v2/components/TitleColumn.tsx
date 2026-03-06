@@ -131,7 +131,7 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
 
     return (
       <div
-        className="relative flex items-center group pl-1 border-r border-gray-200 dark:border-gray-700"
+        className="relative flex items-center group pl-1 border-r border-b border-t border-gray-200 dark:border-gray-700"
         style={{ width, height: '44px', minHeight: '44px' }}
       >
         {editTaskName ? (
