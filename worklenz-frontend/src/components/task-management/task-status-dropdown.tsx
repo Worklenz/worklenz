@@ -11,6 +11,8 @@ import {
   selectGroups,
   moveTaskBetweenGroups,
 } from '@/features/task-management/task-management.slice';
+import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
+import alertService from '@/services/alerts/alertService';
 
 interface TaskStatusDropdownProps {
   task: Task;
@@ -73,8 +75,21 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
 
   // Handle status change
   const handleStatusChange = useCallback(
-    (statusId: string, statusName: string) => {
+    async (statusId: string, statusName: string) => {
       if (!task.id || !statusId || !connected) return;
+
+      // Check dependencies BEFORE making any changes
+      if (task.status !== statusId) {
+        const canContinue = await checkTaskDependencyStatus(task.id, statusId);
+        if (!canContinue) {
+          alertService.error(
+            'Task is not completed',
+            'Please complete the task dependencies before proceeding'
+          );
+          setIsOpen(false);
+          return;
+        }
+      }
 
       // Optimistic update: immediately update the task status in Redux for instant feedback
       const updatedTask = {

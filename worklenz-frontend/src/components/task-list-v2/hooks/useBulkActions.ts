@@ -328,7 +328,6 @@ export const useBulkActions = () => {
       try {
         updateLoadingState('duplicate', true);
         // TODO: Implement bulk duplicate API call when available
-        console.log('Bulk duplicate:', selectedTaskIds);
         // For now, just clear selection and refetch
         dispatch(clearSelection());
         refetchTasks();
@@ -348,7 +347,6 @@ export const useBulkActions = () => {
       try {
         updateLoadingState('export', true);
         // TODO: Implement bulk export API call when available
-        console.log('Bulk export:', selectedTaskIds);
       } catch (error) {
         logger.error('Error exporting tasks:', error);
       } finally {
