@@ -78,16 +78,37 @@ build_frontend() {
         return 1
     fi
 
-    echo -e "${BLUE}[Frontend]${NC} Building application..."
-    NODE_OPTIONS="--max-old-space-size=4096" npm run build > /dev/null 2>&1
+    # Create temporary build directory with timestamp
+    local temp_build="build-$(date +%s)"
+    echo -e "${BLUE}[Frontend]${NC} Building to temporary directory: ${temp_build}..."
+    
+    # Build to temporary directory
+    VITE_BUILD_OUTDIR="$temp_build" NODE_OPTIONS="--max-old-space-size=4096" npm run build > /dev/null 2>&1
     if [ $? -ne 0 ]; then
         echo -e "${RED}[Frontend]${NC} Build failed"
+        rm -rf "$temp_build"
         return 1
     fi
 
+    # Atomic swap: rename current build to backup, move new build to production
+    if [ -d "build" ] && [ ! -L "build" ]; then
+        echo -e "${BLUE}[Frontend]${NC} Backing up current build..."
+        mv build "build-backup-$(date +%s)" 2>/dev/null || true
+    elif [ -L "build" ]; then
+        # If build is a symlink, remove it
+        rm -f build
+    fi
+    
+    # Move new build to production location
+    mv "$temp_build" build
+    
+    # Clean up old backups (keep last 2)
+    echo -e "${BLUE}[Frontend]${NC} Cleaning up old builds..."
+    ls -t | grep "^build-backup-" | tail -n +3 | xargs -r rm -rf
+
     local end_time=$(date +%s)
     local duration=$((end_time - start_time))
-    echo -e "${GREEN}[Frontend]${NC} ✅ Build completed in ${duration}s"
+    echo -e "${GREEN}[Frontend]${NC} ✅ Build completed and deployed atomically in ${duration}s"
     return 0
 }
 
@@ -103,16 +124,37 @@ build_client_portal() {
         return 1
     fi
 
-    echo -e "${BLUE}[Client Portal]${NC} Building application..."
-    npm run build > /dev/null 2>&1
+    # Create temporary build directory with timestamp
+    local temp_build="dist-$(date +%s)"
+    echo -e "${BLUE}[Client Portal]${NC} Building to temporary directory: ${temp_build}..."
+    
+    # Build to temporary directory
+    VITE_BUILD_OUTDIR="$temp_build" npm run build > /dev/null 2>&1
     if [ $? -ne 0 ]; then
         echo -e "${RED}[Client Portal]${NC} Build failed"
+        rm -rf "$temp_build"
         return 1
     fi
 
+    # Atomic swap: rename current dist to backup, move new build to production
+    if [ -d "dist" ] && [ ! -L "dist" ]; then
+        echo -e "${BLUE}[Client Portal]${NC} Backing up current build..."
+        mv dist "dist-backup-$(date +%s)" 2>/dev/null || true
+    elif [ -L "dist" ]; then
+        # If dist is a symlink, remove it
+        rm -f dist
+    fi
+    
+    # Move new build to production location
+    mv "$temp_build" dist
+    
+    # Clean up old backups (keep last 2)
+    echo -e "${BLUE}[Client Portal]${NC} Cleaning up old builds..."
+    ls -t | grep "^dist-backup-" | tail -n +3 | xargs -r rm -rf
+
     local end_time=$(date +%s)
     local duration=$((end_time - start_time))
-    echo -e "${GREEN}[Client Portal]${NC} ✅ Build completed in ${duration}s"
+    echo -e "${GREEN}[Client Portal]${NC} ✅ Build completed and deployed atomically in ${duration}s"
     return 0
 }
 
