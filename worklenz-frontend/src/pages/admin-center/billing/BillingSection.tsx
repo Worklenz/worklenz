@@ -1,4 +1,4 @@
-import { PageHeader } from '@ant-design/pro-components';
+import WorklenzPageHeader from '@/components/common/WorklenzPageHeader';
 import { Tabs, TabsProps } from '@/shared/antd-imports';
 import React, { useMemo } from 'react';
 import CurrentBill from '@/components/admin-center/billing/CurrentBill';
@@ -47,7 +47,7 @@ const BillingSection: React.FC = React.memo(() => {
 
   return (
     <div style={{ width: '100%' }}>
-      <PageHeader title={<span>{t('title')}</span>} style={pageHeaderStyle} />
+      <WorklenzPageHeader title={<span>{t('title')}</span>} style={pageHeaderStyle} />
       <Tabs defaultActiveKey="1" items={items} onChange={handleTabChange} destroyOnHidden />
     </div>
   );

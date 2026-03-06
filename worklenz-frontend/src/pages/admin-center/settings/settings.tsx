@@ -13,7 +13,7 @@ import {
   Select,
   Switch,
 } from '@/shared/antd-imports';
-import { PageHeader } from '@ant-design/pro-components';
+import WorklenzPageHeader from '@/components/common/WorklenzPageHeader';
 import { useTranslation } from 'react-i18next';
 import logger from '@/utils/errorLogger';
 import { scheduleAPIService } from '@/api/schedule/schedule.api.service';
@@ -151,7 +151,7 @@ const SettingsPage: React.FC = () => {
 
   return (
     <div style={{ width: '100%' }}>
-      <PageHeader title={<span>{t('settings')}</span>} style={{ padding: '16px 0' }} />
+      <WorklenzPageHeader title={<span>{t('settings')}</span>} style={{ padding: '16px 0' }} />
 
       <Space direction="vertical" style={{ width: '100%' }} size={22}>
         <Card>

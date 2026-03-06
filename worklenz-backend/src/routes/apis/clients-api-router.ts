@@ -9,6 +9,7 @@ import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-o
 import safeControllerFunction from "../../shared/safe-controller-function";
 import projectManagerValidator from "../../middlewares/validators/project-manager-validator";
 import chatIdParamValidator from "../../middlewares/validators/chat-id-param-validator";
+import phoneNumberValidator from "../../middlewares/validators/phone-number-validator";
 
 const clientsApiRouter = express.Router();
 
@@ -37,11 +38,12 @@ clientsApiRouter.delete("/portal/services/:id", idParamValidator, safeController
 
 // Organization-side Client Portal Management (moved from client-portal-api-router.ts)
 clientsApiRouter.get("/portal/clients", safeControllerFunction(ClientsController.getPortalClients));
-clientsApiRouter.post("/portal/clients", safeControllerFunction(ClientsController.createPortalClient));
+clientsApiRouter.post("/portal/clients", phoneNumberValidator, safeControllerFunction(ClientsController.createPortalClient));
 clientsApiRouter.get("/portal/clients/:id", idParamValidator, safeControllerFunction(ClientsController.getPortalClientById));
 clientsApiRouter.get("/portal/clients/:id/details", idParamValidator, safeControllerFunction(ClientsController.getPortalClientDetails));
-clientsApiRouter.put("/portal/clients/:id", idParamValidator, safeControllerFunction(ClientsController.updatePortalClient));
+clientsApiRouter.put("/portal/clients/:id", idParamValidator, phoneNumberValidator, safeControllerFunction(ClientsController.updatePortalClient));
 clientsApiRouter.delete("/portal/clients/:id", idParamValidator, safeControllerFunction(ClientsController.deletePortalClient));
+clientsApiRouter.put("/portal/clients/:id/activate", idParamValidator, safeControllerFunction(ClientsController.activatePortalClient));
 
 // Organization-side Client Portal Invite Slug (Vanity URLs)
 clientsApiRouter.put("/portal/clients/:id/invite-slug", idParamValidator, safeControllerFunction(ClientsController.setClientInviteSlug));
@@ -93,6 +95,7 @@ clientsApiRouter.get("/portal/invoices/:id/download", idParamValidator, safeCont
 clientsApiRouter.get("/:clientId/invoices/:id/download", idParamValidator, safeControllerFunction(ClientsController.downloadPortalInvoice));
 
 // Organization-side Client Portal Chats Management
+clientsApiRouter.post("/portal/chats/upload", safeControllerFunction(ClientsController.uploadPortalChatFile));
 clientsApiRouter.get("/portal/chats", safeControllerFunction(ClientsController.getPortalChats));
 clientsApiRouter.post("/portal/chats", safeControllerFunction(ClientsController.createPortalChat));
 clientsApiRouter.get("/portal/chats/:id", idParamValidator, safeControllerFunction(ClientsController.getPortalChatById));

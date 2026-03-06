@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, Suspense, lazy } from 'react';
 import {
   Input,
   InputNumber,
@@ -19,7 +19,7 @@ import { PlusOutlined, DeleteOutlined, UploadOutlined, CheckCircleOutlined } fro
 import { useTranslation } from 'react-i18next';
 import { RcFile } from 'antd/es/upload';
 import { getBase64 } from '@/utils/file-utils';
-import RichTextEditor from '@/components/shared/RichTextEditor';
+const RichTextEditor = lazy(() => import('@/components/shared/RichTextEditor'));
 import { CURRENCY_OPTIONS } from '@/shared/currencies';
 
 interface ServiceDetailsStepProps {
@@ -221,13 +221,18 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
                   <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
                     Choose a clear, descriptive name that clients will easily understand.
                   </Typography.Text>
-                  <Input
-                    placeholder="e.g., Website Design, Logo Creation, Marketing Strategy"
-                    size="large"
-                    value={service.name || ''}
-                    onChange={e => setService({ ...service, name: e.target.value })}
-                    status={service.name?.trim() ? '' : 'warning'}
-                  />
+                  <Row>
+                    <Col xs={24} sm={16}>
+                      <Input
+                        placeholder="e.g., Website Design, Logo Creation, Marketing Strategy"
+                        maxLength={100}
+                        showCount
+                        value={service.name || ''}
+                        onChange={e => setService({ ...service, name: e.target.value })}
+                        status={service.name?.trim() ? '' : 'warning'}
+                      />
+                    </Col>
+                  </Row>
                   <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
                     💡 Good examples: "Custom Logo Design", "SEO Audit & Strategy", "Social Media Management"
                   </Typography.Text>
@@ -252,7 +257,7 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
                     Set pricing information and categorize your service for better organization.
                   </Typography.Text>
                   
-                  <Row gutter={16}>
+                  <Row gutter={[16, 16]}>
                     <Col span={12}>
                       <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
                         Price
@@ -282,21 +287,22 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
                         }
                       />
                     </Col>
+                    <Col span={12}>
+                      <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
+                        Category
+                      </Typography.Text>
+                      <Input
+                        placeholder="e.g., Web Development, Design, Marketing"
+                        maxLength={50}
+                        showCount
+                        value={service.category || ''}
+                        onChange={e => setService({ ...service, category: e.target.value })}
+                      />
+                      <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+                        💡 Categories help organize your services for clients
+                      </Typography.Text>
+                    </Col>
                   </Row>
-                  
-                  <div style={{ marginTop: 16 }}>
-                    <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
-                      Category
-                    </Typography.Text>
-                    <Input
-                      placeholder="e.g., Web Development, Design, Marketing"
-                      value={service.category || ''}
-                      onChange={e => setService({ ...service, category: e.target.value })}
-                    />
-                    <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-                      💡 Categories help organize your services for clients
-                    </Typography.Text>
-                  </div>
                 </div>
               </Card>
 
@@ -350,18 +356,20 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
                     Describe your service in detail. Include what's included, your process, and what clients can expect.
                   </Typography.Text>
                   
-                  <div style={{ 
+                  <div style={{
                     border: service.service_data?.description?.trim() ? `1px solid ${token.colorBorder}` : `1px solid ${token.colorError}`,
                     borderRadius: token.borderRadius,
                     overflow: 'hidden'
                   }}>
-                    <RichTextEditor
-                      value={service.service_data?.description || ''}
-                      onChange={handleDescriptionChange}
-                      placeholder="Describe your service in detail... Include what's included, your process, timeline, and what clients can expect."
-                      themeMode={getThemeMode()}
-                      height={200}
-                    />
+                    <Suspense fallback={<div style={{ height: 200 }} />}>
+                      <RichTextEditor
+                        value={service.service_data?.description || ''}
+                        onChange={handleDescriptionChange}
+                        placeholder="Describe your service in detail... Include what's included, your process, timeline, and what clients can expect."
+                        themeMode={getThemeMode()}
+                        height={200}
+                      />
+                    </Suspense>
                   </div>
                   
                   <Alert

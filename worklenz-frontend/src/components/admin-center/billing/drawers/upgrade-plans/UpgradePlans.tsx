@@ -16,7 +16,7 @@ import logger from '@/utils/errorLogger';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IPaddlePlans, SUBSCRIPTION_STATUS } from '@/shared/constants';
 import { useAuthService } from '@/hooks/useAuth';
-import { fetchBillingInfo, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { fetchBillingInfo, fetchStorageInfo, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { billingApiService, IPricingPlan } from '@/api/admin-center/billing.api.service';
 import { authApiService } from '@/api/auth/auth.api.service';
@@ -528,6 +528,7 @@ const UpgradePlans = () => {
           trackMixpanelEvent(MixpanelBillingEvents.FREE_PLAN_SWITCH_COMPLETED, baseProps);
         }
         dispatch(fetchBillingInfo());
+        dispatch(fetchStorageInfo());
         dispatch(toggleUpgradeModal());
         const authorizeResponse = await authApiService.verify();
         if (authorizeResponse.authenticated) {

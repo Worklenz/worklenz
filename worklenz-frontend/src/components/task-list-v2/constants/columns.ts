@@ -1,5 +1,4 @@
 import { COLUMN_KEYS } from '@/features/tasks/tasks.slice';
-import { min } from 'lodash';
 
 export type ColumnStyle = {
   width: string;
@@ -45,7 +44,14 @@ export const BASE_COLUMNS = [
   { id: 'progress', label: 'progressColumn', width: '120px', key: COLUMN_KEYS.PROGRESS },
   { id: 'status', label: 'statusColumn', width: '120px', key: COLUMN_KEYS.STATUS },
   { id: 'assignees', label: 'assigneesColumn', width: '150px', key: COLUMN_KEYS.ASSIGNEES },
-  { id: 'labels', label: 'labelsColumn', width: '250px', key: COLUMN_KEYS.LABELS },
+  {
+    id: 'labels',
+    label: 'labelsColumn',
+    width: '250px',
+    key: COLUMN_KEYS.LABELS,
+    minWidth: '250px',
+    maxWidth: '350px',
+  },
   { id: 'phase', label: 'phaseColumn', width: '120px', key: COLUMN_KEYS.PHASE },
   { id: 'priority', label: 'priorityColumn', width: '120px', key: COLUMN_KEYS.PRIORITY },
   {

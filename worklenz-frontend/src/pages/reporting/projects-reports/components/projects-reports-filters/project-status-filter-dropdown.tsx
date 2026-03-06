@@ -8,7 +8,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { IProjectStatus } from '@/types/project/projectStatus.types';
 import { CaretDownFilled } from '@/shared/antd-imports';
 import { Button, Card, Checkbox, Dropdown, List, Space } from '@/shared/antd-imports';
-import { debounce } from 'lodash';
+import debounce from 'lodash-es/debounce';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

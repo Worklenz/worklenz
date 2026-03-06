@@ -990,16 +990,9 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         return res.end(pdfBuffer, 'binary');
       } catch (pdfError) {
         console.error('PDF generation error:', pdfError);
-
-        // Fallback: return HTML as a downloadable file if PDF generation fails
-        console.log('Falling back to HTML download...');
-        const html = InvoiceTemplateGenerator.generateInvoiceHTML(invoiceData);
-
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoice_no}.html"`);
-        res.setHeader('Content-Length', Buffer.byteLength(html));
-
-        return res.send(html);
+        return res
+          .status(500)
+          .json(new ServerResponse(false, null, "Failed to generate PDF. Please try again later."));
       }
     } catch (error) {
       console.error("Error downloading invoice:", error);
