@@ -70,7 +70,9 @@ export default class BillingController extends WorklenzControllerBase {
     const { plan, seatCount } = req.query;
 
     const teamMemberData = await getTeamMemberCount(req.user?.owner_id ?? "");
-    teamMemberData.user_count = seatCount as string;
+    if (seatCount) {
+      teamMemberData.user_count = parseInt(seatCount as string, 10);
+    }
     const axiosResponse = await generatePayLinkRequest(teamMemberData, plan as string, req.user?.owner_id, req.user?.id);
 
     return res.status(200).send(new ServerResponse(true, axiosResponse.body));
