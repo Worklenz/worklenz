@@ -4,7 +4,10 @@ import {sendEmail} from "./email";
 import {sanitize, sanitizePlainText} from "./utils";
 import FileConstants from "./file-constants";
 
-const FRONTEND_URL = process.env.FRONTEND_URL || "worklenz.com";
+// Ensure FRONTEND_URL is always an absolute URL with a scheme.
+// Without https://, email clients (e.g. Outlook Safe Links) strip the <a> tag.
+const _rawFrontendUrl = process.env.FRONTEND_URL || "worklenz.com";
+const FRONTEND_URL = _rawFrontendUrl.startsWith("http") ? _rawFrontendUrl : `https://${_rawFrontendUrl}`;
 
 export function sendWelcomeEmail(email: string, name: string) {
   let content = FileConstants.getEmailTemplate(IEmailTemplateType.Welcome) as string;
@@ -74,17 +77,17 @@ export function sendRegisterAndJoinTeamInvitation(myName: string, userName: stri
   });
 }
 
-export function sendResetEmail(toEmail: string, user_id: string, hash: string) {
+export async function sendResetEmail(toEmail: string, user_id: string, hash: string) {
   let content = FileConstants.getEmailTemplate(IEmailTemplateType.ResetPassword) as string;
   if (!content) return;
 
   // FRONTEND_URL is a trusted environment variable, no need to sanitize
-  // user_id is base64 encoded (safe), hash is bcrypt hash (safe)
+  // user_id is base64 encoded (safe), hash is a hex token (safe)
   content = content.replace("[VAR_HOSTNAME]", FRONTEND_URL);
   content = content.replace("[VAR_USER_ID]", user_id);
   content = content.replace("[VAR_HASH]", hash);
 
-  sendEmail({
+  await sendEmail({
     to: [toEmail],
     subject: "Reset your password on Worklenz.",
     html: content

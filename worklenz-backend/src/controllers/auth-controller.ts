@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import passport from "passport";
 import { NextFunction } from "express";
 
@@ -120,21 +121,31 @@ export default class AuthController extends WorklenzControllerBase {
     // Security: Always return the same generic message to prevent email enumeration
     const GENERIC_SUCCESS_MESSAGE = "If an account with that email exists, a password reset link has been sent to your email.";
 
+    // Timing attack mitigation: enforce a minimum response time so response duration
+    // cannot be used to determine whether an account exists.
+    const MIN_RESPONSE_MS = 800;
+    const requestStart = Date.now();
+    const sendGenericResponse = async () => {
+      const elapsed = Date.now() - requestStart;
+      if (elapsed < MIN_RESPONSE_MS) {
+        await new Promise(resolve => setTimeout(resolve, MIN_RESPONSE_MS - elapsed));
+      }
+      return res.status(200).send(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
+    };
+
     const q = `SELECT id, email, google_id, apple_id, password FROM users WHERE LOWER(email) = $1;`;
     const result = await db.query(q, [normalizedEmail]);
 
-    // If email doesn't exist, return generic message without revealing account status
     if (!result.rowCount) {
-      return res.status(200).send(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
+      return sendGenericResponse();
     }
 
     const [data] = result.rows;
 
-    // For OAuth-only accounts (Google/Apple), don't send reset email but still return generic message
-    // Log internally for monitoring purposes
+    // For OAuth-only accounts (Google/Apple), don't send reset email
     if (data?.google_id || data?.apple_id) {
       log_error(`Password reset attempted for OAuth account: ${normalizedEmail}`, null);
-      return res.status(200).send(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
+      return sendGenericResponse();
     }
 
     // Only send reset email if account exists and has a password
@@ -142,53 +153,65 @@ export default class AuthController extends WorklenzControllerBase {
       try {
         const userIdBase64 = Buffer.from(data.id, "utf8").toString("base64");
 
-        const salt = bcrypt.genSaltSync(10);
-        const hashedUserData = bcrypt.hashSync(data.id + data.email + data.password, salt);
-        const hashedString = hashedUserData.toString().replace(/\//g, "-");
+        // Generate a cryptographically random URL-safe token (hex, no special chars)
+        const token = crypto.randomBytes(32).toString("hex");
+        // Store SHA-256 hash of the token in DB (never store raw token)
+        const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
         // Invalidate all previous unused tokens for this user
         await db.query(
-          `UPDATE password_reset_tokens 
-           SET is_used = TRUE 
+          `UPDATE password_reset_tokens
+           SET is_used = TRUE
            WHERE user_id = $1 AND is_used = FALSE`,
           [data.id]
         );
 
-        // Store the new token in the database with 1 hour expiration
+        // Opportunistically clean up expired tokens to keep the table lean
+        await db.query(
+          `DELETE FROM password_reset_tokens
+           WHERE expires_at < NOW() - INTERVAL '7 days'`
+        );
+
+        // Store the token hash in the database with 1 hour expiration
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + 1);
 
         await db.query(
           `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
            VALUES ($1, $2, $3)`,
-          [data.id, hashedString, expiresAt]
+          [data.id, tokenHash, expiresAt]
         );
 
-        sendResetEmail(email, userIdBase64, hashedString);
+        // Send raw token in email URL (hex only, completely URL-safe)
+        await sendResetEmail(email, userIdBase64, token);
       } catch (error) {
         // Log error internally but don't expose to client
         log_error(`Failed to send password reset email for: ${normalizedEmail}`, error);
       }
     }
 
-    // Always return the same generic success message to prevent email enumeration
-    return res.status(200).send(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
+    return sendGenericResponse();
   }
 
   @HandleExceptions({ logWithError: "body" })
   public static async verify_reset_email(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     const { user, hash, password } = req.body;
-    const hashedString = hash.replace(/\-/g, "/");
+
+    // Validate token format before touching the DB: must be a 64-char hex string
+    if (typeof hash !== "string" || !/^[0-9a-f]{64}$/.test(hash)) {
+      return res.status(200).send(new ServerResponse(false, null, "Invalid reset link. Please request a new password reset."));
+    }
 
     const userId = Buffer.from(user as string, "base64").toString("ascii");
 
-    // First, verify the token exists, is not used, and is not expired
-    // Use raw hash (with dashes) as that is what is stored in the DB
+    // hash is the raw random token (hex); look it up by its SHA-256 hash
+    const tokenHash = crypto.createHash("sha256").update(hash).digest("hex");
+
     const tokenCheck = await db.query(
       `SELECT id, user_id, expires_at, is_used
        FROM password_reset_tokens
        WHERE token_hash = $1 AND is_used = FALSE AND expires_at > NOW()`,
-      [hash]
+      [tokenHash]
     );
 
     if (!tokenCheck.rowCount) {
@@ -197,13 +220,13 @@ export default class AuthController extends WorklenzControllerBase {
 
     const tokenData = tokenCheck.rows[0];
 
-    // Verify the user ID matches
+    // Verify the user ID from the URL matches the token owner
     if (tokenData.user_id !== userId) {
       return res.status(200).send(new ServerResponse(false, null, "Invalid reset link. Please request a new password reset."));
     }
 
     // Get user data
-    const q = `SELECT id, email, google_id, password FROM users WHERE id = $1;`;
+    const q = `SELECT id, email FROM users WHERE id = $1;`;
     const result = await db.query(q, [userId || null]);
 
     if (!result.rowCount) {
@@ -212,21 +235,10 @@ export default class AuthController extends WorklenzControllerBase {
 
     const [data] = result.rows;
 
-    // Verify the token hash matches the current user data (for additional security)
-    const salt = bcrypt.genSaltSync(10);
-    if (!bcrypt.compareSync(data.id + data.email + data.password, hashedString)) {
-      // Token doesn't match - mark as used to prevent further attempts
-      await db.query(
-        `UPDATE password_reset_tokens SET is_used = TRUE, used_at = NOW() WHERE id = $1`,
-        [tokenData.id]
-      );
-      return res.status(200).send(new ServerResponse(false, null, "Invalid reset link. Please request a new password reset."));
-    }
-
     // Update password
+    const salt = bcrypt.genSaltSync(10);
     const encryptedPassword = bcrypt.hashSync(password, salt);
-    const updatePasswordQ = `UPDATE users SET password = $1 WHERE id = $2;`;
-    await db.query(updatePasswordQ, [encryptedPassword, userId || null]);
+    await db.query(`UPDATE users SET password = $1 WHERE id = $2;`, [encryptedPassword, userId || null]);
 
     // Mark token as used
     await db.query(
@@ -236,11 +248,23 @@ export default class AuthController extends WorklenzControllerBase {
 
     // Invalidate all other unused tokens for this user (defense in depth)
     await db.query(
-      `UPDATE password_reset_tokens 
-       SET is_used = TRUE 
+      `UPDATE password_reset_tokens
+       SET is_used = TRUE
        WHERE user_id = $1 AND is_used = FALSE AND id != $2`,
       [userId, tokenData.id]
     );
+
+    // Invalidate ALL existing sessions for this user so compromised sessions
+    // cannot survive a password reset (changePassword does the same for its own context)
+    try {
+      await db.query(
+        `DELETE FROM pg_sessions WHERE (sess ->> 'passport')::JSON ->> 'user'::TEXT = $1`,
+        [userId]
+      );
+    } catch (error) {
+      // Non-fatal: log but don't block the successful reset response
+      log_error("Failed to invalidate sessions after password reset", error);
+    }
 
     sendResetSuccessEmail(data.email);
     return res.status(200).send(new ServerResponse(true, null, "Password updated successfully"));
