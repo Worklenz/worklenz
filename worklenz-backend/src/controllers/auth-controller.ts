@@ -121,21 +121,31 @@ export default class AuthController extends WorklenzControllerBase {
     // Security: Always return the same generic message to prevent email enumeration
     const GENERIC_SUCCESS_MESSAGE = "If an account with that email exists, a password reset link has been sent to your email.";
 
+    // Timing attack mitigation: enforce a minimum response time so response duration
+    // cannot be used to determine whether an account exists.
+    const MIN_RESPONSE_MS = 800;
+    const requestStart = Date.now();
+    const sendGenericResponse = async () => {
+      const elapsed = Date.now() - requestStart;
+      if (elapsed < MIN_RESPONSE_MS) {
+        await new Promise(resolve => setTimeout(resolve, MIN_RESPONSE_MS - elapsed));
+      }
+      return res.status(200).send(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
+    };
+
     const q = `SELECT id, email, google_id, apple_id, password FROM users WHERE LOWER(email) = $1;`;
     const result = await db.query(q, [normalizedEmail]);
 
-    // If email doesn't exist, return generic message without revealing account status
     if (!result.rowCount) {
-      return res.status(200).send(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
+      return sendGenericResponse();
     }
 
     const [data] = result.rows;
 
-    // For OAuth-only accounts (Google/Apple), don't send reset email but still return generic message
-    // Log internally for monitoring purposes
+    // For OAuth-only accounts (Google/Apple), don't send reset email
     if (data?.google_id || data?.apple_id) {
       log_error(`Password reset attempted for OAuth account: ${normalizedEmail}`, null);
-      return res.status(200).send(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
+      return sendGenericResponse();
     }
 
     // Only send reset email if account exists and has a password
@@ -156,6 +166,12 @@ export default class AuthController extends WorklenzControllerBase {
           [data.id]
         );
 
+        // Opportunistically clean up expired tokens to keep the table lean
+        await db.query(
+          `DELETE FROM password_reset_tokens
+           WHERE expires_at < NOW() - INTERVAL '7 days'`
+        );
+
         // Store the token hash in the database with 1 hour expiration
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + 1);
@@ -174,13 +190,17 @@ export default class AuthController extends WorklenzControllerBase {
       }
     }
 
-    // Always return the same generic success message to prevent email enumeration
-    return res.status(200).send(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
+    return sendGenericResponse();
   }
 
   @HandleExceptions({ logWithError: "body" })
   public static async verify_reset_email(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     const { user, hash, password } = req.body;
+
+    // Validate token format before touching the DB: must be a 64-char hex string
+    if (typeof hash !== "string" || !/^[0-9a-f]{64}$/.test(hash)) {
+      return res.status(200).send(new ServerResponse(false, null, "Invalid reset link. Please request a new password reset."));
+    }
 
     const userId = Buffer.from(user as string, "base64").toString("ascii");
 
@@ -233,6 +253,18 @@ export default class AuthController extends WorklenzControllerBase {
        WHERE user_id = $1 AND is_used = FALSE AND id != $2`,
       [userId, tokenData.id]
     );
+
+    // Invalidate ALL existing sessions for this user so compromised sessions
+    // cannot survive a password reset (changePassword does the same for its own context)
+    try {
+      await db.query(
+        `DELETE FROM pg_sessions WHERE (sess ->> 'passport')::JSON ->> 'user'::TEXT = $1`,
+        [userId]
+      );
+    } catch (error) {
+      // Non-fatal: log but don't block the successful reset response
+      log_error("Failed to invalidate sessions after password reset", error);
+    }
 
     sendResetSuccessEmail(data.email);
     return res.status(200).send(new ServerResponse(true, null, "Password updated successfully"));
