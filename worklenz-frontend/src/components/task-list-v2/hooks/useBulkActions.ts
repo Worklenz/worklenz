@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { clearSelection } from '@/features/task-management/selection.slice';
@@ -36,6 +37,7 @@ export const useBulkActions = () => {
   const dispatch = useAppDispatch();
   const { projectId } = useParams();
   const { trackMixpanelEvent } = useMixpanelTracking();
+  const { t } = useTranslation('task-list-table');
   
   // FIX: Get archived state from taskManagement slice instead of taskReducer
   const archived = useAppSelector(state => state.taskManagement.archived);
@@ -84,13 +86,13 @@ export const useBulkActions = () => {
           if (!canContinue) {
             if (selectedTaskIds.length > 1) {
               alertService.warning(
-                'Incomplete Dependencies!',
-                'Some tasks were not updated. Please ensure all dependent tasks are completed before proceeding.'
+                t('errors.incompleteDependencies', { defaultValue: 'Incomplete Dependencies!' }),
+                t('errors.someDependenciesNotCompleted', { defaultValue: 'Some tasks were not updated. Please ensure all dependent tasks are completed before proceeding.' })
               );
             } else {
               alertService.error(
-                'Task is not completed',
-                'Please complete the task dependencies before proceeding'
+                t('errors.taskNotCompleted', { defaultValue: 'Task is not completed' }),
+                t('errors.completeTaskDependencies', { defaultValue: 'Please complete the task dependencies before proceeding' })
               );
             }
             return;
@@ -114,7 +116,7 @@ export const useBulkActions = () => {
         updateLoadingState('status', false);
       }
     },
-    [projectId, trackMixpanelEvent, dispatch, refetchTasks, updateLoadingState]
+    [projectId, trackMixpanelEvent, dispatch, refetchTasks, updateLoadingState, t]
   );
 
   const handleBulkPriorityChange = useCallback(
@@ -328,7 +330,6 @@ export const useBulkActions = () => {
       try {
         updateLoadingState('duplicate', true);
         // TODO: Implement bulk duplicate API call when available
-        console.log('Bulk duplicate:', selectedTaskIds);
         // For now, just clear selection and refetch
         dispatch(clearSelection());
         refetchTasks();
@@ -348,7 +349,6 @@ export const useBulkActions = () => {
       try {
         updateLoadingState('export', true);
         // TODO: Implement bulk export API call when available
-        console.log('Bulk export:', selectedTaskIds);
       } catch (error) {
         logger.error('Error exporting tasks:', error);
       } finally {

@@ -149,5 +149,12 @@
     "conflictTitle": "Timer Already Running",
     "conflictMessage": "You have a timer running for \"{{taskName}}\" in project \"{{projectName}}\". Would you like to stop that timer and start a new one for this task?",
     "stopAndStart": "Stop & Start New Timer"
+  },
+
+  "errors": {
+    "taskNotCompleted": "Task is not completed",
+    "completeTaskDependencies": "Please complete the task dependencies before proceeding",
+    "incompleteDependencies": "Incomplete Dependencies!",
+    "someDependenciesNotCompleted": "Some tasks were not updated. Please ensure all dependent tasks are completed before proceeding."
   }
 }

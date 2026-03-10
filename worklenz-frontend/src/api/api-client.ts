@@ -334,6 +334,22 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // Add 403 forbidden handling for project access
+    if (error.response?.status === 403) {
+      const errorData = error.response.data as any;
+      const errorMessage = errorData?.message || 'Access denied';
+      
+      // Check if this is a project access error - don't show alert, let component handle it
+      if (errorMessage.toLowerCase().includes('project') || errorData?.body?.requiresTeamSwitch) {
+        // Suppress alert - the project-view component will show appropriate messages
+        return Promise.reject(error);
+      }
+      
+      // For other 403 errors, show alert
+      alertService.error('Access Denied', errorMessage);
+      return Promise.reject(error);
+    }
+
     const errorMessage = message || 'An unexpected error occurred';
     const errorTitle = 'Error';
 

@@ -328,7 +328,8 @@ export default class TaskWorklogController extends WorklenzControllerBase {
                 pr.id AS project_id,
                 pr.name AS project_name,
                 t1.parent_task_id,
-                t2.name AS parent_task_name
+                t2.name AS parent_task_name,
+                COALESCE((SELECT SUM(time_spent) FROM task_work_log WHERE task_id = tt.task_id AND user_id = tt.user_id), 0) AS total_time_logged
             FROM task_timers tt
             LEFT JOIN public.tasks t1 ON tt.task_id = t1.id
             LEFT JOIN public.tasks t2 ON t1.parent_task_id = t2.id -- Optimized join for parent task name

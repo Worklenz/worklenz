@@ -208,6 +208,11 @@ export const useTaskSocketHandlers = () => {
           'Task is not completed',
           'Please complete the task dependencies before proceeding'
         );
+        // CRITICAL FIX: Prevent any UI updates when dependencies are not met
+        // Refetch tasks to revert any optimistic updates
+        if (projectId) {
+          dispatch(fetchTasksV3(projectId));
+        }
         return;
       }
 

@@ -1676,11 +1676,12 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
       const userId = Buffer.from(user as string, "base64").toString("ascii");
 
       // First, verify the token exists, is not used, and is not expired
+      // Use raw hash (with dashes) as that is what is stored in the DB
       const tokenCheck = await db.query(
         `SELECT id, client_user_id, expires_at, is_used
          FROM client_password_reset_tokens
          WHERE token_hash = $1 AND is_used = FALSE AND expires_at > NOW()`,
-        [hashedString],
+        [hash],
       );
 
       if (!tokenCheck.rowCount) {

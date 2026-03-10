@@ -34,9 +34,6 @@ adminCenterApiRouter.get("/organization/team/:id", teamOwnerOrAdminValidator, sa
 adminCenterApiRouter.delete("/organization/team/:id", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.deleteTeam));
 adminCenterApiRouter.put("/organization/team-member/:id", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.deleteById));
 
-adminCenterApiRouter.post("/", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.create));
-adminCenterApiRouter.put("/", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.create));
-
 adminCenterApiRouter.get("/", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getOrganizationTeams));
 
 // billing
