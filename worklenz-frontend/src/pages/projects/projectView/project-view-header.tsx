@@ -537,7 +537,6 @@ const ProjectViewHeader = memo(() => {
           justifyContent: 'space-between',
           alignItems: 'center',
           padding: '16px 0',
-          marginBottom: '16px',
         }}
       >
         <div style={{ flex: 1, minWidth: 0 }}>{pageHeaderTitle}</div>

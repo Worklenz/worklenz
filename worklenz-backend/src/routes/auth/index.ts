@@ -10,6 +10,7 @@ import passwordValidator from "../../middlewares/validators/password-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import FileConstants from "../../shared/file-constants";
 import { log_error } from "../../shared/utils";
+import { resetPasswordLimiter, updatePasswordLimiter } from "../../middlewares/reset-password-rate-limiter";
 
 const authRouter = express.Router();
 
@@ -25,8 +26,8 @@ authRouter.post("/signup/check", signUpValidator, passwordValidator, safeControl
 authRouter.get("/verify", AuthController.verify);
 authRouter.get("/check-password", safeControllerFunction(AuthController.checkPasswordStrength));
 
-authRouter.post("/reset-password", resetEmailValidator, safeControllerFunction(AuthController.reset_password));
-authRouter.post("/update-password", updatePasswordValidator, passwordValidator, safeControllerFunction(AuthController.verify_reset_email));
+authRouter.post("/reset-password", resetPasswordLimiter, resetEmailValidator, safeControllerFunction(AuthController.reset_password));
+authRouter.post("/update-password", updatePasswordLimiter, updatePasswordValidator, passwordValidator, safeControllerFunction(AuthController.verify_reset_email));
 
 authRouter.post("/verify-captcha", safeControllerFunction(AuthController.verifyCaptcha));
 
