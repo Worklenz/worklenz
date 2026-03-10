@@ -20,6 +20,7 @@ import {
 } from '@/shared/antd-imports';
 import {} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { toggleClientSettingsDrawer } from '../../features/clients-portal/clients/clients-slice';
@@ -38,6 +39,7 @@ const { Option } = Select;
 
 const ClientSettingsDrawer = () => {
   const { t } = useTranslation('client-portal-clients');
+  const navigate = useNavigate();
 
   const { isClientSettingsDrawerOpen, selectedClientId } = useAppSelector(
     state => state.clientsPortalReducer.clientsReducer
@@ -213,7 +215,16 @@ const ClientSettingsDrawer = () => {
       render: (_: any, record: any) => (
         <Flex gap={8} align="center">
           <Tooltip title={t('viewProjectTooltip') || 'View Project'}>
-            <Button type="link" icon={<EyeOutlined />} size="small">
+            <Button
+              type="link"
+              icon={<EyeOutlined />}
+              size="small"
+              onClick={() => {
+                if (record.id) {
+                  navigate(`/worklenz/projects/${record.id}?tab=tasks-list&pinned_tab=tasks-list`);
+                }
+              }}
+            >
               {t('viewButton') || 'View'}
             </Button>
           </Tooltip>

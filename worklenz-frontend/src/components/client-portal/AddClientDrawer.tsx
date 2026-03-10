@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Button,
-  Drawer,
+  Modal,
   Flex,
   Form,
   Input,
@@ -10,6 +10,9 @@ import {
   Select,
   Spin,
   Alert,
+  Row,
+  Col,
+  Divider,
 } from '@/shared/antd-imports';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
@@ -21,95 +24,106 @@ import { refreshCsrfToken } from '../../api/api-client';
 const { Option } = Select;
 
 const AddClientDrawer = () => {
-  // localization
   const { t } = useTranslation('client-portal-clients');
 
-  // get drawer state from client reducer
-  const isDrawerOpen = useAppSelector(
+  const isOpen = useAppSelector(
     state => state.clientsPortalReducer.clientsReducer.isAddClientDrawerOpen
   );
 
   const dispatch = useAppDispatch();
-
-  // RTK Query hook
   const [createClient, { isLoading }] = useCreateClientMutation();
-
   const [form] = Form.useForm();
+  const [alertMessage, setAlertMessage] = useState<{
+    type: 'success' | 'warning' | 'error';
+    message: string;
+  } | null>(null);
 
-  // Initialize CSRF token when drawer opens
   useEffect(() => {
-    if (isDrawerOpen) {
-      // Refresh CSRF token to ensure it's valid when the drawer opens
+    if (isOpen) {
       refreshCsrfToken().catch(error => {
         console.error('Failed to refresh CSRF token:', error);
       });
+      setAlertMessage(null);
     }
-  }, [isDrawerOpen]);
+  }, [isOpen]);
 
-  // this function for handle form submit
   const handleFormSubmit = async (values: any) => {
     try {
-      // Ensure CSRF token is fresh before submitting
       await refreshCsrfToken();
-
-      await createClient({
+      const result = await createClient({
         name: values.name,
         email: values.email,
         company_name: values.company_name,
         phone: values.phone,
-        address: values.address,
+        address_line_1: values.address_line_1,
+        city: values.city,
+        state: values.state,
+        zip_code: values.zip_code,
+        country: values.country,
       }).unwrap();
 
-      form.resetFields();
-
-      // Show success message
-      const successMessage =
-        t('createClientSuccessMessage') ||
-        'Client created successfully! Share the organization invite link to give them portal access.';
-
-      message.success(successMessage, 5); // Show for 5 seconds
-      dispatch(toggleAddClientDrawer());
+      // Check if this is an existing client (backend returns body.existing)
+      const responseBody = (result as any)?.body || result;
+      
+      if (responseBody?.existing) {
+        // Show warning alert based on invitation status
+        if (responseBody.invitationAlreadySent) {
+          setAlertMessage({
+            type: 'warning',
+            message: t('clientExistsWithInvitationSent', { defaultValue: 'A client with this email already exists and an invitation has already been sent.' })
+          });
+        } else {
+          setAlertMessage({
+            type: 'warning',
+            message: t('clientExistsNoInvitation', { defaultValue: 'A client with this email already exists. You can send them an invitation from the clients list.' })
+          });
+        }
+      } else {
+        // New client created successfully
+        setAlertMessage({
+          type: 'success',
+          message: t('createClientSuccessMessage', { defaultValue: 'Client created successfully! Share the organization invite link to give them portal access.' })
+        });
+        form.resetFields();
+      }
     } catch (error: any) {
-      // Handle CSRF token errors specifically
       const errorMessage = error?.data?.message || error?.message || '';
-      const isCsrfError = 
+      const isCsrfError =
         errorMessage.toLowerCase().includes('csrf') ||
         errorMessage.toLowerCase().includes('invalid') ||
         error?.status === 403;
 
       if (isCsrfError) {
-        message.error(
-          t('csrfError') || 'Security token expired. Please try again.',
-          5
-        );
-        // Try to refresh token for next attempt
-        refreshCsrfToken().catch(() => {
-          // Silent fail - user can try again
+        setAlertMessage({
+          type: 'error',
+          message: t('csrfError', { defaultValue: 'Security token expired. Please try again.' })
         });
+        refreshCsrfToken().catch(() => {});
       } else {
-        message.error(
-          errorMessage || t('createClientErrorMessage') || 'Failed to create client'
-        );
+        setAlertMessage({
+          type: 'error',
+          message: errorMessage || t('createClientErrorMessage', { defaultValue: 'Failed to create client' })
+        });
       }
     }
   };
 
-  // function to handle drawer close
-  const handleDrawerClose = () => {
+  const handleClose = () => {
     dispatch(toggleAddClientDrawer());
     form.resetFields();
+    setAlertMessage(null);
   };
 
   return (
-    <Drawer
+    <Modal
       title={t('addClientTitle') || 'Add New Client'}
-      placement="right"
-      onClose={handleDrawerClose}
-      open={isDrawerOpen}
-      width={500}
+      open={isOpen}
+      onCancel={handleClose}
+      width={580}
+      destroyOnClose
       footer={
-        <Flex gap={12} justify="flex-end">
-          <Button onClick={handleDrawerClose}>{t('cancelButton') || 'Cancel'}</Button>
+        <Flex gap={8} justify="flex-end">
+          <Button onClick={handleClose}>{t('cancelButton') || 'Cancel'}</Button>
           <Button type="primary" onClick={() => form.submit()} loading={isLoading}>
             {t('createButton') || 'Create Client'}
           </Button>
@@ -117,35 +131,72 @@ const AddClientDrawer = () => {
       }
     >
       <Spin spinning={isLoading}>
+        {alertMessage && (
+          <Alert
+            type={alertMessage.type}
+            message={alertMessage.message}
+            showIcon
+            closable
+            onClose={() => setAlertMessage(null)}
+            style={{ marginBottom: 16 }}
+          />
+        )}
         <Form form={form} layout="vertical" onFinish={handleFormSubmit} autoComplete="off">
-          <Form.Item
-            name="name"
-            label={t('clientNameLabel') || 'Client Name'}
-            rules={[
-              { required: true, message: t('clientNameRequired') || 'Please enter client name' },
-              { min: 2, message: t('clientNameMinLength') || 'Name must be at least 2 characters' },
-            ]}
-          >
-            <Input placeholder={t('clientNamePlaceholder') || 'Enter client name'} size="large" />
-          </Form.Item>
+          <Divider orientation="left" style={{ marginTop: 0 }}>
+            <Typography.Text strong>{t('basicInformationSection', { defaultValue: 'Basic Information' })}</Typography.Text>
+          </Divider>
 
-          <Form.Item
-            name="email"
-            label={t('emailLabel') || 'Email Address'}
-            rules={[
-              { required: true, message: t('emailRequired') || 'Please enter email address' },
-              { type: 'email', message: t('emailInvalid') || 'Please enter a valid email address' },
-            ]}
-          >
-            <Input placeholder={t('emailPlaceholder') || 'Enter email address'} size="large" />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="name"
+                label={t('clientNameLabel') || 'Client Name'}
+                rules={[
+                  { required: true, message: t('clientNameRequired') || 'Please enter client name' },
+                  { min: 2, message: t('clientNameMinLength') || 'At least 2 characters' },
+                ]}
+              >
+                <Input placeholder={t('clientNamePlaceholder') || 'Enter client name'} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="email"
+                label={t('emailLabel') || 'Email Address'}
+                rules={[
+                  { required: true, message: t('emailRequired') || 'Please enter email address' },
+                  { type: 'email', message: t('emailInvalid') || 'Please enter a valid email' },
+                ]}
+              >
+                <Input placeholder={t('emailPlaceholder') || 'Enter email address'} />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item name="company_name" label={t('companyNameLabel') || 'Company Name'}>
-            <Input
-              placeholder={t('companyNamePlaceholder') || 'Enter company name (optional)'}
-              size="large"
-            />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="company_name" label={t('companyNameLabel') || 'Company Name'}>
+                <Input placeholder={t('companyNamePlaceholder') || 'Enter company name'} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="status"
+                label={t('statusLabel') || 'Status'}
+                initialValue="pending"
+              >
+                <Select>
+                  <Option value="active">{t('statusActive') || 'Active'}</Option>
+                  <Option value="inactive">{t('statusInactive') || 'Inactive'}</Option>
+                  <Option value="pending">{t('statusPending') || 'Pending'}</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Divider orientation="left">
+            <Typography.Text strong>{t('contactInformationSection', { defaultValue: 'Contact Information' })}</Typography.Text>
+          </Divider>
 
           <Form.Item
             name="phone"
@@ -153,46 +204,56 @@ const AddClientDrawer = () => {
             rules={[
               {
                 pattern: /^[\+]?[1-9][\d]{0,15}$/,
-                message: t('phoneInvalid') || 'Please enter a valid phone number',
+                message: t('phoneInvalid') || 'Enter a valid phone number',
               },
             ]}
           >
-            <Input
-              placeholder={t('phonePlaceholder') || 'Enter phone number (optional)'}
-              size="large"
-            />
+            <Input placeholder={t('phonePlaceholder') || 'Enter phone number'} />
           </Form.Item>
 
-          <Form.Item name="address" label={t('addressLabel') || 'Address'}>
-            <Input.TextArea
-              placeholder={t('addressPlaceholder') || 'Enter address (optional)'}
-              rows={3}
-            />
+          <Form.Item name="address_line_1" label={t('addressLine1Label') || 'Street Address'}>
+            <Input placeholder={t('addressLine1Placeholder') || 'Enter street address (optional)'} />
           </Form.Item>
 
-          <Form.Item name="status" label={t('statusLabel') || 'Status'} initialValue="pending">
-            <Select size="large">
-              <Option value="active">{t('statusActive') || 'Active'}</Option>
-              <Option value="inactive">{t('statusInactive') || 'Inactive'}</Option>
-              <Option value="pending">{t('statusPending') || 'Pending'}</Option>
-            </Select>
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="city" label={t('cityLabel') || 'City'}>
+                <Input placeholder={t('cityPlaceholder') || 'City'} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="state" label={t('stateLabel') || 'State / Province'}>
+                <Input placeholder={t('statePlaceholder') || 'State / Province'} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="zip_code" label={t('zipCodeLabel') || 'Zip / Postal Code'}>
+                <Input placeholder={t('zipCodePlaceholder') || 'Zip code'} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="country" label={t('countryLabel') || 'Country'}>
+                <Input placeholder={t('countryPlaceholder') || 'Country'} />
+              </Form.Item>
+            </Col>
+          </Row>
         </Form>
 
-        {/* Info Section */}
         <Alert
-          style={{ marginTop: 24 }}
           type="info"
           showIcon
           message={
-            <Typography.Text>
-              {t('clientPortalAccessInfo') ||
-                'After creating the client, use the organization invite link from the Clients page to give them portal access.'}
+            <Typography.Text style={{ fontSize: 12 }}>
+              {t('clientInvitationEmailInfo') ||
+                'An invitation email will be sent to the client to join the portal. You can also share the invite link from the Clients page.'}
             </Typography.Text>
           }
         />
       </Spin>
-    </Drawer>
+    </Modal>
   );
 };
 

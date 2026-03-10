@@ -9,16 +9,17 @@ export default class RateCardController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async create(
     req: IWorkLenzRequest,
-    res: IWorkLenzResponse
+    res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
     const q = `
-      INSERT INTO finance_rate_cards (team_id, name)
-      VALUES ($1, $2)
-      RETURNING id, name, team_id, created_at, updated_at;
+      INSERT INTO finance_rate_cards (team_id, name, currency)
+      VALUES ($1, $2, $3)
+      RETURNING id, name, team_id, currency, created_at, updated_at;
     `;
     const result = await db.query(q, [
       req.user?.team_id || null,
       req.body.name,
+      req.body.currency || "usd",
     ]);
     const [data] = result.rows;
     return res.status(200).send(new ServerResponse(true, data));
@@ -27,7 +28,7 @@ export default class RateCardController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async get(
     req: IWorkLenzRequest,
-    res: IWorkLenzResponse
+    res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
     // team_id is $1, size is $2, offset is $3, so search params start at $4
     const { searchQuery, searchParams, sortField, sortOrder, size, offset } =
@@ -51,7 +52,12 @@ export default class RateCardController extends WorklenzControllerBase {
       WHERE team_id = $1 ${searchQuery}
     ) rec;
   `;
-    const result = await db.query(q, [req.user?.team_id || null, size, offset, ...searchParams]);
+    const result = await db.query(q, [
+      req.user?.team_id || null,
+      size,
+      offset,
+      ...searchParams,
+    ]);
     const [data] = result.rows;
 
     return res
@@ -59,15 +65,15 @@ export default class RateCardController extends WorklenzControllerBase {
       .send(
         new ServerResponse(
           true,
-          data.rate_cards || this.paginatedDatasetDefaultStruct
-        )
+          data.rate_cards || this.paginatedDatasetDefaultStruct,
+        ),
       );
   }
 
   @HandleExceptions()
   public static async getById(
     req: IWorkLenzRequest,
-    res: IWorkLenzResponse
+    res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
     // 1. Fetch the rate card
     const q = `
@@ -107,14 +113,14 @@ export default class RateCardController extends WorklenzControllerBase {
       new ServerResponse(true, {
         ...data,
         jobRolesList,
-      })
+      }),
     );
   }
 
   @HandleExceptions()
   public static async update(
     req: IWorkLenzRequest,
-    res: IWorkLenzResponse
+    res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
     // 1. Update the rate card
     const updateRateCardQ = `
@@ -136,7 +142,7 @@ export default class RateCardController extends WorklenzControllerBase {
       // Delete existing roles for this rate card
       await db.query(
         `DELETE FROM finance_rate_card_roles WHERE rate_card_id = $1;`,
-        [req.params.id]
+        [req.params.id],
       );
 
       // Insert new roles
@@ -150,7 +156,7 @@ export default class RateCardController extends WorklenzControllerBase {
               role.job_title_id,
               role.rate ?? 0,
               role.man_day_rate ?? 0,
-            ]
+            ],
           );
         }
       }
@@ -174,14 +180,14 @@ export default class RateCardController extends WorklenzControllerBase {
       new ServerResponse(true, {
         ...rateCardData,
         jobRolesList,
-      })
+      }),
     );
   }
 
   @HandleExceptions()
   public static async deleteById(
     req: IWorkLenzRequest,
-    res: IWorkLenzResponse
+    res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
     const q = `
       DELETE FROM finance_rate_cards

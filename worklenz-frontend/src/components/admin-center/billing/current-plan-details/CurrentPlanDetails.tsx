@@ -4,6 +4,7 @@ import {
   evt_billing_pause_plan,
   evt_billing_resume_plan,
   evt_billing_add_more_seats,
+  evt_upgrade_plan_click,
 } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import logger from '@/utils/errorLogger';
@@ -278,19 +279,43 @@ const CurrentPlanDetails = () => {
         )}
 
         {billingInfo.trial_in_progress && (
-          <Button type="primary" onClick={() => dispatch(toggleUpgradeModal())}>
+          <Button type="primary" onClick={() => {
+            trackMixpanelEvent(evt_upgrade_plan_click, {
+              user_type: currentSession?.subscription_type?.toLowerCase(),
+              current_plan: billingInfo.plan_name,
+              subscription_type: billingInfo.subscription_type,
+              source: 'admin_center_billing'
+            });
+            dispatch(toggleUpgradeModal());
+          }}>
             {t('upgradePlan')}
           </Button>
         )}
 
         {billingInfo.subscription_type === ISUBSCRIPTION_TYPE.FREE && (
-          <Button type="primary" onClick={() => dispatch(toggleUpgradeModal())}>
+          <Button type="primary" onClick={() => {
+            trackMixpanelEvent(evt_upgrade_plan_click, {
+              user_type: 'free',
+              current_plan: billingInfo.plan_name,
+              subscription_type: billingInfo.subscription_type,
+              source: 'admin_center_billing'
+            });
+            dispatch(toggleUpgradeModal());
+          }}>
             {t('upgradePlan')}
           </Button>
         )}
 
         {billingInfo.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL && (
-          <Button type="primary" onClick={() => dispatch(toggleUpgradeModal())}>
+          <Button type="primary" onClick={() => {
+            trackMixpanelEvent(evt_upgrade_plan_click, {
+              user_type: 'appsumo',
+              current_plan: billingInfo.plan_name,
+              subscription_type: billingInfo.subscription_type,
+              source: 'admin_center_billing'
+            });
+            dispatch(toggleUpgradeModal());
+          }}>
             {t('upgradePlan')}
           </Button>
         )}

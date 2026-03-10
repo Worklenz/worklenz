@@ -34,7 +34,6 @@ import { useAuthService } from '@/hooks/useAuth';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import UpdateMemberDrawer from '@/components/settings/update-member-drawer';
-import { AssignManagerDrawer } from '@/components/settings/assign-manager-drawer';
 import { BulkAssignManagerDrawer } from '@/components/settings/bulk-assign-manager-drawer';
 import {
   toggleInviteMemberDrawer,
@@ -62,9 +61,6 @@ const TeamMembersSettings = () => {
 
   const [model, setModel] = useState<ITeamMembersViewModel>({ total: 0, data: [] });
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [isDrawerVisible, setDrawerVisible] = useState(false);
-  const [isManagerDrawerVisible, setManagerDrawerVisible] = useState(false);
-  const [selectedMember, setSelectedMember] = useState<ITeamMemberViewModel | null>(null);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [selectedMemberRole, setSelectedMemberRole] = useState<string | null>(null); // Add this
   const [selectedMembers, setSelectedMembers] = useState<ITeamMemberViewModel[]>([]);
@@ -149,16 +145,14 @@ const TeamMembersSettings = () => {
     [dispatch]
   );
 
-  const handleAssignManager = (record: ITeamMemberViewModel) => {
-    setSelectedMember(record);
-    setManagerDrawerVisible(true);
-  };
-
   const handleBulkAssignManager = () => {
     setBulkAssignDrawerVisible(true);
   };
 
-  const handleMemberSelection = (selectedRowKeys: React.Key[], selectedRows: ITeamMemberViewModel[]) => {
+  const handleMemberSelection = (
+    selectedRowKeys: React.Key[],
+    selectedRows: ITeamMemberViewModel[]
+  ) => {
     setSelectedMembers(selectedRows);
   };
 
@@ -169,7 +163,7 @@ const TeamMembersSettings = () => {
 
   const handleRemoveTeamLeadAssignment = async (member: ITeamMemberViewModel) => {
     if (!member.id) return;
-    
+
     try {
       setIsLoading(true);
       const res = await teamManagementApiService.removeManagerAssignment(member.id);
@@ -183,26 +177,28 @@ const TeamMembersSettings = () => {
     }
   };
 
-  
-  const handleTableChange = useCallback((newPagination: any, filters: any, sorter: any) => {
-    // Extract field - ensure it's always a single string, not an array
-    let field = 'name';
-    if (sorter.field) {
-      // If sorter.field is an array, take the first element, otherwise use it as-is
-      field = Array.isArray(sorter.field) ? sorter.field[0] : sorter.field;
-    }
-    
-    // Extract order - if no order specified, maintain current order or default to 'asc'
-    const order = sorter.order ? (sorter.order === 'ascend' ? 'asc' : 'desc') : pagination.order;
-    
-    setPagination(prev => ({
-      ...prev,
-      current: newPagination.current,
-      pageSize: newPagination.pageSize,
-      field: field,
-      order: order,
-    }));
-  }, [pagination]);
+  const handleTableChange = useCallback(
+    (newPagination: any, filters: any, sorter: any) => {
+      // Extract field - ensure it's always a single string, not an array
+      let field = 'name';
+      if (sorter.field) {
+        // If sorter.field is an array, take the first element, otherwise use it as-is
+        field = Array.isArray(sorter.field) ? sorter.field[0] : sorter.field;
+      }
+
+      // Extract order - if no order specified, maintain current order or default to 'asc'
+      const order = sorter.order ? (sorter.order === 'ascend' ? 'asc' : 'desc') : pagination.order;
+
+      setPagination(prev => ({
+        ...prev,
+        current: newPagination.current,
+        pageSize: newPagination.pageSize,
+        field: field,
+        order: order,
+      }));
+    },
+    [pagination]
+  );
 
   useEffect(() => {
     if (socket) {
@@ -229,7 +225,8 @@ const TeamMembersSettings = () => {
   }, []);
 
   const currentUser = auth.getCurrentSession();
-  const currentUserRoleName: string | undefined = (currentUser as unknown as { role_name?: string })?.role_name;
+  const currentUserRoleName: string | undefined = (currentUser as unknown as { role_name?: string })
+    ?.role_name;
   const effectiveRole = (currentUserRoleName || auth.role || '').toLowerCase();
   const canManageUser = useCallback(
     (targetRole: string | undefined) => {
@@ -241,53 +238,52 @@ const TeamMembersSettings = () => {
     },
     [effectiveRole, currentUser?.owner, currentUser?.is_admin]
   );
-  const isPrivilegedUser = !!currentUser?.owner || ['admin', 'owner', 'team lead'].includes(effectiveRole);
+  const isPrivilegedUser =
+    !!currentUser?.owner || ['admin', 'owner', 'team lead'].includes(effectiveRole);
 
-  const getActionMenuItems = useCallback((record: ITeamMemberViewModel): MenuProps['items'] => {
-    const canManage = canManageUser(record.role_name);
-    
-    return [
-      {
-        key: 'edit',
-        label: t('editTooltip'),
-        icon: <EditOutlined />,
-        disabled: !canManage,
-        onClick: () => canManage && record.id && handleMemberClick(record.id, record.role_name),
-      },
-      {
-        key: 'status',
-        label: record.active ? t('deactivateTooltip') : t('activateTooltip'),
-        icon: <UserSwitchOutlined />,
-        disabled: !canManage,
-        onClick: () => {
-          if (canManage) {
-            // We need to handle the popconfirm separately for this action
-            return;
-          }
+  const getActionMenuItems = useCallback(
+    (record: ITeamMemberViewModel): MenuProps['items'] => {
+      const canManage = canManageUser(record.role_name);
+
+      const menuItems = [
+        {
+          key: 'edit',
+          label: t('editTooltip'),
+          icon: <EditOutlined />,
+          disabled: !canManage,
+          onClick: () => canManage && record.id && handleMemberClick(record.id, record.role_name),
         },
-      },
-      {
-        key: 'assign',
-        label: t('assign_team_lead'),
-        icon: <UsergroupAddOutlined />,
-        disabled: !canManage,
-        onClick: () => canManage && handleAssignManager(record),
-      },
-      {
-        key: 'delete',
-        label: t('deleteTooltip'),
-        icon: <DeleteOutlined />,
-        disabled: !canManage,
-        danger: true,
-        onClick: () => {
-          if (canManage && record.id) {
-            // We need to handle the popconfirm separately for this action
-            return;
-          }
+        {
+          key: 'status',
+          label: record.active ? t('deactivateTooltip') : t('activateTooltip'),
+          icon: <UserSwitchOutlined />,
+          disabled: !canManage,
+          onClick: () => {
+            if (canManage) {
+              // We need to handle the popconfirm separately for this action
+              return;
+            }
+          },
         },
-      },
-    ];
-  }, [t, canManageUser, handleMemberClick, handleAssignManager]);
+        {
+          key: 'delete',
+          label: t('deleteTooltip'),
+          icon: <DeleteOutlined />,
+          disabled: !canManage,
+          danger: true,
+          onClick: () => {
+            if (canManage && record.id) {
+              // We need to handle the popconfirm separately for this action
+              return;
+            }
+          },
+        },
+      ];
+
+      return menuItems;
+    },
+    [t, canManageUser, handleMemberClick]
+  );
 
   const columns: TableProps['columns'] = useMemo(
     () => [
@@ -310,7 +306,11 @@ const TeamMembersSettings = () => {
               gap: 8,
             }}
           >
-            <Avatar size={28} src={record.avatar_url} style={{ backgroundColor: record.color_code }}>
+            <Avatar
+              size={28}
+              src={record.avatar_url}
+              style={{ backgroundColor: record.color_code }}
+            >
               {record.name?.charAt(0)}
             </Avatar>
             {record.name}
@@ -382,10 +382,14 @@ const TeamMembersSettings = () => {
         key: 'team_lead_assignment',
         title: 'Team Lead',
         render: (_, record: ITeamMemberViewModel) => {
-          if (record.role_name === 'Team Lead' || record.role_name === 'Admin' || record.role_name === 'Owner') {
+          if (
+            record.role_name === 'Team Lead' ||
+            record.role_name === 'Admin' ||
+            record.role_name === 'Owner'
+          ) {
             return <Typography.Text type="secondary">-</Typography.Text>;
           }
-          
+
           if (record.reports_to_member_id && record.current_team_lead_name) {
             return (
               <Flex align="center" gap={8}>
@@ -397,7 +401,7 @@ const TeamMembersSettings = () => {
                     size="small"
                     type="text"
                     danger
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       handleRemoveTeamLeadAssignment(record);
                     }}
@@ -409,7 +413,7 @@ const TeamMembersSettings = () => {
               </Flex>
             );
           }
-          
+
           return (
             <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
               Unassigned
@@ -422,75 +426,78 @@ const TeamMembersSettings = () => {
         width: 60,
         render: (record: ITeamMemberViewModel) => {
           const canManage = canManageUser(record.role_name);
-          
+
           if (!isPrivilegedUser) return null;
-          
+
           const menuItems = getActionMenuItems(record);
-          
+
           // Create custom menu items with popconfirms for status and delete actions
-          const customMenuItems = menuItems?.map(item => {
-            if (item?.key === 'status') {
-              return {
-                ...item,
-                label: (
-                  <Popconfirm
-                    title={t('confirmActivateTitle')}
-                    icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
-                    okText={t('okText')}
-                    cancelText={t('cancelText')}
-                    onConfirm={() => canManage && handleStatusChange(record)}
-                    disabled={!canManage}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-                      {record.active ? t('deactivateTooltip') : t('activateTooltip')}
-                    </div>
-                  </Popconfirm>
-                ),
-                onClick: undefined,
-              };
-            }
-            
-            if (item?.key === 'delete') {
-              return {
-                ...item,
-                label: (
-                  <Popconfirm
-                    title={t('confirmDeleteTitle')}
-                    icon={<ExclamationCircleFilled />}
-                    okText={t('okText')}
-                    cancelText={t('cancelText')}
-                    onConfirm={() => canManage && record.id && handleDeleteMember(record)}
-                    disabled={!canManage}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-                      {t('deleteTooltip')}
-                    </div>
-                  </Popconfirm>
-                ),
-                onClick: undefined,
-              };
-            }
-            
-            return item;
-          }) || [];
+          const customMenuItems =
+            menuItems?.map(item => {
+              if (item?.key === 'status') {
+                return {
+                  ...item,
+                  label: (
+                    <Popconfirm
+                      title={t('confirmActivateTitle')}
+                      icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
+                      okText={t('okText')}
+                      cancelText={t('cancelText')}
+                      onConfirm={() => canManage && handleStatusChange(record)}
+                      disabled={!canManage}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+                        {record.active ? t('deactivateTooltip') : t('activateTooltip')}
+                      </div>
+                    </Popconfirm>
+                  ),
+                  onClick: undefined,
+                };
+              }
+
+              if (item?.key === 'delete') {
+                return {
+                  ...item,
+                  label: (
+                    <Popconfirm
+                      title={t('confirmDeleteTitle')}
+                      icon={<ExclamationCircleFilled />}
+                      okText={t('okText')}
+                      cancelText={t('cancelText')}
+                      onConfirm={() => canManage && record.id && handleDeleteMember(record)}
+                      disabled={!canManage}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+                        {t('deleteTooltip')}
+                      </div>
+                    </Popconfirm>
+                  ),
+                  onClick: undefined,
+                };
+              }
+
+              return item;
+            }) || [];
 
           return (
-            <Dropdown
-              menu={{ items: customMenuItems }}
-              trigger={['click']}
-              placement="bottomRight"
-            >
-              <Button
-                size="small"
-                icon={<MoreOutlined />}
-                onClick={(e) => e.stopPropagation()}
-              />
+            <Dropdown menu={{ items: customMenuItems }} trigger={['click']} placement="bottomRight">
+              <Button size="small" icon={<MoreOutlined />} onClick={e => e.stopPropagation()} />
             </Dropdown>
           );
         },
       },
     ],
-    [t, isPrivilegedUser, effectiveRole, currentUser?.owner, getActionMenuItems, canManageUser, handleStatusChange, handleDeleteMember, handleMemberClick]
+    [
+      t,
+      isPrivilegedUser,
+      effectiveRole,
+      currentUser?.owner,
+      getActionMenuItems,
+      canManageUser,
+      handleStatusChange,
+      handleDeleteMember,
+      handleMemberClick,
+    ]
   );
 
   return (
@@ -502,7 +509,12 @@ const TeamMembersSettings = () => {
             <Typography.Title level={4} style={{ margin: 0 }}>
               {model.total} {model.total !== 1 ? t('membersCountPlural') : t('memberCount')}
             </Typography.Title>
-            <Flex gap={8} align="center" justify="flex-end" style={{ width: '100%', maxWidth: 500 }}>
+            <Flex
+              gap={8}
+              align="center"
+              justify="flex-end"
+              style={{ width: '100%', maxWidth: 500 }}
+            >
               <Tooltip title={t('pinTooltip')}>
                 <Button shape="circle" icon={<SyncOutlined />} onClick={handleRefresh} />
               </Tooltip>
@@ -537,10 +549,15 @@ const TeamMembersSettings = () => {
           loading={isLoading}
           rowSelection={{
             type: 'checkbox',
-            selectedRowKeys: selectedMembers.map(member => member.id).filter((id): id is string => Boolean(id)),
+            selectedRowKeys: selectedMembers
+              .map(member => member.id)
+              .filter((id): id is string => Boolean(id)),
             onChange: handleMemberSelection,
-            getCheckboxProps: (record) => ({
-              disabled: record.role_name === 'Owner' || record.role_name === 'Admin' || record.role_name === 'Team Lead',
+            getCheckboxProps: record => ({
+              disabled:
+                record.role_name === 'Owner' ||
+                record.role_name === 'Admin' ||
+                record.role_name === 'Team Lead',
               name: record.name,
             }),
           }}
@@ -557,7 +574,7 @@ const TeamMembersSettings = () => {
           scroll={{ x: 'max-content' }}
         />
       </Card>
-      
+
       {/* Floating Action Button for Bulk Assign */}
       {isPrivilegedUser && selectedMembers.length > 0 && (
         <div
@@ -590,13 +607,7 @@ const TeamMembersSettings = () => {
           </Button>
         </div>
       )}
-      
-      <AssignManagerDrawer
-        open={isManagerDrawerVisible}
-        onClose={() => setManagerDrawerVisible(false)}
-        member={selectedMember}
-        onManagerAssigned={getTeamMembers}
-      />
+
       <BulkAssignManagerDrawer
         open={isBulkAssignDrawerVisible}
         onClose={() => setBulkAssignDrawerVisible(false)}
@@ -604,10 +615,10 @@ const TeamMembersSettings = () => {
         onAssignmentComplete={handleBulkAssignComplete}
       />
       {createPortal(
-        <UpdateMemberDrawer 
-          selectedMemberId={selectedMemberId} 
+        <UpdateMemberDrawer
+          selectedMemberId={selectedMemberId}
           onRoleUpdate={handleRoleUpdate}
-          initialRoleName={selectedMemberRole}
+          initialRoleName={selectedMemberRole || undefined}
         />,
         document.body
       )}

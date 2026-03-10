@@ -42,8 +42,14 @@ import { getKey, getRootDir, uploadBase64 } from "../shared/s3";
 import { isRestrictedFromProPlanFeatures } from "../middlewares/subscription-middleware";
 
 export default class TasksController extends TasksControllerBase {
-  private static notifyProjectUpdates(socketId: string, projectId: string) {
-    IO.getSocketById(socketId)
+  private static notifyProjectUpdates(socketId: string, projectId: string, notifySender = true) {
+    // Emit to the sender's socket directly
+    const socket = IO.getSocketById(socketId);
+    if (notifySender) {
+      socket?.emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
+    }
+    // Also broadcast to others in the project room
+    socket
       ?.to(projectId)
       .emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
   }
@@ -263,6 +269,11 @@ export default class TasksController extends TasksControllerBase {
   ): Promise<IWorkLenzResponse> {
     const { status_id, task_id } = req.params;
     const { project_id, from_index, to_index } = req.body;
+
+    const canContinue = await TasksControllerV2.checkForCompletedDependencies(task_id, status_id);
+    if (!canContinue) {
+      return res.status(200).send(new ServerResponse(false, { completed_deps: false }, "Task has incomplete dependencies and cannot be marked as done."));
+    }
 
     const q = `SELECT update_task_status($1, $2, $3, $4, $5) AS status;`;
     const result = await db.query(q, [

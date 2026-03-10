@@ -126,42 +126,25 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
 
   /**
    * Calculate working days between two dates (excluding weekends)
-   * @param startDate - Start date (dayjs object, string, or null)
-   * @param endDate - End date (dayjs object, string, or null)
-   * @returns Number of working days (Monday-Friday) between the dates, inclusive
    */
   const calculateWorkingDays = useCallback((
     startDate: dayjs.Dayjs | string | null | undefined,
     endDate: dayjs.Dayjs | string | null | undefined
   ): number => {
-    // Handle null/undefined inputs
-    if (!startDate || !endDate) {
-      return 0;
-    }
+    if (!startDate || !endDate) return 0;
 
-    // Convert to dayjs if needed
     const start = dayjs.isDayjs(startDate) ? startDate : dayjs(startDate);
     const end = dayjs.isDayjs(endDate) ? endDate : dayjs(endDate);
 
-    // Validate dates
-    if (!start.isValid() || !end.isValid()) {
-      return 0;
-    }
+    if (!start.isValid() || !end.isValid()) return 0;
+    if (start.isAfter(end)) return 0;
 
-    // Return 0 if start date is after end date
-    if (start.isAfter(end)) {
-      return 0;
-    }
-
-    // Calculate working days (Monday = 1, Sunday = 0, Saturday = 6)
     let workingDays = 0;
     let currentDate = start.clone().startOf('day');
     const endDateNormalized = end.clone().startOf('day');
 
-    // Iterate through each day from start to end (inclusive)
     while (currentDate.isBefore(endDateNormalized) || currentDate.isSame(endDateNormalized)) {
-      const dayOfWeek = currentDate.day(); // 0 = Sunday, 6 = Saturday
-      // Count only weekdays (Monday through Friday)
+      const dayOfWeek = currentDate.day();
       if (dayOfWeek !== 0 && dayOfWeek !== 6) {
         workingDays++;
       }
@@ -195,7 +178,6 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     loadInitialData();
   }, [dispatch]);
 
-  // New effect to handle form population when project data becomes available
   useEffect(() => {
     if (drawerVisible && projectId && project && !projectLoading) {
       console.log('Populating form with project data:', project);
@@ -215,7 +197,6 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
 
         form.setFieldsValue(formValues);
 
-        // Calculate working days if both dates are present
         if (formValues.start_date && formValues.end_date) {
           try {
             const days = calculateWorkingDays(formValues.start_date, formValues.end_date);
@@ -227,9 +208,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
 
         setSelectedProjectManager(project.project_manager || null);
         setLoading(false);
-        console.log('Form populated successfully with project data');
-        
-        // Force refresh CSRF token for project updates to prevent stale token errors
+
         refreshCsrfToken().catch(error => {
           console.warn('[CSRF] Failed to refresh token for project update:', error);
         });
@@ -239,19 +218,16 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         setLoading(false);
       }
     } else if (drawerVisible && !projectId) {
-      // Creating new project - preserve form state, don't reset
       setEditMode(false);
       setLoading(false);
-      
-      // Only set defaults if form is completely empty and not touched
+
       const currentValues = form.getFieldsValue();
       const isFormPristine = !form.isFieldsTouched(true);
       if (isFormPristine && !currentValues.color_code) {
         form.setFieldsValue(defaultFormValues);
       }
       setSelectedProjectManager(null);
-      
-      // Force refresh CSRF token for new project creation to prevent stale token errors
+
       refreshCsrfToken().catch(error => {
         console.warn('[CSRF] Failed to refresh token for project creation:', error);
       });
@@ -263,7 +239,6 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     }
   }, [drawerVisible, projectId, project, projectLoading, form, calculateWorkingDays, defaultFormValues]);
 
-  // Additional effect to handle loading state when project data is being fetched
   useEffect(() => {
     if (drawerVisible && projectId && projectLoading) {
       console.log('Project data is loading, maintaining loading state');
@@ -271,14 +246,13 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     }
   }, [drawerVisible, projectId, projectLoading]);
 
-  // Socket event handlers for real-time date updates
+  // Socket event handlers
   const handleStartDateChangeResponse = useCallback((data: { project_id: string; start_date: string }) => {
     try {
       if (data.project_id === projectId) {
         const newStartDate = data.start_date ? dayjs(data.start_date) : null;
         form.setFieldsValue({ start_date: newStartDate });
-        
-        // Recalculate working days if both dates are present
+
         const endDate = form.getFieldValue('end_date');
         if (newStartDate && endDate) {
           const days = calculateWorkingDays(newStartDate, endDate);
@@ -297,8 +271,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       if (data.project_id === projectId) {
         const newEndDate = data.end_date ? dayjs(data.end_date) : null;
         form.setFieldsValue({ end_date: newEndDate });
-        
-        // Recalculate working days if both dates are present
+
         const startDate = form.getFieldValue('start_date');
         if (startDate && newEndDate) {
           const days = calculateWorkingDays(startDate, newEndDate);
@@ -312,7 +285,6 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     }
   }, [projectId, form, calculateWorkingDays]);
 
-  // Socket event listeners
   useEffect(() => {
     if (connected && socket && projectId) {
       socket.on(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
@@ -325,7 +297,6 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     }
   }, [connected, socket, projectId, handleStartDateChangeResponse, handleEndDateChangeResponse]);
 
-  // Define resetForm function - only reset when drawer is actually closing
   const resetForm = useCallback(() => {
     setEditMode(false);
     form.resetFields();
@@ -333,7 +304,6 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     setSelectedProjectManager(null);
   }, [form, defaultFormValues]);
 
-  // Helper function to recalculate working days from current form values
   const recalculateWorkingDays = useCallback(() => {
     const startDate = form.getFieldValue('start_date');
     const endDate = form.getFieldValue('end_date');
@@ -346,18 +316,14 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         logger.error('Error recalculating working days', error);
       }
     } else if (!startDate || !endDate) {
-      // Clear working days if either date is missing
       form.setFieldsValue({ working_days: 0 });
     }
   }, [form, calculateWorkingDays]);
 
-  // Socket event emitters for date changes
   const handleStartDateChange = useCallback((date: dayjs.Dayjs | null) => {
     try {
-      // Update form immediately for responsive UI
       form.setFieldsValue({ start_date: date });
-      
-      // Recalculate working days
+
       const endDate = form.getFieldValue('end_date');
       if (date && endDate) {
         const days = calculateWorkingDays(date, endDate);
@@ -366,7 +332,6 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         form.setFieldsValue({ working_days: 0 });
       }
 
-      // Emit socket event for real-time updates (only for existing projects)
       if (socket && projectId) {
         socket.emit(
           SocketEvents.PROJECT_START_DATE_CHANGE.toString(),
@@ -384,10 +349,8 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
 
   const handleEndDateChange = useCallback((date: dayjs.Dayjs | null) => {
     try {
-      // Update form immediately for responsive UI
       form.setFieldsValue({ end_date: date });
-      
-      // Recalculate working days
+
       const startDate = form.getFieldValue('start_date');
       if (startDate && date) {
         const days = calculateWorkingDays(startDate, date);
@@ -396,7 +359,6 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         form.setFieldsValue({ working_days: 0 });
       }
 
-      // Emit socket event for real-time updates (only for existing projects)
       if (socket && projectId) {
         socket.emit(
           SocketEvents.PROJECT_END_DATE_CHANGE.toString(),
@@ -412,20 +374,18 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     }
   }, [form, calculateWorkingDays, socket, projectId]);
 
-  // Handlers
   const handleUpgradeClick = useCallback(() => {
     dispatch(toggleUpgradeModal());
   }, [dispatch]);
 
   const handleFormSubmit = async (values: any) => {
     try {
-      // Ensure CSRF token is available before making the request
       const csrfToken = await ensureCsrfToken();
-      
+
       if (!csrfToken) {
-        notification.error({ 
-          message: tCommon('error'), 
-          description: 'Security token validation failed. Please try again.' 
+        notification.error({
+          message: tCommon('error'),
+          description: 'Security token validation failed. Please try again.',
         });
         return;
       }
@@ -439,14 +399,12 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         key: values.key,
         client_id: values.client_id,
         client_name: values.client_name,
-        // FIX: Format dates as YYYY-MM-DD strings like tasks do, ensuring timezone consistency
         start_date: values.start_date ? dayjs(values.start_date).format('YYYY-MM-DD') : undefined,
         end_date: values.end_date ? dayjs(values.end_date).format('YYYY-MM-DD') : undefined,
         working_days: parseInt(values.working_days),
         man_days: parseInt(values.man_days),
         hours_per_day: parseInt(values.hours_per_day),
         project_manager: selectedProjectManager,
-        // FIX: Explicitly use the form values, ensuring boolean conversion
         use_manual_progress: Boolean(values.use_manual_progress),
         use_weighted_progress: Boolean(values.use_weighted_progress),
         use_time_progress: Boolean(values.use_time_progress),
@@ -462,14 +420,11 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       const response = await action;
 
       if (response?.data?.done) {
-        // ✅ REMOVED form.resetFields() - drawer close handler will handle cleanup
         if (!editMode) {
           trackMixpanelEvent(evt_projects_create);
-          // Navigate first, then reload - this ensures toggle states are preserved
           navigate(
             `/worklenz/projects/${response.data.body.id}?tab=tasks-list&pinned_tab=tasks-list`
           );
-          // Use setTimeout to ensure navigation completes before reload
           setTimeout(() => {
             window.location.reload();
           }, 100);
@@ -495,7 +450,6 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       console.log('Drawer visibility changed:', visible, 'Project ID:', projectId);
       setDrawerVisible(visible);
 
-      // Only reset form when drawer is closing
       if (!visible) {
         resetForm();
       } else if (visible && projectId) {
@@ -539,10 +493,11 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     }
   };
 
+  // ─── Date disabling helpers ───────────────────────────────────────────────
   const disabledStartDate = useCallback(
     (current: dayjs.Dayjs) => {
       const endDate = form.getFieldValue('end_date');
-      return current && endDate ? current > dayjs(endDate) : false;
+      return current && endDate ? current.isAfter(dayjs(endDate), 'day') : false;
     },
     [form]
   );
@@ -550,7 +505,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   const disabledEndDate = useCallback(
     (current: dayjs.Dayjs) => {
       const startDate = form.getFieldValue('start_date');
-      return current && startDate ? current < dayjs(startDate) : false;
+      return current && startDate ? current.isBefore(dayjs(startDate), 'day') : false;
     },
     [form]
   );
@@ -560,50 +515,31 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     setIsFormValid(isValid);
   };
 
-  // FIX: Improved progress calculation method handlers that properly update form state
   const handleManualProgressChange = (checked: boolean) => {
     if (checked) {
-      form.setFieldsValue({
-        use_manual_progress: true,
-        use_weighted_progress: false,
-        use_time_progress: false,
-      });
+      form.setFieldsValue({ use_manual_progress: true, use_weighted_progress: false, use_time_progress: false });
     } else {
-      form.setFieldsValue({
-        use_manual_progress: false,
-      });
+      form.setFieldsValue({ use_manual_progress: false });
     }
   };
 
   const handleWeightedProgressChange = (checked: boolean) => {
     if (checked) {
-      form.setFieldsValue({
-        use_manual_progress: false,
-        use_weighted_progress: true,
-        use_time_progress: false,
-      });
+      form.setFieldsValue({ use_manual_progress: false, use_weighted_progress: true, use_time_progress: false });
     } else {
-      form.setFieldsValue({
-        use_weighted_progress: false,
-      });
+      form.setFieldsValue({ use_weighted_progress: false });
     }
   };
 
   const handleTimeProgressChange = (checked: boolean) => {
     if (checked) {
-      form.setFieldsValue({
-        use_manual_progress: false,
-        use_weighted_progress: false,
-        use_time_progress: true,
-      });
+      form.setFieldsValue({ use_manual_progress: false, use_weighted_progress: false, use_time_progress: true });
     } else {
-      form.setFieldsValue({
-        use_time_progress: false,
-      });
+      form.setFieldsValue({ use_time_progress: false });
     }
   };
 
-  // Tab items for the drawer
+  // ─── Tab items ────────────────────────────────────────────────────────────
   const tabItems: TabsProps['items'] = [
     {
       key: 'general',
@@ -680,15 +616,39 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
             />
           </Form.Item>
 
+          {/* ── Date fields with cross-validation ── */}
           <Form.Item name="date" layout="horizontal">
             <Flex gap={8}>
-              <Form.Item name="start_date" label={t('startDate')}>
+              {/* START DATE */}
+              <Form.Item
+                name="start_date"
+                label={t('startDate')}
+                rules={[
+                  {
+                    validator: (_, value) => {
+                      const endDate = form.getFieldValue('end_date');
+                      if (value && endDate && dayjs(value).isAfter(dayjs(endDate), 'day')) {
+                        return Promise.reject(
+                          new Error(
+                            t('startDateAfterEndDate', {
+                              defaultValue: 'Start date cannot be later than end date',
+                            })
+                          )
+                        );
+                      }
+                      return Promise.resolve();
+                    },
+                  },
+                ]}
+              >
                 <ProjectDatePicker
                   field="start_date"
                   value={form.getFieldValue('start_date')}
                   disabled={!isProjectManager && !isOwnerorAdmin}
+                  disabledDate={disabledStartDate}
                   onChange={date => {
                     try {
+                      form.setFieldsValue({ start_date: date });
                       const endDate = form.getFieldValue('end_date');
                       if (date && endDate) {
                         const days = calculateWorkingDays(date, endDate);
@@ -696,19 +656,45 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
                       } else if (!date) {
                         form.setFieldsValue({ working_days: 0 });
                       }
+                      // Cross-validate so the error clears on the other field too
+                      form.validateFields(['start_date', 'end_date']);
                     } catch (error) {
                       logger.error('Error calculating working days on start date change', error);
                     }
                   }}
                 />
               </Form.Item>
-              <Form.Item name="end_date" label={t('endDate')}>
+
+              {/* END DATE */}
+              <Form.Item
+                name="end_date"
+                label={t('endDate')}
+                rules={[
+                  {
+                    validator: (_, value) => {
+                      const startDate = form.getFieldValue('start_date');
+                      if (value && startDate && dayjs(value).isBefore(dayjs(startDate), 'day')) {
+                        return Promise.reject(
+                          new Error(
+                            t('endDateBeforeStartDate', {
+                              defaultValue: 'End date cannot be earlier than start date',
+                            })
+                          )
+                        );
+                      }
+                      return Promise.resolve();
+                    },
+                  },
+                ]}
+              >
                 <ProjectDatePicker
                   field="end_date"
                   value={form.getFieldValue('end_date')}
                   disabled={!isProjectManager && !isOwnerorAdmin}
+                  disabledDate={disabledEndDate}
                   onChange={date => {
                     try {
+                      form.setFieldsValue({ end_date: date });
                       const startDate = form.getFieldValue('start_date');
                       if (startDate && date) {
                         const days = calculateWorkingDays(startDate, date);
@@ -716,6 +702,8 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
                       } else if (!date) {
                         form.setFieldsValue({ working_days: 0 });
                       }
+                      // Cross-validate so the error clears on the other field too
+                      form.validateFields(['start_date', 'end_date']);
                     } catch (error) {
                       logger.error('Error calculating working days on end date change', error);
                     }
@@ -731,9 +719,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
             rules={[
               {
                 validator: (_, value) => {
-                  if (value === undefined || value >= 0) {
-                    return Promise.resolve();
-                  }
+                  if (value === undefined || value >= 0) return Promise.resolve();
                   return Promise.reject(new Error(t('workingDaysValidationMessage', { min: 0 })));
                 },
               },
@@ -748,9 +734,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
             rules={[
               {
                 validator: (_, value) => {
-                  if (value === undefined || value >= 0) {
-                    return Promise.resolve();
-                  }
+                  if (value === undefined || value >= 0) return Promise.resolve();
                   return Promise.reject(new Error(t('manDaysValidationMessage', { min: 0 })));
                 },
               },
@@ -762,9 +746,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
               disabled={!isProjectManager && !isOwnerorAdmin}
               onBlur={e => {
                 const value = parseInt(e.target.value, 10);
-                if (value < 0) {
-                  form.setFieldsValue({ man_days: 0 });
-                }
+                if (value < 0) form.setFieldsValue({ man_days: 0 });
               }}
             />
           </Form.Item>
@@ -775,9 +757,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
             rules={[
               {
                 validator: (_, value) => {
-                  if (value === undefined || (value >= 0 && value <= 24)) {
-                    return Promise.resolve();
-                  }
+                  if (value === undefined || (value >= 0 && value <= 24)) return Promise.resolve();
                   return Promise.reject(
                     new Error(t('hoursPerDayValidationMessage', { min: 0, max: 24 }))
                   );
@@ -791,9 +771,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
               disabled={!isProjectManager && !isOwnerorAdmin}
               onBlur={e => {
                 const value = parseInt(e.target.value, 10);
-                if (value < 0) {
-                  form.setFieldsValue({ hours_per_day: 8 });
-                }
+                if (value < 0) form.setFieldsValue({ hours_per_day: 8 });
               }}
             />
           </Form.Item>
@@ -871,7 +849,9 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
 
           <Divider />
 
-          <Typography.Title level={5}>{t('taskSettings', { defaultValue: 'Task Settings' })}</Typography.Title>
+          <Typography.Title level={5}>
+            {t('taskSettings', { defaultValue: 'Task Settings' })}
+          </Typography.Title>
           <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 16 }}>
             {t('taskSettingsDescription', {
               defaultValue: 'Configure default behavior for tasks created in this project.',
@@ -976,4 +956,5 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     </Drawer>
   );
 };
+
 export default ProjectDrawer;

@@ -25,7 +25,7 @@ import {
   Typography,
 } from '@/shared/antd-imports';
 import { DeleteOutlined, SearchOutlined, SyncOutlined } from '@/shared/antd-imports';
-import { PageHeader } from '@ant-design/pro-components';
+import WorklenzPageHeader from '@/components/common/WorklenzPageHeader';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 
 const Projects: React.FC = () => {
@@ -167,8 +167,8 @@ const Projects: React.FC = () => {
 
   return (
     <div style={{ width: '100%' }}>
-      <PageHeader title={<span>Projects</span>} style={{ padding: '16px 0' }} />
-      <PageHeader
+      <WorklenzPageHeader title={<span>Projects</span>} style={{ padding: '16px 0' }} />
+      <WorklenzPageHeader
         style={{
           paddingLeft: 0,
           paddingTop: 0,

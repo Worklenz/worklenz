@@ -5,11 +5,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { durationDateFormat } from '../../../../utils/durationDateFormat';
 import { DownloadOutlined, PrinterOutlined, DollarOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useDeleteInvoiceMutation } from '@/api/client-portal/client-portal-api';
 
 const ClientViewInvoiceDetails = () => {
   const { t } = useTranslation('client-view-invoices');
   const { id } = useParams();
   const navigate = useNavigate();
+  const [deleteInvoice, { isLoading: isDeleting }] = useDeleteInvoiceMutation();
 
   // Get invoice details from Redux (replace with API call)
   const invoiceDetails = useAppSelector(state =>
@@ -62,8 +64,7 @@ const ClientViewInvoiceDetails = () => {
   };
 
   const handleEditInvoice = () => {
-    // Navigate to edit page - this would need to be implemented
-    message.info('Edit functionality would be implemented here');
+    navigate(`/worklenz/client-portal/invoices/${id}/edit`);
   };
 
   const handleDeleteInvoice = () => {
@@ -73,10 +74,14 @@ const ClientViewInvoiceDetails = () => {
       okText: t('delete', { defaultValue: 'Delete' }),
       okType: 'danger',
       cancelText: t('cancel', { defaultValue: 'Cancel' }),
-      onOk: () => {
-        // Delete functionality would be implemented here
-        message.success('Invoice deleted successfully');
-        navigate('/client-portal/invoices');
+      onOk: async () => {
+        try {
+          await deleteInvoice(id!).unwrap();
+          message.success(t('deleteSuccess', { defaultValue: 'Invoice deleted successfully' }));
+          navigate('/client-portal/invoices');
+        } catch {
+          message.error(t('deleteError', { defaultValue: 'Failed to delete invoice' }));
+        }
       },
     });
   };
@@ -91,7 +96,7 @@ const ClientViewInvoiceDetails = () => {
           <Button icon={<DownloadOutlined />} onClick={handleDownloadInvoice}>{t('download')}</Button>
           <Button icon={<PrinterOutlined />} onClick={handlePrintInvoice}>{t('print')}</Button>
           <Button icon={<EditOutlined />} onClick={handleEditInvoice}>{t('edit', { defaultValue: 'Edit' })}</Button>
-          <Button icon={<DeleteOutlined />} danger onClick={handleDeleteInvoice}>{t('delete', { defaultValue: 'Delete' })}</Button>
+          <Button icon={<DeleteOutlined />} danger loading={isDeleting} onClick={handleDeleteInvoice}>{t('delete', { defaultValue: 'Delete' })}</Button>
           <Button onClick={() => navigate('/client-portal/invoices')}>{t('backToInvoices')}</Button>
         </Flex>
       </Flex>

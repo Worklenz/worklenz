@@ -171,6 +171,24 @@ const ClientPortalRequestDetails = () => {
     }
   };
 
+  // Helper to get status color
+  const getStatusColor = (status?: string) => {
+    switch (status?.toLowerCase()) {
+      case 'pending':
+        return 'orange';
+      case 'accepted':
+        return 'blue';
+      case 'in_progress':
+        return 'processing';
+      case 'completed':
+        return 'success';
+      case 'rejected':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
   const items: TabsProps['items'] = [
     {
       key: 'submission',
@@ -201,9 +219,25 @@ const ClientPortalRequestDetails = () => {
             styles={{ body: { padding: '20px 24px' } }}
           >
             <Flex vertical gap={8}>
-              <Typography.Title level={4} style={{ margin: 0, marginBottom: 4 }}>
-                {requestInfo.title || t1('untitledRequest')}
-              </Typography.Title>
+              <Flex align="center" gap={12} style={{ marginBottom: 4 }}>
+                <Typography.Title level={4} style={{ margin: 0 }}>
+                  {requestInfo.title || t1('untitledRequest')}
+                </Typography.Title>
+                <Tag 
+                  color={getStatusColor(selectedRequest?.status || '')}
+                  style={{ 
+                    fontSize: 14, 
+                    padding: '4px 12px',
+                    fontWeight: 500,
+                    borderRadius: 6
+                  }}
+                >
+                  {selectedRequest?.status 
+                    ? selectedRequest.status.charAt(0).toUpperCase() + selectedRequest.status.slice(1).replace("_", " ")
+                    : 'Unknown'
+                  }
+                </Tag>
+              </Flex>
               <Flex align="center" gap={16} wrap="wrap">
                 <Flex align="center" gap={6}>
                   <AppstoreOutlined style={{ color: token.colorTextSecondary, fontSize: 14 }} />

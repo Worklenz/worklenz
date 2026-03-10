@@ -33,7 +33,10 @@ import {
 import { TableProps } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { RootState } from '@/app/store';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_client_portal_share } from '@/shared/worklenz-analytics-events';
 import {
   toggleClientSettingsDrawer,
   toggleClientTeamsDrawer,
@@ -81,6 +84,7 @@ const ClientsTable = () => {
   const isDarkMode = themeMode === 'dark';
 
   const dispatch = useAppDispatch();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   // Local state for bulk operations
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
@@ -98,6 +102,7 @@ const ClientsTable = () => {
       page: pagination.page,
       limit: pagination.limit,
       search: filters.search,
+      status: filters.status !== 'all' ? filters.status : undefined,
       sortBy: filters.sortBy,
       sortOrder: filters.sortOrder,
     }),
@@ -481,6 +486,13 @@ const ClientsTable = () => {
   const copyInvitationLink = async () => {
     try {
       await navigator.clipboard.writeText(invitationLink);
+      
+      // Track client portal share event
+      trackMixpanelEvent(evt_client_portal_share, {
+        client_id: currentClientId,
+        share_method: 'copy_link'
+      });
+      
       message.success(
         t('invitationLinkCopiedSuccess', { defaultValue: 'Invitation link copied to clipboard!' })
       );

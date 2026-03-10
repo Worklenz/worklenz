@@ -189,9 +189,8 @@ export const useTaskSocketHandlers = () => {
         dispatch(updateTaskLabel(labels)),
         dispatch(setTaskLabels(labels)),
         labels.is_new && dispatch(fetchLabels()),
-        // Remove unnecessary refetches - real-time updates handle this
-        // dispatch(fetchLabels()),
-        // projectId && dispatch(fetchLabelsByProject(projectId)),
+        // When a new label is created, update the labels filter dropdown by fetching project labels
+        labels.is_new && projectId && dispatch(fetchLabelsByProject(projectId)),
       ]);
 
       // Update enhanced kanban slice
@@ -209,6 +208,11 @@ export const useTaskSocketHandlers = () => {
           'Task is not completed',
           'Please complete the task dependencies before proceeding'
         );
+        // CRITICAL FIX: Prevent any UI updates when dependencies are not met
+        // Refetch tasks to revert any optimistic updates
+        if (projectId) {
+          dispatch(fetchTasksV3(projectId));
+        }
         return;
       }
 
@@ -704,12 +708,13 @@ export const useTaskSocketHandlers = () => {
 
   const handleNewTaskReceived = useCallback(
     (response: any) => {
-      // Use enhanced kanban grouping if available, otherwise fall back to task-management grouping
-      const currentGrouping = enhancedKanbanGroupBy || currentGroupingV3;
+      // Update BOTH task-management slice (for task list) AND enhanced kanban slice
+      // They should work independently with their own grouping settings
       
       handleTaskReceivedUtil(response, {
         dispatch,
-        currentGroupingV3: currentGrouping,
+        currentGroupingV3: currentGroupingV3,
+        enhancedKanbanGroupBy: enhancedKanbanGroupBy,
         trackEvent: trackMixpanelEvent,
         subtaskEventName: evt_project_task_list_create_subtask,
         taskEventName: evt_project_task_create,
@@ -822,6 +827,37 @@ export const useTaskSocketHandlers = () => {
   const handleTaskAssigneesChange = useCallback((data: { assigneeIds: string[] }) => {
     if (!data || !data.assigneeIds) return;
   }, []);
+
+  // Handler for billable status changes
+  const handleBillableChange = useCallback(
+    (data: { id: string; billable: boolean; error?: string }) => {
+      if (!data || data.error) return;
+
+      // Update the task drawer if this task is currently open
+      const state = store.getState();
+      const currentTaskId = state.taskDrawerReducer?.selectedTaskId;
+      
+      if (currentTaskId === data.id) {
+        // Import the action dynamically to avoid circular dependencies
+        import('@/features/task-drawer/task-drawer.slice').then(({ setTaskBillable }) => {
+          dispatch(setTaskBillable({ id: data.id, billable: data.billable }));
+        });
+      }
+
+      // Update the task-management slice for task-list-v2 components
+      const currentTask = state.taskManagement.entities[data.id];
+      if (currentTask) {
+        const updatedTask: Task = {
+          ...currentTask,
+          billable: data.billable,
+          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        dispatch(updateTask(updatedTask));
+      }
+    },
+    [dispatch]
+  );
 
   // Handler for timer start events
   const handleTimerStart = useCallback(
@@ -951,6 +987,14 @@ export const useTaskSocketHandlers = () => {
     [dispatch]
   );
 
+  // Handler for PROJECT_UPDATES_AVAILABLE event (e.g., task deletion)
+  const handleProjectUpdatesAvailable = useCallback(() => {
+    // Refresh task list when project updates are available (includes task deletion, creation, etc.)
+    if (projectId) {
+      dispatch(fetchTasksV3(projectId));
+    }
+  }, [dispatch, projectId]);
+
   // Register socket event listeners
   useEffect(() => {
     if (!socket) return;
@@ -958,6 +1002,7 @@ export const useTaskSocketHandlers = () => {
     const eventHandlers = [
       { event: SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), handler: handleAssigneesUpdate },
       { event: SocketEvents.TASK_ASSIGNEES_CHANGE.toString(), handler: handleTaskAssigneesChange },
+      { event: SocketEvents.TASK_BILLABLE_CHANGE.toString(), handler: handleBillableChange },
       { event: SocketEvents.TASK_LABELS_CHANGE.toString(), handler: handleLabelsChange },
       { event: SocketEvents.CREATE_LABEL.toString(), handler: handleLabelsChange },
       { event: SocketEvents.TASK_STATUS_CHANGE.toString(), handler: handleTaskStatusChange },
@@ -989,6 +1034,10 @@ export const useTaskSocketHandlers = () => {
       { event: SocketEvents.TASK_TIMER_START.toString(), handler: handleTimerStart },
       { event: SocketEvents.TASK_TIMER_STOP.toString(), handler: handleTimerStop },
       { event: SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), handler: handleTaskSortOrderChange },
+      {
+        event: SocketEvents.PROJECT_UPDATES_AVAILABLE.toString(),
+        handler: handleProjectUpdatesAvailable,
+      },
     ];
 
     // Register all event listeners
@@ -1006,6 +1055,7 @@ export const useTaskSocketHandlers = () => {
     socket,
     handleAssigneesUpdate,
     handleTaskAssigneesChange,
+    handleBillableChange,
     handleLabelsChange,
     handleTaskStatusChange,
     handleTaskProgress,
@@ -1023,5 +1073,6 @@ export const useTaskSocketHandlers = () => {
     handleTimerStart,
     handleTimerStop,
     handleTaskSortOrderChange,
+    handleProjectUpdatesAvailable,
   ]);
 };

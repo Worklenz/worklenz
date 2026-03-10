@@ -63,6 +63,7 @@ function serializeError(error: any, maxLength = 3000): string {
 export async function send_to_slack(error: any) {
   if (!isProduction()) return;
   if (!process.env.SLACK_WEBHOOK) return;
+  if (process.env.ENABLE_SLACK_NOTIFICATIONS === 'false') return;
   
   try {
     const url = process.env.SLACK_WEBHOOK;

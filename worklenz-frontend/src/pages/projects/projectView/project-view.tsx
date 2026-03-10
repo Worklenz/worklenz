@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback, Suspense } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, Suspense, useRef } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 
@@ -11,6 +11,7 @@ import {
   Tooltip,
   PushpinFilled,
   PushpinOutlined,
+  message,
 } from '@/shared/antd-imports';
 import { CrownOutlined } from '@ant-design/icons';
 
@@ -28,9 +29,10 @@ import './project-view.css';
 import { resetTaskListData } from '@/features/tasks/tasks.slice';
 import { resetBoardData } from '@/features/board/board-slice';
 import { resetTaskManagement } from '@/features/task-management/task-management.slice';
+import { setActiveTeam } from '@/features/teams/teamSlice';
 import { resetGrouping } from '@/features/task-management/grouping.slice';
 import { resetSelection } from '@/features/task-management/selection.slice';
-import { resetFields } from '@/features/task-management/taskListFields.slice';
+import { resetFields, setProjectContext } from '@/features/task-management/taskListFields.slice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import {
@@ -50,6 +52,8 @@ import { useTranslation } from 'react-i18next';
 import { useTimerInitialization } from '@/hooks/useTimerInitialization';
 import { useAuthService } from '@/hooks/useAuth';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { useAuthStatus } from '@/hooks/useAuthStatus';
+import { evt_paywall_hit } from '@/shared/worklenz-analytics-events';
 
 // Import critical components synchronously to avoid suspense interruptions
 import TaskDrawer from '@components/task-drawer/task-drawer';
@@ -88,6 +92,7 @@ const ProjectView = React.memo(() => {
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
   const { trackMixpanelEvent } = useMixpanelTracking();
+  const { isLicenseExpired } = useAuthStatus();
 
   // Memoize URL params to prevent unnecessary state updates
   const urlParams = useMemo(() => {
@@ -103,6 +108,10 @@ const ProjectView = React.memo(() => {
   const [pinnedTab, setPinnedTab] = useState<string>(urlParams.pinnedTab);
   const [taskid, setTaskId] = useState<string>(urlParams.taskId);
   const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Use ref to prevent duplicate API calls and error messages
+  const isLoadingRef = useRef(false);
+  const hasShownErrorRef = useRef(false);
 
   // Initialize timer state from backend when project view loads
   useTimerInitialization();
@@ -185,12 +194,20 @@ const ProjectView = React.memo(() => {
   // Reset initialization when project changes - must run first
   useEffect(() => {
     setIsInitialized(false);
+    isLoadingRef.current = false;
+    hasShownErrorRef.current = false;
   }, [projectId]);
 
   // Optimized project data loading with better error handling and performance tracking
   useEffect(() => {
-    if (projectId && !isInitialized) {
+    if (projectId && !isInitialized && !isLoadingRef.current) {
       const loadProjectData = async () => {
+        // Prevent duplicate calls
+        if (isLoadingRef.current) {
+          return;
+        }
+        isLoadingRef.current = true;
+
         try {
           // Clean up previous project data before loading new project
           dispatch(resetTaskListData());
@@ -201,6 +218,9 @@ const ProjectView = React.memo(() => {
 
           // Load new project data
           dispatch(setProjectId(projectId));
+          
+          // Set project context for field visibility
+          dispatch(setProjectContext(projectId));
 
           // Load project and essential data in parallel
           const [projectResult] = await Promise.allSettled([
@@ -208,22 +228,128 @@ const ProjectView = React.memo(() => {
             dispatch(fetchStatuses(projectId)),
             dispatch(fetchLabels()),
           ]);
-
-          if (projectResult.status === 'fulfilled' && !projectResult.value.payload) {
+          
+          // Check if project fetch was rejected (access denied or not found)
+          if (projectResult.status === 'rejected') {
+            // Redirect to projects list
             navigate('/worklenz/projects');
             return;
+          }
+
+          // Check if project fetch was fulfilled
+          if (projectResult.status === 'fulfilled') {
+            const result = projectResult.value as any;
+            
+            // Check if the Redux action was rejected (type ends with '/rejected')
+            if (result.type && result.type.includes('/rejected')) {
+              const payload = result.payload;
+              
+              // Check if it's a 403 error (access denied)
+              if (payload?.statusCode === 403) {
+                // Check if user needs to switch teams
+                if (payload.requiresTeamSwitch && payload.projectTeamId) {
+                  console.log('Project belongs to different team, switching teams...', payload.projectTeamId);
+                  
+                  // Show message that we're switching teams (only once)
+                  if (!hasShownErrorRef.current) {
+                    hasShownErrorRef.current = true;
+                    message.info(
+                      t('Switching to project team...', { 
+                        defaultValue: 'Switching to project team...' 
+                      })
+                    );
+                  }
+                  
+                  try {
+                    // Switch to the project's team
+                    const switchResult = await dispatch(setActiveTeam(payload.projectTeamId));
+                    
+                    if (setActiveTeam.fulfilled.match(switchResult)) {
+                      // Team switched successfully, reload the page to refresh session
+                      message.success(
+                        t('Team switched successfully', { 
+                          defaultValue: 'Team switched successfully' 
+                        })
+                      );
+                      
+                      // Reload the page to get new session with correct team
+                      window.location.reload();
+                      return;
+                    } else {
+                      // Team switch failed
+                      if (!hasShownErrorRef.current) {
+                        hasShownErrorRef.current = true;
+                        message.error(
+                          t('Failed to switch teams', { 
+                            defaultValue: 'Failed to switch teams' 
+                          })
+                        );
+                      }
+                      navigate('/worklenz/projects');
+                      return;
+                    }
+                  } catch (switchError) {
+                    console.error('Error switching teams:', switchError);
+                    if (!hasShownErrorRef.current) {
+                      hasShownErrorRef.current = true;
+                      message.error(
+                        t('Failed to switch teams', { 
+                          defaultValue: 'Failed to switch teams' 
+                        })
+                      );
+                    }
+                    navigate('/worklenz/projects');
+                    return;
+                  }
+                }
+                
+                // Regular access denied (user doesn't have access to the project)
+                console.log('Access denied to project:', projectId);
+                if (!hasShownErrorRef.current) {
+                  hasShownErrorRef.current = true;
+                  message.error(
+                    payload?.message || 
+                    t('You do not have permission to access this project', { 
+                      defaultValue: 'You do not have permission to access this project' 
+                    })
+                  );
+                }
+                navigate('/worklenz/projects');
+                return;
+              }
+              
+              // For other errors, also redirect
+              if (!hasShownErrorRef.current) {
+                hasShownErrorRef.current = true;
+                message.error(
+                  t('Failed to load project', { 
+                    defaultValue: 'Failed to load project' 
+                  })
+                );
+              }
+              navigate('/worklenz/projects');
+              return;
+            }
+            
+            // Check if project data is missing
+            if (!result.payload) {
+              navigate('/worklenz/projects');
+              return;
+            }
           }
 
           setIsInitialized(true);
         } catch (error) {
           console.error('Error loading project data:', error);
           navigate('/worklenz/projects');
+        } finally {
+          isLoadingRef.current = false;
         }
       };
 
       loadProjectData();
     }
-  }, [dispatch, navigate, projectId, isInitialized]);
+  }, [dispatch, projectId, isInitialized, navigate, t]);
 
   // Effect for handling task drawer opening from URL params
   useEffect(() => {
@@ -284,6 +410,16 @@ const ProjectView = React.memo(() => {
 
       // If tab is disabled, open upgrade modal instead of navigating
       if (tabItem?.disabled) {
+        // Track paywall hit for trial expired users clicking Finance tab
+        if (isLicenseExpired && key === 'finance') {
+          trackMixpanelEvent(evt_paywall_hit, {
+            feature_blocked: 'finance',
+            user_type: currentSession?.subscription_type?.toLowerCase(),
+            trial_expired: true,
+            project_id: projectId,
+            source: 'project_finance_tab'
+          });
+        }
         dispatch(toggleUpgradeModal());
         return;
       }

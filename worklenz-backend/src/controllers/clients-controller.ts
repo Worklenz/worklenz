@@ -982,6 +982,15 @@ export default class ClientsController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
+  public static async activatePortalClient(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const modifiedReq = {
+      ...req,
+      user: req.user
+    } as any;
+    return ClientPortalClientsController.activateClient(modifiedReq, res as any);
+  }
+
+  @HandleExceptions()
   public static async setClientInviteSlug(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const modifiedReq = {
       ...req,
@@ -1221,7 +1230,7 @@ export default class ClientsController extends WorklenzControllerBase {
         
         const query = `
           WITH chat_summary AS (
-            SELECT 
+            SELECT
               c.id as client_id,
               c.name as client_name,
               c.email as client_email,
@@ -1234,18 +1243,29 @@ export default class ClientsController extends WorklenzControllerBase {
             JOIN clients c ON m.client_id = c.id
             WHERE m.organization_team_id = $1
             GROUP BY c.id, c.name, c.email, DATE(m.created_at)
+          ),
+          last_messages AS (
+            SELECT DISTINCT ON (m.client_id, DATE(m.created_at))
+              m.client_id,
+              DATE(m.created_at) as chat_date,
+              m.message as last_message_text
+            FROM client_portal_chat_messages m
+            WHERE m.organization_team_id = $1
+            ORDER BY m.client_id, DATE(m.created_at), m.created_at DESC
           )
-          SELECT 
-            client_id,
-            client_name,
-            client_email,
-            chat_date,
-            message_count,
-            last_message_at,
-            last_team_message_at,
-            unread_count
-          FROM chat_summary
-          ORDER BY last_message_at DESC
+          SELECT
+            cs.client_id,
+            cs.client_name,
+            cs.client_email,
+            cs.chat_date,
+            cs.message_count,
+            cs.last_message_at,
+            cs.last_team_message_at,
+            cs.unread_count,
+            lm.last_message_text
+          FROM chat_summary cs
+          LEFT JOIN last_messages lm ON cs.client_id = lm.client_id AND cs.chat_date = lm.chat_date
+          ORDER BY cs.last_message_at DESC
           LIMIT $2 OFFSET $3
         `;
         
@@ -1269,7 +1289,8 @@ export default class ClientsController extends WorklenzControllerBase {
           lastMessageAt: row.last_message_at,
           lastTeamMessageAt: row.last_team_message_at,
           unreadCount: parseInt(row.unread_count || "0"),
-          hasNewMessages: row.unread_count > 0
+          hasNewMessages: row.unread_count > 0,
+          lastMessage: row.last_message_text || null,
         }));
         
         return res.json(new ServerResponse(true, {
@@ -1875,6 +1896,55 @@ export default class ClientsController extends WorklenzControllerBase {
     }
 
     return res.status(200).send(new ServerResponse(true, newComment, "Comment added successfully"));
+  }
+
+  @HandleExceptions()
+  public static async uploadPortalChatFile(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    try {
+      const organizationId = req.user?.team_id;
+      const { fileData, fileName, fileType, clientId } = req.body;
+
+      if (!fileData || !fileName) {
+        return res.status(400).json(new ServerResponse(false, null, "File data and filename are required"));
+      }
+
+      const fileSizeBytes = Math.floor((fileData.length * 3) / 4);
+      const maxSizeBytes = 10 * 1024 * 1024; // 10MB limit
+      if (fileSizeBytes > maxSizeBytes) {
+        return res.status(400).json(new ServerResponse(false, null, "File size exceeds 10MB limit"));
+      }
+
+      const allowedTypes = [
+        "image/jpeg", "image/png", "image/gif", "image/webp",
+        "application/pdf", "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "text/plain", "text/csv"
+      ];
+      if (fileType && !allowedTypes.includes(fileType)) {
+        return res.status(400).json(new ServerResponse(false, null, "File type not allowed"));
+      }
+
+      const ext = fileName.includes('.') ? fileName.split('.').pop() : 'bin';
+      const uniqueFileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const storageKey = getClientPortalStorageKey(
+        "chat-files",
+        organizationId as string,
+        clientId || "admin",
+        uniqueFileName
+      );
+
+      const fileUrl = await uploadBase64(fileData, storageKey);
+      if (!fileUrl) {
+        return res.status(500).json(new ServerResponse(false, null, "Failed to upload file"));
+      }
+
+      return res.json(new ServerResponse(true, { url: fileUrl, fileName }, "File uploaded successfully"));
+    } catch (error) {
+      console.error("Error uploading chat file:", error);
+      return res.status(500).json(new ServerResponse(false, null, "Failed to upload file"));
+    }
   }
 
 }

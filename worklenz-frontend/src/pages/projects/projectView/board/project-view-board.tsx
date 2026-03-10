@@ -44,7 +44,7 @@ import { ITaskStatusCreateRequest } from '@/types/tasks/task-status-create-reque
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import logger from '@/utils/errorLogger';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
-import { debounce } from 'lodash';
+import debounce from 'lodash-es/debounce';
 import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priority.types';
 import { updateTaskPriority as updateBoardTaskPriority } from '@/features/board/board-slice';
 

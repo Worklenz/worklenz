@@ -23,6 +23,8 @@ import { teamMembersApiService } from '@/api/team-members/teamMembers.api.servic
 import { ITeamMemberCreateRequest } from '@/types/teamMembers/team-member-create-request';
 import { LinkOutlined, CopyOutlined, CheckOutlined } from '@ant-design/icons';
 import { ROLE_NAMES } from '@/types/roles/role.types';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_team_invite_sent } from '@/shared/worklenz-analytics-events';
 
 interface FormValues {
   email: string[];
@@ -51,6 +53,7 @@ const InviteTeamMembers = () => {
   const { t } = useTranslation('settings/team-members');
   const isDrawerOpen = useAppSelector(state => state.memberReducer.isInviteMemberDrawerOpen);
   const dispatch = useAppDispatch();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   // const handleSearch = useCallback(
   //   async (value: string) => {
@@ -124,6 +127,14 @@ const InviteTeamMembers = () => {
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(invitationLink);
+      
+      // Track team invitation link copy
+      trackMixpanelEvent(evt_team_invite_sent, {
+        invite_method: 'copy_link',
+        role: form.getFieldValue('access') || 'member',
+        has_job_title: !!selectedJobTitle
+      });
+      
       setLinkCopied(true);
       message.success(t('Invitation link copied to clipboard'));
       setTimeout(() => setLinkCopied(false), 2000);
@@ -165,6 +176,14 @@ const InviteTeamMembers = () => {
       };
       const res = await teamMembersApiService.createTeamMember(body);
       if (res.done) {
+        // Track team invitation via email
+        trackMixpanelEvent(evt_team_invite_sent, {
+          invite_method: 'email',
+          invite_count: emails.length,
+          role: values.access,
+          has_job_title: !!selectedJobTitle
+        });
+        
         form.resetFields();
         setEmails([]);
         setSelectedJobTitle(null);

@@ -15,6 +15,32 @@ import { getThemeConfig } from './config/theme.config';
 import { initSentry } from './config/sentry';
 import SentryErrorBoundary from '@/components/common/SentryErrorBoundary';
 
+// Handle chunk load failures (CSS/JS preload errors after deployment)
+const RELOAD_KEY = 'app_reload_attempted';
+const RELOAD_TIMEOUT = 10000; // 10 seconds
+
+window.addEventListener('error', (event) => {
+  const isChunkLoadError = 
+    event.message?.includes('Failed to fetch dynamically imported module') ||
+    event.message?.includes('Unable to preload CSS') ||
+    event.message?.includes('Loading chunk') ||
+    event.message?.includes('Loading CSS chunk');
+
+  if (isChunkLoadError) {
+    const lastReload = sessionStorage.getItem(RELOAD_KEY);
+    const now = Date.now();
+
+    // Prevent reload loop - only reload once per session within timeout
+    if (!lastReload || now - parseInt(lastReload) > RELOAD_TIMEOUT) {
+      console.warn('Chunk load error detected, reloading page...', event.message);
+      sessionStorage.setItem(RELOAD_KEY, now.toString());
+      window.location.reload();
+    } else {
+      console.error('Chunk load error persists after reload:', event.message);
+    }
+  }
+}, true);
+
 const initialTheme = getInitialTheme();
 
 // Apply CSS variables and initial theme
