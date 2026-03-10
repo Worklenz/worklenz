@@ -80,16 +80,27 @@ export default function verifyProjectAccess(
           const isOwnerOfProjectTeam = userTeamRole.owner;
           const isAdminOfProjectTeam = userTeamRole.admin_role;
           
-          // User has access to the project's team, return info to switch teams
-          logUnauthorizedAccess(userId, teamId, 'project', projectId, req.path, 'WRONG_TEAM');
-          return res.status(403).send(
-            new ServerResponse(false, {
-              requiresTeamSwitch: true,
-              projectTeamId: projectTeamId,
-              isOwnerOfProjectTeam: isOwnerOfProjectTeam,
-              isAdminOfProjectTeam: isAdminOfProjectTeam
-            }, "Project belongs to a different team. Please switch teams to access this project.")
-          );
+          // Before suggesting team switch, verify user would actually have access to the project in that team
+          const hasProjectAccessInTeam = await checkProjectAccessInTeam(projectId, userId, projectTeamId, isOwnerOfProjectTeam, isAdminOfProjectTeam);
+          
+          if (hasProjectAccessInTeam) {
+            // User has access to the project's team AND the project itself, return info to switch teams
+            logUnauthorizedAccess(userId, teamId, 'project', projectId, req.path, 'WRONG_TEAM');
+            return res.status(403).send(
+              new ServerResponse(false, {
+                requiresTeamSwitch: true,
+                projectTeamId: projectTeamId,
+                isOwnerOfProjectTeam: isOwnerOfProjectTeam,
+                isAdminOfProjectTeam: isAdminOfProjectTeam
+              }, "Project belongs to a different team. Please switch teams to access this project.")
+            );
+          } else {
+            // User has access to the team but not to the specific project
+            logUnauthorizedAccess(userId, teamId, 'project', projectId, req.path, 'NO_PROJECT_ACCESS_IN_TEAM');
+            return res.status(403).send(
+              new ServerResponse(false, null, "You do not have permission to access this project")
+            );
+          }
         }
         
         // User doesn't have access to the project's team at all
@@ -160,6 +171,58 @@ export async function hasProjectAccess(projectId: string, teamId: string): Promi
     const q = `SELECT 1 FROM projects WHERE id = $1 AND team_id = $2 LIMIT 1;`;
     const result = await db.query(q, [projectId, teamId]);
     return result.rowCount ? result.rowCount > 0 : false;
+  } catch (error) {
+    log_error(error);
+    return false;
+  }
+}
+
+/**
+ * Helper function to check if user would have access to a project in a specific team
+ * This is used to verify access before suggesting team switch
+ */
+async function checkProjectAccessInTeam(
+  projectId: string, 
+  userId: string, 
+  teamId: string, 
+  isOwner: boolean, 
+  isAdmin: boolean
+): Promise<boolean> {
+  try {
+    // If user is Owner or Admin of the team, they can access all projects in that team
+    if (isOwner || isAdmin) {
+      return true;
+    }
+
+    // Check if user is a Team Lead in that team (admin_role = true)
+    const teamLeadQuery = `
+      SELECT 1
+      FROM team_members tm
+      INNER JOIN roles r ON tm.role_id = r.id
+      WHERE tm.user_id = $1 
+        AND tm.team_id = $2 
+        AND r.admin_role = TRUE
+      LIMIT 1;
+    `;
+    const teamLeadResult = await db.query(teamLeadQuery, [userId, teamId]);
+    
+    if (teamLeadResult.rowCount && teamLeadResult.rowCount > 0) {
+      return true;
+    }
+
+    // For regular members, check if they are explicitly added to the project
+    const projectMemberQuery = `
+      SELECT 1
+      FROM project_members pm
+      INNER JOIN team_members tm ON pm.team_member_id = tm.id
+      WHERE pm.project_id = $1 
+        AND tm.user_id = $2 
+        AND tm.team_id = $3
+      LIMIT 1;
+    `;
+    const projectMemberResult = await db.query(projectMemberQuery, [projectId, userId, teamId]);
+    
+    return projectMemberResult.rowCount ? projectMemberResult.rowCount > 0 : false;
   } catch (error) {
     log_error(error);
     return false;
