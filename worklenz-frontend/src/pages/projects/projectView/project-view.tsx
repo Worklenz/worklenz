@@ -246,7 +246,8 @@ const ProjectView = React.memo(() => {
               
               // Check if it's a 403 error (access denied)
               if (payload?.statusCode === 403) {
-                // Check if user needs to switch teams
+                // Check if user needs to switch teams (backend has already verified project access)
+                // The backend only sets requiresTeamSwitch=true if the user actually has access to the project
                 if (payload.requiresTeamSwitch && payload.projectTeamId) {
                   console.log('Project belongs to different team, switching teams...', payload.projectTeamId);
                   
@@ -303,7 +304,7 @@ const ProjectView = React.memo(() => {
                   }
                 }
                 
-                // Regular access denied (user doesn't have access to the project)
+                // Access denied (user doesn't have access to the project)
                 console.log('Access denied to project:', projectId);
                 if (!hasShownErrorRef.current) {
                   hasShownErrorRef.current = true;
@@ -567,8 +568,8 @@ const ProjectView = React.memo(() => {
           <Suspense fallback={<SuspenseFallback />}>
             {selectedProject && createPortal(
               <InviteProjectMembers 
-                projectId={selectedProject.id} 
-                projectName={selectedProject.name} 
+                projectId={selectedProject.id || ''} 
+                projectName={selectedProject.name || ''} 
               />, 
               document.body, 
               'project-member-drawer'
