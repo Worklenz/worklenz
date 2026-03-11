@@ -547,8 +547,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                     onTaskDrop(e, group.id, 0);
                   }}
                 >
-                  {(isOwnerOrAdmin || isProjectManager) &&
-                    !showNewCardTop &&
+                  {!showNewCardTop &&
                     !showNewCardBottom && (
                       <button
                         type="button"
