@@ -42,6 +42,7 @@ const NEVER_CACHE_PATTERNS = [
   /\/socket\.io/,
   /\.hot-update\./,
   /sw\.js$/,
+  /version\.json$/,
   /chrome-extension/,
   /moz-extension/,
 ];
@@ -115,9 +116,9 @@ async function handleFetchRequest(request) {
       return await networkFirstStrategy(request, CACHE_NAMES.DYNAMIC);
     }
 
-    // CSS assets - Stale While Revalidate (balance between cache and freshness)
+    // CSS assets - Network First (ensure fresh CSS after deployments)
     if (isCSSAsset(url)) {
-      return await staleWhileRevalidateStrategy(request, CACHE_NAMES.STATIC);
+      return await networkFirstStrategy(request, CACHE_NAMES.STATIC);
     }
 
     // Static assets (fonts, manifest) - Cache First strategy

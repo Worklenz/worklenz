@@ -7,6 +7,7 @@ export enum IEmailTemplateType {
   Welcome,
   OTPVerification,
   ResetPassword,
+  ResetPasswordClientPortal,
   TaskAssigneeChange,
   DailyDigest,
   TaskDone,

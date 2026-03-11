@@ -200,6 +200,7 @@
     "createFirst": "Create Your First Request",
     "errorLoading": "Error loading requests",
     "errorLoadingDescription": "Failed to load requests. Please try again.",
+    "requestNotFoundDescription": "The requested item could not be found or you don't have access to it.",
     "showingRange": "{{start}}-{{end}} of {{total}} requests",
     "pending": "Pending",
     "accepted": "Accepted",
@@ -258,6 +259,9 @@
     "loadingQuestions": "Loading questions...",
     "enterAnswer": "Enter your answer",
     "noComments": "No comments yet. Start the conversation!",
+    "startConversation": "Start the conversation by adding a comment below",
+    "requestCompletedNoComments": "This request has been completed. Comments are disabled.",
+    "requestRejectedNoComments": "This request has been rejected. Comments are disabled.",
     "teamMember": "Team",
     "client": "Client",
     "pressEnterToSend": "Press Enter to send, Shift+Enter for new line"

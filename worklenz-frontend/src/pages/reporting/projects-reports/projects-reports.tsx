@@ -10,7 +10,12 @@ import ProjectsReportsFilters from './components/projects-reports-filters/projec
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import { setArchived, fetchReportingTeams, resetAllFilters, fetchProjectData } from '@/features/reporting/projectReports/project-reports-slice';
+import {
+  setArchived,
+  fetchReportingTeams,
+  resetAllFilters,
+  fetchProjectData,
+} from '@/features/reporting/projectReports/project-reports-slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAuthService } from '@/hooks/useAuth';
 import { reportingExportApiService } from '@/api/reporting/reporting-export.api.service';
@@ -25,16 +30,23 @@ const ProjectsReports = () => {
 
   const { total, archived, viewMode } = useAppSelector(state => state.projectReportsReducer);
 
-  // Reset filters synchronously before any rendering
-  useLayoutEffect(() => {
-    dispatch(resetAllFilters());
-  }, [dispatch]);
-
   // Fetch data after filters are reset
   useEffect(() => {
     trackMixpanelEvent(evt_reporting_projects_overview);
     dispatch(fetchReportingTeams());
   }, [trackMixpanelEvent, dispatch]);
+
+  // Initial data fetch when component mounts
+  useEffect(() => {
+    dispatch(fetchProjectData());
+  }, [dispatch]);
+
+  // Fetch data when archived state changes, but only for table view
+  useEffect(() => {
+    if (viewMode === 'table') {
+      dispatch(fetchProjectData());
+    }
+  }, [archived, dispatch, viewMode]);
 
   // Memoize the title to prevent recalculation on every render
   const pageTitle = useMemo(() => {
@@ -93,9 +105,7 @@ const ProjectsReports = () => {
     <Flex vertical>
       <CustomPageHeader title={pageTitle} children={headerChildren} />
 
-      <Card title={cardTitle}>
-        {cardContent}
-      </Card>
+      <Card title={cardTitle}>{cardContent}</Card>
     </Flex>
   );
 };

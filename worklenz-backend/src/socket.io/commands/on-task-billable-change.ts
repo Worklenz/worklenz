@@ -27,7 +27,8 @@ export async function on_task_billable_change(_io: Server, socket: Socket, data?
         }
         
         // Check if user is restricted from billable feature
-        const isRestricted = await isRestrictedFromProPlanFeatures(teamId);
+        // const isRestricted = await isRestrictedFromProPlanFeatures(teamId);
+        const isRestricted = false;
         
         if (isRestricted) {
             // Emit error to client
@@ -38,11 +39,23 @@ export async function on_task_billable_change(_io: Server, socket: Socket, data?
             return;
         }
         
-        const q = `UPDATE tasks SET billable = $2 WHERE id = $1`;
-        await db.query(q, [data?.task_id, data?.billable]);
+        const q = `UPDATE tasks SET billable = $2 WHERE id = $1 RETURNING project_id`;
+        const result = await db.query(q, [data?.task_id, data?.billable]);
+        const [taskData] = result.rows;
+        
+        // Emit to the requesting socket
         socket.emit(SocketEvents.TASK_BILLABLE_CHANGE.toString(), {
-            id: data?.task_id
+            id: data?.task_id,
+            billable: data?.billable
         });
+        
+        // Broadcast to all clients in the project room for real-time updates
+        if (taskData?.project_id) {
+            _io.to(taskData.project_id).emit(SocketEvents.TASK_BILLABLE_CHANGE.toString(), {
+                id: data?.task_id,
+                billable: data?.billable
+            });
+        }
 
     } catch (e) {
         log_error(e);

@@ -68,16 +68,6 @@ export const useTaskRowState = (task: Task) => {
     ]
   );
 
-  // Debug log for completedAt
-  if (task.id === 'a30278bb-26c5-43a5-b86d-68fe2b740689') {
-    console.log(
-      '[DEBUG useTaskRowState] formattedDates.completed:',
-      formattedDates.completed,
-      'task.completedAt:',
-      task.completedAt
-    );
-  }
-
   // Memoize date values for DatePicker
   // Use startOf('day') to ensure we're working with the date only, no time component
   const dateValues = useMemo(

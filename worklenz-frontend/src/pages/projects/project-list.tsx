@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ProjectViewType, ProjectGroupBy } from '@/types/project/project.types';
 import { setViewMode, setGroupBy } from '@features/project/project-view-slice';
-import debounce from 'lodash/debounce';
+import debounce from 'lodash-es/debounce';
 import {
   Button,
   Card,
@@ -17,7 +17,7 @@ import {
   TablePaginationConfig,
   Tooltip,
 } from '@/shared/antd-imports';
-import { PageHeader } from '@ant-design/pro-components';
+import WorklenzPageHeader from '@/components/common/WorklenzPageHeader';
 import {
   SearchOutlined,
   SyncOutlined,
@@ -817,7 +817,7 @@ const ProjectList: React.FC = () => {
 
   return (
     <div style={{ minHeight: '90vh' }}>
-      <PageHeader
+      <WorklenzPageHeader
         className="site-page-header"
         title={`${projectCount} ${t('projects', { defaultValue: 'Projects' })}`}
         style={{ padding: '16px 0' }}
@@ -826,7 +826,11 @@ const ProjectList: React.FC = () => {
             <Tooltip title={t('refreshProjects', { defaultValue: 'Refresh projects' })}>
               <Button
                 shape="circle"
-                icon={<SyncOutlined spin={isFetchingProjects} />}
+                icon={
+                  <SyncOutlined
+                    spin={isFetchingProjects || groupedProjects.loading}
+                  />
+                }
                 onClick={handleRefresh}
                 aria-label="Refresh projects"
               />

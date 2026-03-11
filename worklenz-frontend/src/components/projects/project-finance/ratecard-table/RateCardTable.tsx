@@ -227,12 +227,14 @@ const RateCardTable: React.FC = () => {
   // Separate function for updating rate if changed
   const handleRateBlur = (value: string, index: number) => {
     const isManDays = calculationMethod === 'man_days';
-    // Compare with Redux value, not local state
+    // Compare with Redux value, convert both to numbers for proper comparison
     const reduxRole = rolesRedux[index];
     const reduxValue = isManDays
-      ? String(reduxRole?.man_day_rate ?? 0)
-      : String(reduxRole?.rate ?? 0);
-    if (value !== reduxValue) {
+      ? Number(reduxRole?.man_day_rate ?? 0)
+      : Number(reduxRole?.rate ?? 0);
+    const inputValue = Number(value) || 0;
+    
+    if (inputValue !== reduxValue) {
       const payload = {
         id: roles[index].id!,
         body: {
@@ -241,10 +243,10 @@ const RateCardTable: React.FC = () => {
           ...(isManDays
             ? {
                 rate: String(reduxRole?.rate ?? 0), // Keep existing rate value
-                man_day_rate: String(value), // Update man_day_rate with new value
+                man_day_rate: String(inputValue), // Update man_day_rate with new value
               }
             : {
-                rate: String(value), // Update rate with new value
+                rate: String(inputValue), // Update rate with new value
                 man_day_rate: String(reduxRole?.man_day_rate ?? 0), // Keep existing man_day_rate value
               }),
         },

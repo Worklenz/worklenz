@@ -14,6 +14,7 @@ import {
 interface HandleNewTaskReceivedOptions {
   dispatch: Dispatch;
   currentGroupingV3: string | null;
+  enhancedKanbanGroupBy?: string | null; // Add kanban grouping
   trackEvent?: (eventName: string, properties: any) => void;
   subtaskEventName?: string;
   taskEventName?: string;
@@ -22,12 +23,13 @@ interface HandleNewTaskReceivedOptions {
 /**
  * Shared handler for processing new task data received from API or Socket.IO
  * Handles both subtask and regular task creation
+ * Updates both task-management slice (task list) and enhanced kanban slice independently
  */
 export const handleNewTaskReceived = (
   response: any,
   options: HandleNewTaskReceivedOptions
 ) => {
-  const { dispatch, currentGroupingV3, trackEvent, subtaskEventName, taskEventName } = options;
+  const { dispatch, currentGroupingV3, enhancedKanbanGroupBy, trackEvent, subtaskEventName, taskEventName } = options;
 
   // Handle array format response [index, taskData]
   const data = Array.isArray(response) ? response[1] : response;
@@ -97,6 +99,7 @@ export const handleNewTaskReceived = (
       attachments_count: data.attachments_count || 0,
       has_subscribers: data.has_subscribers || false,
       has_dependencies: data.has_dependencies || false,
+      reporter: data.reporter || '',
     };
 
     // Before adding the real subtask, remove any temporary subtasks with the same name
@@ -190,28 +193,68 @@ export const handleNewTaskReceived = (
       attachments_count: data.attachments_count || 0,
       has_subscribers: data.has_subscribers || false,
       has_dependencies: data.has_dependencies || false,
+      reporter: data.reporter || '',
     };
 
-    // Extract the group UUID from the backend response based on current grouping
-    let groupId: string | undefined;
+    // Helper function to determine group ID based on grouping type
+    const getGroupIdForGrouping = (groupingType: string | null) => {
+      const grouping = groupingType || 'status';
+      let groupId: string | undefined;
 
-    // Select the correct UUID based on current grouping
-    // If currentGroupingV3 is null, default to 'status' since that's the most common grouping
-    const grouping = currentGroupingV3 || 'status';
+      if (grouping === 'status') {
+        groupId = data.status;
+      } else if (grouping === 'priority') {
+        groupId = data.priority_id || data.priority || 'Unmapped';
+        
+        if (!groupId || groupId === 'Unmapped') {
+          const state = store.getState();
+          const priorityList = state.priorityReducer?.priorities || [];
+          const priorityValue = data.priority_value;
+          
+          if (priorityValue !== undefined && priorityValue !== null) {
+            const matchedPriority = priorityList.find((p: any) => p.value === priorityValue);
+            if (matchedPriority) {
+              groupId = matchedPriority.id;
+            }
+          }
+        }
+      } else if (grouping === 'phase') {
+        groupId = data.phase_id;
+        
+        if (!groupId || groupId === 'Unmapped') {
+          const state = store.getState();
+          const phaseList = state.phaseReducer?.phaseList || [];
+          const phaseName = data.phase_name;
+          
+          if (phaseName) {
+            const matchedPhase = phaseList.find((p: any) => p.name === phaseName);
+            if (matchedPhase) {
+              groupId = matchedPhase.id;
+            } else {
+              groupId = 'Unmapped';
+            }
+          } else {
+            groupId = 'Unmapped';
+          }
+        }
+      }
+      
+      return groupId || '';
+    };
 
-    if (grouping === 'status') {
-      // For status grouping, use status field (which contains the status UUID)
-      groupId = data.status;
-    } else if (grouping === 'priority') {
-      // For priority grouping, use priority_id field (which contains the priority UUID)
-      groupId = data.priority_id || data.priority || 'Unmapped';
-    } else if (grouping === 'phase') {
-      // For phase grouping, use phase_id, or 'Unmapped' if no phase_id
-      groupId = data.phase_id || 'Unmapped';
-    }
+    // Update task-management slice (for task list) with its own grouping
+    const taskListGroupId = getGroupIdForGrouping(currentGroupingV3);
+    dispatch(addTaskToGroup({ task, groupId: taskListGroupId }));
 
-    // Use addTaskToGroup with the actual group UUID
-    dispatch(addTaskToGroup({ task, groupId: groupId || '' }));
+
+    // Update enhanced kanban slice with its own grouping (if provided)
+    const kanbanGroupId = getGroupIdForGrouping(enhancedKanbanGroupBy || currentGroupingV3);
+    dispatch(
+      addEnhancedKanbanTaskToGroup({
+        sectionId: kanbanGroupId,
+        task: data,
+      })
+    );
 
     // Track regular task creation event if tracking is enabled
     if (trackEvent && taskEventName) {
@@ -220,13 +263,5 @@ export const handleNewTaskReceived = (
         project_id: data.project_id,
       });
     }
-
-    // Also update enhanced kanban slice for regular task creation
-    dispatch(
-      addEnhancedKanbanTaskToGroup({
-        sectionId: groupId || '',
-        task: data,
-      })
-    );
   }
 };

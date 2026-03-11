@@ -10,7 +10,7 @@ import {
   LogoutOutlined,
   MoonOutlined,
   SunOutlined,
-  TranslationOutlined,
+  TranslationOutlined
 } from '@/shared/antd-imports';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';

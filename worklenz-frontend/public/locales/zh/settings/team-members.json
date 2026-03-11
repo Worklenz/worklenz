@@ -86,5 +86,10 @@
   "projectInvite_emailHelp": "Type email and press Enter",
   "projectInvite_inviteButton": "Invite",
   "projectInvite_teamRoleLabel": "Team role",
-  "projectInvite_teamRoleTooltip": "Team role determines team-wide permissions. Project access level defaults to Member and can be changed later."
+  "projectInvite_teamRoleTooltip": "Team role determines team-wide permissions. Project access level defaults to Member and can be changed later.",
+  "managerLabel": "经理",
+  "managerTooltip": "分配团队负责人来管理此成员。只有成员可以被分配给经理。",
+  "selectManagerPlaceholder": "选择团队负责人作为经理",
+  "manager_removed_successfully": "经理分配已成功移除",
+  "updateError": "更新团队成员失败。请重试。"
 }

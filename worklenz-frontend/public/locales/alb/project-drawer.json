@@ -46,5 +46,14 @@
   "manualProgressTooltip": "Lejo përditësimet manuale të progresit për detyrat pa nëndetyra",
   "weightedProgress": "Progresi i Ponderuar",
   "weightedProgressTooltip": "Llogarit progresin bazuar në peshat e nëndetyrave",
-  "timeProgress": "Progresi i Bazuar në Kohë"
+  "timeProgress": "Progresi i Bazuar në Kohë",
+  "timeProgressTooltip": "Llogarit progresin bazuar në kohën e vlerësuar",
+  "autoAssignTaskCreator": "Cakto Detyrat te Krijuesi",
+  "autoAssignTaskCreatorTooltip": "Cakto automatikisht detyrat e reja te anëtari i ekipit që i krijon ato",
+  "generalTab": "Të Përgjithshme",
+  "advancedSettingsTab": "Cilësimet e Avancuara",
+  "progressSettingsDescription": "Konfiguro se si llogaritet progresi i detyrave për këtë projekt. Vetëm një metodë mund të jetë aktive në të njëjtën kohë.",
+  "taskSettings": "Cilësimet e Detyrave",
+  "taskSettingsDescription": "Konfiguro sjelljen e paracaktuar për detyrat e krijuara në këtë projekt.",
+  "enterProjectKey": "Vendosni çelësin e projektit"
 }

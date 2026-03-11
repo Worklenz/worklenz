@@ -632,4 +632,63 @@ export default class ClientPortalRequestsController extends ClientPortalControll
     }
   }
 
+  static async getRequestStatusHistory(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const { id } = req.params;
+      const { clientId } = req;
+      const { organizationId } = req;
+
+      const requestCheck = await db.query(
+        "SELECT id FROM client_portal_requests WHERE id = $1 AND client_id = $2 AND organization_team_id = $3",
+        [id, clientId, organizationId]
+      );
+
+      if (requestCheck.rows.length === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Request not found"));
+      }
+
+      const query = `
+        SELECT
+          h.id,
+          h.previous_status,
+          h.new_status,
+          h.notes,
+          h.changed_at,
+          u.name as changed_by_name,
+          cu.name as changed_by_client_name
+        FROM client_portal_request_status_history h
+        LEFT JOIN users u ON h.changed_by = u.id
+        LEFT JOIN client_users cu ON h.changed_by_client = cu.id
+        WHERE h.request_id = $1
+        ORDER BY h.changed_at ASC
+      `;
+
+      const result = await db.query(query, [id]);
+
+      return res.json(
+        new ServerResponse(
+          true,
+          result.rows,
+          "Request status history retrieved successfully"
+        )
+      );
+    } catch (error) {
+      console.error("Error fetching request status history:", error);
+      return res
+        .status(500)
+        .json(
+          new ServerResponse(
+            false,
+            null,
+            "Failed to retrieve request status history"
+          )
+        );
+    }
+  }
+
 }

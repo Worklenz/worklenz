@@ -46,6 +46,7 @@ class FileConstants {
     FileConstants.getEmailTemplate(IEmailTemplateType.Welcome);
     FileConstants.getEmailTemplate(IEmailTemplateType.OTPVerification);
     FileConstants.getEmailTemplate(IEmailTemplateType.ResetPassword);
+    FileConstants.getEmailTemplate(IEmailTemplateType.ResetPasswordClientPortal);
     FileConstants.getEmailTemplate(IEmailTemplateType.TaskAssigneeChange);
     FileConstants.getEmailTemplate(IEmailTemplateType.DailyDigest);
     FileConstants.getEmailTemplate(IEmailTemplateType.TaskDone);
@@ -70,6 +71,8 @@ class FileConstants {
         return FileConstants.readHtmlEmailTemplate("otp-verfication-code");
       case IEmailTemplateType.ResetPassword:
         return FileConstants.readHtmlEmailTemplate("reset-password");
+      case IEmailTemplateType.ResetPasswordClientPortal:
+        return FileConstants.readHtmlEmailTemplate("reset-password-client-portal");
       case IEmailTemplateType.TaskAssigneeChange:
         return FileConstants.readPugEmailTemplate("task-assignee-change");
       case IEmailTemplateType.DailyDigest:

@@ -1,8 +1,9 @@
-import { Button, Flex, Input, Typography, Spin, Tooltip } from '@/shared/antd-imports';
+import { Button, Flex, Input, Typography, Spin, Tooltip, message as antMessage } from '@/shared/antd-imports';
 import React, { useEffect, useRef, useState } from 'react';
 import SendChatItem from './send-chat-item';
 import RecivedChatItem from './recived-chat-item';
-import { SendOutlined, PaperClipOutlined, SmileOutlined, ReloadOutlined } from '@ant-design/icons';
+import { SendOutlined, PaperClipOutlined, ReloadOutlined } from '@ant-design/icons';
+import EmojiPicker from '@components/project-updates/EmojiPicker';
 import { useTranslation } from 'react-i18next';
 import { TempChatsType } from './chat-box-wrapper';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -13,6 +14,7 @@ import CustomAvatar from '@components/CustomAvatar';
 import {
   useGetOrganizationMessagesQuery,
   useSendOrganizationMessageMutation,
+  useUploadOrganizationChatFileMutation,
 } from '../../../../../api/client-portal/client-portal-api';
 
 type ChatBoxProps = {
@@ -21,8 +23,10 @@ type ChatBoxProps = {
 
 const ChatBox = ({ openedChat }: ChatBoxProps) => {
   const [message, setMessage] = useState<string>('');
+  const [pendingFile, setPendingFile] = useState<{ name: string; data: string; type: string } | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const { t } = useTranslation('client-portal-chats');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -56,6 +60,7 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
     }
   );
   const [sendMessageMutation, { isLoading: isSending }] = useSendOrganizationMessageMutation();
+  const [uploadFile, { isLoading: isUploading }] = useUploadOrganizationChatFileMutation();
 
   // Extract messages from response
   const messages = React.useMemo(() => {
@@ -92,6 +97,8 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
           content: msg.message || msg.content || '',
           time: new Date(msg.created_at || Date.now()),
           is_me: msg.senderType === 'team_member' || (currentUserId && msg.senderId === currentUserId),
+          file_url: msg.file_url || null,
+          file_name: msg.file_name || null,
         }));
       }
       return Array.isArray(openedChat.chats_data) ? openedChat.chats_data : [];
@@ -101,25 +108,55 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
     }
   }, [messages, openedChat.chats_data]);
 
-  const handleSendMessage = async () => {
-    if (message.trim() && clientId) {
-      try {
-        await sendMessageMutation({
-          chatId: openedChat.id,
-          clientId: clientId,
-          messageData: {
-            content: message.trim(),
-            attachments: [],
-          },
-        }).unwrap();
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-        setMessage('');
-        // The mutation's invalidatesTags will automatically trigger a refetch of the messages query
-      } catch (err) {
-        console.error('Error sending message:', err);
-        dispatch(sendMessage({ chatId: openedChat.id, message }));
-        setMessage('');
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      // Strip base64 header (e.g. "data:image/png;base64,")
+      const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+      setPendingFile({ name: file.name, data: base64, type: file.type });
+    };
+    reader.readAsDataURL(file);
+    // Reset so the same file can be selected again
+    e.target.value = '';
+  };
+
+  const handleSendMessage = async () => {
+    if ((!message.trim() && !pendingFile) || !clientId) return;
+    try {
+      let fileUrl: string | undefined;
+      let fileName: string | undefined;
+
+      if (pendingFile) {
+        const uploadResult = await uploadFile({
+          fileData: pendingFile.data,
+          fileName: pendingFile.name,
+          fileType: pendingFile.type,
+          clientId: clientId || undefined,
+        }).unwrap();
+        fileUrl = uploadResult.url;
+        fileName = uploadResult.fileName;
+        setPendingFile(null);
       }
+
+      await sendMessageMutation({
+        chatId: openedChat.id,
+        clientId: clientId,
+        messageData: {
+          content: message.trim() || (fileName ? `Shared file: ${fileName}` : ''),
+          attachments: fileUrl ? [{ url: fileUrl, name: fileName }] : [],
+        },
+      }).unwrap();
+
+      setMessage('');
+    } catch (err) {
+      console.error('Error sending message:', err);
+      antMessage.error(t('errorSendingMessage') || 'Failed to send message');
+      dispatch(sendMessage({ chatId: openedChat.id, message }));
+      setMessage('');
     }
   };
 
@@ -228,60 +265,91 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
 
       {/* Message Input Area */}
       <Flex
-        align="center"
-        gap={12}
+        vertical
         style={{
-          padding: '12px 20px',
           borderTop: `1px solid ${themeWiseColor('#f0f0f0', '#303030', themeMode)}`,
           backgroundColor: themeWiseColor('#fff', '#141414', themeMode),
         }}
       >
-        <Tooltip title={t('attachFile')}>
-          <Button
-            type="text"
-            icon={<PaperClipOutlined style={{ fontSize: 18 }} />}
-            style={{ color: themeWiseColor('#8c8c8c', '#8c8c8c', themeMode) }}
+        {pendingFile && (
+          <Flex
+            align="center"
+            gap={8}
+            style={{
+              padding: '6px 20px',
+              backgroundColor: themeWiseColor('#f5f5f5', '#1f1f1f', themeMode),
+              fontSize: 12,
+            }}
+          >
+            <PaperClipOutlined />
+            <Typography.Text style={{ fontSize: 12, flex: 1 }} ellipsis>
+              {pendingFile.name}
+            </Typography.Text>
+            <Button
+              type="text"
+              size="small"
+              onClick={() => setPendingFile(null)}
+              style={{ fontSize: 11, height: 20, padding: '0 4px' }}
+            >
+              ✕
+            </Button>
+          </Flex>
+        )}
+        <Flex
+          align="center"
+          gap={12}
+          style={{ padding: '12px 20px' }}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            style={{ display: 'none' }}
+            onChange={handleFileSelect}
+            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
           />
-        </Tooltip>
+          <Tooltip title={t('attachFile')}>
+            <Button
+              type="text"
+              icon={<PaperClipOutlined style={{ fontSize: 18 }} />}
+              style={{ color: themeWiseColor('#8c8c8c', '#8c8c8c', themeMode) }}
+              onClick={() => fileInputRef.current?.click()}
+              loading={isUploading}
+            />
+          </Tooltip>
 
-        <Input.TextArea
-          ref={inputRef}
-          placeholder={t('chatInputPlaceholder')}
-          value={message}
-          onChange={e => setMessage(e.target.value)}
-          onKeyDown={handleKeyPress}
-          disabled={isSending}
-          autoSize={{ minRows: 1, maxRows: 4 }}
-          style={{
-            flex: 1,
-            borderRadius: 20,
-            padding: '8px 16px',
-            resize: 'none',
-            backgroundColor: themeWiseColor('#f5f5f5', '#262626', themeMode),
-            border: 'none',
-          }}
-        />
-
-        <Tooltip title={t('emojiPicker')}>
-          <Button
-            type="text"
-            icon={<SmileOutlined style={{ fontSize: 18 }} />}
-            style={{ color: themeWiseColor('#8c8c8c', '#8c8c8c', themeMode) }}
+          <Input.TextArea
+            ref={inputRef}
+            placeholder={t('chatInputPlaceholder')}
+            value={message}
+            onChange={e => setMessage(e.target.value)}
+            onKeyDown={handleKeyPress}
+            disabled={isSending || isUploading}
+            autoSize={{ minRows: 1, maxRows: 4 }}
+            style={{
+              flex: 1,
+              borderRadius: 20,
+              padding: '8px 16px',
+              resize: 'none',
+              backgroundColor: themeWiseColor('#f5f5f5', '#262626', themeMode),
+              border: 'none',
+            }}
           />
-        </Tooltip>
 
-        <Button
-          type="primary"
-          shape="circle"
-          icon={<SendOutlined />}
-          onClick={handleSendMessage}
-          loading={isSending}
-          disabled={!message.trim()}
-          style={{
-            width: 40,
-            height: 40,
-          }}
-        />
+          <EmojiPicker onSelect={(emoji) => setMessage(prev => prev + emoji)} />
+
+          <Button
+            type="primary"
+            shape="circle"
+            icon={<SendOutlined />}
+            onClick={handleSendMessage}
+            loading={isSending || isUploading}
+            disabled={!message.trim() && !pendingFile}
+            style={{
+              width: 40,
+              height: 40,
+            }}
+          />
+        </Flex>
       </Flex>
     </Flex>
   );

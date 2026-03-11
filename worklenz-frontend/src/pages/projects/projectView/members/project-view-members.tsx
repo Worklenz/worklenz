@@ -40,6 +40,7 @@ import EmptyListPlaceholder from '../../../../components/EmptyListPlaceholder';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { evt_project_members_visit } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { getRoleColor } from '@/types/roles/role.types';
 
 interface PaginationType {
   current: number;
@@ -241,7 +242,9 @@ const ProjectViewMembers = () => {
             ? 'descend'
             : null,
       render: (_, record: IProjectMemberViewModel) => (
-        <Typography.Text style={{ textTransform: 'capitalize' }}>{record.access}</Typography.Text>
+        <Typography.Text style={{ textTransform: 'capitalize', color: getRoleColor(record.access || '') }}>
+          {record.access}
+        </Typography.Text>
       ),
     },
     {
