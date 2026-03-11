@@ -660,8 +660,30 @@ const taskManagementSlice = createSlice({
         }
       }
     },
-    deleteTask: (state, action: PayloadAction<string>) => {
-      const taskId = action.payload;
+    deleteTask: (state, action: PayloadAction<string | { taskId: string; parentTaskId?: string }>) => {
+      // Handle both string and object payload
+      const taskId = typeof action.payload === 'string' ? action.payload : action.payload.taskId;
+      const parentTaskId = typeof action.payload === 'object' ? action.payload.parentTaskId : undefined;
+      
+      const task = state.entities[taskId];
+      
+      // Determine the parent task ID (from payload or from task entity)
+      const actualParentTaskId = parentTaskId || task?.parent_task_id;
+      
+      // If this is a subtask, update the parent task
+      if (actualParentTaskId) {
+        const parent = state.entities[actualParentTaskId];
+        if (parent) {
+          // Remove from parent's sub_tasks array
+          if (parent.sub_tasks) {
+            parent.sub_tasks = parent.sub_tasks.filter(subtask => subtask.id !== taskId);
+          }
+          // Decrement parent's sub_tasks_count
+          parent.sub_tasks_count = Math.max((parent.sub_tasks_count || 0) - 1, 0);
+        }
+      }
+      
+      // Delete the task from entities
       delete state.entities[taskId];
       state.ids = state.ids.filter(id => id !== taskId);
       state.groups = state.groups.map(group => ({
