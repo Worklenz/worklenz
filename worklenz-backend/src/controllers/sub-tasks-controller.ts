@@ -52,6 +52,7 @@ export default class SubTasksController extends WorklenzControllerBase {
                               INNER JOIN sys_task_status_categories stsc ON task_statuses.category_id = stsc.id
                       WHERE project_id = t.project_id
                       ORDER BY task_statuses.name) rec) AS statuses,
+              (SELECT name FROM users WHERE id = t.reporter_id) AS reporter,
               t.completed_at
         FROM tasks t
                 INNER JOIN task_statuses ts ON ts.id = t.status_id
@@ -96,6 +97,7 @@ export default class SubTasksController extends WorklenzControllerBase {
               (SELECT color_code
                 FROM sys_task_status_categories
                 WHERE id = (SELECT category_id FROM task_statuses WHERE id = tasks.status_id)) AS status_color,
+              (SELECT name FROM users WHERE id = tasks.reporter_id) AS reporter,
               (SELECT get_task_assignees(tasks.id)) AS assignees
         FROM tasks
                 INNER JOIN task_statuses ts ON ts.task_id = tasks.id
