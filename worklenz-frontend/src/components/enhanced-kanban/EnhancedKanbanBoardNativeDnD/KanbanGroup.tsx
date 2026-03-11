@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useState, useRef, useEffect } from 'react';
+import React, { memo, useMemo, useState, useRef } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import TaskCard from './TaskCard';
@@ -24,14 +24,16 @@ import {
   fetchEnhancedKanbanGroups,
   IGroupBy,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
-import { createPortal } from 'react-dom';
-import { Modal } from '@/shared/antd-imports';
+import { Modal, Dropdown, Badge } from '@/shared/antd-imports';
+// @ts-ignore: Heroicons module types
+import {
+  EllipsisHorizontalIcon,
+  PencilIcon,
+  ArrowPathIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline';
 
-// Simple Portal component
-const Portal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const portalRoot = document.getElementById('portal-root') || document.body;
-  return createPortal(children, portalRoot);
-};
+// Simple Portal component - removed as it's no longer used
 
 interface KanbanGroupProps {
   group: ITaskListGroup;
@@ -59,18 +61,13 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
     hoveredTaskIdx,
     hoveredGroupId,
   }) => {
-    const [isHover, setIsHover] = useState<boolean>(false);
     const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
     const [isEditable, setIsEditable] = useState(false);
     const isProjectManager = useIsProjectManager();
-    const [isLoading, setIsLoading] = useState(false);
     const [name, setName] = useState(group.name);
     const inputRef = useRef<HTMLInputElement>(null);
-    const [editName, setEdit] = useState(group.name);
-    const [isEllipsisActive, setIsEllipsisActive] = useState(false);
-    const [showDropdown, setShowDropdown] = useState(false);
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
+    const [dropdownVisible, setDropdownVisible] = useState(false);
+    const [isChangingCategory, setIsChangingCategory] = useState(false);
     const themeMode = useAppSelector(state => state.themeReducer.mode);
     const dispatch = useAppDispatch();
     const { projectId } = useAppSelector(state => state.projectReducer);
@@ -88,29 +85,8 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
       return group.color_code || '#f5f5f5';
     }, [themeMode, group.color_code, group.color_code_dark]);
 
-    const getUniqueSectionName = (baseName: string): string => {
-      // Check if the base name already exists
-      const existingNames = status.map(status => status.name?.toLowerCase());
-
-      if (!existingNames.includes(baseName.toLowerCase())) {
-        return baseName;
-      }
-
-      // If the base name exists, add a number suffix
-      let counter = 1;
-      let newName = `${baseName.trim()} (${counter})`;
-
-      while (existingNames.includes(newName.toLowerCase())) {
-        counter++;
-        newName = `${baseName.trim()} (${counter})`;
-      }
-
-      return newName;
-    };
-
     const updateStatus = async (category = group.category_id ?? null) => {
       if (!category || !projectId || !group.id) return;
-      // const sectionName = getUniqueSectionName(name);
       const body: ITaskStatusUpdateModel = {
         name: name.trim(),
         project_id: projectId,
@@ -122,7 +98,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
         dispatch(fetchStatuses(projectId));
         setName(name.trim());
       } else {
-        setName(editName);
+        setName(group.name);
         logger.error('Error updating status', res.message);
       }
     };
@@ -134,7 +110,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
 
     const handleBlur = async () => {
       setIsEditable(false);
-      if (name === editName) return;
+      if (name === group.name) return;
       if (name === t('untitledSection')) {
         dispatch(fetchEnhancedKanbanGroups(projectId ?? ''));
       }
@@ -205,7 +181,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
 
     const handleRename = () => {
       setIsEditable(true);
-      setShowDropdown(false);
+      setDropdownVisible(false);
       setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
@@ -214,9 +190,21 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
       }, 100);
     };
 
-    const handleCategoryChange = (categoryId: string) => {
-      updateStatus(categoryId);
-      setShowDropdown(false);
+    const handleCategoryChange = async (categoryId: string) => {
+      if (!projectId || !group.id || isChangingCategory) return;
+
+      setIsChangingCategory(true);
+      setDropdownVisible(false);
+      try {
+        await statusApiService.updateStatusCategory(group.id, categoryId, projectId);
+        trackMixpanelEvent(evt_project_board_column_setting_click, { 'Change category': 'Status' });
+        dispatch(fetchEnhancedKanbanGroups(projectId));
+        dispatch(fetchStatuses(projectId));
+      } catch (error) {
+        logger.error('Error changing category', error);
+      } finally {
+        setIsChangingCategory(false);
+      }
     };
 
     const handleDelete = () => {
@@ -256,25 +244,106 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
           },
         });
       }
-      setShowDropdown(false);
+      setDropdownVisible(false);
     };
 
-    // Close dropdown when clicking outside
-    useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-          setShowDropdown(false);
-        }
-      };
+    // Check if this is the Unmapped phase (should not be editable)
+    const isUnmappedPhase = useMemo(() => {
+      return groupBy === IGroupBy.PHASE && (group.id === 'Unmapped' || group.name === t('unmapped'));
+    }, [groupBy, group.id, group.name, t]);
 
-      if (showDropdown) {
-        document.addEventListener('mousedown', handleClickOutside);
+    // Create dropdown menu items
+    const menuItems = useMemo(() => {
+      if (!isOwnerOrAdmin && !isProjectManager) return [];
+
+      // Don't show menu for Unmapped phase or priority grouping
+      if (isUnmappedPhase || groupBy === IGroupBy.PRIORITY) return [];
+
+      const items = [
+        {
+          key: 'rename',
+          icon: <PencilIcon className="h-4 w-4" />,
+          label:
+            groupBy === IGroupBy.STATUS
+              ? t('renameStatus')
+              : groupBy === IGroupBy.PHASE
+                ? t('renamePhase')
+                : t('rename'),
+          onClick: (e: any) => {
+            e?.domEvent?.stopPropagation();
+            handleRename();
+          },
+        },
+      ];
+
+      // Only show "Change Category" when grouped by status
+      if (groupBy === IGroupBy.STATUS && statusCategories) {
+        const categorySubMenuItems = statusCategories.map(category => ({
+          key: `category-${category.id}`,
+          label: (
+            <div className="flex items-center gap-2">
+              <Badge color={category.color_code} />
+              <span>{category.name}</span>
+            </div>
+          ),
+          onClick: (info: any) => {
+            info?.domEvent?.stopPropagation();
+            handleCategoryChange(category.id || '');
+          },
+        }));
+
+        items.push({
+          key: 'changeCategory',
+          icon: <ArrowPathIcon className="h-4 w-4" />,
+          label: t('changeCategory'),
+          children: categorySubMenuItems,
+          onTitleClick: (info: any) => {
+            info?.domEvent?.stopPropagation();
+          },
+        } as any);
       }
 
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }, [showDropdown]);
+      // Add delete option
+      items.push({
+        key: 'delete',
+        icon: <TrashIcon className="h-4 w-4" />,
+        label: t('delete'),
+        onClick: (e: any) => {
+          e?.domEvent?.stopPropagation();
+          handleDelete();
+        },
+        danger: true,
+      } as any);
+
+      return items;
+    }, [
+      groupBy,
+      handleRename,
+      handleCategoryChange,
+      handleDelete,
+      isOwnerOrAdmin,
+      isProjectManager,
+      isUnmappedPhase,
+      statusCategories,
+      t,
+    ]);
+
+    // Close dropdown when clicking outside - remove this since we're using Ant Design Dropdown
+    // useEffect(() => {
+    //   const handleClickOutside = (event: MouseEvent) => {
+    //     if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+    //       setShowDropdown(false);
+    //     }
+    //   };
+
+    //   if (showDropdown) {
+    //     document.addEventListener('mousedown', handleClickOutside);
+    //   }
+
+    //   return () => {
+    //     document.removeEventListener('mousedown', handleClickOutside);
+    //   };
+    // }, [showDropdown]);
 
     return (
       <div className="enhanced-kanban-group" style={{ position: 'relative' }}>
@@ -316,8 +385,6 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
           >
             <div
               className="flex items-center justify-between w-full font-semibold rounded-md"
-              onMouseEnter={() => setIsHover(true)}
-              onMouseLeave={() => setIsHover(false)}
             >
               <div
                 className="flex items-center gap-2 cursor-pointer"
@@ -330,9 +397,6 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                   e.stopPropagation();
                 }}
               >
-                {isLoading && (
-                  <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
-                )}
                 {isEditable ? (
                   <input
                     ref={inputRef}
@@ -353,7 +417,6 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                   <div
                     className={`min-w-[185px] text-sm font-semibold capitalize truncate ${themeMode === 'dark' ? 'text-gray-800' : 'text-gray-900'
                       }`}
-                    title={isEllipsisActive ? name : undefined}
                     onMouseDown={e => {
                       e.stopPropagation();
                       e.preventDefault();
@@ -394,109 +457,26 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                   </svg>
                 </button>
 
-                {(isOwnerOrAdmin || isProjectManager) && name !== t('unmapped') && groupBy !== IGroupBy.PRIORITY && (
-                  <div className="relative" ref={dropdownRef}>
+                {(isOwnerOrAdmin || isProjectManager) && menuItems.length > 0 && (
+                  <Dropdown
+                    menu={{ items: menuItems }}
+                    trigger={['click']}
+                    open={dropdownVisible}
+                    onOpenChange={setDropdownVisible}
+                    placement="bottomRight"
+                    overlayStyle={{ zIndex: 1000 }}
+                  >
                     <button
                       type="button"
                       className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
-                      onClick={() => setShowDropdown(!showDropdown)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDropdownVisible(!dropdownVisible);
+                      }}
                     >
-                      <svg
-                        className="w-4 h-4 text-gray-800 rotate-90"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                        />
-                      </svg>
+                      <EllipsisHorizontalIcon className="w-4 h-4 text-gray-800" />
                     </button>
-
-                    {showDropdown && (
-                      <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-                        <div className="py-1">
-                          <button
-                            type="button"
-                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                            onClick={handleRename}
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                              />
-                            </svg>
-                            {t('rename')}
-                          </button>
-
-                          {groupBy === IGroupBy.STATUS && statusCategories && (
-                            <div className="border-t border-gray-200 dark:border-gray-700">
-                              <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                {t('changeCategory')}
-                              </div>
-                              {statusCategories.map(status => (
-                                <button
-                                  key={status.id}
-                                  type="button"
-                                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                                  onClick={() => status.id && handleCategoryChange(status.id)}
-                                >
-                                  <div
-                                    className="w-3 h-3 rounded-full"
-                                    style={{ backgroundColor: status.color_code }}
-                                  ></div>
-                                  <span
-                                    className={group.category_id === status.id ? 'font-bold' : ''}
-                                  >
-                                    {status.name}
-                                  </span>
-                                </button>
-                              ))}
-                            </div>
-                          )}
-
-
-                          <div className="border-t border-gray-200 dark:border-gray-700">
-                            <button
-                              type="button"
-                              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-red-600 dark:text-red-400"
-                              onClick={e => {
-                                e.stopPropagation();
-                                handleDelete();
-                              }}
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                />
-                              </svg>
-                              {t('delete')}
-                            </button>
-                          </div>
-
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  </Dropdown>
                 )}
               </div>
             </div>
