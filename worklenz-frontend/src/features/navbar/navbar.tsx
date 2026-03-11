@@ -63,7 +63,6 @@ const Navbar = () => {
         if (authorizeResponse.authenticated) {
           authService.setCurrentSession(authorizeResponse.user);
           setIdentity(authorizeResponse.user);
-          // Remove setIsOwnerOrAdmin since it's now computed
         }
       })
       .catch(error => {
@@ -79,8 +78,32 @@ const Navbar = () => {
   }, [currentSession, organization, isOwnerOrAdmin, dispatch]);
 
   useEffect(() => {
-    const storedNavRoutesList: NavRoutesType[] = getJSONFromLocalStorage('navRoutes') || navRoutes;
-    setNavRoutesList(storedNavRoutesList);
+    // Shared loader — used by all event sources below
+    const loadNavRoutes = () => {
+      const updated: NavRoutesType[] = getJSONFromLocalStorage('navRoutes') || navRoutes;
+      setNavRoutesList(updated);
+    };
+
+    // Initial load
+    loadNavRoutes();
+
+    // Same-tab updates: fires when PinRouteToNavbarButton calls
+    // window.dispatchEvent(new Event('navRoutesUpdated'))
+    window.addEventListener('navRoutesUpdated', loadNavRoutes);
+
+    // Cross-tab / testing environment updates: the native 'storage' event fires
+    // automatically when localStorage is written from a DIFFERENT tab or context.
+    // It does NOT fire in the same tab that wrote — that's covered by the custom
+    // event above — so together these two cover every possible scenario.
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'navRoutes') loadNavRoutes();
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('navRoutesUpdated', loadNavRoutes);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -98,7 +121,6 @@ const Navbar = () => {
     const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
     const isSelfHosted = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED;
 
-    // Check if user has team lead role
     const isTeamLead = currentSession?.role_name ? isTeamLeadRole(currentSession.role_name) : false;
 
     return navRoutesList
@@ -116,9 +138,8 @@ const Navbar = () => {
 
         return {
           key: route.path.split('/').pop() || route.name,
-          disabled: false, // Don't disable the menu item so click events work
+          disabled: false,
           label: shouldDisable ? (
-            // Show all premium features with normal colors and crown icon
             <Tooltip
               title={
                 isFreePlanRoute && isFreePlan
@@ -127,12 +148,7 @@ const Navbar = () => {
               }
               placement="bottom"
             >
-              <span
-                style={{
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                }}
-              >
+              <span style={{ cursor: 'pointer', fontWeight: 600 }}>
                 {t(route.name, { defaultValue: route.name.charAt(0).toUpperCase() + route.name.slice(1) })}
                 <CrownOutlined style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }} />
               </span>
@@ -146,24 +162,20 @@ const Navbar = () => {
       });
   }, [navRoutesList, t, isOwnerOrAdmin, currentSession, tCommon, dispatch]);
 
-  // Memoize current route calculation to prevent unnecessary rerenders
   const currentRoute = useMemo(() => {
     const afterWorklenzString = location.pathname.split('/worklenz/')[1];
     const pathKey = afterWorklenzString?.split('/')[0];
     return pathKey ?? 'home';
   }, [location.pathname]);
 
-  // Only update state if the route actually changed
   useEffect(() => {
     if (currentRoute !== current) {
       setCurrent(currentRoute);
     }
   }, [currentRoute, current]);
 
-  // Move useCallback outside of JSX to prevent hooks error on resize
   const handleMenuClick = useCallback((menuInfo: { key: string }) => {
     const { key } = menuInfo;
-    // Handle clicks on disabled items to open upgrade modal
     const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
     const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
 
@@ -173,7 +185,6 @@ const Navbar = () => {
     });
 
     if (clickedRoute) {
-      // Track navigation clicks for client portal
       if (clickedRoute.name === 'client-portal') {
         trackMixpanelEvent('client_portal_nav_clicked', {
           source: 'navbar',
@@ -188,13 +199,12 @@ const Navbar = () => {
         (isBusinessRoute && !hasBusinessAccess) || (isFreePlanRoute && isFreePlan);
 
       if (shouldOpenModal) {
-        // Track paywall hit for trial expired users clicking Client Portal
         if (isLicenseExpired && clickedRoute.name === 'client-portal') {
           trackMixpanelEvent(evt_paywall_hit, {
             feature_blocked: 'client_portal',
             user_type: currentSession?.subscription_type?.toLowerCase(),
             trial_expired: true,
-            source: 'navbar'
+            source: 'navbar',
           });
         }
         dispatch(toggleUpgradeModal());
@@ -231,17 +241,11 @@ const Navbar = () => {
           justify={isDesktop ? 'space-between' : 'flex-end'}
           style={{ width: '100%' }}
         >
-          {/* navlinks menu  */}
           {isDesktop && (
             <Menu
               selectedKeys={[current]}
               mode="horizontal"
-              style={{
-                flex: 10,
-                maxWidth: 720,
-                minWidth: 0,
-                border: 'none',
-              }}
+              style={{ flex: 10, maxWidth: 720, minWidth: 0, border: 'none' }}
               items={navlinkItems}
               onClick={handleMenuClick}
             />
@@ -268,7 +272,6 @@ const Navbar = () => {
                     </Flex>
                   </Flex>
                 </Flex>
-
               )}
               {isTablet && !isDesktop && (
                 <Flex gap={12} align="center">
