@@ -28,6 +28,7 @@ import {
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { Task } from '@/types/task-management.types';
+import { safeTextDisplay } from '@/utils/html-entities';
 import { RootState } from '@/app/store';
 import {
   AvatarGroup,
@@ -423,7 +424,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
 
     // Edit task name state
     const [editTaskName, setEditTaskName] = useState(false);
-    const [taskName, setTaskName] = useState(task.title || '');
+    const [taskName, setTaskName] = useState(safeTextDisplay(task.title || ''));
     const [showAddSubtask, setShowAddSubtask] = useState(false);
     const [newSubtaskName, setNewSubtaskName] = useState('');
     const inputRef = useRef<InputRef>(null);
@@ -770,10 +771,10 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                     <div style={{ width: 20, display: 'inline-block' }} />
                     <div className="flex-1 min-w-0 flex items-center gap-2">
                       <Typography.Text
-                        ellipsis={{ tooltip: task.title }}
+                        ellipsis={{ tooltip: safeTextDisplay(task.title) }}
                         className={styleClasses.taskName}
                       >
-                        {task.title}
+                        {safeTextDisplay(task.title)}
                       </Typography.Text>
                       {(task as any).sub_tasks_count > 0 && (
                         <div
@@ -986,12 +987,12 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                       ) : (
                         <>
                           <Typography.Text
-                            ellipsis={{ tooltip: task.title }}
+                            ellipsis={{ tooltip: safeTextDisplay(task.title) }}
                             onClick={() => setEditTaskName(true)}
                             className={styleClasses.taskName}
                             style={{ cursor: 'pointer' }}
                           >
-                            {task.title}
+                            {safeTextDisplay(task.title)}
                           </Typography.Text>
                           {(task as any).sub_tasks_count > 0 && (
                             <div
