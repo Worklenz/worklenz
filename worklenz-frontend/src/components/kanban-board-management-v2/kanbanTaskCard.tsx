@@ -11,6 +11,7 @@ import {
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { IGroupBy } from '@/features/tasks/tasks.slice';
 import { useTranslation } from 'react-i18next';
+import { safeTextDisplay } from '@/utils/html-entities';
 
 const { Text } = Typography;
 
@@ -96,7 +97,7 @@ const KanbanTaskCard: React.FC<TaskRowProps> = ({
           strong
           className={`kanban-task-title${task.complete_ratio === 100 ? ' kanban-task-completed' : ''}`}
         >
-          {task.name}
+          {safeTextDisplay(task.name)}
         </Text>
         {task.sub_tasks_count && task.sub_tasks_count > 0 && (
           <Button
