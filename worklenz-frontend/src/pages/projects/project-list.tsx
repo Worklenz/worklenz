@@ -180,11 +180,11 @@ const ProjectList: React.FC = () => {
           );
         } else if (viewMode === ProjectViewType.GROUP) {
           const newGroupedParams = {
-            ...currentGroupedParams,
+            ...(currentGroupedParams || {}),
             search: searchTerm,
             index: 1,
             // Ensure groupBy is set, fallback to category if empty
-            groupBy: currentGroupedParams.groupBy || currentGroupBy || ProjectGroupBy.CATEGORY,
+            groupBy: currentGroupedParams?.groupBy || currentGroupBy || ProjectGroupBy.CATEGORY,
           };
           dispatch(setGroupedRequestParams(newGroupedParams));
           dispatch(fetchGroupedProjects(newGroupedParams));
