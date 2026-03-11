@@ -1177,6 +1177,7 @@ const taskManagementSlice = createSlice({
             attachments_count: subtask.attachments_count || 0,
             has_dependencies: subtask.has_dependencies || false,
             schedule_id: subtask.schedule_id || null,
+            reporter: subtask.reporter || undefined, // Add reporter field mapping
           }));
 
           // Update parent task with subtasks
