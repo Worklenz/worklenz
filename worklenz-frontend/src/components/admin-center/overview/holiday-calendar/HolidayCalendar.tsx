@@ -268,8 +268,6 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
 
   const handleCreateHoliday = async (values: any) => {
     // Guard: prevent saving if the selected type id is still a placeholder.
-    // This can only happen if the DB is missing the holiday_types rows AND
-    // the API call failed — extremely unlikely in production.
     if (isTempId(values.holiday_type_id)) {
       message.error(
         'Holiday types are still loading or not seeded in the database. ' +
@@ -278,11 +276,22 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
       return;
     }
 
+    // Guard: prevent duplicate date — check before even hitting the backend.
+    const selectedDate = values.date.format('YYYY-MM-DD');
+    const dateAlreadyTaken = holidays.some(h => h.date === selectedDate);
+    if (dateAlreadyTaken) {
+      message.error(
+        'A holiday already exists on this date. ' +
+        'Please choose a different date or delete the existing holiday first.'
+      );
+      return;
+    }
+
     try {
       const holidayData: ICreateHolidayRequest = {
         name: values.name,
         description: values.description,
-        date: values.date.format('YYYY-MM-DD'),
+        date: selectedDate,
         holiday_type_id: values.holiday_type_id, // guaranteed real UUID here
         is_recurring: values.is_recurring || false,
       };
@@ -294,9 +303,21 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
         form.resetFields();
         fetchHolidaysForDateRange(true);
       }
-    } catch (error) {
+    } catch (error: any) {
+      // Fallback: catch duplicate date violation from the backend in case
+      // the frontend check was bypassed (e.g. race condition).
+      if (
+        error?.response?.data?.code === '23505' ||
+        error?.message?.includes('organization_holidays_organization_date_unique')
+      ) {
+        message.error(
+          'A holiday already exists on this date. ' +
+          'Please choose a different date or delete the existing holiday first.'
+        );
+      } else {
+        message.error(t('errorCreatingHoliday'));
+      }
       logger.error('Error creating holiday', error);
-      message.error(t('errorCreatingHoliday'));
     }
   };
 
