@@ -41,6 +41,7 @@ import {
 } from '@/features/task-drawer/task-drawer.slice';
 import { updateSubtask } from '@/features/board/board-slice';
 import { updateEnhancedKanbanSubtask } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { deleteTask } from '@/features/task-management/task-management.slice';
 
 type SubTaskTableProps = {
   subTasks: ISubTask[];
@@ -134,7 +135,10 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
         );
       }
 
-      // 2. Update enhanced kanban view
+      // 2. Update task-management slice (for TaskListV2)
+      dispatch(deleteTask({ taskId, parentTaskId: selectedTaskId || undefined }));
+
+      // 3. Update enhanced kanban view
       dispatch(
         updateEnhancedKanbanSubtask({
           sectionId: '',
@@ -143,7 +147,7 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
         })
       );
 
-      // 3. Update board view
+      // 4. Update board view
       dispatch(
         updateSubtask({
           sectionId: '',
@@ -152,7 +156,7 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
         })
       );
 
-      // 4. Refresh subtasks in drawer
+      // 5. Refresh subtasks in drawer
       refreshSubTasks();
     } catch (error) {
       logger.error('Error deleting subtask:', error);
