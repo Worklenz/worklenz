@@ -7,6 +7,8 @@ import { isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { SocketEvents } from '@/shared/socket-events';
 import logger from '@/utils/errorLogger';
+import alertService from '@/services/alerts/alertService';
+import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import { Task } from '@/types/task-management.types';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import { taskListBulkActionsApiService } from '@/api/tasks/task-list-bulk-actions.api.service';
@@ -280,6 +282,19 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
       if (!projectId || !task.id || !targetId) return;
 
       try {
+        // Check dependencies BEFORE emitting the socket event
+        if (task.status !== targetId) {
+          const canContinue = await checkTaskDependencyStatus(task.id, targetId);
+          if (!canContinue) {
+            alertService.error(
+              t('errors.taskNotCompleted'),
+              t('errors.completeTaskDependencies')
+            );
+            onClose();
+            return;
+          }
+        }
+
         socket?.emit(
           SocketEvents.TASK_STATUS_CHANGE.toString(),
           JSON.stringify({
@@ -295,7 +310,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
         onClose();
       }
     },
-    [projectId, task.id, task.parent_task_id, currentSession?.team_id, socket, onClose]
+    [projectId, task.id, task.status, task.parent_task_id, currentSession?.team_id, socket, onClose, t]
   );
 
   const handlePriorityMoveTo = useCallback(

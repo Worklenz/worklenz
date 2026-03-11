@@ -5,9 +5,7 @@ import { CheckCircleOutlined, LoadingOutlined, ProjectOutlined, CloseOutlined } 
 import { projectMembersApiService } from '@/api/project-members/project-members.api.service';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { invitationRedirectService } from '@/services/invitation-redirect.service';
-import { setActiveTeam } from '@/features/teams/teamSlice';
 import { useTranslation } from 'react-i18next';
 
 const { Title, Paragraph } = Typography;
@@ -19,7 +17,6 @@ interface FormValues {
 
 const ProjectInvitePage: React.FC = () => {
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
   const { token } = useParams<{ token: string }>();
   const authService = useAuthService();
   const currentUser = authService.getCurrentSession();
@@ -84,14 +81,11 @@ const ProjectInvitePage: React.FC = () => {
         const projectId = response.body?.project_id || projectInfo?.project?.id;
         
         // Redirect to login or project after a delay
-        setTimeout(async () => {
+        setTimeout(() => {
           if (currentUser && teamId) {
-            // Switch to the invited team and reload to refresh the session
-            try {
-              await dispatch(setActiveTeam(teamId));
-            } catch (error) {
-              console.error('[ProjectInvite] Failed to set active team:', error);
-            }
+            // Force full page reload to refresh session with new active team
+            // Backend has already set the active team, so reload will pick it up
+            console.log('[ProjectInvite] Reloading to refresh session with new active team:', teamId);
             window.location.href = `/worklenz/projects/${projectId}`;
           } else if (currentUser) {
             // Fallback: reload to pick up the active team set by backend

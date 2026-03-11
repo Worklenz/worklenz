@@ -57,7 +57,7 @@ const GroupByFilterDropdown = () => {
   const selectedLabel = items.find(item => item.key === currentGroup)?.label;
 
   return (
-    <Flex align="center" gap={4} style={{ marginInlineStart: 12 }}>
+    <Flex align="center" gap={4}>
       {t('groupByText')}:
       <Dropdown
         trigger={['click']}

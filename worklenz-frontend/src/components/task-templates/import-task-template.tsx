@@ -24,7 +24,7 @@ import { setImportTaskTemplateDrawerOpen } from '@/features/project/project.slic
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { fetchTaskGroups } from '@/features/tasks/tasks.slice';
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
-
+import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 const ImportTaskTemplate = () => {
   const dispatch = useAppDispatch();
   const [form] = Form.useForm();
@@ -90,8 +90,14 @@ const ImportTaskTemplate = () => {
       setImporting(true);
       const res = await taskTemplatesApiService.importTemplate(projectId, tasks);
       if (res.done) {
-        if (tab === 'board') dispatch(fetchBoardTaskGroups(projectId));
-        if (tab === 'tasks-list') dispatch(fetchTasksV3(projectId));
+        // Refresh data based on current tab
+        if (tab === 'board') {
+          // Import enhanced kanban slice action
+          dispatch(fetchEnhancedKanbanGroups(projectId));
+        }
+        if (tab === 'tasks-list') {
+          dispatch(fetchTasksV3(projectId));
+        }
 
         dispatch(setImportTaskTemplateDrawerOpen(false));
       }

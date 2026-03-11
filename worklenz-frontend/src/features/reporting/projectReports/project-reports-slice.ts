@@ -209,7 +209,7 @@ const initialState: ProjectReportsState = {
 
   projectList: [],
   total: 0,
-  isLoading: false,
+  isLoading: true,
   error: null,
 
   // Grouped view data
@@ -376,7 +376,7 @@ const projectReportsSlice = createSlice({
       state.total = 0;
       state.groupedProjects = [];
       state.totalGroups = 0;
-      state.isLoading = false;
+      state.isLoading = true;
       state.error = null;
       state.index = 1;
       state.pageSize = 10;

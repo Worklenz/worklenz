@@ -33,7 +33,11 @@ import { IO } from "../shared/io";
 import { SocketEvents } from "../socket.io/events";
 import TasksControllerBase from "./tasks-controller-base";
 import { insertToActivityLogs } from "../services/activity-logs/activity-logs.service";
-import { IActivityLog } from "../services/activity-logs/interfaces";
+import {
+  IActivityLog,
+  IActivityLogAttributeTypes,
+  IActivityLogChangeType,
+} from "../services/activity-logs/interfaces";
 import { getKey, getRootDir, uploadBase64 } from "../shared/s3";
 import { isRestrictedFromProPlanFeatures } from "../middlewares/subscription-middleware";
 
@@ -519,20 +523,45 @@ export default class TasksController extends TasksControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
-    // Get project_id before deleting the task so we can notify other clients
-    const getProjectQuery = `SELECT project_id FROM tasks WHERE id = $1;`;
-    const projectResult = await db.query(getProjectQuery, [req.params.id]);
-    const projectId = projectResult.rows[0]?.project_id;
+    const taskId = req.params.id;
+    const userId = req.user?.id as string;
 
+    // First, get task details before deletion to log the activity
+    const taskDetailsQuery = `
+      SELECT t.id, t.project_id, p.team_id, t.name
+      FROM tasks t
+      INNER JOIN projects p ON t.project_id = p.id
+      WHERE t.id = $1;
+    `;
+    const taskDetailsResult = await db.query(taskDetailsQuery, [taskId]);
+
+    if (taskDetailsResult.rows.length === 0) {
+      return res
+        .status(404)
+        .send(new ServerResponse(false, null, "Task not found"));
+    }
+
+    const taskDetails = taskDetailsResult.rows[0];
+
+    // Log the task deletion activity
+    const activityLog: IActivityLog = {
+      task_id: taskId,
+      team_id: taskDetails.team_id,
+      project_id: taskDetails.project_id,
+      attribute_type: IActivityLogAttributeTypes.NAME,
+      user_id: userId,
+      log_type: IActivityLogChangeType.DELETE,
+      old_value: taskDetails.name,
+      new_value: null,
+    };
+
+    await insertToActivityLogs(activityLog);
+
+    // Now delete the task
     const q = `DELETE
                FROM tasks
                WHERE id = $1;`;
-    const result = await db.query(q, [req.params.id]);
-
-    // Notify other clients about the task deletion if we have a project_id
-    if (projectId && req.user?.socket_id) {
-      TasksController.notifyProjectUpdates(req.user.socket_id, projectId);
-    }
+    const result = await db.query(q, [taskId]);
 
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
@@ -722,13 +751,17 @@ export default class TasksController extends TasksControllerBase {
 
     const result: any = { deleted_tasks: deletedTasks };
 
+    // Add user_id to body for activity log tracking
+    const bodyWithUser = {
+      ...req.body,
+      user_id: req.user?.id,
+    };
+
     const q = `SELECT bulk_delete_tasks($1) AS task;`;
-    await db.query(q, [JSON.stringify(req.body)]);
-    // Don't notify the sender — the frontend already removes the task locally via dispatch(deleteTask)
+    await db.query(q, [JSON.stringify(bodyWithUser)]);
     TasksController.notifyProjectUpdates(
       req.user?.socket_id as string,
       req.query.project as string,
-      false,
     );
     return res.status(200).send(new ServerResponse(true, result));
   }

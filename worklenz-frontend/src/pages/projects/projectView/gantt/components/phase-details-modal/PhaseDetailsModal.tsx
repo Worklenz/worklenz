@@ -437,6 +437,12 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
                       setEditedValues(prev => ({ ...prev, start_date: newDate }));
                       handleFieldSave('start_date', newDate);
                     }}
+                    // ✅ FIX: Disable dates after the current end date
+                    disabledDate={current => {
+                      const endDate = localPhase.end_date;
+                      if (!endDate) return false;
+                      return current && current.isAfter(dayjs(endDate), 'day');
+                    }}
                     size="small"
                     className="w-full"
                     placeholder="Select start date"
@@ -472,6 +478,12 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
                       const newDate = date?.toDate() || null;
                       setEditedValues(prev => ({ ...prev, end_date: newDate }));
                       handleFieldSave('end_date', newDate);
+                    }}
+                    // ✅ FIX: Disable dates before the current start date
+                    disabledDate={current => {
+                      const startDate = localPhase.start_date;
+                      if (!startDate) return false;
+                      return current && current.isBefore(dayjs(startDate), 'day');
                     }}
                     size="small"
                     className="w-full"
