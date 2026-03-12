@@ -71,7 +71,9 @@ const TaskContextMenu = ({ visible, position, selectedTask, onClose }: TaskConte
     },
   ];
 
-  return visible ? (
+  if (!visible) return null;
+
+  return (
     <Dropdown menu={{ items }} trigger={['contextMenu']} open={visible} onOpenChange={onClose}>
       <div
         style={{
@@ -84,7 +86,7 @@ const TaskContextMenu = ({ visible, position, selectedTask, onClose }: TaskConte
         }}
       ></div>
     </Dropdown>
-  ) : null;
+  );
 };
 
 export default TaskContextMenu;

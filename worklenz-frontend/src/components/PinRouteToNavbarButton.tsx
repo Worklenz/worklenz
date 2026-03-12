@@ -35,6 +35,9 @@ const PinRouteToNavbarButton = ({ name, path, adminOnly = false }: PinRouteToNav
 
     setIsPinned(prev => !prev);
     saveJSONToLocalStorage('navRoutes', newNavRoutesList);
+
+    // Notify navbar to re-read localStorage immediately (fixes real-time sidebar update)
+    window.dispatchEvent(new Event('navRoutesUpdated'));
   };
 
   return (

@@ -50,12 +50,12 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
                        WHERE pt.user_id = ud.user_id AND pt.is_active = true AND pt.trial_end_date > NOW()
                        LIMIT 1) AS active_plan_trial,
                       COALESCE(
-                        (SELECT name FROM licensing_pricing_plans lpp 
-                         JOIN licensing_user_subscriptions lus2 ON lpp.id = lus2.plan_id 
-                         WHERE lus2.user_id = ud.user_id AND lus2.status IN ('active', 'trialing') 
+                        (SELECT name FROM licensing_pricing_plans lpp
+                         JOIN licensing_user_subscriptions lus2 ON lpp.id = lus2.plan_id
+                         WHERE lus2.user_id = ud.user_id AND lus2.status IN ('active', 'trialing')
                          ORDER BY CASE WHEN lus2.status = 'trialing' THEN 1 ELSE 2 END
                          LIMIT 1),
-                        (SELECT CASE 
+                        (SELECT CASE
                            WHEN tier_name = 'BUSINESS_LARGE' THEN 'business'
                            WHEN tier_name = 'ENTERPRISE' THEN 'enterprise'
                            ELSE LOWER(tier_name)
@@ -93,7 +93,19 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
         WHERE ud.user_id = (SELECT user_id FROM teams WHERE id = $1);`;
     const result = await db.query(q, [team_id]);
     const [data] = result.rows;
-    
+
+    // Resolve effective subscription_type to account for active plan trials,
+    // mirroring the logic in deserialize_user so server-side checks are consistent.
+    if (data && data.active_plan_trial) {
+      if (data.active_plan_trial === "BUSINESS_LARGE") {
+        data.subscription_type = "BUSINESS_TRIAL";
+      } else if (data.active_plan_trial === "ENTERPRISE") {
+        data.subscription_type = "ENTERPRISE_TRIAL";
+      } else {
+        data.subscription_type = "PLAN_TRIAL";
+      }
+    }
+
     // If this is a business plan, check if AppSumo user gets special limit
     if (data && data.subscription_type === "PADDLE" && data.plan_name) {
       const appSumoLimit = AppSumoService.getBusinessPlanUserLimit(

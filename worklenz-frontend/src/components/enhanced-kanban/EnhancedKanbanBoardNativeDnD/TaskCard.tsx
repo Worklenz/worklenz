@@ -498,11 +498,11 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                     key={label.id}
                     className="task-label"
                     style={{
-                      backgroundColor: label.color_code,
+                      backgroundColor: label.color ? `${label.color}69` : undefined,
                       display: 'inline-block',
                       borderRadius: '2px',
                       padding: '0px 4px',
-                      color: themeMode === 'dark' ? '#181818' : '#fff',
+                      color: themeMode === 'dark' ? '#fff' : '#181818',
                       fontSize: 10,
                       marginRight: 4,
                       whiteSpace: 'nowrap',

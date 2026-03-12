@@ -11,6 +11,7 @@ const ForgotPasswordPage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@
 const LoggingOutPage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/auth/LoggingOutPage'), 'LoggingOutPage'));
 const AuthenticatingPage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/auth/AuthenticatingPage'), 'AuthenticatingPage'));
 const VerifyResetEmailPage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/auth/VerifyResetEmailPage'), 'VerifyResetEmailPage'));
+const ResetPasswordRedirect = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/auth/ResetPasswordRedirect'), 'ResetPasswordRedirect'));
 
 const authRoutes = [
   {
@@ -66,6 +67,14 @@ const authRoutes = [
         element: (
           <Suspense fallback={<SuspenseFallback />}>
             <VerifyResetEmailPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'reset-password',
+        element: (
+          <Suspense fallback={<SuspenseFallback />}>
+            <ResetPasswordRedirect />
           </Suspense>
         ),
       },

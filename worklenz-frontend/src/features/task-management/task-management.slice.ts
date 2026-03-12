@@ -76,7 +76,7 @@ const initialState: TaskManagementState = {
   sortField: '',
   sortOrder: 'ASC',
   isOpenDuplicateTaskModal: false,
-  duplicateTask: {}
+  duplicateTask: {},
 };
 
 // Async thunk to fetch tasks from API
@@ -438,10 +438,21 @@ export const refreshTaskProgress = createAsyncThunk(
 
 export const duplicateTask = createAsyncThunk(
   'taskManagement/duplicateTask',
-  async ({ projectId, taskId, duplicateOptions }: { projectId: string, taskId: string, duplicateOptions: any }, { rejectWithValue }) => {
+  async (
+    {
+      projectId,
+      taskId,
+      duplicateOptions,
+    }: { projectId: string; taskId: string; duplicateOptions: any },
+    { rejectWithValue }
+  ) => {
     try {
       // console.log('Duplicate Task Thunk', projectId, taskId, duplicateOptions);
-      const response = await duplicateTaskApiService.duplicate({ task_id: taskId, project_id: projectId, options: duplicateOptions });
+      const response = await duplicateTaskApiService.duplicate({
+        task_id: taskId,
+        project_id: projectId,
+        options: duplicateOptions,
+      });
       return response;
     } catch (error) {
       logger.error('Failed to duplicate task', error);
@@ -635,11 +646,7 @@ const taskManagementSlice = createSlice({
       const updatedTask = action.payload;
       const oldTask = state.entities[updatedTask.id];
 
-      if (
-        oldTask &&
-        state.grouping === IGroupBy.STATUS &&
-        oldTask.status !== updatedTask.status
-      ) {
+      if (oldTask && state.grouping === IGroupBy.STATUS && oldTask.status !== updatedTask.status) {
         // Remove from old status group
         const oldGroup = state.groups.find(group => group.id === oldTask.status);
         if (oldGroup) {
@@ -653,8 +660,30 @@ const taskManagementSlice = createSlice({
         }
       }
     },
-    deleteTask: (state, action: PayloadAction<string>) => {
-      const taskId = action.payload;
+    deleteTask: (state, action: PayloadAction<string | { taskId: string; parentTaskId?: string }>) => {
+      // Handle both string and object payload
+      const taskId = typeof action.payload === 'string' ? action.payload : action.payload.taskId;
+      const parentTaskId = typeof action.payload === 'object' ? action.payload.parentTaskId : undefined;
+      
+      const task = state.entities[taskId];
+      
+      // Determine the parent task ID (from payload or from task entity)
+      const actualParentTaskId = parentTaskId || task?.parent_task_id;
+      
+      // If this is a subtask, update the parent task
+      if (actualParentTaskId) {
+        const parent = state.entities[actualParentTaskId];
+        if (parent) {
+          // Remove from parent's sub_tasks array
+          if (parent.sub_tasks) {
+            parent.sub_tasks = parent.sub_tasks.filter(subtask => subtask.id !== taskId);
+          }
+          // Decrement parent's sub_tasks_count
+          parent.sub_tasks_count = Math.max((parent.sub_tasks_count || 0) - 1, 0);
+        }
+      }
+      
+      // Delete the task from entities
       delete state.entities[taskId];
       state.ids = state.ids.filter(id => id !== taskId);
       state.groups = state.groups.map(group => ({
@@ -886,9 +915,14 @@ const taskManagementSlice = createSlice({
     },
     createSubtask: (
       state,
-      action: PayloadAction<{ parentTaskId: string; name: string; projectId: string }>
+      action: PayloadAction<{
+        parentTaskId: string;
+        name: string;
+        projectId: string;
+        reporterName?: string; // Add optional reporter name for optimistic update
+      }>
     ) => {
-      const { parentTaskId, name, projectId } = action.payload;
+      const { parentTaskId, name, projectId, reporterName } = action.payload;
       const parent = state.entities[parentTaskId];
       if (parent) {
         // Create a temporary subtask - the real one will come from the socket
@@ -921,6 +955,7 @@ const taskManagementSlice = createSlice({
           sub_tasks_count: 0,
           show_sub_tasks: false,
           isTemporary: true, // Mark as temporary
+          reporter: reporterName || '', // Include reporter for optimistic update
         };
 
         // Add temporary subtask for immediate UI feedback
@@ -1142,6 +1177,7 @@ const taskManagementSlice = createSlice({
             attachments_count: subtask.attachments_count || 0,
             has_dependencies: subtask.has_dependencies || false,
             schedule_id: subtask.schedule_id || null,
+            reporter: subtask.reporter || undefined, // Add reporter field mapping
           }));
 
           // Update parent task with subtasks
@@ -1162,7 +1198,9 @@ const taskManagementSlice = createSlice({
         const { taskId } = action.meta.arg;
         state.loadingSubtasks[taskId] = false;
         state.error =
-          action.error.message || (action.payload as string) || 'Failed to fetch subtasks. Please try again.';
+          action.error.message ||
+          (action.payload as string) ||
+          'Failed to fetch subtasks. Please try again.';
       })
       .addCase(fetchTasks.pending, state => {
         state.loading = true;
@@ -1202,9 +1240,9 @@ const taskManagementSlice = createSlice({
         const customPayload = action.payload.custom;
         const customColumns = Array.isArray(customPayload)
           ? customPayload.map((col: any) => ({
-            ...col,
-            isCustom: true,
-          }))
+              ...col,
+              isCustom: true,
+            }))
           : [];
 
         // Merge columns

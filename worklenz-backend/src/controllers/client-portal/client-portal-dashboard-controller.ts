@@ -33,7 +33,7 @@ export default class ClientPortalDashboardController extends ClientPortalControl
       ]);
       const requestStats = requestStatsResult.rows[0];
 
-      // Get project statistics (assuming client has access to projects)
+      // Get project statistics - verify both client_id AND team_id
       const projectStatsQuery = `
         SELECT
           COUNT(*) as total_projects,
@@ -41,10 +41,10 @@ export default class ClientPortalDashboardController extends ClientPortalControl
           COUNT(CASE WHEN sps.name = 'Completed' THEN 1 END) as completed_projects
         FROM projects p
         LEFT JOIN sys_project_statuses sps ON p.status_id = sps.id
-        WHERE p.client_id = $1
+        WHERE p.client_id = $1 AND p.team_id = $2
       `;
 
-      const projectStatsResult = await db.query(projectStatsQuery, [clientId]);
+      const projectStatsResult = await db.query(projectStatsQuery, [clientId, organizationId]);
       const projectStats = projectStatsResult.rows[0];
 
       // Get invoice statistics

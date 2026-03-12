@@ -92,23 +92,28 @@
   background-color: var(--color-paleBlue);
 }
 
-/* ✅ FIX: Constrain Ant Design Tabs content so it doesn't create
-   overflow/extra scroll space inside the modal */
-.ant-tabs-content-holder {
-  overflow: hidden !important;
-}
-
+/* Height-filling rules kept global — used by client portal and other height-constrained tabs */
 .ant-tabs-tabpane {
   height: 100%;
 }
 
-.ant-tabs.ant-tabs-card {
+.ant-tabs-content {
+  height: 100%;
+}
+
+/* ✅ FIX: overflow:hidden rules scoped to template drawer only.
+   Keeping these global was preventing the task drawer (and any other
+   drawer with Tabs) from scrolling its body content. */
+.template-drawer-content .ant-tabs-content-holder {
+  overflow: hidden !important;
+}
+
+.template-drawer-content .ant-tabs-content {
+  overflow: hidden;
+}
+
+.template-drawer-content .ant-tabs.ant-tabs-card {
   height: 100%;
   display: flex;
   flex-direction: column;
-}
-
-.ant-tabs-content {
-  height: 100%;
-  overflow: hidden;
 }

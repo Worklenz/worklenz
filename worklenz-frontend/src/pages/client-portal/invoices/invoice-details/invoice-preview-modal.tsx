@@ -58,6 +58,11 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
     navigate('/worklenz/client-portal/settings');
   };
 
+  // Handle download invoice
+  const handleDownload = () => {
+    window.open(`/api/v1/clients/portal/invoices/${invoice.id}/download`, '_blank');
+  };
+
   // Theme-aware colors
   const colors = {
     background: isDark ? token.colorBgContainer : '#ffffff',
@@ -573,7 +578,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
           <Button icon={<PrinterOutlined />} onClick={handlePrint}>
             {t('print')}
           </Button>
-          <Button icon={<DownloadOutlined />} type="primary" onClick={handlePrint}>
+          <Button icon={<DownloadOutlined />} type="primary" onClick={handleDownload}>
             {t('downloadInvoice')}
           </Button>
         </Flex>

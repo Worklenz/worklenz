@@ -7,6 +7,8 @@ import { isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { SocketEvents } from '@/shared/socket-events';
 import logger from '@/utils/errorLogger';
+import alertService from '@/services/alerts/alertService';
+import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import { Task } from '@/types/task-management.types';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import { taskListBulkActionsApiService } from '@/api/tasks/task-list-bulk-actions.api.service';
@@ -73,6 +75,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   const archived = useAppSelector(state => state.taskManagement.archived);
 
   const [updatingAssignToMe, setUpdatingAssignToMe] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [adjustedPosition, setAdjustedPosition] = useState(position);
 
   const menuRef = useRef<HTMLDivElement>(null);
@@ -243,9 +246,13 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     } finally {
       onClose();
     }
-  }, [projectId, task.id, task.parent_task_id, dispatch, socket, onClose, trackMixpanelEvent, isFree, archived]);
+  }, [projectId, task.id, dispatch, onClose, trackMixpanelEvent, isFree, archived]);
 
-  const handleDelete = useCallback(async () => {
+  const handleDeleteClick = useCallback(() => {
+    setShowDeleteConfirm(true);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
     if (!projectId || !task.id) return;
 
     try {
@@ -264,13 +271,30 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     } finally {
       onClose();
     }
-  }, [projectId, task.id, task.parent_task_id, dispatch, socket, onClose, trackMixpanelEvent]);
+  }, [projectId, task.id, dispatch, onClose, trackMixpanelEvent]);
+
+  const handleDeleteCancel = useCallback(() => {
+    setShowDeleteConfirm(false);
+  }, []);
 
   const handleStatusMoveTo = useCallback(
     async (targetId: string) => {
       if (!projectId || !task.id || !targetId) return;
 
       try {
+        // Check dependencies BEFORE emitting the socket event
+        if (task.status !== targetId) {
+          const canContinue = await checkTaskDependencyStatus(task.id, targetId);
+          if (!canContinue) {
+            alertService.error(
+              t('errors.taskNotCompleted'),
+              t('errors.completeTaskDependencies')
+            );
+            onClose();
+            return;
+          }
+        }
+
         socket?.emit(
           SocketEvents.TASK_STATUS_CHANGE.toString(),
           JSON.stringify({
@@ -286,7 +310,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
         onClose();
       }
     },
-    [projectId, task.id, task.parent_task_id, currentSession?.team_id, socket, onClose]
+    [projectId, task.id, task.status, task.parent_task_id, currentSession?.team_id, socket, onClose, t]
   );
 
   const handlePriorityMoveTo = useCallback(
@@ -618,18 +642,49 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     }
 
     // Add Delete
-    items.push({
-      key: 'delete',
-      label: (
-        <button
-          onClick={handleDelete}
-          className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 w-full text-left"
-        >
-          <DeleteOutlined className="text-red-500 dark:text-red-400" />
-          <span>{t('contextMenu.delete')}</span>
-        </button>
-      ),
-    });
+    if (showDeleteConfirm) {
+      const isSubtask = !!task.parent_task_id;
+      const confirmMessage = isSubtask
+        ? t('contextMenu.deleteSubtaskConfirmMessage', { defaultValue: 'Are you sure you want to delete this subtask? This action cannot be undone.' })
+        : t('contextMenu.deleteConfirmMessage', { defaultValue: 'Are you sure you want to delete this task? This action cannot be undone.' });
+
+      items.push({
+        key: 'delete-confirm',
+        label: (
+          <div className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/10">
+            <DeleteOutlined className="text-red-500 dark:text-red-400" />
+            <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">
+              {t('contextMenu.deleteConfirmOk', { defaultValue: 'Delete' })}?
+            </span>
+            <button
+              onClick={handleDeleteConfirm}
+              className="px-2 py-0.5 text-xs text-white bg-red-600 hover:bg-red-700 rounded"
+            >
+              Yes
+            </button>
+            <button
+              onClick={handleDeleteCancel}
+              className="px-2 py-0.5 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+            >
+              No
+            </button>
+          </div>
+        ),
+      });
+    } else {
+      items.push({
+        key: 'delete',
+        label: (
+          <button
+            onClick={handleDeleteClick}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 w-full text-left"
+          >
+            <DeleteOutlined className="text-red-500 dark:text-red-400" />
+            <span>{t('contextMenu.delete')}</span>
+          </button>
+        ),
+      });
+    }
 
     return items;
   }, [
@@ -638,9 +693,12 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     updatingAssignToMe,
     archived,
     isFree,
+    showDeleteConfirm,
     handleAssignToMe,
     handleArchive,
-    handleDelete,
+    handleDeleteClick,
+    handleDeleteConfirm,
+    handleDeleteCancel,
     handleConvertToTask,
     handleCopyLink,
     getMoveToOptions,

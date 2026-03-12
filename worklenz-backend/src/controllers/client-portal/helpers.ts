@@ -112,7 +112,7 @@ export function generateWelcomeEmailHTML(data: IWelcomeEmailData): string {
           <p>Hello ${data.userName},</p>
 
           <p>
-            Welcome to <strong>${data.organizationName}</strong>${data.companyName && data.companyName !== data.organizationName ? ` (${data.companyName})` : ''}on Worklenz!
+            Welcome to <strong>${data.organizationName}</strong> on Worklenz!
           </p>
 
           <p>You now have access to a comprehensive project management platform where you can stay connected with your team and track project progress in real-time.</p>

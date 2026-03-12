@@ -8,6 +8,7 @@ import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import { safeTextDisplay } from '@/utils/html-entities';
 import { useAuthService } from '@/hooks/useAuth';
 import { Button, Checkbox, Tag } from '@/components';
 
@@ -259,7 +260,7 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
                       <div
                         className={`text-xs font-medium truncate ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}
                       >
-                        {label.name}
+                        {safeTextDisplay(label.name)}
                       </div>
                     </div>
                   </div>

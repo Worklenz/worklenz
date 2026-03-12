@@ -22,10 +22,11 @@ html
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
       }
       .header {
-        background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
-        color: white;
+        background: #ffffff;
+        color: #334155;
         padding: 40px 20px;
         text-align: center;
+        border-bottom: 2px solid #e2e8f0;
       }
       .header h1 {
         margin: 0;
@@ -41,33 +42,35 @@ html
         font-size: 16px;
       }
       .content strong {
-        color: #52c41a;
+        color: #334155;
       }
       .button {
         display: inline-block;
-        background: #52c41a;
-        color: white;
+        background: transparent;
+        color: #334155;
         padding: 14px 28px;
         text-decoration: none;
         border-radius: 6px;
+        border: 2px solid #334155;
         margin: 24px 0;
-        font-weight: 500;
+        font-weight: 600;
         font-size: 16px;
-        transition: background-color 0.3s;
+        transition: background-color 0.3s, border-color 0.3s;
       }
       .button:hover {
-        background: #389e0d;
+        background: #f8fafc;
+        border-color: #1e293b;
       }
       .features {
-        background: #f6ffed;
+        background: #f8fafc;
         padding: 20px;
         border-radius: 6px;
         margin: 24px 0;
-        border: 1px solid #d9f7be;
+        border: 1px solid #e2e8f0;
       }
       .features h3 {
         margin: 0 0 12px 0;
-        color: #52c41a;
+        color: #334155;
         font-size: 18px;
       }
       .features ul {
@@ -90,8 +93,8 @@ html
         margin: 8px 0;
       }
       .success-badge {
-        background: #f6ffed;
-        border: 1px solid #b7eb8f;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
         border-radius: 6px;
         padding: 16px;
         margin: 24px 0;
@@ -99,7 +102,7 @@ html
       }
       .success-badge p {
         margin: 0;
-        color: #52c41a;
+        color: #334155;
         font-weight: 500;
       }
       @media (max-width: 600px) {

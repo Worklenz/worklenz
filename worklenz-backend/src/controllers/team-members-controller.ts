@@ -207,12 +207,17 @@ export default class TeamMembersController extends WorklenzControllerBase {
     /**
      * Checks various conditions to determine if the maximum number of lifetime users is exceeded.
      * Only applies to users who are still on AppSumo lifetime deals (not upgraded to Business plans)
+     * Business plans (via ANNUAL_BUSINESS subscription type OR plan_name containing "business") override LTD limits
      */
+    const isBusinessPlan =
+      subscriptionData.subscription_type === "ANNUAL_BUSINESS" ||
+      subscriptionData.plan_name?.toLowerCase().includes("business");
+
     if (
       incrementBy > 0 &&
       subscriptionData.is_ltd &&
       subscriptionData.current_count &&
-      subscriptionData.subscription_type !== "ANNUAL_BUSINESS" &&
+      !isBusinessPlan &&
       parseInt(subscriptionData.current_count) + req.body.emails.length >
         parseInt(subscriptionData.ltd_users)
     ) {
@@ -230,7 +235,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
     if (
       subscriptionData.is_ltd &&
       subscriptionData.current_count &&
-      subscriptionData.subscription_type !== "ANNUAL_BUSINESS" &&
+      !isBusinessPlan &&
       parseInt(subscriptionData.current_count) + incrementBy >
         parseInt(subscriptionData.ltd_users)
     ) {
@@ -1399,10 +1404,14 @@ export default class TeamMembersController extends WorklenzControllerBase {
         }
 
         // Check AppSumo lifetime deal limit - only applies if not on Business plan
+        // Business plans (via ANNUAL_BUSINESS subscription type OR plan_name containing "business") override LTD limits
+        const isBusinessPlanAccept = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' || 
+                                     subscriptionData.plan_name?.toLowerCase().includes("business");
+        
         if (
           subscriptionData.is_ltd &&
           subscriptionData.ltd_users &&
-          subscriptionData.subscription_type !== "ANNUAL_BUSINESS" &&
+          !isBusinessPlanAccept &&
           currentCount + 1 > parseInt(subscriptionData.ltd_users)
         ) {
           return res
@@ -1506,10 +1515,14 @@ export default class TeamMembersController extends WorklenzControllerBase {
         }
 
         // Check AppSumo lifetime deal limit - only applies if not on Business plan
+        // Business plans (via ANNUAL_BUSINESS subscription type OR plan_name containing "business") override LTD limits
+        const isBusinessPlanReactivate = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' || 
+                                         subscriptionData.plan_name?.toLowerCase().includes("business");
+        
         if (
           subscriptionData.is_ltd &&
           subscriptionData.ltd_users &&
-          subscriptionData.subscription_type !== "ANNUAL_BUSINESS" &&
+          !isBusinessPlanReactivate &&
           currentCount + 1 > parseInt(subscriptionData.ltd_users)
         ) {
           return res
@@ -2053,11 +2066,16 @@ export default class TeamMembersController extends WorklenzControllerBase {
         }
 
         // Check LTD user limits - only applies if not on Business plan
+        // Business plans (via ANNUAL_BUSINESS subscription type OR plan_name containing "business") override LTD limits
+        const isBusinessPlanLink =
+          subscriptionData.subscription_type === "ANNUAL_BUSINESS" ||
+          subscriptionData.plan_name?.toLowerCase().includes("business");
+
         if (
           incrementBy > 0 &&
           subscriptionData.is_ltd &&
           subscriptionData.current_count &&
-          subscriptionData.subscription_type !== "ANNUAL_BUSINESS"
+          !isBusinessPlanLink
         ) {
           const currentCount = parseInt(subscriptionData.current_count) || 0;
           const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;

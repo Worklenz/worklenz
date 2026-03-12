@@ -22,6 +22,24 @@ export default defineConfig(({ command, mode }) => {
         authToken: env.VITE_SENTRY_AUTH_TOKEN,
         telemetry: false,
       }) : []),
+      // Custom plugin to generate version.json for reliable update detection
+      {
+        name: 'generate-version-file',
+        generateBundle() {
+          // Generate version.json with build metadata
+          const versionData = {
+            version: env.npm_package_version || '1.0.0',
+            buildTime: buildTimestamp,
+            buildId: buildTimestamp,
+          };
+
+          this.emitFile({
+            type: 'asset',
+            fileName: 'version.json',
+            source: JSON.stringify(versionData, null, 2),
+          });
+        },
+      },
       // Custom plugin to inject build timestamp into service worker
       {
         name: 'inject-build-timestamp',
@@ -123,7 +141,7 @@ export default defineConfig(({ command, mode }) => {
       target: ['es2020'], // Updated to a more modern target, adjust according to your needs
 
       // **Output**
-      outDir: 'build',
+      outDir: process.env.VITE_BUILD_OUTDIR || 'build',
       assetsDir: 'assets',
       cssCodeSplit: true,
 
@@ -162,16 +180,18 @@ export default defineConfig(({ command, mode }) => {
       // **Rollup Options**
       rollupOptions: {
         output: {
-          // **Simplified Chunking Strategy to avoid React context issues**
+          // **Granular chunking strategy for better parallelism and cache reuse**
           manualChunks: {
-            // Keep React and all React-dependent libraries together
             'react-vendor': ['react', 'react-dom', 'react/jsx-runtime'],
-
-            // Separate chunk for router
             'react-router': ['react-router-dom'],
-
-            // Keep Ant Design separate but ensure React is available
-            antd: ['antd', '@ant-design/icons'],
+            'antd-core': ['antd'],
+            'antd-icons': ['@ant-design/icons'],
+            'charts': ['chart.js', 'react-chartjs-2', 'chartjs-plugin-datalabels'],
+            'gantt': ['gantt-task-react'],
+            'pdf-export': ['html2canvas', 'jspdf'],
+            'editor': ['tinymce', '@tinymce/tinymce-react'],
+            'socket': ['socket.io-client'],
+            'i18n': ['i18next', 'react-i18next', 'i18next-browser-languagedetector', 'i18next-http-backend'],
           },
 
           // **File Naming Strategies**
@@ -211,7 +231,16 @@ export default defineConfig(({ command, mode }) => {
 
     // **Optimization**
     optimizeDeps: {
-      include: ['react', 'react-dom', 'react/jsx-runtime', 'antd', '@ant-design/icons'],
+      include: [
+        'react', 'react-dom', 'react/jsx-runtime',
+        'antd', '@ant-design/icons',
+        'chart.js', 'react-chartjs-2', 'chartjs-plugin-datalabels',
+        'gantt-task-react',
+        'html2canvas', 'jspdf',
+        'tinymce', '@tinymce/tinymce-react',
+        'socket.io-client',
+        'i18next', 'react-i18next', 'i18next-browser-languagedetector', 'i18next-http-backend',
+      ],
       exclude: [
         // Add any packages that should not be pre-bundled
       ],

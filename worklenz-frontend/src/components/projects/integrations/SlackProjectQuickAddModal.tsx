@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Form, Modal, Select, message, ReloadOutlined } from '@/shared/antd-imports';
+import { Button, Form, Modal, Select, message, ReloadOutlined, theme, Alert, Space, Typography } from '@/shared/antd-imports';
 import { slackApiService } from '@api/slack/slack.api.service';
 import type { ISlackChannel } from '@api/slack/slack.api.service';
 import logger from '@/utils/errorLogger';
@@ -30,16 +30,36 @@ export const SlackProjectQuickAddModal: React.FC<SlackProjectQuickAddModalProps>
   onSuccess
 }) => {
   const { t } = useTranslation('project-integrations');
+  const { token } = theme.useToken();
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
   const [availableChannels, setAvailableChannels] = useState<ISlackChannel[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const notificationOptions = NOTIFICATION_TYPE_DEFINITIONS.map(({ value, labelKey, defaultValue }) => ({
-    value,
-    label: t(labelKey, { defaultValue }),
-  }));
+  const { Text } = Typography;
+
+  // Memoize notification options
+  const notificationOptions = useMemo(() => 
+    NOTIFICATION_TYPE_DEFINITIONS.map(({ value, labelKey, defaultValue }) => ({
+      value,
+      label: t(labelKey, { defaultValue }),
+    })),
+    [t]
+  );
+
+  // Memoize channel options
+  const channelOptions = useMemo(() => 
+    availableChannels.map(channel => ({
+      value: channel.id,
+      label: (
+        <span>
+          {channel.is_private && '🔒 '} #{channel.channel_name}
+        </span>
+      )
+    })),
+    [availableChannels]
+  );
 
   const loadAvailableChannels = async () => {
     try {
@@ -101,27 +121,28 @@ export const SlackProjectQuickAddModal: React.FC<SlackProjectQuickAddModalProps>
       onCancel={onClose}
       footer={null}
       width={500}
+      styles={{
+        body: { padding: '24px' }
+      }}
     >
       {contextHolder}
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
         {projectName && (
-          <div
-            style={{
-              padding: '12px',
-              backgroundColor: 'var(--info-bg, #1a365d)',
-              borderRadius: '6px',
-              marginBottom: '16px',
-              fontSize: '13px'
-            }}
-          >
-            ℹ️ {t('slack.currentProject', { defaultValue: 'Project' })}: <strong>{projectName}</strong>
-          </div>
+          <Alert
+            message={
+              <Text>
+                ℹ️ {t('slack.currentProject', { defaultValue: 'Project' })}: <Text strong>{projectName}</Text>
+              </Text>
+            }
+            type="info"
+            style={{ marginBottom: '16px' }}
+          />
         )}
 
         <Form.Item
           name="slackChannelId"
           label={
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            <Space style={{ width: '100%', justifyContent: 'space-between' }}>
               <span>{t('slack.selectChannel', { defaultValue: 'Slack Channel' })}</span>
               <Button
                 type="link"
@@ -129,11 +150,11 @@ export const SlackProjectQuickAddModal: React.FC<SlackProjectQuickAddModalProps>
                 icon={<ReloadOutlined />}
                 onClick={handleRefreshChannels}
                 loading={refreshing}
-                style={{ padding: 0, height: 'auto', marginLeft: 'auto' }}
+                style={{ padding: 0, height: 'auto' }}
               >
                 {t('slack.refresh', { defaultValue: 'Refresh' })}
               </Button>
-            </div>
+            </Space>
           }
           rules={[
             {
@@ -146,13 +167,12 @@ export const SlackProjectQuickAddModal: React.FC<SlackProjectQuickAddModalProps>
             placeholder={t('slack.selectChannelPlaceholder', { defaultValue: 'Select a Slack channel...' })}
             showSearch
             optionFilterProp="children"
-          >
-            {availableChannels.map(channel => (
-              <Select.Option key={channel.id} value={channel.id}>
-                {channel.is_private && '🔒 '} #{channel.channel_name}
-              </Select.Option>
-            ))}
-          </Select>
+            options={channelOptions}
+            filterOption={(input, option) => {
+              const channelName = availableChannels.find(c => c.id === option?.value)?.channel_name || '';
+              return channelName.toLowerCase().includes(input.toLowerCase());
+            }}
+          />
         </Form.Item>
 
         <Form.Item
@@ -172,28 +192,26 @@ export const SlackProjectQuickAddModal: React.FC<SlackProjectQuickAddModalProps>
           />
         </Form.Item>
 
-        <div
-          style={{
-            padding: '12px',
-            backgroundColor: 'var(--warning-bg, #2d3748)',
-            borderRadius: '6px',
-            marginBottom: '16px',
-            fontSize: '12px',
-            lineHeight: 1.5
-          }}
-        >
-          💡 {t('slack.inviteBotTip', { defaultValue: 'Tip: Make sure to invite @Worklenz bot to your Slack channel first!' })}
-        </div>
+        <Alert
+          message={
+            <Text style={{ fontSize: '12px' }}>
+              💡 {t('slack.inviteBotTip', { defaultValue: 'Tip: Make sure to invite @Worklenz bot to your Slack channel first!' })}
+            </Text>
+          }
+          type="warning"
+          showIcon
+          style={{ marginBottom: '16px' }}
+        />
 
         <Form.Item style={{ marginBottom: 0 }}>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
             <Button onClick={onClose}>
               {t('cancel', { defaultValue: 'Cancel' })}
             </Button>
             <Button type="primary" htmlType="submit" loading={submitting}>
               {t('slack.addButton', { defaultValue: 'Add Integration' })}
             </Button>
-          </div>
+          </Space>
         </Form.Item>
       </Form>
     </Modal>

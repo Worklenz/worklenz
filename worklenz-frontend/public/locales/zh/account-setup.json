@@ -94,7 +94,7 @@
   "aboutYouStepName": "关于您",
   "yourNeedsStepName": "您的需求",
   "discoveryStepName": "发现",
-  "stepProgress": "第 {step} 步，共 3 步：{title}",
+  "stepProgress": "第 {{step}} 步，共 3 步：{{title}}",
 
   "projectStepHeader": "让我们创建您的第一个项目",
   "projectStepSubheader": "从头开始或使用模板更快上手",

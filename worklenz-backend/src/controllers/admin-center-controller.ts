@@ -39,7 +39,13 @@ import { IO } from "../shared/io";
 import { uploadBase64, getOrganizationLogoKey, deleteObject, getRootDir } from "../shared/storage";
 
 export default class AdminCenterController extends WorklenzControllerBase {
-  public static async checkIfUserActiveInOtherTeams(
+  private static async getSubscriptionId(ownerId: string): Promise<string> {
+    const q = `SELECT subscription_id FROM licensing_user_subscriptions WHERE user_id = $1;`;
+    const result = await db.query(q, [ownerId]);
+    return result.rows[0]?.subscription_id?.toString();
+  }
+
+  private static async checkIfUserActiveInOtherTeams(
     owner_id: string,
     email: string
   ) {
@@ -63,13 +69,6 @@ export default class AdminCenterController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    // const q = `SELECT organization_name                                      AS name,
-    //                   contact_number,
-    //                   contact_number_secondary,
-    //                   (SELECT email FROM users WHERE id = users_data.user_id),
-    //                   (SELECT name FROM users WHERE id = users_data.user_id) AS owner_name
-    //            FROM users_data
-    //            WHERE user_id = $1;`;
     const q = `SELECT organization_name                                      AS name,
                       contact_number,
                       contact_number_secondary,
@@ -181,9 +180,6 @@ export default class AdminCenterController extends WorklenzControllerBase {
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
     const { name } = req.body;
-    // const q = `UPDATE users_data
-    //            SET organization_name = $1
-    //            WHERE user_id = $2;`;
     const q = `UPDATE organizations
                SET organization_name = $1
                WHERE user_id = $2;`;
@@ -209,110 +205,105 @@ export default class AdminCenterController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    try {
-      const ownerId = req.user?.owner_id;
-      if (!ownerId) {
-        return res.status(400).send(new ServerResponse(false, null, "User not found"));
-      }
+    const ownerId = req.user?.owner_id;
+    if (!ownerId) {
+      return res.status(400).send(new ServerResponse(false, null, "User not found"));
+    }
 
-      // Get organization ID
-      const orgQuery = `SELECT id FROM organizations WHERE user_id = $1`;
-      const orgResult = await db.query(orgQuery, [ownerId]);
-      if (orgResult.rows.length === 0) {
-        return res.status(404).send(new ServerResponse(false, null, "Organization not found"));
-      }
-      const organizationId = orgResult.rows[0].id;
+    // Get organization ID
+    const orgQuery = `SELECT id FROM organizations WHERE user_id = $1`;
+    const orgResult = await db.query(orgQuery, [ownerId]);
+    if (orgResult.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Organization not found"));
+    }
+    const organizationId = orgResult.rows[0].id;
 
-      const { logoData } = req.body;
-      if (!logoData) {
-        return res.status(400).send(new ServerResponse(false, null, "Logo data is required"));
-      }
+    const { logoData } = req.body;
+    if (!logoData) {
+      return res.status(400).send(new ServerResponse(false, null, "Logo data is required"));
+    }
 
-      // Extract file type from base64 data
-      const mimeMatch = logoData.match(/^data:(image\/[a-z]+);base64,/);
-      if (!mimeMatch) {
-        return res.status(400).send(new ServerResponse(false, null, "Invalid image format"));
-      }
+    // Extract file type from base64 data
+    const mimeMatch = logoData.match(/^data:(image\/[a-z]+);base64,/);
+    if (!mimeMatch) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid image format"));
+    }
 
-      const mimeType = mimeMatch[1];
-      const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
-      if (!allowedTypes.includes(mimeType)) {
-        return res.status(400).send(new ServerResponse(false, null, "Only PNG, JPG, JPEG, and WEBP images are allowed"));
-      }
+    const mimeType = mimeMatch[1];
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    if (!allowedTypes.includes(mimeType)) {
+      return res.status(400).send(new ServerResponse(false, null, "Only PNG, JPG, JPEG, and WEBP images are allowed"));
+    }
 
-      // Validate file size (assuming base64 data)
-      const fileSizeBytes = Math.floor((logoData.length * 3) / 4);
-      const maxSizeBytes = 5 * 1024 * 1024; // 5MB limit
-      if (fileSizeBytes > maxSizeBytes) {
-        return res.status(400).send(new ServerResponse(false, null, "Logo file size must be less than 5MB"));
-      }
+    // Validate file size (assuming base64 data)
+    const fileSizeBytes = Math.floor((logoData.length * 3) / 4);
+    const maxSizeBytes = 5 * 1024 * 1024; // 5MB limit
+    if (fileSizeBytes > maxSizeBytes) {
+      return res.status(400).send(new ServerResponse(false, null, "Logo file size must be less than 5MB"));
+    }
 
-      const fileExtension = mimeType.split("/")[1];
+    const fileExtension = mimeType.split("/")[1];
 
-      // Get old logo URL to delete it
-      const oldLogoQuery = `SELECT logo_url FROM organizations WHERE id = $1`;
-      const oldLogoResult = await db.query(oldLogoQuery, [organizationId]);
-      const oldLogoUrl = oldLogoResult.rows[0]?.logo_url;
+    // Get old logo URL to delete it
+    const oldLogoQuery = `SELECT logo_url FROM organizations WHERE id = $1`;
+    const oldLogoResult = await db.query(oldLogoQuery, [organizationId]);
+    const oldLogoUrl = oldLogoResult.rows[0]?.logo_url;
 
-      // Delete old logo from S3 if exists
-      if (oldLogoUrl) {
-        try {
-          // Extract the storage key from the old logo URL
-          // Logo URLs are typically in format: {S3_URL}/{env}/organization-logos/{orgId}.{ext}
-          const urlParts = oldLogoUrl.split("/organization-logos/");
-          if (urlParts.length > 1) {
-            const keyPart = urlParts[1].split("?")[0]; // Remove query params if any
-            // Reconstruct the storage key using the same pattern as getOrganizationLogoKey
-            const oldStorageKey = `organization-logos/${getRootDir()}/${keyPart}`;
-            await deleteObject(oldStorageKey);
-          }
-        } catch (deleteError) {
-          // Log but don't fail if old logo deletion fails
-          log_error(deleteError);
+    // Delete old logo from S3 if exists
+    if (oldLogoUrl) {
+      try {
+        // Extract the storage key from the old logo URL
+        // Logo URLs are typically in format: {S3_URL}/{env}/organization-logos/{orgId}.{ext}
+        const urlParts = oldLogoUrl.split("/organization-logos/");
+        if (urlParts.length > 1) {
+          const keyPart = urlParts[1].split("?")[0]; // Remove query params if any
+          // Reconstruct the storage key using the same pattern as getOrganizationLogoKey
+          const oldStorageKey = `organization-logos/${getRootDir()}/${keyPart}`;
+          await deleteObject(oldStorageKey);
         }
+      } catch (deleteError) {
+        // Log but don't fail if old logo deletion fails
+        log_error(deleteError);
       }
+    }
 
-      // Generate storage key
-      const storageKey = getOrganizationLogoKey(organizationId, fileExtension);
+    // Generate storage key
+    const storageKey = getOrganizationLogoKey(organizationId, fileExtension);
 
-      // Upload to storage
-      const logoUrl = await uploadBase64(logoData, storageKey);
-      if (!logoUrl) {
-        return res.status(500).send(new ServerResponse(false, null, "Failed to upload logo"));
-      }
-
-      // Update database with logo URL
-      const updateQ = `
-        UPDATE organizations 
-        SET logo_url = $1, updated_at = CURRENT_TIMESTAMP
-        WHERE id = $2
-        RETURNING logo_url
-      `;
-      const updateResult = await db.query(updateQ, [logoUrl, organizationId]);
-
-      // Sync logo to all related client_portal_settings
-      // Find all teams belonging to this organization and update their client portal settings
-      const syncQuery = `
-        UPDATE client_portal_settings
-        SET logo_url = $1, updated_at = CURRENT_TIMESTAMP
-        WHERE organization_team_id IN (
-          SELECT id FROM teams 
-          WHERE user_id = $2 OR organization_id = $3
-        )
-      `;
-      await db.query(syncQuery, [logoUrl, ownerId, organizationId]);
-
-      return res.status(200).send(
-        new ServerResponse(
-          true,
-          { logo_url: updateResult.rows[0].logo_url },
-          "Logo uploaded successfully"
-        )
-      );
-    } catch (error) {
-      log_error(error);
+    // Upload to storage
+    const logoUrl = await uploadBase64(logoData, storageKey);
+    if (!logoUrl) {
       return res.status(500).send(new ServerResponse(false, null, "Failed to upload logo"));
     }
+
+    // Update database with logo URL
+    const updateQ = `
+      UPDATE organizations
+      SET logo_url = $1, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+      RETURNING logo_url
+    `;
+    const updateResult = await db.query(updateQ, [logoUrl, organizationId]);
+
+    // Sync logo to all related client_portal_settings
+    // Find all teams belonging to this organization and update their client portal settings
+    const syncQuery = `
+      UPDATE client_portal_settings
+      SET logo_url = $1, updated_at = CURRENT_TIMESTAMP
+      WHERE organization_team_id IN (
+        SELECT id FROM teams
+        WHERE user_id = $2 OR organization_id = $3
+      )
+    `;
+    await db.query(syncQuery, [logoUrl, ownerId, organizationId]);
+
+    return res.status(200).send(
+      new ServerResponse(
+        true,
+        { logo_url: updateResult.rows[0].logo_url },
+        "Logo uploaded successfully"
+      )
+    );
   }
 
   @HandleExceptions()
@@ -320,67 +311,62 @@ export default class AdminCenterController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    try {
-      const ownerId = req.user?.owner_id;
-      if (!ownerId) {
-        return res.status(400).send(new ServerResponse(false, null, "User not found"));
-      }
-
-      // Get organization ID
-      const orgQuery = `SELECT id, logo_url FROM organizations WHERE user_id = $1`;
-      const orgResult = await db.query(orgQuery, [ownerId]);
-      if (orgResult.rows.length === 0) {
-        return res.status(404).send(new ServerResponse(false, null, "Organization not found"));
-      }
-      const organizationId = orgResult.rows[0].id;
-      const logoUrl = orgResult.rows[0].logo_url;
-
-      if (!logoUrl) {
-        return res.status(404).send(new ServerResponse(false, null, "No logo to delete"));
-      }
-
-      // Delete logo from S3
-      try {
-        // Extract the storage key from the logo URL
-        const urlParts = logoUrl.split("/organization-logos/");
-        if (urlParts.length > 1) {
-          const keyPart = urlParts[1].split("?")[0]; // Remove query params if any
-          const storageKey = `organization-logos/${getRootDir()}/${keyPart}`;
-          await deleteObject(storageKey);
-        }
-      } catch (deleteError) {
-        // Log but don't fail if S3 deletion fails
-        log_error(deleteError);
-      }
-
-      // Update database to remove logo URL
-      const updateQ = `
-        UPDATE organizations 
-        SET logo_url = NULL, updated_at = CURRENT_TIMESTAMP
-        WHERE id = $1
-        RETURNING logo_url
-      `;
-      await db.query(updateQ, [organizationId]);
-
-      // Clear logo from all related client_portal_settings
-      // Find all teams belonging to this organization and clear their client portal logo
-      const syncQuery = `
-        UPDATE client_portal_settings
-        SET logo_url = NULL, updated_at = CURRENT_TIMESTAMP
-        WHERE organization_team_id IN (
-          SELECT id FROM teams 
-          WHERE user_id = $1 OR organization_id = $2
-        )
-      `;
-      await db.query(syncQuery, [ownerId, organizationId]);
-
-      return res.status(200).send(
-        new ServerResponse(true, { logo_url: null }, "Logo deleted successfully")
-      );
-    } catch (error) {
-      log_error(error);
-      return res.status(500).send(new ServerResponse(false, null, "Failed to delete logo"));
+    const ownerId = req.user?.owner_id;
+    if (!ownerId) {
+      return res.status(400).send(new ServerResponse(false, null, "User not found"));
     }
+
+    // Get organization ID
+    const orgQuery = `SELECT id, logo_url FROM organizations WHERE user_id = $1`;
+    const orgResult = await db.query(orgQuery, [ownerId]);
+    if (orgResult.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Organization not found"));
+    }
+    const organizationId = orgResult.rows[0].id;
+    const logoUrl = orgResult.rows[0].logo_url;
+
+    if (!logoUrl) {
+      return res.status(404).send(new ServerResponse(false, null, "No logo to delete"));
+    }
+
+    // Delete logo from S3
+    try {
+      // Extract the storage key from the logo URL
+      const urlParts = logoUrl.split("/organization-logos/");
+      if (urlParts.length > 1) {
+        const keyPart = urlParts[1].split("?")[0]; // Remove query params if any
+        const storageKey = `organization-logos/${getRootDir()}/${keyPart}`;
+        await deleteObject(storageKey);
+      }
+    } catch (deleteError) {
+      // Log but don't fail if S3 deletion fails
+      log_error(deleteError);
+    }
+
+    // Update database to remove logo URL
+    const updateQ = `
+      UPDATE organizations
+      SET logo_url = NULL, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+      RETURNING logo_url
+    `;
+    await db.query(updateQ, [organizationId]);
+
+    // Clear logo from all related client_portal_settings
+    // Find all teams belonging to this organization and clear their client portal logo
+    const syncQuery = `
+      UPDATE client_portal_settings
+      SET logo_url = NULL, updated_at = CURRENT_TIMESTAMP
+      WHERE organization_team_id IN (
+        SELECT id FROM teams
+        WHERE user_id = $1 OR organization_id = $2
+      )
+    `;
+    await db.query(syncQuery, [ownerId, organizationId]);
+
+    return res.status(200).send(
+      new ServerResponse(true, { logo_url: null }, "Logo deleted successfully")
+    );
   }
 
   @HandleExceptions()
@@ -430,17 +416,6 @@ export default class AdminCenterController extends WorklenzControllerBase {
         message: "Organization calculation method updated successfully",
       })
     );
-  }
-
-  @HandleExceptions()
-  public static async create(
-    req: IWorkLenzRequest,
-    res: IWorkLenzResponse
-  ): Promise<IWorkLenzResponse> {
-    const q = ``;
-    const result = await db.query(q, []);
-    const [data] = result.rows;
-    return res.status(200).send(new ServerResponse(true, data));
   }
 
   @HandleExceptions()
@@ -616,7 +591,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
         .status(200)
         .send(new ServerResponse(true, null, "Team updated successfully"));
     } catch (error) {
-      log_error("Error updating team:", error);
+      log_error(error);
       return res
         .status(500)
         .send(new ServerResponse(false, null, "Failed to update team"));
@@ -827,9 +802,12 @@ export default class AdminCenterController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    const { plan } = req.query;
+    const { plan, seatCount } = req.query;
 
     const obj = await getTeamMemberCount(req.user?.owner_id ?? "");
+    if (seatCount) {
+      obj.user_count = parseInt(seatCount as string, 10);
+    }
     const axiosResponse = await generatePayLinkRequest(
       obj,
       plan as string,
@@ -903,15 +881,11 @@ export default class AdminCenterController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    const q = `SELECT subscription_id
-               FROM licensing_user_subscriptions lus
-               WHERE user_id = $1;`;
-    const result = await db.query(q, [req.user?.owner_id]);
-    const [data] = result.rows;
+    const subscriptionId = await this.getSubscriptionId(req.user?.owner_id ?? "");
 
-    await addModifier(data.subscription_id);
+    await addModifier(subscriptionId);
 
-    return res.status(200).send(new ServerResponse(true, data));
+    return res.status(200).send(new ServerResponse(true, { subscription_id: subscriptionId }));
   }
 
   @HandleExceptions()
@@ -921,15 +895,11 @@ export default class AdminCenterController extends WorklenzControllerBase {
   ): Promise<IWorkLenzResponse> {
     const { plan } = req.query;
 
-    const q = `SELECT subscription_id
-               FROM licensing_user_subscriptions lus
-               WHERE user_id = $1;`;
-    const result = await db.query(q, [req.user?.owner_id]);
-    const [data] = result.rows;
+    const subscriptionId = await this.getSubscriptionId(req.user?.owner_id ?? "");
 
     const axiosResponse = await changePlan(
       plan as string,
-      data.subscription_id
+      subscriptionId
     );
 
     return res.status(200).send(new ServerResponse(true, axiosResponse.body));
@@ -945,14 +915,10 @@ export default class AdminCenterController extends WorklenzControllerBase {
         .status(200)
         .send(new ServerResponse(false, "Invalid Request."));
 
-    const q = `SELECT subscription_id
-               FROM licensing_user_subscriptions lus
-               WHERE user_id = $1;`;
-    const result = await db.query(q, [req.user?.owner_id]);
-    const [data] = result.rows;
+    const subscriptionId = await this.getSubscriptionId(req.user?.owner_id ?? "");
 
     const axiosResponse = await cancelSubscription(
-      data.subscription_id,
+      subscriptionId,
       req.user?.owner_id
     );
 
@@ -969,14 +935,10 @@ export default class AdminCenterController extends WorklenzControllerBase {
         .status(200)
         .send(new ServerResponse(false, "Invalid Request."));
 
-    const q = `SELECT subscription_id
-               FROM licensing_user_subscriptions lus
-               WHERE user_id = $1;`;
-    const result = await db.query(q, [req.user?.owner_id]);
-    const [data] = result.rows;
+    const subscriptionId = await this.getSubscriptionId(req.user?.owner_id ?? "");
 
     const axiosResponse = await pauseOrResumeSubscription(
-      data.subscription_id,
+      subscriptionId,
       req.user?.owner_id,
       true
     );
@@ -994,14 +956,10 @@ export default class AdminCenterController extends WorklenzControllerBase {
         .status(200)
         .send(new ServerResponse(false, "Invalid Request."));
 
-    const q = `SELECT subscription_id
-               FROM licensing_user_subscriptions lus
-               WHERE user_id = $1;`;
-    const result = await db.query(q, [req.user?.owner_id]);
-    const [data] = result.rows;
+    const subscriptionId = await this.getSubscriptionId(req.user?.owner_id ?? "");
 
     const axiosResponse = await pauseOrResumeSubscription(
-      data.subscription_id,
+      subscriptionId,
       req.user?.owner_id,
       false
     );
@@ -1487,14 +1445,9 @@ export default class AdminCenterController extends WorklenzControllerBase {
           }
         }
 
-        console.log(
-          `✅ Automatically populated Sri Lankan holidays for ${years.join(
-            ", "
-          )}`
-        );
       } catch (error) {
         // Log error but don't fail the settings update
-        console.error("Error populating Sri Lankan holidays:", error);
+        log_error(error);
       }
     }
 
@@ -1555,26 +1508,21 @@ export default class AdminCenterController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null, "Organization ID is required"));
     }
 
-    try {
-      const countdownData = await AppSumoService.getCountdownWidget(organizationId);
-      
-      if (!countdownData) {
-        return res.status(200).send(new ServerResponse(true, {
-          isVisible: false,
-          remainingDays: 0,
-          remainingHours: 0,
-          remainingMinutes: 0,
-          urgencyLevel: 'normal',
-          message: 'Not an AppSumo user or discount period expired',
-          ctaText: 'View Plans',
-          ctaUrl: '/settings/billing'
-        }));
-      }
+    const countdownData = await AppSumoService.getCountdownWidget(organizationId);
 
-      return res.status(200).send(new ServerResponse(true, countdownData));
-    } catch (error) {
-      log_error(error);
-      return res.status(500).send(new ServerResponse(false, null, "Failed to get AppSumo countdown widget data"));
+    if (!countdownData) {
+      return res.status(200).send(new ServerResponse(true, {
+        isVisible: false,
+        remainingDays: 0,
+        remainingHours: 0,
+        remainingMinutes: 0,
+        urgencyLevel: 'normal',
+        message: 'Not an AppSumo user or discount period expired',
+        ctaText: 'View Plans',
+        ctaUrl: '/settings/billing'
+      }));
     }
+
+    return res.status(200).send(new ServerResponse(true, countdownData));
   }
 }
