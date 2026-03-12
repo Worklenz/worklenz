@@ -1,5 +1,6 @@
 {
   "rename": "Umbenennen",
+  "renameStatus": "Status umbenennen",
   "delete": "Löschen",
   "addTask": "Aufgabe hinzufügen",
   "addSectionButton": "Abschnitt hinzufügen",
