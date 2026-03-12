@@ -77,6 +77,9 @@ interface CategorySectionProps {
   activeId: string | null;
   dragOverIndex: number | null;
   localStatuses: IKanbanTaskStatus[];
+  // Lifted state for controlling which category's add form is open
+  activeAddCategoryId: string | null;
+  onSetActiveAddCategory: (categoryId: string | null) => void;
 }
 
 // Sortable Status Item Component (compact with hover actions)
@@ -257,10 +260,14 @@ const CategorySection: React.FC<CategorySectionProps> = ({
   activeId,
   dragOverIndex,
   localStatuses,
+  activeAddCategoryId,
+  onSetActiveAddCategory,
 }) => {
   const { t } = useTranslation('task-list-filters');
   const [newStatusName, setNewStatusName] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
+
+  // Derived from lifted state — only this category's form is open when IDs match
+  const showAddForm = activeAddCategoryId === category.id;
 
   const { setNodeRef, isOver } = useDroppable({
     id: `category-${category.id}`,
@@ -274,9 +281,9 @@ const CategorySection: React.FC<CategorySectionProps> = ({
     if (newStatusName.trim()) {
       onCreateStatus(category.id, newStatusName.trim());
       setNewStatusName('');
-      setShowAddForm(false);
+      onSetActiveAddCategory(null);
     }
-  }, [newStatusName, category.id, onCreateStatus]);
+  }, [newStatusName, category.id, onCreateStatus, onSetActiveAddCategory]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -284,10 +291,10 @@ const CategorySection: React.FC<CategorySectionProps> = ({
         handleCreateStatus();
       } else if (e.key === 'Escape') {
         setNewStatusName('');
-        setShowAddForm(false);
+        onSetActiveAddCategory(null);
       }
     },
-    [handleCreateStatus]
+    [handleCreateStatus, onSetActiveAddCategory]
   );
 
   // Check if we should show cross-category drop placeholder
@@ -337,7 +344,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({
               type="text"
               size="small"
               icon={<PlusOutlined />}
-              onClick={() => setShowAddForm(true)}
+              onClick={() => onSetActiveAddCategory(category.id)}
               className={`h-7 px-2 text-xs font-medium transition-all duration-200 ${
                 isDarkMode
                   ? 'text-gray-300 hover:text-gray-200 hover:bg-gray-700'
@@ -426,7 +433,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({
           </div>
         </SortableContext>
 
-        {/* Add Status Form */}
+        {/* Add Status Form — only renders for the active category */}
         {showAddForm && (
           <div
             className={`mt-3 p-2 rounded border-2 border-dashed transition-all duration-200 ${
@@ -461,7 +468,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({
               <Button
                 onClick={() => {
                   setNewStatusName('');
-                  setShowAddForm(false);
+                  onSetActiveAddCategory(null);
                 }}
                 size="small"
                 className={`text-xs ${
@@ -487,7 +494,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({
             <Button
               type="link"
               size="small"
-              onClick={() => setShowAddForm(true)}
+              onClick={() => onSetActiveAddCategory(category.id)}
               className={`text-xs mt-1 font-medium ${
                 isDarkMode
                   ? 'text-blue-400 hover:text-blue-300'
@@ -518,6 +525,10 @@ const ManageStatusModal: React.FC<ManageStatusModalProps> = ({ open, onClose, pr
   const [dragOverCategory, setDragOverCategory] = useState<string | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
+  // Single source of truth: tracks which category's "Add Status" form is open.
+  // Only one can be open at a time — setting a new category ID closes the previous one.
+  const [activeAddCategoryId, setActiveAddCategoryId] = useState<string | null>(null);
+
   const finalProjectId = projectId || currentProjectId;
 
   // DnD sensors
@@ -546,6 +557,11 @@ const ManageStatusModal: React.FC<ManageStatusModalProps> = ({ open, onClose, pr
         .catch(() => {
           setStatusCategories([]);
         });
+    }
+
+    // Reset the open add form when modal closes
+    if (!open) {
+      setActiveAddCategoryId(null);
     }
   }, [open, finalProjectId, dispatch]);
 
@@ -920,6 +936,7 @@ const ManageStatusModal: React.FC<ManageStatusModalProps> = ({ open, onClose, pr
   );
 
   const handleClose = useCallback(() => {
+    setActiveAddCategoryId(null);
     onClose();
   }, [onClose]);
 
@@ -1006,6 +1023,8 @@ const ManageStatusModal: React.FC<ManageStatusModalProps> = ({ open, onClose, pr
                 activeId={activeId}
                 dragOverIndex={dragOverIndex}
                 localStatuses={localStatuses}
+                activeAddCategoryId={activeAddCategoryId}
+                onSetActiveAddCategory={setActiveAddCategoryId}
               />
             ))}
           </div>
