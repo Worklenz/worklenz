@@ -197,24 +197,10 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
 
       // CRITICAL: Update the local groups state (old task list uses local state, not Redux)
       setGroups(prevGroups => {
-        console.log('[DEBUG task-group-wrapper] Updating groups for task:', response.id);
-        console.log('[DEBUG task-group-wrapper] completed_at:', response.completed_at);
-        console.log('[DEBUG task-group-wrapper] Groups count:', prevGroups.length);
-
-        const updated = prevGroups.map(group => {
-          // Find if this group contains the task
+        return prevGroups.map(group => {
           const taskIndex = group.tasks.findIndex(task => task.id === response.id);
           if (taskIndex === -1) return group;
 
-          console.log(
-            '[DEBUG task-group-wrapper] Found task in group:',
-            group.name,
-            'at index:',
-            taskIndex
-          );
-          console.log('[DEBUG task-group-wrapper] Task before update:', group.tasks[taskIndex]);
-
-          // Update the task with new completed_at
           const updatedTasks = [...group.tasks];
           updatedTasks[taskIndex] = {
             ...updatedTasks[taskIndex],
@@ -223,16 +209,11 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
             status_color: response.color_code,
           };
 
-          console.log('[DEBUG task-group-wrapper] Task after update:', updatedTasks[taskIndex]);
-
           return {
             ...group,
             tasks: updatedTasks,
           };
         });
-
-        console.log('[DEBUG task-group-wrapper] Updated groups:', updated);
-        return updated;
       });
     },
     [dispatch]
