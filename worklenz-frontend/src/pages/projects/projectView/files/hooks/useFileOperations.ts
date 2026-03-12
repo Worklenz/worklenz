@@ -68,7 +68,6 @@ export const useFileOperations = () => {
       const response = await projectFilesApiService.delete(projectId, fileId);
 
       if (response.done) {
-        message.success(t('deleteSuccess', { defaultValue: 'File deleted successfully.' }));
         onSuccess?.();
       }
     } catch (error) {
