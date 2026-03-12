@@ -344,7 +344,20 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
 
   static async createInvoice(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
-      const { requestId, amount, currency = "USD", dueDate, notes, status = "draft" } = req.body;
+      const { 
+        requestId, 
+        amount, 
+        currency = "USD", 
+        dueDate, 
+        notes, 
+        status = "draft",
+        taxRate = 0,
+        discountType = 'percentage',
+        discountValue = 0,
+        subtotal,
+        taxAmount,
+        discountAmount
+      } = req.body;
       const organizationId = req.user?.team_id;
       const createdBy = req.user?.id;
 
@@ -393,10 +406,11 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
       const insertQuery = `
         INSERT INTO client_portal_invoices (
           invoice_no, request_id, client_id, organization_team_id,
-          amount, currency, status, due_date, notes, created_by_user_id, sent_at, created_at, updated_at
+          amount, currency, status, due_date, notes, created_by_user_id, sent_at, created_at, updated_at,
+          tax_rate, tax_amount, discount_type, discount_value, discount_amount, subtotal
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
-        RETURNING id, invoice_no, amount, currency, status, due_date, sent_at, created_at
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW(), $12, $13, $14, $15, $16, $17)
+        RETURNING id, invoice_no, amount, currency, status, due_date, sent_at, created_at, tax_rate, tax_amount, discount_type, discount_value, discount_amount, subtotal
       `;
 
       const result = await db.query(insertQuery, [
@@ -411,6 +425,12 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         notes || null,
         createdBy,
         sentAt,
+        taxRate || 0,
+        taxAmount || 0,
+        discountType || 'percentage',
+        discountValue || 0,
+        discountAmount || 0,
+        subtotal || amount
       ]);
 
       const newInvoice = result.rows[0];
@@ -443,7 +463,13 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         dueDate: newInvoice.due_date,
         createdAt: newInvoice.created_at,
         clientName: request.client_name,
-        serviceName: request.service_name
+        serviceName: request.service_name,
+        taxRate: parseFloat(newInvoice.tax_rate || "0"),
+        taxAmount: parseFloat(newInvoice.tax_amount || "0"),
+        discountType: newInvoice.discount_type,
+        discountValue: parseFloat(newInvoice.discount_value || "0"),
+        discountAmount: parseFloat(newInvoice.discount_amount || "0"),
+        subtotal: parseFloat(newInvoice.subtotal || "0")
       }, "Invoice created successfully"));
     } catch (error) {
       console.error("Error creating invoice:", error);
@@ -476,6 +502,12 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           i.created_at,
           i.updated_at,
           i.payment_proof_url,
+          i.tax_rate,
+          i.tax_amount,
+          i.discount_type,
+          i.discount_value,
+          i.discount_amount,
+          i.subtotal,
           r.id as request_id,
           r.req_no as request_number,
           r.request_data,
@@ -517,6 +549,12 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         createdAt: invoice.created_at,
         updatedAt: invoice.updated_at,
         paymentProofUrl: invoice.payment_proof_url || null,
+        taxRate: parseFloat(invoice.tax_rate || "0"),
+        taxAmount: parseFloat(invoice.tax_amount || "0"),
+        discountType: invoice.discount_type,
+        discountValue: parseFloat(invoice.discount_value || "0"),
+        discountAmount: parseFloat(invoice.discount_amount || "0"),
+        subtotal: parseFloat(invoice.subtotal || "0"),
         isOverdue:
           invoice.due_date &&
           new Date(invoice.due_date) < new Date() &&
@@ -592,6 +630,12 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           i.updated_at,
           i.notes,
           i.payment_proof_url,
+          i.tax_rate,
+          i.tax_amount,
+          i.discount_type,
+          i.discount_value,
+          i.discount_amount,
+          i.subtotal,
           r.id as request_id,
           r.req_no as request_number,
           r.request_data,
@@ -657,6 +701,12 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         updatedAt: invoice.updated_at,
         notes: invoice.notes,
         paymentProofUrl: invoice.payment_proof_url || null,
+        taxRate: parseFloat(invoice.tax_rate || "0"),
+        taxAmount: parseFloat(invoice.tax_amount || "0"),
+        discountType: invoice.discount_type,
+        discountValue: parseFloat(invoice.discount_value || "0"),
+        discountAmount: parseFloat(invoice.discount_amount || "0"),
+        subtotal: parseFloat(invoice.subtotal || "0"),
         isOverdue:
           invoice.due_date &&
           new Date(invoice.due_date) < new Date() &&
@@ -1008,7 +1058,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
   ) {
     try {
       const { id } = req.params;
-      const { amount, currency, dueDate, notes } = req.body;
+      const { amount, currency, dueDate, notes, taxRate, taxAmount, discountType, discountValue, discountAmount, subtotal } = req.body;
       
       // Determine if this is a client request or admin request
       const isClientRequest = 'clientId' in req && req.clientId;
@@ -1080,6 +1130,30 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         setFields.notes = notes;
       }
 
+      if (taxRate !== undefined) {
+        setFields.tax_rate = taxRate;
+      }
+
+      if (taxAmount !== undefined) {
+        setFields.tax_amount = taxAmount;
+      }
+
+      if (discountType !== undefined) {
+        setFields.discount_type = discountType;
+      }
+
+      if (discountValue !== undefined) {
+        setFields.discount_value = discountValue;
+      }
+
+      if (discountAmount !== undefined) {
+        setFields.discount_amount = discountAmount;
+      }
+
+      if (subtotal !== undefined) {
+        setFields.subtotal = subtotal;
+      }
+
       if (Object.keys(setFields).length === 0) {
         return res
           .status(400)
@@ -1118,7 +1192,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         UPDATE client_portal_invoices
         SET ${setClauses.join(", ")}
         WHERE ${isClientRequest && clientId ? `${whereClause} AND client_id = $${params.length + 1}` : whereClause}
-        RETURNING id, invoice_no, amount, currency, status, due_date, sent_at, paid_at, updated_at
+        RETURNING id, invoice_no, amount, currency, status, due_date, sent_at, paid_at, updated_at, tax_rate, tax_amount, discount_type, discount_value, discount_amount, subtotal
       `;
 
       const result = await db.query(updateQuery, params);
