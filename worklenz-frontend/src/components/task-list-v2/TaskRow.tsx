@@ -123,7 +123,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(
     return (
       <div
         ref={setNodeRef}
-        style={{ ...style, height: '44px' }}
+        style={{ ...style, height: '40px' }}
         className={`flex items-center min-w-max px-1 border-t border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
           isDragging ? 'opacity-50' : ''
         } ${isOver && !isDragging ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}

@@ -280,7 +280,7 @@ export default class ProjectFilesController extends WorklenzControllerBase {
 
     return res
       .status(200)
-      .send(new ServerResponse(true, null, "File deleted successfully"));
+      .send(new ServerResponse(true, null));
   }
 
   @HandleExceptions()
