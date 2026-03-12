@@ -71,7 +71,7 @@
     "worklenz": "file:"
   },
   "devDependencies": {
-    "@sentry/vite-plugin": "^4.7.0",
+    "@sentry/vite-plugin": "^4.9.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
