@@ -1640,7 +1640,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
           // Import and call the email sending function
           const { sendClientPortalResetEmail } =
             await import("../../shared/email-templates");
-          sendClientPortalResetEmail(email, userIdBase64, hashedString);
+          await sendClientPortalResetEmail(email, userIdBase64, hashedString);
         } catch (error) {
           // Log error internally but don't expose to client
           console.error(
