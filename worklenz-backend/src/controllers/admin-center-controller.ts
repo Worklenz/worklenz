@@ -643,12 +643,12 @@ export default class AdminCenterController extends WorklenzControllerBase {
       data.billing_info.unit_price_per_month =
         data.billing_info.unit_price / 12;
 
-    const teamMemberData = await getTeamMemberCount(req.user?.owner_id ?? "");
+    const teamMemberData = await getActiveTeamMemberCount(req.user?.owner_id ?? "");
     const subscriptionData = await checkTeamSubscriptionStatus(
       req.user?.team_id ?? ""
     );
 
-    data.billing_info.total_used = teamMemberData.user_count;
+    data.billing_info.total_used = Math.max(teamMemberData?.user_count ?? 0, 0);
     data.billing_info.total_seats = subscriptionData.quantity;
 
     return res.status(200).send(new ServerResponse(true, data.billing_info));

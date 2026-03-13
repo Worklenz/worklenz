@@ -8,6 +8,45 @@ import SqlHelper from "../../shared/sql-helpers";
 
 export default class ClientPortalInvoicesController extends ClientPortalControllerBase {
 
+  private static async getClientPortalInvoiceFinanceSelectClause() {
+    const financeColumns = [
+      "tax_rate",
+      "tax_amount",
+      "discount_type",
+      "discount_value",
+      "discount_amount",
+      "subtotal",
+    ];
+
+    const result = await db.query(
+      `
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'client_portal_invoices'
+          AND column_name = ANY($1::text[])
+      `,
+      [financeColumns]
+    );
+
+    const availableColumns = new Set(
+      result.rows.map((row: { column_name: string }) => row.column_name)
+    );
+
+    return financeColumns
+      .map(column => {
+        if (availableColumns.has(column)) {
+          return `i.${column}`;
+        }
+
+        if (column === "discount_type") {
+          return `NULL::text AS ${column}`;
+        }
+
+        return `0::numeric AS ${column}`;
+      })
+      .join(",\n          ");
+  }
+
   static async getInvoices(
     req: AuthenticatedClientRequest,
     res: IWorkLenzResponse
@@ -487,6 +526,8 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
       const { id } = req.params;
       const { clientId } = req;
       const { organizationId } = req;
+      const financeSelectClause =
+        await this.getClientPortalInvoiceFinanceSelectClause();
 
       // Get invoice details with related information
       const query = `
@@ -502,12 +543,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           i.created_at,
           i.updated_at,
           i.payment_proof_url,
-          i.tax_rate,
-          i.tax_amount,
-          i.discount_type,
-          i.discount_value,
-          i.discount_amount,
-          i.subtotal,
+          ${financeSelectClause},
           r.id as request_id,
           r.req_no as request_number,
           r.request_data,
@@ -615,6 +651,9 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           .json(new ServerResponse(false, null, "Unauthorized"));
       }
 
+      const financeSelectClause =
+        await this.getClientPortalInvoiceFinanceSelectClause();
+
       // Get invoice details with related information (without client_id filter)
       const query = `
         SELECT
@@ -630,12 +669,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           i.updated_at,
           i.notes,
           i.payment_proof_url,
-          i.tax_rate,
-          i.tax_amount,
-          i.discount_type,
-          i.discount_value,
-          i.discount_amount,
-          i.subtotal,
+          ${financeSelectClause},
           r.id as request_id,
           r.req_no as request_number,
           r.request_data,
