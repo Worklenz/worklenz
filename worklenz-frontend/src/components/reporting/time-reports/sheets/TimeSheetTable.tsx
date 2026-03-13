@@ -22,6 +22,7 @@ const TimeSheetTable: React.FC = () => {
     loadingProjects,
     billable,
     archived,
+    noCategory,
   } = useAppSelector(state => state.timeReportsOverviewReducer);
   const { duration, dateRange } = useAppSelector(state => state.reportingReducer);
 
@@ -40,17 +41,14 @@ const TimeSheetTable: React.FC = () => {
       const selectedProjects = filterProjects.filter(project => project.selected);
       const selectedCategories = categories.filter(category => category.selected);
 
-      // If no projects are selected, show empty state
-      // Projects are the primary filter - without projects, there should be no data
-      if (selectedProjects.length === 0) {
-        setProjects([]);
-        setMembers([]);
-        return;
-      }
+      // Validate primary filters - show empty state if any required filter is not met
+      // This matches backend logic which returns no data when primary filters are empty
+      const hasInvalidFilters =
+        selectedProjects.length === 0 || // Projects are required
+        selectedTeams.length === 0 || // Teams are required
+        (selectedCategories.length === 0 && !noCategory); // Categories required unless "No Category" is checked
 
-      // If no teams are selected, show empty state
-      // Teams are also a primary filter - without teams, there should be no data
-      if (selectedTeams.length === 0) {
+      if (hasInvalidFilters) {
         setProjects([]);
         setMembers([]);
         return;
@@ -64,6 +62,7 @@ const TimeSheetTable: React.FC = () => {
         date_range: dateRange,
         archived,
         billable,
+        noCategory,
       };
       const response = await reportingTimesheetApiService.getTimeSheetData(body, archived);
       if (response.done) {
