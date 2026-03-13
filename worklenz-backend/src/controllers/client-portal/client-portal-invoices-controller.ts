@@ -527,7 +527,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
       const { clientId } = req;
       const { organizationId } = req;
       const financeSelectClause =
-        await this.getClientPortalInvoiceFinanceSelectClause();
+        await ClientPortalInvoicesController.getClientPortalInvoiceFinanceSelectClause();
 
       // Get invoice details with related information
       const query = `
@@ -652,7 +652,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
       }
 
       const financeSelectClause =
-        await this.getClientPortalInvoiceFinanceSelectClause();
+        await ClientPortalInvoicesController.getClientPortalInvoiceFinanceSelectClause();
 
       // Get invoice details with related information (without client_id filter)
       const query = `
