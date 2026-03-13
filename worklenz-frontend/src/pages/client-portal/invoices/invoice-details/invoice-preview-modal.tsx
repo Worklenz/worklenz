@@ -26,6 +26,8 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 const { Title, Text } = Typography;
 const { useToken } = theme;
 
+const getInvoiceDownloadUrl = (invoiceId: string) => `/api/v1/clients/portal/invoices/${invoiceId}/download`;
+
 interface InvoicePreviewModalProps {
   open: boolean;
   onClose: () => void;
@@ -60,7 +62,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
 
   // Handle download invoice
   const handleDownload = () => {
-    window.open(`/api/v1/clients/portal/invoices/${invoice.id}/download`, '_blank');
+    window.open(getInvoiceDownloadUrl(invoice.id), '_blank', 'noopener,noreferrer');
   };
 
   // Theme-aware colors

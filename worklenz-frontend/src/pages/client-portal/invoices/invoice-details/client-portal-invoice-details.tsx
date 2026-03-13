@@ -42,12 +42,13 @@ import {
   useGetInvoiceDetailsQuery,
   useSendInvoiceMutation,
   useMarkInvoiceAsPaidMutation,
-  useUpdateInvoiceMutation,
   useDeleteInvoiceMutation,
 } from '@/api/client-portal/client-portal-api';
 import InvoicePreviewModal from './invoice-preview-modal';
 
 const { Title, Text } = Typography;
+
+const getInvoiceDownloadUrl = (invoiceId: string) => `/api/v1/clients/portal/invoices/${invoiceId}/download`;
 
 const ClientPortalInvoiceDetails: React.FC = () => {
   const { invoiceId } = useParams<{ invoiceId: string }>();
@@ -153,6 +154,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
 
   // Handle edit invoice
   const handleEditInvoice = () => {
+    if (!invoiceId) return;
     navigate(`/worklenz/client-portal/invoices/${invoiceId}/edit`);
   };
 
@@ -178,7 +180,8 @@ const ClientPortalInvoiceDetails: React.FC = () => {
 
   // Handle download invoice
   const handleDownloadInvoice = () => {
-    window.open(`/api/v1/clients/portal/invoices/${invoiceId}/download`, '_blank');
+    if (!invoiceId) return;
+    window.open(getInvoiceDownloadUrl(invoiceId), '_blank', 'noopener,noreferrer');
   };
 
   // Loading state

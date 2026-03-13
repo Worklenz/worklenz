@@ -1215,19 +1215,34 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
   }
 
   static async deleteInvoice(
-    req: IWorkLenzRequest,
+    req: AuthenticatedClientRequest | IWorkLenzRequest,
     res: IWorkLenzResponse
   ) {
     try {
       const { id } = req.params;
-      const organizationId = req.user?.team_id;
+      const isClientRequest = "clientId" in req && !!req.clientId;
+      const clientId = isClientRequest ? (req as AuthenticatedClientRequest).clientId : null;
+      const organizationId = isClientRequest
+        ? (req as AuthenticatedClientRequest).organizationId
+        : (req as IWorkLenzRequest).user?.team_id;
 
-      // Verify invoice exists and belongs to organization
-      const checkQuery = `
+      if (!organizationId) {
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Unauthorized"));
+      }
+
+      const checkQuery = isClientRequest
+        ? `
+        SELECT id, status FROM client_portal_invoices
+        WHERE id = $1 AND client_id = $2 AND organization_team_id = $3
+      `
+        : `
         SELECT id, status FROM client_portal_invoices
         WHERE id = $1 AND organization_team_id = $2
       `;
-      const checkResult = await db.query(checkQuery, [id, organizationId]);
+      const checkParams = isClientRequest ? [id, clientId, organizationId] : [id, organizationId];
+      const checkResult = await db.query(checkQuery, checkParams);
 
       if (checkResult.rows.length === 0) {
         return res
@@ -1235,19 +1250,23 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           .json(new ServerResponse(false, null, "Invoice not found"));
       }
 
-      // Prevent deletion of paid invoices
       if (checkResult.rows[0].status === "paid") {
         return res
           .status(400)
           .json(new ServerResponse(false, null, "Cannot delete paid invoices"));
       }
 
-      // Delete invoice
-      const deleteQuery = `
+      const deleteQuery = isClientRequest
+        ? `
         DELETE FROM client_portal_invoices
-        WHERE id = $1
+        WHERE id = $1 AND client_id = $2 AND organization_team_id = $3
+      `
+        : `
+        DELETE FROM client_portal_invoices
+        WHERE id = $1 AND organization_team_id = $2
       `;
-      await db.query(deleteQuery, [id]);
+      const deleteParams = isClientRequest ? [id, clientId, organizationId] : [id, organizationId];
+      await db.query(deleteQuery, deleteParams);
 
       return res.json(
         new ServerResponse(true, null, "Invoice deleted successfully")
