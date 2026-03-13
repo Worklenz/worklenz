@@ -52,9 +52,12 @@ import './team-members-settings.css';
 
 const TeamMembersSettings = () => {
   const { t } = useTranslation('settings/team-members');
+  const { t: tCommon } = useTranslation('common');
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
   const auth = useAuthService();
+  const currentSession = auth.getCurrentSession();
+  const isInviteRestricted = Boolean(currentSession?.is_expired);
   const refreshTeamMembers = useAppSelector(state => state.memberReducer.refreshTeamMembers);
 
   useDocumentTitle(t('title') || 'Team Members');
@@ -525,9 +528,27 @@ const TeamMembersSettings = () => {
                 style={{ maxWidth: 250 }}
                 suffix={<SearchOutlined />}
               />
-              <Button type="primary" onClick={() => dispatch(toggleInviteMemberDrawer())}>
-                {t('addMemberButton')}
-              </Button>
+              <Tooltip
+                title={
+                  isInviteRestricted
+                    ? tCommon('license-expired-subtitle', {
+                        defaultValue:
+                          'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
+                      })
+                    : ''
+                }
+              >
+                <Button
+                  type="primary"
+                  disabled={isInviteRestricted}
+                  onClick={() => {
+                    if (isInviteRestricted) return;
+                    dispatch(toggleInviteMemberDrawer());
+                  }}
+                >
+                  {t('addMemberButton', { defaultValue: 'Add New Member' })}
+                </Button>
+              </Tooltip>
               <Tooltip title={t('pinTooltip')} trigger={'hover'}>
                 <PinRouteToNavbarButton
                   name="teamMembers"

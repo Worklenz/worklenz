@@ -25,6 +25,7 @@ import { LinkOutlined, CopyOutlined, CheckOutlined } from '@ant-design/icons';
 import { ROLE_NAMES } from '@/types/roles/role.types';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_team_invite_sent } from '@/shared/worklenz-analytics-events';
+import { useAuthService } from '@/hooks/useAuth';
 
 interface FormValues {
   email: string[];
@@ -51,9 +52,17 @@ const InviteTeamMembers = () => {
   const [form] = Form.useForm<FormValues>();
 
   const { t } = useTranslation('settings/team-members');
+  const { t: tCommon } = useTranslation('common');
   const isDrawerOpen = useAppSelector(state => state.memberReducer.isInviteMemberDrawerOpen);
   const dispatch = useAppDispatch();
   const { trackMixpanelEvent } = useMixpanelTracking();
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
+  const isInviteRestricted = Boolean(currentSession?.is_expired);
+  const inviteRestrictedMessage = tCommon('license-expired-subtitle', {
+    defaultValue:
+      'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
+  });
 
   // const handleSearch = useCallback(
   //   async (value: string) => {
@@ -97,6 +106,11 @@ const InviteTeamMembers = () => {
   };
 
   const handleCreateInvitationLink = async () => {
+    if (isInviteRestricted) {
+      message.error(inviteRestrictedMessage);
+      return;
+    }
+
     try {
       setLinkLoading(true);
       const linkData = {
@@ -115,16 +129,29 @@ const InviteTeamMembers = () => {
         setInvitationLink(res.body.invitation_url);
         setLinkExpiry(res.body.expires_at);
         setHasActiveLink(true);
-        message.success(t('Invitation link created successfully'));
+        message.success(
+          t('Invitation link created successfully', {
+            defaultValue: 'Invitation link created successfully',
+          })
+        );
       }
     } catch (error) {
-      message.error(t('Failed to create invitation link'));
+      message.error(
+        t('Failed to create invitation link', {
+          defaultValue: 'Failed to create invitation link',
+        })
+      );
     } finally {
       setLinkLoading(false);
     }
   };
 
   const handleCopyLink = async () => {
+    if (isInviteRestricted) {
+      message.error(inviteRestrictedMessage);
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(invitationLink);
       
@@ -136,14 +163,27 @@ const InviteTeamMembers = () => {
       });
       
       setLinkCopied(true);
-      message.success(t('Invitation link copied to clipboard'));
+      message.success(
+        t('Invitation link copied to clipboard', {
+          defaultValue: 'Invitation link copied to clipboard',
+        })
+      );
       setTimeout(() => setLinkCopied(false), 2000);
     } catch (error) {
-      message.error(t('Failed to copy link'));
+      message.error(
+        t('Failed to copy link', {
+          defaultValue: 'Failed to copy link',
+        })
+      );
     }
   };
 
   const handleDeactivateLink = async () => {
+    if (isInviteRestricted) {
+      message.error(inviteRestrictedMessage);
+      return;
+    }
+
     try {
       setLinkLoading(true);
       const res = await teamMembersApiService.revokeInvitationLink();
@@ -151,16 +191,29 @@ const InviteTeamMembers = () => {
         setHasActiveLink(false);
         setInvitationLink('');
         setLinkExpiry('');
-        message.success(t('Invitation link deactivated'));
+        message.success(
+          t('Invitation link deactivated', {
+            defaultValue: 'Invitation link deactivated',
+          })
+        );
       }
     } catch (error) {
-      message.error(t('Failed to deactivate link'));
+      message.error(
+        t('Failed to deactivate link', {
+          defaultValue: 'Failed to deactivate link',
+        })
+      );
     } finally {
       setLinkLoading(false);
     }
   };
 
   const handleFormSubmit = async (values: FormValues) => {
+    if (isInviteRestricted) {
+      message.error(inviteRestrictedMessage);
+      return;
+    }
+
     try {
       setLoading(true);
       const body: ITeamMemberCreateRequest = {
@@ -230,7 +283,9 @@ const InviteTeamMembers = () => {
   const tabItems = [
     {
       key: 'email',
-      label: t('Invite with Email'),
+      label: t('Invite with Email', {
+        defaultValue: 'Invite with Email',
+      }),
       children: (
         <Form
           form={form}
@@ -238,6 +293,11 @@ const InviteTeamMembers = () => {
           layout="vertical"
           initialValues={{ access: 'member' }}
         >
+          {isInviteRestricted && (
+            <Typography.Text type="danger" style={{ display: 'block', marginBottom: 16 }}>
+              {inviteRestrictedMessage}
+            </Typography.Text>
+          )}
           <Form.Item
             name="emails"
             label={t('memberEmailLabel')}
@@ -258,6 +318,7 @@ const InviteTeamMembers = () => {
                 style={{ width: '100%' }}
                 placeholder={t('memberEmailPlaceholder')}
                 onChange={handleEmailChange}
+                disabled={isInviteRestricted}
                 notFoundContent={
                   <Typography.Text type="secondary">{t('noResultFound')}</Typography.Text>
                 }
@@ -293,6 +354,7 @@ const InviteTeamMembers = () => {
 
           <Form.Item label={t('memberAccessLabel')} name="access">
             <Select
+              disabled={isInviteRestricted}
               options={[
                 { value: 'member', label: t('memberText') },
                 { value: 'team-lead', label: 'Team Lead' },
@@ -305,15 +367,24 @@ const InviteTeamMembers = () => {
     },
     {
       key: 'link',
-      label: t('Invite with Link'),
+      label: t('Invite with Link', {
+        defaultValue: 'Invite with Link',
+      }),
       children: (
         <Flex vertical gap={16}>
+          {isInviteRestricted && <Typography.Text type="danger">{inviteRestrictedMessage}</Typography.Text>}
           <div>
-            <Typography.Text strong>{t('Your Invite Link')}</Typography.Text>
+            <Typography.Text strong>
+              {t('Your Invite Link', {
+                defaultValue: 'Your Invite Link',
+              })}
+            </Typography.Text>
             <Input
               value={invitationLink}
               disabled
-              placeholder={t('No active invitation link')}
+              placeholder={t('No active invitation link', {
+                defaultValue: 'No active invitation link',
+              })}
               style={{ marginTop: 8 }}
               suffix={
                 invitationLink && (
@@ -322,6 +393,7 @@ const InviteTeamMembers = () => {
                     size="small"
                     icon={linkCopied ? <CheckOutlined /> : <CopyOutlined />}
                     onClick={handleCopyLink}
+                    disabled={isInviteRestricted}
                     style={{ color: linkCopied ? '#52c41a' : undefined }}
                   />
                 )
@@ -348,24 +420,37 @@ const InviteTeamMembers = () => {
                 loading={linkLoading}
                 onClick={handleCreateInvitationLink}
                 icon={<LinkOutlined />}
+                disabled={isInviteRestricted}
               >
-                {t('Create Link')}
+                {t('Create Link', {
+                  defaultValue: 'Create Link',
+                })}
               </Button>
             ) : (
               <>
                 <Button
                   loading={linkLoading}
                   onClick={handleDeactivateLink}
+                  disabled={isInviteRestricted}
                 >
-                  {t('Deactivate Link')}
+                  {t('Deactivate Link', {
+                    defaultValue: 'Deactivate Link',
+                  })}
                 </Button>
                 {formatExpiryDate(linkExpiry) !== 'Expired' && (
                   <Button
                     type="primary"
                     onClick={handleCopyLink}
                     icon={linkCopied ? <CheckOutlined /> : <CopyOutlined />}
+                    disabled={isInviteRestricted}
                   >
-                    {linkCopied ? t('Copied!') : t('Copy Link')}
+                    {linkCopied
+                      ? t('Copied!', {
+                          defaultValue: 'Copied!',
+                        })
+                      : t('Copy Link', {
+                          defaultValue: 'Copy Link',
+                        })}
                   </Button>
                 )}
               </>
@@ -393,7 +478,7 @@ const InviteTeamMembers = () => {
         activeTab === 'email' ? (
           <Flex justify="end">
             <Button onClick={form.submit} style={{ fontSize: 12 }}>
-              {t('addToTeamButton')}
+              {t('addToTeamButton', { defaultValue: 'Add to Team' })}
             </Button>
           </Flex>
         ) : null
