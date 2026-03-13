@@ -217,6 +217,22 @@ const EstimatedVsActualTimeSheet = forwardRef<
       const selectedProjects = filterProjects.filter(project => project.selected);
       const selectedCategories = categories.filter(category => category.selected);
 
+      // If no projects are selected, show empty chart
+      // Projects are the primary filter - without projects, there should be no data
+      if (selectedProjects.length === 0) {
+        setJsonData([]);
+        setChartWidth(window.innerWidth - 250);
+        return;
+      }
+
+      // If no teams are selected, show empty chart
+      // Teams are also a primary filter - without teams, there should be no data
+      if (selectedTeams.length === 0) {
+        setJsonData([]);
+        setChartWidth(window.innerWidth - 250);
+        return;
+      }
+
       const body = {
         type: type === 'WORKING_DAYS' ? 'WORKING_DAYS' : 'MAN_DAYS',
         teams: selectedTeams.map(t => t.id),

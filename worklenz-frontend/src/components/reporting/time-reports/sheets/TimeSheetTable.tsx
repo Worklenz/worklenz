@@ -39,6 +39,23 @@ const TimeSheetTable: React.FC = () => {
       const selectedTeams = teams.filter(team => team.selected);
       const selectedProjects = filterProjects.filter(project => project.selected);
       const selectedCategories = categories.filter(category => category.selected);
+
+      // If no projects are selected, show empty state
+      // Projects are the primary filter - without projects, there should be no data
+      if (selectedProjects.length === 0) {
+        setProjects([]);
+        setMembers([]);
+        return;
+      }
+
+      // If no teams are selected, show empty state
+      // Teams are also a primary filter - without teams, there should be no data
+      if (selectedTeams.length === 0) {
+        setProjects([]);
+        setMembers([]);
+        return;
+      }
+
       const body = {
         teams: selectedTeams.map(t => t.id) as string[],
         projects: selectedProjects.map(project => project.id) || [],

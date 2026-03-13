@@ -191,6 +191,20 @@ const ProjectTimeSheetChart = forwardRef<ProjectTimeSheetChartRef>((_, ref) => {
       const selectedProjects = filterProjects.filter(project => project.selected);
       const selectedCategories = categories.filter(category => category.selected);
 
+      // If no projects are selected, show empty chart
+      // Projects are the primary filter - without projects, there should be no data
+      if (selectedProjects.length === 0) {
+        setJsonData([]);
+        return;
+      }
+
+      // If no teams are selected, show empty chart
+      // Teams are also a primary filter - without teams, there should be no data
+      if (selectedTeams.length === 0) {
+        setJsonData([]);
+        return;
+      }
+
       const body = {
         teams: selectedTeams.map(t => t.id),
         projects: selectedProjects.map(project => project.id),
