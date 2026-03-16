@@ -1168,31 +1168,23 @@ export default class AdminCenterController extends WorklenzControllerBase {
         WHERE user_id = $1;`;
     await db.query(updateQ2, [req.user?.owner_id]);
 
-    // AppSumo LTD users should not have Business plan trials.
-    // - < 5 redeemed codes: buying 5 codes unlocks Business automatically.
-    // - >= 5 redeemed codes: Business is already unlocked.
-    try {
-      const countResult = await db.query(
-        `SELECT COUNT(*)::INT AS redeemed_codes_count
-         FROM licensing_coupon_codes
-         WHERE redeemed_by = $1
-           AND is_redeemed = TRUE
-           AND is_refunded = FALSE;`,
-        [req.user?.owner_id]
-      );
+    // Check if user has redeemed 5 codes and upgrade to Business Plan
+    const redeemedCountQ = `SELECT COUNT(*)::INT AS redeemed_count 
+                           FROM licensing_coupon_codes 
+                           WHERE redeemed_by = $1 
+                             AND is_redeemed = TRUE 
+                             AND is_refunded = FALSE;`;
+    const redeemedResult = await db.query(redeemedCountQ, [req.user?.owner_id]);
+    const redeemedCount = redeemedResult.rows[0]?.redeemed_count || 0;
 
-      const redeemedCodesCount = countResult.rows[0]?.redeemed_codes_count ?? 0;
-      await PlanTrialService.cancelPlanTrialByTier(
-        req.user?.owner_id as string,
-        "BUSINESS_LARGE",
-        redeemedCodesCount >= 5
-          ? "appsumo_ltd_business_unlocked"
-          : "appsumo_ltd_not_eligible_for_business_trial"
-      );
-    } catch (error) {
-      log_error(error);
-      // Don't block redemption if trial cleanup fails
-    }
+	    if (redeemedCount >= 5) {
+	      // Upgrade to Business Plan
+	      const businessPlanQ = `UPDATE organizations
+	        SET business_plan_override = TRUE,
+	            team_member_limit_override = TRUE
+	        WHERE user_id = $1;`;
+	      await db.query(businessPlanQ, [req.user?.owner_id]);
+	    }
 
     return res
       .status(200)

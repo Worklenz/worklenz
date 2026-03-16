@@ -167,5 +167,9 @@
 
   "planComparison": "Compare Plans",
   "currentUsage": "Current Usage",
-  "planRecommendation": "Recommended for your team size"
+  "planRecommendation": "Recommended for your team size",
+
+  "appsumoBusinessUnlockTitle": "Unlock Business Plan with 5 AppSumo codes",
+  "appsumoBusinessUnlockDescription": "Redeem {{required}} AppSumo codes to automatically unlock Business Plan features. You have redeemed {{count}} of {{required}} codes.",
+  "appsumoBusinessUnlockProgress": "{{count}} of {{required}} AppSumo codes redeemed. Redeem {{required}} codes to unlock Business Plan features."
 }

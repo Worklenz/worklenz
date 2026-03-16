@@ -13,17 +13,19 @@ function hasBusinessPlanAccess(user: any): boolean {
     return false;
   }
 
+  const isTruthy = (value: unknown): boolean =>
+    value === true || value === 1 || value === "true" || value === "t";
+
   // PRIORITY 1: Manual override flag (highest priority)
-  if (user.business_plan_override === true) {
+  if (isTruthy(user.business_plan_override)) {
     return true;
   }
 
   // PRIORITY 2: AppSumo LTD users with 5+ redeemed codes
-  if (user.appsumo_business_eligible === true) {
+  if (isTruthy(user.appsumo_business_eligible) || (user.redeemed_codes_count ?? 0) >= 5) {
     return true;
   }
 
-  // PRIORITY 3: Existing logic (trials, ANNUAL_BUSINESS, SELF_HOSTED, PADDLE business/enterprise)
   const subscriptionType = user.subscription_type;
   const planName = (user.plan_name || "").toLowerCase();
 
