@@ -25,6 +25,9 @@
   "paymentMethod": "Zahlungsmethode",
   "status": "Status",
   "ltdUsers": "Sie können bis zu {{ltd_users}} Benutzer hinzufügen.",
+  "appsumoBusinessUnlockTitle": "Business-Plan mit 5 AppSumo-Codes freischalten",
+  "appsumoBusinessUnlockDescription": "Lösen Sie {{required}} AppSumo-Codes ein, um Business-Plan-Funktionen automatisch freizuschalten. Sie haben {{count}} von {{required}} Codes eingelöst.",
+  "redeemAnotherCode": "Weiteren Code einlösen",
 
   "totalSeats": "Gesamte Plätze",
   "availableSeats": "Verfügbare Plätze",

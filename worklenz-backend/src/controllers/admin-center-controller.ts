@@ -24,6 +24,7 @@ import {
   getUsedStorage,
 } from "../shared/paddle-utils";
 import { AppSumoService } from "../services/appsumo-service";
+import { PlanTrialService } from "../services/plan-trial-service";
 import {
   addModifier,
   cancelSubscription,
@@ -650,6 +651,8 @@ export default class AdminCenterController extends WorklenzControllerBase {
 
     data.billing_info.total_used = Math.max(teamMemberData?.user_count ?? 0, 0);
     data.billing_info.total_seats = subscriptionData.quantity;
+    data.billing_info.redeemed_codes_count = subscriptionData?.redeemed_codes_count ?? 0;
+    data.billing_info.appsumo_business_eligible = subscriptionData?.appsumo_business_eligible === true;
 
     return res.status(200).send(new ServerResponse(true, data.billing_info));
   }
@@ -1164,6 +1167,32 @@ export default class AdminCenterController extends WorklenzControllerBase {
             license_type_id = (SELECT id FROM sys_license_types WHERE key = 'LIFE_TIME_DEAL') 
         WHERE user_id = $1;`;
     await db.query(updateQ2, [req.user?.owner_id]);
+
+    // AppSumo LTD users should not have Business plan trials.
+    // - < 5 redeemed codes: buying 5 codes unlocks Business automatically.
+    // - >= 5 redeemed codes: Business is already unlocked.
+    try {
+      const countResult = await db.query(
+        `SELECT COUNT(*)::INT AS redeemed_codes_count
+         FROM licensing_coupon_codes
+         WHERE redeemed_by = $1
+           AND is_redeemed = TRUE
+           AND is_refunded = FALSE;`,
+        [req.user?.owner_id]
+      );
+
+      const redeemedCodesCount = countResult.rows[0]?.redeemed_codes_count ?? 0;
+      await PlanTrialService.cancelPlanTrialByTier(
+        req.user?.owner_id as string,
+        "BUSINESS_LARGE",
+        redeemedCodesCount >= 5
+          ? "appsumo_ltd_business_unlocked"
+          : "appsumo_ltd_not_eligible_for_business_trial"
+      );
+    } catch (error) {
+      log_error(error);
+      // Don't block redemption if trial cleanup fails
+    }
 
     return res
       .status(200)

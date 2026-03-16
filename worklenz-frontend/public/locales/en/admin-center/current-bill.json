@@ -25,6 +25,9 @@
   "paymentMethod": "Payment Method",
   "status": "Status",
   "ltdUsers": "You can add up to {{ltd_users}} users.",
+  "appsumoBusinessUnlockTitle": "Unlock Business Plan with 5 AppSumo codes",
+  "appsumoBusinessUnlockDescription": "Redeem {{required}} AppSumo codes to automatically unlock Business Plan features. You have redeemed {{count}} of {{required}} codes.",
+  "redeemAnotherCode": "Redeem another code",
 
   "totalSeats": "Total seats",
   "availableSeats": "Available seats",

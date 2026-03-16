@@ -25,6 +25,9 @@
   "paymentMethod": "Metoda e Pagesës",
   "status": "Statusi",
   "ltdUsers": "Mund të shtoni deri në {{ltd_users}} përdorues.",
+  "appsumoBusinessUnlockTitle": "Zhbllokoni planin Business me 5 kode AppSumo",
+  "appsumoBusinessUnlockDescription": "Shlyeni {{required}} kode AppSumo për të zhbllokuar automatikisht veçoritë e planit Business. Keni shlyer {{count}} nga {{required}} kode.",
+  "redeemAnotherCode": "Shlye një kod tjetër",
 
   "totalSeats": "Vende totale",
   "availableSeats": "Vende të disponueshme",

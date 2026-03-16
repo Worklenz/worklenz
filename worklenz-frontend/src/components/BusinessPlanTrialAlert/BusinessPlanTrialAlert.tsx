@@ -55,6 +55,13 @@ export const BusinessPlanTrialAlert = () => {
       return;
     }
 
+    // Never show Business trial banner to AppSumo LTD users (they unlock Business by redeeming 5 codes)
+    if (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL) {
+      setVisible(false);
+      setEligibilityChecked(true);
+      return;
+    }
+
     // Check if user has dismissed today
     const dismissedDate = localStorage.getItem(DISMISS_KEY);
     const today = new Date().toDateString();

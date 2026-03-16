@@ -47,6 +47,7 @@ type SeatOption = { label: string; value: number | string };
 const SEAT_COUNT_LIMIT = '100+';
 const BILLING_DELAY_MS = 8000;
 const LTD_USER_LIMIT = 50;
+const APPSUMO_BUSINESS_UNLOCK_CODE_COUNT = 5;
 const BUTTON_STYLE = {
   backgroundColor: '#1890ff',
   borderColor: '#1890ff',
@@ -613,6 +614,18 @@ const CurrentPlanDetails = () => {
     renderCustomSubscriptionInfo,
   ]);
 
+  const shouldShowAppSumoBusinessUnlock = useMemo(() => {
+    if (!billingInfo) return false;
+    if (billingInfo.subscription_type !== ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL) return false;
+    const redeemedCodesCount = billingInfo.redeemed_codes_count ?? 0;
+    return redeemedCodesCount < APPSUMO_BUSINESS_UNLOCK_CODE_COUNT;
+  }, [billingInfo]);
+
+  const redeemedCodesCount = useMemo(
+    () => billingInfo?.redeemed_codes_count ?? 0,
+    [billingInfo?.redeemed_codes_count]
+  );
+
   return (
     <Card
       style={{ height: '100%' }}
@@ -631,6 +644,31 @@ const CurrentPlanDetails = () => {
       extra={renderExtra()}
     >
       <Flex vertical>
+        {shouldShowAppSumoBusinessUnlock && (
+          <Alert
+            type="success"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message={t('appsumoBusinessUnlockTitle', {
+              defaultValue: 'Unlock Business Plan with 5 AppSumo codes',
+            })}
+            description={t('appsumoBusinessUnlockDescription', {
+              count: redeemedCodesCount,
+              required: APPSUMO_BUSINESS_UNLOCK_CODE_COUNT,
+              defaultValue:
+                'Redeem {{required}} AppSumo codes to automatically unlock Business Plan features. You have redeemed {{count}} of {{required}} codes.',
+            })}
+            action={
+              <Button
+                type="link"
+                size="small"
+                onClick={() => dispatch(toggleRedeemCodeDrawer())}
+              >
+                {t('redeemAnotherCode', { defaultValue: 'Redeem another code' })}
+              </Button>
+            }
+          />
+        )}
         <div style={{ marginBottom: '14px' }}>{renderSubscriptionContent()}</div>
 
         {shouldShowRedeemButton && (
