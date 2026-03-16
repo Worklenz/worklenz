@@ -6,13 +6,24 @@ import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
 
 /**
  * Checks if user has business plan access based on session data
- * Includes active business plan trials
+ * Includes active business plan trials, manual overrides, and AppSumo eligibility
  */
 function hasBusinessPlanAccess(user: any): boolean {
   if (!user) {
     return false;
   }
 
+  // PRIORITY 1: Manual override flag (highest priority)
+  if (user.business_plan_override === true) {
+    return true;
+  }
+
+  // PRIORITY 2: AppSumo LTD users with 5+ redeemed codes
+  if (user.appsumo_business_eligible === true) {
+    return true;
+  }
+
+  // PRIORITY 3: Existing logic (trials, ANNUAL_BUSINESS, SELF_HOSTED, PADDLE business/enterprise)
   const subscriptionType = user.subscription_type;
   const planName = (user.plan_name || "").toLowerCase();
 
