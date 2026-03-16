@@ -89,6 +89,8 @@ export interface IBillingAccountInfo {
   is_custom?: boolean;
   is_ltd_user?: boolean;
   ltd_users?: number;
+  redeemed_codes_count?: number;
+  appsumo_business_eligible?: boolean;
   total_seats?: number;
   total_used?: number;
   is_lkr_billing?: boolean;
