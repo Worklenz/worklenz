@@ -4,23 +4,25 @@ import { ILocalSession } from '@/types/auth/local-session.types';
 /**
  * Checks if user has access to business features (client portal, project finance)
  * PADDLE users with business or enterprise plans, ANNUAL_BUSINESS users, SELF_HOSTED users,
- * users on active Business plan trials, manual overrides, and AppSumo users with 5+ codes have access
- * Excludes lifetime deal users and other subscription types
+ * users on active Business plan trials, manual overrides, and AppSumo users with 5+ codes have access.
  */
 export const hasBusinessFeatureAccess = (session: ILocalSession | null): boolean => {
   if (!session) return false;
 
+  const isTruthy = (value: unknown): boolean =>
+    value === true || value === 1 || value === 'true' || value === 't';
+
   // PRIORITY 1: Manual override flag (highest priority)
-  if (session.business_plan_override === true) {
+  if (isTruthy(session.business_plan_override)) {
     return true;
   }
 
   // PRIORITY 2: AppSumo LTD users with 5+ redeemed codes
-  if (session.appsumo_business_eligible === true) {
+  if (isTruthy(session.appsumo_business_eligible) || (session.redeemed_codes_count ?? 0) >= 5) {
     return true;
   }
 
-  // PRIORITY 3: Check for active Business plan trial
+  // Check for active Business plan trial
   if (session.active_plan_trial === 'BUSINESS_LARGE' && session.plan_trial_end_date) {
     const trialEndDate = new Date(session.plan_trial_end_date);
     if (trialEndDate > new Date()) {
@@ -59,13 +61,16 @@ export const hasBusinessFeatureAccess = (session: ILocalSession | null): boolean
 export const isBusinessPlan = (session: ILocalSession | null): boolean => {
   if (!session) return false;
 
+  const isTruthy = (value: unknown): boolean =>
+    value === true || value === 1 || value === 'true' || value === 't';
+
   // PRIORITY 1: Manual override flag (highest priority)
-  if (session.business_plan_override === true) {
+  if (isTruthy(session.business_plan_override)) {
     return true;
   }
 
   // PRIORITY 2: AppSumo LTD users with 5+ redeemed codes
-  if (session.appsumo_business_eligible === true) {
+  if (isTruthy(session.appsumo_business_eligible) || (session.redeemed_codes_count ?? 0) >= 5) {
     return true;
   }
 
@@ -207,7 +212,7 @@ export const getTrialExpirationMessage = (session: ILocalSession | null): string
   if (!isOnPlanTrial(session)) return null;
 
   const daysRemaining = getPlanTrialDaysRemaining(session);
-  const planName = session.trial_plan_display_name || 'Plan';
+  const planName = session?.trial_plan_display_name || 'Plan';
 
   if (daysRemaining === 0) {
     return `Your ${planName} trial expires today`;
