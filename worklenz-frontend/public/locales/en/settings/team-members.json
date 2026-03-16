@@ -96,5 +96,6 @@
   "managerTooltip": "Assign a Team Lead to manage this member. Only Members can be assigned to managers.",
   "selectManagerPlaceholder": "Select a Team Lead as manager",
   "manager_removed_successfully": "Manager assignment removed successfully",
-  "updateError": "Failed to update team member. Please try again."
+  "updateError": "Failed to update team member. Please try again.",
+  "noTeamLeadsAvailable": "No team leads available" 
 }
