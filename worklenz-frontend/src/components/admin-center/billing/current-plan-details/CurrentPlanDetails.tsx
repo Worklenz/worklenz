@@ -624,14 +624,7 @@ const CurrentPlanDetails = () => {
     renderCustomSubscriptionInfo,
   ]);
 
-  const shouldShowAppSumoBusinessUnlock = useMemo(() => {
-    if (!billingInfo) return false;
-    if (billingInfo.subscription_type !== ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL) return false;
-    const redeemedCodesCount = billingInfo.redeemed_codes_count ?? 0;
-    return redeemedCodesCount < APPSUMO_BUSINESS_UNLOCK_CODE_COUNT;
-  }, [billingInfo]);
-
-  const redeemedCodesCount = useMemo(
+  const appsumoRedeemedCodesCount = useMemo(
     () => billingInfo?.redeemed_codes_count ?? 0,
     [billingInfo?.redeemed_codes_count]
   );
@@ -663,7 +656,7 @@ const CurrentPlanDetails = () => {
               defaultValue: 'Unlock Business Plan with 5 AppSumo codes',
             })}
             description={t('appsumoBusinessUnlockDescription', {
-              count: redeemedCodesCount,
+              count: appsumoRedeemedCodesCount,
               required: APPSUMO_BUSINESS_UNLOCK_CODE_COUNT,
               defaultValue:
                 'Redeem {{required}} AppSumo codes to automatically unlock Business Plan features. You have redeemed {{count}} of {{required}} codes.',
@@ -688,7 +681,7 @@ const CurrentPlanDetails = () => {
             banner
             style={{ marginBottom: 12 }}
             message={t('appsumoBusinessUnlockProgress', {
-              count: billingInfo?.redeemed_codes_count ?? 0,
+              count: appsumoRedeemedCodesCount,
               required: APPSUMO_BUSINESS_UNLOCK_CODE_COUNT,
               defaultValue:
                 '{{count}} of {{required}} AppSumo codes redeemed. Redeem {{required}} codes to unlock Business Plan features.',
