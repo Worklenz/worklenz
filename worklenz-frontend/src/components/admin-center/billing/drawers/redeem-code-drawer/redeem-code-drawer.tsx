@@ -1,4 +1,4 @@
-import { Alert, Button, Drawer, Form, Input, notification, Typography } from '@/shared/antd-imports';
+import { Alert, Button, Drawer, Form, Input, Typography } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -10,9 +10,8 @@ import {
 } from '@features/admin-center/admin-center.slice';
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import logger from '@/utils/errorLogger';
-import { authApiService } from '@/api/auth/auth.api.service';
 import { setUser } from '@/features/user/userSlice';
-import { setSession } from '@/utils/session-helper';
+import { verifyAuthentication } from '@/features/auth/authSlice';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 
 const APPSUMO_BUSINESS_UNLOCK_CODE_COUNT = 5;
@@ -41,9 +40,8 @@ const RedeemCodeDrawer: React.FC = () => {
       const res = await adminCenterApiService.redeemCode(values.redeemCode);
       if (res.done) {
         form.resetFields();
-        const authorizeResponse = await authApiService.verify();
-        if (authorizeResponse.authenticated) {
-          setSession(authorizeResponse.user);
+        const authorizeResponse = await dispatch(verifyAuthentication()).unwrap();
+        if (authorizeResponse?.authenticated) {
           dispatch(setUser(authorizeResponse.user));
         }
         dispatch(toggleRedeemCodeDrawer());
