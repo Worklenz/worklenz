@@ -47,6 +47,7 @@ type SeatOption = { label: string; value: number | string };
 const SEAT_COUNT_LIMIT = '100+';
 const BILLING_DELAY_MS = 8000;
 const LTD_USER_LIMIT = 50;
+const APPSUMO_BUSINESS_UNLOCK_CODE_COUNT = 5;
 const BUTTON_STYLE = {
   backgroundColor: '#1890ff',
   borderColor: '#1890ff',
@@ -214,6 +215,16 @@ const CurrentPlanDetails = () => {
     if (validSubscriptionTypes.includes(billingInfo?.subscription_type as ISUBSCRIPTION_TYPE)) return true;
     return billingInfo?.ltd_users ? billingInfo.ltd_users < LTD_USER_LIMIT : false;
   }, [billingInfo?.subscription_type, billingInfo?.ltd_users]);
+
+  const shouldShowAppSumoBusinessUnlock = useMemo(() => {
+    const redeemedCodesCount = billingInfo?.redeemed_codes_count ?? 0;
+    const isBusinessPlanActivated = billingInfo?.plan_name === 'Business Plan';
+    return (
+      billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL &&
+      redeemedCodesCount < APPSUMO_BUSINESS_UNLOCK_CODE_COUNT &&
+      !isBusinessPlanActivated
+    );
+  }, [billingInfo?.subscription_type, billingInfo?.redeemed_codes_count, billingInfo?.plan_name]);
 
   const showChangeButton = useMemo(() => {
     return checkSubscriptionStatus([SUBSCRIPTION_STATUS.ACTIVE, SUBSCRIPTION_STATUS.PASTDUE]);
@@ -633,12 +644,27 @@ const CurrentPlanDetails = () => {
       <Flex vertical>
         <div style={{ marginBottom: '14px' }}>{renderSubscriptionContent()}</div>
 
+        {shouldShowAppSumoBusinessUnlock && (
+          <Alert
+            type="info"
+            showIcon
+            banner
+            style={{ marginBottom: 12 }}
+            message={t('appsumoBusinessUnlockProgress', {
+              count: billingInfo?.redeemed_codes_count ?? 0,
+              required: APPSUMO_BUSINESS_UNLOCK_CODE_COUNT,
+              defaultValue:
+                '{{count}} of {{required}} AppSumo codes redeemed. Redeem {{required}} codes to unlock Business Plan features.',
+            })}
+          />
+        )}
+
         {shouldShowRedeemButton && (
           <>
             <Button
               type="link"
               icon={<TagOutlined />}
-              style={{ margin: 0, padding: 0, width: '90px' }}
+              style={{ paddingLeft: 0 }}
               onClick={() => dispatch(toggleRedeemCodeDrawer())}
             >
               {t('redeemCode')}

@@ -1,4 +1,4 @@
-import { Button, Drawer, Form, Input, notification, Typography } from '@/shared/antd-imports';
+import { Alert, Button, Drawer, Form, Input, notification, Typography } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -13,14 +13,25 @@ import logger from '@/utils/errorLogger';
 import { authApiService } from '@/api/auth/auth.api.service';
 import { setUser } from '@/features/user/userSlice';
 import { setSession } from '@/utils/session-helper';
+import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
+
+const APPSUMO_BUSINESS_UNLOCK_CODE_COUNT = 5;
+
 const RedeemCodeDrawer: React.FC = () => {
   const [form] = Form.useForm();
   const { t } = useTranslation('admin-center/current-bill');
-  const { isRedeemCodeDrawerOpen } = useAppSelector(state => state.adminCenterReducer);
+  const { isRedeemCodeDrawerOpen, billingInfo } = useAppSelector(state => state.adminCenterReducer);
   const dispatch = useAppDispatch();
 
   const [redeemCode, setRedeemCode] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const redeemedCodesCount = billingInfo?.redeemed_codes_count ?? 0;
+  const isBusinessPlanActivated = billingInfo?.plan_name === 'Business Plan';
+  const shouldShowAppSumoBusinessUnlock =
+    billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL &&
+    redeemedCodesCount < APPSUMO_BUSINESS_UNLOCK_CODE_COUNT &&
+    !isBusinessPlanActivated;
 
   const handleFormSubmit = async (values: any) => {
     if (!values.redeemCode) return;
@@ -60,6 +71,22 @@ const RedeemCodeDrawer: React.FC = () => {
           form.resetFields();
         }}
       >
+        {shouldShowAppSumoBusinessUnlock && (
+          <Alert
+            type="success"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message={t('appsumoBusinessUnlockTitle', {
+              defaultValue: 'Unlock Business Plan with 5 AppSumo codes',
+            })}
+            description={t('appsumoBusinessUnlockDescription', {
+              count: redeemedCodesCount,
+              required: APPSUMO_BUSINESS_UNLOCK_CODE_COUNT,
+              defaultValue:
+                'Redeem {{required}} AppSumo codes to automatically unlock Business Plan features. You have redeemed {{count}} of {{required}} codes.',
+            })}
+          />
+        )}
         <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
           <Form.Item
             name="redeemCode"

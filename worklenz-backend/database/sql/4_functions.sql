@@ -1693,7 +1693,13 @@ BEGIN
                  _is_custom AS is_custom,
                  _is_ltd AS is_ltd_user,
                  (SELECT SUM(team_members_limit) FROM licensing_coupon_codes WHERE redeemed_by = _user_id) AS ltd_users,
+                 (SELECT COUNT(*)
+                  FROM licensing_coupon_codes lcc
+                  WHERE lcc.redeemed_by = _user_id
+                    AND lcc.is_redeemed = TRUE
+                    AND lcc.is_refunded = FALSE) AS redeemed_codes_count,
                  (CASE
+                      WHEN (ud.business_plan_override = TRUE) THEN 'Business Plan'
                       WHEN (_is_custom) THEN 'Custom Plan'
                       WHEN (_is_ltd) THEN 'Life Time Deal'
                       ELSE

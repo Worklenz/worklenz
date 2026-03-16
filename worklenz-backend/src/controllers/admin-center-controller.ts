@@ -1165,6 +1165,24 @@ export default class AdminCenterController extends WorklenzControllerBase {
         WHERE user_id = $1;`;
     await db.query(updateQ2, [req.user?.owner_id]);
 
+    // Check if user has redeemed 5 codes and upgrade to Business Plan
+    const redeemedCountQ = `SELECT COUNT(*)::INT AS redeemed_count 
+                           FROM licensing_coupon_codes 
+                           WHERE redeemed_by = $1 
+                             AND is_redeemed = TRUE 
+                             AND is_refunded = FALSE;`;
+    const redeemedResult = await db.query(redeemedCountQ, [req.user?.owner_id]);
+    const redeemedCount = redeemedResult.rows[0]?.redeemed_count || 0;
+
+	    if (redeemedCount >= 5) {
+	      // Upgrade to Business Plan
+	      const businessPlanQ = `UPDATE organizations
+	        SET business_plan_override = TRUE,
+	            team_member_limit_override = TRUE
+	        WHERE user_id = $1;`;
+	      await db.query(businessPlanQ, [req.user?.owner_id]);
+	    }
+
     return res
       .status(200)
       .send(new ServerResponse(true, [], "Code redeemed successfully!"));
