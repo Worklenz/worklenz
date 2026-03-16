@@ -647,31 +647,6 @@ const CurrentPlanDetails = () => {
       extra={renderExtra()}
     >
       <Flex vertical>
-        {shouldShowAppSumoBusinessUnlock && (
-          <Alert
-            type="success"
-            showIcon
-            style={{ marginBottom: 12 }}
-            message={t('appsumoBusinessUnlockTitle', {
-              defaultValue: 'Unlock Business Plan with 5 AppSumo codes',
-            })}
-            description={t('appsumoBusinessUnlockDescription', {
-              count: appsumoRedeemedCodesCount,
-              required: APPSUMO_BUSINESS_UNLOCK_CODE_COUNT,
-              defaultValue:
-                'Redeem {{required}} AppSumo codes to automatically unlock Business Plan features. You have redeemed {{count}} of {{required}} codes.',
-            })}
-            action={
-              <Button
-                type="link"
-                size="small"
-                onClick={() => dispatch(toggleRedeemCodeDrawer())}
-              >
-                {t('redeemAnotherCode', { defaultValue: 'Redeem another code' })}
-              </Button>
-            }
-          />
-        )}
         <div style={{ marginBottom: '14px' }}>{renderSubscriptionContent()}</div>
 
         {shouldShowAppSumoBusinessUnlock && (
