@@ -37,6 +37,7 @@ import { UniqueIdentifier } from '@dnd-kit/core';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { getUserSession } from '@/utils/session-helper';
+import { safeTextDisplay } from '@/utils/html-entities';
 
 interface taskProps {
   task: IProjectTask;
@@ -236,7 +237,7 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
                 }}
               />
             )}
-            <Typography.Text style={{ fontWeight: 500 }}>{task.name}</Typography.Text>
+            <Typography.Text style={{ fontWeight: 500 }}>{safeTextDisplay(task.name)}</Typography.Text>
           </div>
 
           {/* Subtask Section */}

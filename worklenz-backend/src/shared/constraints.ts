@@ -50,6 +50,10 @@ export const DB_CONSTRAINS: { [x: string]: string | null } = {
   tasks_assignees_pk: null,
   tasks_status_id_fk:
     "$One or more tasks (archived/non-archived) will be affected. Please select another status to move the tasks",
+  users_active_team_fk:
+    "This team cannot be deleted because one or more users still have it selected as their active team. Please switch those users to another team and try again.",
+  project_folders_team_id_fk:
+    "This team cannot be deleted because it still has project folders associated with it. Please remove those folders and try again.",
 
   // Check constrains
   projects_color_code_check: "",

@@ -185,13 +185,18 @@ const InvoiceBuilder = () => {
       // Set currency
       setCurrency(existingInvoice.currency || DEFAULT_CURRENCY);
 
+      // Set tax and discount values
+      setTaxRate(existingInvoice.taxRate || 0);
+      setDiscountType(existingInvoice.discountType || 'percentage');
+      setDiscountValue(existingInvoice.discountValue || 0);
+
       // Set amount as single line item for simple invoices
       setLineItems([{
         key: generateKey(),
         description: existingInvoice.request?.service?.name || 'Service',
         quantity: 1,
-        rate: existingInvoice.amount,
-        amount: existingInvoice.amount,
+        rate: existingInvoice.subtotal || existingInvoice.amount,
+        amount: existingInvoice.subtotal || existingInvoice.amount,
       }]);
     }
   }, [existingInvoice, isEditMode, form, navigate, invoiceId, t]);
@@ -322,6 +327,12 @@ const InvoiceBuilder = () => {
           currency,
           dueDate: values.dueDate ? dayjs(values.dueDate).format('YYYY-MM-DD') : undefined,
           notes: values.notes,
+          taxRate,
+          taxAmount: calculations.tax,
+          discountType,
+          discountValue,
+          discountAmount: calculations.discount,
+          subtotal: calculations.subtotal,
         };
 
         await updateInvoice({ id: invoiceId!, data: updateData }).unwrap();

@@ -5,7 +5,6 @@ import {
   ITaskListSortableColumn,
 } from '@/types/tasks/taskList.types';
 import { tasksApiService, ITaskListConfigV2 } from '@/api/tasks/tasks.api.service';
-import { subTasksApiService } from '@/api/tasks/subtasks.api.service';
 import logger from '@/utils/errorLogger';
 import { ITaskListMemberFilter } from '@/types/tasks/taskListFilters.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';

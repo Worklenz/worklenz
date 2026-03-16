@@ -77,11 +77,24 @@ ALTER TABLE bounced_emails
         PRIMARY KEY (id);
 
 CREATE TABLE IF NOT EXISTS clients (
-    id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    name       TEXT                                                NOT NULL,
-    team_id    UUID                                                NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
+    id                    UUID                     DEFAULT uuid_generate_v4()                         NOT NULL,
+    name                  TEXT                                                                    NOT NULL,
+    team_id               UUID                                                                    NOT NULL,
+    email                 WL_EMAIL,
+    company_name          TEXT,
+    phone                 TEXT,
+    address               TEXT,
+    address_line_1        TEXT,
+    city                  TEXT,
+    state                 TEXT,
+    zip_code              TEXT,
+    country               TEXT,
+    contact_person        TEXT,
+    client_portal_enabled BOOLEAN                  DEFAULT FALSE,
+    client_portal_access_code TEXT,
+    status                TEXT                     DEFAULT 'active'::TEXT,
+    created_at            TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP                      NOT NULL,
+    updated_at            TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP                      NOT NULL
 );
 
 ALTER TABLE clients
@@ -91,6 +104,10 @@ ALTER TABLE clients
 ALTER TABLE clients
     ADD CONSTRAINT clients_name_check
         CHECK (CHAR_LENGTH(name) <= 60);
+
+ALTER TABLE clients
+    ADD CONSTRAINT clients_status_check
+        CHECK (status = ANY (ARRAY ['active'::TEXT, 'inactive'::TEXT, 'pending'::TEXT]));
 
 CREATE TABLE IF NOT EXISTS cpt_phases (
     id          UUID                     DEFAULT uuid_generate_v4() NOT NULL,

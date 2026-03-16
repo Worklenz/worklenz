@@ -14,6 +14,7 @@ import {
 } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 import { useState } from 'react';
+import { safeTextDisplay } from '@/utils/html-entities';
 
 interface ProjectClientSectionProps {
   clients: IClientsViewModel;
@@ -39,7 +40,7 @@ const ProjectClientSection = ({
     ...(clients.data?.map((client, index) => ({
       key: index,
       value: client.id,
-      label: client.name,
+      label: safeTextDisplay(client.name),
     })) || []),
     ...(searchTerm && clients.data?.length === 0 && !loadingClients
       ? [

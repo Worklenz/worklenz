@@ -31,18 +31,10 @@ const CustomColumnSelectionCell = ({
   // localization
   const { t } = useTranslation('task-list-table');
 
-  // Debug the selectionsList and value
-  console.log('CustomColumnSelectionCell props:', {
-    selectionsList,
-    value,
-    selectionsCount: selectionsList?.length || 0,
-  });
-
   // Set initial selection based on value prop
   useEffect(() => {
     if (value && Array.isArray(selectionsList) && selectionsList.length > 0) {
       const selectedOption = selectionsList.find(option => option.selection_id === value);
-      console.log('Found selected option:', selectedOption);
       if (selectedOption) {
         setCurrentSelectionOption(selectedOption);
       }

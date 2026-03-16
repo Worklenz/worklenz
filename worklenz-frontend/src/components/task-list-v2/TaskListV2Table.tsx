@@ -285,6 +285,8 @@ const TaskListV2Section: React.FC = () => {
   // Refs for scroll synchronization
   const headerScrollRef = useRef<HTMLDivElement>(null);
   const contentScrollRef = useRef<HTMLDivElement>(null);
+  // State for GroupedVirtuoso customScrollParent (updated after mount via useEffect)
+  const [scrollContainer, setScrollContainer] = useState<Element | null>(null);
 
   // Ref to store cleanup function for column resize drag operation
   const resizeCleanupRef = useRef<(() => void) | null>(null);
@@ -591,6 +593,17 @@ const TaskListV2Section: React.FC = () => {
     }
   }, [columns, fields, dispatch, initializedFromDatabase]);
 
+  // Capture scroll container for GroupedVirtuoso.
+  // Must depend on loading/loadingColumns: the contentScrollRef div only mounts
+  // after loading finishes (skeleton is returned early), so the empty-deps variant
+  // would always capture null. Re-running when loading transitions to false ensures
+  // contentScrollRef.current is the real DOM element by the time this effect fires.
+  useEffect(() => {
+    if (contentScrollRef.current) {
+      setScrollContainer(contentScrollRef.current);
+    }
+  }, [loading, loadingColumns]);
+
   // Cleanup column resize listeners on unmount to prevent memory leaks
   useEffect(() => {
     return () => {
@@ -879,7 +892,7 @@ const TaskListV2Section: React.FC = () => {
           >
             <div
               className="flex items-center px-1 py-3 w-full"
-              style={{ minWidth: 'max-content', height: '44px' }}
+              style={{ minWidth: 'max-content', height: '40px' }}
             >
               {visibleColumns.map((column, index) => {
                 const isDropTarget = overColumnId === column.id && column.id !== activeColumnId;
@@ -1426,58 +1439,49 @@ const TaskListV2Section: React.FC = () => {
                   .filter((id): id is string => id !== undefined)}
                 strategy={verticalListSortingStrategy}
               >
-                <div style={{ minWidth: 'max-content' }}>
-                  {/* Render groups manually for debugging */}
-                  {virtuosoGroups.map((group, groupIndex) => (
-                    <div key={group.id}>
-                      {/* Group Header */}
-                      {renderGroup(groupIndex)}
+                <GroupedVirtuoso
+                  customScrollParent={scrollContainer || undefined}
+                  overscan={800}
+                  groupCounts={virtuosoGroupCounts}
+                  groupContent={renderGroup}
+                  itemContent={(index, groupIndex) => {
+                    const item = virtuosoItems[index];
+                    if (!item) return <div />;
 
-                      {/* Group Tasks */}
-                      {!collapsedGroups.has(group.id) &&
-                        (group.tasks.length > 0
-                          ? group.tasks.map((task, taskIndex) => {
-                              const globalTaskIndex =
-                                virtuosoGroups
-                                  .slice(0, groupIndex)
-                                  .reduce((sum, g) => sum + g.count, 0) + taskIndex;
+                    const groupOffset = virtuosoGroupCounts
+                      .slice(0, groupIndex)
+                      .reduce((sum, c) => sum + c, 0);
+                    const indexInGroup = index - groupOffset;
+                    const isFirstInGroup =
+                      indexInGroup === 0 && !('isAddTaskRow' in item);
 
-                              // Check if this is the first actual task in the group (not AddTaskRow)
-                              const isFirstTaskInGroup =
-                                taskIndex === 0 && !('isAddTaskRow' in task);
+                    const isOverThisTask =
+                      activeId && overId === item.id && !('isAddTaskRow' in item);
+                    const showBefore = isOverThisTask && dropPosition === 'before';
+                    const showAfter = isOverThisTask && dropPosition === 'after';
 
-                              // Check if we should show drop spacer
-                              const isOverThisTask =
-                                activeId && overId === task.id && !('isAddTaskRow' in task);
-                              const showDropSpacerBefore =
-                                isOverThisTask && dropPosition === 'before';
-                              const showDropSpacerAfter =
-                                isOverThisTask && dropPosition === 'after';
-
-                              return (
-                                <div key={task.id || `add-task-${group.id}-${taskIndex}`}>
-                                  {showDropSpacerBefore && (
-                                    <DropSpacer
-                                      isVisible={true}
-                                      visibleColumns={visibleColumns}
-                                      isDarkMode={isDarkMode}
-                                    />
-                                  )}
-                                  {renderTask(globalTaskIndex, isFirstTaskInGroup)}
-                                  {showDropSpacerAfter && (
-                                    <DropSpacer
-                                      isVisible={true}
-                                      visibleColumns={visibleColumns}
-                                      isDarkMode={isDarkMode}
-                                    />
-                                  )}
-                                </div>
-                              );
-                            })
-                          : null)}
-                    </div>
-                  ))}
-                </div>
+                    return (
+                      <div style={{ minWidth: 'max-content' }}>
+                        {showBefore && (
+                          <DropSpacer
+                            isVisible={true}
+                            visibleColumns={visibleColumns}
+                            isDarkMode={isDarkMode}
+                          />
+                        )}
+                        {renderTask(index, isFirstInGroup)}
+                        {showAfter && (
+                          <DropSpacer
+                            isVisible={true}
+                            visibleColumns={visibleColumns}
+                            isDarkMode={isDarkMode}
+                          />
+                        )}
+                      </div>
+                    );
+                  }}
+                  style={{ minWidth: 'max-content' }}
+                />
               </SortableContext>
             </div>
           </div>

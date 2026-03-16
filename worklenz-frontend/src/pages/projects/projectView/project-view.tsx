@@ -48,6 +48,7 @@ import {
 import { resetState as resetEnhancedKanbanState } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { setProjectId as setInsightsProjectId } from '@/features/projects/insights/project-insights.slice';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
+import ProjectViewSkeleton from './project-view-skeleton';
 import { useTranslation } from 'react-i18next';
 import { useTimerInitialization } from '@/hooks/useTimerInitialization';
 import { useAuthService } from '@/hooks/useAuth';
@@ -584,13 +585,9 @@ const ProjectView = React.memo(() => {
     [shouldLoadSecondaryComponents]
   );
 
-  // Show loading state while project is being fetched or translations are loading
+  // Show skeleton while project is being fetched or translations are loading
   if (projectLoading || !isInitialized || !translationsReady) {
-    return (
-      <div style={{ marginBlockEnd: 12, minHeight: '80vh' }}>
-        <SuspenseFallback />
-      </div>
-    );
+    return <ProjectViewSkeleton />;
   }
 
   return (

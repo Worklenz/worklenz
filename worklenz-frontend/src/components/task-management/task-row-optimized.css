@@ -2,7 +2,6 @@
 
 .task-row-optimized {
   contain: layout style;
-  /* Remove conflicting will-change and transform */
   transition:
     background-color 0.15s ease-out,
     border-color 0.15s ease-out;
@@ -11,7 +10,6 @@
   border-color: var(--task-border-primary, #e8e8e8);
 }
 
-/* Horizontal Scrolling Optimizations */
 .task-table-fixed-columns {
   flex-shrink: 0;
   position: sticky;
@@ -25,66 +23,47 @@
 .task-table-scrollable-container {
   flex: 1;
   overflow: hidden;
-  min-width: 0; /* Allow flex item to shrink below content size */
+  min-width: 0;
 }
 
 .task-table-scrollable-columns {
   display: flex;
-  width: max-content; /* Allow content to determine width */
-  min-width: 100%; /* Ensure it takes at least full width */
+  width: max-content;
+  min-width: 100%;
 }
 
-/* Dark mode support for horizontal scrolling */
 .dark .task-table-fixed-columns {
   background: var(--task-bg-primary, #1f1f1f);
   border-right-color: var(--task-border-primary, #303030);
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.3);
 }
 
-/* 
- * HORIZONTAL SCROLLING SETUP
- * 
- * For proper horizontal scrolling, the parent container should have:
- * - overflow-x: auto
- * - width: 100% (or specific width)
- * - min-width: fit-content (optional, for very wide content)
- * 
- * Example parent container CSS:
- * .task-list-container {
- *   overflow-x: auto;
- *   width: 100%;
- *   min-width: fit-content;
- * }
- */
-
-/* Ensure task row works with horizontal scrolling containers */
 .task-row-optimized {
   min-width: fit-content;
   width: 100%;
 }
 
-/* Container styles for horizontal scrolling */
+/* ✅ 44px row height */
 .task-row-container {
   display: flex;
   width: 100%;
   min-width: fit-content;
   overflow-x: auto;
   overflow-y: hidden;
+  height: 44px;
+  max-height: 44px;
 }
 
-/* All columns container - no fixed positioning */
 .task-table-all-columns {
   display: flex;
   min-width: fit-content;
   width: 100%;
 }
 
-/* Ensure columns maintain their widths */
 .task-table-all-columns > div {
   flex-shrink: 0;
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
   .task-row-container {
     overflow-x: auto;
@@ -92,313 +71,18 @@
   }
 }
 
-/* SIMPLIFIED HOVER STATE: Remove complex containment and transforms */
 .task-row-optimized:hover {
   background-color: var(--task-hover-bg, #fafafa);
   border-color: var(--task-border-primary, #e8e8e8);
-  border-top-color: var(--task-border-hover-top, #c0c0c0); /* Ensure top border is visible */
+  border-top-color: var(--task-border-hover-top, #c0c0c0);
 }
 
-/* OPTIMIZED HOVER BUTTONS: Use opacity only, no visibility changes */
+/* ✅ Open button - opacity controlled by CSS only */
 .task-open-button {
   opacity: 0;
   transition: opacity 0.15s ease-out;
-  /* Remove will-change to prevent GPU conflicts */
 }
 
-.task-row-optimized:hover .task-open-button {
-  opacity: 1;
-}
-
-/* OPTIMIZED EXPAND ICON: Simplified hover behavior */
-.expand-icon-container.hover-only {
-  opacity: 0;
-  transition: opacity 0.15s ease-out;
-}
-
-.task-row-optimized:hover .expand-icon-container.hover-only {
-  opacity: 1;
-}
-
-/* REMOVE COMPLEX CONTAINMENT RULES that were causing layout thrashing */
-.task-row-optimized:not(:hover) {
-  /* Remove forced containment and transforms */
-}
-
-.task-row-optimized:not(:hover) .task-open-button {
-  opacity: 0;
-  /* Remove !important and visibility changes */
-}
-
-.task-row-optimized:not(:hover) .expand-icon-container.hover-only {
-  opacity: 0;
-  /* Remove !important and visibility changes */
-}
-
-/* DRAG STATE: Simplified */
-.task-row-optimized.task-row-dragging {
-  contain: layout;
-  will-change: transform;
-  z-index: 1000;
-}
-
-.task-row-optimized.task-row-virtualized {
-  contain: strict;
-  will-change: transform;
-}
-
-.task-row-optimized.task-row-selected {
-  contain: layout style;
-}
-
-/* PERFORMANCE OPTIMIZATION: Progressive loading states */
-.task-row-optimized.initial-load {
-  contain: strict;
-  will-change: auto;
-}
-
-.task-row-optimized.fully-loaded {
-  contain: layout style;
-  /* Remove will-change: transform to prevent conflicts */
-}
-
-/* REAL-TIME UPDATES: Simplified stable content */
-.task-row-optimized.stable-content {
-  contain: layout style;
-  /* Remove will-change to prevent GPU conflicts */
-  min-height: 40px;
-  /* Simplified transitions */
-  transition:
-    background-color 0.15s ease-out,
-    border-color 0.15s ease-out;
-}
-
-.task-row-optimized.stable-content * {
-  contain: layout;
-  /* Remove will-change to prevent conflicts */
-}
-
-/* Optimize initial render performance */
-.task-row-optimized.initial-load * {
-  contain: layout;
-  will-change: auto;
-}
-
-.task-row-optimized.fully-loaded * {
-  contain: layout style;
-  will-change: auto;
-}
-
-/* Skeleton loading animations for initial render */
-.task-row-optimized.initial-load .animate-pulse {
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 0.8;
-  }
-}
-
-.task-name-edit-active {
-  contain: none; /* Disable containment during editing for proper focus */
-}
-
-.task-name-input {
-  contain: layout;
-  will-change: contents;
-}
-
-/* Performance optimizations for drag and drop */
-.task-row-optimized [data-dnd-draggable] {
-  will-change: transform;
-  transform: translateZ(0);
-}
-
-.task-row-optimized [data-dnd-drag-handle] {
-  cursor: grab;
-  will-change: transform;
-}
-
-.task-row-optimized [data-dnd-drag-handle]:active {
-  cursor: grabbing;
-}
-
-/* Virtualization specific optimizations */
-.task-row-virtualized {
-  contain: strict;
-  will-change: transform;
-}
-
-.task-row-virtualized * {
-  contain: layout style;
-}
-
-/* Smooth scrolling for virtualized lists */
-.virtualized-task-container {
-  scroll-behavior: smooth;
-  contain: layout style paint;
-}
-
-/* Optimize frequent updates */
-.task-progress-circle {
-  contain: layout style paint;
-  will-change: stroke-dasharray;
-}
-
-.task-status-dropdown {
-  contain: layout style;
-  will-change: background-color;
-}
-
-.task-assignee-avatar {
-  contain: layout style paint;
-  will-change: transform;
-}
-
-/* Reduce layout thrashing */
-.task-cell {
-  contain: layout;
-  will-change: auto;
-}
-
-.task-cell:hover {
-  will-change: background-color;
-}
-
-/* PERFORMANCE OPTIMIZATION: Intersection observer optimizations */
-.task-row-optimized.intersection-observed {
-  contain: layout style paint;
-}
-
-.task-row-optimized.intersection-observed.visible {
-  will-change: transform, opacity;
-}
-
-.task-row-optimized.intersection-observed.hidden {
-  will-change: auto;
-  contain: strict;
-}
-
-/* Dark mode optimizations */
-:root {
-  /* ... existing variables ... */
-  --task-border-hover-top: #c0c0c0; /* Slightly darker for visibility */
-}
-
-.dark .task-row-optimized {
-  /* ... existing variables ... */
-}
-
-.dark {
-  /* ... existing variables ... */
-  --task-border-hover-top-dark: #505050; /* Slightly darker for visibility in dark mode */
-}
-
-.dark .task-row-optimized:hover {
-  background-color: var(--task-hover-bg, #2a2a2a);
-  border-color: var(--task-border-primary, #303030);
-  border-top-color: var(
-    --task-border-hover-top-dark,
-    #505050
-  ); /* Ensure top border is visible in dark mode */
-}
-
-/* Animation performance */
-@media (prefers-reduced-motion: reduce) {
-  .task-row-optimized {
-    transition: none !important;
-    animation: none !important;
-  }
-
-  .task-row-optimized .animate-pulse {
-    animation: none !important;
-  }
-}
-
-/* High DPI display optimizations */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
-  .task-row-optimized {
-    contain: layout style paint;
-  }
-}
-
-/* Memory optimization for large lists */
-.task-list-container {
-  contain: layout style;
-  overflow: hidden;
-}
-
-.task-list-container.large-list {
-  contain: strict;
-}
-
-/* PERFORMANCE OPTIMIZATION: Simplified GPU acceleration */
-.task-row-optimized {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  /* Remove transform-style to prevent conflicts */
-}
-
-/* Optimize rendering layers */
-.task-row-optimized.initial-load {
-  /* Remove transform to prevent conflicts */
-}
-
-.task-row-optimized.fully-loaded {
-  /* Remove transform to prevent conflicts */
-}
-
-/* Performance debugging */
-.task-row-debug {
-  outline: 1px solid red !important;
-}
-
-.task-row-debug::before {
-  content: "DEBUG";
-  position: absolute;
-  top: 0;
-  right: 0;
-  background: red;
-  color: white;
-  font-size: 10px;
-  padding: 2px 4px;
-  z-index: 9999;
-}
-
-/* PERFORMANCE OPTIMIZATION: Optimize text rendering */
-.task-row-optimized {
-  text-rendering: optimizeSpeed;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Optimize for mobile devices */
-@media (max-width: 768px) {
-  .task-row-optimized {
-    contain: strict;
-    will-change: auto;
-  }
-
-  .task-row-optimized.initial-load {
-    contain: strict;
-  }
-}
-
-/* PERFORMANCE OPTIMIZATION: Reduce reflows during resize */
-.task-row-optimized {
-  box-sizing: border-box;
-}
-
-.task-row-optimized * {
-  box-sizing: border-box;
-}
-
-/* SIMPLIFIED TASK ROW HOVER EFFECTS */
 .task-cell-container:hover .task-open-button {
   opacity: 1;
 }
@@ -407,13 +91,11 @@
   opacity: 0;
 }
 
-/* Expand icon smart visibility - simplified */
+/* Expand icon smart visibility */
 .expand-icon-container {
   transition: opacity 0.15s ease-out;
-  /* Remove transform and will-change to prevent conflicts */
 }
 
-/* Always show expand icon if task has subtasks */
 .expand-icon-container.has-subtasks {
   opacity: 1;
 }
@@ -431,7 +113,6 @@
   opacity: 0.8;
 }
 
-/* Show expand icon on hover for tasks without subtasks (for adding subtasks) */
 .expand-icon-container.hover-only {
   opacity: 0;
 }
@@ -457,7 +138,7 @@
   opacity: 0.6;
 }
 
-/* Add subtask row styling */
+/* Add subtask row */
 .add-subtask-row {
   opacity: 0;
   max-height: 0;
@@ -481,7 +162,6 @@
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
 }
 
-/* Dark mode add subtask row */
 .dark .add-subtask-row {
   background-color: #1f2937;
   border-color: #374151;
@@ -498,7 +178,6 @@
   box-shadow: 0 2px 8px rgba(96, 165, 250, 0.25);
 }
 
-/* Task indicators hover effects */
 .task-indicators .indicator-badge {
   transition: all 0.15s ease-out;
 }
@@ -508,28 +187,16 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Dark mode specific hover effects */
 .dark .task-indicators .indicator-badge:hover {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* SIMPLIFIED HOVER STATE MANAGEMENT */
 .task-row-optimized {
-  /* Ensure proper hover state management */
   pointer-events: auto;
 }
 
 .task-row-optimized * {
-  /* Inherit pointer events to ensure proper hover detection */
   pointer-events: inherit;
-}
-
-/* Remove complex hover state forcing */
-@supports (contain: layout) {
-  .task-row-optimized:not(:hover) {
-    contain: layout;
-    /* Remove animation forcing */
-  }
 }
 
 .task-row-optimized.selected {
@@ -547,7 +214,6 @@
   opacity: 0.95;
 }
 
-/* Dark mode support */
 .dark .task-row-optimized.selected,
 [data-theme="dark"] .task-row-optimized.selected {
   background: var(--task-selected-bg, #1a2332) !important;
@@ -564,9 +230,7 @@
 
 .task-row-optimized.is-dragging {
   border: 3px solid #1890ff !important;
-  box-shadow:
-    0 0 24px 4px #1890ff,
-    0 6px 16px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 0 24px 4px #1890ff, 0 6px 16px rgba(0, 0, 0, 0.18);
   opacity: 0.85 !important;
   background: var(--task-bg-primary, #fff) !important;
   z-index: 2000 !important;
@@ -576,27 +240,210 @@
 .dark .task-row-optimized.is-dragging,
 [data-theme="dark"] .task-row-optimized.is-dragging {
   border: 3px solid #40a9ff !important;
-  box-shadow:
-    0 0 24px 4px #40a9ff,
-    0 6px 16px rgba(0, 0, 0, 0.38);
+  box-shadow: 0 0 24px 4px #40a9ff, 0 6px 16px rgba(0, 0, 0, 0.38);
   background: var(--task-bg-primary, #1f1f1f) !important;
 }
 
-.task-row-optimized.drag-overlay {
-  border: 3px dashed #ff4d4f !important;
-  box-shadow:
-    0 0 32px 8px #ff4d4f,
-    0 6px 16px rgba(0, 0, 0, 0.22);
-  background: #fffbe6 !important;
-  opacity: 0.95 !important;
-  z-index: 3000 !important;
+.task-row-optimized.task-row-dragging {
+  contain: layout;
+  will-change: transform;
+  z-index: 1000;
 }
 
-.dark .task-row-optimized.drag-overlay,
-[data-theme="dark"] .task-row-optimized.drag-overlay {
-  border: 3px dashed #ff7875 !important;
-  box-shadow:
-    0 0 32px 8px #ff7875,
-    0 6px 16px rgba(0, 0, 0, 0.42);
-  background: #2a2a2a !important;
+.task-row-optimized.task-row-virtualized {
+  contain: strict;
+  will-change: transform;
+}
+
+.task-row-optimized.task-row-selected {
+  contain: layout style;
+}
+
+.task-row-optimized.initial-load {
+  contain: strict;
+  will-change: auto;
+}
+
+.task-row-optimized.fully-loaded {
+  contain: layout style;
+}
+
+.task-row-optimized.stable-content {
+  contain: layout style;
+  min-height: 44px;
+  transition:
+    background-color 0.15s ease-out,
+    border-color 0.15s ease-out;
+}
+
+.task-row-optimized.stable-content * {
+  contain: layout;
+}
+
+.task-row-optimized.initial-load * {
+  contain: layout;
+  will-change: auto;
+}
+
+.task-row-optimized.fully-loaded * {
+  contain: layout style;
+  will-change: auto;
+}
+
+.task-row-optimized.initial-load .animate-pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+.task-name-edit-active {
+  contain: none;
+}
+
+.task-name-input {
+  contain: layout;
+  will-change: contents;
+}
+
+.task-row-optimized [data-dnd-draggable] {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.task-row-optimized [data-dnd-drag-handle] {
+  cursor: grab;
+  will-change: transform;
+}
+
+.task-row-optimized [data-dnd-drag-handle]:active {
+  cursor: grabbing;
+}
+
+.task-row-virtualized {
+  contain: strict;
+  will-change: transform;
+}
+
+.task-row-virtualized * {
+  contain: layout style;
+}
+
+.virtualized-task-container {
+  scroll-behavior: smooth;
+  contain: layout style paint;
+}
+
+.task-progress-circle {
+  contain: layout style paint;
+  will-change: stroke-dasharray;
+}
+
+.task-status-dropdown {
+  contain: layout style;
+  will-change: background-color;
+}
+
+.task-assignee-avatar {
+  contain: layout style paint;
+  will-change: transform;
+}
+
+.task-cell {
+  contain: layout;
+  will-change: auto;
+}
+
+.task-cell:hover {
+  will-change: background-color;
+}
+
+.task-row-optimized.intersection-observed {
+  contain: layout style paint;
+}
+
+.task-row-optimized.intersection-observed.visible {
+  will-change: transform, opacity;
+}
+
+.task-row-optimized.intersection-observed.hidden {
+  will-change: auto;
+  contain: strict;
+}
+
+:root {
+  --task-border-hover-top: #c0c0c0;
+}
+
+.dark .task-row-optimized:hover {
+  background-color: var(--task-hover-bg, #2a2a2a);
+  border-color: var(--task-border-primary, #303030);
+  border-top-color: var(--task-border-hover-top-dark, #505050);
+}
+
+.dark {
+  --task-border-hover-top-dark: #505050;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task-row-optimized {
+    transition: none !important;
+    animation: none !important;
+  }
+  .task-row-optimized .animate-pulse {
+    animation: none !important;
+  }
+}
+
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
+  .task-row-optimized {
+    contain: layout style paint;
+  }
+}
+
+.task-list-container {
+  contain: layout style;
+  overflow: hidden;
+}
+
+.task-list-container.large-list {
+  contain: strict;
+}
+
+.task-row-optimized {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-sizing: border-box;
+  text-rendering: optimizeSpeed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.task-row-optimized * {
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .task-row-optimized {
+    contain: strict;
+    will-change: auto;
+  }
+}
+
+.task-row-debug {
+  outline: 1px solid red !important;
+}
+
+.task-row-debug::before {
+  content: "DEBUG";
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: red;
+  color: white;
+  font-size: 10px;
+  padding: 2px 4px;
+  z-index: 9999;
 }

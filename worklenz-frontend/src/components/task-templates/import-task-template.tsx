@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { safeTextDisplay } from '@/utils/html-entities';
 import {
   Button,
   Divider,
@@ -161,7 +162,7 @@ const ImportTaskTemplate = () => {
                 </Button>,
               ]}
             >
-              <Typography.Text>{task.name}</Typography.Text>
+              <Typography.Text>{safeTextDisplay(task.name)}</Typography.Text>
             </List.Item>
           )}
         />

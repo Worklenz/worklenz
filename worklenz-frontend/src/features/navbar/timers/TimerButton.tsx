@@ -12,13 +12,10 @@ import {
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { taskTimeLogsApiService, IRunningTimer, IRecentTimeLog } from '@/api/tasks/task-time-logs.api.service';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
-import { updateTaskTimeTracking } from '@/features/tasks/tasks.slice';
-import { format, differenceInSeconds, isValid, parseISO, formatDistanceToNow } from 'date-fns';
-import TaskTimer from '@/components/taskListCommon/task-timer/task-timer';
-import { useTaskTimerWithConflictCheck } from '@/hooks/useTaskTimerWithConflictCheck';
+import { format, parseISO, formatDistanceToNow } from 'date-fns';
+import NavbarTimer from './NavbarTimer';
 
 const { Text } = Typography;
 const { useToken } = theme;
@@ -31,7 +28,6 @@ const TimerButton = () => {
   const [error, setError] = useState<string | null>(null);
   const { t } = useTranslation('navbar');
   const { token } = useToken();
-  const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
 
   const logError = (message: string, error?: any) => {
@@ -154,59 +150,6 @@ const TimerButton = () => {
 
   const timerCount = () => {
     return Array.isArray(runningTimers) ? runningTimers.length : 0;
-  };
-
-  // Component to handle timer for running timers with conflict checking
-  const RunningTimerButton = ({ taskId, totalTimeLogged }: { taskId: string; totalTimeLogged?: number }) => {
-    const { started, timeString, handleStartTimer, handleStopTimer } = useTaskTimerWithConflictCheck(
-      taskId,
-      null
-    );
-
-    return (
-      <TaskTimer
-        taskId={taskId}
-        started={started}
-        handleStartTimer={() => {
-          handleStartTimer();
-          setTimeout(() => fetchTimerData(), 100);
-        }}
-        handleStopTimer={() => {
-          handleStopTimer();
-          setTimeout(() => fetchTimerData(), 100);
-        }}
-        timeString={timeString}
-      />
-    );
-  };
-
-  // Component to handle timer for recent logs with conflict checking
-  const RecentLogTimerButton = ({ taskId, timeSpent }: { taskId: string; timeSpent?: number }) => {
-    const { started, timeString, handleStartTimer, handleStopTimer } = useTaskTimerWithConflictCheck(
-      taskId,
-      null
-    );
-
-    // Use timer's timeString if timer is running, otherwise use the last time log duration
-    const displayTime = started ? timeString : formatTimeSpent(timeSpent);
-
-    return (
-      <TaskTimer
-        taskId={taskId}
-        started={started}
-        handleStartTimer={() => {
-          handleStartTimer();
-          // Refresh timer data after starting
-          setTimeout(() => fetchTimerData(), 100);
-        }}
-        handleStopTimer={() => {
-          handleStopTimer();
-          // Refresh timer data after stopping
-          setTimeout(() => fetchTimerData(), 100);
-        }}
-        timeString={displayTime}
-      />
-    );
   };
 
   // Helper function to format time spent in seconds
@@ -358,9 +301,11 @@ const TimerButton = () => {
                                 ? format(parseISO(timer.start_time), 'HH:mm')
                                 : '--:--'}
                             </Text>
-                            <RunningTimerButton 
-                              taskId={timer.task_id} 
-                              totalTimeLogged={timer.total_time_logged}
+                            <NavbarTimer
+                              taskId={timer.task_id}
+                              isRunning={true}
+                              startTime={timer.start_time}
+                              onTimerChange={fetchTimerData}
                             />
                           </div>
                         </Space>
@@ -468,7 +413,12 @@ const TimerButton = () => {
                               {formatDistanceToNow(parseISO(log.created_at), { addSuffix: true })}
                             </Text>
                             {isHovered ? (
-                              <RecentLogTimerButton taskId={log.task_id} timeSpent={log.time_spent} />
+                              <NavbarTimer
+                                taskId={log.task_id}
+                                isRunning={runningTimers.some(timer => timer.task_id === log.task_id)}
+                                startTime={runningTimers.find(timer => timer.task_id === log.task_id)?.start_time}
+                                onTimerChange={fetchTimerData}
+                              />
                             ) : (
                               <Text
                                 style={{

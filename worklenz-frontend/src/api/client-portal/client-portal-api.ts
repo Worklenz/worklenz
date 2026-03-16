@@ -90,6 +90,12 @@ export interface ClientPortalInvoice {
 export interface ClientPortalInvoiceDetails extends ClientPortalInvoice {
   notes?: string;
   paymentProofUrl?: string | null;
+  taxRate?: number;
+  taxAmount?: number;
+  discountType?: string;
+  discountValue?: number;
+  discountAmount?: number;
+  subtotal?: number;
   request: {
     id: string;
     requestNumber: string;
@@ -132,6 +138,12 @@ export interface UpdateInvoiceRequest {
   dueDate?: string;
   notes?: string;
   status?: string;
+  taxRate?: number;
+  taxAmount?: number;
+  discountType?: string;
+  discountValue?: number;
+  discountAmount?: number;
+  subtotal?: number;
 }
 
 export interface UpdateInvoiceResponseBody {

@@ -106,7 +106,7 @@ export function sendResetSuccessEmail(toEmail: string) {
   });
 }
 
-export function sendClientPortalResetEmail(toEmail: string, user_id: string, hash: string) {
+export async function sendClientPortalResetEmail(toEmail: string, user_id: string, hash: string) {
   let content = FileConstants.getEmailTemplate(IEmailTemplateType.ResetPasswordClientPortal) as string;
   if (!content) return;
 
@@ -129,7 +129,7 @@ export function sendClientPortalResetEmail(toEmail: string, user_id: string, has
   console.log(`Reset Link: ${resetLink}`);
   console.log('========================================\n');
 
-  sendEmail({
+  await sendEmail({
     to: [toEmail],
     subject: "Reset your Client Portal password.",
     html: content

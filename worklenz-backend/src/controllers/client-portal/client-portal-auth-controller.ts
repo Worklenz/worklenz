@@ -425,7 +425,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
       let organizationBranding = {
         logoUrl: null,
         primaryColor: "#52c41a",
-        companyName: invitation.team_name || invitation.company_name,
+        companyName: invitation.team_name || "Worklenz",
       };
 
       if (invitation.team_id) {
@@ -451,7 +451,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
             companyName:
               settings.company_name ||
               invitation.team_name ||
-              invitation.company_name,
+              "Worklenz",
           };
         } else {
           // If no client_portal_settings record exists, check organization logo directly
@@ -473,7 +473,6 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
       const organizationName =
         organizationBranding.companyName ||
         invitation.team_name ||
-        invitation.company_name ||
         "Worklenz";
 
       const emailHtml = generateWelcomeEmailHTML({
@@ -1640,7 +1639,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
           // Import and call the email sending function
           const { sendClientPortalResetEmail } =
             await import("../../shared/email-templates");
-          sendClientPortalResetEmail(email, userIdBase64, hashedString);
+          await sendClientPortalResetEmail(email, userIdBase64, hashedString);
         } catch (error) {
           // Log error internally but don't expose to client
           console.error(

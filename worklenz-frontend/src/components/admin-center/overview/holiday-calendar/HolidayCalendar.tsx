@@ -15,7 +15,7 @@ import {
   Popconfirm,
   message,
 } from '@/shared/antd-imports';
-import { PlusOutlined, DeleteOutlined, EditOutlined } from '@/shared/antd-imports';
+import { PlusOutlined, DeleteOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs, { Dayjs } from 'dayjs';
 import { holidayApiService } from '@/api/holiday/holiday.api.service';
@@ -32,9 +32,86 @@ import { fetchHolidays, clearHolidaysCache } from '@/features/admin-center/admin
 import logger from '@/utils/errorLogger';
 import './holiday-calendar.css';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
+
+// ---------------------------------------------------------------------------
+// PREDEFINED_HOLIDAY_TYPES — UI display metadata only.
+//
+// IMPORTANT: The `id` values here are TEMPORARY placeholders used purely so
+// the dropdown renders immediately on first paint (before the API responds).
+// These placeholder ids are NEVER sent to the backend.
+//
+// fetchHolidayTypes() replaces this list with real DB rows (which have proper
+// UUIDs) as soon as the API responds. The merge logic ensures:
+//   • Federal Holiday always appears first in the list.
+//   • Once the DB row for Federal Holiday is loaded, its real UUID replaces
+//     the placeholder — so saves work correctly with no FK violation.
+//
+// PREREQUISITE: Run this SQL once in pgAdmin to seed the DB row:
+//
+//   INSERT INTO holiday_types (id, name, description, color_code, created_at, updated_at)
+//   VALUES (gen_random_uuid(), 'Federal Holiday', 'Official US Federal Holidays',
+//           '#1890ff', NOW(), NOW());
+// ---------------------------------------------------------------------------
+const PREDEFINED_HOLIDAY_DISPLAY: Array<Omit<IHolidayType, 'id'> & { tempId: string }> = [
+  {
+    tempId: '__federal-holiday__',
+    name: 'Federal Holiday',
+    description: 'Official US Federal Holidays',
+    color_code: '#1890ff',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    tempId: '__public-holiday__',
+    name: 'Public Holiday',
+    description: 'National public holidays',
+    color_code: '#f5222d',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    tempId: '__company-holiday__',
+    name: 'Company Holiday',
+    description: 'Company-specific holidays',
+    color_code: '#52c41a',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    tempId: '__religious-holiday__',
+    name: 'Religious Holiday',
+    description: 'Religious observances',
+    color_code: '#faad14',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    tempId: '__personal-holiday__',
+    name: 'Personal Holiday',
+    description: 'Personal time off',
+    color_code: '#722ed1',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+];
+
+// Convert display items to IHolidayType using tempId as the id.
+// These are ONLY used for the initial render — replaced by real DB data ASAP.
+const PREDEFINED_HOLIDAY_TYPES: IHolidayType[] = PREDEFINED_HOLIDAY_DISPLAY.map(item => ({
+  id: item.tempId,
+  name: item.name,
+  description: item.description,
+  color_code: item.color_code,
+  created_at: item.created_at,
+  updated_at: item.updated_at,
+}));
+
+// Checks whether an id is one of our temporary placeholder ids.
+// Used to prevent accidental submission of placeholder ids to the backend.
+const isTempId = (id: string) => id.startsWith('__') && id.endsWith('__');
 
 interface HolidayCalendarProps {
   themeMode: string;
@@ -50,7 +127,12 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
 
-  const [holidayTypes, setHolidayTypes] = useState<IHolidayType[]>([]);
+  // Starts with predefined display types so the dropdown is never empty on
+  // first render. fetchHolidayTypes() will replace these with real DB rows
+  // (containing proper UUIDs) as soon as the API responds.
+  const [holidayTypes, setHolidayTypes] = useState<IHolidayType[]>(PREDEFINED_HOLIDAY_TYPES);
+  const [typesLoaded, setTypesLoaded] = useState(false);
+
   const [modalVisible, setModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedHoliday, setSelectedHoliday] = useState<IHolidayCalendarEvent | null>(null);
@@ -59,20 +141,79 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
   const [hasAttemptedPopulation, setHasAttemptedPopulation] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
 
+  // ---------------------------------------------------------------------------
+  // fetchHolidayTypes
+  //
+  // Strategy:
+  //   1. Call GET /holidays/types — returns real DB rows with proper UUIDs.
+  //   2. Build the final list as: [DB rows ordered by PREDEFINED order] +
+  //      [any extra DB rows not in the predefined name list].
+  //
+  //   This means:
+  //   • The order matches the predefined order (Federal Holiday always first).
+  //   • Every item in the final list has a REAL UUID from the DB.
+  //   • No placeholder ids ever reach the Save handler.
+  //   • If the DB is missing a predefined type (e.g. Federal Holiday was never
+  //     inserted), that slot simply does not appear — the user sees a console
+  //     warning and the dropdown still works for all other types.
+  // ---------------------------------------------------------------------------
   const fetchHolidayTypes = async () => {
     try {
       const res = await holidayApiService.getHolidayTypes();
-      if (res.done) {
-        setHolidayTypes(res.body);
+
+      if (res.done && res.body && res.body.length > 0) {
+        const backendTypes: IHolidayType[] = res.body;
+
+        // Index backend types by lowercase name for O(1) lookup
+        const backendByName = new Map<string, IHolidayType>(
+          backendTypes.map(t => [t.name.toLowerCase(), t])
+        );
+
+        // Walk the predefined order; substitute each slot with its real DB row.
+        // If the DB row is missing for a predefined type, log a warning and skip it.
+        const orderedTypes: IHolidayType[] = [];
+        for (const predefined of PREDEFINED_HOLIDAY_DISPLAY) {
+          const dbRow = backendByName.get(predefined.name.toLowerCase());
+          if (dbRow) {
+            orderedTypes.push(dbRow); // real UUID ✓
+          } else {
+            // DB row missing — warn the developer but don't break the UI.
+            // To fix: run the INSERT SQL shown at the top of this file.
+            logger.error(
+              `Holiday type "${predefined.name}" not found in DB. ` +
+              `Run the INSERT SQL to add it. Skipping from dropdown.`
+            );
+          }
+        }
+
+        // Append any backend types that are NOT in the predefined list
+        const predefinedNames = new Set(
+          PREDEFINED_HOLIDAY_DISPLAY.map(p => p.name.toLowerCase())
+        );
+        const extraTypes = backendTypes.filter(
+          t => !predefinedNames.has(t.name.toLowerCase())
+        );
+
+        const mergedTypes: IHolidayType[] = [...orderedTypes, ...extraTypes];
+        setHolidayTypes(mergedTypes);
+        setTypesLoaded(true);
+      } else {
+        // API returned empty or failed — keep predefined placeholder types so
+        // the dropdown is not blank, but warn the developer.
+        logger.error(
+          'getHolidayTypes returned empty. ' +
+          'Holiday type dropdowns will use placeholder ids that cannot be saved. ' +
+          'Ensure holiday_types table is seeded.'
+        );
       }
     } catch (error) {
-      logger.error('Error fetching holiday types', error);
+      logger.error('Error fetching holiday types — keeping predefined placeholders', error);
+      // Do not call setHolidayTypes — initial state (predefined placeholders)
+      // remains, which at least renders the dropdown visually.
     }
   };
 
   const populateHolidaysIfNeeded = async () => {
-    // Check if we have holiday settings with a country code but no holidays
-    // Also check if we haven't already attempted population and we're not currently populating
     if (
       holidaySettings?.country_code &&
       holidays.length === 0 &&
@@ -82,10 +223,8 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
       try {
         setIsPopulatingHolidays(true);
         setHasAttemptedPopulation(true);
-
         const populateRes = await holidayApiService.populateCountryHolidays();
         if (populateRes.done) {
-          // Refresh holidays after population
           fetchHolidaysForDateRange(true);
         }
       } catch (error) {
@@ -99,12 +238,7 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
   const fetchHolidaysForDateRange = (forceRefresh = false) => {
     const startOfYear = currentDate.startOf('year');
     const endOfYear = currentDate.endOf('year');
-
-    // If forceRefresh is true, clear the cached holidays first
-    if (forceRefresh) {
-      dispatch(clearHolidaysCache());
-    }
-
+    if (forceRefresh) dispatch(clearHolidaysCache());
     dispatch(
       fetchHolidays({
         from_date: startOfYear.format('YYYY-MM-DD'),
@@ -119,27 +253,46 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
     fetchHolidaysForDateRange();
   }, [currentDate.year()]);
 
-  // Check if we need to populate holidays when holiday settings are loaded
   useEffect(() => {
     populateHolidaysIfNeeded();
   }, [holidaySettings]);
 
-  // Reset population attempt state when holiday settings change
   useEffect(() => {
     setHasAttemptedPopulation(false);
   }, [holidaySettings?.country_code]);
 
-  const customHolidays = useMemo(() => {
-    return holidays.filter(holiday => holiday.source === 'custom');
-  }, [holidays]);
+  const customHolidays = useMemo(
+    () => holidays.filter(h => h.source === 'custom'),
+    [holidays]
+  );
 
   const handleCreateHoliday = async (values: any) => {
+    // Guard: prevent saving if the selected type id is still a placeholder.
+    if (isTempId(values.holiday_type_id)) {
+      message.error(
+        'Holiday types are still loading or not seeded in the database. ' +
+        'Please wait a moment and try again, or contact your administrator.'
+      );
+      return;
+    }
+
+    // Guard: prevent duplicate date — check before even hitting the backend.
+    const selectedDate = values.date.format('YYYY-MM-DD');
+    const dateAlreadyTaken = holidays.some(h => h.date === selectedDate);
+    if (dateAlreadyTaken) {
+      message.error(
+        'A holiday already exists on this date. ' +
+        'Please choose a different date or delete the existing holiday first.'
+      );
+      return;
+    }
+
     try {
       const holidayData: ICreateHolidayRequest = {
         name: values.name,
         description: values.description,
-        date: values.date.format('YYYY-MM-DD'),
-        holiday_type_id: values.holiday_type_id,
+        date: selectedDate,
+        holiday_type_id: values.holiday_type_id, // guaranteed real UUID here
         is_recurring: values.is_recurring || false,
       };
 
@@ -150,14 +303,33 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
         form.resetFields();
         fetchHolidaysForDateRange(true);
       }
-    } catch (error) {
+    } catch (error: any) {
+      // Fallback: catch duplicate date violation from the backend in case
+      // the frontend check was bypassed (e.g. race condition).
+      if (
+        error?.response?.data?.code === '23505' ||
+        error?.message?.includes('organization_holidays_organization_date_unique')
+      ) {
+        message.error(
+          'A holiday already exists on this date. ' +
+          'Please choose a different date or delete the existing holiday first.'
+        );
+      } else {
+        message.error(t('errorCreatingHoliday'));
+      }
       logger.error('Error creating holiday', error);
-      message.error(t('errorCreatingHoliday'));
     }
   };
 
   const handleUpdateHoliday = async (values: any) => {
     if (!selectedHoliday) return;
+
+    if (isTempId(values.holiday_type_id)) {
+      message.error(
+        'Holiday types are still loading. Please wait a moment and try again.'
+      );
+      return;
+    }
 
     try {
       const holidayData: IUpdateHolidayRequest = {
@@ -191,11 +363,9 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
       const res = await holidayApiService.deleteOrganizationHoliday(holidayId);
       if (res.done) {
         message.success(t('holidayDeleted'));
-        // Close the edit modal and reset form
         setEditModalVisible(false);
         editForm.resetFields();
         setSelectedHoliday(null);
-        // Refresh holidays data
         fetchHolidaysForDateRange(true);
       }
     } catch (error) {
@@ -205,12 +375,10 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
   };
 
   const handleEditHoliday = (holiday: IHolidayCalendarEvent) => {
-    // Only allow editing custom holidays
     if (holiday.source !== 'custom' || !holiday.is_editable) {
       message.warning(t('cannotEditOfficialHoliday') || 'Cannot edit official holidays');
       return;
     }
-
     setSelectedHoliday(holiday);
     editForm.setFieldsValue({
       name: holiday.name,
@@ -225,7 +393,6 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
   const getHolidayDateCellRender = (date: Dayjs) => {
     const dateHolidays = holidays.filter(h => dayjs(h.date).isSame(date, 'day'));
     const dayName = date.format('dddd');
-    // Check if this day is in the working days array from API response
     const isWorkingDay =
       workingDays && workingDays.length > 0 ? workingDays.includes(dayName) : false;
     const isToday = date.isSame(dayjs(), 'day');
@@ -260,14 +427,10 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
                   title={`${holiday.name}${isOfficial ? ' (Official Holiday)' : ' (Custom Holiday)'}`}
                 >
                   {isCustom && (
-                    <span className="custom-holiday-icon" style={{ marginRight: '2px' }}>
-                      ⭐
-                    </span>
+                    <span className="custom-holiday-icon" style={{ marginRight: '2px' }}>⭐</span>
                   )}
                   {isOfficial && (
-                    <span className="official-holiday-icon" style={{ marginRight: '2px' }}>
-                      🏛️
-                    </span>
+                    <span className="official-holiday-icon" style={{ marginRight: '2px' }}>🏛️</span>
                   )}
                   {holiday.name}
                 </Tag>
@@ -287,35 +450,51 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
   const onPanelChange = (value: Dayjs) => {
     setIsNavigating(true);
     setCurrentDate(value);
-    // Reset navigation flag after a short delay to allow the onSelect event to check it
     setTimeout(() => setIsNavigating(false), 100);
   };
 
   const onDateSelect = (date: Dayjs) => {
-    // Prevent modal from opening during navigation (month/year changes)
-    if (isNavigating) {
-      return;
-    }
+    if (isNavigating) return;
+    if (!date.isSame(currentDate, 'month')) return;
 
-    // Prevent modal from opening if the date is from a different month (navigation click)
-    if (!date.isSame(currentDate, 'month')) {
-      return;
-    }
-
-    // Check if there's already a custom holiday on this date
     const existingCustomHoliday = holidays.find(
       h => dayjs(h.date).isSame(date, 'day') && h.source === 'custom' && h.is_editable
     );
 
     if (existingCustomHoliday) {
-      // If custom holiday exists, open edit modal
       handleEditHoliday(existingCustomHoliday);
     } else {
-      // If no custom holiday, open create modal with pre-filled date
       form.setFieldValue('date', date);
       setModalVisible(true);
     }
   };
+
+  // Shared dropdown options used in both Create and Edit modals.
+  // Each Option value is always a real DB UUID (or a temp placeholder if the
+  // API has not yet responded — the isTempId guard in handleCreate/Update
+  // prevents those from ever reaching the backend).
+  const holidayTypeOptions = holidayTypes.map(type => (
+    <Option key={type.id} value={type.id}>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div
+          style={{
+            width: 12,
+            height: 12,
+            borderRadius: '50%',
+            backgroundColor: type.color_code,
+            marginRight: 8,
+            flexShrink: 0,
+          }}
+        />
+        {type.name}
+        {isTempId(type.id) && (
+          <span style={{ marginLeft: 6, fontSize: 10, color: '#faad14' }}>
+            (loading…)
+          </span>
+        )}
+      </div>
+    </Option>
+  ));
 
   return (
     <Card>
@@ -379,7 +558,6 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
           className={`holiday-calendar ${themeMode}`}
         />
 
-        {/* Calendar Legend */}
         <div className="calendar-legend">
           <div className="legend-item">
             <div className="legend-badge working-day-badge">W</div>
@@ -406,7 +584,7 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
         </div>
       </div>
 
-      {/* Create Holiday Modal */}
+      {/* ── Create Holiday Modal ── */}
       <Modal
         title={t('addHoliday')}
         open={modalVisible}
@@ -423,11 +601,11 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
             label={t('holidayName')}
             rules={[{ required: true, message: t('holidayNameRequired') }]}
           >
-            <Input />
+            <Input placeholder="e.g., Independence Day" />
           </Form.Item>
 
           <Form.Item name="description" label={t('description')}>
-            <TextArea rows={3} />
+            <TextArea rows={3} placeholder="Optional description" />
           </Form.Item>
 
           <Form.Item
@@ -443,23 +621,8 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
             label={t('holidayType')}
             rules={[{ required: true, message: t('holidayTypeRequired') }]}
           >
-            <Select>
-              {holidayTypes.map(type => (
-                <Option key={type.id} value={type.id}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <div
-                      style={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: '50%',
-                        backgroundColor: type.color_code,
-                        marginRight: 8,
-                      }}
-                    />
-                    {type.name}
-                  </div>
-                </Option>
-              ))}
+            <Select placeholder="Select holiday type" showSearch optionFilterProp="children">
+              {holidayTypeOptions}
             </Select>
           </Form.Item>
 
@@ -485,7 +648,7 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
         </Form>
       </Modal>
 
-      {/* Edit Holiday Modal */}
+      {/* ── Edit Holiday Modal ── */}
       <Modal
         title={t('editHoliday')}
         open={editModalVisible}
@@ -523,23 +686,8 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
             label={t('holidayType')}
             rules={[{ required: true, message: t('holidayTypeRequired') }]}
           >
-            <Select>
-              {holidayTypes.map(type => (
-                <Option key={type.id} value={type.id}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <div
-                      style={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: '50%',
-                        backgroundColor: type.color_code,
-                        marginRight: 8,
-                      }}
-                    />
-                    {type.name}
-                  </div>
-                </Option>
-              ))}
+            <Select showSearch optionFilterProp="children">
+              {holidayTypeOptions}
             </Select>
           </Form.Item>
 
@@ -566,7 +714,8 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
                 selectedHoliday.is_editable && (
                   <Popconfirm
                     title={
-                      t('deleteHolidayConfirm') || 'Are you sure you want to delete this holiday?'
+                      t('deleteHolidayConfirm') ||
+                      'Are you sure you want to delete this holiday?'
                     }
                     onConfirm={() => handleDeleteHoliday(selectedHoliday.id)}
                     okText={t('yes') || 'Yes'}

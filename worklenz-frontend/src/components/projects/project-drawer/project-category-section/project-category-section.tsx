@@ -25,6 +25,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import { isFreeUser } from '@/utils/subscription-utils';
 import { useTranslation } from 'react-i18next';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { safeTextDisplay } from '@/utils/html-entities';
 
 interface ProjectCategorySectionProps {
   form: FormInstance;
@@ -57,7 +58,7 @@ const ProjectCategorySection = ({ form, t, disabled }: ProjectCategorySectionPro
   const categoryOptions = categories.map((category, index) => ({
     key: index,
     value: category.id,
-    label: category.name,
+    label: safeTextDisplay(category.name),
   }));
 
   const handleCategoryInputFocus = () => {

@@ -28,6 +28,7 @@ import {
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { themeWiseColor } from '@/utils/themeWiseColor';
+import { safeTextDisplay } from '@/utils/html-entities';
 import './EnhancedKanbanTaskCard.css';
 import LazyAssigneeSelectorWrapper from '../task-management/lazy-assignee-selector';
 import CustomDueDatePicker from '../board/custom-due-date-picker';
@@ -236,8 +237,8 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
               className="w-2 h-2 rounded-full"
               style={{ backgroundColor: task.priority_color || '#d9d9d9' }}
             />
-            <Typography.Text style={{ fontWeight: 500 }} ellipsis={{ tooltip: task.name }}>
-              {task.name}
+            <Typography.Text style={{ fontWeight: 500 }} ellipsis={{ tooltip: safeTextDisplay(task.name) }}>
+              {safeTextDisplay(task.name)}
             </Typography.Text>
           </Flex>
           <Flex
