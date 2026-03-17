@@ -2,7 +2,7 @@ import { Button, Card, Flex, Typography } from '@/shared/antd-imports';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setFields } from '@/features/tasks/tasks.slice';
+import { setSort } from '@/features/task-management/task-management.slice';
 
 import StatusOverview from './graphs/status-overview';
 import PriorityOverview from './graphs/priority-overview';
@@ -17,17 +17,7 @@ const InsightsOverview = ({ t }: { t: TFunction }) => {
   const { projectId } = useAppSelector(state => state.projectInsightsReducer);
 
   const handleSeeAllLastUpdated = () => {
-    // Set the sort filter to "Last Updated" descending (most recently updated first)
-    dispatch(
-      setFields([
-        {
-          key: 'updated_at',
-          label: 'Last Updated',
-          sort_order: 'descend',
-        }
-      ])
-    );
-    // Navigate to the task list tab
+    dispatch(setSort({ field: 'updated_at', order: 'DESC' }));
     navigate(`/worklenz/projects/${projectId}?pinned_tab=tasks-list`);
   };
 
