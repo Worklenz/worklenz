@@ -33,7 +33,8 @@ import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { toggleClientDetailsDrawer } from '../../features/clients-portal/clients/clients-slice';
 import {
-  useGetClientDetailsQuery,
+  UpdateClientRequest,
+  useLazyGetClientDetailsQuery,
   useDeactivateClientMutation,
   useUpdateClientMutation,
 } from '../../api/client-portal/client-portal-api';
@@ -51,14 +52,14 @@ const ClientDetailsDrawer = () => {
     state => state.clientsPortalReducer.clientsReducer
   );
 
-  const {
-    data: clientDetails,
-    isLoading: isLoadingClient,
-    error: clientError,
-    refetch: refetchClientDetails,
-  } = useGetClientDetailsQuery(selectedClientId || '', {
-    skip: !selectedClientId,
-  });
+  const [
+    fetchClientDetails,
+    {
+      data: clientDetails,
+      isLoading: isLoadingClient,
+      error: clientError,
+    },
+  ] = useLazyGetClientDetailsQuery();
 
   const client = clientDetails?.body;
   const clientStats = client?.stats;
@@ -68,6 +69,12 @@ const ClientDetailsDrawer = () => {
 
   const [form] = Form.useForm();
 
+  useEffect(() => {
+    if (isClientDetailsDrawerOpen && selectedClientId) {
+      fetchClientDetails(selectedClientId, true);
+    }
+  }, [fetchClientDetails, isClientDetailsDrawerOpen, selectedClientId]);
+
   // Populate form whenever client data arrives
   useEffect(() => {
     if (client) {
@@ -76,13 +83,13 @@ const ClientDetailsDrawer = () => {
         email: client.email,
         company_name: client.company_name,
         phone: client.phone,
-        address_line_1: (client as any).address_line_1,
-        city: (client as any).city,
-        state: (client as any).state,
-        zip_code: (client as any).zip_code,
-        country: (client as any).country,
+        address_line_1: client.address_line_1,
+        city: client.city,
+        state: client.state,
+        zip_code: client.zip_code,
+        country: client.country,
         status: client.status,
-        contact_person: (client as any).contact_person,
+        contact_person: client.contact_person,
       });
     }
   }, [client, form]);
@@ -92,10 +99,10 @@ const ClientDetailsDrawer = () => {
     form.resetFields();
   };
 
-  const handleFormSubmit = async (values: any) => {
+  const handleFormSubmit = async (values: UpdateClientRequest) => {
     if (!selectedClientId) return;
     try {
-      await updateClient({
+      const result = await updateClient({
         id: selectedClientId,
         data: {
           name: values.name,
@@ -111,8 +118,19 @@ const ClientDetailsDrawer = () => {
           contact_person: values.contact_person,
         },
       }).unwrap();
+
+      const response = result as any;
+      if (response?.done === false) {
+        throw new Error(
+          response?.message ||
+            t('updateClientErrorMessage', { defaultValue: 'Failed to update client' })
+        );
+      }
+
       message.success(t('updateClientSuccessMessage') || 'Client updated successfully');
-      refetchClientDetails();
+      window.setTimeout(() => {
+        handleClose();
+      }, 600);
     } catch (error: any) {
       message.error(
         error?.data?.message || t('updateClientErrorMessage') || 'Failed to update client'
@@ -125,7 +143,7 @@ const ClientDetailsDrawer = () => {
     try {
       await deactivateClient(selectedClientId).unwrap();
       message.success(t('deactivateClientSuccessMessage') || 'Client deactivated successfully');
-      refetchClientDetails();
+      fetchClientDetails(selectedClientId, true);
       handleClose();
     } catch (error: any) {
       message.error(
@@ -139,7 +157,7 @@ const ClientDetailsDrawer = () => {
     try {
       await updateClient({ id: selectedClientId, data: { status: 'active' } }).unwrap();
       message.success(t('activateClientSuccessMessage') || 'Client activated successfully');
-      refetchClientDetails();
+      fetchClientDetails(selectedClientId, true);
     } catch (error: any) {
       message.error(
         error?.data?.message || t('activateClientErrorMessage') || 'Failed to activate client'

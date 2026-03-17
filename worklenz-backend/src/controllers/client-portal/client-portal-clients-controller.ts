@@ -38,6 +38,11 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           c.company_name,
           c.phone,
           c.address,
+          c.address_line_1,
+          c.city,
+          c.state,
+          c.zip_code,
+          c.country,
           c.contact_person,
           c.status,
           c.team_id,
@@ -574,7 +579,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         FROM clients c
         LEFT JOIN projects p ON c.id = p.client_id
         WHERE c.id = $1 AND c.team_id = $2
-        GROUP BY c.id, c.name, c.email, c.company_name, c.phone, c.address, c.contact_person, c.status, c.team_id, c.created_at, c.updated_at
+        GROUP BY c.id, c.name, c.email, c.company_name, c.phone, c.address, c.address_line_1, c.city, c.state, c.zip_code, c.country, c.contact_person, c.status, c.team_id, c.created_at, c.updated_at
       `;
 
       const result = await db.query(query, [id, teamId]);
@@ -593,6 +598,11 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         company_name: client.company_name,
         phone: client.phone,
         address: client.address,
+        address_line_1: client.address_line_1,
+        city: client.city,
+        state: client.state,
+        zip_code: client.zip_code,
+        country: client.country,
         contact_person: client.contact_person,
         status: client.status || "active",
         created_at: client.created_at,
@@ -649,6 +659,11 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           c.company_name,
           c.phone,
           c.address,
+          c.address_line_1,
+          c.city,
+          c.state,
+          c.zip_code,
+          c.country,
           c.contact_person,
           c.status,
           c.team_id,
@@ -658,7 +673,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         FROM clients c
         LEFT JOIN projects p ON c.id = p.client_id
         WHERE c.id = $1 AND c.team_id = $2
-        GROUP BY c.id, c.name, c.email, c.company_name, c.phone, c.address, c.contact_person, c.status, c.team_id, c.created_at, c.updated_at
+        GROUP BY c.id, c.name, c.email, c.company_name, c.phone, c.address, c.address_line_1, c.city, c.state, c.zip_code, c.country, c.contact_person, c.status, c.team_id, c.created_at, c.updated_at
       `;
 
       const clientResult = await db.query(clientQuery, [id, teamId]);
@@ -722,6 +737,11 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         company_name: client.company_name,
         phone: client.phone,
         address: client.address,
+        address_line_1: client.address_line_1,
+        city: client.city,
+        state: client.state,
+        zip_code: client.zip_code,
+        country: client.country,
         contact_person: client.contact_person,
         status: client.status || "active",
         created_at: client.created_at,
@@ -917,6 +937,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         state: updatedClient.state,
         zip_code: updatedClient.zip_code,
         country: updatedClient.country,
+        contact_person: updatedClient.contact_person,
         status: updatedClient.status || "active",
         created_at: updatedClient.created_at,
         updated_at: updatedClient.updated_at

@@ -252,6 +252,11 @@ export interface ClientPortalClient {
   company_name?: string;
   phone?: string;
   address?: string;
+  address_line_1?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  country?: string;
   contact_person?: string;
   assigned_projects_count: number;
   projects: ClientPortalProject[];
@@ -286,6 +291,13 @@ export interface CreateClientRequest {
   company_name?: string;
   phone?: string;
   address?: string;
+  address_line_1?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  country?: string;
+  contact_person?: string;
+  status?: 'active' | 'inactive' | 'pending';
 }
 
 export interface UpdateClientRequest {
@@ -294,6 +306,11 @@ export interface UpdateClientRequest {
   company_name?: string;
   phone?: string;
   address?: string;
+  address_line_1?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  country?: string;
   contact_person?: string;
   status?: 'active' | 'inactive' | 'pending';
 }
@@ -1414,6 +1431,7 @@ export const {
   useGetClientsQuery,
   useGetClientByIdQuery,
   useGetClientDetailsQuery,
+  useLazyGetClientDetailsQuery,
   useCreateClientMutation,
   useUpdateClientMutation,
   useDeactivateClientMutation,
