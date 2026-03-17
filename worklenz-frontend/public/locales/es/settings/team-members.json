@@ -97,5 +97,6 @@
   "managerTooltip": "Asignar un líder de equipo para gestionar este miembro. Solo los miembros pueden ser asignados a gerentes.",
   "selectManagerPlaceholder": "Seleccionar un líder de equipo como gerente",
   "manager_removed_successfully": "Asignación de gerente eliminada exitosamente",
-  "updateError": "Error al actualizar el miembro del equipo. Por favor, inténtelo de nuevo."
+  "updateError": "Error al actualizar el miembro del equipo. Por favor, inténtelo de nuevo.",
+  "noTeamLeadsAvailable": "No hay líderes de equipo disponibles"
 }
