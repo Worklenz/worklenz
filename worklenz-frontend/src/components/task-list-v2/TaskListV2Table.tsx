@@ -1154,17 +1154,17 @@ const TaskListV2Section: React.FC = () => {
                               minWidth,
                               Math.min(maxWidth, startWidth + diff)
                             );
-
                             // Update CSS variable once - all elements update together
                             document.documentElement.style.setProperty(
                               `--col-width-${columnId}`,
                               `${newWidth}px`
                             );
-
-                            // Update indicator and tooltip
-                            updateIndicator(moveEvent.clientX, newWidth);
+                            // FIX: clamp indicator X to match clamped width so the
+                            // blue line stops at the min/max boundary
+                            const clampedClientX = startX + (newWidth - startWidth);
+                            updateIndicator(clampedClientX, newWidth);
                           };
-
+                          
                           const handleMouseUp = (upEvent: MouseEvent) => {
                             // Calculate final width and update state to persist
                             const diff = upEvent.clientX - startX;
