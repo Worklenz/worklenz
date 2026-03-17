@@ -1,4 +1,8 @@
 import { Button, Card, Flex, Typography } from '@/shared/antd-imports';
+import { useNavigate } from 'react-router-dom';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { setSort } from '@/features/task-management/task-management.slice';
 
 import StatusOverview from './graphs/status-overview';
 import PriorityOverview from './graphs/priority-overview';
@@ -8,12 +12,20 @@ import ProjectStats from '../project-stats/project-stats';
 import { TFunction } from 'i18next';
 
 const InsightsOverview = ({ t }: { t: TFunction }) => {
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { projectId } = useAppSelector(state => state.projectInsightsReducer);
+
+  const handleSeeAllLastUpdated = () => {
+    dispatch(setSort({ field: 'updated_at', order: 'DESC' }));
+    navigate(`/worklenz/projects/${projectId}?pinned_tab=tasks-list`);
+  };
+
   return (
-    <div 
-      className="overflow-y-auto overflow-x-hidden px-6" 
-      style={{ 
-        height: 'calc(100vh - 220px)', // Adjust based on your header/tabs height
-        // Optional: Custom scrollbar styling
+    <div
+      className="overflow-y-auto overflow-x-hidden px-6"
+      style={{
+        height: 'calc(100vh - 220px)',
         scrollbarWidth: 'thin',
         scrollbarColor: 'rgba(155, 155, 155, 0.5) transparent',
       }}
@@ -54,7 +66,11 @@ const InsightsOverview = ({ t }: { t: TFunction }) => {
                 {t('overview.lastUpdatedTasks')}
               </Typography.Text>
             }
-            extra={<Button type="link">{t('common.seeAll')}</Button>}
+            extra={
+              <Button type="link" onClick={handleSeeAllLastUpdated}>
+                {t('common.seeAll')}
+              </Button>
+            }
             style={{ width: '100%' }}
           >
             <LastUpdatedTasks />
