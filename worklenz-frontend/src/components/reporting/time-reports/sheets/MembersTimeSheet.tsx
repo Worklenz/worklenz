@@ -204,7 +204,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
               const idx = context[0].dataIndex;
               const member = jsonData[idx];
               const loggedTime = parseFloat(member?.logged_time || '0') / 3600;
-              return `📊 Total Logged: ${formatHours(loggedTime)}`;
+              return `Total Logged: ${formatHours(loggedTime)}`;
             },
           },
         },
@@ -254,6 +254,24 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         const selectedMembers = members.filter(member => member.selected);
         const selectedUtilization = utilization.filter(item => item.selected);
 
+        // Validate primary filters - show empty chart if any required filter is not met
+        // This matches backend logic which returns no data when primary filters are empty
+        const hasInvalidFilters =
+          selectedProjects.length === 0 || // Projects are required
+          selectedTeams.length === 0 || // Teams are required
+          (selectedCategories.length === 0 && !noCategory) || // Categories required unless "No Category" is checked
+          selectedMembers.length === 0; // Members are required (backend line 790: members.length === 0 → show nothing)
+
+        if (hasInvalidFilters) {
+          setJsonData([]);
+          onTotalsUpdate({
+            total_time_logs: '0',
+            total_estimated_hours: '0',
+            total_utilization: '0',
+          });
+          return;
+        }
+
         // Format dates using date-fns
         const formattedDateRange = dateRange
           ? [
@@ -278,9 +296,11 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
 
         if (res.done) {
           // Ensure filteredRows is always an array, even if API returns null/undefined
-          setJsonData(res.body?.filteredRows || []);
+          // The API response structure includes filteredRows and totals properties
+          const responseData = res.body as any;
+          setJsonData(responseData?.filteredRows || []);
 
-          const totalsRaw = res.body?.totals || {};
+          const totalsRaw = responseData?.totals || {};
           const totals = {
             total_time_logs: totalsRaw.total_time_logs ?? '0',
             total_estimated_hours: totalsRaw.total_estimated_hours ?? '0',

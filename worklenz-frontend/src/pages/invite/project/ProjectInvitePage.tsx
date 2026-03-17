@@ -77,10 +77,19 @@ const ProjectInvitePage: React.FC = () => {
         invitationRedirectService.clearPendingInvitation();
         console.log('[ProjectInvite] Cleared invitation context after successful join');
         
+        const teamId = response.body?.team_id;
+        const projectId = response.body?.project_id || projectInfo?.project?.id;
+        
         // Redirect to login or project after a delay
         setTimeout(() => {
-          if (currentUser) {
-            navigate(`/worklenz/projects/${projectInfo?.project?.id}`);
+          if (currentUser && teamId) {
+            // Force full page reload to refresh session with new active team
+            // Backend has already set the active team, so reload will pick it up
+            console.log('[ProjectInvite] Reloading to refresh session with new active team:', teamId);
+            window.location.href = `/worklenz/projects/${projectId}`;
+          } else if (currentUser) {
+            // Fallback: reload to pick up the active team set by backend
+            window.location.href = `/worklenz/projects/${projectId}`;
           } else {
             navigate('/auth/login', {
               state: {

@@ -20,7 +20,7 @@ export default class ClientPortalChatController extends ClientPortalControllerBa
       // Get chat conversations grouped by date
       const query = `
         WITH chat_summary AS (
-          SELECT 
+          SELECT
             DATE(created_at) as chat_date,
             COUNT(*) as message_count,
             MAX(created_at) as last_message_at,
@@ -29,15 +29,25 @@ export default class ClientPortalChatController extends ClientPortalControllerBa
           FROM client_portal_chat_messages
           WHERE client_id = $1 AND organization_team_id = $2
           GROUP BY DATE(created_at)
+        ),
+        last_messages AS (
+          SELECT DISTINCT ON (DATE(created_at))
+            DATE(created_at) as chat_date,
+            message as last_message_text
+          FROM client_portal_chat_messages
+          WHERE client_id = $1 AND organization_team_id = $2
+          ORDER BY DATE(created_at), created_at DESC
         )
-        SELECT 
-          chat_date,
-          message_count,
-          last_message_at,
-          last_team_message_at,
-          unread_count
-        FROM chat_summary
-        ORDER BY chat_date DESC
+        SELECT
+          cs.chat_date,
+          cs.message_count,
+          cs.last_message_at,
+          cs.last_team_message_at,
+          cs.unread_count,
+          lm.last_message_text
+        FROM chat_summary cs
+        LEFT JOIN last_messages lm ON cs.chat_date = lm.chat_date
+        ORDER BY cs.chat_date DESC
         LIMIT $3 OFFSET $4
       `;
 
@@ -68,6 +78,7 @@ export default class ClientPortalChatController extends ClientPortalControllerBa
         lastTeamMessageAt: row.last_team_message_at,
         unreadCount: parseInt(row.unread_count || "0"),
         hasNewMessages: row.unread_count > 0,
+        lastMessage: row.last_message_text || null,
       }));
 
       return res.json(

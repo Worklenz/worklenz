@@ -33,10 +33,17 @@ th.group:hover .column-resize-handle {
 }
 
 /* Active dragging state */
-.column-resize-handle:active {
+.column-resize-handle:active,
+.column-resize-handle.resizing {
   background-color: #9ca3af; /* gray */
   width: 4px;
   box-shadow: 0 0 4px rgba(156, 163, 175, 0.5);
+}
+
+/* At limit state */
+.column-resize-handle.at-limit {
+  background-color: #ff4d4f !important;
+  cursor: not-allowed !important;
 }
 
 /* Prevent text selection during resize */
@@ -63,8 +70,26 @@ th.sticky .column-resize-handle {
 
 /* Visual feedback - resize line during drag */
 .column-resize-indicator {
-  /* Hide the visual indicator while keeping resize logic intact */
-  display: none;
+  position: absolute;
+  top: 0;
+  width: 2px;
+  background-color: #1890ff;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  box-shadow: 0 0 4px rgba(24, 144, 255, 0.5);
+}
+
+/* Dark theme support for indicator */
+[data-theme="dark"] .column-resize-indicator {
+  background-color: #40a9ff;
+  box-shadow: 0 0 4px rgba(64, 169, 255, 0.5);
+}
+
+.dark .column-resize-indicator {
+  background-color: #40a9ff;
+  box-shadow: 0 0 4px rgba(64, 169, 255, 0.5);
 }
 
 /* Tooltip for resize hint */

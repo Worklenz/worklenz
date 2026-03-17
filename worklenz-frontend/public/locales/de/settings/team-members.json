@@ -92,5 +92,11 @@
   "projectInvite_emailHelp": "Type email and press Enter",
   "projectInvite_inviteButton": "Invite",
   "projectInvite_teamRoleLabel": "Team role",
-  "projectInvite_teamRoleTooltip": "Team role determines team-wide permissions. Project access level defaults to Member and can be changed later."
+  "projectInvite_teamRoleTooltip": "Team role determines team-wide permissions. Project access level defaults to Member and can be changed later.",
+  "managerLabel": "Manager",
+  "managerTooltip": "Weisen Sie einen Teamleiter zu, um dieses Mitglied zu verwalten. Nur Mitglieder können Managern zugewiesen werden.",
+  "selectManagerPlaceholder": "Wählen Sie einen Teamleiter als Manager",
+  "manager_removed_successfully": "Managerzuweisung erfolgreich entfernt",
+  "updateError": "Fehler beim Aktualisieren des Teammitglieds. Bitte versuchen Sie es erneut.",
+  "noTeamLeadsAvailable": "Keine Teamleiter verfügbar" 
 }

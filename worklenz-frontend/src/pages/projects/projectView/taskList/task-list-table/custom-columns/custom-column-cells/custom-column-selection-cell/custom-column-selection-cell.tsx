@@ -31,21 +31,16 @@ const CustomColumnSelectionCell = ({
   // localization
   const { t } = useTranslation('task-list-table');
 
-  // Debug the selectionsList and value
-  console.log('CustomColumnSelectionCell props:', {
-    selectionsList,
-    value,
-    selectionsCount: selectionsList?.length || 0,
-  });
-
   // Set initial selection based on value prop
   useEffect(() => {
-    if (!value) {
-      setCurrentSelectionOption(null);
-      return;
+    if (value && Array.isArray(selectionsList) && selectionsList.length > 0) {
+      const selectedOption = selectionsList.find(option => option.selection_id === value);
+      if (selectedOption) {
+        setCurrentSelectionOption(selectedOption);
+      }
     }
 
-    const normalizedValue = value.toString().trim();
+    const normalizedValue = value?.toString().trim() || '';
     const normalizedLower = normalizedValue.toLowerCase();
     const list = Array.isArray(selectionsList) ? selectionsList : [];
 

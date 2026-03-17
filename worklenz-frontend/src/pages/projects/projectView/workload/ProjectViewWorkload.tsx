@@ -85,57 +85,25 @@ const ProjectViewWorkload = React.memo(() => {
     }
   }, [dateRange.startDate, dateRange.endDate, dispatch]);
 
-  // Debug logging and state monitoring
-  useEffect(() => {
-    console.log('ProjectViewWorkload State:', {
-      projectId,
-      dateRange,
-      isLoading: finalLoading,
-      isFetching: finalFetching,
-      hasData: !!finalData,
-      dataLength: finalData?.members?.length || finalData?.body?.length || 0,
-      error: finalError,
-      usingFallback: error && fallbackData,
-    });
-  }, [projectId, dateRange, finalLoading, finalFetching, finalData, finalError, error, fallbackData]);
-
   // Force refetch when projectId or dateRange changes
   useEffect(() => {
     if (projectId) {
-      console.log('Project or date range changed, refetching workload data for:', projectId);
-      const timeoutId = setTimeout(() => {
-        finalRefetch();
-      }, 100);
-      return () => clearTimeout(timeoutId);
+      finalRefetch();
     }
   }, [projectId, dateRange.startDate, dateRange.endDate, finalRefetch]);
 
-  // Retry mechanism for failed loads
   const handleRetry = useCallback(() => {
-    console.log('Manual retry triggered');
     finalRefetch();
   }, [finalRefetch]);
 
-  // Enhanced refetch handler with debugging
   const handleRefresh = useCallback(() => {
-    console.log('=== REFRESH TRIGGERED ===');
-    console.log('Current state:', {
-      projectId,
-      dateRange,
-      isLoading: finalLoading,
-      isFetching: finalFetching,
-      hasData: !!finalData,
-      error: finalError
-    });
-    
     try {
       dispatch(projectWorkloadApi.util.invalidateTags(['ProjectWorkload']));
       finalRefetch();
-      console.log('Refetch completed successfully');
     } catch (error) {
-      console.error('Error calling refetch:', error);
+      console.error('Error refreshing workload:', error);
     }
-  }, [finalRefetch, projectId, dateRange, finalLoading, finalFetching, finalData, finalError, dispatch]);
+  }, [finalRefetch, dispatch]);
 
   // Memoize the content to prevent unnecessary re-renders
   const memoizedContent = useMemo(() => {

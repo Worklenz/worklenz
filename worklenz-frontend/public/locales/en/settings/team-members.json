@@ -52,7 +52,6 @@
   "optionalFieldLabel": "(Optional)",
   "inviteTeamMembersModalTitle": "Invite team members",
   "assign_manager": "Assign Manager",
-  "assign_team_lead": "Assign Team Lead",
   "bulk_assign_manager": "Bulk Assign Manager",
   "bulk_assign_team_lead": "Bulk Assign Team Lead",
   "selected_members": "Selected Members",
@@ -78,7 +77,6 @@
   "failed_to_assign_manager": "Failed to assign Team Lead",
   "assign": "Assign",
   "cancel": "Cancel",
-  "assign_team_lead": "Assign Team Lead",
   "projectInvite_emailRequired": "Please enter at least one email address",
   "projectInvite_inviteFailed": "Failed to invite project members",
   "projectInvite_linkCreatedSuccess": "Project invitation link created successfully",
@@ -93,5 +91,11 @@
   "projectInvite_emailHelp": "Type email and press Enter",
   "projectInvite_inviteButton": "Invite",
   "projectInvite_teamRoleLabel": "Team role",
-  "projectInvite_teamRoleTooltip": "Team role determines team-wide permissions. Project access level defaults to Member and can be changed later."
+  "projectInvite_teamRoleTooltip": "Team role determines team-wide permissions. Project access level defaults to Member and can be changed later.",
+  "managerLabel": "Manager",
+  "managerTooltip": "Assign a Team Lead to manage this member. Only Members can be assigned to managers.",
+  "selectManagerPlaceholder": "Select a Team Lead as manager",
+  "manager_removed_successfully": "Manager assignment removed successfully",
+  "updateError": "Failed to update team member. Please try again.",
+  "noTeamLeadsAvailable": "No team leads available" 
 }

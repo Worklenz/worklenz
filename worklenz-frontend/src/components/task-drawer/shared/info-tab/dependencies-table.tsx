@@ -193,13 +193,19 @@ const DependenciesTable = ({
                   options={taskList}
                   loading={loadingTaskList}
                   onSelect={handleAddDependency}
+                  className="dependency-search-select"
+                  popupClassName="dependency-search-select-dropdown"
                   onKeyDown={e => {
                     if (e.key === 'Enter') {
                       handleAddDependency;
                     }
                   }}
                   filterOption={false}
-                  notFoundContent={t('taskInfoTab.dependencies.noTasksFound')}
+                  notFoundContent={
+                    <span style={{ color: '#7b7b7b' }}>
+                      {t('taskInfoTab.dependencies.noTasksFound')}
+                    </span>
+                  }
                 />
               </Form.Item>
             </Col>

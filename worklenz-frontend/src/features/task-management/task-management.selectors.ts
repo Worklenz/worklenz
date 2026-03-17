@@ -58,7 +58,7 @@ export const selectLoadingColumns = (state: RootState) => state.taskManagement.l
 // Helper selector to check if columns are in sync with local fields
 export const selectColumnsInSync = (state: RootState) => {
     const columns = state.taskManagement.columns;
-    const fields = state.taskManagementFields || [];
+    const fields = state.taskManagementFields?.fields || [];
 
     if (columns.length === 0 || fields.length === 0) return true;
 

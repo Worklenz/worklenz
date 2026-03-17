@@ -6,7 +6,6 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 import dayjs from 'dayjs';
-import { useScheduleSocketHandlers } from '@/hooks/useScheduleSocketHandlers';
 
 interface ScheduleTaskRowProps {
   task: {
@@ -35,9 +34,6 @@ const ScheduleTaskRow: React.FC<ScheduleTaskRowProps> = ({ task, onClick }) => {
   const dispatch = useAppDispatch();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDarkMode = themeMode === 'dark';
-
-  // Initialize schedule socket handlers for real-time updates
-  useScheduleSocketHandlers();
 
   // Get status list from Redux to map status ID to name
   const statusList = useAppSelector(state => state.taskStatusReducer.status);

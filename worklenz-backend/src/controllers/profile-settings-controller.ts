@@ -24,7 +24,8 @@ export default class ProfileSettingsController extends WorklenzControllerBase {
 
     const newMembers = data.account.members || [];
 
-    NotificationsService.sendTeamMembersInvitations(newMembers, req.user as IPassportSession);
+    // Pass project_id so invitation emails include direct project access link
+    NotificationsService.sendTeamMembersInvitations(newMembers, req.user as IPassportSession, data.account.id);
 
     return res.status(200).send(new ServerResponse(true, data.account));
   }

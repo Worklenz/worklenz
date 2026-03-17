@@ -105,7 +105,7 @@ reportingApiRouter.get("/projects/grouped",
   validateUuidArrayParam("project_managers", ","),
   validateUuidArrayParam("teams", ","),
   validateEnumParam("archived", ["true", "false"]),
-  validateEnumParam("group_by", ["category", "status", "health"]),
+  validateEnumParam("group_by", ["category", "status", "health", "team", "manager"]),
   validatePaginationParams(),
   safeControllerFunction(ReportingProjectsController.getGrouped)
 );

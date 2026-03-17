@@ -73,4 +73,7 @@ export enum SocketEvents {
 
   // Task completion events
   GET_DONE_STATUSES,
+
+  // Task time log events
+  TASK_TIME_LOG_UPDATED,
 }

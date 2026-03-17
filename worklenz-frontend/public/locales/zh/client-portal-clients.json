@@ -65,7 +65,18 @@
   
   "addressLabel": "地址",
   "addressPlaceholder": "输入地址（可选）",
-  
+  "addressLine1Label": "街道地址",
+  "addressLine1Placeholder": "输入街道地址（可选）",
+  "cityLabel": "城市",
+  "cityPlaceholder": "城市",
+  "stateLabel": "省 / 州",
+  "statePlaceholder": "省 / 州",
+  "zipCodeLabel": "邮政编码",
+  "zipCodePlaceholder": "邮政编码",
+  "countryLabel": "国家",
+  "countryPlaceholder": "国家",
+  "clientInvitationEmailInfo": "将向客户发送邀请邮件以加入门户。您也可以从客户页面分享邀请链接。",
+
   "contactPersonLabel": "联系人",
   "contactPersonPlaceholder": "输入联系人姓名",
   
@@ -252,5 +263,8 @@
   "clientAlreadyHasPortalAccess": "客户已有门户访问权限",
   "clientAlreadyHasPendingInvitation": "邀请已发送。请使用重新发送选项。",
   "clientEmailRequired": "客户电子邮件是邀请所必需的",
-  "addEmailButton": "添加电子邮件并邀请"
+  "addEmailButton": "添加电子邮件并邀请",
+  "clientExistsWarning": "此电子邮件的客户已存在。使用现有客户记录。",
+  "clientExistsWithInvitationSent": "此电子邮件的客户已存在，并且已发送邀请。",
+  "clientExistsNoInvitation": "此电子邮件的客户已存在。您可以从客户列表发送邀请。"
 }

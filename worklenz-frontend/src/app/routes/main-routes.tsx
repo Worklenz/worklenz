@@ -7,6 +7,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import { Navigate, useLocation } from 'react-router-dom';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import ChunkErrorHandler from '@/utils/chunk-error-handler';
+import { isTeamLeadRole } from '@/types/roles/role.types';
 
 // Lazy load page components for better code splitting with chunk error handling
 const HomePage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/home/HomePage'), 'HomePage'));
@@ -66,13 +67,11 @@ const TeamLeadGuard = ({ children }: { children: React.ReactNode }) => {
     }
 
     const currentSession = authService.getCurrentSession();
-    const isOwnerOrAdmin = authService.isOwnerOrAdmin();
     
-    // For now, allow access to all non-admin users as a temporary fix
-    // TODO: Implement proper Team Lead role detection in session
-    const isTeamLead = !isOwnerOrAdmin && currentSession && !currentSession.owner && !currentSession.is_admin;
+    // Check if user has Team Lead role using role_name field
+    const hasTeamLeadRole = currentSession?.role_name ? isTeamLeadRole(currentSession.role_name) : false;
 
-    if (!isTeamLead) {
+    if (!hasTeamLeadRole) {
       return <Navigate to="/worklenz/unauthorized" replace />;
     }
 

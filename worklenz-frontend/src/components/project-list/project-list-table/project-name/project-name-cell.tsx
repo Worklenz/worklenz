@@ -49,7 +49,8 @@ export const ProjectNameCell: React.FC<{
 
   return (
     <div className="flex items-center">
-      <Badge color="geekblue" className="mr-2" />
+      {/* FIX: Use record.color_code instead of hardcoded "geekblue" */}
+      <Badge color={record.color_code || '#4096ff'} className="mr-2" />
       <span className="cursor-pointer">
         <span onClick={() => selectProject(record)}>{record.name}</span>
         {(record.start_date || record.end_date) && (

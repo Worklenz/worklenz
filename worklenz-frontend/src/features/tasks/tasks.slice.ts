@@ -987,6 +987,21 @@ const taskSlice = createSlice({
       }
     },
 
+    removeSubTask: (state, action: PayloadAction<{ subtaskId: string; parentTaskId: string }>) => {
+      const { subtaskId, parentTaskId } = action.payload;
+      for (const group of state.taskGroups) {
+        const parentTask = group.tasks.find(t => t.id === parentTaskId);
+        if (parentTask && parentTask.sub_tasks) {
+          const subtaskIndex = parentTask.sub_tasks.findIndex(st => st.id === subtaskId);
+          if (subtaskIndex !== -1) {
+            parentTask.sub_tasks.splice(subtaskIndex, 1);
+            parentTask.sub_tasks_count = Math.max((parentTask.sub_tasks_count || 0) - 1, 0);
+            break;
+          }
+        }
+      }
+    },
+
     updateCustomColumnValue: (
       state,
       action: PayloadAction<{
@@ -1229,6 +1244,7 @@ export const {
   updateCustomColumn,
   deleteCustomColumn,
   updateSubTasks,
+  removeSubTask,
   updateCustomColumnValue,
   updateCustomColumnPinned,
   updateRecurringChange,

@@ -1,5 +1,6 @@
 {
   "rename": "Renomear",
+  "renameStatus": "Renomear Status",
   "delete": "Excluir",
   "addTask": "Adicionar Tarefa",
   "addSectionButton": "Adicionar Seção",

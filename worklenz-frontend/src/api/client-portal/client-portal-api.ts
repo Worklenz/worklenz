@@ -1,6 +1,12 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import {
+  BaseQueryFn,
+  FetchArgs,
+  FetchBaseQueryError,
+  createApi,
+  fetchBaseQuery,
+} from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '@/shared/constants';
-import { getCsrfToken, ensureCsrfToken } from '../api-client';
+import { ensureCsrfToken, getCsrfToken, refreshCsrfToken } from '../api-client';
 import config from '@/config/env';
 
 export interface ClientPortalDashboardData {
@@ -90,6 +96,12 @@ export interface ClientPortalInvoice {
 export interface ClientPortalInvoiceDetails extends ClientPortalInvoice {
   notes?: string;
   paymentProofUrl?: string | null;
+  taxRate?: number;
+  taxAmount?: number;
+  discountType?: string;
+  discountValue?: number;
+  discountAmount?: number;
+  subtotal?: number;
   request: {
     id: string;
     requestNumber: string;
@@ -132,6 +144,12 @@ export interface UpdateInvoiceRequest {
   dueDate?: string;
   notes?: string;
   status?: string;
+  taxRate?: number;
+  taxAmount?: number;
+  discountType?: string;
+  discountValue?: number;
+  discountAmount?: number;
+  subtotal?: number;
 }
 
 export interface UpdateInvoiceResponseBody {
@@ -240,6 +258,11 @@ export interface ClientPortalClient {
   company_name?: string;
   phone?: string;
   address?: string;
+  address_line_1?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  country?: string;
   contact_person?: string;
   assigned_projects_count: number;
   projects: ClientPortalProject[];
@@ -274,6 +297,13 @@ export interface CreateClientRequest {
   company_name?: string;
   phone?: string;
   address?: string;
+  address_line_1?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  country?: string;
+  contact_person?: string;
+  status?: 'active' | 'inactive' | 'pending';
 }
 
 export interface UpdateClientRequest {
@@ -282,6 +312,11 @@ export interface UpdateClientRequest {
   company_name?: string;
   phone?: string;
   address?: string;
+  address_line_1?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  country?: string;
   contact_person?: string;
   status?: 'active' | 'inactive' | 'pending';
 }
@@ -374,37 +409,76 @@ export interface BulkDeleteRequest {
   client_ids: string[];
 }
 
+const rawBaseQuery = fetchBaseQuery({
+  baseUrl: `${config.apiUrl}${API_BASE_URL}`,
+  prepareHeaders: async headers => {
+    let token = getCsrfToken();
+
+    if (!token) {
+      try {
+        token = await ensureCsrfToken();
+      } catch (error) {
+        console.error('[CSRF] Failed to refresh CSRF token:', error);
+      }
+    }
+
+    if (token) {
+      headers.set('X-CSRF-Token', token);
+    } else {
+      console.warn('[CSRF] No CSRF token available - request may fail');
+    }
+
+    headers.set('Content-Type', 'application/json');
+    return headers;
+  },
+  credentials: 'include',
+});
+
+const isCsrfError = (error?: FetchBaseQueryError): boolean => {
+  if (!error || error.status !== 403 || !('data' in error)) {
+    return false;
+  }
+
+  const errorData = error.data;
+
+  if (typeof errorData === 'string') {
+    const normalizedMessage = errorData.toLowerCase();
+    return normalizedMessage.includes('csrf') || normalizedMessage.includes('security token');
+  }
+
+  if (typeof errorData === 'object' && errorData !== null && 'message' in errorData) {
+    const message = errorData.message;
+    if (typeof message === 'string') {
+      const normalizedMessage = message.toLowerCase();
+      return normalizedMessage.includes('csrf') || normalizedMessage.includes('security token');
+    }
+  }
+
+  return false;
+};
+
+const baseQueryWithCsrfRetry: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
+  args,
+  api,
+  extraOptions
+) => {
+  let result = await rawBaseQuery(args, api, extraOptions);
+
+  if (isCsrfError(result.error)) {
+    const refreshedToken = await refreshCsrfToken();
+
+    if (refreshedToken) {
+      result = await rawBaseQuery(args, api, extraOptions);
+    }
+  }
+
+  return result;
+};
+
 // RTK Query API
 export const clientPortalApi = createApi({
   reducerPath: 'clientPortalApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: `${config.apiUrl}${API_BASE_URL}`,
-    prepareHeaders: async headers => {
-      // Always try to get CSRF token, refresh if needed
-      let token = getCsrfToken();
-      
-      // If no token, try to refresh it with deduplication
-      if (!token) {
-        try {
-          token = await ensureCsrfToken();
-        } catch (error) {
-          console.error('[CSRF] Failed to refresh CSRF token:', error);
-        }
-      }
-
-      // Set token if available
-      if (token) {
-        headers.set('X-CSRF-Token', token);
-      } else {
-        // Log warning if no token available (backend will return proper error)
-        console.warn('[CSRF] No CSRF token available - request may fail');
-      }
-
-      headers.set('Content-Type', 'application/json');
-      return headers;
-    },
-    credentials: 'include',
-  }),
+  baseQuery: baseQueryWithCsrfRetry,
   tagTypes: [
     'Client',
     'Clients',
@@ -847,6 +921,21 @@ export const clientPortalApi = createApi({
         return response;
       },
       invalidatesTags: ['Chats'],
+    }),
+
+    uploadOrganizationChatFile: builder.mutation<
+      { url: string; fileName: string },
+      { fileData: string; fileName: string; fileType: string; clientId?: string }
+    >({
+      query: (body) => ({
+        url: '/clients/portal/chats/upload',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response: any) => {
+        if (response?.body) return response.body;
+        return response;
+      },
     }),
 
     sendOrganizationMessage: builder.mutation<
@@ -1387,6 +1476,7 @@ export const {
   useGetClientsQuery,
   useGetClientByIdQuery,
   useGetClientDetailsQuery,
+  useLazyGetClientDetailsQuery,
   useCreateClientMutation,
   useUpdateClientMutation,
   useDeactivateClientMutation,
@@ -1428,6 +1518,7 @@ export const {
   useGetOrganizationChatsQuery,
   useGetOrganizationChatByIdQuery,
   useCreateOrganizationChatMutation,
+  useUploadOrganizationChatFileMutation,
   useSendOrganizationMessageMutation,
   useGetOrganizationMessagesQuery,
 

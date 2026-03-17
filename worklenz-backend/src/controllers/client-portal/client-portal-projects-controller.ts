@@ -11,10 +11,10 @@ export default class ClientPortalProjectsController extends ClientPortalControll
     res: IWorkLenzResponse
   ) {
     try {
-      const { clientId } = req;
+      const { clientId, organizationId } = req;
       const { page = 1, limit = 10, status, search } = req.query;
 
-      // Build query with pagination and filtering - only show projects assigned to this client
+      // Build query with pagination and filtering - only show projects assigned to this client AND organization
       let query = `
         SELECT 
           p.id,
@@ -34,11 +34,11 @@ export default class ClientPortalProjectsController extends ClientPortalControll
         LEFT JOIN clients c ON p.client_id = c.id
         LEFT JOIN tasks t ON p.id = t.project_id
         LEFT JOIN task_statuses ts ON t.status_id = ts.id
-        WHERE p.client_id = $1
+        WHERE p.client_id = $1 AND p.team_id = $2
       `;
 
-      const queryParams: (string | number)[] = [clientId as string];
-      let paramIndex = 2;
+      const queryParams: (string | number)[] = [clientId as string, organizationId as string];
+      let paramIndex = 3;
 
       // Add status filter if provided
       if (status) {
@@ -61,24 +61,24 @@ export default class ClientPortalProjectsController extends ClientPortalControll
         SELECT COUNT(*) as total
         FROM projects p
         LEFT JOIN sys_project_statuses sps ON p.status_id = sps.id
-        WHERE p.client_id = $1
-        ${status ? "AND sps.name = $2" : ""}
+        WHERE p.client_id = $1 AND p.team_id = $2
+        ${status ? "AND sps.name = $3" : ""}
         ${
           search
-            ? `AND (p.name ILIKE $${status ? 3 : 2} OR p.notes ILIKE $${
-                status ? 3 : 2
+            ? `AND (p.name ILIKE $${status ? 4 : 3} OR p.notes ILIKE $${
+                status ? 4 : 3
               })`
             : ""
         }
       `;
       const countParams =
         status && search
-          ? [clientId, status, `%${search}%`]
+          ? [clientId, organizationId, status, `%${search}%`]
           : status
-          ? [clientId, status]
+          ? [clientId, organizationId, status]
           : search
-          ? [clientId, `%${search}%`]
-          : [clientId];
+          ? [clientId, organizationId, `%${search}%`]
+          : [clientId, organizationId];
       const countResult = await db.query(countQuery, countParams);
       const total = parseInt(countResult.rows[0]?.total || "0");
 
@@ -175,10 +175,9 @@ export default class ClientPortalProjectsController extends ClientPortalControll
   ) {
     try {
       const { id } = req.params;
-      const { clientId } = req;
-      const { organizationId } = req;
+      const { clientId, organizationId } = req;
 
-      // Get project details with client access validation
+      // Get project details with client access validation - verify both client_id AND team_id
       const query = `
         SELECT 
           p.id,
@@ -200,11 +199,11 @@ export default class ClientPortalProjectsController extends ClientPortalControll
         LEFT JOIN clients c ON p.client_id = c.id
         LEFT JOIN tasks t ON p.id = t.project_id
         LEFT JOIN task_statuses ts ON t.status_id = ts.id
-        WHERE p.id = $1 AND p.client_id = $2
+        WHERE p.id = $1 AND p.client_id = $2 AND p.team_id = $3
         GROUP BY p.id, p.name, p.notes, p.status_id, sps.name, sps.color_code, p.created_at, p.updated_at, p.start_date, p.end_date, c.name, c.company_name
       `;
 
-      const result = await db.query(query, [id, clientId]);
+      const result = await db.query(query, [id, clientId, organizationId]);
 
       if (result.rows.length === 0) {
         return res
@@ -265,13 +264,13 @@ export default class ClientPortalProjectsController extends ClientPortalControll
   ) {
     try {
       const { id } = req.params;
-      const { clientId } = req;
+      const { clientId, organizationId } = req;
       const { page = 1, limit = 10, search } = req.query;
 
-      // Verify client has access to this project
+      // Verify client has access to this project - check both client_id AND team_id
       const accessCheck = await db.query(
-        `SELECT id FROM projects WHERE id = $1 AND client_id = $2`,
-        [id, clientId]
+        `SELECT id FROM projects WHERE id = $1 AND client_id = $2 AND team_id = $3`,
+        [id, clientId, organizationId]
       );
 
       if (accessCheck.rows.length === 0) {
@@ -385,14 +384,14 @@ export default class ClientPortalProjectsController extends ClientPortalControll
   ) {
     try {
       const { id } = req.params;
-      const { clientId } = req;
+      const { clientId, organizationId } = req;
 
-      // Verify client has access to this task via project
+      // Verify client has access to this task via project - check both client_id AND team_id
       const accessCheck = await db.query(
         `SELECT t.id FROM tasks t
          INNER JOIN projects p ON t.project_id = p.id
-         WHERE t.id = $1 AND p.client_id = $2`,
-        [id, clientId]
+         WHERE t.id = $1 AND p.client_id = $2 AND p.team_id = $3`,
+        [id, clientId, organizationId]
       );
 
       if (accessCheck.rows.length === 0) {
@@ -498,12 +497,12 @@ export default class ClientPortalProjectsController extends ClientPortalControll
       const { id } = req.params;
       const { clientId, organizationId } = req;
 
-      // Verify client has access to this task
+      // Verify client has access to this task - check both client_id AND team_id
       const accessCheck = await db.query(
         `SELECT t.id, t.project_id FROM tasks t
          INNER JOIN projects p ON t.project_id = p.id
-         WHERE t.id = $1 AND p.client_id = $2`,
-        [id, clientId]
+         WHERE t.id = $1 AND p.client_id = $2 AND p.team_id = $3`,
+        [id, clientId, organizationId]
       );
 
       if (accessCheck.rows.length === 0) {
@@ -578,12 +577,12 @@ export default class ClientPortalProjectsController extends ClientPortalControll
           );
       }
 
-      // Verify task exists and client has access
+      // Verify task exists and client has access - check both client_id AND team_id
       const taskCheck = await db.query(
         `SELECT t.id, t.project_id FROM tasks t
          INNER JOIN projects p ON t.project_id = p.id
-         WHERE t.id = $1 AND p.client_id = $2`,
-        [id, clientId]
+         WHERE t.id = $1 AND p.client_id = $2 AND p.team_id = $3`,
+        [id, clientId, organizationId]
       );
 
       if (taskCheck.rows.length === 0) {
@@ -645,14 +644,14 @@ export default class ClientPortalProjectsController extends ClientPortalControll
   ) {
     try {
       const { id } = req.params;
-      const { clientId } = req;
+      const { clientId, organizationId } = req;
 
-      // Verify client has access to this task
+      // Verify client has access to this task - check both client_id AND team_id
       const accessCheck = await db.query(
         `SELECT t.id FROM tasks t
          INNER JOIN projects p ON t.project_id = p.id
-         WHERE t.id = $1 AND p.client_id = $2`,
-        [id, clientId]
+         WHERE t.id = $1 AND p.client_id = $2 AND p.team_id = $3`,
+        [id, clientId, organizationId]
       );
 
       if (accessCheck.rows.length === 0) {

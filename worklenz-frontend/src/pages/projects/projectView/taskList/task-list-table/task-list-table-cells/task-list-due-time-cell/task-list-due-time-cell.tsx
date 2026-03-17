@@ -4,8 +4,8 @@ import React from 'react';
 
 const TaskListDueTimeCell = () => {
   // function to trigger time change
-  const onTimeChange: TimePickerProps['onChange'] = (time, timeString) => {
-    console.log(time, timeString);
+  const onTimeChange: TimePickerProps['onChange'] = (_time, _timeString) => {
+    // TODO: persist due time when backend supports it
   };
 
   return (

@@ -34,6 +34,8 @@ import TaskComments from './comments/task-comments';
 import { ITaskCommentViewModel } from '@/types/tasks/task-comments.types';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { ITaskViewModel } from '@/types/tasks/task.types';
+import TaskDrawerCustomFields from './details/task-drawer-custom-fields/task-drawer-custom-fields';
+import { hasDrawerSupportedCustomFields } from '@/utils/task-custom-columns';
 
 interface TaskDrawerInfoTabProps {
   t: TFunction;
@@ -61,6 +63,14 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
   const [taskComments, setTaskComments] = useState<ITaskCommentViewModel[]>([]);
   const [loadingTaskComments, setLoadingTaskComments] = useState<boolean>(false);
 
+  // FIX: Track the previous task ID so we only re-fetch when a REAL task is
+  // opened (selectedTaskId is a non-null string), not when the drawer closes
+  // and resets selectedTaskId to null. Without this guard, closing the drawer
+  // triggers the useEffect cleanup (which wipes local state) and then
+  // immediately re-runs fetchTaskData with null — causing a redundant API call
+  // and leaving taskFormViewModel empty when the drawer reopens.
+  const prevTaskIdRef = useRef<string | null>(null);
+
   const handleFilesSelected = async (files: File[]) => {
     if (!taskFormViewModel?.task?.id || !projectId) return;
 
@@ -71,7 +81,6 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
         const filesToUpload = [...files];
         selectedFilesRef.current = filesToUpload;
 
-        // Upload all files and wait for all promises to complete
         await Promise.all(
           filesToUpload.map(async file => {
             const base64 = await getBase64(file);
@@ -88,7 +97,6 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
       } finally {
         setProcessingUpload(false);
         selectedFilesRef.current = [];
-        // Refetch attachments after all uploads are complete
         fetchTaskAttachments();
       }
     }
@@ -105,7 +113,10 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
     paddingBlock: 0,
   };
 
-  // Define all info items
+  const hasSupportedCustomFields = hasDrawerSupportedCustomFields(
+    taskFormViewModel?.custom_columns || []
+  );
+
   const allInfoItems: CollapseProps['items'] = [
     {
       key: 'details',
@@ -114,6 +125,24 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
       style: panelStyle,
       className: 'custom-task-drawer-info-collapse',
     },
+    ...(hasSupportedCustomFields
+      ? [
+          {
+            key: 'customFields',
+            label: <Typography.Text strong>{t('taskInfoTab.customFields.title')}</Typography.Text>,
+            children: (
+              <TaskDrawerCustomFields
+                customColumns={taskFormViewModel?.custom_columns || []}
+                projectId={projectId || null}
+                task={(taskFormViewModel?.task as ITaskViewModel) || null}
+                teamMembers={taskFormViewModel?.team_members || []}
+              />
+            ),
+            style: panelStyle,
+            className: 'custom-task-drawer-info-collapse',
+          },
+        ]
+      : []),
     {
       key: 'description',
       label: <Typography.Text strong>{t('taskInfoTab.description.title')}</Typography.Text>,
@@ -184,7 +213,6 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
     },
   ];
 
-  // Filter out the 'subTasks' item if this task is more than level 2
   const infoItems =
     (taskFormViewModel?.task?.task_level ?? 0) >= 2
       ? allInfoItems.filter(item => item.key !== 'subTasks')
@@ -212,8 +240,6 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
       const res = await taskDependenciesApiService.getTaskDependencies(selectedTaskId);
       if (res.done) {
         setTaskDependencies(res.body);
-
-        // Update Redux state with the current dependency status
         dispatch(
           updateTaskCounts({
             taskId: selectedTaskId,
@@ -237,8 +263,6 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
       const res = await taskAttachmentsApiService.getTaskAttachments(selectedTaskId);
       if (res.done) {
         setTaskAttachments(res.body);
-
-        // Update Redux state with the current attachment count
         dispatch(
           updateTaskCounts({
             taskId: selectedTaskId,
@@ -271,6 +295,35 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
   };
 
   useEffect(() => {
+    // FIX: Only fetch and reset data when selectedTaskId changes to a REAL
+    // task ID (non-null). When the drawer closes, resetTaskState() sets
+    // selectedTaskId → null after a 300ms timeout. Without this guard, that
+    // null change re-triggers this effect: the cleanup wipes all local state,
+    // then fetchTaskData() runs with null and dispatches fetchTask(null),
+    // which clears taskFormViewModel in Redux. So when the drawer reopens the
+    // task, every field (phase, priority, labels, assignees, due date,
+    // estimation) shows blank until the API round-trip completes again.
+    if (!selectedTaskId) {
+      // Reset the prevTaskIdRef when drawer closes
+      prevTaskIdRef.current = null;
+      return;
+    }
+
+    // Check if we need to fetch data:
+    // 1. If it's a different task than before, OR
+    // 2. If it's the same task but taskFormViewModel is empty (drawer was closed and reopened), OR
+    // 3. If it's the same task but local state is empty (cleanup ran when drawer closed)
+    const isDifferentTask = selectedTaskId !== prevTaskIdRef.current;
+    const isDataMissing = !taskFormViewModel || !taskFormViewModel.task;
+    const isLocalStateMissing = taskAttachments.length === 0 || subTasks.length === 0 || taskDependencies.length === 0;
+    
+    if (!isDifferentTask && !isDataMissing && !isLocalStateMissing) {
+      // Same task and data is already loaded, skip fetch
+      return;
+    }
+
+    prevTaskIdRef.current = selectedTaskId;
+
     fetchTaskData();
     fetchSubTasks();
     fetchTaskDependencies();
@@ -278,6 +331,8 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
     fetchTaskComments();
 
     return () => {
+      // Only clear local data when we're actually switching to a different
+      // task, not when selectedTaskId is being reset to null on drawer close.
       setSubTasks([]);
       setTaskDependencies([]);
       setTaskAttachments([]);

@@ -196,22 +196,23 @@ export default class HomePageController extends WorklenzControllerBase {
     let params: any[];
     let result: any[];
 
-    if (isCalendarView == "true") {
-      const selectedDate = req.query.selected_date as string;
-      currentTabClosure = `AND t.end_date::DATE = $3::DATE`;
-      params = [teamId, userId, selectedDate];
-      result = await this.getTasksResult(groupByClosure, currentTabClosure, params, teamId as string, userId as string);
-    } else {
-      params = [teamId, userId];
-      result = await this.getTasksResult(groupByClosure, currentTabClosure, params, teamId as string, userId as string);
-    }
+ if (isCalendarView == "true") {
+  const selectedDate = req.query.selected_date as string;
+  const calendarClosure = `AND t.end_date::DATE = $3::DATE`;
+  params = [teamId, userId, selectedDate];
+  result = await this.getTasksResult(groupByClosure, calendarClosure, params, teamId as string, userId as string);
+} else {
+  params = [teamId, userId];
+  // ✅ FIX: pass "" so ALL tasks are fetched regardless of selected tab
+  result = await this.getTasksResult(groupByClosure, "", params, teamId as string, userId as string);
+}
 
-    const counts = await this.getCountsByGroup(result, timeZone, today);
+// ✅ FIX: counts calculated from full task list, not tab-filtered subset
+const counts = await this.getCountsByGroup(result, timeZone, today);
 
-    if (isCalendarView != "true") {
-      result = await this.groupByDate(currentTab as string, result, timeZone, today);
-    }
-
+if (isCalendarView != "true") {
+  result = await this.groupByDate(currentTab as string, result, timeZone, today);
+}
     // const counts = await this.getCountsResult(groupByClosure, teamId as string, userId as string);
 
     const data = {

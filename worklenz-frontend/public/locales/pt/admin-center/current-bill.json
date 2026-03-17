@@ -24,6 +24,9 @@
   "paymentMethod": "Método de Pagamento",
   "status": "Status",
   "ltdUsers": "Puedes agregar hasta {{ltd_users}} usuarios.",
+  "appsumoBusinessUnlockTitle": "Desbloqueie o plano Business com 5 códigos AppSumo",
+  "appsumoBusinessUnlockDescription": "Resgate {{required}} códigos AppSumo para desbloquear automaticamente os recursos do plano Business. Você resgatou {{count}} de {{required}} códigos.",
+  "redeemAnotherCode": "Resgatar outro código",
 
   "drawerTitle": "Resgatar Código",
   "label": "Resgatar Código",

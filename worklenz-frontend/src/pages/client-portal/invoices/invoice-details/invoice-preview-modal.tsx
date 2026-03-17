@@ -26,6 +26,8 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 const { Title, Text } = Typography;
 const { useToken } = theme;
 
+const getInvoiceDownloadUrl = (invoiceId: string) => `/api/v1/clients/portal/invoices/${invoiceId}/download`;
+
 interface InvoicePreviewModalProps {
   open: boolean;
   onClose: () => void;
@@ -56,6 +58,11 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   const handleEditCompanyDetails = () => {
     onClose();
     navigate('/worklenz/client-portal/settings');
+  };
+
+  // Handle download invoice
+  const handleDownload = () => {
+    window.open(getInvoiceDownloadUrl(invoice.id), '_blank', 'noopener,noreferrer');
   };
 
   // Theme-aware colors
@@ -457,12 +464,20 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
               <div class="totals-box">
                 <div class="totals-row">
                   <span>${t('subtotal')}</span>
-                  <span>${formatCurrency(invoice.amount, invoice.currency)}</span>
+                  <span>${formatCurrency(invoice.subtotal || invoice.amount, invoice.currency)}</span>
                 </div>
-                <div class="totals-row">
-                  <span>${t('tax')} (0%)</span>
-                  <span>${formatCurrency(0, invoice.currency)}</span>
-                </div>
+                ${invoice.discountAmount && invoice.discountAmount > 0 ? `
+                  <div class="totals-row">
+                    <span>${t('discount')} (${invoice.discountType === 'percentage' ? `${invoice.discountValue}%` : formatCurrency(invoice.discountValue || 0, invoice.currency)})</span>
+                    <span>-${formatCurrency(invoice.discountAmount, invoice.currency)}</span>
+                  </div>
+                ` : ''}
+                ${invoice.taxAmount && invoice.taxAmount > 0 ? `
+                  <div class="totals-row">
+                    <span>${t('tax')} (${invoice.taxRate || 0}%)</span>
+                    <span>${formatCurrency(invoice.taxAmount, invoice.currency)}</span>
+                  </div>
+                ` : ''}
                 <div class="totals-row total">
                   <span>${t('total')}</span>
                   <span class="amount">${formatCurrency(invoice.amount, invoice.currency)}</span>
@@ -573,7 +588,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
           <Button icon={<PrinterOutlined />} onClick={handlePrint}>
             {t('print')}
           </Button>
-          <Button icon={<DownloadOutlined />} type="primary" onClick={handlePrint}>
+          <Button icon={<DownloadOutlined />} type="primary" onClick={handleDownload}>
             {t('downloadInvoice')}
           </Button>
         </Flex>
@@ -824,12 +839,20 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
           <Col xs={24} sm={12} md={8}>
             <Flex justify="space-between" style={{ padding: '8px 0' }}>
               <Text type="secondary">{t('subtotal')}</Text>
-              <Text>{formatCurrency(invoice.amount, invoice.currency)}</Text>
+              <Text>{formatCurrency(invoice.subtotal || invoice.amount, invoice.currency)}</Text>
             </Flex>
-            <Flex justify="space-between" style={{ padding: '8px 0' }}>
-              <Text type="secondary">{t('tax')} (0%)</Text>
-              <Text>{formatCurrency(0, invoice.currency)}</Text>
-            </Flex>
+            {(invoice.discountAmount && invoice.discountAmount > 0) && (
+              <Flex justify="space-between" style={{ padding: '8px 0' }}>
+                <Text type="secondary">{t('discount')} ({invoice.discountType === 'percentage' ? `${invoice.discountValue}%` : formatCurrency(invoice.discountValue || 0, invoice.currency)})</Text>
+                <Text type="success">-{formatCurrency(invoice.discountAmount, invoice.currency)}</Text>
+              </Flex>
+            )}
+            {(invoice.taxAmount && invoice.taxAmount > 0) && (
+              <Flex justify="space-between" style={{ padding: '8px 0' }}>
+                <Text type="secondary">{t('tax')} ({invoice.taxRate || 0}%)</Text>
+                <Text>{formatCurrency(invoice.taxAmount, invoice.currency)}</Text>
+              </Flex>
+            )}
             <Divider style={{ margin: '12px 0' }} />
             <Flex justify="space-between" style={{ padding: '8px 0' }}>
               <Text strong style={{ fontSize: 16 }}>

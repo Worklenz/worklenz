@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ProjectViewType, ProjectGroupBy } from '@/types/project/project.types';
 import { setViewMode, setGroupBy } from '@features/project/project-view-slice';
-import debounce from 'lodash/debounce';
+import debounce from 'lodash-es/debounce';
 import {
   Button,
   Card,
@@ -17,7 +17,7 @@ import {
   TablePaginationConfig,
   Tooltip,
 } from '@/shared/antd-imports';
-import { PageHeader } from '@ant-design/pro-components';
+import WorklenzPageHeader from '@/components/common/WorklenzPageHeader';
 import {
   SearchOutlined,
   SyncOutlined,
@@ -90,7 +90,6 @@ const ProjectList: React.FC = () => {
   const [filteredInfo, setFilteredInfo] = useState<Record<string, FilterValue | null>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastQueryParamsRef = useRef<string>('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -166,47 +165,38 @@ const ProjectList: React.FC = () => {
   }, [loadingProjects]);
 
   // Optimized debounced search with better cleanup and performance
-  const debouncedSearch = useCallback(
-    debounce((searchTerm: string) => {
-      // Clear any error messages when starting a new search
-      setErrorMessage(null);
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchTerm: string, currentGroupedParams: typeof groupedRequestParams, currentGroupBy: string) => {
+        // Clear any error messages when starting a new search
+        setErrorMessage(null);
 
-      if (viewMode === ProjectViewType.LIST) {
-        dispatch(
-          setRequestParams({
+        if (viewMode === ProjectViewType.LIST) {
+          dispatch(
+            setRequestParams({
+              search: searchTerm,
+              index: 1, // Reset to first page on search
+            })
+          );
+        } else if (viewMode === ProjectViewType.GROUP) {
+          const newGroupedParams = {
+            ...(currentGroupedParams || {}),
             search: searchTerm,
-            index: 1, // Reset to first page on search
-          })
-        );
-      } else if (viewMode === ProjectViewType.GROUP) {
-        const newGroupedParams = {
-          ...groupedRequestParams,
-          search: searchTerm,
-          index: 1,
-        };
-        dispatch(setGroupedRequestParams(newGroupedParams));
-
-        // Add timeout for grouped search to prevent rapid API calls
-        if (searchTimeoutRef.current) {
-          clearTimeout(searchTimeoutRef.current);
-        }
-
-        searchTimeoutRef.current = setTimeout(() => {
+            index: 1,
+            // Ensure groupBy is set, fallback to category if empty
+            groupBy: currentGroupedParams?.groupBy || currentGroupBy || ProjectGroupBy.CATEGORY,
+          };
+          dispatch(setGroupedRequestParams(newGroupedParams));
           dispatch(fetchGroupedProjects(newGroupedParams));
-        }, 100);
-      }
-    }, 500), // Increased debounce time for better performance
-    [dispatch, viewMode, groupedRequestParams]
+        }
+      }, 500),
+    [dispatch, viewMode]
   );
 
   // Enhanced cleanup with better timeout management
   useEffect(() => {
     return () => {
       debouncedSearch.cancel();
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-        searchTimeoutRef.current = null;
-      }
     };
   }, [debouncedSearch]);
 
@@ -223,16 +213,10 @@ const ProjectList: React.FC = () => {
       setSearchValue(newSearchValue);
       trackMixpanelEvent(evt_projects_search);
 
-      // Clear any existing timeout
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-        searchTimeoutRef.current = null;
-      }
-
-      // Debounce the actual search execution
-      debouncedSearch(newSearchValue);
+      // Debounce the actual search execution with current params
+      debouncedSearch(newSearchValue, groupedRequestParams, groupBy);
     },
-    [debouncedSearch, trackMixpanelEvent]
+    [debouncedSearch, trackMixpanelEvent, groupedRequestParams, groupBy]
   );
 
   const getFilterIndex = useCallback(() => {
@@ -833,7 +817,7 @@ const ProjectList: React.FC = () => {
 
   return (
     <div style={{ minHeight: '90vh' }}>
-      <PageHeader
+      <WorklenzPageHeader
         className="site-page-header"
         title={`${projectCount} ${t('projects', { defaultValue: 'Projects' })}`}
         style={{ padding: '16px 0' }}
@@ -842,7 +826,11 @@ const ProjectList: React.FC = () => {
             <Tooltip title={t('refreshProjects', { defaultValue: 'Refresh projects' })}>
               <Button
                 shape="circle"
-                icon={<SyncOutlined spin={isFetchingProjects} />}
+                icon={
+                  <SyncOutlined
+                    spin={isFetchingProjects || groupedProjects.loading}
+                  />
+                }
                 onClick={handleRefresh}
                 aria-label="Refresh projects"
               />

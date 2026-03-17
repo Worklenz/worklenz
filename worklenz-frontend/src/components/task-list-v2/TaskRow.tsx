@@ -115,7 +115,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(
       () => ({
         transform: CSS.Transform.toString(transform),
         transition,
-        opacity: isDragging ? 0.3 : 1, // Make original task slightly transparent while dragging
+        opacity: isDragging ? 0.3 : 1,
       }),
       [transform, transition, isDragging]
     );
@@ -124,25 +124,21 @@ const TaskRow: React.FC<TaskRowProps> = memo(
       <div
         ref={setNodeRef}
         style={{ ...style, height: '40px' }}
-        className={`flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-          isFirstInGroup ? 'border-t border-gray-200 dark:border-gray-700' : ''
-        } ${isDragging ? 'opacity-50' : ''} ${
-          isOver && !isDragging ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-        }`}
+        className={`flex items-center min-w-max px-1 border-t border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
+          isDragging ? 'opacity-50' : ''
+        } ${isOver && !isDragging ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
       >
         {visibleColumns.map((column, index) => {
-          // Calculate background state for sticky columns - custom dark mode colors
           const rowBackgrounds = {
-            normal: isDarkMode ? '#1e1e1e' : '#ffffff', // custom dark : bg-white
-            hover: isDarkMode ? '#1f2937' : '#f9fafb', // slightly lighter dark : bg-gray-50
-            dragOver: isDarkMode ? '#1e3a8a33' : '#dbeafe', // bg-blue-900/20 : bg-blue-50
+            normal: isDarkMode ? '#1e1e1e' : '#ffffff',
+            hover: isDarkMode ? '#1f2937' : '#f9fafb',
+            dragOver: isDarkMode ? '#1e3a8a33' : '#dbeafe',
           };
 
           let currentBg = rowBackgrounds.normal;
           if (isOver && !isDragging) {
             currentBg = rowBackgrounds.dragOver;
           }
-          // Note: hover state is handled by CSS, so we'll use a CSS custom property
 
           return (
             <React.Fragment key={column.id}>

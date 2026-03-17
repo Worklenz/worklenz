@@ -30,6 +30,7 @@ import {
   GROUP_BY_STATUS_VALUE,
   GROUP_BY_PRIORITY_VALUE,
   GROUP_BY_PHASE_VALUE,
+  removeSubTask,
 } from '@/features/tasks/tasks.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import logger from '@/utils/errorLogger';
@@ -40,6 +41,7 @@ import {
 } from '@/features/task-drawer/task-drawer.slice';
 import { updateSubtask } from '@/features/board/board-slice';
 import { updateEnhancedKanbanSubtask } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { deleteTask } from '@/features/task-management/task-management.slice';
 
 type SubTaskTableProps = {
   subTasks: ISubTask[];
@@ -121,6 +123,22 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
 
     try {
       await tasksApiService.deleteTask(taskId);
+
+      // Update Redux state for all views
+      // 1. Update task list view (tasks.slice)
+      if (selectedTaskId) {
+        dispatch(
+          removeSubTask({
+            subtaskId: taskId,
+            parentTaskId: selectedTaskId,
+          })
+        );
+      }
+
+      // 2. Update task-management slice (for TaskListV2)
+      dispatch(deleteTask({ taskId, parentTaskId: selectedTaskId || undefined }));
+
+      // 3. Update enhanced kanban view
       dispatch(
         updateEnhancedKanbanSubtask({
           sectionId: '',
@@ -128,6 +146,8 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
           mode: 'delete',
         })
       );
+
+      // 4. Update board view
       dispatch(
         updateSubtask({
           sectionId: '',
@@ -136,6 +156,7 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
         })
       );
 
+      // 5. Refresh subtasks in drawer
       refreshSubTasks();
     } catch (error) {
       logger.error('Error deleting subtask:', error);

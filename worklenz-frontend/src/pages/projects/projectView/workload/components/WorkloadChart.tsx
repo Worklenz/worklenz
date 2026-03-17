@@ -194,18 +194,6 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
           periodCapacity = weeklyCapacity;
         }
         
-        // Debug logging
-        console.log('Member capacity calculation:', {
-          memberName: member.name,
-          startDate,
-          endDate,
-          dailyHours,
-          workingDaysInPeriod,
-          periodCapacity,
-          weeklyCapacity,
-          orgWorkingDays: member.org_working_days
-        });
-        
         const utilizationPercentage = periodCapacity > 0 ? Math.round((currentWorkload / periodCapacity) * 100) : 0;
         
         return {

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -11,6 +12,8 @@ import {
   selectGroups,
   moveTaskBetweenGroups,
 } from '@/features/task-management/task-management.slice';
+import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
+import alertService from '@/services/alerts/alertService';
 
 interface TaskStatusDropdownProps {
   task: Task;
@@ -23,6 +26,7 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
   projectId,
   isDarkMode = false,
 }) => {
+  const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
   const [isOpen, setIsOpen] = useState(false);
@@ -73,8 +77,21 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
 
   // Handle status change
   const handleStatusChange = useCallback(
-    (statusId: string, statusName: string) => {
+    async (statusId: string, statusName: string) => {
       if (!task.id || !statusId || !connected) return;
+
+      // Check dependencies BEFORE making any changes
+      if (task.status !== statusId) {
+        const canContinue = await checkTaskDependencyStatus(task.id, statusId);
+        if (!canContinue) {
+          alertService.error(
+            t('errors.taskNotCompleted', { defaultValue: 'Task is not completed' }),
+            t('errors.completeTaskDependencies', { defaultValue: 'Please complete the task dependencies before proceeding' })
+          );
+          setIsOpen(false);
+          return;
+        }
+      }
 
       // Optimistic update: immediately update the task status in Redux for instant feedback
       const updatedTask = {
@@ -122,7 +139,7 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
       socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.id);
       setIsOpen(false);
     },
-    [task, connected, socket, projectId, dispatch, currentGroupingV3, groups]
+    [task, connected, socket, projectId, dispatch, currentGroupingV3, groups, t]
   );
 
   // Calculate dropdown position and handle outside clicks

@@ -48,12 +48,18 @@ export const fetchTask = createAsyncThunk(
   }
 );
 
+const resetTimeLogEditing = {
+  isEditing: false,
+  logBeingEdited: null,
+};
+
 const taskDrawerSlice = createSlice({
   name: 'taskDrawer',
   initialState,
   reducers: {
     setSelectedTaskId: (state, action) => {
       state.selectedTaskId = action.payload;
+      state.timeLogEditing = resetTimeLogEditing; // ← reset when switching tasks
     },
     setShowTaskDrawer: (state, action) => {
       state.showTaskDrawer = action.payload;
@@ -140,6 +146,36 @@ const taskDrawerSlice = createSlice({
         state.taskFormViewModel.task.schedule_id = schedule_id;
       }
     },
+    setTaskBillable: (
+      state,
+      action: PayloadAction<{
+        id: string;
+        billable: boolean;
+      }>
+    ) => {
+      if (!action.payload) return;
+      const { id, billable } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === id) {
+        state.taskFormViewModel.task.billable = billable;
+      }
+    },
+    setTaskCustomColumnValue: (
+      state,
+      action: PayloadAction<{
+        taskId: string;
+        columnKey: string;
+        value: string | number | boolean | string[] | null;
+      }>
+    ) => {
+      const { taskId, columnKey, value } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        if (!state.taskFormViewModel.task.custom_column_values) {
+          state.taskFormViewModel.task.custom_column_values = {};
+        }
+
+        state.taskFormViewModel.task.custom_column_values[columnKey] = value;
+      }
+    },
     setNavigationContext: (
       state,
       action: PayloadAction<{
@@ -158,6 +194,7 @@ const taskDrawerSlice = createSlice({
         const nextIndex = currentIndex + 1;
         state.selectedTaskId = taskIds[nextIndex];
         state.navigationContext.currentIndex = nextIndex;
+        state.timeLogEditing = resetTimeLogEditing; // ← reset when switching tasks
       }
     },
     navigateToPreviousTask: state => {
@@ -167,10 +204,10 @@ const taskDrawerSlice = createSlice({
         const prevIndex = currentIndex - 1;
         state.selectedTaskId = taskIds[prevIndex];
         state.navigationContext.currentIndex = prevIndex;
+        state.timeLogEditing = resetTimeLogEditing; // ← reset when switching tasks
       }
     },
     syncNavigationIndex: state => {
-      // Sync the current index with the selected task ID
       if (!state.navigationContext || !state.selectedTaskId) return;
       const { taskIds } = state.navigationContext;
       const actualIndex = taskIds.indexOf(state.selectedTaskId);
@@ -211,6 +248,8 @@ export const {
   setTaskSubscribers,
   setTimeLogEditing,
   setTaskRecurringSchedule,
+  setTaskBillable,
+  setTaskCustomColumnValue,
   setNavigationContext,
   navigateToNextTask,
   navigateToPreviousTask,

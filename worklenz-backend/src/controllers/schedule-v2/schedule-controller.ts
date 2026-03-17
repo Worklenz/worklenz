@@ -290,18 +290,48 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
     @HandleExceptions()
     public static async getOrganizationMembers(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
 
-        const getDataq = `SELECT DISTINCT ON (users.email) 
-                            team_members.id AS team_member_id,
-                            users.id AS id, 
-                            users.name AS name, 
-                            users.email AS email, 
-                            '[]'::JSONB AS projects
-                        FROM team_members 
-                        INNER JOIN users ON users.id = team_members.user_id 
-                        WHERE team_members.team_id = (
-                            SELECT active_team FROM users WHERE id = $1
+        const getDataq = `
+            WITH member_projects AS (
+                -- Get all projects for each member with their allocations
+                SELECT 
+                    pm.team_member_id,
+                    jsonb_agg(
+                        jsonb_build_object(
+                            'id', p.id,
+                            'name', p.name,
+                            'color_code', p.color_code,
+                            'allocated_hours', COALESCE(
+                                (
+                                    SELECT SUM(pma.seconds_per_day / 3600)
+                                    FROM project_member_allocations pma
+                                    WHERE pma.team_member_id = pm.team_member_id
+                                        AND pma.project_id = p.id
+                                        AND pma.allocated_from <= CURRENT_DATE
+                                        AND pma.allocated_to >= CURRENT_DATE
+                                ), 0
+                            )
                         )
-                        ORDER BY users.email ASC, users.name ASC;`;
+                    ) AS projects
+                FROM project_members pm
+                JOIN projects p ON pm.project_id = p.id
+                WHERE p.id NOT IN (SELECT project_id FROM archived_projects)
+                GROUP BY pm.team_member_id
+            )
+            SELECT DISTINCT ON (users.email) 
+                team_members.id AS team_member_id,
+                users.id AS id, 
+                users.name AS name, 
+                users.email AS email,
+                COALESCE(mp.projects, '[]'::JSONB) AS projects
+            FROM team_members 
+            INNER JOIN users ON users.id = team_members.user_id 
+            LEFT JOIN member_projects mp ON mp.team_member_id = team_members.id
+            WHERE team_members.team_id = (
+                SELECT active_team FROM users WHERE id = $1
+            )
+            AND team_members.active = TRUE
+            ORDER BY users.email ASC, users.name ASC;
+        `;
 
         const results = await db.query(getDataq, [req.user?.id]);
         return res.status(200).send(new ServerResponse(true, results.rows));
@@ -328,6 +358,8 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                     p.id AS project_id,
                     p.name AS project_name,
                     p.color_code AS project_color,
+                    p.start_date::DATE AS project_start_date,
+                    p.end_date::DATE AS project_end_date,
                     t.organization_id
                 FROM project_members pm
                 JOIN projects p ON pm.project_id = p.id
@@ -458,16 +490,23 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
             ),
             all_projects_with_segments AS (
                 -- Combine all member projects with their segments
+                -- If no segments exist (no tasks/allocations), use project-level dates
                 SELECT
                     mpl.project_id,
                     mpl.project_name,
                     mpl.project_color,
-                    sws.segment_start AS start_date,
-                    sws.segment_end AS end_date,
+                    mpl.project_start_date,
+                    mpl.project_end_date,
+                    COALESCE(sws.segment_start, mpl.project_start_date) AS start_date,
+                    COALESCE(sws.segment_end, mpl.project_end_date) AS end_date,
                     COALESCE(sws.hours_per_day, 0) AS hours_per_day,
                     COALESCE(sws.total_hours, 0) AS total_hours,
                     COALESCE(sws.task_count, 0) AS task_count,
-                    ROW_NUMBER() OVER (PARTITION BY mpl.project_id ORDER BY sws.segment_start) AS segment_number
+                    CASE 
+                        WHEN sws.segment_start IS NOT NULL THEN
+                            ROW_NUMBER() OVER (PARTITION BY mpl.project_id ORDER BY sws.segment_start)
+                        ELSE 1
+                    END AS segment_number
                 FROM member_project_list mpl
                 LEFT JOIN segments_with_stats sws ON mpl.project_id = sws.project_id
             ),
@@ -476,6 +515,8 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                     apd.project_name,
                     apd.project_id,
                     apd.project_color,
+                    apd.project_start_date,
+                    apd.project_end_date,
                     apd.hours_per_day,
                     apd.total_hours,
                     apd.task_count,
@@ -510,6 +551,10 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                 'date_union', jsonb_build_object(
                     'start', start_date::DATE,
                     'end', end_date::DATE
+                ),
+                'project_dates', jsonb_build_object(
+                    'start', project_start_date::DATE,
+                    'end', project_end_date::DATE
                 ),
                 'indicator_offset', indicator_offset,
                 'indicator_width', indicator_width,

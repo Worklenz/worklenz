@@ -92,6 +92,19 @@
     "peopleField": "Campo de personas",
     "noDate": "Sin fecha",
     "unsupportedField": "Tipo de campo no compatible",
+    "datePlaceholder": "Establecer fecha",
+    "numberPlaceholder": "0",
+    "percentagePlaceholder": "0%",
+    "selectOption": "Seleccionar opción",
+    "noOptionsAvailable": "No hay opciones disponibles",
+    "updating": "Actualizando...",
+    "peopleDropdown": {
+      "searchMembers": "Buscar miembros...",
+      "pending": "Pendiente",
+      "loadingMembers": "Cargando miembros...",
+      "noMembersFound": "No se encontraron miembros",
+      "inviteMember": "Invitar miembro"
+    },
 
     "modal": {
       "addFieldTitle": "Agregar campo",

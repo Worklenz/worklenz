@@ -7,7 +7,6 @@ import helmet from "helmet";
 import compression from "compression";
 import passport from "passport";
 import { csrfSync } from "csrf-sync";
-import rateLimit from "express-rate-limit";
 import cors from "cors";
 import flash from "connect-flash";
 import hpp from "hpp";
@@ -461,23 +460,11 @@ if (!isProduction()) {
   }
 }
 
-// API rate limiting
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: isProduction() ? 1500 : 3000, // 100 req/min in production, 200 req/min in dev
-  standardHeaders: false,
-  legacyHeaders: false,
-  message: "Too many requests from this IP, please try again later.",
-});
-
-// Export endpoint rate limiting
-const exportLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 50, // 50 exports per 15 minutes
-  standardHeaders: false,
-  legacyHeaders: false,
-  message: "Too many export requests, please try again later.",
-});
+// Rate limiting is handled by nginx - see nginx configuration for rate limit zones:
+// - api_general: 200 req/s + burst 50
+// - api_auth: 10 req/s + burst 10
+// - api_export: 20 req/s + burst 30
+// - api_socket: 50 req/s + burst 30
 
 // Create CSRF rotation middleware
 const csrfRotation = createCsrfRotation(generateToken);
@@ -485,11 +472,10 @@ const csrfRotation = createCsrfRotation(generateToken);
 // Routes
 // Add CSRF token rotation to state-changing routes
 // TEMPORARY: Disable CSRF rotation to prevent token conflicts with concurrent requests
-// Token rotation causes issues when multiple requests are in flight
-app.use("/api/v1", apiLimiter, isLoggedIn, apiRouter);
 // Backward compatibility for clients still calling /api/imports (without v1 prefix)
-app.use("/api/imports", apiLimiter, isLoggedIn, importsApiRouter);
-app.use("/api/client-portal", apiLimiter, clientPortalApiRouter);
+app.use("/api/v1", isLoggedIn, apiRouter);
+app.use("/api/imports", isLoggedIn, importsApiRouter);
+app.use("/api/client-portal", clientPortalApiRouter);
 app.use("/secure", authRouter);
 app.use("/public", public_router);
 

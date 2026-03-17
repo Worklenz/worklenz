@@ -3,7 +3,7 @@ import { AuthenticatedClientRequest } from "../../middlewares/client-auth-middle
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import db from "../../config/db";
-import crypto from "crypto";
+import TokenService from "../../services/token-service";
 
 export default class ClientPortalProfileController extends ClientPortalControllerBase {
 
@@ -106,13 +106,10 @@ export default class ClientPortalProfileController extends ClientPortalControlle
             );
         }
 
-        // Verify current password
-        const currentPasswordHash = crypto
-          .createHash("sha256")
-          .update(currentPassword)
-          .digest("hex");
+        // Verify current password using bcrypt (with legacy SHA256 fallback)
+        const { isValid } = await TokenService.verifyClientPassword(currentPassword, user.password_hash);
 
-        if (currentPasswordHash !== user.password_hash) {
+        if (!isValid) {
           return res
             .status(400)
             .json(
@@ -120,11 +117,8 @@ export default class ClientPortalProfileController extends ClientPortalControlle
             );
         }
 
-        // Hash new password
-        const newPasswordHash = crypto
-          .createHash("sha256")
-          .update(newPassword)
-          .digest("hex");
+        // Hash new password using bcrypt
+        const newPasswordHash = TokenService.hashClientPassword(newPassword);
         updateFields.push(`password_hash = $${paramIndex}`);
         updateValues.push(newPasswordHash);
         paramIndex++;

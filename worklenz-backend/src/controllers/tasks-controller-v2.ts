@@ -17,6 +17,30 @@ import TasksControllerBase, {
   ITaskGroup,
 } from "./tasks-controller-base";
 
+const normalizePeopleCustomColumnValue = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  }
+
+  if (typeof value === "string") {
+    const trimmedValue = value.trim();
+    if (!trimmedValue) return [];
+
+    try {
+      const parsedValue = JSON.parse(trimmedValue);
+      if (Array.isArray(parsedValue)) {
+        return parsedValue.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+      }
+    } catch {
+      return [trimmedValue];
+    }
+
+    return [];
+  }
+
+  return [];
+};
+
 export class TaskListGroup implements ITaskGroup {
   name: string;
   category_id: string | null;
@@ -1179,7 +1203,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         ) THEN TRUE -- If status is not in the "done" category, continue immediately (TRUE)
 
         WHEN EXISTS (
-            -- Check if any dependent tasks are not completed
+            -- Check if any direct dependent tasks are not completed
             SELECT 1
             FROM task_dependencies td
             LEFT JOIN public.tasks t ON t.id = td.related_task_id
@@ -1193,6 +1217,37 @@ export default class TasksControllerV2 extends TasksControllerBase {
                     )
               )
         ) THEN FALSE -- If there are incomplete dependent tasks, do not continue (FALSE)
+
+        WHEN EXISTS (
+            -- Check if any subtask dependencies (at any nesting level) are not completed
+            -- Uses recursive CTE to find all descendants (subtasks, nested subtasks, etc.)
+            WITH RECURSIVE task_descendants AS (
+                -- Base case: direct children (subtasks)
+                SELECT id, parent_task_id
+                FROM tasks
+                WHERE parent_task_id = $1 AND archived IS FALSE
+                
+                UNION ALL
+                
+                -- Recursive case: children of children (nested subtasks at any level)
+                SELECT child.id, child.parent_task_id
+                FROM tasks child
+                INNER JOIN task_descendants td ON child.parent_task_id = td.id
+                WHERE child.archived IS FALSE
+            )
+            SELECT 1
+            FROM task_descendants subtask
+            INNER JOIN task_dependencies dep ON dep.task_id = subtask.id
+            LEFT JOIN public.tasks dep_task ON dep_task.id = dep.related_task_id
+            WHERE dep_task.status_id NOT IN (
+                SELECT id
+                FROM task_statuses ts
+                WHERE dep_task.project_id = ts.project_id
+                  AND ts.category_id IN (
+                      SELECT id FROM sys_task_status_categories WHERE is_done IS TRUE
+                  )
+            )
+        ) THEN FALSE -- If there are incomplete subtask dependencies at any level, do not continue (FALSE)
 
         ELSE TRUE -- Continue if no other conditions block the process
     END AS can_continue;`;
@@ -1274,6 +1329,33 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const columnId = column.id;
     const fieldType = column.field_type;
 
+    const normalizedPeopleValue =
+      fieldType === "people" ? normalizePeopleCustomColumnValue(value) : null;
+
+    const isEmptyValue =
+      value === null ||
+      value === '' ||
+      (Array.isArray(value) && value.length === 0) ||
+      (fieldType === "people" && normalizedPeopleValue !== null && normalizedPeopleValue.length === 0);
+
+    if (isEmptyValue) {
+      await db.query(
+        `
+          DELETE FROM cc_column_values
+          WHERE task_id = $1 AND column_id = $2
+        `,
+        [taskId, columnId]
+      );
+
+      return res.status(200).send(
+        new ServerResponse(true, {
+          task_id: taskId,
+          column_key,
+          value: null,
+        })
+      );
+    }
+
     // Determine which value field to use based on the field_type
     let textValue = null;
     let numberValue = null;
@@ -1292,7 +1374,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         booleanValue = Boolean(value);
         break;
       case "people":
-        jsonValue = JSON.stringify(Array.isArray(value) ? value : [value]);
+        jsonValue = JSON.stringify(normalizedPeopleValue || []);
         break;
       default:
         textValue = String(value);
