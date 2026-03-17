@@ -642,7 +642,11 @@ const TaskListV2Section: React.FC = () => {
 
   // Function to update custom column values
   const updateTaskCustomColumnValue = useCallback(
-    (taskId: string, columnKey: string, value: string) => {
+    (
+      taskId: string,
+      columnKey: string,
+      value: string | number | boolean | string[] | null
+    ) => {
       try {
         if (!urlProjectId) {
           console.error('Project ID is missing');

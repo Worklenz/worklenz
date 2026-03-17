@@ -3679,6 +3679,8 @@ DECLARE
     _team_members JSON;
     _assignees    JSON;
     _phases       JSON;
+    _custom_columns JSON;
+    _custom_column_values JSON;
 BEGIN
 
     -- Select task info
@@ -3773,14 +3775,110 @@ BEGIN
 
     SELECT get_task_assignees(_task_id) INTO _assignees;
 
+    SELECT COALESCE(
+               JSON_AGG(
+                   JSON_BUILD_OBJECT(
+                       'key', rec.key,
+                       'id', rec.id,
+                       'name', rec.name,
+                       'width', rec.width,
+                       'pinned', rec.is_visible,
+                       'custom_column', TRUE,
+                       'custom_column_obj', JSON_BUILD_OBJECT(
+                           'fieldType', rec.field_type,
+                           'fieldTitle', rec.field_title,
+                           'numberType', rec.number_type,
+                           'decimals', rec.decimals,
+                           'label', rec.label,
+                           'labelPosition', rec.label_position,
+                           'previewValue', rec.preview_value,
+                           'expression', rec.expression,
+                           'firstNumericColumnKey', rec.first_numeric_column_key,
+                           'secondNumericColumnKey', rec.second_numeric_column_key,
+                           'selectionsList', COALESCE(rec.selections_list, '[]'::JSON),
+                           'labelsList', COALESCE(rec.labels_list, '[]'::JSON)
+                       )
+                   )
+                   ORDER BY rec.created_at
+               ),
+               '[]'::JSON
+           )
+    INTO _custom_columns
+    FROM (
+             SELECT cc.id,
+                    cc.key,
+                    cc.name,
+                    cc.width,
+                    cc.is_visible,
+                    cc.created_at,
+                    cc.field_type,
+                    cf.field_title,
+                    cf.number_type,
+                    cf.decimals,
+                    cf.label,
+                    cf.label_position,
+                    cf.preview_value,
+                    cf.expression,
+                    cf.first_numeric_column_key,
+                    cf.second_numeric_column_key,
+                    (SELECT JSON_AGG(
+                                    JSON_BUILD_OBJECT(
+                                            'selection_id', so.selection_id,
+                                            'selection_name', so.selection_name,
+                                            'selection_color', so.selection_color
+                                    )
+                            ORDER BY so.selection_order
+                            )
+                     FROM cc_selection_options so
+                     WHERE so.column_id = cc.id) AS selections_list,
+                    (SELECT JSON_AGG(
+                                    JSON_BUILD_OBJECT(
+                                            'label_id', lo.label_id,
+                                            'label_name', lo.label_name,
+                                            'label_color', lo.label_color
+                                    )
+                            ORDER BY lo.label_order
+                            )
+                     FROM cc_label_options lo
+                     WHERE lo.column_id = cc.id) AS labels_list
+             FROM cc_custom_columns cc
+                      LEFT JOIN cc_column_configurations cf ON cf.column_id = cc.id
+             WHERE cc.project_id = _project_id
+               AND cc.is_visible IS TRUE
+         ) rec;
+
+    SELECT COALESCE(
+               JSON_OBJECT_AGG(rec.key, rec.value),
+               '{}'::JSON
+           )
+    INTO _custom_column_values
+    FROM (
+             SELECT cc.key,
+                    CASE
+                        WHEN ccv.text_value IS NOT NULL THEN TO_JSON(ccv.text_value)
+                        WHEN ccv.number_value IS NOT NULL THEN TO_JSON(ccv.number_value)
+                        WHEN ccv.boolean_value IS NOT NULL THEN TO_JSON(ccv.boolean_value)
+                        WHEN ccv.date_value IS NOT NULL THEN TO_JSON(ccv.date_value)
+                        WHEN ccv.json_value IS NOT NULL THEN ccv.json_value::JSON
+                        ELSE NULL::JSON
+                        END AS value
+             FROM cc_column_values ccv
+                      INNER JOIN cc_custom_columns cc ON ccv.column_id = cc.id
+             WHERE ccv.task_id = _task_id
+               AND cc.project_id = _project_id
+               AND cc.is_visible IS TRUE
+         ) rec
+    WHERE rec.value IS NOT NULL;
+
     RETURN JSON_BUILD_OBJECT(
-        'task', _task,
+        'task', (_task::JSONB || JSONB_BUILD_OBJECT('custom_column_values', COALESCE(_custom_column_values, '{}'::JSON)::JSONB))::JSON,
         'priorities', _priorities,
         'projects', _projects,
         'statuses', _statuses,
         'team_members', _team_members,
         'assignees', _assignees,
-        'phases', _phases
+        'phases', _phases,
+        'custom_columns', _custom_columns
         );
 END;
 $$;
