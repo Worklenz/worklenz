@@ -39,9 +39,43 @@ import {
   useUpdateClientMutation,
 } from '../../api/client-portal/client-portal-api';
 import { useEffect } from 'react';
+import PhoneInput from '@/components/PhoneInput/PhoneInput';
+import { validatePhoneNumber } from '@/utils/validatePhoneNumber';
+import { getCountries } from 'libphonenumber-js';
+import type { CountryCode } from 'libphonenumber-js';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+
+const getDefaultPhoneCountry = (countryValue?: string): CountryCode => {
+  const fallback: CountryCode = 'US';
+
+  if (!countryValue || countryValue.trim() === '') {
+    return fallback;
+  }
+
+  const normalizedCountry = countryValue.trim().toLowerCase();
+  const supportedCountries = getCountries();
+
+  if (normalizedCountry.length === 2) {
+    const alpha2 = normalizedCountry.toUpperCase() as CountryCode;
+    if (supportedCountries.includes(alpha2)) {
+      return alpha2;
+    }
+  }
+
+  try {
+    const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
+    const match = supportedCountries.find(code => {
+      const regionName = regionNames.of(code)?.toLowerCase();
+      return regionName === normalizedCountry;
+    });
+
+    return match || fallback;
+  } catch {
+    return fallback;
+  }
+};
 
 const ClientDetailsDrawer = () => {
   const { t } = useTranslation('client-portal-clients');
@@ -69,6 +103,7 @@ const ClientDetailsDrawer = () => {
   const [updateClient, { isLoading: isUpdating }] = useUpdateClientMutation();
 
   const [form] = Form.useForm();
+  const countryValue = Form.useWatch('country', form);
 
   useEffect(() => {
     if (isClientDetailsDrawerOpen && selectedClientId) {
@@ -317,12 +352,30 @@ const ClientDetailsDrawer = () => {
                 label={t('phoneLabel') || 'Phone'}
                 rules={[
                   {
-                    pattern: /^[\+]?[1-9][\d]{0,15}$/,
-                    message: t('phoneInvalid') || 'Enter a valid phone number',
+                    validator: (_, value) => {
+                      if (!value || value.trim() === '') {
+                        return Promise.resolve();
+                      }
+
+                      if (validatePhoneNumber(value)) {
+                        return Promise.resolve();
+                      }
+
+                      return Promise.reject(
+                        new Error(
+                          t('phoneInvalid', {
+                            defaultValue: 'Please enter a valid phone number',
+                          })
+                        )
+                      );
+                    },
                   },
                 ]}
               >
-                <Input placeholder="Enter phone number" />
+                <PhoneInput
+                  defaultCountry={getDefaultPhoneCountry(countryValue)}
+                  placeholder={t('phonePlaceholder', { defaultValue: 'Enter phone number' })}
+                />
               </Form.Item>
             </Col>
           </Row>
