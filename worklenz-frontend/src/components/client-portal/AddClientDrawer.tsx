@@ -5,9 +5,7 @@ import {
   Flex,
   Form,
   Input,
-  message,
   Typography,
-  Select,
   Spin,
   Alert,
   Row,
@@ -18,10 +16,36 @@ import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
 import { toggleAddClientDrawer } from '../../features/clients-portal/clients/clients-slice';
-import { useCreateClientMutation } from '../../api/client-portal/client-portal-api';
+import {
+  CreateClientRequest,
+  useCreateClientMutation,
+} from '../../api/client-portal/client-portal-api';
 import { refreshCsrfToken } from '../../api/api-client';
+import PhoneInput from '@/components/PhoneInput/PhoneInput';
+import { validatePhoneNumber } from '@/utils/validatePhoneNumber';
 
-const { Option } = Select;
+const getCreateClientErrorMessage = (
+  errorMessage: string,
+  t: (key: string, options?: Record<string, unknown>) => string
+) => {
+  const normalizedMessage = errorMessage.toLowerCase();
+
+  if (
+    normalizedMessage.includes('clients_name_team_id_uindex') ||
+    (normalizedMessage.includes('duplicate key value') && normalizedMessage.includes('name'))
+  ) {
+    return t('clientNameAlreadyExistsError', {
+      defaultValue: 'A client with this name already exists. Use a different client name.',
+    });
+  }
+
+  return (
+    errorMessage ||
+    t('createClientErrorMessage', {
+      defaultValue: 'Failed to create client',
+    })
+  );
+};
 
 const AddClientDrawer = () => {
   const { t } = useTranslation('client-portal-clients');
@@ -47,13 +71,14 @@ const AddClientDrawer = () => {
     }
   }, [isOpen]);
 
-  const handleFormSubmit = async (values: any) => {
+  const handleFormSubmit = async (values: CreateClientRequest) => {
     try {
       await refreshCsrfToken();
       const result = await createClient({
         name: values.name,
         email: values.email,
         company_name: values.company_name,
+        contact_person: values.contact_person,
         phone: values.phone,
         address_line_1: values.address_line_1,
         city: values.city,
@@ -62,8 +87,16 @@ const AddClientDrawer = () => {
         country: values.country,
       }).unwrap();
 
+      const response = result as any;
+      if (response?.done === false) {
+        throw new Error(
+          response?.message ||
+            t('createClientErrorMessage', { defaultValue: 'Failed to create client' })
+        );
+      }
+
       // Check if this is an existing client (backend returns body.existing)
-      const responseBody = (result as any)?.body || result;
+      const responseBody = response?.body || response;
       
       if (responseBody?.existing) {
         // Show warning alert based on invitation status
@@ -84,13 +117,17 @@ const AddClientDrawer = () => {
           type: 'success',
           message: t('createClientSuccessMessage', { defaultValue: 'Client created successfully! Share the organization invite link to give them portal access.' })
         });
-        form.resetFields();
+        window.setTimeout(() => {
+          handleClose();
+        }, 600);
       }
     } catch (error: any) {
       const errorMessage = error?.data?.message || error?.message || '';
+      const normalizedErrorMessage = errorMessage.toLowerCase();
       const isCsrfError =
-        errorMessage.toLowerCase().includes('csrf') ||
-        errorMessage.toLowerCase().includes('invalid') ||
+        normalizedErrorMessage.includes('csrf') ||
+        normalizedErrorMessage.includes('security token') ||
+        normalizedErrorMessage.includes('token expired') ||
         error?.status === 403;
 
       if (isCsrfError) {
@@ -102,7 +139,7 @@ const AddClientDrawer = () => {
       } else {
         setAlertMessage({
           type: 'error',
-          message: errorMessage || t('createClientErrorMessage', { defaultValue: 'Failed to create client' })
+          message: getCreateClientErrorMessage(errorMessage, t)
         });
       }
     }
@@ -119,8 +156,14 @@ const AddClientDrawer = () => {
       title={t('addClientTitle') || 'Add New Client'}
       open={isOpen}
       onCancel={handleClose}
-      width={580}
+      width={820}
       destroyOnClose
+      styles={{
+        body: {
+          maxHeight: 'calc(100vh - 220px)',
+          overflowY: 'auto',
+        },
+      }}
       footer={
         <Flex gap={8} justify="flex-end">
           <Button onClick={handleClose}>{t('cancelButton') || 'Cancel'}</Button>
@@ -147,7 +190,7 @@ const AddClientDrawer = () => {
           </Divider>
 
           <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item
                 name="name"
                 label={t('clientNameLabel') || 'Client Name'}
@@ -159,7 +202,7 @@ const AddClientDrawer = () => {
                 <Input placeholder={t('clientNamePlaceholder') || 'Enter client name'} />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item
                 name="email"
                 label={t('emailLabel') || 'Email Address'}
@@ -174,22 +217,57 @@ const AddClientDrawer = () => {
           </Row>
 
           <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item name="company_name" label={t('companyNameLabel') || 'Company Name'}>
                 <Input placeholder={t('companyNamePlaceholder') || 'Enter company name'} />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item
-                name="status"
-                label={t('statusLabel') || 'Status'}
-                initialValue="pending"
+                name="contact_person"
+                label={t('contactPersonLabel', { defaultValue: 'Contact Person' })}
               >
-                <Select>
-                  <Option value="active">{t('statusActive') || 'Active'}</Option>
-                  <Option value="inactive">{t('statusInactive') || 'Inactive'}</Option>
-                  <Option value="pending">{t('statusPending') || 'Pending'}</Option>
-                </Select>
+                <Input
+                  placeholder={t('contactPersonPlaceholder', {
+                    defaultValue: 'Enter contact person name',
+                  })}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
+              <Form.Item
+                name="phone"
+                label={t('phoneLabel') || 'Phone Number'}
+                rules={[
+                  {
+                    validator: (_, value) => {
+                      if (!value || value.trim() === '') {
+                        return Promise.resolve();
+                      }
+
+                      if (validatePhoneNumber(value)) {
+                        return Promise.resolve();
+                      }
+
+                      return Promise.reject(
+                        new Error(
+                          t('phoneInvalid', {
+                            defaultValue: 'Please enter a valid phone number',
+                          })
+                        )
+                      );
+                    },
+                  },
+                ]}
+              >
+                <PhoneInput
+                  placeholder={
+                    t('phonePlaceholder', { defaultValue: 'Enter phone number' })
+                  }
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -198,48 +276,31 @@ const AddClientDrawer = () => {
             <Typography.Text strong>{t('contactInformationSection', { defaultValue: 'Contact Information' })}</Typography.Text>
           </Divider>
 
-          <Form.Item
-            name="phone"
-            label={t('phoneLabel') || 'Phone Number'}
-            rules={[
-              {
-                pattern: /^[\+]?[1-9][\d]{0,15}$/,
-                message: t('phoneInvalid') || 'Enter a valid phone number',
-              },
-            ]}
-          >
-            <Input placeholder={t('phonePlaceholder') || 'Enter phone number'} />
-          </Form.Item>
-
           <Form.Item name="address_line_1" label={t('addressLine1Label') || 'Street Address'}>
             <Input placeholder={t('addressLine1Placeholder') || 'Enter street address (optional)'} />
           </Form.Item>
 
           <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} md={8}>
               <Form.Item name="city" label={t('cityLabel') || 'City'}>
                 <Input placeholder={t('cityPlaceholder') || 'City'} />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} md={8}>
               <Form.Item name="state" label={t('stateLabel') || 'State / Province'}>
                 <Input placeholder={t('statePlaceholder') || 'State / Province'} />
               </Form.Item>
             </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} md={8}>
               <Form.Item name="zip_code" label={t('zipCodeLabel') || 'Zip / Postal Code'}>
                 <Input placeholder={t('zipCodePlaceholder') || 'Zip code'} />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item name="country" label={t('countryLabel') || 'Country'}>
-                <Input placeholder={t('countryPlaceholder') || 'Country'} />
-              </Form.Item>
-            </Col>
           </Row>
+
+          <Form.Item name="country" label={t('countryLabel') || 'Country'}>
+            <Input placeholder={t('countryPlaceholder') || 'Country'} />
+          </Form.Item>
         </Form>
 
         <Alert

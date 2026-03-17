@@ -39,7 +39,19 @@
       "taskWeightTooltip": "Set the weight of this subtask (percentage)",
       "taskWeightRequired": "Please enter a task weight",
       "taskWeightRange": "Weight must be between 0 and 100",
+      "customFields": {
+        "empty": "Empty",
+        "enterNumber": "Enter number",
+        "selectDate": "Select date",
+        "selectOption": "Select option",
+        "selectPeople": "Select people",
+        "updateError": "Failed to update custom field"
+      },
       "recurring": "Recurring"
+    },
+    "customFields": {
+      "title": "Custom Fields",
+      "autoSaveHint": "Changes save automatically when you leave a field."
     },
     "labels": {
       "labelInputPlaceholder": "Search or create",

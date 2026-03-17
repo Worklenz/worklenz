@@ -42,6 +42,127 @@ import { getKey, getRootDir, uploadBase64 } from "../shared/s3";
 import { isRestrictedFromProPlanFeatures } from "../middlewares/subscription-middleware";
 
 export default class TasksController extends TasksControllerBase {
+  private static async getTaskDrawerCustomColumns(projectId: string | null) {
+    if (!projectId) return [];
+
+    const q = `
+      WITH column_data AS (
+        SELECT 
+          cc.id,
+          cc.key,
+          cc.name,
+          cc.field_type,
+          cc.width,
+          cc.is_visible,
+          cc.created_at,
+          cf.field_title,
+          cf.number_type,
+          cf.decimals,
+          cf.label,
+          cf.label_position,
+          cf.preview_value,
+          cf.expression,
+          cf.first_numeric_column_key,
+          cf.second_numeric_column_key,
+          (
+            SELECT json_agg(
+              json_build_object(
+                'selection_id', so.selection_id,
+                'selection_name', so.selection_name,
+                'selection_color', so.selection_color
+              )
+              ORDER BY so.selection_order
+            )
+            FROM cc_selection_options so
+            WHERE so.column_id = cc.id
+          ) as selections_list,
+          (
+            SELECT json_agg(
+              json_build_object(
+                'label_id', lo.label_id,
+                'label_name', lo.label_name,
+                'label_color', lo.label_color
+              )
+              ORDER BY lo.label_order
+            )
+            FROM cc_label_options lo
+            WHERE lo.column_id = cc.id
+          ) as labels_list
+        FROM cc_custom_columns cc
+        LEFT JOIN cc_column_configurations cf ON cf.column_id = cc.id
+        WHERE cc.project_id = $1
+          AND cc.is_visible IS TRUE
+      )
+      SELECT COALESCE(
+        json_agg(
+          json_build_object(
+            'key', cd.key,
+            'id', cd.id,
+            'name', cd.name,
+            'width', cd.width,
+            'pinned', cd.is_visible,
+            'custom_column', true,
+            'custom_column_obj', json_build_object(
+              'fieldType', cd.field_type,
+              'fieldTitle', cd.field_title,
+              'numberType', cd.number_type,
+              'decimals', cd.decimals,
+              'label', cd.label,
+              'labelPosition', cd.label_position,
+              'previewValue', cd.preview_value,
+              'expression', cd.expression,
+              'firstNumericColumnKey', cd.first_numeric_column_key,
+              'secondNumericColumnKey', cd.second_numeric_column_key,
+              'selectionsList', COALESCE(cd.selections_list, '[]'::json),
+              'labelsList', COALESCE(cd.labels_list, '[]'::json)
+            )
+          )
+          ORDER BY cd.created_at
+        ),
+        '[]'::json
+      ) AS columns
+      FROM column_data cd;
+    `;
+
+    const result = await db.query(q, [projectId]);
+    return result.rows[0]?.columns || [];
+  }
+
+  private static async getTaskDrawerCustomColumnValues(
+    taskId: string | null,
+    projectId: string | null,
+  ) {
+    if (!taskId || !projectId) return {};
+
+    const q = `
+      SELECT COALESCE(
+        jsonb_object_agg(custom_cols.key, custom_cols.value),
+        '{}'::jsonb
+      ) AS custom_column_values
+      FROM (
+        SELECT
+          cc.key,
+          CASE
+            WHEN ccv.text_value IS NOT NULL THEN to_jsonb(ccv.text_value)
+            WHEN ccv.number_value IS NOT NULL THEN to_jsonb(ccv.number_value)
+            WHEN ccv.boolean_value IS NOT NULL THEN to_jsonb(ccv.boolean_value)
+            WHEN ccv.date_value IS NOT NULL THEN to_jsonb(ccv.date_value)
+            WHEN ccv.json_value IS NOT NULL THEN ccv.json_value
+            ELSE NULL::jsonb
+          END AS value
+        FROM cc_column_values ccv
+        JOIN cc_custom_columns cc ON ccv.column_id = cc.id
+        WHERE ccv.task_id = $1
+          AND cc.project_id = $2
+          AND cc.is_visible IS TRUE
+      ) AS custom_cols
+      WHERE custom_cols.value IS NOT NULL;
+    `;
+
+    const result = await db.query(q, [taskId, projectId]);
+    return result.rows[0]?.custom_column_values || {};
+  }
+
   private static notifyProjectUpdates(socketId: string, projectId: string, notifySender = true) {
     // Emit to the sender's socket directly
     const socket = IO.getSocketById(socketId);
@@ -586,6 +707,7 @@ export default class TasksController extends TasksControllerBase {
       projects: [],
       statuses: [],
       team_members: [],
+      custom_columns: [],
     };
 
     const task = data.view_model.task || null;
@@ -612,6 +734,19 @@ export default class TasksController extends TasksControllerBase {
       task.timer_start_time = moment(task.timer_start_time).valueOf();
 
       task.status_color = task.status_color + TASK_STATUS_COLOR_ALPHA;
+    }
+
+    const projectId =
+      ((req.query.project_id as string) || task?.project_id || null);
+    const [customColumns, customColumnValues] = await Promise.all([
+      TasksController.getTaskDrawerCustomColumns(projectId),
+      TasksController.getTaskDrawerCustomColumnValues(task?.id || null, projectId),
+    ]);
+
+    data.view_model.custom_columns = customColumns;
+
+    if (task) {
+      task.custom_column_values = customColumnValues;
     }
 
     for (const member of data.view_model?.team_members || []) {

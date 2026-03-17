@@ -2,6 +2,8 @@ import db from "../config/db";
 import { log_error } from "./utils";
 import { AppSumoService } from "../services/appsumo-service";
 
+const APPSUMO_BUSINESS_UNLOCK_CODE_COUNT = 5;
+
 export async function getTeamMemberCount(userId: string) {
   if (!userId) return;
 
@@ -44,6 +46,8 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
                       subscription_status,
                       subscription_id,
                       quantity::INT,
+                      ud.business_plan_override,
+                      ud.team_member_limit_override,
                       (SELECT key FROM sys_license_types WHERE id = ud.license_type_id) AS subscription_type,
                       (SELECT tier_name FROM licensing_plan_trials pt
                        JOIN licensing_plan_tiers lpt ON pt.plan_tier_id = lpt.id
@@ -80,6 +84,7 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
                       (SELECT EXISTS(SELECT id FROM licensing_credit_subs lcs WHERE lcs.user_id = ud.user_id)) AS is_credit,
                       (SELECT EXISTS(SELECT id FROM licensing_coupon_codes WHERE redeemed_by = ud.user_id)) AS is_ltd,
                       (SELECT SUM(team_members_limit) FROM licensing_coupon_codes WHERE redeemed_by = ud.user_id) AS ltd_users,
+                      (SELECT COUNT(*)::INT FROM licensing_coupon_codes WHERE redeemed_by = ud.user_id AND is_redeemed = TRUE) AS redeemed_codes_count,
                       (SELECT COUNT(DISTINCT tmiv.email)
                         FROM team_member_info_view tmiv
                         JOIN team_members tm ON tmiv.team_member_id = tm.id
@@ -94,6 +99,16 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
     const result = await db.query(q, [team_id]);
     const [data] = result.rows;
 
+    // AppSumo LTD users with < 5 redeemed codes should never have Business trial access
+    if (
+      data &&
+      data.is_ltd === true &&
+      (data.redeemed_codes_count ?? 0) < APPSUMO_BUSINESS_UNLOCK_CODE_COUNT &&
+      data.active_plan_trial === "BUSINESS_LARGE"
+    ) {
+      data.active_plan_trial = null;
+    }
+
     // Resolve effective subscription_type to account for active plan trials,
     // mirroring the logic in deserialize_user so server-side checks are consistent.
     if (data && data.active_plan_trial) {
@@ -104,6 +119,11 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
       } else {
         data.subscription_type = "PLAN_TRIAL";
       }
+    }
+
+    // Check if AppSumo LTD user with 5+ redeemed codes should get business plan access
+    if (data && data.redeemed_codes_count >= APPSUMO_BUSINESS_UNLOCK_CODE_COUNT && data.is_ltd) {
+      data.appsumo_business_eligible = true;
     }
 
     // If this is a business plan, check if AppSumo user gets special limit

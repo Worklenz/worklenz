@@ -17,6 +17,30 @@ import TasksControllerBase, {
   ITaskGroup,
 } from "./tasks-controller-base";
 
+const normalizePeopleCustomColumnValue = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  }
+
+  if (typeof value === "string") {
+    const trimmedValue = value.trim();
+    if (!trimmedValue) return [];
+
+    try {
+      const parsedValue = JSON.parse(trimmedValue);
+      if (Array.isArray(parsedValue)) {
+        return parsedValue.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+      }
+    } catch {
+      return [trimmedValue];
+    }
+
+    return [];
+  }
+
+  return [];
+};
+
 export class TaskListGroup implements ITaskGroup {
   name: string;
   category_id: string | null;
@@ -1305,6 +1329,33 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const columnId = column.id;
     const fieldType = column.field_type;
 
+    const normalizedPeopleValue =
+      fieldType === "people" ? normalizePeopleCustomColumnValue(value) : null;
+
+    const isEmptyValue =
+      value === null ||
+      value === '' ||
+      (Array.isArray(value) && value.length === 0) ||
+      (fieldType === "people" && normalizedPeopleValue !== null && normalizedPeopleValue.length === 0);
+
+    if (isEmptyValue) {
+      await db.query(
+        `
+          DELETE FROM cc_column_values
+          WHERE task_id = $1 AND column_id = $2
+        `,
+        [taskId, columnId]
+      );
+
+      return res.status(200).send(
+        new ServerResponse(true, {
+          task_id: taskId,
+          column_key,
+          value: null,
+        })
+      );
+    }
+
     // Determine which value field to use based on the field_type
     let textValue = null;
     let numberValue = null;
@@ -1323,7 +1374,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         booleanValue = Boolean(value);
         break;
       case "people":
-        jsonValue = JSON.stringify(Array.isArray(value) ? value : [value]);
+        jsonValue = JSON.stringify(normalizedPeopleValue || []);
         break;
       default:
         textValue = String(value);

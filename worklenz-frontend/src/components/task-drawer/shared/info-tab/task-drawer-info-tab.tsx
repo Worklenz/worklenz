@@ -34,6 +34,8 @@ import TaskComments from './comments/task-comments';
 import { ITaskCommentViewModel } from '@/types/tasks/task-comments.types';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { ITaskViewModel } from '@/types/tasks/task.types';
+import TaskDrawerCustomFields from './details/task-drawer-custom-fields/task-drawer-custom-fields';
+import { hasDrawerSupportedCustomFields } from '@/utils/task-custom-columns';
 
 interface TaskDrawerInfoTabProps {
   t: TFunction;
@@ -111,6 +113,10 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
     paddingBlock: 0,
   };
 
+  const hasSupportedCustomFields = hasDrawerSupportedCustomFields(
+    taskFormViewModel?.custom_columns || []
+  );
+
   const allInfoItems: CollapseProps['items'] = [
     {
       key: 'details',
@@ -119,6 +125,24 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
       style: panelStyle,
       className: 'custom-task-drawer-info-collapse',
     },
+    ...(hasSupportedCustomFields
+      ? [
+          {
+            key: 'customFields',
+            label: <Typography.Text strong>{t('taskInfoTab.customFields.title')}</Typography.Text>,
+            children: (
+              <TaskDrawerCustomFields
+                customColumns={taskFormViewModel?.custom_columns || []}
+                projectId={projectId || null}
+                task={(taskFormViewModel?.task as ITaskViewModel) || null}
+                teamMembers={taskFormViewModel?.team_members || []}
+              />
+            ),
+            style: panelStyle,
+            className: 'custom-task-drawer-info-collapse',
+          },
+        ]
+      : []),
     {
       key: 'description',
       label: <Typography.Text strong>{t('taskInfoTab.description.title')}</Typography.Text>,

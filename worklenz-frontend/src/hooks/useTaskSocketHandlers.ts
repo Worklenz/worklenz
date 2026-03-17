@@ -800,20 +800,31 @@ export const useTaskSocketHandlers = () => {
   );
 
   const handleCustomColumnUpdate = useCallback(
-    (data: { task_id: string; column_key: string; value: string }) => {
-      if (!data || !data.task_id || !data.column_key) return;
+    (
+      data:
+        | string
+        | {
+            task_id: string;
+            column_key: string;
+            value: string | number | boolean | string[] | null;
+          }
+    ) => {
+      const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+
+      if (!parsedData || !parsedData.task_id || !parsedData.column_key) return;
 
       // Update the task-management slice for task-list-v2 components
-      const currentTask = store.getState().taskManagement.entities[data.task_id];
+      const currentTask = store.getState().taskManagement.entities[parsedData.task_id];
       if (currentTask) {
         const updatedCustomColumnValues = {
           ...currentTask.custom_column_values,
-          [data.column_key]: data.value,
+          [parsedData.column_key]: parsedData.value,
         };
 
         const updatedTask: Task = {
           ...currentTask,
           custom_column_values: updatedCustomColumnValues,
+          updatedAt: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
 

@@ -1,6 +1,12 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import {
+  BaseQueryFn,
+  FetchArgs,
+  FetchBaseQueryError,
+  createApi,
+  fetchBaseQuery,
+} from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '@/shared/constants';
-import { getCsrfToken, ensureCsrfToken } from '../api-client';
+import { ensureCsrfToken, getCsrfToken, refreshCsrfToken } from '../api-client';
 import config from '@/config/env';
 
 export interface ClientPortalDashboardData {
@@ -252,6 +258,11 @@ export interface ClientPortalClient {
   company_name?: string;
   phone?: string;
   address?: string;
+  address_line_1?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  country?: string;
   contact_person?: string;
   assigned_projects_count: number;
   projects: ClientPortalProject[];
@@ -286,6 +297,13 @@ export interface CreateClientRequest {
   company_name?: string;
   phone?: string;
   address?: string;
+  address_line_1?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  country?: string;
+  contact_person?: string;
+  status?: 'active' | 'inactive' | 'pending';
 }
 
 export interface UpdateClientRequest {
@@ -294,6 +312,11 @@ export interface UpdateClientRequest {
   company_name?: string;
   phone?: string;
   address?: string;
+  address_line_1?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  country?: string;
   contact_person?: string;
   status?: 'active' | 'inactive' | 'pending';
 }
@@ -386,37 +409,76 @@ export interface BulkDeleteRequest {
   client_ids: string[];
 }
 
+const rawBaseQuery = fetchBaseQuery({
+  baseUrl: `${config.apiUrl}${API_BASE_URL}`,
+  prepareHeaders: async headers => {
+    let token = getCsrfToken();
+
+    if (!token) {
+      try {
+        token = await ensureCsrfToken();
+      } catch (error) {
+        console.error('[CSRF] Failed to refresh CSRF token:', error);
+      }
+    }
+
+    if (token) {
+      headers.set('X-CSRF-Token', token);
+    } else {
+      console.warn('[CSRF] No CSRF token available - request may fail');
+    }
+
+    headers.set('Content-Type', 'application/json');
+    return headers;
+  },
+  credentials: 'include',
+});
+
+const isCsrfError = (error?: FetchBaseQueryError): boolean => {
+  if (!error || error.status !== 403 || !('data' in error)) {
+    return false;
+  }
+
+  const errorData = error.data;
+
+  if (typeof errorData === 'string') {
+    const normalizedMessage = errorData.toLowerCase();
+    return normalizedMessage.includes('csrf') || normalizedMessage.includes('security token');
+  }
+
+  if (typeof errorData === 'object' && errorData !== null && 'message' in errorData) {
+    const message = errorData.message;
+    if (typeof message === 'string') {
+      const normalizedMessage = message.toLowerCase();
+      return normalizedMessage.includes('csrf') || normalizedMessage.includes('security token');
+    }
+  }
+
+  return false;
+};
+
+const baseQueryWithCsrfRetry: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
+  args,
+  api,
+  extraOptions
+) => {
+  let result = await rawBaseQuery(args, api, extraOptions);
+
+  if (isCsrfError(result.error)) {
+    const refreshedToken = await refreshCsrfToken();
+
+    if (refreshedToken) {
+      result = await rawBaseQuery(args, api, extraOptions);
+    }
+  }
+
+  return result;
+};
+
 // RTK Query API
 export const clientPortalApi = createApi({
   reducerPath: 'clientPortalApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: `${config.apiUrl}${API_BASE_URL}`,
-    prepareHeaders: async headers => {
-      // Always try to get CSRF token, refresh if needed
-      let token = getCsrfToken();
-      
-      // If no token, try to refresh it with deduplication
-      if (!token) {
-        try {
-          token = await ensureCsrfToken();
-        } catch (error) {
-          console.error('[CSRF] Failed to refresh CSRF token:', error);
-        }
-      }
-
-      // Set token if available
-      if (token) {
-        headers.set('X-CSRF-Token', token);
-      } else {
-        // Log warning if no token available (backend will return proper error)
-        console.warn('[CSRF] No CSRF token available - request may fail');
-      }
-
-      headers.set('Content-Type', 'application/json');
-      return headers;
-    },
-    credentials: 'include',
-  }),
+  baseQuery: baseQueryWithCsrfRetry,
   tagTypes: [
     'Client',
     'Clients',
@@ -1414,6 +1476,7 @@ export const {
   useGetClientsQuery,
   useGetClientByIdQuery,
   useGetClientDetailsQuery,
+  useLazyGetClientDetailsQuery,
   useCreateClientMutation,
   useUpdateClientMutation,
   useDeactivateClientMutation,

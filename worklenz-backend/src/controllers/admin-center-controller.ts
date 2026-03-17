@@ -24,6 +24,7 @@ import {
   getUsedStorage,
 } from "../shared/paddle-utils";
 import { AppSumoService } from "../services/appsumo-service";
+import { PlanTrialService } from "../services/plan-trial-service";
 import {
   addModifier,
   cancelSubscription,
@@ -39,6 +40,19 @@ import { IO } from "../shared/io";
 import { uploadBase64, getOrganizationLogoKey, deleteObject, getRootDir } from "../shared/storage";
 
 export default class AdminCenterController extends WorklenzControllerBase {
+  private static readonly TEAM_DELETE_BLOCKERS = {
+    ACTIVE_TEAM: {
+      title: "Unable to delete team",
+      message:
+        "This team cannot be deleted because one or more users still have it selected as their active team. Please switch those users to another team and try again.",
+    },
+    PROJECT_FOLDERS: {
+      title: "Unable to delete team",
+      message:
+        "This team cannot be deleted because it still has project folders associated with it. Please remove those folders and try again.",
+    },
+  } as const;
+
   private static async getSubscriptionId(ownerId: string): Promise<string> {
     const q = `SELECT subscription_id FROM licensing_user_subscriptions WHERE user_id = $1;`;
     const result = await db.query(q, [ownerId]);
@@ -61,6 +75,31 @@ export default class AdminCenterController extends WorklenzControllerBase {
 
     const [data] = result.rows;
     return data.exists;
+  }
+
+  private static async getTeamDeleteBlocker(teamId: string) {
+    const q = `SELECT EXISTS(
+                 SELECT 1
+                 FROM users
+                 WHERE active_team = $1::UUID
+               ) AS has_active_users,
+               EXISTS(
+                 SELECT 1
+                 FROM project_folders
+                 WHERE team_id = $1::UUID
+               ) AS has_project_folders;`;
+    const result = await db.query(q, [teamId]);
+    const [data] = result.rows;
+
+    if (data?.has_active_users) {
+      return this.TEAM_DELETE_BLOCKERS.ACTIVE_TEAM;
+    }
+
+    if (data?.has_project_folders) {
+      return this.TEAM_DELETE_BLOCKERS.PROJECT_FOLDERS;
+    }
+
+    return null;
   }
 
   // organization
@@ -650,6 +689,8 @@ export default class AdminCenterController extends WorklenzControllerBase {
 
     data.billing_info.total_used = Math.max(teamMemberData?.user_count ?? 0, 0);
     data.billing_info.total_seats = subscriptionData.quantity;
+    data.billing_info.redeemed_codes_count = subscriptionData?.redeemed_codes_count ?? 0;
+    data.billing_info.appsumo_business_eligible = subscriptionData?.appsumo_business_eligible === true;
 
     return res.status(200).send(new ServerResponse(true, data.billing_info));
   }
@@ -1165,6 +1206,24 @@ export default class AdminCenterController extends WorklenzControllerBase {
         WHERE user_id = $1;`;
     await db.query(updateQ2, [req.user?.owner_id]);
 
+    // Check if user has redeemed 5 codes and upgrade to Business Plan
+    const redeemedCountQ = `SELECT COUNT(*)::INT AS redeemed_count 
+                           FROM licensing_coupon_codes 
+                           WHERE redeemed_by = $1 
+                             AND is_redeemed = TRUE 
+                             AND is_refunded = FALSE;`;
+    const redeemedResult = await db.query(redeemedCountQ, [req.user?.owner_id]);
+    const redeemedCount = redeemedResult.rows[0]?.redeemed_count || 0;
+
+	    if (redeemedCount >= 5) {
+	      // Upgrade to Business Plan
+	      const businessPlanQ = `UPDATE organizations
+	        SET business_plan_override = TRUE,
+	            team_member_limit_override = TRUE
+	        WHERE user_id = $1;`;
+	      await db.query(businessPlanQ, [req.user?.owner_id]);
+	    }
+
     return res
       .status(200)
       .send(new ServerResponse(true, [], "Code redeemed successfully!"));
@@ -1176,6 +1235,13 @@ export default class AdminCenterController extends WorklenzControllerBase {
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
     const { id } = req.params;
+    const ownerId = req.user?.owner_id;
+
+    if (!ownerId) {
+      return res
+        .status(200)
+        .send(new ServerResponse(false, null, "User not found").withTitle("Unable to delete team"));
+    }
 
     if (id == req.user?.team_id) {
       return res
@@ -1189,8 +1255,24 @@ export default class AdminCenterController extends WorklenzControllerBase {
         );
     }
 
-    const q = `DELETE FROM teams WHERE id = $1;`;
-    const result = await db.query(q, [id]);
+    const blocker = await this.getTeamDeleteBlocker(id);
+    if (blocker) {
+      return res
+        .status(200)
+        .send(new ServerResponse(false, null, blocker.message).withTitle(blocker.title));
+    }
+
+    const q = `DELETE FROM teams
+               WHERE id = $1
+                 AND user_id = $2
+               RETURNING id;`;
+    const result = await db.query(q, [id, ownerId]);
+
+    if (!result.rowCount) {
+      return res
+        .status(200)
+        .send(new ServerResponse(false, null, "Team not found").withTitle("Unable to delete team"));
+    }
 
     return res.status(200).send(new ServerResponse(true, result.rows));
   }

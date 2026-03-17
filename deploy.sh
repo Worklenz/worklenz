@@ -13,6 +13,9 @@ DEPLOY_START=$(date +%s)
 # Store current directory
 ROOT_DIR=$(pwd)
 
+# Defaults (override via env vars on the server if needed)
+PM2_APP_ID=${PM2_APP_ID:-4}
+
 # Parse command-line arguments
 DEPLOY_FRONTEND=false
 DEPLOY_CLIENT_PORTAL=false
@@ -132,26 +135,26 @@ handle_error() {
 # Function to disable maintenance mode on successful exit only
 cleanup() {
     if [ $? -eq 0 ]; then
-        echo -e "${YELLOW}Disabling maintenance mode...${NC}"
-        sudo rm -f /var/www/maintenance-mode
-        sudo nginx -s reload
-        echo -e "${GREEN}✅ Maintenance mode disabled${NC}"
+        if [ "${MAINTENANCE_ENABLED:-false}" = true ]; then
+            echo -e "${YELLOW}Disabling maintenance mode...${NC}"
+            sudo rm -f /var/www/maintenance-mode
+            sudo nginx -s reload
+            echo -e "${GREEN}✅ Maintenance mode disabled${NC}"
+        fi
     fi
 }
 
 # Set trap to cleanup only on successful exit
 trap cleanup EXIT
 
-# 1. Enable maintenance mode (only if deploying frontend or client portal)
-if [ "$DEPLOY_FRONTEND" = true ] || [ "$DEPLOY_CLIENT_PORTAL" = true ]; then
-    echo -e "${YELLOW}▶ Enabling maintenance mode...${NC}"
-    sudo touch /var/www/maintenance-mode
-    sudo nginx -s reload
-    echo -e "${RED}🔧 Site is now in maintenance mode${NC}"
-    echo ""
-fi
+MAINTENANCE_ENABLED=false
 
-# 2. Pull latest changes
+# Temp files for passing build artifact paths from parallel build jobs
+DEPLOY_TMP_DIR="$(mktemp -d -t worklenz-deploy-XXXXXX)"
+FRONTEND_BUILD_PATH_FILE="$DEPLOY_TMP_DIR/frontend-build-path"
+CLIENT_PORTAL_BUILD_PATH_FILE="$DEPLOY_TMP_DIR/client-portal-build-path"
+
+# 1. Pull latest changes
 if [ "$SKIP_GIT_PULL" = false ]; then
     echo -e "${YELLOW}▶ Pulling latest changes from git...${NC}"
     git pull
@@ -165,7 +168,7 @@ else
     echo ""
 fi
 
-# 3. Build Frontend and Client Portal in PARALLEL
+# 2. Build Frontend and Client Portal in PARALLEL (build first; swap later)
 if [ "$DEPLOY_FRONTEND" = true ] || [ "$DEPLOY_CLIENT_PORTAL" = true ]; then
     if [ "$DEPLOY_FRONTEND" = true ] && [ "$DEPLOY_CLIENT_PORTAL" = true ]; then
         echo -e "${YELLOW}▶ Building Frontend and Client Portal (parallel)...${NC}"
@@ -200,25 +203,10 @@ build_frontend() {
         return 1
     fi
 
-    # Atomic swap: rename current build to backup, move new build to production
-    if [ -d "build" ] && [ ! -L "build" ]; then
-        echo -e "${BLUE}[Frontend]${NC} Backing up current build..."
-        mv build "build-backup-$(date +%s)" 2>/dev/null || true
-    elif [ -L "build" ]; then
-        # If build is a symlink, remove it
-        rm -f build
-    fi
-    
-    # Move new build to production location
-    mv "$temp_build" build
-    
-    # Clean up old backups (keep last 2)
-    echo -e "${BLUE}[Frontend]${NC} Cleaning up old builds..."
-    ls -t | grep "^build-backup-" | tail -n +3 | xargs -r rm -rf
-
     local end_time=$(date +%s)
     local duration=$((end_time - start_time))
-    echo -e "${GREEN}[Frontend]${NC} ✅ Build completed and deployed atomically in ${duration}s"
+    echo "$ROOT_DIR/worklenz-frontend/$temp_build" > "$FRONTEND_BUILD_PATH_FILE"
+    echo -e "${GREEN}[Frontend]${NC} ✅ Build completed in ${duration}s (ready to swap)"
     return 0
 }
 
@@ -246,25 +234,10 @@ build_client_portal() {
         return 1
     fi
 
-    # Atomic swap: rename current dist to backup, move new build to production
-    if [ -d "dist" ] && [ ! -L "dist" ]; then
-        echo -e "${BLUE}[Client Portal]${NC} Backing up current build..."
-        mv dist "dist-backup-$(date +%s)" 2>/dev/null || true
-    elif [ -L "dist" ]; then
-        # If dist is a symlink, remove it
-        rm -f dist
-    fi
-    
-    # Move new build to production location
-    mv "$temp_build" dist
-    
-    # Clean up old backups (keep last 2)
-    echo -e "${BLUE}[Client Portal]${NC} Cleaning up old builds..."
-    ls -t | grep "^dist-backup-" | tail -n +3 | xargs -r rm -rf
-
     local end_time=$(date +%s)
     local duration=$((end_time - start_time))
-    echo -e "${GREEN}[Client Portal]${NC} ✅ Build completed and deployed atomically in ${duration}s"
+    echo "$ROOT_DIR/worklenz-client-portal/$temp_build" > "$CLIENT_PORTAL_BUILD_PATH_FILE"
+    echo -e "${GREEN}[Client Portal]${NC} ✅ Build completed in ${duration}s (ready to swap)"
     return 0
 }
 
@@ -373,7 +346,7 @@ fi
 # 6. Restart Backend with PM2
 if [ "$DEPLOY_BACKEND" = true ]; then
     echo -e "${YELLOW}▶ Restarting Backend service with PM2...${NC}"
-    pm2 restart 4 --update-env > /dev/null 2>&1
+    pm2 restart "$PM2_APP_ID" --update-env > /dev/null 2>&1
     if [ $? -ne 0 ]; then
         handle_error "PM2 restart" $?
     fi
@@ -387,7 +360,7 @@ if [ "$DEPLOY_BACKEND" = true ]; then
     MAX_HEALTH_CHECKS=10
 
     while [ $HEALTH_CHECK_ATTEMPTS -lt $MAX_HEALTH_CHECKS ]; do
-        if pm2 describe 4 2>&1 | grep -q "online"; then
+        if pm2 describe "$PM2_APP_ID" 2>&1 | grep -q "online"; then
             echo -e "${GREEN}✅ Backend service is running${NC}"
             break
         fi
@@ -398,13 +371,85 @@ if [ "$DEPLOY_BACKEND" = true ]; then
             sleep 2
         else
             echo -e "${RED}Health check failed - service not responding${NC}"
-            pm2 logs 4 --lines 20
+            pm2 logs "$PM2_APP_ID" --lines 20
             handle_error "Health check" 1
         fi
     done
 
     echo ""
 fi
+
+# 7. Brief maintenance mode and atomic swap (frontend/client portal)
+if [ "$DEPLOY_FRONTEND" = true ] || [ "$DEPLOY_CLIENT_PORTAL" = true ]; then
+    echo -e "${YELLOW}▶ Enabling maintenance mode (brief) for final swap...${NC}"
+    sudo touch /var/www/maintenance-mode
+    sudo nginx -s reload
+    if [ $? -ne 0 ]; then
+        handle_error "Enable maintenance mode" $?
+    fi
+    MAINTENANCE_ENABLED=true
+    echo ""
+
+    if [ "$DEPLOY_FRONTEND" = true ]; then
+        if [ ! -f "$FRONTEND_BUILD_PATH_FILE" ]; then
+            handle_error "Frontend build artifact missing" 1
+        fi
+        FRONTEND_BUILD_PATH="$(cat "$FRONTEND_BUILD_PATH_FILE")"
+        if [ ! -d "$FRONTEND_BUILD_PATH" ]; then
+            handle_error "Frontend build artifact not found" 1
+        fi
+
+        echo -e "${YELLOW}▶ Swapping Frontend build...${NC}"
+        cd "$ROOT_DIR/worklenz-frontend" || handle_error "Frontend directory not found" 1
+
+        if [ -d "build" ] && [ ! -L "build" ]; then
+            mv build "build-backup-$(date +%s)" 2>/dev/null || true
+        elif [ -L "build" ]; then
+            rm -f build
+        fi
+
+        mv "$FRONTEND_BUILD_PATH" build
+        ls -t | grep "^build-backup-" | tail -n +3 | xargs -r rm -rf
+        echo -e "${GREEN}✅ Frontend deployed${NC}"
+        echo ""
+    fi
+
+    if [ "$DEPLOY_CLIENT_PORTAL" = true ]; then
+        if [ ! -f "$CLIENT_PORTAL_BUILD_PATH_FILE" ]; then
+            handle_error "Client Portal build artifact missing" 1
+        fi
+        CLIENT_PORTAL_BUILD_PATH="$(cat "$CLIENT_PORTAL_BUILD_PATH_FILE")"
+        if [ ! -d "$CLIENT_PORTAL_BUILD_PATH" ]; then
+            handle_error "Client Portal build artifact not found" 1
+        fi
+
+        echo -e "${YELLOW}▶ Swapping Client Portal build...${NC}"
+        cd "$ROOT_DIR/worklenz-client-portal" || handle_error "Client Portal directory not found" 1
+
+        if [ -d "dist" ] && [ ! -L "dist" ]; then
+            mv dist "dist-backup-$(date +%s)" 2>/dev/null || true
+        elif [ -L "dist" ]; then
+            rm -f dist
+        fi
+
+        mv "$CLIENT_PORTAL_BUILD_PATH" dist
+        ls -t | grep "^dist-backup-" | tail -n +3 | xargs -r rm -rf
+        echo -e "${GREEN}✅ Client Portal deployed${NC}"
+        echo ""
+    fi
+
+    echo -e "${YELLOW}Disabling maintenance mode...${NC}"
+    sudo rm -f /var/www/maintenance-mode
+    sudo nginx -s reload
+    if [ $? -ne 0 ]; then
+        handle_error "Disable maintenance mode" $?
+    fi
+    MAINTENANCE_ENABLED=false
+    echo -e "${GREEN}✅ Maintenance mode disabled${NC}"
+    echo ""
+fi
+
+rm -rf "$DEPLOY_TMP_DIR" 2>/dev/null || true
 
 # Calculate total deployment time
 DEPLOY_END=$(date +%s)
