@@ -159,6 +159,23 @@ const taskDrawerSlice = createSlice({
         state.taskFormViewModel.task.billable = billable;
       }
     },
+    setTaskCustomColumnValue: (
+      state,
+      action: PayloadAction<{
+        taskId: string;
+        columnKey: string;
+        value: string | number | boolean | string[] | null;
+      }>
+    ) => {
+      const { taskId, columnKey, value } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        if (!state.taskFormViewModel.task.custom_column_values) {
+          state.taskFormViewModel.task.custom_column_values = {};
+        }
+
+        state.taskFormViewModel.task.custom_column_values[columnKey] = value;
+      }
+    },
     setNavigationContext: (
       state,
       action: PayloadAction<{
@@ -232,6 +249,7 @@ export const {
   setTimeLogEditing,
   setTaskRecurringSchedule,
   setTaskBillable,
+  setTaskCustomColumnValue,
   setNavigationContext,
   navigateToNextTask,
   navigateToPreviousTask,

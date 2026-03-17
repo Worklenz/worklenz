@@ -85,6 +85,19 @@
     "peopleField": "人员字段",
     "noDate": "无日期",
     "unsupportedField": "不支持的字段类型",
+    "datePlaceholder": "设置日期",
+    "numberPlaceholder": "0",
+    "percentagePlaceholder": "0%",
+    "selectOption": "选择选项",
+    "noOptionsAvailable": "没有可用选项",
+    "updating": "正在更新...",
+    "peopleDropdown": {
+      "searchMembers": "搜索成员...",
+      "pending": "待处理",
+      "loadingMembers": "正在加载成员...",
+      "noMembersFound": "未找到成员",
+      "inviteMember": "邀请成员"
+    },
 
     "modal": {
       "addFieldTitle": "添加字段",
