@@ -123,6 +123,8 @@
     "email_already_registered_title": "Correo Electrónico Ya Registrado",
     "email_already_registered_message": "Ya existe un usuario con este correo electrónico. Por favor inicia sesión.",
     "invalid_credentials": "Correo electrónico o contraseña inválidos",
+    "invalid_credentials_title": "Credenciales inválidas",
+    "invalid_credentials_message": "Correo electrónico o contraseña inválidos",
     "token_required": "Se requiere token",
     "token_invalid": "Token inválido o expirado",
     "invitation_invalid": "Invitación inválida o expirada",

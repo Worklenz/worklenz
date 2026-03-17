@@ -257,6 +257,8 @@
     "email_already_registered_title": "邮箱已注册",
     "email_already_registered_message": "该邮箱的用户已存在。请直接登录。",
     "invalid_credentials": "邮箱或密码无效",
+    "invalid_credentials_title": "凭据无效",
+    "invalid_credentials_message": "邮箱或密码无效",
     "token_required": "需要令牌",
     "token_invalid": "令牌无效或已过期",
     "invitation_invalid": "邀请无效或已过期",
