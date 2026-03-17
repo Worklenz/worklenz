@@ -58,6 +58,7 @@ const ClientDetailsDrawer = () => {
       data: clientDetails,
       isLoading: isLoadingClient,
       error: clientError,
+      reset: resetClientDetails,
     },
   ] = useLazyGetClientDetailsQuery();
 
@@ -71,9 +72,17 @@ const ClientDetailsDrawer = () => {
 
   useEffect(() => {
     if (isClientDetailsDrawerOpen && selectedClientId) {
-      fetchClientDetails(selectedClientId, true);
+      form.resetFields();
+      resetClientDetails();
+      fetchClientDetails(selectedClientId, false);
     }
-  }, [fetchClientDetails, isClientDetailsDrawerOpen, selectedClientId]);
+  }, [
+    fetchClientDetails,
+    form,
+    isClientDetailsDrawerOpen,
+    resetClientDetails,
+    selectedClientId,
+  ]);
 
   // Populate form whenever client data arrives
   useEffect(() => {
@@ -95,8 +104,9 @@ const ClientDetailsDrawer = () => {
   }, [client, form]);
 
   const handleClose = () => {
-    dispatch(toggleClientDetailsDrawer(null));
     form.resetFields();
+    resetClientDetails();
+    dispatch(toggleClientDetailsDrawer(null));
   };
 
   const handleFormSubmit = async (values: UpdateClientRequest) => {
@@ -143,7 +153,7 @@ const ClientDetailsDrawer = () => {
     try {
       await deactivateClient(selectedClientId).unwrap();
       message.success(t('deactivateClientSuccessMessage') || 'Client deactivated successfully');
-      fetchClientDetails(selectedClientId, true);
+      fetchClientDetails(selectedClientId, false);
       handleClose();
     } catch (error: any) {
       message.error(
@@ -157,7 +167,7 @@ const ClientDetailsDrawer = () => {
     try {
       await updateClient({ id: selectedClientId, data: { status: 'active' } }).unwrap();
       message.success(t('activateClientSuccessMessage') || 'Client activated successfully');
-      fetchClientDetails(selectedClientId, true);
+      fetchClientDetails(selectedClientId, false);
     } catch (error: any) {
       message.error(
         error?.data?.message || t('activateClientErrorMessage') || 'Failed to activate client'
