@@ -21,6 +21,8 @@ import {
   useCreateClientMutation,
 } from '../../api/client-portal/client-portal-api';
 import { refreshCsrfToken } from '../../api/api-client';
+import PhoneInput from '@/components/PhoneInput/PhoneInput';
+import { validatePhoneNumber } from '@/utils/validatePhoneNumber';
 
 const getCreateClientErrorMessage = (
   errorMessage: string,
@@ -121,9 +123,11 @@ const AddClientDrawer = () => {
       }
     } catch (error: any) {
       const errorMessage = error?.data?.message || error?.message || '';
+      const normalizedErrorMessage = errorMessage.toLowerCase();
       const isCsrfError =
-        errorMessage.toLowerCase().includes('csrf') ||
-        errorMessage.toLowerCase().includes('invalid') ||
+        normalizedErrorMessage.includes('csrf') ||
+        normalizedErrorMessage.includes('security token') ||
+        normalizedErrorMessage.includes('token expired') ||
         error?.status === 403;
 
       if (isCsrfError) {
@@ -239,12 +243,31 @@ const AddClientDrawer = () => {
                 label={t('phoneLabel') || 'Phone Number'}
                 rules={[
                   {
-                    pattern: /^[\+]?[1-9][\d]{0,15}$/,
-                    message: t('phoneInvalid') || 'Enter a valid phone number',
+                    validator: (_, value) => {
+                      if (!value || value.trim() === '') {
+                        return Promise.resolve();
+                      }
+
+                      if (validatePhoneNumber(value)) {
+                        return Promise.resolve();
+                      }
+
+                      return Promise.reject(
+                        new Error(
+                          t('phoneInvalid', {
+                            defaultValue: 'Please enter a valid phone number',
+                          })
+                        )
+                      );
+                    },
                   },
                 ]}
               >
-                <Input placeholder={t('phonePlaceholder') || 'Enter phone number'} />
+                <PhoneInput
+                  placeholder={
+                    t('phonePlaceholder', { defaultValue: 'Enter phone number' })
+                  }
+                />
               </Form.Item>
             </Col>
           </Row>
