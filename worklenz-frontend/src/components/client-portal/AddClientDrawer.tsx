@@ -5,9 +5,7 @@ import {
   Flex,
   Form,
   Input,
-  message,
   Typography,
-  Select,
   Spin,
   Alert,
   Row,
@@ -24,7 +22,28 @@ import {
 } from '../../api/client-portal/client-portal-api';
 import { refreshCsrfToken } from '../../api/api-client';
 
-const { Option } = Select;
+const getCreateClientErrorMessage = (
+  errorMessage: string,
+  t: (key: string, options?: Record<string, unknown>) => string
+) => {
+  const normalizedMessage = errorMessage.toLowerCase();
+
+  if (
+    normalizedMessage.includes('clients_name_team_id_uindex') ||
+    (normalizedMessage.includes('duplicate key value') && normalizedMessage.includes('name'))
+  ) {
+    return t('clientNameAlreadyExistsError', {
+      defaultValue: 'A client with this name already exists. Use a different client name.',
+    });
+  }
+
+  return (
+    errorMessage ||
+    t('createClientErrorMessage', {
+      defaultValue: 'Failed to create client',
+    })
+  );
+};
 
 const AddClientDrawer = () => {
   const { t } = useTranslation('client-portal-clients');
@@ -64,7 +83,6 @@ const AddClientDrawer = () => {
         state: values.state,
         zip_code: values.zip_code,
         country: values.country,
-        status: values.status,
       }).unwrap();
 
       const response = result as any;
@@ -117,7 +135,7 @@ const AddClientDrawer = () => {
       } else {
         setAlertMessage({
           type: 'error',
-          message: errorMessage || t('createClientErrorMessage', { defaultValue: 'Failed to create client' })
+          message: getCreateClientErrorMessage(errorMessage, t)
         });
       }
     }
@@ -227,19 +245,6 @@ const AddClientDrawer = () => {
                 ]}
               >
                 <Input placeholder={t('phonePlaceholder') || 'Enter phone number'} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                name="status"
-                label={t('statusLabel') || 'Status'}
-                initialValue="pending"
-              >
-                <Select>
-                  <Option value="active">{t('statusActive') || 'Active'}</Option>
-                  <Option value="inactive">{t('statusInactive') || 'Inactive'}</Option>
-                  <Option value="pending">{t('statusPending') || 'Pending'}</Option>
-                </Select>
               </Form.Item>
             </Col>
           </Row>
