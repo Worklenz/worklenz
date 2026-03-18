@@ -112,11 +112,16 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
         return messages.map((msg: any) => ({
           id: msg.id || '',
           content: msg.message || msg.content || '',
-          time: new Date(msg.created_at || Date.now()),
+          time: new Date(msg.created_at || msg.createdAt || Date.now()),
           is_me:
             msg.senderType === 'team_member' || (currentUserId && msg.senderId === currentUserId),
-          file_url: msg.file_url || null,
-          file_name: msg.file_name || null,
+          file_url: msg.file_url || msg.fileUrl || null,
+          file_name:
+            msg.file_name ||
+            msg.fileName ||
+            (msg.file_url || msg.fileUrl
+              ? decodeURIComponent(String(msg.file_url || msg.fileUrl).split('/').pop() || '')
+              : null),
         }));
       }
       return Array.isArray(openedChat.chats_data) ? openedChat.chats_data : [];
