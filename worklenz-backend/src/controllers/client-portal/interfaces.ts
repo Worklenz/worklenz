@@ -115,6 +115,7 @@ export interface IClientDTO {
   email: string;
   company_name?: string;
   phone?: string;
+  phone_country_code?: string;
   address?: string;
   status: 'active' | 'inactive' | 'pending';
   team_id: string;

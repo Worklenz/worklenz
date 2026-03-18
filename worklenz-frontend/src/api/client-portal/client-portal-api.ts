@@ -257,6 +257,7 @@ export interface ClientPortalClient {
   email: string;
   company_name?: string;
   phone?: string;
+  phone_country_code?: string;
   address?: string;
   address_line_1?: string;
   city?: string;
@@ -296,6 +297,7 @@ export interface CreateClientRequest {
   email: string;
   company_name?: string;
   phone?: string;
+  phone_country_code?: string;
   address?: string;
   address_line_1?: string;
   city?: string;
@@ -311,6 +313,7 @@ export interface UpdateClientRequest {
   email?: string;
   company_name?: string;
   phone?: string;
+  phone_country_code?: string;
   address?: string;
   address_line_1?: string;
   city?: string;

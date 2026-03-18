@@ -257,6 +257,8 @@
     "email_already_registered_title": "Email-i Tashmë i Regjistruar",
     "email_already_registered_message": "Një përdorues me këtë email ekziston tashmë. Ju lutem hyni.",
     "invalid_credentials": "Email ose fjalëkalim i pavlefshëm",
+    "invalid_credentials_title": "Kredenciale të pavlefshme",
+    "invalid_credentials_message": "Email ose fjalëkalim i pavlefshëm",
     "token_required": "Kërkohet token",
     "token_invalid": "Token i pavlefshëm ose i skaduar",
     "invitation_invalid": "Ftesë e pavlefshme ose e skaduar",

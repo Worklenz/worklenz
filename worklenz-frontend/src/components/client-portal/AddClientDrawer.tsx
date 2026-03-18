@@ -80,6 +80,7 @@ const AddClientDrawer = () => {
         company_name: values.company_name,
         contact_person: values.contact_person,
         phone: values.phone,
+        phone_country_code: values.phone?.trim() ? values.phone_country_code : undefined,
         address_line_1: values.address_line_1,
         city: values.city,
         state: values.state,
@@ -280,6 +281,9 @@ const AddClientDrawer = () => {
                 <PhoneInput
                   placeholder={t('phonePlaceholder', { defaultValue: 'Enter phone number' })}
                 />
+              </Form.Item>
+              <Form.Item name="phone_country_code" hidden>
+                <Input />
               </Form.Item>
             </Col>
           </Row>

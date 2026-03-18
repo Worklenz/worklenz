@@ -13,6 +13,7 @@ import * as flags from 'country-flag-icons/react/3x2';
 interface PhoneInputProps {
   value?: string;
   onChange?: (value: string) => void;
+  onCountryChange?: (country: CountryCode) => void;
   placeholder?: string;
   disabled?: boolean;
   defaultCountry?: CountryCode;
@@ -148,6 +149,7 @@ const FlagIcon: React.FC<{ countryCode: string; style?: React.CSSProperties }> =
 const PhoneInput: React.FC<PhoneInputProps> = ({
   value,
   onChange,
+  onCountryChange,
   placeholder = 'Enter phone number',
   disabled = false,
   defaultCountry = 'US',
@@ -167,11 +169,15 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
 
     if (value) {
       try {
-        const parsed = parsePhoneNumber(value);
+        const parsed = parsePhoneNumber(value, defaultCountry);
         if (parsed) {
-          setSelectedCountry(parsed.country || defaultCountry);
+          const resolvedCountry = parsed.country || defaultCountry;
+          setSelectedCountry(resolvedCountry);
+          onCountryChange?.(resolvedCountry);
           setPhoneNumber(parsed.nationalNumber);
         } else {
+          setSelectedCountry(defaultCountry);
+          onCountryChange?.(defaultCountry);
           // Ignore malformed international numbers to prevent display issues
           if (value.startsWith('+')) {
             return;
@@ -179,6 +185,8 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
           setPhoneNumber(value);
         }
       } catch {
+        setSelectedCountry(defaultCountry);
+        onCountryChange?.(defaultCountry);
         // Ignore malformed international numbers to prevent display issues
         if (value.startsWith('+')) {
           return;
@@ -186,12 +194,15 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
         setPhoneNumber(value);
       }
     } else {
+      setSelectedCountry(defaultCountry);
+      onCountryChange?.(defaultCountry);
       setPhoneNumber('');
     }
-  }, [value, defaultCountry]);
+  }, [value, defaultCountry, onCountryChange]);
 
   const handleCountryChange = (country: CountryCode) => {
     setSelectedCountry(country);
+    onCountryChange?.(country);
     isUpdatingRef.current = true;
 
     if (phoneNumber) {

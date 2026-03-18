@@ -47,15 +47,25 @@ import type { CountryCode } from 'libphonenumber-js';
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-const getDefaultPhoneCountry = (countryValue?: string): CountryCode => {
+const getDefaultPhoneCountry = (
+  phoneCountryCodeValue?: string,
+  countryValue?: string
+): CountryCode => {
   const fallback: CountryCode = 'US';
+  const supportedCountries = getCountries();
+
+  if (phoneCountryCodeValue?.trim()) {
+    const normalizedPhoneCountryCode = phoneCountryCodeValue.trim().toUpperCase() as CountryCode;
+    if (supportedCountries.includes(normalizedPhoneCountryCode)) {
+      return normalizedPhoneCountryCode;
+    }
+  }
 
   if (!countryValue || countryValue.trim() === '') {
     return fallback;
   }
 
   const normalizedCountry = countryValue.trim().toLowerCase();
-  const supportedCountries = getCountries();
 
   if (normalizedCountry.length === 2) {
     const alpha2 = normalizedCountry.toUpperCase() as CountryCode;
@@ -103,6 +113,7 @@ const ClientDetailsDrawer = () => {
   const [updateClient, { isLoading: isUpdating }] = useUpdateClientMutation();
 
   const [form] = Form.useForm();
+  const phoneCountryCodeValue = Form.useWatch('phone_country_code', form);
   const countryValue = Form.useWatch('country', form);
 
   useEffect(() => {
@@ -121,6 +132,7 @@ const ClientDetailsDrawer = () => {
         email: client.email,
         company_name: client.company_name,
         phone: client.phone,
+        phone_country_code: client.phone_country_code,
         address_line_1: client.address_line_1,
         city: client.city,
         state: client.state,
@@ -148,6 +160,9 @@ const ClientDetailsDrawer = () => {
           email: values.email,
           company_name: values.company_name,
           phone: values.phone,
+          phone_country_code: values.phone?.trim()
+            ? values.phone_country_code
+            : undefined,
           address_line_1: values.address_line_1,
           city: values.city,
           state: values.state,
@@ -374,9 +389,13 @@ const ClientDetailsDrawer = () => {
                 ]}
               >
                 <PhoneInput
-                  defaultCountry={getDefaultPhoneCountry(countryValue)}
+                  defaultCountry={getDefaultPhoneCountry(phoneCountryCodeValue, countryValue)}
+                  onCountryChange={country => form.setFieldValue('phone_country_code', country)}
                   placeholder={t('phonePlaceholder', { defaultValue: 'Enter phone number' })}
                 />
+              </Form.Item>
+              <Form.Item name="phone_country_code" hidden>
+                <Input />
               </Form.Item>
             </Col>
           </Row>
