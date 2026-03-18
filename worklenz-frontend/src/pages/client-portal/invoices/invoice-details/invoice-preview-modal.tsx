@@ -22,12 +22,14 @@ import { useNavigate } from 'react-router-dom';
 import { Tooltip } from 'antd';
 import { ClientPortalInvoiceDetails } from '@/api/client-portal/client-portal-api';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import config from '@/config/env';
+import { API_BASE_URL } from '@/shared/constants';
 
 const { Title, Text } = Typography;
 const { useToken } = theme;
 
 const getInvoiceDownloadUrl = (invoiceId: string) =>
-  `/api/v1/clients/portal/invoices/${invoiceId}/download`;
+  `${config.apiUrl.replace(/\/$/, '')}${API_BASE_URL}/clients/portal/invoices/${invoiceId}/download`;
 
 interface InvoicePreviewModalProps {
   open: boolean;
