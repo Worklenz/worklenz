@@ -1,8 +1,6 @@
 import { Button, Card, Flex, Typography } from '@/shared/antd-imports';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setSort } from '@/features/task-management/task-management.slice';
 
 import StatusOverview from './graphs/status-overview';
 import PriorityOverview from './graphs/priority-overview';
@@ -13,12 +11,12 @@ import { TFunction } from 'i18next';
 
 const InsightsOverview = ({ t }: { t: TFunction }) => {
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
   const { projectId } = useAppSelector(state => state.projectInsightsReducer);
 
   const handleSeeAllLastUpdated = () => {
-    dispatch(setSort({ field: 'updated_at', order: 'DESC' }));
-    navigate(`/worklenz/projects/${projectId}?pinned_tab=tasks-list`);
+    navigate(
+      `/worklenz/projects/${projectId}?pinned_tab=tasks-list&sort_field=updated_at&sort_order=DESC`
+    );
   };
 
   return (

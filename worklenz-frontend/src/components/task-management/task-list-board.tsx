@@ -25,6 +25,7 @@ import {
   fetchTasksV3,
   selectTaskGroupsV3,
   fetchSubTasks,
+  setSort,
 } from '@/features/task-management/task-management.slice';
 import { selectCurrentGrouping } from '@/features/task-management/grouping.slice';
 import {
@@ -238,14 +239,21 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   }, []);
 
   // Fetch task groups when component mounts or dependencies change
+  // AFTER
   useEffect(() => {
     if (projectId && !hasInitialized.current) {
       hasInitialized.current = true;
 
-      // Measure task loading performance
-      CustomPerformanceMeasurer.mark('task-load-time');
+      // Read sort from URL if passed from insights "See All"
+      const urlParams = new URLSearchParams(window.location.search);
+      const sortField = urlParams.get('sort_field');
+      const sortOrder = urlParams.get('sort_order') as 'ASC' | 'DESC' | null;
 
-      // Fetch real tasks from V3 API (minimal processing needed)
+      if (sortField && sortOrder) {
+        dispatch(setSort({ field: sortField, order: sortOrder }));
+      }
+
+      CustomPerformanceMeasurer.mark('task-load-time');
       dispatch(fetchTasksV3(projectId)).finally(() => {
         CustomPerformanceMeasurer.measure('task-load-time');
       });
