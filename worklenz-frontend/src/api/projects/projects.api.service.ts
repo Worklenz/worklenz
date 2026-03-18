@@ -143,4 +143,17 @@ export const projectsApiService = {
     const response = await apiClient.get<IServerResponse<IProjectManager[]>>(`${url}`);
     return response.data;
   },
+
+  getProjectStatuses: async (): Promise<
+    IServerResponse<Array<{ id: string; name: string; color_code?: string; is_default?: boolean }>>
+  > => {
+    const url = `${API_BASE_URL}/project-statuses`;
+    const response =
+      await apiClient.get<
+        IServerResponse<
+          Array<{ id: string; name: string; color_code?: string; is_default?: boolean }>
+        >
+      >(url);
+    return response.data;
+  },
 };

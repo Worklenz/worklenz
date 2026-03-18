@@ -427,7 +427,12 @@ const ProjectViewHeader = memo(() => {
           key="invite-tooltip"
           title={t('inviteTooltip', { defaultValue: 'Invite team members to this project' })}
         >
-          <Button key="invite" type="primary" icon={<UsergroupAddOutlined />} onClick={handleInvite}>
+          <Button
+            key="invite"
+            type="primary"
+            icon={<UsergroupAddOutlined />}
+            onClick={handleInvite}
+          >
             {t('invite', { defaultValue: 'Invite' })}
           </Button>
         </Tooltip>
@@ -542,7 +547,7 @@ const ProjectViewHeader = memo(() => {
         <div style={{ flex: 1, minWidth: 0 }}>{pageHeaderTitle}</div>
         <div style={{ marginLeft: '16px', flexShrink: 0 }}>{headerActions}</div>
       </div>
-      {createPortal(<ProjectDrawer onClose={() => {}} />, document.body, 'project-drawer')}
+      {createPortal(<ProjectDrawer onClose={() => { }} />, document.body, 'project-drawer')}
       {createPortal(<ImportTaskTemplate />, document.body, 'import-task-template')}
       {createPortal(<SaveProjectAsTemplate />, document.body, 'save-project-as-template')}
     </>

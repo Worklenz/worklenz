@@ -5,6 +5,7 @@ import { SelectionType } from '../../../../pages/projects/projectView/taskList/t
 
 export type CustomFieldsTypes =
   | 'people'
+  | 'text'
   | 'number'
   | 'date'
   | 'selection'
@@ -42,7 +43,7 @@ const initialState: TaskListCustomColumnsState = {
   customColumnId: null,
   currentColumnData: null,
 
-  customFieldType: 'people',
+  customFieldType: 'text',
   customFieldNumberType: 'formatted',
   decimals: 0,
   label: 'LKR',
