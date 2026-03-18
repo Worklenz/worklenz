@@ -1,5 +1,8 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { IProjectUpdateCommentViewModel, IProjectUpdateComment } from '@/types/project/project.types';
+import {
+  IProjectUpdateCommentViewModel,
+  IProjectUpdateComment,
+} from '@/types/project/project.types';
 import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
 import { IProjectCommentsCreateRequest } from '@/types/project/projectComments.types';
 
@@ -14,7 +17,7 @@ const initialState: UpdatesState = {
   updatesList: [],
   loading: false,
   error: null,
-  count: 0
+  count: 0,
 };
 
 // Async Thunks
@@ -76,11 +79,14 @@ const updatesSlice = createSlice({
         state.count += 1;
       }
     },
-    clearUpdates: (state) => {
+    clearUpdates: state => {
       state.updatesList = [];
       state.count = 0;
     },
-    addReactionToComment: (state, action: PayloadAction<{ comment_id: string; reactions: any[] }>) => {
+    addReactionToComment: (
+      state,
+      action: PayloadAction<{ comment_id: string; reactions: any[] }>
+    ) => {
       const comment = state.updatesList.find(c => c.id === action.payload.comment_id);
       if (comment) {
         comment.reactions = action.payload.reactions;
@@ -95,11 +101,11 @@ const updatesSlice = createSlice({
         comment.last_edited_at = action.payload.last_edited_at;
         comment.last_edited_by_name = action.payload.last_edited_by_name;
       }
-    }
+    },
   },
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     // Get Comments
-    builder.addCase(getProjectComments.pending, (state) => {
+    builder.addCase(getProjectComments.pending, state => {
       state.loading = true;
       state.error = null;
     });
@@ -114,12 +120,12 @@ const updatesSlice = createSlice({
     });
 
     // Create Comment
-    // We don't necessarily need to add it here if we rely on socket or subsequent fetch, 
+    // We don't necessarily need to add it here if we rely on socket or subsequent fetch,
     // but adding it optimistically or after success is good UX.
-    // However, the API create response structure might need verification. 
+    // However, the API create response structure might need verification.
     // Assuming it returns the created comment.
     builder.addCase(createProjectComment.fulfilled, (state, action) => {
-      // If the socket also sends it, we might duplicate. 
+      // If the socket also sends it, we might duplicate.
       // Safest is to let socket handle it OR check duplicates.
       // But typically we want immediate feedback.
       // Let's add it if not present.
@@ -137,5 +143,6 @@ const updatesSlice = createSlice({
   },
 });
 
-export const { addCommentFromSocket, clearUpdates, addReactionToComment, updateCommentAfterEdit } = updatesSlice.actions;
+export const { addCommentFromSocket, clearUpdates, addReactionToComment, updateCommentAfterEdit } =
+  updatesSlice.actions;
 export default updatesSlice.reducer;

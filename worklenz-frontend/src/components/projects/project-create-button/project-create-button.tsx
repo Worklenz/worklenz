@@ -174,10 +174,7 @@ const CreateProjectButton: React.FC<CreateProjectButtonProps> = ({ className }) 
           selectedTemplateType={setSelectedType}
         />
       </Drawer>
-      <ProjectImportModal
-        open={isImportExportOpen}
-        onClose={() => setIsImportExportOpen(false)}
-      />
+      <ProjectImportModal open={isImportExportOpen} onClose={() => setIsImportExportOpen(false)} />
     </div>
   );
 };

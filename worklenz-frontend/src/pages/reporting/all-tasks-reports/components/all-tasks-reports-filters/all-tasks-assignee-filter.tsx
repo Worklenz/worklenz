@@ -1,5 +1,15 @@
 import { memo, useEffect, useState } from 'react';
-import { Button, Card, Checkbox, Dropdown, Flex, Input, Typography, Avatar, Spin } from '@/shared/antd-imports';
+import {
+  Button,
+  Card,
+  Checkbox,
+  Dropdown,
+  Flex,
+  Input,
+  Typography,
+  Avatar,
+  Spin,
+} from '@/shared/antd-imports';
 import { CaretDownFilled, SearchOutlined, UserOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -24,7 +34,9 @@ const AllTasksAssigneeFilter = () => {
 
   useEffect(() => {
     if (!membersList.length) {
-      dispatch(getTeamMembers({ index: 0, size: 100, field: null, order: null, search: null, all: true }));
+      dispatch(
+        getTeamMembers({ index: 0, size: 100, field: null, order: null, search: null, all: true })
+      );
     }
   }, [dispatch, membersList.length]);
 
@@ -46,7 +58,9 @@ const AllTasksAssigneeFilter = () => {
     <Card className="custom-card" styles={{ body: { padding: 8, width: 280 } }}>
       <Flex vertical gap={8}>
         <Input
-          placeholder={t('searchPlaceholder', { defaultValue: 'Search by task name, key, or description' })}
+          placeholder={t('searchPlaceholder', {
+            defaultValue: 'Search by task name, key, or description',
+          })}
           prefix={<SearchOutlined />}
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}

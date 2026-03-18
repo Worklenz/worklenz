@@ -38,24 +38,33 @@ export function useBusinessTrial(currentSession: any) {
       const response = await PlanTrialApiService.startBusinessTrial();
       if (response.done) {
         message.success(
-          t('business-trial-started', { defaultValue: 'Business trial started successfully! Refreshing...' })
+          t('business-trial-started', {
+            defaultValue: 'Business trial started successfully! Refreshing...',
+          })
         );
-        setTimeout(() => { window.location.reload(); }, 1500);
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } else {
         message.error(
           response.message ||
-          t('business-trial-start-failed', { defaultValue: 'Failed to start trial' })
+            t('business-trial-start-failed', { defaultValue: 'Failed to start trial' })
         );
       }
     } catch (error: any) {
       message.error(
         error.response?.data?.message ||
-        t('business-trial-start-failed', { defaultValue: 'Failed to start trial' })
+          t('business-trial-start-failed', { defaultValue: 'Failed to start trial' })
       );
     } finally {
       setBusinessTrialLoading(false);
     }
   };
 
-  return { canStartBusinessTrial, businessTrialLoading, trialEligibilityChecked, startBusinessTrial };
+  return {
+    canStartBusinessTrial,
+    businessTrialLoading,
+    trialEligibilityChecked,
+    startBusinessTrial,
+  };
 }

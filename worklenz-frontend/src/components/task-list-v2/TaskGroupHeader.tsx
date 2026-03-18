@@ -285,7 +285,8 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
   ]);
 
   // Check if this is the Unmapped phase for name click handler
-  const isUnmappedPhaseForClick = currentGrouping === 'phase' && (group.id === 'Unmapped' || group.name === 'Unmapped');
+  const isUnmappedPhaseForClick =
+    currentGrouping === 'phase' && (group.id === 'Unmapped' || group.name === 'Unmapped');
 
   const handleNameClick = useCallback(
     (e: React.MouseEvent) => {
@@ -357,7 +358,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
   // Create dropdown menu items
   const menuItems = useMemo(() => {
     if (!isOwnerOrAdmin) return [];
-    
+
     // Don't show menu for Unmapped phase
     if (isUnmappedPhase) return [];
 

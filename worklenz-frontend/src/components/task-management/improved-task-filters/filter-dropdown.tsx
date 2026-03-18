@@ -127,11 +127,12 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
         className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out
-          ${selectedCount > 0
-            ? isDarkMode
-              ? 'bg-gray-600 text-white border-gray-500'
-              : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
-            : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
+          ${
+            selectedCount > 0
+              ? isDarkMode
+                ? 'bg-gray-600 text-white border-gray-500'
+                : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
+              : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
           hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
           ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
@@ -161,22 +162,25 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
           {section.selectedValues[0] === 'phase' && (
             <button
               onClick={onManagePhase}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isDarkMode
-                ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 focus:ring-offset-gray-900'
-                : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600 focus:ring-offset-white'
-                }`}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                isDarkMode
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 focus:ring-offset-gray-900'
+                  : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600 focus:ring-offset-white'
+              }`}
             >
               <SettingOutlined className="w-3.5 h-3.5" />
-              {t('manage', { defaultValue: 'Manage' })} {projectPhaseLabel || t('phasesText', { defaultValue: 'Phases' })}
+              {t('manage', { defaultValue: 'Manage' })}{' '}
+              {projectPhaseLabel || t('phasesText', { defaultValue: 'Phases' })}
             </button>
           )}
           {section.selectedValues[0] === 'status' && (
             <button
               onClick={onManageStatus}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isDarkMode
-                ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 focus:ring-offset-gray-900'
-                : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600 focus:ring-offset-white'
-                }`}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                isDarkMode
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-500 focus:ring-offset-gray-900'
+                  : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-600 focus:ring-offset-white'
+              }`}
             >
               <SettingOutlined className="w-3.5 h-3.5" />
               {t('manageStatuses', { defaultValue: 'Manage Statuses' })}
@@ -197,10 +201,11 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                   placeholder={t('search', { defaultValue: 'Search' })}
-                  className={`w-full pl-8 pr-2 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${isDarkMode
-                    ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
-                    : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
-                    }`}
+                  className={`w-full pl-8 pr-2 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-150 ${
+                    isDarkMode
+                      ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
+                      : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
+                  }`}
                 />
               </div>
             </div>
@@ -223,11 +228,12 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
                       className={`
                         w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded
                         transition-colors duration-150 text-left
-                        ${isSelected
-                          ? isDarkMode
-                            ? 'bg-gray-600 text-white'
-                            : 'bg-gray-200 text-gray-800 font-semibold'
-                          : `${themeClasses.optionText} ${themeClasses.optionHover}`
+                        ${
+                          isSelected
+                            ? isDarkMode
+                              ? 'bg-gray-600 text-white'
+                              : 'bg-gray-200 text-gray-800 font-semibold'
+                            : `${themeClasses.optionText} ${themeClasses.optionHover}`
                         }
                       `}
                     >
@@ -235,9 +241,10 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
                         <div
                           className={`
                             flex items-center justify-center w-3.5 h-3.5 border rounded
-                            ${isSelected
-                              ? 'bg-gray-600 border-gray-800 text-white'
-                              : 'border-gray-300 dark:border-gray-600'
+                            ${
+                              isSelected
+                                ? 'bg-gray-600 border-gray-800 text-white'
+                                : 'border-gray-300 dark:border-gray-600'
                             }
                           `}
                         >
@@ -265,7 +272,8 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
                             <Avatar
                               size={20}
                               style={{
-                                backgroundColor: AvatarNamesMap[option.label[0]?.toUpperCase()] || '#9e9e9e',
+                                backgroundColor:
+                                  AvatarNamesMap[option.label[0]?.toUpperCase()] || '#9e9e9e',
                                 width: 20,
                                 height: 20,
                                 fontSize: 10,

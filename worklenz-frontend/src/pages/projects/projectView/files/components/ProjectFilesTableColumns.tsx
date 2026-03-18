@@ -1,10 +1,4 @@
-import {
-  Button,
-  Flex,
-  Popconfirm,
-  Tooltip,
-  Typography,
-} from '@/shared/antd-imports';
+import { Button, Flex, Popconfirm, Tooltip, Typography } from '@/shared/antd-imports';
 import { CloudDownloadOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { TFunction } from 'i18next';
 import { colors } from '@/styles/colors';

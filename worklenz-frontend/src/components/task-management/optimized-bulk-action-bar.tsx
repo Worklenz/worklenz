@@ -192,7 +192,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     const labelsList = useAppSelector(state => state.taskLabelsReducer.labels);
     const members = useAppSelector(state => state.teamMembersReducer.teamMembers);
     const tasks = useAppSelector(state => state.taskManagement.entities);
-    
+
     // Add archived selector as requested
     const archived = useAppSelector(state => state.taskManagement.archived);
 
@@ -875,14 +875,14 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           </Tooltip>
 
           {/* Archive */}
-          <Tooltip 
+          <Tooltip
             title={
-              isFree && !archived 
-                ? tCommon('upgrade-plan') 
-                : archived 
-                  ? t('Unarchive') 
+              isFree && !archived
+                ? tCommon('upgrade-plan')
+                : archived
+                  ? t('Unarchive')
                   : t('Archive')
-            } 
+            }
             placement="top"
           >
             <Button
@@ -939,7 +939,9 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
                       label: (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span>{t('createTaskTemplate')}</span>
-                          {isFree && <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />}
+                          {isFree && (
+                            <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
+                          )}
                         </div>
                       ),
                       onClick: handleOpenTemplateDrawer,

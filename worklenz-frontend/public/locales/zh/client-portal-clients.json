@@ -2,67 +2,67 @@
   "pageTitle": "客户",
   "pageDescription": "管理您的客户及其门户访问权限",
   "addClientButton": "添加客户",
-  
+
   "totalClientsLabel": "客户总数",
   "activeClientsLabel": "活跃客户",
   "totalProjectsLabel": "项目总数",
   "totalTeamMembersLabel": "团队成员",
-  
+
   "errorTitle": "错误",
   "loadingText": "加载中...",
   "refreshButton": "刷新",
   "clearFiltersButton": "清除过滤器",
-  
+
   "clientColumn": "客户",
   "statusColumn": "状态",
   "assignedProjectsColumn": "分配的项目",
   "teamMembersColumn": "团队成员",
   "actionBtnsColumn": "操作",
-  
+
   "statusAll": "全部",
   "statusActive": "活跃",
   "statusInactive": "非活跃",
   "statusPending": "待定",
-  
+
   "viewDetailsTooltip": "查看详情",
   "editClientTooltip": "编辑客户",
   "manageProjectsTooltip": "管理项目",
   "manageTeamTooltip": "管理团队",
   "deleteTooltip": "删除",
-  
+
   "deleteConfirmationTitle": "删除客户",
   "deleteConfirmationDescription": "您确定要删除此客户吗？此操作无法撤销。",
   "deleteConfirmationOk": "删除",
   "deleteConfirmationCancel": "取消",
-  
+
   "searchClientsPlaceholder": "搜索客户...",
   "statusFilterPlaceholder": "按状态过滤",
-  
+
   "paginationText": "显示",
   "ofText": "共",
   "clientsText": "客户",
-  
+
   "addClientTitle": "添加新客户",
   "createButton": "创建客户",
   "cancelButton": "取消",
-  
+
   "clientNameLabel": "客户名称",
   "clientNamePlaceholder": "输入客户名称",
   "clientNameRequired": "请输入客户名称",
   "clientNameMinLength": "名称至少需要2个字符",
-  
+
   "emailLabel": "邮箱地址",
   "emailPlaceholder": "输入邮箱地址",
   "emailRequired": "请输入邮箱地址",
   "emailInvalid": "请输入有效的邮箱地址",
-  
+
   "companyNameLabel": "公司名称",
   "companyNamePlaceholder": "输入公司名称（可选）",
-  
+
   "phoneLabel": "电话号码",
   "phonePlaceholder": "输入电话号码（可选）",
   "phoneInvalid": "请输入有效的电话号码",
-  
+
   "addressLabel": "地址",
   "addressPlaceholder": "输入地址（可选）",
   "addressLine1Label": "街道地址",
@@ -79,9 +79,9 @@
 
   "contactPersonLabel": "联系人",
   "contactPersonPlaceholder": "输入联系人姓名",
-  
+
   "statusLabel": "状态",
-  
+
   "createClientSuccessMessage": "客户创建成功！分享组织邀请链接为他们提供门户访问权限。",
   "createClientSuccessMessageWithInvite": "客户创建成功！邀请已发送至 {email}",
   "createClientErrorMessage": "创建客户失败",
@@ -89,28 +89,28 @@
   "updateClientErrorMessage": "更新客户失败",
   "deleteClientSuccessMessage": "客户删除成功",
   "deleteClientErrorMessage": "删除客户失败",
-  
+
   "closeButton": "关闭",
   "deleteButton": "删除客户",
   "editButton": "编辑",
   "updateButton": "更新客户",
-  
+
   "editClientTitle": "编辑客户",
   "errorLoadingClient": "加载客户数据时出错",
-  
+
   "clientInformationTitle": "客户信息",
   "createdAtLabel": "创建时间",
-  
+
   "statisticsTitle": "统计信息",
   "activeProjectsLabel": "活跃项目",
   "totalRequestsLabel": "请求总数",
-  
+
   "teamManagementTitle": "团队管理",
   "clientPortalLinkLabel": "客户门户链接",
   "clientPortalLinkDescription": "与您的客户分享此链接以给予他们访问其门户的权限",
   "clientPortalAccessInfo": "创建客户后，使用客户页面的组织邀请链接为他们提供门户访问权限。",
   "linkCopiedMessage": "链接已复制到剪贴板",
-  
+
   "organizationInviteLinkTitle": "组织邀请链接",
   "organizationInviteLinkDescription": "与任何客户分享此单一链接以允许他们加入您组织的客户门户。出于安全考虑，链接将在7天后过期，可根据需要重新生成。",
   "generateLink": "生成链接",
@@ -151,7 +151,7 @@
   "removeConfirmationOk": "移除",
   "removeConfirmationCancel": "取消",
   "removeMemberTooltip": "移除成员",
-  
+
   "projectSettingsTitle": "项目设置",
   "selectProjectLabel": "选择项目",
   "selectProjectPlaceholder": "选择要分配的项目",
@@ -166,7 +166,7 @@
   "projectRemovedSuccessMessage": "项目移除成功",
   "projectRemovedErrorMessage": "移除项目失败",
   "noAssignedProjectsText": "未给此客户分配项目",
-  
+
   "teamMembersTitle": "团队成员",
   "noTeamMembersText": "未找到团队成员",
   "projectsTitle": "项目",
@@ -181,7 +181,7 @@
   "nameLabel": "姓名",
   "roleLabel": "角色",
   "rolePlaceholder": "选择角色",
-  
+
   "bulkActions": "批量操作",
   "selectedCount": "已选择",
   "activateSelected": "激活选中项",
@@ -194,15 +194,15 @@
   "bulkDeleteErrorMessage": "删除选中的客户失败",
   "bulkUpdateSuccessMessage": "选中的客户更新成功",
   "bulkUpdateErrorMessage": "更新选中的客户失败",
-  
+
   "noDataText": "无可用数据",
   "loadingDataText": "正在加载数据...",
   "errorLoadingDataText": "加载数据时出错",
   "retryButton": "重试",
-  
+
   "assignProjectTitle": "分配新项目",
   "assignedProjectsTitle": "已分配项目",
-  
+
   "portalStatusColumn": "门户状态",
   "portalStatus": {
     "active": "活跃",

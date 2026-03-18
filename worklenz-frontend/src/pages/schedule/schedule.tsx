@@ -3,7 +3,12 @@ import React, { useRef, useEffect, useState, Suspense, lazy } from 'react';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_schedule_page_visit } from '@/shared/worklenz-analytics-events';
 import { SettingOutlined, ReloadOutlined } from '@ant-design/icons';
-import { setDate, setType, toggleSettingsDrawer, getWorking } from '@/features/schedule/scheduleSlice';
+import {
+  setDate,
+  setType,
+  toggleSettingsDrawer,
+  getWorking,
+} from '@/features/schedule/scheduleSlice';
 import ScheduleSettingsDrawer from '@/features/schedule/ScheduleSettingsDrawer';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
@@ -43,10 +48,10 @@ const Schedule: React.FC = () => {
   const granttChartRef = useRef<any>(null);
   const { date, type, error } = useAppSelector(state => state.scheduleReducer);
   const { trackMixpanelEvent } = useMixpanelTracking();
-  
+
   // Initialize schedule socket handlers for real-time updates
   useScheduleSocketHandlers();
-  
+
   // View mode state: 'project' for existing view, 'task' for new task timeline
   const [viewMode, setViewMode] = useState<ScheduleViewMode>('project');
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -89,20 +94,22 @@ const Schedule: React.FC = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    
+
     // Invalidate all schedule-related cache to force refetch
-    dispatch(scheduleApi.util.invalidateTags([
-      'DateList', 
-      'Members', 
-      'MemberProjects', 
-      'Capacity', 
-      'Workload', 
-      'CapacityReport',
-      'Conflicts',
-      'TaskTimeline',
-      'TimeOff'
-    ]));
-    
+    dispatch(
+      scheduleApi.util.invalidateTags([
+        'DateList',
+        'Members',
+        'MemberProjects',
+        'Capacity',
+        'Workload',
+        'CapacityReport',
+        'Conflicts',
+        'TaskTimeline',
+        'TimeOff',
+      ])
+    );
+
     // Wait a bit for the refetch to complete
     setTimeout(() => {
       setIsRefreshing(false);
@@ -134,7 +141,7 @@ const Schedule: React.FC = () => {
             </Select>
             <PickerWithType date={date as Date} type={type} onChange={handleDateChange} />
           </Space>
-          
+
           {/* View Mode Toggle */}
           {/* <Radio.Group 
             value={viewMode} 
@@ -151,16 +158,16 @@ const Schedule: React.FC = () => {
           </Radio.Group> */}
         </Flex>
         <Space>
-          <Button 
-            icon={<ReloadOutlined />} 
+          <Button
+            icon={<ReloadOutlined />}
             onClick={handleRefresh}
             loading={isRefreshing}
             shape="circle"
             title={t('refreshSchedule', { defaultValue: 'Refresh Schedule' })}
           />
-          <Button 
-            size="small" 
-            shape="circle" 
+          <Button
+            size="small"
+            shape="circle"
             onClick={handleOpenSettings}
             title={t('settings', { defaultValue: 'Settings' })}
           >
@@ -179,7 +186,7 @@ const Schedule: React.FC = () => {
 
       <ScheduleSettingsDrawer />
       <ScheduleDrawer />
-      
+
       {/* Task Drawer for opening individual tasks */}
       {createPortal(
         <Suspense fallback={null}>

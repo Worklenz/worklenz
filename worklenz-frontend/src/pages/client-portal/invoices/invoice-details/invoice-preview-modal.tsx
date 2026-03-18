@@ -26,7 +26,8 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 const { Title, Text } = Typography;
 const { useToken } = theme;
 
-const getInvoiceDownloadUrl = (invoiceId: string) => `/api/v1/clients/portal/invoices/${invoiceId}/download`;
+const getInvoiceDownloadUrl = (invoiceId: string) =>
+  `/api/v1/clients/portal/invoices/${invoiceId}/download`;
 
 interface InvoicePreviewModalProps {
   open: boolean;
@@ -34,11 +35,7 @@ interface InvoicePreviewModalProps {
   invoice: ClientPortalInvoiceDetails;
 }
 
-const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
-  open,
-  onClose,
-  invoice,
-}) => {
+const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose, invoice }) => {
   // Get organization details from invoice or use defaults
   const organizationName = invoice.organization?.name || 'Your Company';
   const organizationEmail = invoice.organization?.email || '';
@@ -391,9 +388,10 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
             <div class="header">
               <div class="company-section">
                 <div class="company-logo">
-                  ${organizationLogo 
-                    ? `<img src="${organizationLogo}" alt="Logo" />`
-                    : organizationName.charAt(0).toUpperCase()
+                  ${
+                    organizationLogo
+                      ? `<img src="${organizationLogo}" alt="Logo" />`
+                      : organizationName.charAt(0).toUpperCase()
                   }
                 </div>
                 <div class="company-info">
@@ -466,18 +464,26 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                   <span>${t('subtotal')}</span>
                   <span>${formatCurrency(invoice.subtotal || invoice.amount, invoice.currency)}</span>
                 </div>
-                ${invoice.discountAmount && invoice.discountAmount > 0 ? `
+                ${
+                  invoice.discountAmount && invoice.discountAmount > 0
+                    ? `
                   <div class="totals-row">
                     <span>${t('discount')} (${invoice.discountType === 'percentage' ? `${invoice.discountValue}%` : formatCurrency(invoice.discountValue || 0, invoice.currency)})</span>
                     <span>-${formatCurrency(invoice.discountAmount, invoice.currency)}</span>
                   </div>
-                ` : ''}
-                ${invoice.taxAmount && invoice.taxAmount > 0 ? `
+                `
+                    : ''
+                }
+                ${
+                  invoice.taxAmount && invoice.taxAmount > 0
+                    ? `
                   <div class="totals-row">
                     <span>${t('tax')} (${invoice.taxRate || 0}%)</span>
                     <span>${formatCurrency(invoice.taxAmount, invoice.currency)}</span>
                   </div>
-                ` : ''}
+                `
+                    : ''
+                }
                 <div class="totals-row total">
                   <span>${t('total')}</span>
                   <span class="amount">${formatCurrency(invoice.amount, invoice.currency)}</span>
@@ -485,12 +491,16 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
               </div>
             </div>
 
-            ${invoice.notes ? `
+            ${
+              invoice.notes
+                ? `
               <div class="notes-section">
                 <h3>${t('notes')}</h3>
                 <p>${invoice.notes}</p>
               </div>
-            ` : ''}
+            `
+                : ''
+            }
 
             <div class="footer">
               ${invoiceFooterMessage ? `<p class="thank-you">${invoiceFooterMessage}</p>` : ''}
@@ -615,11 +625,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
           <Col>
             <Flex align="center" gap={12} style={{ marginBottom: 12 }}>
               {organizationLogo ? (
-                <img
-                  src={organizationLogo}
-                  alt="Logo"
-                  style={{ height: 48, width: 'auto' }}
-                />
+                <img src={organizationLogo} alt="Logo" style={{ height: 48, width: 'auto' }} />
               ) : (
                 <div
                   style={{
@@ -642,17 +648,21 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                 {organizationName}
               </Title>
               <Tooltip title={t('companyDetailsTooltip')}>
-                <Button 
-                  type="text" 
-                  size="small" 
-                  icon={<SettingOutlined />} 
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<SettingOutlined />}
                   onClick={handleEditCompanyDetails}
                   style={{ marginLeft: 8 }}
                 />
               </Tooltip>
             </Flex>
             <Text type="secondary" style={{ display: 'block' }}>
-              {organizationEmail || <Text type="secondary" italic>No email set</Text>}
+              {organizationEmail || (
+                <Text type="secondary" italic>
+                  No email set
+                </Text>
+              )}
             </Text>
             {organizationPhone && (
               <Text type="secondary" style={{ display: 'block' }}>
@@ -688,20 +698,28 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                   fontWeight: 500,
                   backgroundColor:
                     invoice.status === 'paid'
-                      ? isDark ? 'rgba(82, 196, 26, 0.15)' : '#f6ffed'
+                      ? isDark
+                        ? 'rgba(82, 196, 26, 0.15)'
+                        : '#f6ffed'
                       : invoice.status === 'sent'
-                      ? isDark ? 'rgba(24, 144, 255, 0.15)' : '#e6f7ff'
-                      : invoice.status === 'overdue'
-                      ? isDark ? 'rgba(255, 77, 79, 0.15)' : '#fff2f0'
-                      : isDark ? 'rgba(255, 255, 255, 0.08)' : '#f5f5f5',
+                        ? isDark
+                          ? 'rgba(24, 144, 255, 0.15)'
+                          : '#e6f7ff'
+                        : invoice.status === 'overdue'
+                          ? isDark
+                            ? 'rgba(255, 77, 79, 0.15)'
+                            : '#fff2f0'
+                          : isDark
+                            ? 'rgba(255, 255, 255, 0.08)'
+                            : '#f5f5f5',
                   color:
                     invoice.status === 'paid'
                       ? colors.success
                       : invoice.status === 'sent'
-                      ? colors.primary
-                      : invoice.status === 'overdue'
-                      ? colors.error
-                      : colors.textSecondary,
+                        ? colors.primary
+                        : invoice.status === 'overdue'
+                          ? colors.error
+                          : colors.textSecondary,
                 }}
               >
                 {getStatusText(invoice.status)}
@@ -841,15 +859,25 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
               <Text type="secondary">{t('subtotal')}</Text>
               <Text>{formatCurrency(invoice.subtotal || invoice.amount, invoice.currency)}</Text>
             </Flex>
-            {(invoice.discountAmount && invoice.discountAmount > 0) && (
+            {invoice.discountAmount && invoice.discountAmount > 0 && (
               <Flex justify="space-between" style={{ padding: '8px 0' }}>
-                <Text type="secondary">{t('discount')} ({invoice.discountType === 'percentage' ? `${invoice.discountValue}%` : formatCurrency(invoice.discountValue || 0, invoice.currency)})</Text>
-                <Text type="success">-{formatCurrency(invoice.discountAmount, invoice.currency)}</Text>
+                <Text type="secondary">
+                  {t('discount')} (
+                  {invoice.discountType === 'percentage'
+                    ? `${invoice.discountValue}%`
+                    : formatCurrency(invoice.discountValue || 0, invoice.currency)}
+                  )
+                </Text>
+                <Text type="success">
+                  -{formatCurrency(invoice.discountAmount, invoice.currency)}
+                </Text>
               </Flex>
             )}
-            {(invoice.taxAmount && invoice.taxAmount > 0) && (
+            {invoice.taxAmount && invoice.taxAmount > 0 && (
               <Flex justify="space-between" style={{ padding: '8px 0' }}>
-                <Text type="secondary">{t('tax')} ({invoice.taxRate || 0}%)</Text>
+                <Text type="secondary">
+                  {t('tax')} ({invoice.taxRate || 0}%)
+                </Text>
                 <Text>{formatCurrency(invoice.taxAmount, invoice.currency)}</Text>
               </Flex>
             )}

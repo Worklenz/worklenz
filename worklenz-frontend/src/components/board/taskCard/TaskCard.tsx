@@ -86,7 +86,8 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
           task_id: task.id,
           end_date: date?.format('YYYY-MM-DD'),
           parent_task: task.parent_task_id || null,
-          time_zone: getUserSession()?.timezone_name || Intl.DateTimeFormat().resolvedOptions().timeZone,
+          time_zone:
+            getUserSession()?.timezone_name || Intl.DateTimeFormat().resolvedOptions().timeZone,
         })
       );
     }
@@ -237,7 +238,9 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
                 }}
               />
             )}
-            <Typography.Text style={{ fontWeight: 500 }}>{safeTextDisplay(task.name)}</Typography.Text>
+            <Typography.Text style={{ fontWeight: 500 }}>
+              {safeTextDisplay(task.name)}
+            </Typography.Text>
           </div>
 
           {/* Subtask Section */}

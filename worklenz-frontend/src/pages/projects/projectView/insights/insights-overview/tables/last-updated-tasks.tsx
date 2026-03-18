@@ -16,14 +16,14 @@ const LastUpdatedTasks = () => {
 
   const [data, setData] = useState<IInsightTasks[]>([]);
   // const [loading, setLoading] = useState(false);
-// const [pageSize, setPageSize] = useState(20);
-// const [currentPage, setCurrentPage] = useState(1);
+  // const [pageSize, setPageSize] = useState(20);
+  // const [currentPage, setCurrentPage] = useState(1);
 
-//change 1
-const [loading, setLoading] = useState(false);
-const [pageSize, setPageSize] = useState(20);
-const [currentPage, setCurrentPage] = useState(1);
-const [total, setTotal] = useState(0);
+  //change 1
+  const [loading, setLoading] = useState(false);
+  const [pageSize, setPageSize] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [total, setTotal] = useState(0);
 
   const { refreshTimestamp } = useAppSelector(state => state.projectReducer);
 
@@ -45,9 +45,8 @@ const [total, setTotal] = useState(0);
   //   }
   // };
 
-
   //change 2
-const getLastUpdatedTasks = async (page = 1, limit = 20) => {
+  const getLastUpdatedTasks = async (page = 1, limit = 20) => {
     if (!projectId) return;
     setLoading(true);
     try {
@@ -65,7 +64,6 @@ const getLastUpdatedTasks = async (page = 1, limit = 20) => {
         setData(tasks);
         setTotal(total);
       }
-      
     } catch (error) {
       logger.error('getLastUpdatedTasks', error);
     } finally {
@@ -73,11 +71,9 @@ const getLastUpdatedTasks = async (page = 1, limit = 20) => {
     }
   };
 
-
   // useEffect(() => {
   //   getLastUpdatedTasks();
   // }, [projectId, includeArchivedTasks, refreshTimestamp]);
-
 
   //change 3
   useEffect(() => {
@@ -140,9 +136,6 @@ const getLastUpdatedTasks = async (page = 1, limit = 20) => {
   //     ),
   //   },
   // ];
-
-
-
 
   //change 4
   const columns: TableProps['columns'] = [
@@ -220,9 +213,8 @@ const getLastUpdatedTasks = async (page = 1, limit = 20) => {
       //   defaultPageSize: 20,
       // }}
 
-
       //change 5
-    pagination={{
+      pagination={{
         showSizeChanger: true,
         pageSizeOptions: ['10', '20', '50', '100'],
         current: currentPage,
@@ -233,7 +225,7 @@ const getLastUpdatedTasks = async (page = 1, limit = 20) => {
           setPageSize(size);
           getLastUpdatedTasks(page, size);
         },
-      }}//change ends from here
+      }} //change ends from here
       loading={loading}
       onRow={() => {
         return {

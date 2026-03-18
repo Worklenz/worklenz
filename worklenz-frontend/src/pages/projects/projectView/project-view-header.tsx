@@ -301,9 +301,7 @@ const ProjectViewHeader = memo(() => {
               margin: 0,
             }}
           >
-            <span style={{ fontSize: 12, color: textColor }}>
-              {selectedProject.category_name}
-            </span>
+            <span style={{ fontSize: 12, color: textColor }}>{selectedProject.category_name}</span>
           </Tag>
         </Tooltip>
       );
@@ -547,7 +545,7 @@ const ProjectViewHeader = memo(() => {
         <div style={{ flex: 1, minWidth: 0 }}>{pageHeaderTitle}</div>
         <div style={{ marginLeft: '16px', flexShrink: 0 }}>{headerActions}</div>
       </div>
-      {createPortal(<ProjectDrawer onClose={() => { }} />, document.body, 'project-drawer')}
+      {createPortal(<ProjectDrawer onClose={() => {}} />, document.body, 'project-drawer')}
       {createPortal(<ImportTaskTemplate />, document.body, 'import-task-template')}
       {createPortal(<SaveProjectAsTemplate />, document.body, 'save-project-as-template')}
     </>

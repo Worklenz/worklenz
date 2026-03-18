@@ -136,8 +136,11 @@ const parseCsvText = (
   const matrix = parseCsvRows(text || '', delimiter);
   if (!matrix.length) return { fields: [], rows: [] };
 
-  const headers = (matrix[0] || []).map((field, index) =>
-    String(field || '').replace(/^\uFEFF/, '').trim() || `column_${index + 1}`
+  const headers = (matrix[0] || []).map(
+    (field, index) =>
+      String(field || '')
+        .replace(/^\uFEFF/, '')
+        .trim() || `column_${index + 1}`
   );
   const fields = headers.filter(Boolean);
 
@@ -351,16 +354,19 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const [defaultProjectStatusId, setDefaultProjectStatusId] = React.useState<string | null>(null);
   const [worklenzStatuses, setWorklenzStatuses] = React.useState<IProjectStatus[]>([]);
 
-  const parseCsvData = React.useCallback((text: string) => {
-    const parsed = parseCsvText(text || '', delimiter.trim() || undefined);
-    const fields = parsed.fields.map(field => String(field).trim()).filter(Boolean);
-    setCsvText(text || '');
-    setCsvColumns(fields);
-    setFieldMappings({});
-    setIncludeInImport(Object.fromEntries(fields.map((f: string) => [f, true])));
-    setCsvRows(Array.isArray(parsed.rows) ? (parsed.rows as Record<string, any>[]) : []);
-    setUserEmails({});
-  }, [delimiter]);
+  const parseCsvData = React.useCallback(
+    (text: string) => {
+      const parsed = parseCsvText(text || '', delimiter.trim() || undefined);
+      const fields = parsed.fields.map(field => String(field).trim()).filter(Boolean);
+      setCsvText(text || '');
+      setCsvColumns(fields);
+      setFieldMappings({});
+      setIncludeInImport(Object.fromEntries(fields.map((f: string) => [f, true])));
+      setCsvRows(Array.isArray(parsed.rows) ? (parsed.rows as Record<string, any>[]) : []);
+      setUserEmails({});
+    },
+    [delimiter]
+  );
   const worklenzFieldOptions = React.useMemo(
     () => [
       { value: 'key', label: tt('fields.key', 'Key') },
@@ -493,10 +499,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const autoMappedRef = React.useRef(false);
 
   const persistImportOptions = React.useCallback(
-    async (
-      jobId: string,
-      overrides?: { importMembers?: boolean; importAttachments?: boolean }
-    ) => {
+    async (jobId: string, overrides?: { importMembers?: boolean; importAttachments?: boolean }) => {
       await updateImportSource(jobId, {
         importMembers:
           typeof overrides?.importMembers === 'boolean' ? overrides.importMembers : importMembers,
@@ -2422,8 +2425,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               {t('importStep.mapSpaceFields', { defaultValue: 'Map space fields' })}
             </Typography.Title>
             <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 16 }}>
-              Weâ€™ve automatically mapped a few columns from the CSV file to{' '}
-              <b>Worklenz fields</b>. Verify and{' '}
+              Weâ€™ve automatically mapped a few columns from the CSV file to <b>Worklenz fields</b>
+              . Verify and{' '}
               <a href="#" style={{ color: '#4096ff' }}>
                 map any remaining columns
               </a>

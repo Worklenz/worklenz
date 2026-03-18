@@ -1,6 +1,6 @@
-import { IServerResponse } from "@/types/common/server-response.types";
-import { createApi } from "@reduxjs/toolkit/query/react";
-import { baseQueryWithReauth } from "@/api/common/auth.api";
+import { IServerResponse } from '@/types/common/server-response.types';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { baseQueryWithReauth } from '@/api/common/auth.api';
 
 export interface IActivityLog {
   description: string;
@@ -11,16 +11,16 @@ export interface IActivityLog {
 }
 
 export const activityLogsApi = createApi({
-  reducerPath: "activityLogsApi",
+  reducerPath: 'activityLogsApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ["ActivityLogs"],
-  endpoints: (builder) => ({
+  tagTypes: ['ActivityLogs'],
+  endpoints: builder => ({
     getActivityLogs: builder.query<IServerResponse<IActivityLog[]>, void>({
       query: () => ({
-        url: "/api/logs/my-dashboard",
-        method: "GET",
+        url: '/api/logs/my-dashboard',
+        method: 'GET',
       }),
-      providesTags: ["ActivityLogs"],
+      providesTags: ['ActivityLogs'],
     }),
   }),
 });

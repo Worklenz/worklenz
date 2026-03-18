@@ -32,8 +32,8 @@ export const sanitizeHtml = (input: string): string => {
   return DOMPurify.sanitize(input, {
     ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'span'],
     ALLOWED_ATTR: {
-      'a': ['href', 'target', 'rel'],
-      'span': ['class']
+      a: ['href', 'target', 'rel'],
+      span: ['class'],
     },
     ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
     // Remove dangerous protocols
@@ -47,7 +47,7 @@ export const sanitizeHtml = (input: string): string => {
     KEEP_CONTENT: true,
     RETURN_DOM: false,
     RETURN_DOM_FRAGMENT: false,
-    RETURN_TRUSTED_TYPE: false
+    RETURN_TRUSTED_TYPE: false,
   });
 };
 
@@ -67,18 +67,27 @@ export const sanitizeCommentContent = (input: string): string => {
     ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'p', 'br', 'span'],
     ALLOWED_ATTR: {
       // Only allow class attribute on span for mentions
-      'span': ['class']
+      span: ['class'],
     },
     // No URL schemes allowed since we're not allowing links
     ALLOWED_URI_REGEXP: /^$/,
     ALLOWED_PROTOCOLS: [],
     // Remove any script tags, event handlers, and dangerous attributes
     FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'a', 'link'],
-    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'href', 'src'],
+    FORBID_ATTR: [
+      'onerror',
+      'onload',
+      'onclick',
+      'onmouseover',
+      'onfocus',
+      'onblur',
+      'href',
+      'src',
+    ],
     // Enforce HTML boundary
     KEEP_CONTENT: true,
     RETURN_DOM: false,
     RETURN_DOM_FRAGMENT: false,
-    RETURN_TRUSTED_TYPE: false
+    RETURN_TRUSTED_TYPE: false,
   });
 };

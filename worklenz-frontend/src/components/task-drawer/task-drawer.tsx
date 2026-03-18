@@ -281,12 +281,7 @@ const TaskDrawer = () => {
       {/* FIX: destroyOnHidden removed from Tabs — it unmounts tab panel content
           on tab switch/drawer close, causing the same blank re-render problem
           inside TaskDrawerInfoTab and its child field selectors. */}
-      <Tabs
-        type="card"
-        items={tabItems}
-        onChange={handleTabChange}
-        activeKey={activeTab}
-      />
+      <Tabs type="card" items={tabItems} onChange={handleTabChange} activeKey={activeTab} />
     </Drawer>
   );
 };

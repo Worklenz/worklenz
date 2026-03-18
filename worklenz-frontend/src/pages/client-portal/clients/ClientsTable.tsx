@@ -219,7 +219,7 @@ const ClientsTable = () => {
     } else {
       sort = sorter;
     }
-    
+
     if (sort?.field && sort?.order) {
       dispatch(setSortBy(sort.field as string));
       dispatch(setSortOrder(sort.order === 'ascend' ? 'asc' : 'desc'));
@@ -486,13 +486,13 @@ const ClientsTable = () => {
   const copyInvitationLink = async () => {
     try {
       await navigator.clipboard.writeText(invitationLink);
-      
+
       // Track client portal share event
       trackMixpanelEvent(evt_client_portal_share, {
         client_id: currentClientId,
-        share_method: 'copy_link'
+        share_method: 'copy_link',
       });
-      
+
       message.success(
         t('invitationLinkCopiedSuccess', { defaultValue: 'Invitation link copied to clipboard!' })
       );
@@ -907,9 +907,7 @@ const ClientsTable = () => {
             value={filters.status}
           >
             <Option value="all">{t('statusAll', { defaultValue: 'All' })}</Option>
-            <Option value="active">
-              {t('portalStatus.active', { defaultValue: 'Active' })}
-            </Option>
+            <Option value="active">{t('portalStatus.active', { defaultValue: 'Active' })}</Option>
             <Option value="invited">
               {t('portalStatus.invited', { defaultValue: 'Invited' })}
             </Option>

@@ -242,7 +242,9 @@ const ProjectViewMembers = () => {
             ? 'descend'
             : null,
       render: (_, record: IProjectMemberViewModel) => (
-        <Typography.Text style={{ textTransform: 'capitalize', color: getRoleColor(record.access || '') }}>
+        <Typography.Text
+          style={{ textTransform: 'capitalize', color: getRoleColor(record.access || '') }}
+        >
           {record.access}
         </Typography.Text>
       ),

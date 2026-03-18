@@ -40,7 +40,7 @@ export const projectInsightsApiService = {
   // },
 
   //change 1
-    getLastUpdatedTasks: async (
+  getLastUpdatedTasks: async (
     id: string,
     include_archived: boolean,
     limit = 20,

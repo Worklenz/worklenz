@@ -19,7 +19,7 @@ export const useTaskAttachments = () => {
 
   const fetchTaskAttachments = useCallback(async () => {
     if (!projectId) return;
-    
+
     setTaskAttachmentsLoading(true);
     try {
       const response = await taskAttachmentsApiService.getProjectAttachments(

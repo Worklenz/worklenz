@@ -97,5 +97,5 @@
   "selectManagerPlaceholder": "Select a Team Lead as manager",
   "manager_removed_successfully": "Manager assignment removed successfully",
   "updateError": "Failed to update team member. Please try again.",
-  "noTeamLeadsAvailable": "No team leads available" 
+  "noTeamLeadsAvailable": "No team leads available"
 }

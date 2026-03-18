@@ -25,7 +25,10 @@ import { useAppSelector } from '../../../hooks/useAppSelector';
 import { themeWiseColor } from '../../../utils/themeWiseColor';
 import { useResponsive } from '../../../hooks/useResponsive';
 import { useMixpanelTracking } from '../../../hooks/useMixpanelTracking';
-import { MixpanelEvents, ClientPortalNavigationEventProps } from '../../../types/mixpanel-events.types';
+import {
+  MixpanelEvents,
+  ClientPortalNavigationEventProps,
+} from '../../../types/mixpanel-events.types';
 
 const { Title } = Typography;
 
@@ -53,13 +56,17 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
   ).filter(chat => chat.status === 'unread').length;
 
   // Track navigation
-  const handleNavigation = (toPage: string, fromPage?: string, method: 'sidebar' | 'link' = 'sidebar') => {
+  const handleNavigation = (
+    toPage: string,
+    fromPage?: string,
+    method: 'sidebar' | 'link' = 'sidebar'
+  ) => {
     const navigationProps: ClientPortalNavigationEventProps = {
       from_page: fromPage || activeKey,
       to_page: toPage,
       navigation_method: method,
       page: 'client_portal',
-      source: 'sidebar'
+      source: 'sidebar',
     };
 
     trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_NAVIGATION, navigationProps);

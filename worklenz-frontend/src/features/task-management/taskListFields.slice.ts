@@ -211,14 +211,21 @@ const taskListFieldsSlice = createSlice({
   },
 });
 
-export const { setProjectContext, toggleField, setFields, resetFields, updateFieldVisibilityFromDatabase } =
-  taskListFieldsSlice.actions;
+export const {
+  setProjectContext,
+  toggleField,
+  setFields,
+  resetFields,
+  updateFieldVisibilityFromDatabase,
+} = taskListFieldsSlice.actions;
 
 // Utility function to force reset fields (can be called from browser console)
 export const forceResetFields = (projectId?: string) => {
   const storageKey = getLocalStorageKey(projectId || null);
   localStorage.removeItem(storageKey);
-  console.log(`Cleared localStorage for project ${projectId || 'default'} and reset fields to defaults`);
+  console.log(
+    `Cleared localStorage for project ${projectId || 'default'} and reset fields to defaults`
+  );
   return DEFAULT_FIELDS;
 };
 

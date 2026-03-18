@@ -23,18 +23,18 @@
 }
 
 /* ── Dark mode ── */
-[data-theme='dark'] .dependency-search-select-dropdown,
+[data-theme="dark"] .dependency-search-select-dropdown,
 .ant-dark .dependency-search-select-dropdown {
   background-color: #2a2a2a !important;
 }
 
-[data-theme='dark'] .dependency-search-select-dropdown .ant-select-item-empty,
+[data-theme="dark"] .dependency-search-select-dropdown .ant-select-item-empty,
 .ant-dark .dependency-search-select-dropdown .ant-select-item-empty {
   background-color: #2a2a2a;
   color: #cdcbcb;
 }
 
-[data-theme='dark'] .dependency-search-select-dropdown .ant-empty-description,
+[data-theme="dark"] .dependency-search-select-dropdown .ant-empty-description,
 .ant-dark .dependency-search-select-dropdown .ant-empty-description {
   color: #cdcbcb;
 }

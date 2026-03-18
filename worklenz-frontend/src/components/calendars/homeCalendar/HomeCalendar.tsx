@@ -49,7 +49,7 @@ const HomeCalendar = () => {
   const fullCellRender = (value: Dayjs) => {
     const dateStr = value.format('YYYY-MM-DD');
     const count = countsByDate.get(dateStr);
-    
+
     const dueDateStatus = getDueDateStatus(value);
     const badgeColor = getDueDateColor(dueDateStatus) || '#1890ff';
 

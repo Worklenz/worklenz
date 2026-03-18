@@ -15,9 +15,7 @@ const CustomColorsCategoryTag = ({ category }: { category: IProjectCategory | nu
         border: 'none',
       }}
     >
-      <span style={{ fontSize: 12, color: textColor }}>
-        {category?.name}
-      </span>
+      <span style={{ fontSize: 12, color: textColor }}>{category?.name}</span>
     </Tag>
   );
 };

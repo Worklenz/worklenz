@@ -457,11 +457,11 @@ const isCsrfError = (error?: FetchBaseQueryError): boolean => {
   return false;
 };
 
-const baseQueryWithCsrfRetry: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
-  args,
-  api,
-  extraOptions
-) => {
+const baseQueryWithCsrfRetry: BaseQueryFn<
+  string | FetchArgs,
+  unknown,
+  FetchBaseQueryError
+> = async (args, api, extraOptions) => {
   let result = await rawBaseQuery(args, api, extraOptions);
 
   if (isCsrfError(result.error)) {
@@ -581,27 +581,29 @@ export const clientPortalApi = createApi({
     getRequestComments: builder.query<
       {
         done: boolean;
-        body: {
-          comments: Array<{
-            id: string;
-            comment: string;
-            sender_type: 'client' | 'team_member';
-            sender_id: string;
-            sender_name: string;
-            created_at: string;
-            updated_at: string;
-          }>;
-          totalCount: number;
-          newCommentsCount: number;
-        } | Array<{
-          id: string;
-          comment: string;
-          sender_type: 'client' | 'team_member';
-          sender_id: string;
-          sender_name: string;
-          created_at: string;
-          updated_at: string;
-        }>; // Support both old format (array) and new format (object)
+        body:
+          | {
+              comments: Array<{
+                id: string;
+                comment: string;
+                sender_type: 'client' | 'team_member';
+                sender_id: string;
+                sender_name: string;
+                created_at: string;
+                updated_at: string;
+              }>;
+              totalCount: number;
+              newCommentsCount: number;
+            }
+          | Array<{
+              id: string;
+              comment: string;
+              sender_type: 'client' | 'team_member';
+              sender_id: string;
+              sender_name: string;
+              created_at: string;
+              updated_at: string;
+            }>; // Support both old format (array) and new format (object)
         message: string;
       },
       string
@@ -768,7 +770,10 @@ export const clientPortalApi = createApi({
       ],
     }),
 
-    updateInvoice: builder.mutation<UpdateInvoiceResponse, { id: string; data: UpdateInvoiceRequest }>({
+    updateInvoice: builder.mutation<
+      UpdateInvoiceResponse,
+      { id: string; data: UpdateInvoiceRequest }
+    >({
       query: ({ id, data }) => ({
         url: `/clients/portal/invoices/${id}`,
         method: 'PUT',
@@ -786,11 +791,7 @@ export const clientPortalApi = createApi({
         url: `/clients/portal/invoices/${id}/send`,
         method: 'POST',
       }),
-      invalidatesTags: (result, error, id) => [
-        { type: 'Invoices', id },
-        'Invoices',
-        'Dashboard',
-      ],
+      invalidatesTags: (result, error, id) => [{ type: 'Invoices', id }, 'Invoices', 'Dashboard'],
     }),
 
     markInvoiceAsPaid: builder.mutation<MarkInvoiceAsPaidResponse, string>({
@@ -798,11 +799,7 @@ export const clientPortalApi = createApi({
         url: `/clients/portal/invoices/${id}/mark-paid`,
         method: 'POST',
       }),
-      invalidatesTags: (result, error, id) => [
-        { type: 'Invoices', id },
-        'Invoices',
-        'Dashboard',
-      ],
+      invalidatesTags: (result, error, id) => [{ type: 'Invoices', id }, 'Invoices', 'Dashboard'],
     }),
 
     deleteInvoice: builder.mutation<void, string>({
@@ -839,7 +836,7 @@ export const clientPortalApi = createApi({
         message: string;
       }
     >({
-      query: (chatData) => ({
+      query: chatData => ({
         url: `${config.apiUrl}/api/client-portal/chats`,
         method: 'POST',
         body: chatData,
@@ -869,7 +866,8 @@ export const clientPortalApi = createApi({
 
     // Organization-side Client Portal Chats Management (for admin/organization users)
     getOrganizationChats: builder.query<
-      ClientPortalChat[] | { chats: ClientPortalChat[]; total: number; page: number; limit: number },
+      | ClientPortalChat[]
+      | { chats: ClientPortalChat[]; total: number; page: number; limit: number },
       { clientId?: string; page?: number; limit?: number }
     >({
       query: ({ clientId, page, limit }) => ({
@@ -927,7 +925,7 @@ export const clientPortalApi = createApi({
       { url: string; fileName: string },
       { fileData: string; fileName: string; fileType: string; clientId?: string }
     >({
-      query: (body) => ({
+      query: body => ({
         url: '/clients/portal/chats/upload',
         method: 'POST',
         body,
@@ -952,7 +950,14 @@ export const clientPortalApi = createApi({
     }),
 
     getOrganizationMessages: builder.query<
-      { messages: ClientPortalMessage[]; date: string; total: number; page: number; limit: number } | ClientPortalMessage[],
+      | {
+          messages: ClientPortalMessage[];
+          date: string;
+          total: number;
+          page: number;
+          limit: number;
+        }
+      | ClientPortalMessage[],
       { chatId: string; clientId: string }
     >({
       query: ({ chatId, clientId }) => ({
@@ -1037,7 +1042,6 @@ export const clientPortalApi = createApi({
       },
     }),
 
-
     // Client Management APIs (Organization-side endpoints)
     getClients: builder.query<
       ClientsResponse,
@@ -1092,7 +1096,7 @@ export const clientPortalApi = createApi({
         { type: 'ClientStats', id },
         { type: 'ClientProjects', id },
         { type: 'ClientTeam', id },
-        'Clients'
+        'Clients',
       ],
     }),
 
@@ -1336,9 +1340,9 @@ export const clientPortalApi = createApi({
     }),
 
     updateOrganizationService: builder.mutation<
-      any, 
-      { 
-        id: string; 
+      any,
+      {
+        id: string;
         data: {
           name?: string;
           description?: string;
@@ -1352,7 +1356,7 @@ export const clientPortalApi = createApi({
           imageData?: string;
           imageName?: string;
           imageType?: string;
-        }
+        };
       }
     >({
       query: ({ id, data }) => ({

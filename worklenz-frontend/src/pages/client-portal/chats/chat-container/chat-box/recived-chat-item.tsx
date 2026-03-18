@@ -80,10 +80,7 @@ const RecivedChatItem = ({ sendersName, chatData }: RecivedChatItemProps) => {
               </span>
             </a>
           )}
-          <Typography.Text
-            type="secondary"
-            style={{ fontSize: 11, marginTop: 4, paddingLeft: 4 }}
-          >
+          <Typography.Text type="secondary" style={{ fontSize: 11, marginTop: 4, paddingLeft: 4 }}>
             {durationDateFormat(chatData?.time)}
           </Typography.Text>
         </Flex>

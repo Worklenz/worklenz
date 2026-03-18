@@ -242,73 +242,73 @@ export const transformToGanttTasks = (
 
   // Create phase milestones with their tasks (already sorted from backend)
   apiPhases.forEach(phase => {
-      const phaseTasks = tasksByPhase.get(phase.id) || [];
+    const phaseTasks = tasksByPhase.get(phase.id) || [];
 
-      // Use phase dates if provided, they are independent of child task dates
-      let phaseStartDate = phase.start_date ? new Date(phase.start_date) : null;
-      let phaseEndDate = phase.end_date ? new Date(phase.end_date) : null;
-      
-      // Only calculate from child tasks if phase has no dates AND we want to show something
-      // This is optional - phases without dates can remain without dates
-      if (!phaseStartDate && !phaseEndDate && phaseTasks.length > 0) {
-        // Optional: Calculate from child tasks as a visual helper
-        const taskDates = phaseTasks
-          .filter(task => task.start_date && task.end_date)
-          .map(task => ({
-            start: new Date(task.start_date!),
-            end: new Date(task.end_date!)
-          }));
-        
-        console.log(`Phase ${phase.name} has no dates, optionally calculating from child tasks:`, {
-          taskCount: phaseTasks.length,
-          tasksWithDates: taskDates.length,
-          taskDates
-        });
-        
-        // Only set calculated dates if we have tasks with dates
-        // This is optional behavior - can be disabled if phases should only show their own dates
-        if (taskDates.length > 0) {
-          phaseStartDate = new Date(Math.min(...taskDates.map(d => d.start.getTime())));
-          phaseEndDate = new Date(Math.max(...taskDates.map(d => d.end.getTime())));
-          console.log(`Optional calculated dates - start: ${phaseStartDate}, end: ${phaseEndDate}`);
-        }
-      } else if (phase.start_date || phase.end_date) {
-        console.log(`Phase ${phase.name} using its own dates:`, {
-          start_date: phaseStartDate,
-          end_date: phaseEndDate
-        });
-      }
+    // Use phase dates if provided, they are independent of child task dates
+    let phaseStartDate = phase.start_date ? new Date(phase.start_date) : null;
+    let phaseEndDate = phase.end_date ? new Date(phase.end_date) : null;
 
-      // Create phase milestone
-      const phaseMilestone: GanttTask = {
-        id: `phase-${phase.id}`,
-        name: phase.name,
-        start_date: phaseStartDate,
-        end_date: phaseEndDate,
-        progress: 0,
-        level: 0,
-        expanded: true,
-        color: phase.color_code,
-        type: 'milestone',
-        is_milestone: true,
-        phase_id: phase.id,
-        // Pass through phase progress data from backend
-        todo_progress: phase.todo_progress,
-        doing_progress: phase.doing_progress,
-        done_progress: phase.done_progress,
-        total_tasks: phase.total_tasks,
-        children: phaseTasks.map(task => transformTask(task, 1)),
-      };
+    // Only calculate from child tasks if phase has no dates AND we want to show something
+    // This is optional - phases without dates can remain without dates
+    if (!phaseStartDate && !phaseEndDate && phaseTasks.length > 0) {
+      // Optional: Calculate from child tasks as a visual helper
+      const taskDates = phaseTasks
+        .filter(task => task.start_date && task.end_date)
+        .map(task => ({
+          start: new Date(task.start_date!),
+          end: new Date(task.end_date!),
+        }));
 
-      console.log(`Final phase milestone:`, {
-        name: phaseMilestone.name,
-        start_date: phaseMilestone.start_date,
-        end_date: phaseMilestone.end_date,
-        childrenCount: phaseMilestone.children?.length || 0
+      console.log(`Phase ${phase.name} has no dates, optionally calculating from child tasks:`, {
+        taskCount: phaseTasks.length,
+        tasksWithDates: taskDates.length,
+        taskDates,
       });
 
-      result.push(phaseMilestone);
+      // Only set calculated dates if we have tasks with dates
+      // This is optional behavior - can be disabled if phases should only show their own dates
+      if (taskDates.length > 0) {
+        phaseStartDate = new Date(Math.min(...taskDates.map(d => d.start.getTime())));
+        phaseEndDate = new Date(Math.max(...taskDates.map(d => d.end.getTime())));
+        console.log(`Optional calculated dates - start: ${phaseStartDate}, end: ${phaseEndDate}`);
+      }
+    } else if (phase.start_date || phase.end_date) {
+      console.log(`Phase ${phase.name} using its own dates:`, {
+        start_date: phaseStartDate,
+        end_date: phaseEndDate,
+      });
+    }
+
+    // Create phase milestone
+    const phaseMilestone: GanttTask = {
+      id: `phase-${phase.id}`,
+      name: phase.name,
+      start_date: phaseStartDate,
+      end_date: phaseEndDate,
+      progress: 0,
+      level: 0,
+      expanded: true,
+      color: phase.color_code,
+      type: 'milestone',
+      is_milestone: true,
+      phase_id: phase.id,
+      // Pass through phase progress data from backend
+      todo_progress: phase.todo_progress,
+      doing_progress: phase.doing_progress,
+      done_progress: phase.done_progress,
+      total_tasks: phase.total_tasks,
+      children: phaseTasks.map(task => transformTask(task, 1)),
+    };
+
+    console.log(`Final phase milestone:`, {
+      name: phaseMilestone.name,
+      start_date: phaseMilestone.start_date,
+      end_date: phaseMilestone.end_date,
+      childrenCount: phaseMilestone.children?.length || 0,
     });
+
+    result.push(phaseMilestone);
+  });
 
   // Always create unmapped phase at the bottom (even if empty)
   const unmappedPhase: GanttTask = {

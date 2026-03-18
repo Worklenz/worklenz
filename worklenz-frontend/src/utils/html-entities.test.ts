@@ -3,9 +3,9 @@ import { decodeHtmlEntities, safeTextDisplay, decodeHtmlEntitiesFallback } from 
 
 describe('decodeHtmlEntities', () => {
   it('decodes apostrophe entities', () => {
-    expect(decodeHtmlEntities("John&#x27;s Task")).toBe("John's Task");
-    expect(decodeHtmlEntities("John&#39;s Task")).toBe("John's Task");
-    expect(decodeHtmlEntities("John&apos;s Task")).toBe("John's Task");
+    expect(decodeHtmlEntities('John&#x27;s Task')).toBe("John's Task");
+    expect(decodeHtmlEntities('John&#39;s Task')).toBe("John's Task");
+    expect(decodeHtmlEntities('John&apos;s Task')).toBe("John's Task");
   });
 
   it('decodes ampersand entity', () => {
@@ -39,7 +39,7 @@ describe('decodeHtmlEntities', () => {
 
 describe('safeTextDisplay', () => {
   it('is an alias for decodeHtmlEntities', () => {
-    expect(safeTextDisplay("Task &amp; Project")).toBe('Task & Project');
+    expect(safeTextDisplay('Task &amp; Project')).toBe('Task & Project');
     expect(safeTextDisplay(undefined)).toBe('');
   });
 });
@@ -50,8 +50,8 @@ describe('decodeHtmlEntitiesFallback', () => {
   });
 
   it('decodes &#x27; and &#39;', () => {
-    expect(decodeHtmlEntitiesFallback("it&#x27;s")).toBe("it's");
-    expect(decodeHtmlEntitiesFallback("it&#39;s")).toBe("it's");
+    expect(decodeHtmlEntitiesFallback('it&#x27;s')).toBe("it's");
+    expect(decodeHtmlEntitiesFallback('it&#39;s')).toBe("it's");
   });
 
   it('decodes &quot;', () => {

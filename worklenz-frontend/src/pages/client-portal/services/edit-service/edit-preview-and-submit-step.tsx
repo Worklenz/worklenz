@@ -50,9 +50,10 @@ const EditPreviewAndSubmitStep = ({
         id,
         data: {
           name: service.name,
-          description: typeof service.service_data?.description === 'string' 
-            ? service.service_data.description 
-            : service.service_data?.description?.toString() || '',
+          description:
+            typeof service.service_data?.description === 'string'
+              ? service.service_data.description
+              : service.service_data?.description?.toString() || '',
           service_data: service.service_data,
           is_public: service.is_public,
           price: service.price,
@@ -106,17 +107,24 @@ const EditPreviewAndSubmitStep = ({
                   <Flex gap={16} wrap>
                     {service.price !== null && service.price !== undefined && (
                       <div>
-                        <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+                        <Typography.Text
+                          type="secondary"
+                          style={{ fontSize: 12, display: 'block', marginBottom: 4 }}
+                        >
                           Price
                         </Typography.Text>
                         <Typography.Text strong style={{ fontSize: 18, color: token.colorSuccess }}>
-                          {getCurrencyLabel(service.currency || 'usd').split(' - ')[0]} {Number(service.price).toFixed(2)}
+                          {getCurrencyLabel(service.currency || 'usd').split(' - ')[0]}{' '}
+                          {Number(service.price).toFixed(2)}
                         </Typography.Text>
                       </div>
                     )}
                     {service.category && (
                       <div>
-                        <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+                        <Typography.Text
+                          type="secondary"
+                          style={{ fontSize: 12, display: 'block', marginBottom: 4 }}
+                        >
                           Category
                         </Typography.Text>
                         <Tag color="blue" style={{ fontSize: 13 }}>

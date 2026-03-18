@@ -15,7 +15,12 @@ import {
   theme,
   Switch,
 } from '@/shared/antd-imports';
-import { PlusOutlined, DeleteOutlined, UploadOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import {
+  PlusOutlined,
+  DeleteOutlined,
+  UploadOutlined,
+  CheckCircleOutlined,
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { RcFile } from 'antd/es/upload';
 import { getBase64 } from '@/utils/file-utils';
@@ -38,10 +43,9 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
   const [uploading, setUploading] = useState(false);
   const [placeholder, setPlaceholder] = useState('Describe your service in detail...');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Get Ant Design theme tokens
   const { token } = theme.useToken();
-
 
   // Update placeholder when translation is ready
   useEffect(() => {
@@ -65,22 +69,26 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
   const beforeUpload = (file: RcFile) => {
     const isImage = file.type.startsWith('image/');
     if (!isImage) {
-      message.error(t('addService.serviceDetails.imageUploadError') || 'Please upload an image file');
+      message.error(
+        t('addService.serviceDetails.imageUploadError') || 'Please upload an image file'
+      );
       return false;
     }
     const isLt5M = file.size / 1024 / 1024 < 5;
     if (!isLt5M) {
-      message.error(t('addService.serviceDetails.imageSizeError') || 'Image must be smaller than 5MB');
+      message.error(
+        t('addService.serviceDetails.imageSizeError') || 'Image must be smaller than 5MB'
+      );
       return false;
     }
-    
+
     // Validate image types more specifically
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
       message.error('Only JPEG, PNG, GIF, and WebP images are allowed');
       return false;
     }
-    
+
     return true;
   };
 
@@ -92,8 +100,8 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
 
       try {
         // Convert file to base64 for temporary storage
-        const base64Data = await getBase64(file) as string;
-        
+        const base64Data = (await getBase64(file)) as string;
+
         // Store base64 temporarily until service is created
         setImageUrl(base64Data);
         setService({
@@ -101,11 +109,12 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
           service_data: {
             ...service.service_data,
             images: [base64Data], // Store base64 temporarily
-            imageFile: { // Store file metadata for later upload
+            imageFile: {
+              // Store file metadata for later upload
               fileName: file.name,
               fileType: file.type,
-              size: file.size
-            }
+              size: file.size,
+            },
           },
         });
 
@@ -139,20 +148,22 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
 
   const handleNext = () => {
     const errors = [];
-    
+
     if (!service.name?.trim()) {
       errors.push('Service name is required');
     }
-    
+
     if (!service.service_data?.description?.trim()) {
       errors.push('Service description is required');
     }
-    
+
     if (errors.length > 0) {
       message.error({
         content: (
           <div>
-            <div style={{ fontWeight: 'bold', marginBottom: 8 }}>Please complete the following:</div>
+            <div style={{ fontWeight: 'bold', marginBottom: 8 }}>
+              Please complete the following:
+            </div>
             {errors.map((error, index) => (
               <div key={index}>• {error}</div>
             ))}
@@ -162,7 +173,7 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
       });
       return;
     }
-    
+
     setCurrent(1);
   };
 
@@ -193,11 +204,7 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
           <Typography.Text strong>Service Details Progress</Typography.Text>
           <Typography.Text type="secondary">{getStepCompletion()}% complete</Typography.Text>
         </Flex>
-        <Progress 
-          percent={getStepCompletion()} 
-          strokeColor={token.colorSuccess}
-          size="small"
-        />
+        <Progress percent={getStepCompletion()} strokeColor={token.colorSuccess} size="small" />
       </div>
 
       {/* Scrollable Content */}
@@ -207,11 +214,13 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
           <Col xs={24} lg={16}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               {/* Service Name Section */}
-              <Card 
+              <Card
                 title={
                   <Flex align="center" gap={8}>
                     <span>1. Service Name</span>
-                    {service.name?.trim() && <CheckCircleOutlined style={{ color: token.colorSuccess }} />}
+                    {service.name?.trim() && (
+                      <CheckCircleOutlined style={{ color: token.colorSuccess }} />
+                    )}
                   </Flex>
                 }
                 size="small"
@@ -233,18 +242,25 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
                       />
                     </Col>
                   </Row>
-                  <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-                    💡 Good examples: "Custom Logo Design", "SEO Audit & Strategy", "Social Media Management"
+                  <Typography.Text
+                    type="secondary"
+                    style={{ fontSize: 12, display: 'block', marginTop: 4 }}
+                  >
+                    💡 Good examples: "Custom Logo Design", "SEO Audit & Strategy", "Social Media
+                    Management"
                   </Typography.Text>
                 </div>
               </Card>
 
               {/* Pricing and Category Section */}
-              <Card 
+              <Card
                 title={
                   <Flex align="center" gap={8}>
                     <span>3. Pricing & Category</span>
-                    <Typography.Text type="secondary" style={{ fontWeight: 'normal', fontSize: 12 }}>
+                    <Typography.Text
+                      type="secondary"
+                      style={{ fontWeight: 'normal', fontSize: 12 }}
+                    >
                       (Optional)
                     </Typography.Text>
                   </Flex>
@@ -256,7 +272,7 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
                   <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
                     Set pricing information and categorize your service for better organization.
                   </Typography.Text>
-                  
+
                   <Row gutter={[16, 16]}>
                     <Col span={12}>
                       <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
@@ -298,7 +314,10 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
                         value={service.category || ''}
                         onChange={e => setService({ ...service, category: e.target.value })}
                       />
-                      <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+                      <Typography.Text
+                        type="secondary"
+                        style={{ fontSize: 12, display: 'block', marginTop: 4 }}
+                      >
                         💡 Categories help organize your services for clients
                       </Typography.Text>
                     </Col>
@@ -307,7 +326,7 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
               </Card>
 
               {/* Service Visibility Section */}
-              <Card 
+              <Card
                 title={
                   <Flex align="center" gap={8}>
                     <span>4. {t('serviceVisibility.title')}</span>
@@ -320,7 +339,7 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
                   <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
                     {t('serviceVisibility.description')}
                   </Typography.Text>
-                  
+
                   <Flex align="center" gap={12}>
                     <Switch
                       checked={service.is_public ?? true}
@@ -328,10 +347,12 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
                     />
                     <div>
                       <Typography.Text strong>
-                        {service.is_public ?? true ? t('serviceVisibility.showToAll') : t('serviceVisibility.hiddenFromAll')}
+                        {(service.is_public ?? true)
+                          ? t('serviceVisibility.showToAll')
+                          : t('serviceVisibility.hiddenFromAll')}
                       </Typography.Text>
                       <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
-                        {service.is_public ?? true 
+                        {(service.is_public ?? true)
                           ? t('serviceVisibility.showToAllDescription')
                           : t('serviceVisibility.hiddenFromAllDescription')}
                       </Typography.Text>
@@ -341,11 +362,13 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
               </Card>
 
               {/* Service Description Section */}
-              <Card 
+              <Card
                 title={
                   <Flex align="center" gap={8}>
                     <span>5. Service Description</span>
-                    {service.service_data?.description?.trim() && <CheckCircleOutlined style={{ color: token.colorSuccess }} />}
+                    {service.service_data?.description?.trim() && (
+                      <CheckCircleOutlined style={{ color: token.colorSuccess }} />
+                    )}
                   </Flex>
                 }
                 size="small"
@@ -353,14 +376,19 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
               >
                 <div style={{ marginBottom: 16 }}>
                   <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-                    Describe your service in detail. Include what's included, your process, and what clients can expect.
+                    Describe your service in detail. Include what's included, your process, and what
+                    clients can expect.
                   </Typography.Text>
-                  
-                  <div style={{
-                    border: service.service_data?.description?.trim() ? `1px solid ${token.colorBorder}` : `1px solid ${token.colorError}`,
-                    borderRadius: token.borderRadius,
-                    overflow: 'hidden'
-                  }}>
+
+                  <div
+                    style={{
+                      border: service.service_data?.description?.trim()
+                        ? `1px solid ${token.colorBorder}`
+                        : `1px solid ${token.colorError}`,
+                      borderRadius: token.borderRadius,
+                      overflow: 'hidden',
+                    }}
+                  >
                     <Suspense fallback={<div style={{ height: 200 }} />}>
                       <RichTextEditor
                         value={service.service_data?.description || ''}
@@ -371,7 +399,7 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
                       />
                     </Suspense>
                   </div>
-                  
+
                   <Alert
                     message="Writing a great description"
                     description={
@@ -394,7 +422,7 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
 
           {/* Right Column - Service Image */}
           <Col xs={24} lg={8}>
-            <Card 
+            <Card
               title={
                 <Flex align="center" gap={8}>
                   <span>2. Service Image</span>
@@ -409,17 +437,20 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
             >
               <div style={{ marginBottom: 16 }}>
                 <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-                  Add a visual that represents your service. This helps clients understand what you offer.
+                  Add a visual that represents your service. This helps clients understand what you
+                  offer.
                 </Typography.Text>
-                
-                <div style={{ 
-                  border: `2px dashed ${token.colorBorder}`, 
-                  borderRadius: token.borderRadius, 
-                  padding: 24, 
-                  textAlign: 'center',
-                  backgroundColor: imageUrl ? 'transparent' : token.colorFillAlter,
-                  transition: 'all 0.3s ease'
-                }}>
+
+                <div
+                  style={{
+                    border: `2px dashed ${token.colorBorder}`,
+                    borderRadius: token.borderRadius,
+                    padding: 24,
+                    textAlign: 'center',
+                    backgroundColor: imageUrl ? 'transparent' : token.colorFillAlter,
+                    transition: 'all 0.3s ease',
+                  }}
+                >
                   {imageUrl ? (
                     <div style={{ position: 'relative', display: 'inline-block' }}>
                       <img
@@ -430,7 +461,7 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
                           maxHeight: 300,
                           objectFit: 'cover',
                           borderRadius: 8,
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                         }}
                       />
                       <Button
@@ -446,7 +477,9 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
                     </div>
                   ) : (
                     <div>
-                      <UploadOutlined style={{ fontSize: 32, color: token.colorTextTertiary, marginBottom: 16 }} />
+                      <UploadOutlined
+                        style={{ fontSize: 32, color: token.colorTextTertiary, marginBottom: 16 }}
+                      />
                       <div style={{ marginBottom: 16 }}>
                         <Typography.Text style={{ display: 'block', marginBottom: 8 }}>
                           Click to upload or drag and drop
@@ -484,19 +517,21 @@ const ServiceDetailsStep: React.FC<ServiceDetailsStepProps> = ({
       </div>
 
       {/* Navigation Buttons - Fixed at bottom */}
-      <div style={{ 
-        borderTop: `1px solid ${token.colorBorder}`, 
-        paddingTop: 16, 
-        marginTop: 16,
-        flexShrink: 0 
-      }}>
+      <div
+        style={{
+          borderTop: `1px solid ${token.colorBorder}`,
+          paddingTop: 16,
+          marginTop: 16,
+          flexShrink: 0,
+        }}
+      >
         <Flex justify="space-between" align="center">
           <Typography.Text type="secondary">
             Complete all required fields to continue
           </Typography.Text>
-          <Button 
-            type="primary" 
-            onClick={handleNext} 
+          <Button
+            type="primary"
+            onClick={handleNext}
             size="large"
             disabled={!service.name?.trim() || !service.service_data?.description?.trim()}
           >

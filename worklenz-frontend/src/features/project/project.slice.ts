@@ -69,12 +69,12 @@ export const getProject = createAsyncThunk(
           requiresTeamSwitch: errorData?.body?.requiresTeamSwitch || false,
           projectTeamId: errorData?.body?.projectTeamId || null,
           isOwnerOfProjectTeam: errorData?.body?.isOwnerOfProjectTeam || false,
-          isAdminOfProjectTeam: errorData?.body?.isAdminOfProjectTeam || false
+          isAdminOfProjectTeam: errorData?.body?.isAdminOfProjectTeam || false,
         });
       }
       return rejectWithValue({
         message: error instanceof Error ? error.message : 'Failed to fetch project',
-        statusCode: error?.response?.status || 500
+        statusCode: error?.response?.status || 500,
       });
     }
   }

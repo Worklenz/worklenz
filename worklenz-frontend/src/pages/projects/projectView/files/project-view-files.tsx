@@ -287,7 +287,12 @@ const ProjectViewFiles = () => {
     if (activeTab === 'task') {
       void fetchTaskAttachments();
     }
-  }, [activeTab, projectId, taskAttachmentsPagination.pageIndex, taskAttachmentsPagination.pageSize]);
+  }, [
+    activeTab,
+    projectId,
+    taskAttachmentsPagination.pageIndex,
+    taskAttachmentsPagination.pageSize,
+  ]);
 
   const isBlockedExtension = (fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase() || '';

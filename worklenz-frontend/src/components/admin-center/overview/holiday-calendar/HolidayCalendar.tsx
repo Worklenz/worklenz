@@ -181,18 +181,14 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
             // To fix: run the INSERT SQL shown at the top of this file.
             logger.error(
               `Holiday type "${predefined.name}" not found in DB. ` +
-              `Run the INSERT SQL to add it. Skipping from dropdown.`
+                `Run the INSERT SQL to add it. Skipping from dropdown.`
             );
           }
         }
 
         // Append any backend types that are NOT in the predefined list
-        const predefinedNames = new Set(
-          PREDEFINED_HOLIDAY_DISPLAY.map(p => p.name.toLowerCase())
-        );
-        const extraTypes = backendTypes.filter(
-          t => !predefinedNames.has(t.name.toLowerCase())
-        );
+        const predefinedNames = new Set(PREDEFINED_HOLIDAY_DISPLAY.map(p => p.name.toLowerCase()));
+        const extraTypes = backendTypes.filter(t => !predefinedNames.has(t.name.toLowerCase()));
 
         const mergedTypes: IHolidayType[] = [...orderedTypes, ...extraTypes];
         setHolidayTypes(mergedTypes);
@@ -202,8 +198,8 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
         // the dropdown is not blank, but warn the developer.
         logger.error(
           'getHolidayTypes returned empty. ' +
-          'Holiday type dropdowns will use placeholder ids that cannot be saved. ' +
-          'Ensure holiday_types table is seeded.'
+            'Holiday type dropdowns will use placeholder ids that cannot be saved. ' +
+            'Ensure holiday_types table is seeded.'
         );
       }
     } catch (error) {
@@ -261,17 +257,14 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
     setHasAttemptedPopulation(false);
   }, [holidaySettings?.country_code]);
 
-  const customHolidays = useMemo(
-    () => holidays.filter(h => h.source === 'custom'),
-    [holidays]
-  );
+  const customHolidays = useMemo(() => holidays.filter(h => h.source === 'custom'), [holidays]);
 
   const handleCreateHoliday = async (values: any) => {
     // Guard: prevent saving if the selected type id is still a placeholder.
     if (isTempId(values.holiday_type_id)) {
       message.error(
         'Holiday types are still loading or not seeded in the database. ' +
-        'Please wait a moment and try again, or contact your administrator.'
+          'Please wait a moment and try again, or contact your administrator.'
       );
       return;
     }
@@ -282,7 +275,7 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
     if (dateAlreadyTaken) {
       message.error(
         'A holiday already exists on this date. ' +
-        'Please choose a different date or delete the existing holiday first.'
+          'Please choose a different date or delete the existing holiday first.'
       );
       return;
     }
@@ -312,7 +305,7 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
       ) {
         message.error(
           'A holiday already exists on this date. ' +
-          'Please choose a different date or delete the existing holiday first.'
+            'Please choose a different date or delete the existing holiday first.'
         );
       } else {
         message.error(t('errorCreatingHoliday'));
@@ -325,9 +318,7 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
     if (!selectedHoliday) return;
 
     if (isTempId(values.holiday_type_id)) {
-      message.error(
-        'Holiday types are still loading. Please wait a moment and try again.'
-      );
+      message.error('Holiday types are still loading. Please wait a moment and try again.');
       return;
     }
 
@@ -427,10 +418,14 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
                   title={`${holiday.name}${isOfficial ? ' (Official Holiday)' : ' (Custom Holiday)'}`}
                 >
                   {isCustom && (
-                    <span className="custom-holiday-icon" style={{ marginRight: '2px' }}>⭐</span>
+                    <span className="custom-holiday-icon" style={{ marginRight: '2px' }}>
+                      ⭐
+                    </span>
                   )}
                   {isOfficial && (
-                    <span className="official-holiday-icon" style={{ marginRight: '2px' }}>🏛️</span>
+                    <span className="official-holiday-icon" style={{ marginRight: '2px' }}>
+                      🏛️
+                    </span>
                   )}
                   {holiday.name}
                 </Tag>
@@ -488,9 +483,7 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
         />
         {type.name}
         {isTempId(type.id) && (
-          <span style={{ marginLeft: 6, fontSize: 10, color: '#faad14' }}>
-            (loading…)
-          </span>
+          <span style={{ marginLeft: 6, fontSize: 10, color: '#faad14' }}>(loading…)</span>
         )}
       </div>
     </Option>
@@ -714,8 +707,7 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
                 selectedHoliday.is_editable && (
                   <Popconfirm
                     title={
-                      t('deleteHolidayConfirm') ||
-                      'Are you sure you want to delete this holiday?'
+                      t('deleteHolidayConfirm') || 'Are you sure you want to delete this holiday?'
                     }
                     onConfirm={() => handleDeleteHoliday(selectedHoliday.id)}
                     okText={t('yes') || 'Yes'}

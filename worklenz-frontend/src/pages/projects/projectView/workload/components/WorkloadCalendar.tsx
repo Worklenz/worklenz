@@ -43,7 +43,7 @@ const calculateWorkingDaysFromOrgSettings = (workingDays: any): number => {
 // Helper function to transform raw API response to IWorkloadData format
 const transformToWorkloadData = (rawData: any, workingHoursPerDay: number = 8, t: any) => {
   const members = rawData?.body || rawData?.members || [];
-  
+
   if (!Array.isArray(members)) {
     return {
       members: [],
@@ -51,12 +51,12 @@ const transformToWorkloadData = (rawData: any, workingHoursPerDay: number = 8, t
       availability: [],
     };
   }
-  
+
   const transformedMembers = members.map((member: any) => {
     const dailyHours = workingHoursPerDay; // Use the filter setting instead of org settings
     const workingDaysPerWeek = calculateWorkingDaysFromOrgSettings(member.org_working_days) || 5;
     const weeklyCapacity = dailyHours * workingDaysPerWeek;
-    
+
     return {
       id: member.project_member_id || member.team_member_id || member.user_id,
       name: member.name || t('calendar.unknownMember'),
@@ -73,7 +73,7 @@ const transformToWorkloadData = (rawData: any, workingHoursPerDay: number = 8, t
       isUnderutilized: false,
     };
   });
-  
+
   // Generate allocations from member tasks
   const allocations: ITaskAllocation[] = [];
   members.forEach((member: any) => {
@@ -85,9 +85,10 @@ const transformToWorkloadData = (rawData: any, workingHoursPerDay: number = 8, t
           hours = parseFloat(task.logged_hours);
         }
 
-        const taskName = task.entry_type === 'time_log'
-          ? `${task.task_name || t('calendar.task')} (${hours.toFixed(1)}h ${t('calendar.logged')})`
-          : (task.task_name || `${t('calendar.task')} ${index + 1}`);
+        const taskName =
+          task.entry_type === 'time_log'
+            ? `${task.task_name || t('calendar.task')} (${hours.toFixed(1)}h ${t('calendar.logged')})`
+            : task.task_name || `${t('calendar.task')} ${index + 1}`;
 
         // Handle different date scenarios
         let startDateStr: string;
@@ -95,23 +96,27 @@ const transformToWorkloadData = (rawData: any, workingHoursPerDay: number = 8, t
 
         if (task.start_date && task.end_date) {
           // Both dates available
-          startDateStr = typeof task.start_date === 'string'
-            ? task.start_date.split('T')[0]
-            : dayjs(task.start_date, 'YYYY-MM-DD').format('YYYY-MM-DD');
-          endDateStr = typeof task.end_date === 'string'
-            ? task.end_date.split('T')[0]
-            : dayjs(task.end_date, 'YYYY-MM-DD').format('YYYY-MM-DD');
+          startDateStr =
+            typeof task.start_date === 'string'
+              ? task.start_date.split('T')[0]
+              : dayjs(task.start_date, 'YYYY-MM-DD').format('YYYY-MM-DD');
+          endDateStr =
+            typeof task.end_date === 'string'
+              ? task.end_date.split('T')[0]
+              : dayjs(task.end_date, 'YYYY-MM-DD').format('YYYY-MM-DD');
         } else if (task.start_date && !task.end_date) {
           // Only start date - assume single day task
-          startDateStr = typeof task.start_date === 'string'
-            ? task.start_date.split('T')[0]
-            : dayjs(task.start_date, 'YYYY-MM-DD').format('YYYY-MM-DD');
+          startDateStr =
+            typeof task.start_date === 'string'
+              ? task.start_date.split('T')[0]
+              : dayjs(task.start_date, 'YYYY-MM-DD').format('YYYY-MM-DD');
           endDateStr = startDateStr;
         } else if (!task.start_date && task.end_date) {
           // Only end date - assume single day task
-          endDateStr = typeof task.end_date === 'string'
-            ? task.end_date.split('T')[0]
-            : dayjs(task.end_date, 'YYYY-MM-DD').format('YYYY-MM-DD');
+          endDateStr =
+            typeof task.end_date === 'string'
+              ? task.end_date.split('T')[0]
+              : dayjs(task.end_date, 'YYYY-MM-DD').format('YYYY-MM-DD');
           startDateStr = endDateStr;
         } else {
           // No dates - place on current date as unscheduled
@@ -123,7 +128,10 @@ const transformToWorkloadData = (rawData: any, workingHoursPerDay: number = 8, t
         allocations.push({
           id: `${member.project_member_id || member.team_member_id}-task-${task.task_id || index}-${startDateStr}`,
           taskId: task.task_id || `task-${index}`,
-          taskName: !task.start_date && !task.end_date ? `${taskName} (${t('calendar.unscheduled')})` : taskName,
+          taskName:
+            !task.start_date && !task.end_date
+              ? `${taskName} (${t('calendar.unscheduled')})`
+              : taskName,
           projectId: 'current-project',
           projectName: t('calendar.currentProject'),
           memberId: member.project_member_id || member.team_member_id || member.user_id,
@@ -141,7 +149,7 @@ const transformToWorkloadData = (rawData: any, workingHoursPerDay: number = 8, t
       });
     }
   });
-  
+
   // Generate availability data
   const availability: IMemberAvailability[] = [];
   transformedMembers.forEach(member => {
@@ -149,7 +157,7 @@ const transformToWorkloadData = (rawData: any, workingHoursPerDay: number = 8, t
     for (let i = 0; i < 60; i++) {
       const date = dayjs().add(i, 'day');
       const dayOfWeek = date.day(); // 0 = Sunday, 1 = Monday, etc.
-      
+
       // Find the original member data to get working days
       const originalMember = members.find(
         m => (m.project_member_id || m.team_member_id || m.user_id) === member.id
@@ -163,11 +171,19 @@ const transformToWorkloadData = (rawData: any, workingHoursPerDay: number = 8, t
         saturday: false,
         sunday: false,
       };
-      
+
       // Map day of week to working days object
-      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const dayNames = [
+        'sunday',
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday',
+      ];
       const isWorkingDay = workingDays[dayNames[dayOfWeek]] || false;
-      
+
       availability.push({
         memberId: member.id,
         date: date.format('YYYY-MM-DD'),
@@ -180,7 +196,7 @@ const transformToWorkloadData = (rawData: any, workingHoursPerDay: number = 8, t
       });
     }
   });
-  
+
   return {
     members: transformedMembers,
     allocations,
@@ -194,7 +210,9 @@ interface WorkloadCalendarProps {
 
 const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
   const { t } = useTranslation('workload');
-  const { showWeekends, alertThresholds, dateRange, workingHoursPerDay } = useAppSelector(state => state.projectWorkload);
+  const { showWeekends, alertThresholds, dateRange, workingHoursPerDay } = useAppSelector(
+    state => state.projectWorkload
+  );
   const { token } = theme.useToken();
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
@@ -224,13 +242,13 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
     const filterStartDate = dayjs(dateRange.startDate);
     const filterEndDate = dayjs(dateRange.endDate);
 
-    workloadData.allocations.forEach((allocation) => {
+    workloadData.allocations.forEach(allocation => {
       const start = dayjs(allocation.startDate);
       const end = dayjs(allocation.endDate);
 
       // Check if allocation overlaps with the selected date range
-      const overlapsDateRange = start.isSameOrBefore(filterEndDate, 'day') &&
-                                end.isSameOrAfter(filterStartDate, 'day');
+      const overlapsDateRange =
+        start.isSameOrBefore(filterEndDate, 'day') && end.isSameOrAfter(filterStartDate, 'day');
 
       if (!overlapsDateRange) {
         return; // Skip allocations outside the date range
@@ -242,8 +260,10 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
         const dateKey = current.format('YYYY-MM-DD');
 
         // Only add to map if the current date is within the filter range
-        if (current.isSameOrAfter(filterStartDate, 'day') &&
-            current.isSameOrBefore(filterEndDate, 'day')) {
+        if (
+          current.isSameOrAfter(filterStartDate, 'day') &&
+          current.isSameOrBefore(filterEndDate, 'day')
+        ) {
           const existing = map.get(dateKey) || {
             allocations: [],
             availability: [],
@@ -263,10 +283,12 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
     workloadData.availability.forEach(avail => {
       const dateKey = avail.date;
       const availDate = dayjs(avail.date);
-      
+
       // Only add availability data if it's within the selected date range
-      if (availDate.isSameOrAfter(filterStartDate, 'day') && 
-          availDate.isSameOrBefore(filterEndDate, 'day')) {
+      if (
+        availDate.isSameOrAfter(filterStartDate, 'day') &&
+        availDate.isSameOrBefore(filterEndDate, 'day')
+      ) {
         const existing = map.get(dateKey) || {
           allocations: [],
           availability: [],
@@ -323,11 +345,12 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
           minHeight: '20px',
           padding: '4px 6px',
           borderRadius: '6px',
-          backgroundColor: status === 'error'
-            ? token.colorErrorBg
-            : status === 'warning'
-              ? token.colorWarningBg
-              : token.colorSuccessBg,
+          backgroundColor:
+            status === 'error'
+              ? token.colorErrorBg
+              : status === 'warning'
+                ? token.colorWarningBg
+                : token.colorSuccessBg,
           border: `1px solid ${
             status === 'error'
               ? token.colorErrorBorder
@@ -339,8 +362,8 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
           transition: 'all 0.2s ease',
           '&:hover': {
             transform: 'scale(1.05)',
-            boxShadow: token.boxShadow
-          }
+            boxShadow: token.boxShadow,
+          },
         }}
         onClick={() => setSelectedDate(date)}
       >
@@ -348,12 +371,13 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
           style={{
             fontSize: '11px',
             fontWeight: 600,
-            color: status === 'error'
-              ? token.colorError
-              : status === 'warning'
-                ? token.colorWarning
-                : token.colorSuccess,
-            margin: 0
+            color:
+              status === 'error'
+                ? token.colorError
+                : status === 'warning'
+                  ? token.colorWarning
+                  : token.colorSuccess,
+            margin: 0,
           }}
         >
           {totalTaskCount}
@@ -371,8 +395,9 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
     dateWorkloadMap.forEach((workload, dateKey) => {
       const workloadDate = dayjs(dateKey);
       // Since dateWorkloadMap is already filtered by date range, just check if it's within the month
-      const isWithinMonth = workloadDate.isSameOrAfter(monthStart) && workloadDate.isSameOrBefore(monthEnd);
-      
+      const isWithinMonth =
+        workloadDate.isSameOrAfter(monthStart) && workloadDate.isSameOrBefore(monthEnd);
+
       if (isWithinMonth) {
         totalTasks += workload.allocations.length;
         totalHours += workload.totalHours;
@@ -429,51 +454,78 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
         style={{
           width: 380,
           boxShadow: token.boxShadow,
-          borderRadius: '8px'
+          borderRadius: '8px',
         }}
         styles={{ body: { padding: '16px' } }}
       >
         {selectedDateWorkload && selectedDateWorkload.allocations.length > 0 ? (
           <Flex vertical gap={20}>
             {/* Utilization Overview with Progress Bar */}
-            <div style={{
-              padding: '12px',
-              background: token.colorFillQuaternary,
-              borderRadius: '6px'
-            }}>
+            <div
+              style={{
+                padding: '12px',
+                background: token.colorFillQuaternary,
+                borderRadius: '6px',
+              }}
+            >
               <Flex align="center" justify="space-between" style={{ marginBottom: 8 }}>
-                <Typography.Text style={{ fontSize: 12, fontWeight: 500, color: token.colorTextSecondary }}>
+                <Typography.Text
+                  style={{ fontSize: 12, fontWeight: 500, color: token.colorTextSecondary }}
+                >
                   {t('calendar.utilization')}
                 </Typography.Text>
-                <Typography.Text style={{
-                  fontSize: 20,
-                  fontWeight: 700,
-                  color: selectedDateWorkload.totalCapacity > 0 && (selectedDateWorkload.totalHours / selectedDateWorkload.totalCapacity) > 1
-                    ? token.colorError
-                    : selectedDateWorkload.totalCapacity > 0 && (selectedDateWorkload.totalHours / selectedDateWorkload.totalCapacity) > 0.8
-                      ? token.colorWarning
-                      : token.colorSuccess
-                }}>
+                <Typography.Text
+                  style={{
+                    fontSize: 20,
+                    fontWeight: 700,
+                    color:
+                      selectedDateWorkload.totalCapacity > 0 &&
+                      selectedDateWorkload.totalHours / selectedDateWorkload.totalCapacity > 1
+                        ? token.colorError
+                        : selectedDateWorkload.totalCapacity > 0 &&
+                            selectedDateWorkload.totalHours / selectedDateWorkload.totalCapacity >
+                              0.8
+                          ? token.colorWarning
+                          : token.colorSuccess,
+                  }}
+                >
                   {selectedDateWorkload.totalCapacity > 0
-                    ? Math.round((selectedDateWorkload.totalHours / selectedDateWorkload.totalCapacity) * 100)
-                    : 0}%
+                    ? Math.round(
+                        (selectedDateWorkload.totalHours / selectedDateWorkload.totalCapacity) * 100
+                      )
+                    : 0}
+                  %
                 </Typography.Text>
               </Flex>
               <Progress
-                percent={selectedDateWorkload.totalCapacity > 0
-                  ? Math.min(100, Math.round((selectedDateWorkload.totalHours / selectedDateWorkload.totalCapacity) * 100))
-                  : 0}
+                percent={
+                  selectedDateWorkload.totalCapacity > 0
+                    ? Math.min(
+                        100,
+                        Math.round(
+                          (selectedDateWorkload.totalHours / selectedDateWorkload.totalCapacity) *
+                            100
+                        )
+                      )
+                    : 0
+                }
                 strokeColor={{
-                  '0%': selectedDateWorkload.totalCapacity > 0 && (selectedDateWorkload.totalHours / selectedDateWorkload.totalCapacity) > 1
-                    ? token.colorError
-                    : selectedDateWorkload.totalCapacity > 0 && (selectedDateWorkload.totalHours / selectedDateWorkload.totalCapacity) > 0.8
-                      ? token.colorWarning
-                      : token.colorSuccess,
-                  '100%': selectedDateWorkload.totalCapacity > 0 && (selectedDateWorkload.totalHours / selectedDateWorkload.totalCapacity) > 1
-                    ? token.colorError
-                    : selectedDateWorkload.totalCapacity > 0 && (selectedDateWorkload.totalHours / selectedDateWorkload.totalCapacity) > 0.8
-                      ? token.colorWarning
-                      : token.colorSuccess,
+                  '0%':
+                    selectedDateWorkload.totalCapacity > 0 &&
+                    selectedDateWorkload.totalHours / selectedDateWorkload.totalCapacity > 1
+                      ? token.colorError
+                      : selectedDateWorkload.totalCapacity > 0 &&
+                          selectedDateWorkload.totalHours / selectedDateWorkload.totalCapacity > 0.8
+                        ? token.colorWarning
+                        : token.colorSuccess,
+                  '100%':
+                    selectedDateWorkload.totalCapacity > 0 &&
+                    selectedDateWorkload.totalHours / selectedDateWorkload.totalCapacity > 1
+                      ? token.colorError
+                      : selectedDateWorkload.totalCapacity > 0 &&
+                          selectedDateWorkload.totalHours / selectedDateWorkload.totalCapacity > 0.8
+                        ? token.colorWarning
+                        : token.colorSuccess,
                 }}
                 size="small"
                 showInfo={false}
@@ -481,7 +533,9 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
               />
               <Flex justify="space-between">
                 <Typography.Text style={{ fontSize: 11, color: token.colorTextTertiary }}>
-                  {t('calendar.hoursAssigned', { hours: selectedDateWorkload.totalHours.toFixed(1) })}
+                  {t('calendar.hoursAssigned', {
+                    hours: selectedDateWorkload.totalHours.toFixed(1),
+                  })}
                 </Typography.Text>
                 <Typography.Text style={{ fontSize: 11, color: token.colorTextTertiary }}>
                   {t('calendar.capacityHours', { hours: selectedDateWorkload.totalCapacity })}
@@ -491,65 +545,81 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
 
             {/* Task Count Summary Cards */}
             <Flex gap={12}>
-              <div style={{
-                flex: 1,
-                padding: '12px',
-                background: token.colorPrimaryBg,
-                borderRadius: '6px',
-                border: `1px solid ${token.colorPrimaryBorder}`,
-                textAlign: 'center'
-              }}>
-                <Typography.Text style={{
-                  fontSize: 24,
-                  fontWeight: 700,
-                  color: token.colorPrimary,
-                  display: 'block'
-                }}>
+              <div
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  background: token.colorPrimaryBg,
+                  borderRadius: '6px',
+                  border: `1px solid ${token.colorPrimaryBorder}`,
+                  textAlign: 'center',
+                }}
+              >
+                <Typography.Text
+                  style={{
+                    fontSize: 24,
+                    fontWeight: 700,
+                    color: token.colorPrimary,
+                    display: 'block',
+                  }}
+                >
                   {selectedDateWorkload.allocations.length}
                 </Typography.Text>
                 <Typography.Text style={{ fontSize: 11, color: token.colorTextSecondary }}>
-                  {selectedDateWorkload.allocations.length === 1 ? t('calendar.task') : t('calendar.tasks_plural')}
+                  {selectedDateWorkload.allocations.length === 1
+                    ? t('calendar.task')
+                    : t('calendar.tasks_plural')}
                 </Typography.Text>
               </div>
-              <div style={{
-                flex: 1,
-                padding: '12px',
-                background: token.colorInfoBg,
-                borderRadius: '6px',
-                border: `1px solid ${token.colorInfoBorder}`,
-                textAlign: 'center'
-              }}>
-                <Typography.Text style={{
-                  fontSize: 24,
-                  fontWeight: 700,
-                  color: token.colorInfo,
-                  display: 'block'
-                }}>
+              <div
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  background: token.colorInfoBg,
+                  borderRadius: '6px',
+                  border: `1px solid ${token.colorInfoBorder}`,
+                  textAlign: 'center',
+                }}
+              >
+                <Typography.Text
+                  style={{
+                    fontSize: 24,
+                    fontWeight: 700,
+                    color: token.colorInfo,
+                    display: 'block',
+                  }}
+                >
                   {new Set(selectedDateWorkload.allocations.map(t => t.memberId)).size}
                 </Typography.Text>
                 <Typography.Text style={{ fontSize: 11, color: token.colorTextSecondary }}>
-                  {new Set(selectedDateWorkload.allocations.map(t => t.memberId)).size === 1 ? t('calendar.member') : t('calendar.members_plural')}
+                  {new Set(selectedDateWorkload.allocations.map(t => t.memberId)).size === 1
+                    ? t('calendar.member')
+                    : t('calendar.members_plural')}
                 </Typography.Text>
               </div>
             </Flex>
 
             {/* Task Details with Better Layout */}
             <div>
-              <Typography.Text style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: token.colorTextSecondary,
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px'
-              }}>
+              <Typography.Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: token.colorTextSecondary,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+              >
                 {t('calendar.assignedTasks')}
               </Typography.Text>
-              <div style={{
-                marginTop: 12,
-                maxHeight: '300px',
-                overflowY: 'auto',
-                paddingRight: '4px'
-              }}>
+              <div
+                style={{
+                  marginTop: 12,
+                  maxHeight: '300px',
+                  overflowY: 'auto',
+                  paddingRight: '4px',
+                }}
+              >
                 <Flex vertical gap={10}>
                   {selectedDateWorkload.allocations.map(task => {
                     const member = workloadData.members.find(m => m.id === task.memberId);
@@ -563,13 +633,13 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
                           borderRadius: '6px',
                           border: `1px solid ${token.colorBorderSecondary}`,
                           transition: 'all 0.2s ease',
-                          cursor: 'pointer'
+                          cursor: 'pointer',
                         }}
-                        onMouseEnter={(e) => {
+                        onMouseEnter={e => {
                           e.currentTarget.style.background = token.colorFillTertiary;
                           e.currentTarget.style.borderColor = token.colorPrimaryBorder;
                         }}
-                        onMouseLeave={(e) => {
+                        onMouseLeave={e => {
                           e.currentTarget.style.background = token.colorBgContainer;
                           e.currentTarget.style.borderColor = token.colorBorderSecondary;
                         }}
@@ -580,7 +650,7 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
                               size={32}
                               style={{
                                 backgroundColor: token.colorPrimary,
-                                flexShrink: 0
+                                flexShrink: 0,
                               }}
                             >
                               {member?.name.charAt(0) || t('calendar.unknownInitial')}
@@ -593,25 +663,33 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
                                 fontSize: 13,
                                 fontWeight: 500,
                                 color: token.colorText,
-                                marginBottom: 2
+                                marginBottom: 2,
                               }}
                             >
                               {task.taskName}
                             </Typography.Text>
                             <Flex align="center" gap={8}>
-                              <Typography.Text style={{
-                                fontSize: 11,
-                                color: token.colorTextSecondary
-                              }}>
+                              <Typography.Text
+                                style={{
+                                  fontSize: 11,
+                                  color: token.colorTextSecondary,
+                                }}
+                              >
                                 {member?.name}
                               </Typography.Text>
-                              <Typography.Text style={{ color: token.colorTextQuaternary }}>•</Typography.Text>
-                              <Typography.Text style={{
-                                fontSize: 11,
-                                color: isTimeLog ? token.colorSuccess : token.colorInfo,
-                                fontWeight: 500
-                              }}>
-                                {isTimeLog ? `${task.actualHours.toFixed(1)}h ${t('calendar.logged')}` : `${task.estimatedHours.toFixed(1)}h ${t('calendar.planned')}`}
+                              <Typography.Text style={{ color: token.colorTextQuaternary }}>
+                                •
+                              </Typography.Text>
+                              <Typography.Text
+                                style={{
+                                  fontSize: 11,
+                                  color: isTimeLog ? token.colorSuccess : token.colorInfo,
+                                  fontWeight: 500,
+                                }}
+                              >
+                                {isTimeLog
+                                  ? `${task.actualHours.toFixed(1)}h ${t('calendar.logged')}`
+                                  : `${task.estimatedHours.toFixed(1)}h ${t('calendar.planned')}`}
                               </Typography.Text>
                             </Flex>
                             <Flex align="center" gap={6} style={{ marginTop: 4 }}>
@@ -640,34 +718,42 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
             {/* Team Availability Section */}
             {selectedDateWorkload.availability.length > 0 && (
               <div>
-                <Typography.Text style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: token.colorTextSecondary,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
+                <Typography.Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: token.colorTextSecondary,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                  }}
+                >
                   {t('calendar.teamAvailability')}
                 </Typography.Text>
-                <div style={{
-                  marginTop: 12,
-                  padding: '10px',
-                  background: token.colorFillQuaternary,
-                  borderRadius: '6px'
-                }}>
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: '10px',
+                    background: token.colorFillQuaternary,
+                    borderRadius: '6px',
+                  }}
+                >
                   <Flex vertical gap={8}>
                     {selectedDateWorkload.availability
                       .filter(avail => avail.availableHours > 0)
                       .slice(0, 5)
                       .map(avail => {
                         const member = workloadData.members.find(m => m.id === avail.memberId);
-                        const utilizationPercent = avail.availableHours > 0
-                          ? (avail.plannedHours / avail.availableHours) * 100
-                          : 0;
+                        const utilizationPercent =
+                          avail.availableHours > 0
+                            ? (avail.plannedHours / avail.availableHours) * 100
+                            : 0;
                         return (
                           <Flex key={avail.memberId} align="center" justify="space-between">
                             <Flex align="center" gap={8}>
-                              <Avatar size={20} style={{ backgroundColor: token.colorTextQuaternary }}>
+                              <Avatar
+                                size={20}
+                                style={{ backgroundColor: token.colorTextQuaternary }}
+                              >
                                 {member?.name.charAt(0) || t('calendar.unknownInitial')}
                               </Avatar>
                               <Typography.Text style={{ fontSize: 12, color: token.colorText }}>
@@ -680,14 +766,18 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
                                 size="small"
                                 style={{ width: 60 }}
                                 showInfo={false}
-                                strokeColor={utilizationPercent > 100 ? token.colorError : token.colorSuccess}
+                                strokeColor={
+                                  utilizationPercent > 100 ? token.colorError : token.colorSuccess
+                                }
                               />
-                              <Typography.Text style={{
-                                fontSize: 11,
-                                color: token.colorTextSecondary,
-                                minWidth: '45px',
-                                textAlign: 'right'
-                              }}>
+                              <Typography.Text
+                                style={{
+                                  fontSize: 11,
+                                  color: token.colorTextSecondary,
+                                  minWidth: '45px',
+                                  textAlign: 'right',
+                                }}
+                              >
                                 {avail.plannedHours}/{avail.availableHours}h
                               </Typography.Text>
                             </Flex>

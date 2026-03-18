@@ -94,7 +94,8 @@ export const CustomColumnHeader: React.FC<{
   const { t } = useTranslation('task-list-table');
   const [isHovered, setIsHovered] = useState(false);
 
-  const displayName = getTaskCustomFieldDisplayName(column) || t('customColumns.customColumnHeader');
+  const displayName =
+    getTaskCustomFieldDisplayName(column) || t('customColumns.customColumnHeader');
 
   return (
     <Flex

@@ -1,10 +1,16 @@
 import { ITaskCustomColumn, ITaskCustomColumnValue } from '@/types/tasks/task.types';
 
-export const DRAWER_SUPPORTED_CUSTOM_FIELD_TYPES = ['date', 'number', 'selection', 'people'] as const;
+export const DRAWER_SUPPORTED_CUSTOM_FIELD_TYPES = [
+  'date',
+  'number',
+  'selection',
+  'people',
+] as const;
 
 export const isDrawerSupportedCustomField = (column: ITaskCustomColumn) =>
   DRAWER_SUPPORTED_CUSTOM_FIELD_TYPES.includes(
-    (column.custom_column_obj?.fieldType || '') as (typeof DRAWER_SUPPORTED_CUSTOM_FIELD_TYPES)[number]
+    (column.custom_column_obj?.fieldType ||
+      '') as (typeof DRAWER_SUPPORTED_CUSTOM_FIELD_TYPES)[number]
   );
 
 export const getDrawerSupportedCustomFields = (customColumns: ITaskCustomColumn[]) =>
@@ -13,10 +19,7 @@ export const getDrawerSupportedCustomFields = (customColumns: ITaskCustomColumn[
 export const hasDrawerSupportedCustomFields = (customColumns: ITaskCustomColumn[]) =>
   customColumns.some(isDrawerSupportedCustomField);
 
-const collectPeopleCustomFieldIds = (
-  value: unknown,
-  collectedIds: Set<string>
-) => {
+const collectPeopleCustomFieldIds = (value: unknown, collectedIds: Set<string>) => {
   if (Array.isArray(value)) {
     value.forEach(item => collectPeopleCustomFieldIds(item, collectedIds));
     return;

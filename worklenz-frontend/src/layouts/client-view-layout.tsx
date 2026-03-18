@@ -22,60 +22,60 @@ const ClientViewLayout = () => {
         minHeight: '100vh',
       }}
     >
-        <Layout.Header
-          className={`shadow-md ${themeMode === 'dark' ? '' : 'shadow-[#18181811]'}`}
+      <Layout.Header
+        className={`shadow-md ${themeMode === 'dark' ? '' : 'shadow-[#18181811]'}`}
+        style={{
+          zIndex: 999,
+          position: 'fixed',
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          padding: 0,
+          borderBottom: themeMode === 'dark' ? '1px solid #303030' : '',
+        }}
+      >
+        <img
+          src={ClientViewLogo}
+          alt="client-view-logo"
+          style={{ width: 120, height: 40, marginInlineStart: 24 }}
+        />
+      </Layout.Header>
+
+      <Layout.Content>
+        <Col
           style={{
-            zIndex: 999,
-            position: 'fixed',
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            padding: 0,
-            borderBottom: themeMode === 'dark' ? '1px solid #303030' : '',
+            paddingInlineEnd: isDesktop ? 64 : 24,
+            overflowX: 'hidden',
           }}
         >
-          <img
-            src={ClientViewLogo}
-            alt="client-view-logo"
-            style={{ width: 120, height: 40, marginInlineStart: 24 }}
-          />
-        </Layout.Header>
-
-        <Layout.Content>
-          <Col
+          <Flex
+            gap={24}
+            align="flex-start"
             style={{
-              paddingInlineEnd: isDesktop ? 64 : 24,
-              overflowX: 'hidden',
+              width: '100%',
+              marginBlockStart: 24,
             }}
           >
             <Flex
-              gap={24}
-              align="flex-start"
               style={{
                 width: '100%',
-                marginBlockStart: 24,
+                maxWidth: isCollapsed ? 56 : 240,
+                minHeight: 'calc(100vh - 24px)',
+                paddingBlockStart: 84,
+                borderInlineEnd: `1px solid ${themeWiseColor('#f5f5f5', '#303030', themeMode)}`,
+                transition: 'all 0.3s',
               }}
             >
-              <Flex
-                style={{
-                  width: '100%',
-                  maxWidth: isCollapsed ? 56 : 240,
-                  minHeight: 'calc(100vh - 24px)',
-                  paddingBlockStart: 84,
-                  borderInlineEnd: `1px solid ${themeWiseColor('#f5f5f5', '#303030', themeMode)}`,
-                  transition: 'all 0.3s',
-                }}
-              >
-                <ClientViewSiderMenu isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
-              </Flex>
-
-              <Flex style={{ width: '100%', marginBlockStart: 96 }}>
-                <Outlet />
-              </Flex>
+              <ClientViewSiderMenu isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
             </Flex>
-          </Col>
-        </Layout.Content>
-      </Layout>
+
+            <Flex style={{ width: '100%', marginBlockStart: 96 }}>
+              <Outlet />
+            </Flex>
+          </Flex>
+        </Col>
+      </Layout.Content>
+    </Layout>
   );
 };
 

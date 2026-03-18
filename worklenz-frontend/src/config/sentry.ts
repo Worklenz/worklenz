@@ -19,10 +19,10 @@ export const initSentry = () => {
     dsn: SENTRY_DSN,
     environment: ENVIRONMENT,
     release: RELEASE,
-    
+
     // Setting this option to true will send default PII data to Sentry
     sendDefaultPii: true,
-    
+
     // Performance monitoring
     integrations: [
       Sentry.browserTracingIntegration(),
@@ -106,7 +106,11 @@ export const captureException = (error: Error, context?: Record<string, any>) =>
   });
 };
 
-export const captureMessage = (message: string, level: Sentry.SeverityLevel = 'info', context?: Record<string, any>) => {
+export const captureMessage = (
+  message: string,
+  level: Sentry.SeverityLevel = 'info',
+  context?: Record<string, any>
+) => {
   Sentry.captureMessage(message, {
     level,
     contexts: { custom: context },
@@ -126,7 +130,11 @@ export const addBreadcrumb = (breadcrumb: Sentry.Breadcrumb) => {
 };
 
 // Performance monitoring helpers
-export const startSpan = (name: string, op: string = 'navigation', fn: () => void | Promise<void>) => {
+export const startSpan = (
+  name: string,
+  op: string = 'navigation',
+  fn: () => void | Promise<void>
+) => {
   return Sentry.startSpan(
     {
       name,

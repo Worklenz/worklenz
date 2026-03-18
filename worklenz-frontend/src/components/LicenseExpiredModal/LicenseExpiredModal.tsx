@@ -343,7 +343,7 @@ export const LicenseExpiredModal = ({
                 <Text type="secondary" className="license-modal-current-team">
                   {t('current-team')}: <Text strong>{session?.team_name || t('select-team')}</Text>
                 </Text>
-                
+
                 <Dropdown
                   overlayClassName="switch-team-dropdown"
                   menu={{ items: dropdownItems }}

@@ -188,7 +188,7 @@ const TaskTimelineFilters: React.FC<TaskTimelineFiltersProps> = ({
       {/* Date Range Filter */}
       <RangePicker
         value={dateRange}
-        onChange={(dates) => onDateRangeChange(dates as [Dayjs | null, Dayjs | null])}
+        onChange={dates => onDateRangeChange(dates as [Dayjs | null, Dayjs | null])}
         placeholder={[
           t('startDate', { defaultValue: 'Start Date' }),
           t('endDate', { defaultValue: 'End Date' }),

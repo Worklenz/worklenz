@@ -242,7 +242,6 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
       setShowInlineInput(true);
     }, []);
 
-
     const isEmpty = isPhase && (!task.children || task.children.length === 0);
 
     // Calculate phase completion percentage
@@ -286,7 +285,6 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
       },
       [isPhase, onTaskClick, task.id]
     );
-
 
     return (
       <>
@@ -372,7 +370,7 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
                         {task.children?.length || 0} tasks
                       </span>
                       <button
-                        onClick={(e) => {
+                        onClick={e => {
                           e.stopPropagation();
                           if (onPhaseClick) {
                             onPhaseClick(task);

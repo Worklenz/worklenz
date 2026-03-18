@@ -18,4 +18,3 @@ export interface ColumnWidthConstraints {
   minWidth?: number;
   maxWidth?: number;
 }
-

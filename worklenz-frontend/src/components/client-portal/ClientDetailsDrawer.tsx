@@ -111,13 +111,7 @@ const ClientDetailsDrawer = () => {
       resetClientDetails();
       fetchClientDetails(selectedClientId, false);
     }
-  }, [
-    fetchClientDetails,
-    form,
-    isClientDetailsDrawerOpen,
-    resetClientDetails,
-    selectedClientId,
-  ]);
+  }, [fetchClientDetails, form, isClientDetailsDrawerOpen, resetClientDetails, selectedClientId]);
 
   // Populate form whenever client data arrives
   useEffect(() => {
@@ -212,10 +206,14 @@ const ClientDetailsDrawer = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active':  return 'green';
-      case 'inactive': return 'red';
-      case 'pending':  return 'orange';
-      default:         return 'default';
+      case 'active':
+        return 'green';
+      case 'inactive':
+        return 'red';
+      case 'pending':
+        return 'orange';
+      default:
+        return 'default';
     }
   };
 
@@ -319,7 +317,10 @@ const ClientDetailsDrawer = () => {
                 name="name"
                 label={t('clientNameLabel') || 'Client Name'}
                 rules={[
-                  { required: true, message: t('clientNameRequired') || 'Please enter client name' },
+                  {
+                    required: true,
+                    message: t('clientNameRequired') || 'Please enter client name',
+                  },
                   { min: 2, message: t('clientNameMinLength') || 'At least 2 characters' },
                 ]}
               >

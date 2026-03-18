@@ -41,7 +41,7 @@
 .comment-link {
   /* Layout */
   display: inline;
-  word-break: break-all;        /* prevent long URLs from overflowing the bubble */
+  word-break: break-all; /* prevent long URLs from overflowing the bubble */
 
   /* Typography */
   font-size: inherit;
@@ -52,7 +52,9 @@
 
   /* Interaction */
   cursor: pointer;
-  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+  transition:
+    color 0.2s ease,
+    text-decoration-color 0.2s ease;
 }
 
 /* Light theme — other user's bubble */

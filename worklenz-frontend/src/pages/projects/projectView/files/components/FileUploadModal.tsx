@@ -1,12 +1,4 @@
-import {
-  Button,
-  Flex,
-  Modal,
-  Progress,
-  Space,
-  Typography,
-  Upload,
-} from '@/shared/antd-imports';
+import { Button, Flex, Modal, Progress, Space, Typography, Upload } from '@/shared/antd-imports';
 import type { RcFile } from 'antd/es/upload/interface';
 import {
   CheckCircleTwoTone,
@@ -65,9 +57,7 @@ export const FileUploadModal = ({
       return (
         <Flex align="center" gap={6}>
           <CheckCircleTwoTone twoToneColor="#52c41a" />
-          <Typography.Text>
-            {t('uploadedLabel', { defaultValue: 'Uploaded' })}
-          </Typography.Text>
+          <Typography.Text>{t('uploadedLabel', { defaultValue: 'Uploaded' })}</Typography.Text>
         </Flex>
       );
     }
@@ -77,8 +67,7 @@ export const FileUploadModal = ({
         <Flex align="center" gap={6}>
           <CloseCircleTwoTone twoToneColor={colors.vibrantOrange} />
           <Typography.Text type="danger">
-            {typedFile.errorMessage ||
-              t('uploadFailedShort', { defaultValue: 'Upload failed' })}
+            {typedFile.errorMessage || t('uploadFailedShort', { defaultValue: 'Upload failed' })}
           </Typography.Text>
         </Flex>
       );
@@ -123,9 +112,7 @@ export const FileUploadModal = ({
             >
               <Space size={8} align="center">
                 <Typography.Text>{typedFile.name}</Typography.Text>
-                <Typography.Text type="secondary">
-                  {formatFileSize(typedFile.size)}
-                </Typography.Text>
+                <Typography.Text type="secondary">{formatFileSize(typedFile.size)}</Typography.Text>
               </Space>
 
               <Space size={12} align="center">

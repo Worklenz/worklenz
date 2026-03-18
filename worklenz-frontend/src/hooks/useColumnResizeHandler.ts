@@ -50,9 +50,9 @@ export const useColumnResizeHandler = ({
   // Default function to find table container
   const defaultGetTableContainer = useCallback((element: HTMLElement): HTMLElement => {
     return (
-      element.closest('.tasklist-container') as HTMLElement ||
-      element.closest('[class*="overflow"]') as HTMLElement ||
-      element.closest('table')?.parentElement as HTMLElement ||
+      (element.closest('.tasklist-container') as HTMLElement) ||
+      (element.closest('[class*="overflow"]') as HTMLElement) ||
+      (element.closest('table')?.parentElement as HTMLElement) ||
       document.body
     );
   }, []);
@@ -60,36 +60,39 @@ export const useColumnResizeHandler = ({
   const findTableContainer = getTableContainer || defaultGetTableContainer;
 
   // Update indicator and tooltip position
-  const updateIndicator = useCallback((x: number, width: number, clientY?: number) => {
-    const state = resizeStateRef.current;
-    if (!state) return;
+  const updateIndicator = useCallback(
+    (x: number, width: number, clientY?: number) => {
+      const state = resizeStateRef.current;
+      if (!state) return;
 
-    const containerRect = state.tableContainer.getBoundingClientRect();
-    const relativeX = x - containerRect.left;
-    
-    state.indicator.style.left = `${relativeX}px`;
-    state.indicator.style.opacity = '1';
-    
-    state.tooltip.textContent = `${width}px`;
-    state.tooltip.style.left = `${x}px`;
-    if (clientY !== undefined) {
-      state.tooltip.style.top = `${clientY - 40}px`;
-    }
-    state.tooltip.style.opacity = '1';
+      const containerRect = state.tableContainer.getBoundingClientRect();
+      const relativeX = x - containerRect.left;
 
-    // Check if at limit and update classes
-    const atLimit = width <= minWidth || width >= maxWidth;
-    if (atLimit) {
-      state.handleElement.classList.add('at-limit');
-    } else {
-      state.handleElement.classList.remove('at-limit');
-    }
-    
-    // Update aria attributes
-    state.handleElement.setAttribute('aria-valuenow', `${width}`);
-    state.handleElement.setAttribute('aria-valuemin', `${minWidth}`);
-    state.handleElement.setAttribute('aria-valuemax', `${maxWidth}`);
-  }, [minWidth, maxWidth]);
+      state.indicator.style.left = `${relativeX}px`;
+      state.indicator.style.opacity = '1';
+
+      state.tooltip.textContent = `${width}px`;
+      state.tooltip.style.left = `${x}px`;
+      if (clientY !== undefined) {
+        state.tooltip.style.top = `${clientY - 40}px`;
+      }
+      state.tooltip.style.opacity = '1';
+
+      // Check if at limit and update classes
+      const atLimit = width <= minWidth || width >= maxWidth;
+      if (atLimit) {
+        state.handleElement.classList.add('at-limit');
+      } else {
+        state.handleElement.classList.remove('at-limit');
+      }
+
+      // Update aria attributes
+      state.handleElement.setAttribute('aria-valuenow', `${width}`);
+      state.handleElement.setAttribute('aria-valuemin', `${minWidth}`);
+      state.handleElement.setAttribute('aria-valuemax', `${maxWidth}`);
+    },
+    [minWidth, maxWidth]
+  );
 
   // Cleanup function to remove listeners and DOM elements
   const cleanup = useCallback(() => {
@@ -142,128 +145,17 @@ export const useColumnResizeHandler = ({
   }, []);
 
   // Mouse down handler
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const handleElement = e.currentTarget as HTMLElement;
-    const startX = e.clientX;
-    const startWidth = typeof currentWidth === 'number' 
-      ? currentWidth 
-      : parseInt(String(currentWidth).replace('px', ''), 10);
-
-    // Find table container
-    const tableContainer = findTableContainer(handleElement);
-
-    // Create resize indicator line
-    const indicator = document.createElement('div');
-    indicator.className = 'column-resize-indicator';
-    if (tableContainer !== document.body) {
-      tableContainer.style.position = 'relative';
-    }
-    tableContainer.appendChild(indicator);
-
-    // Create tooltip
-    const tooltip = document.createElement('div');
-    tooltip.className = 'column-resize-tooltip';
-    document.body.appendChild(tooltip);
-
-    // Add resizing class
-    handleElement.classList.add('resizing');
-    document.body.classList.add('column-resizing');
-
-    // Create mouse move handler
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      const state = resizeStateRef.current;
-      if (!state || !state.isResizing) return;
-
-      const diff = moveEvent.clientX - state.startX;
-      const newWidth = Math.max(minWidth, Math.min(maxWidth, state.startWidth + diff));
-      
-      updateIndicator(moveEvent.clientX, newWidth, moveEvent.clientY);
-      onResize(newWidth);
-    };
-
-    // Create mouse up handler
-    const handleMouseUp = () => {
-      cleanup();
-    };
-
-    // Create keyboard handler for resize
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const state = resizeStateRef.current;
-      if (!state || !state.isResizing) return;
-
-      // Handle arrow keys for resizing
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const increment = e.shiftKey ? 10 : 1;
-        const direction = e.key === 'ArrowRight' ? 1 : -1;
-        const newWidth = Math.max(minWidth, Math.min(maxWidth, state.startWidth + (direction * increment)));
-
-        // Update start width for next keypress
-        state.startWidth = newWidth;
-        state.startX += direction * increment; // Adjust startX to maintain relative position
-
-        updateIndicator(state.startX, newWidth);
-        onResize(newWidth);
-      } else if (e.key === 'Escape') {
-        // Cancel resize on Escape
-        e.preventDefault();
-        cleanup();
-      } else if (e.key === 'Enter') {
-        // Complete resize on Enter
-        e.preventDefault();
-        cleanup();
-      }
-    };
-
-    // Store resize state
-    resizeStateRef.current = {
-      indicator,
-      tooltip,
-      handleElement,
-      tableContainer,
-      startX,
-      startWidth,
-      isResizing: true,
-      handleMouseMove,
-      handleMouseUp,
-      handleKeyDown,
-    };
-
-    // Store cleanup function
-    cleanupRef.current = cleanup;
-
-    // Call the resize start handler
-    onResizeStart(e, columnKey);
-
-    // Initial indicator position
-    updateIndicator(e.clientX, startWidth, e.clientY);
-
-    // Add event listeners
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-    document.addEventListener('keydown', handleKeyDown);
-  }, [currentWidth, findTableContainer, onResizeStart, columnKey, updateIndicator, minWidth, maxWidth, onResize, cleanup]);
-
-  // Keyboard handler for starting resize
-  const handleKeyDownStart = useCallback((e: React.KeyboardEvent) => {
-    // Only handle Enter/Space to start resize
-    if (e.key === 'Enter' || e.key === ' ') {
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
 
       const handleElement = e.currentTarget as HTMLElement;
-      const rect = handleElement.getBoundingClientRect();
-      const startX = rect.right; // Start at the right edge of the handle
-      const startWidth = typeof currentWidth === 'number' 
-        ? currentWidth 
-        : parseInt(String(currentWidth).replace('px', ''), 10);
+      const startX = e.clientX;
+      const startWidth =
+        typeof currentWidth === 'number'
+          ? currentWidth
+          : parseInt(String(currentWidth).replace('px', ''), 10);
 
       // Find table container
       const tableContainer = findTableContainer(handleElement);
@@ -285,19 +177,39 @@ export const useColumnResizeHandler = ({
       handleElement.classList.add('resizing');
       document.body.classList.add('column-resizing');
 
+      // Create mouse move handler
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        const state = resizeStateRef.current;
+        if (!state || !state.isResizing) return;
+
+        const diff = moveEvent.clientX - state.startX;
+        const newWidth = Math.max(minWidth, Math.min(maxWidth, state.startWidth + diff));
+
+        updateIndicator(moveEvent.clientX, newWidth, moveEvent.clientY);
+        onResize(newWidth);
+      };
+
+      // Create mouse up handler
+      const handleMouseUp = () => {
+        cleanup();
+      };
+
       // Create keyboard handler for resize
-      const handleKeyDown = (keyEvent: KeyboardEvent) => {
+      const handleKeyDown = (e: KeyboardEvent) => {
         const state = resizeStateRef.current;
         if (!state || !state.isResizing) return;
 
         // Handle arrow keys for resizing
-        if (keyEvent.key === 'ArrowLeft' || keyEvent.key === 'ArrowRight') {
-          keyEvent.preventDefault();
-          keyEvent.stopPropagation();
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+          e.preventDefault();
+          e.stopPropagation();
 
-          const increment = keyEvent.shiftKey ? 10 : 1;
-          const direction = keyEvent.key === 'ArrowRight' ? 1 : -1;
-          const newWidth = Math.max(minWidth, Math.min(maxWidth, state.startWidth + (direction * increment)));
+          const increment = e.shiftKey ? 10 : 1;
+          const direction = e.key === 'ArrowRight' ? 1 : -1;
+          const newWidth = Math.max(
+            minWidth,
+            Math.min(maxWidth, state.startWidth + direction * increment)
+          );
 
           // Update start width for next keypress
           state.startWidth = newWidth;
@@ -305,13 +217,13 @@ export const useColumnResizeHandler = ({
 
           updateIndicator(state.startX, newWidth);
           onResize(newWidth);
-        } else if (keyEvent.key === 'Escape') {
+        } else if (e.key === 'Escape') {
           // Cancel resize on Escape
-          keyEvent.preventDefault();
+          e.preventDefault();
           cleanup();
-        } else if (keyEvent.key === 'Enter') {
+        } else if (e.key === 'Enter') {
           // Complete resize on Enter
-          keyEvent.preventDefault();
+          e.preventDefault();
           cleanup();
         }
       };
@@ -325,8 +237,8 @@ export const useColumnResizeHandler = ({
         startX,
         startWidth,
         isResizing: true,
-        handleMouseMove: () => {}, // Not used for keyboard-only resize
-        handleMouseUp: () => {}, // Not used for keyboard-only resize
+        handleMouseMove,
+        handleMouseUp,
         handleKeyDown,
       };
 
@@ -337,12 +249,137 @@ export const useColumnResizeHandler = ({
       onResizeStart(e, columnKey);
 
       // Initial indicator position
-      updateIndicator(startX, startWidth);
+      updateIndicator(e.clientX, startWidth, e.clientY);
 
-      // Add event listeners for keyboard resize
+      // Add event listeners
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
       document.addEventListener('keydown', handleKeyDown);
-    }
-  }, [currentWidth, findTableContainer, onResizeStart, columnKey, updateIndicator, minWidth, maxWidth, onResize, cleanup]);
+    },
+    [
+      currentWidth,
+      findTableContainer,
+      onResizeStart,
+      columnKey,
+      updateIndicator,
+      minWidth,
+      maxWidth,
+      onResize,
+      cleanup,
+    ]
+  );
+
+  // Keyboard handler for starting resize
+  const handleKeyDownStart = useCallback(
+    (e: React.KeyboardEvent) => {
+      // Only handle Enter/Space to start resize
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const handleElement = e.currentTarget as HTMLElement;
+        const rect = handleElement.getBoundingClientRect();
+        const startX = rect.right; // Start at the right edge of the handle
+        const startWidth =
+          typeof currentWidth === 'number'
+            ? currentWidth
+            : parseInt(String(currentWidth).replace('px', ''), 10);
+
+        // Find table container
+        const tableContainer = findTableContainer(handleElement);
+
+        // Create resize indicator line
+        const indicator = document.createElement('div');
+        indicator.className = 'column-resize-indicator';
+        if (tableContainer !== document.body) {
+          tableContainer.style.position = 'relative';
+        }
+        tableContainer.appendChild(indicator);
+
+        // Create tooltip
+        const tooltip = document.createElement('div');
+        tooltip.className = 'column-resize-tooltip';
+        document.body.appendChild(tooltip);
+
+        // Add resizing class
+        handleElement.classList.add('resizing');
+        document.body.classList.add('column-resizing');
+
+        // Create keyboard handler for resize
+        const handleKeyDown = (keyEvent: KeyboardEvent) => {
+          const state = resizeStateRef.current;
+          if (!state || !state.isResizing) return;
+
+          // Handle arrow keys for resizing
+          if (keyEvent.key === 'ArrowLeft' || keyEvent.key === 'ArrowRight') {
+            keyEvent.preventDefault();
+            keyEvent.stopPropagation();
+
+            const increment = keyEvent.shiftKey ? 10 : 1;
+            const direction = keyEvent.key === 'ArrowRight' ? 1 : -1;
+            const newWidth = Math.max(
+              minWidth,
+              Math.min(maxWidth, state.startWidth + direction * increment)
+            );
+
+            // Update start width for next keypress
+            state.startWidth = newWidth;
+            state.startX += direction * increment; // Adjust startX to maintain relative position
+
+            updateIndicator(state.startX, newWidth);
+            onResize(newWidth);
+          } else if (keyEvent.key === 'Escape') {
+            // Cancel resize on Escape
+            keyEvent.preventDefault();
+            cleanup();
+          } else if (keyEvent.key === 'Enter') {
+            // Complete resize on Enter
+            keyEvent.preventDefault();
+            cleanup();
+          }
+        };
+
+        // Store resize state
+        resizeStateRef.current = {
+          indicator,
+          tooltip,
+          handleElement,
+          tableContainer,
+          startX,
+          startWidth,
+          isResizing: true,
+          handleMouseMove: () => {}, // Not used for keyboard-only resize
+          handleMouseUp: () => {}, // Not used for keyboard-only resize
+          handleKeyDown,
+        };
+
+        // Store cleanup function
+        cleanupRef.current = cleanup;
+
+        // Call the resize start handler
+        onResizeStart(e, columnKey);
+
+        // Initial indicator position
+        updateIndicator(startX, startWidth);
+
+        // Add event listeners for keyboard resize
+        document.addEventListener('keydown', handleKeyDown);
+      }
+    },
+    [
+      currentWidth,
+      findTableContainer,
+      onResizeStart,
+      columnKey,
+      updateIndicator,
+      minWidth,
+      maxWidth,
+      onResize,
+      cleanup,
+    ]
+  );
 
   // Cleanup on unmount
   useEffect(() => {

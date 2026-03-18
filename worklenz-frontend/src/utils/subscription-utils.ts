@@ -179,7 +179,9 @@ export const getSubscriptionPlanType = (session: ILocalSession | null): string =
  */
 export const isOnPlanTrial = (session: ILocalSession | null): boolean => {
   if (!session) return false;
-  return Boolean(session.is_plan_trial || (session.active_plan_trial && session.plan_trial_end_date));
+  return Boolean(
+    session.is_plan_trial || (session.active_plan_trial && session.plan_trial_end_date)
+  );
 };
 
 /**
@@ -201,8 +203,10 @@ export const getPlanTrialDaysRemaining = (session: ILocalSession | null): number
  */
 export const isOnBusinessTrial = (session: ILocalSession | null): boolean => {
   if (!session) return false;
-  return session.subscription_type === 'BUSINESS_TRIAL' ||
-         (session.active_plan_trial === 'BUSINESS_LARGE' && Boolean(session.plan_trial_end_date));
+  return (
+    session.subscription_type === 'BUSINESS_TRIAL' ||
+    (session.active_plan_trial === 'BUSINESS_LARGE' && Boolean(session.plan_trial_end_date))
+  );
 };
 
 /**

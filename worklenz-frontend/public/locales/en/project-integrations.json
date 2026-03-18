@@ -5,7 +5,7 @@
   "manageAll": "Manage All Integrations",
   "comingSoon": "Coming Soon",
   "cancel": "Cancel",
-  
+
   "slack": {
     "title": "Slack",
     "description": "Send notifications to Slack channels",
@@ -20,17 +20,17 @@
     "addButton": "Add Integration",
     "inviteBotTip": "Tip: Make sure to invite @Worklenz bot to your Slack channel first!"
   },
-  
+
   "teams": {
     "title": "Microsoft Teams",
     "description": "Send notifications to Teams channels"
   },
-  
+
   "github": {
     "title": "GitHub",
     "description": "Sync tasks with GitHub issues"
   },
-  
+
   "notificationTypes": {
     "taskCreated": "Task Created",
     "taskAssigned": "Task Assigned",
@@ -39,17 +39,17 @@
     "commentAdded": "Comment Added",
     "dueDateChanged": "Due Date Changed"
   },
-  
+
   "validation": {
     "selectChannel": "Please select a Slack channel",
     "selectNotifications": "Please select at least one notification type"
   },
-  
+
   "messages": {
     "integrationAdded": "Slack integration added successfully!",
     "channelsRefreshed": "Channels refreshed successfully"
   },
-  
+
   "errors": {
     "loadChannelsFailed": "Failed to load channels",
     "refreshChannelsFailed": "Failed to refresh channels",

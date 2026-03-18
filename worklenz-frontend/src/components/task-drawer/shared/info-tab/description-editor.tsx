@@ -224,7 +224,11 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
             </div>
           )}
           {isTinyMCELoaded && (
-            <Suspense fallback={<div>{t('description.loadingEditor', { defaultValue: 'Loading editor...' })}</div>}>
+            <Suspense
+              fallback={
+                <div>{t('description.loadingEditor', { defaultValue: 'Loading editor...' })}</div>
+              }
+            >
               <LazyTinyMCEEditor
                 tinymceScriptSrc="/tinymce/tinymce.min.js"
                 value={content}

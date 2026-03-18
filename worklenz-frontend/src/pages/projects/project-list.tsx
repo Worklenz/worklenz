@@ -149,37 +149,41 @@ const ProjectList: React.FC = () => {
       ...groupedRequestParams,
       ...overrides,
       groupBy:
-        overrides.groupBy ||
-        groupedRequestParams.groupBy ||
-        groupBy ||
-        ProjectGroupBy.CATEGORY,
+        overrides.groupBy || groupedRequestParams.groupBy || groupBy || ProjectGroupBy.CATEGORY,
     }),
     [groupedRequestParams, groupBy]
   );
 
   const debouncedSearch = useMemo(
     () =>
-      debounce((searchTerm: string, currentGroupedParams: typeof groupedRequestParams, currentGroupBy: string) => {
-        setErrorMessage(null);
+      debounce(
+        (
+          searchTerm: string,
+          currentGroupedParams: typeof groupedRequestParams,
+          currentGroupBy: string
+        ) => {
+          setErrorMessage(null);
 
-        if (viewMode === ProjectViewType.LIST) {
-          dispatch(
-            setRequestParams({
+          if (viewMode === ProjectViewType.LIST) {
+            dispatch(
+              setRequestParams({
+                search: searchTerm,
+                index: 1, // Reset to first page on search
+              })
+            );
+          } else if (viewMode === ProjectViewType.GROUP) {
+            const newGroupedParams = {
+              ...(currentGroupedParams || {}),
               search: searchTerm,
-              index: 1, // Reset to first page on search
-            })
-          );
-        } else if (viewMode === ProjectViewType.GROUP) {
-          const newGroupedParams = {
-            ...(currentGroupedParams || {}),
-            search: searchTerm,
-            index: 1,
-            groupBy: currentGroupedParams?.groupBy || currentGroupBy || ProjectGroupBy.CATEGORY,
-          };
-          dispatch(setGroupedRequestParams(newGroupedParams));
-          dispatch(fetchGroupedProjects(newGroupedParams));
-        }
-      }, SEARCH_DEBOUNCE_MS),
+              index: 1,
+              groupBy: currentGroupedParams?.groupBy || currentGroupBy || ProjectGroupBy.CATEGORY,
+            };
+            dispatch(setGroupedRequestParams(newGroupedParams));
+            dispatch(fetchGroupedProjects(newGroupedParams));
+          }
+        },
+        SEARCH_DEBOUNCE_MS
+      ),
     [dispatch, viewMode]
   );
 
@@ -783,11 +787,7 @@ const ProjectList: React.FC = () => {
             <Tooltip title={t('refreshProjects', { defaultValue: 'Refresh projects' })}>
               <Button
                 shape="circle"
-                icon={
-                  <SyncOutlined
-                    spin={isFetchingProjects || groupedProjects.loading}
-                  />
-                }
+                icon={<SyncOutlined spin={isFetchingProjects || groupedProjects.loading} />}
                 onClick={handleRefresh}
                 aria-label={t('refreshProjects', { defaultValue: 'Refresh projects' })}
               />

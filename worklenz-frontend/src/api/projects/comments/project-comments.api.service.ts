@@ -67,7 +67,7 @@ export const projectCommentsApiService = {
     const url = `${reactionsUrl}/reactions/add`;
     const response = await apiClient.post<IServerResponse<any>>(`${url}`, {
       comment_id: commentId,
-      emoji
+      emoji,
     });
     return response.data;
   },
@@ -76,7 +76,7 @@ export const projectCommentsApiService = {
     const url = `${reactionsUrl}/reactions/remove`;
     const response = await apiClient.post<IServerResponse<any>>(`${url}`, {
       comment_id: commentId,
-      emoji
+      emoji,
     });
     return response.data;
   },
@@ -92,7 +92,7 @@ export const projectCommentsApiService = {
     const url = `${reactionsUrl}/edit`;
     const response = await apiClient.put<IServerResponse<any>>(`${url}`, {
       comment_id: commentId,
-      content
+      content,
     });
     return response.data;
   },

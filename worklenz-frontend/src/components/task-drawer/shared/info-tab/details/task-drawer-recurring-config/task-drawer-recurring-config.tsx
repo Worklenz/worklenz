@@ -258,7 +258,7 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
       const res = await statusApiService.getStatuses(task.project_id);
       if (res.done && res.body) {
         setTaskStatuses(res.body);
-        
+
         // Set default to first status if not already set
         if (!targetStatusId && res.body.length > 0) {
           setTargetStatusId(res.body[0].id || null);
@@ -290,7 +290,10 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
         <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
           {isFree ? (
             <Tooltip title={tCommon('upgrade-plan')} placement="top">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }} onClick={() => dispatch(toggleUpgradeModal())}>
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                onClick={() => dispatch(toggleUpgradeModal())}
+              >
                 <Switch checked={false} disabled />
                 <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
               </div>

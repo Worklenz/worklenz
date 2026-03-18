@@ -102,13 +102,13 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
             </Link>
           )}
           {isOwnerOrAdmin && (
-            <Link 
-              to="/worklenz/admin-center/billing" 
+            <Link
+              to="/worklenz/admin-center/billing"
               style={getLinkStyle()}
               onClick={() => {
                 trackMixpanelEvent('billing_profile_dropdown_click', {
                   user_type: currentSession?.subscription_type?.toLowerCase(),
-                  is_owner_or_admin: true
+                  is_owner_or_admin: true,
                 });
               }}
             >

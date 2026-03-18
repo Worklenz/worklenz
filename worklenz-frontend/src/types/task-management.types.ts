@@ -56,7 +56,7 @@ export interface Task {
   custom_column_values?: Record<string, any>; // Custom column values
   isTemporary?: boolean; // Temporary task indicator
   // Add any other task properties as needed
-  complete_ratio?: number
+  complete_ratio?: number;
 }
 
 export interface TaskGroup {

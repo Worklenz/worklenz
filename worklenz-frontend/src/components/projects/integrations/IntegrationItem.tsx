@@ -10,7 +10,7 @@ export const IntegrationItem: React.FC<IntegrationItemProps> = ({
   badge,
   channels,
   comingSoon,
-  onClick
+  onClick,
 }) => {
   const { t } = useTranslation('project-integrations');
   const { token } = theme.useToken();
@@ -24,14 +24,17 @@ export const IntegrationItem: React.FC<IntegrationItemProps> = ({
     document.body.classList.contains('dark');
 
   // Memoize item styles with dark mode support
-  const itemStyles = useMemo(() => ({
-    padding: '12px 16px',
-    cursor: comingSoon ? 'not-allowed' : 'pointer',
-    opacity: comingSoon ? 0.6 : 1,
-    borderBottom: `1px solid ${token.colorBorder}`,
-    transition: 'background-color 0.2s',
-    color: token.colorText
-  }), [comingSoon, token.colorBorder, token.colorText]);
+  const itemStyles = useMemo(
+    () => ({
+      padding: '12px 16px',
+      cursor: comingSoon ? 'not-allowed' : 'pointer',
+      opacity: comingSoon ? 0.6 : 1,
+      borderBottom: `1px solid ${token.colorBorder}`,
+      transition: 'background-color 0.2s',
+      color: token.colorText,
+    }),
+    [comingSoon, token.colorBorder, token.colorText]
+  );
 
   // Memoize hover background color
   const hoverBgColor = token.colorBgTextHover;
@@ -47,21 +50,27 @@ export const IntegrationItem: React.FC<IntegrationItemProps> = ({
   };
 
   // Memoize description styles with dark mode support
-  const descriptionStyles = useMemo(() => ({
-    fontSize: 12,
-    color: token.colorTextSecondary,
-    lineHeight: 1.4
-  }), [token.colorTextSecondary]);
+  const descriptionStyles = useMemo(
+    () => ({
+      fontSize: 12,
+      color: token.colorTextSecondary,
+      lineHeight: 1.4,
+    }),
+    [token.colorTextSecondary]
+  );
 
   // Memoize channels styles with dark mode support
-  const channelsStyles = useMemo(() => ({
-    fontSize: 12,
-    color: token.colorPrimary,
-    marginTop: 6,
-    whiteSpace: 'nowrap' as const,
-    overflow: 'hidden',
-    textOverflow: 'ellipsis'
-  }), [token.colorPrimary]);
+  const channelsStyles = useMemo(
+    () => ({
+      fontSize: 12,
+      color: token.colorPrimary,
+      marginTop: 6,
+      whiteSpace: 'nowrap' as const,
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+    }),
+    [token.colorPrimary]
+  );
 
   return (
     <div
@@ -87,13 +96,9 @@ export const IntegrationItem: React.FC<IntegrationItemProps> = ({
               </Tag>
             )}
           </div>
-          <div style={descriptionStyles}>
-            {description}
-          </div>
+          <div style={descriptionStyles}>{description}</div>
           {channels && channels.length > 0 && (
-            <div style={channelsStyles}>
-              {channels.join(' • ')}
-            </div>
+            <div style={channelsStyles}>{channels.join(' • ')}</div>
           )}
         </div>
       </div>

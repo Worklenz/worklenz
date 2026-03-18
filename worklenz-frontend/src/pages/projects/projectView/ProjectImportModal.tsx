@@ -7,10 +7,7 @@ interface ProjectImportModalProps {
   onClose: () => void;
 }
 
-export const ProjectImportModal: React.FC<ProjectImportModalProps> = ({
-  open,
-  onClose,
-}) => {
+export const ProjectImportModal: React.FC<ProjectImportModalProps> = ({ open, onClose }) => {
   return (
     <Modal
       open={open}

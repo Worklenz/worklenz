@@ -101,9 +101,7 @@ export const LazyTaskRowWithSubtasks = createOptimizedLazy(
 
 export const LazyCustomColumnModal = createOptimizedLazy(
   () =>
-    import(
-      '@/pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/custom-column-modal'
-    ),
+    import('@/pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/custom-column-modal'),
   <div className="p-4">
     <Skeleton active />
   </div>
