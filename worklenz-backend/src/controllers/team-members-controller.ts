@@ -22,6 +22,7 @@ import {
 } from "../shared/constants";
 import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
 import { updateUsers } from "../shared/paddle-requests";
+import { getTeamMemberSeatLimit } from "../shared/subscription-limits";
 import { NotificationsService } from "../services/notifications/notifications.service";
 
 export default class TeamMembersController extends WorklenzControllerBase {
@@ -183,10 +184,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
       ) {
         const updatedCount =
           parseInt(subscriptionData.current_count) + incrementBy;
-        const effectiveUserLimit =
-          subscriptionData.effective_user_limit ||
-          subscriptionData.quantity ||
-          25;
+        const effectiveUserLimit = getTeamMemberSeatLimit(subscriptionData);
         const requiredSeats = updatedCount - effectiveUserLimit;
         if (updatedCount > effectiveUserLimit) {
           const obj = {
@@ -1385,10 +1383,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
           !subscriptionData.is_custom &&
           subscriptionData.subscription_status === "active"
         ) {
-          const effectiveUserLimit =
-            subscriptionData.effective_user_limit ||
-            subscriptionData.quantity ||
-            25;
+          const effectiveUserLimit = getTeamMemberSeatLimit(subscriptionData);
           if (currentCount + 1 > effectiveUserLimit) {
             const requiredSeats = currentCount + 1 - effectiveUserLimit;
             const obj = {
@@ -1498,10 +1493,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
           !subscriptionData.is_custom &&
           subscriptionData.subscription_status === "active"
         ) {
-          const effectiveUserLimit =
-            subscriptionData.effective_user_limit ||
-            subscriptionData.quantity ||
-            25;
+          const effectiveUserLimit = getTeamMemberSeatLimit(subscriptionData);
           if (currentCount + 1 > effectiveUserLimit) {
             const requiredSeats = currentCount + 1 - effectiveUserLimit;
             const obj = {
@@ -1689,17 +1681,6 @@ export default class TeamMembersController extends WorklenzControllerBase {
     // Check subscription status
     const subscriptionData = await checkTeamSubscriptionStatus(teamId);
 
-    // DEBUG: Log subscription data to troubleshoot Business plan trial issue
-    console.log("=== SUBSCRIPTION DEBUG ===");
-    console.log("subscription_type:", subscriptionData.subscription_type);
-    console.log("plan_name:", subscriptionData.plan_name);
-    console.log("subscription_status:", subscriptionData.subscription_status);
-    console.log("is_ltd:", subscriptionData.is_ltd);
-    console.log("ltd_users:", subscriptionData.ltd_users);
-    console.log("current_count:", subscriptionData.current_count);
-    console.log("effective_user_limit:", subscriptionData.effective_user_limit);
-    console.log("========================");
-
     // Handle self-hosted subscriptions - allow link generation
     if (subscriptionData.subscription_type === "SELF_HOSTED") {
       // Self-hosted can generate links without restrictions
@@ -1746,10 +1727,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
         subscriptionData.subscription_status === "active"
       ) {
         const currentCount = parseInt(subscriptionData.current_count) || 0;
-        const effectiveUserLimit =
-          subscriptionData.effective_user_limit ||
-          subscriptionData.quantity ||
-          25;
+        const effectiveUserLimit = getTeamMemberSeatLimit(subscriptionData);
         if (currentCount >= effectiveUserLimit) {
           const requiredSeats = 1; // At least 1 more seat needed
           const obj = {
@@ -2054,10 +2032,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
         ) {
           const updatedCount =
             parseInt(subscriptionData.current_count) + incrementBy;
-          const effectiveUserLimit =
-            subscriptionData.effective_user_limit ||
-            subscriptionData.quantity ||
-            25;
+          const effectiveUserLimit = getTeamMemberSeatLimit(subscriptionData);
           const requiredSeats = updatedCount - effectiveUserLimit;
           if (updatedCount > effectiveUserLimit) {
             const obj = {

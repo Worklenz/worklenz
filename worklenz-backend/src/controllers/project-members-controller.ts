@@ -12,6 +12,7 @@ import TeamMembersController from "./team-members-controller";
 import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
 import { updateUsers } from "../shared/paddle-requests";
 import { statusExclude, TRIAL_MEMBER_LIMIT } from "../shared/constants";
+import { getTeamMemberSeatLimit } from "../shared/subscription-limits";
 import { NotificationsService } from "../services/notifications/notifications.service";
 import { sendInvitationEmail } from "../shared/email-templates";
 
@@ -197,7 +198,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
         //   if (!response.body.subscription_id) return res.status(200).send(new ServerResponse(false, null, response.message || "Unable to add user! Please check your subscription."));
         // }
         const updatedCount = parseInt(subscriptionData.current_count) + 1;
-        const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
+        const effectiveUserLimit = getTeamMemberSeatLimit(subscriptionData);
         const requiredSeats = updatedCount - effectiveUserLimit;
         if (updatedCount > effectiveUserLimit) {
           const obj = {
@@ -364,7 +365,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
         // Check seat availability for active subscriptions (Business plans override LTD limits)
         if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
           const currentCount = parseInt(subscriptionData.current_count) || 0;
-          const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
+          const effectiveUserLimit = getTeamMemberSeatLimit(subscriptionData);
           if (currentCount >= effectiveUserLimit) {
             const requiredSeats = 1; // At least 1 more seat needed
             const obj = {
@@ -615,7 +616,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
           // Check seat availability for active subscriptions (Business plans override LTD limits)
           if (!subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status === "active") {
             const updatedCount = parseInt(subscriptionData.current_count) + incrementBy;
-            const effectiveUserLimit = subscriptionData.effective_user_limit || subscriptionData.quantity || 25;
+            const effectiveUserLimit = getTeamMemberSeatLimit(subscriptionData);
             const requiredSeats = updatedCount - effectiveUserLimit;
             if (updatedCount > effectiveUserLimit) {
               const obj = {
