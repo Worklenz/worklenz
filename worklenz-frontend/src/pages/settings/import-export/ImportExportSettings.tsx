@@ -51,21 +51,36 @@ export const ImportExportSettings: React.FC = () => {
 
   return (
     <div className="import-export-settings import-export-modal-content-wrapper">
-      <Typography.Title level={2} className="mb-8">
-        {t('importHeader', 'Import data into Worklenz')}
+      <Typography.Title level={2} className="import-header-title">
+        {t('importHeader', { defaultValue: 'Create a project by importing tasks' })}
       </Typography.Title>
+      <Typography.Paragraph className="import-header-subtitle">
+        {t('importSubHeader', {
+          defaultValue: 'Import from Asana, Jira, Trello, Monday.com, or CSV.',
+        })}
+      </Typography.Paragraph>
       <Typography.Title level={4} className="section-title">
-        {t('importFrom', 'Where would you like to import from?')}
+        {t('importFrom', { defaultValue: 'Choose your source' })}
       </Typography.Title>
       <div className="import-source-grid">
         {importSources.map(source => (
           <div
             className="import-source-card"
             key={source.key}
+            role="button"
+            tabIndex={0}
             onClick={() => handleSourceClick(source)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleSourceClick(source);
+              }
+            }}
           >
-            <div className="import-source-icon">{source.icon}</div>
-            <span className="import-source-label">{source.label}</span>
+            <div className="import-source-content">
+              <div className="import-source-icon">{source.icon}</div>
+              <span className="import-source-label">{source.label}</span>
+            </div>
           </div>
         ))}
       </div>
@@ -74,13 +89,13 @@ export const ImportExportSettings: React.FC = () => {
       <div className="cant-find-app-section mt-10">
         <Card className="cant-find-app-card" bordered={false}>
           <Typography.Title level={5} className="mb-1">
-            {t('cantFindAppTitle', "Can't find your app?")}
+            {t('cantFindAppTitle', { defaultValue: "Can't find your app?" })}
           </Typography.Title>
           <Typography.Text type="secondary" className="mb-4 d-block">
-            {t(
-              'cantFindAppDesc',
-              "If you don't see your app here, select CSV to use any CSV file to import your data."
-            )}
+            {t('cantFindAppDesc', {
+              defaultValue:
+                "If you don't see your app here, select CSV to use any CSV file to import your data.",
+            })}
           </Typography.Text>
           <div
             className="csv-dropzone"
@@ -98,10 +113,10 @@ export const ImportExportSettings: React.FC = () => {
               <CloudUploadOutlined />
             </div>
             <Typography.Text className="csv-dropzone-title">
-              {t('selectCsv', 'Select a CSV file to import')}
+              {t('selectCsv', { defaultValue: 'Select a CSV file to import' })}
             </Typography.Text>
             <Typography.Text type="secondary" className="csv-dropzone-helper">
-              {t('dragCsv', 'or Drag and Drop here')}
+              {t('dragCsv', { defaultValue: 'or Drag and Drop here' })}
             </Typography.Text>
           </div>
         </Card>

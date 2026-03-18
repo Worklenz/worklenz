@@ -17,7 +17,7 @@ import {
   evt_project_import_from_template_click,
 } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import ProjectImportExportModal from '@/pages/projects/projectView/ProjectImportExportModal';
+import ProjectImportModal from '@/pages/projects/projectView/ProjectImportModal';
 interface CreateProjectButtonProps {
   className?: string;
 }
@@ -125,7 +125,7 @@ const CreateProjectButton: React.FC<CreateProjectButtonProps> = ({ className }) 
       label: (
         <div className="w-full m-0 p-0" onClick={() => setIsImportExportOpen(true)}>
           <ImportOutlined className="mr-2" />
-          {t('importExport', 'Import and Export')}
+          {t('importTasks', { defaultValue: 'Import Tasks' })}
         </div>
       ),
     },
@@ -174,7 +174,7 @@ const CreateProjectButton: React.FC<CreateProjectButtonProps> = ({ className }) 
           selectedTemplateType={setSelectedType}
         />
       </Drawer>
-      <ProjectImportExportModal
+      <ProjectImportModal
         open={isImportExportOpen}
         onClose={() => setIsImportExportOpen(false)}
       />

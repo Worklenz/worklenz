@@ -1,5 +1,4 @@
 import db from "../config/db";
-import { v4 as uuidv4 } from "uuid";
 import { PoolClient } from "pg";
 import slugify from "slugify";
 
@@ -1052,12 +1051,10 @@ export const mapRawToTaskFields = (
 
 class ImportsService {
   async createJob(input: CreateImportJobInput): Promise<ImportJob> {
-    const id = uuidv4();
-    const q = `INSERT INTO import_jobs (id, provider, flow_type, created_by, target_project_id, target_space_type, target_template, source_reference)
-               VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+    const q = `INSERT INTO import_jobs (provider, flow_type, created_by, target_project_id, target_space_type, target_template, source_reference)
+               VALUES ($1,$2,$3,$4,$5,$6,$7)
                RETURNING *;`;
     const params = [
-      id,
       input.provider,
       input.flowType,
       input.createdBy,
@@ -1412,6 +1409,10 @@ class ImportsService {
       const job = await this.getJob(jobId);
       if (!job?.target_project_id)
         throw new Error("Target project is required for commit");
+      const sourceReference = (job.source_reference as any) || {};
+      const importOptions = (sourceReference.options as any) || {};
+      const shouldImportMembers = importOptions.importMembers !== false;
+      const shouldImportAttachments = importOptions.importAttachments !== false;
 
       const [
         { rows: staged },
@@ -1526,7 +1527,9 @@ class ImportsService {
         hydrateTeamMemberEmails(refreshedMembers);
       };
 
-      await ensureAssigneeTeamMembers();
+      if (shouldImportMembers) {
+        await ensureAssigneeTeamMembers();
+      }
 
       const labelNameMap = new Map<string, string>();
 
@@ -2144,6 +2147,7 @@ class ImportsService {
         token.trim().toLowerCase().replace(/\s+/g, " ");
 
       const resolveAssignees = (value?: string | null) => {
+        if (!shouldImportMembers) return [] as string[];
         if (!value) return [] as string[];
         const normalized = value.toString().trim();
         if (!normalized) return [] as string[];
@@ -2378,6 +2382,10 @@ class ImportsService {
       await this.appendLog(jobId, "info", "Commit pipeline executed", {
         stats,
         created: createdTasks.length,
+        options: {
+          importMembers: shouldImportMembers,
+          importAttachments: shouldImportAttachments,
+        },
       });
       await this.updateJobStatus(jobId, "success", undefined, stats);
       await client.query("COMMIT");

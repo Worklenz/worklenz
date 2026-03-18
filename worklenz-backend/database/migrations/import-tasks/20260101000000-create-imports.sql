@@ -4,7 +4,7 @@
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS import_jobs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID DEFAULT uuid_generate_v4(),
   provider TEXT NOT NULL,
   flow_type TEXT NOT NULL CHECK (flow_type IN ('direct','csv')),
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','ready','running','success','failed')),
@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS import_jobs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE import_jobs ADD CONSTRAINT import_jobs_pkey PRIMARY KEY (id);
 
 CREATE TABLE IF NOT EXISTS import_hierarchy_mappings (
   id BIGSERIAL PRIMARY KEY,

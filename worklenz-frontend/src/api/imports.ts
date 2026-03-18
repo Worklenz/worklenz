@@ -110,6 +110,8 @@ export const updateImportSource = async (
     key?: string;
     boardId?: string | null;
     boardName?: string | null;
+    importMembers?: boolean;
+    importAttachments?: boolean;
   }
 ) => {
   const { data } = await apiClient.post(`/api/v1/imports/${jobId}/source`, payload);
@@ -137,6 +139,36 @@ export const saveImportFields = async (
     fields,
   });
   return data?.body as typeof fields;
+};
+
+export const saveImportValueMappings = async (
+  jobId: string,
+  values: Array<{
+    source_value: string;
+    target_worktype: string;
+    include?: boolean;
+  }>
+) => {
+  const { data } = await apiClient.post(`/api/v1/imports/${jobId}/value-mappings`, {
+    values,
+  });
+  return data?.body as typeof values;
+};
+
+export const saveImportUserMappings = async (
+  jobId: string,
+  users: Array<{
+    source_user_id?: string | null;
+    source_email?: string | null;
+    target_user_id?: string | null;
+    resolution?: string;
+    include?: boolean;
+  }>
+) => {
+  const { data } = await apiClient.post(`/api/v1/imports/${jobId}/user-mappings`, {
+    users,
+  });
+  return data?.body as typeof users;
 };
 
 export const commitImportJob = async (jobId: string) => {

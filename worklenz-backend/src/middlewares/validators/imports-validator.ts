@@ -34,6 +34,8 @@ const sourceSchema: Schema = {
     key: { type: ["string", "null"] },
     boardId: { type: ["string", "null"] },
     boardName: { type: ["string", "null"] },
+    importMembers: { type: "boolean" },
+    importAttachments: { type: "boolean" },
   },
   required: [],
   additionalProperties: false,

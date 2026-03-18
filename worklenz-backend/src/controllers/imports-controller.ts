@@ -193,23 +193,41 @@ export default class ImportsController {
         key,
         boardId,
         boardName,
+        importMembers,
+        importAttachments,
       } = req.body || {};
-
-      // DEBUG: Log what we received
-      console.log("[setSource DEBUG] Received payload:", {
-        workspaceId,
-        projectId,
-        projectKey,
-        projectName,
-        boardId,
-        boardName,
-        hasToken: !!token,
-        hasKey: !!key,
-      });
-      console.log("[setSource DEBUG] Provider:", job.provider);
 
       const providerKey = (job.provider || "asana").toLowerCase();
       const ref = (job.source_reference as any) || {};
+      const optionsPatch =
+        typeof importMembers === "boolean" ||
+        typeof importAttachments === "boolean"
+          ? {
+              options: {
+                ...(ref.options || {}),
+                ...(typeof importMembers === "boolean" ? { importMembers } : {}),
+                ...(typeof importAttachments === "boolean"
+                  ? { importAttachments }
+                  : {}),
+              },
+            }
+          : {};
+
+      const optionsOnlyUpdate =
+        Object.keys(optionsPatch).length > 0 &&
+        !workspaceId &&
+        !projectId &&
+        !projectKey &&
+        !projectName &&
+        !token &&
+        !key &&
+        !boardId &&
+        !boardName;
+      if (optionsOnlyUpdate) {
+        await ImportsService.mergeSourceReference(job.id, optionsPatch);
+        const updated = await ImportsService.getJob(job.id);
+        return res.status(200).send(new ServerResponse(true, updated));
+      }
 
       if (providerKey === "trello") {
         if (!boardId)
@@ -247,6 +265,7 @@ export default class ImportsController {
         await ImportsService.mergeSourceReference(job.id, {
           ...sourcePatch,
           ...authPatch,
+          ...optionsPatch,
         });
         const updated = await ImportsService.getJob(job.id);
         return res.status(200).send(new ServerResponse(true, updated));
@@ -289,6 +308,7 @@ export default class ImportsController {
       await ImportsService.mergeSourceReference(job.id, {
         ...sourcePatch,
         ...authPatch,
+        ...optionsPatch,
       });
       const updated = await ImportsService.getJob(job.id);
       return res.status(200).send(new ServerResponse(true, updated));
@@ -1046,35 +1066,11 @@ export default class ImportsController {
 
       // Validate credentials by fetching current user
       try {
-        console.log("[JIRA DEBUG] Validating credentials...");
-        console.log("[JIRA DEBUG] baseUrl:", baseUrl);
-        console.log("[JIRA DEBUG] email:", email);
-        console.log("[JIRA DEBUG] token length:", token.length);
-        console.log(
-          "[JIRA DEBUG] token first 10 chars:",
-          token.substring(0, 10),
-        );
-        console.log(
-          "[JIRA DEBUG] token last 10 chars:",
-          token.substring(token.length - 10),
-        );
-        console.log("[JIRA DEBUG] auth string length:", authString.length);
-        console.log(
-          "[JIRA DEBUG] Authorization header:",
-          authHeader.Authorization.substring(0, 20) + "...",
-        );
         const response = await axios.get(`${baseUrl}/rest/api/3/myself`, {
           headers: authHeader,
         });
-
-        console.log("[JIRA DEBUG] Authentication successful");
-        console.log("[JIRA DEBUG] User:", response.data?.displayName);
+        void response;
       } catch (err: any) {
-        console.error("[JIRA DEBUG] Authentication failed");
-        console.error("[JIRA DEBUG] Status:", err?.response?.status);
-        console.error("[JIRA DEBUG] Response data:", err?.response?.data);
-        console.error("[JIRA DEBUG] Error message:", err?.message);
-
         const status = err?.response?.status;
         if (status === 401 || status === 403) {
           throw createHttpError(

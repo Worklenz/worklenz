@@ -177,6 +177,27 @@ export default class MondayProvider implements ImportProvider {
   name = "monday";
   private columnsCache?: MondayColumn[];
 
+  private buildHierarchy(columns?: MondayColumn[]) {
+    const levels: Array<{
+      source_level: string;
+      target_level: string;
+      position: number;
+    }> = [];
+    const statusColumns = (columns || []).filter((col) => col.type === "status");
+    statusColumns.forEach((col, index) => {
+      levels.push({
+        source_level: col.title || `Status ${index + 1}`,
+        target_level: "Status",
+        position: index + 1,
+      });
+    });
+    if (!levels.length) {
+      levels.push({ source_level: "Status", target_level: "Status", position: 1 });
+    }
+    levels.push({ source_level: "Item", target_level: "Task", position: levels.length + 1 });
+    return levels;
+  }
+
   private mapMondayFieldType(column: MondayColumn): string {
     const baseMapping = MONDAY_TYPE_MAPPING[column.type] || column.type;
 
@@ -674,8 +695,6 @@ export default class MondayProvider implements ImportProvider {
         hasToken: !!token,
         boardId,
         boardsCount: mondayAuth.boards?.length || 0,
-        tokenStart: token ? token.substring(0, 20) + "..." : "undefined",
-        mondayAuth: mondayAuth,
       });
     }
     // Fallback: Handle nested auth structure from payload
@@ -689,8 +708,6 @@ export default class MondayProvider implements ImportProvider {
           hasToken: !!token,
           boardId,
           boardsCount: mondayAuth.boards?.length || 0,
-          tokenStart: token ? token.substring(0, 20) + "..." : "undefined",
-          mondayAuth: mondayAuth,
         },
       );
     } else {
@@ -700,9 +717,6 @@ export default class MondayProvider implements ImportProvider {
       console.log("[Monday Provider] Direct options check:", {
         hasOptsToken: !!opts.token,
         optsBoardId: opts.boardId,
-        optsTokenStart: opts.token
-          ? opts.token.substring(0, 20) + "..."
-          : "undefined",
         hasOptsAuth: !!opts.auth,
       });
     }
@@ -744,12 +758,12 @@ export default class MondayProvider implements ImportProvider {
       console.log("[Monday Provider] After fallback attempts:", {
         hasToken: !!token,
         boardId,
-        tokenStart: token ? token.substring(0, 20) + "..." : "undefined",
       });
 
       if (!token || !boardId) {
         return {
           fields: await this.buildFieldMappings(),
+          hierarchy: this.buildHierarchy(),
           raw: { warning: "Missing Monday token/boardId for auto mappings" },
         };
       }
@@ -799,6 +813,7 @@ export default class MondayProvider implements ImportProvider {
 
       return {
         fields: fieldMappings,
+        hierarchy: this.buildHierarchy(columns),
         raw: {
           boardId: boardId, // Use extracted boardId
           boardName: data?.data?.boards?.[0]?.name,
@@ -829,7 +844,12 @@ export default class MondayProvider implements ImportProvider {
         hasToken: !!opts.token,
         boardId: opts.boardId,
       });
-      return { tasks: [], raw: { warning: "Missing Monday token/boardId" } };
+      return {
+        tasks: [],
+        fields: await this.buildFieldMappings(),
+        hierarchy: this.buildHierarchy(),
+        raw: { warning: "Missing Monday token/boardId" },
+      };
     }
 
     // Enhanced query that includes column information
@@ -883,6 +903,8 @@ export default class MondayProvider implements ImportProvider {
       // Get columns from the current response
       const columns =
         data?.data?.boards?.[0]?.columns || this.columnsCache || [];
+      const fieldMappings = await this.buildFieldMappings(columns, job);
+      const hierarchy = this.buildHierarchy(columns);
 
       console.log("[Monday Provider] Extracted items:", items);
       console.log("[Monday Provider] Available columns:", columns.length);
@@ -1124,10 +1146,15 @@ export default class MondayProvider implements ImportProvider {
 
       console.log("[Monday Provider] Mapped tasks:", tasks);
 
-      return { tasks };
+      return { tasks, fields: fieldMappings, hierarchy };
     } catch (error: any) {
       console.error("[Monday Provider] Error fetching data:", error);
-      return { tasks: [], raw: { error: error?.message || "Unknown error" } };
+      return {
+        tasks: [],
+        fields: await this.buildFieldMappings(),
+        hierarchy: this.buildHierarchy(),
+        raw: { error: error?.message || "Unknown error" },
+      };
     }
   }
 

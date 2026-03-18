@@ -15,6 +15,7 @@ import {
   theme,
   Space,
   Switch,
+  Checkbox,
 } from 'antd';
 import {
   InfoCircleOutlined,
@@ -26,8 +27,10 @@ import {
   TableOutlined,
   TeamOutlined,
   PaperClipOutlined,
+  InboxOutlined,
+  UserOutlined,
+  UserAddOutlined,
 } from '@ant-design/icons';
-import Papa from 'papaparse';
 import { useTranslation } from 'react-i18next';
 import {
   clickupWorkspaces,
@@ -41,6 +44,8 @@ import {
   updateImportTarget,
   startAsanaAuth,
   saveImportFields,
+  saveImportValueMappings,
+  saveImportUserMappings,
   autoImportFields,
   autoImportHierarchy,
   updateImportSource,
@@ -60,12 +65,106 @@ interface ImportSourceModalProps {
   } | null;
 }
 
+const AUTO_DELIMITER_CANDIDATES = [',', ';', '\t', '|'];
+
+const detectDelimiter = (text: string) => {
+  const sampleLine = text
+    .replace(/^\uFEFF/, '')
+    .split(/\r?\n/)
+    .find(line => line.trim().length > 0);
+  if (!sampleLine) return ',';
+
+  let best = ',';
+  let bestCount = -1;
+  AUTO_DELIMITER_CANDIDATES.forEach(candidate => {
+    const count = sampleLine.split(candidate).length - 1;
+    if (count > bestCount) {
+      best = candidate;
+      bestCount = count;
+    }
+  });
+  return best;
+};
+
+const parseCsvRows = (text: string, delimiter: string) => {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let value = '';
+  let inQuotes = false;
+  const normalized = (text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+  for (let i = 0; i < normalized.length; i += 1) {
+    const char = normalized[i];
+
+    if (char === '"') {
+      if (inQuotes && normalized[i + 1] === '"') {
+        value += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (!inQuotes && char === delimiter) {
+      row.push(value);
+      value = '';
+      continue;
+    }
+
+    if (!inQuotes && char === '\n') {
+      row.push(value);
+      rows.push(row);
+      row = [];
+      value = '';
+      continue;
+    }
+
+    value += char;
+  }
+
+  row.push(value);
+  rows.push(row);
+  return rows;
+};
+
+const parseCsvText = (
+  text: string,
+  providedDelimiter?: string
+): { fields: string[]; rows: Record<string, string>[] } => {
+  const delimiter = providedDelimiter || detectDelimiter(text);
+  const matrix = parseCsvRows(text || '', delimiter);
+  if (!matrix.length) return { fields: [], rows: [] };
+
+  const headers = (matrix[0] || []).map((field, index) =>
+    String(field || '').replace(/^\uFEFF/, '').trim() || `column_${index + 1}`
+  );
+  const fields = headers.filter(Boolean);
+
+  const rows = matrix
+    .slice(1)
+    .map(rawRow => {
+      const mapped = Object.fromEntries(
+        fields.map((field, index) => [field, (rawRow[index] || '').trim()])
+      ) as Record<string, string>;
+      return mapped;
+    })
+    .filter(rowData => Object.values(rowData).some(v => `${v || ''}`.trim().length > 0));
+
+  return { fields, rows };
+};
+
 export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onClose, source }) => {
   // Prevent ReferenceError by checking for source before any usage
   if (!source) return null;
 
   const { t } = useTranslation('settings/import-export');
   const { token: themeToken } = theme.useToken();
+  const tt = React.useCallback(
+    (key: string, defaultValue: string, options?: Record<string, unknown>) =>
+      t(key, { defaultValue, ...(options || {}) }),
+    [t]
+  );
 
   // --- Dynamic import flow state ---
   // List of direct integration apps (use 4-step flow)
@@ -187,8 +286,19 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   // Steps for each flow
   const steps =
     integrationType === 'direct'
-      ? ['Select list', 'Create space', 'Review Details & Import']
-      : ['Upload CSV', 'Set up space', 'Map fields', 'Map values', 'Move users', 'Review details'];
+      ? [
+          tt('steps.selectList', 'Select list'),
+          tt('steps.createSpace', 'Create space'),
+          tt('steps.reviewImport', 'Review Details & Import'),
+        ]
+      : [
+          tt('steps.uploadCsv', 'Upload CSV'),
+          tt('steps.setupSpace', 'Set up space'),
+          tt('steps.mapFields', 'Map fields'),
+          tt('steps.mapValues', 'Map values'),
+          tt('steps.moveUsers', 'Move users'),
+          tt('steps.reviewDetails', 'Review details'),
+        ];
 
   const [step, setStep] = React.useState(0);
   const totalSteps = steps.length;
@@ -215,6 +325,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const [csvColumns, setCsvColumns] = React.useState<string[]>([]);
   const [csvText, setCsvText] = React.useState<string>('');
   const [csvRows, setCsvRows] = React.useState<Record<string, any>[]>([]);
+  const uploadedCsvFileRef = React.useRef<File | null>(null);
   const [fieldMappings, setFieldMappings] = React.useState<Record<string, string>>({});
   const [includeInImport, setIncludeInImport] = React.useState<Record<string, boolean>>({});
   // Delimiter for CSV parsing
@@ -239,27 +350,38 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const [spaceTemplate, setSpaceTemplate] = React.useState<string>('scrum');
   const [defaultProjectStatusId, setDefaultProjectStatusId] = React.useState<string | null>(null);
   const [worklenzStatuses, setWorklenzStatuses] = React.useState<IProjectStatus[]>([]);
+
+  const parseCsvData = React.useCallback((text: string) => {
+    const parsed = parseCsvText(text || '', delimiter.trim() || undefined);
+    const fields = parsed.fields.map(field => String(field).trim()).filter(Boolean);
+    setCsvText(text || '');
+    setCsvColumns(fields);
+    setFieldMappings({});
+    setIncludeInImport(Object.fromEntries(fields.map((f: string) => [f, true])));
+    setCsvRows(Array.isArray(parsed.rows) ? (parsed.rows as Record<string, any>[]) : []);
+    setUserEmails({});
+  }, [delimiter]);
   const worklenzFieldOptions = React.useMemo(
     () => [
-      { value: 'key', label: 'Key' },
-      { value: 'description', label: 'Description' },
-      { value: 'progress', label: 'Progress' },
-      { value: 'status', label: 'Status' },
-      { value: 'assignees', label: 'Assignees' },
-      { value: 'labels', label: 'Labels' },
-      { value: 'phase', label: 'Phase' },
-      { value: 'priority', label: 'Priority' },
-      { value: 'timeTracking', label: 'Time Tracking' },
-      { value: 'estimation', label: 'Estimation' },
-      { value: 'startDate', label: 'Start Date' },
-      { value: 'dueDate', label: 'Due Date' },
-      { value: 'dueTime', label: 'Due Time' },
-      { value: 'completedDate', label: 'Completed Date' },
-      { value: 'createdDate', label: 'Created Date' },
-      { value: 'lastUpdated', label: 'Last Updated' },
-      { value: 'reporter', label: 'Reporter' },
+      { value: 'key', label: tt('fields.key', 'Key') },
+      { value: 'description', label: tt('fields.description', 'Description') },
+      { value: 'progress', label: tt('fields.progress', 'Progress') },
+      { value: 'status', label: tt('fields.status', 'Status') },
+      { value: 'assignees', label: tt('fields.assignees', 'Assignees') },
+      { value: 'labels', label: tt('fields.labels', 'Labels') },
+      { value: 'phase', label: tt('fields.phase', 'Phase') },
+      { value: 'priority', label: tt('fields.priority', 'Priority') },
+      { value: 'timeTracking', label: tt('fields.timeTracking', 'Time Tracking') },
+      { value: 'estimation', label: tt('fields.estimation', 'Estimation') },
+      { value: 'startDate', label: tt('fields.startDate', 'Start Date') },
+      { value: 'dueDate', label: tt('fields.dueDate', 'Due Date') },
+      { value: 'dueTime', label: tt('fields.dueTime', 'Due Time') },
+      { value: 'completedDate', label: tt('fields.completedDate', 'Completed Date') },
+      { value: 'createdDate', label: tt('fields.createdDate', 'Created Date') },
+      { value: 'lastUpdated', label: tt('fields.lastUpdated', 'Last Updated') },
+      { value: 'reporter', label: tt('fields.reporter', 'Reporter') },
     ],
-    []
+    [tt]
   );
 
   const defaultWorkTypes = React.useMemo(
@@ -321,6 +443,30 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     }));
   }, [defaultWorkTypes, t, worklenzStatuses]);
 
+  const csvUserRows = React.useMemo(() => {
+    if (!csvColumns.length || !csvRows.length) return [] as string[];
+    const userColumnKeywords = ['assignee', 'reporter', 'email', 'user', 'username'];
+    const userColumns = csvColumns.filter(col =>
+      userColumnKeywords.some(keyword => col.toLowerCase().includes(keyword))
+    );
+    if (!userColumns.length) return [] as string[];
+
+    const usersSet = new Set<string>();
+    csvRows.forEach(row => {
+      userColumns.forEach(col => {
+        const raw = row?.[col];
+        if (typeof raw !== 'string') return;
+        raw
+          .split(/[;,]/)
+          .map(v => v.trim())
+          .filter(Boolean)
+          .forEach(v => usersSet.add(v));
+      });
+    });
+
+    return Array.from(usersSet);
+  }, [csvColumns, csvRows]);
+
   const mappedFieldCount = React.useMemo(
     () => fieldMappingRows.filter(row => row.include !== false).length,
     [fieldMappingRows]
@@ -345,6 +491,23 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   );
 
   const autoMappedRef = React.useRef(false);
+
+  const persistImportOptions = React.useCallback(
+    async (
+      jobId: string,
+      overrides?: { importMembers?: boolean; importAttachments?: boolean }
+    ) => {
+      await updateImportSource(jobId, {
+        importMembers:
+          typeof overrides?.importMembers === 'boolean' ? overrides.importMembers : importMembers,
+        importAttachments:
+          typeof overrides?.importAttachments === 'boolean'
+            ? overrides.importAttachments
+            : importAttachments,
+      });
+    },
+    [importAttachments, importMembers]
+  );
 
   const runAutoMapping = React.useCallback(
     async (suppressToast?: boolean) => {
@@ -400,6 +563,11 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       cancelled = true;
     };
   }, [defaultWorkTypes]);
+
+  React.useEffect(() => {
+    if (!csvText.trim()) return;
+    parseCsvData(csvText);
+  }, [delimiter, parseCsvData]); // re-parse when delimiter changes
 
   React.useEffect(() => {
     autoMappedRef.current = false;
@@ -551,6 +719,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             targetSpaceType: spaceType,
             targetTemplate: spaceTemplate,
           });
+          await persistImportOptions(job.id);
 
           const projectName = asanaProjects.find(p => p.id === selectedProject)?.name;
           await persistAsanaSelection(selectedProject, selectedWorkspace, projectName);
@@ -635,6 +804,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             targetSpaceType: spaceType,
             targetTemplate: spaceTemplate,
           });
+          await persistImportOptions(job.id);
 
           const projectName = jiraProjects.find(p => p.key === selectedJiraProject)?.name;
           await updateImportSource(job.id, {
@@ -726,6 +896,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             targetSpaceType: spaceType,
             targetTemplate: spaceTemplate,
           });
+          await persistImportOptions(job.id);
 
           const boardName = trelloBoards.find(b => b.id === selectedTrelloBoard)?.name || null;
           await updateImportSource(job.id, {
@@ -826,6 +997,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             targetSpaceType: spaceType,
             targetTemplate: spaceTemplate,
           });
+          await persistImportOptions(job.id);
 
           const boardName = mondayBoards.find(b => b.id === selectedBoard)?.name || null;
           await updateImportSource(job.id, {
@@ -931,6 +1103,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         targetSpaceType: spaceType,
         targetTemplate: spaceTemplate,
       });
+      await persistImportOptions(activeJob.id, { importMembers: addUsers });
 
       await ingestImportJob(activeJob.id, {
         csvText,
@@ -947,6 +1120,32 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
 
       if (mappedFields.length) {
         await saveImportFields(activeJob.id, mappedFields);
+      }
+
+      const mappedValues = Object.entries(workTypeMapping)
+        .filter(([, target]) => !!target)
+        .map(([sourceValue, targetWorktype]) => ({
+          source_value: sourceValue,
+          target_worktype: targetWorktype,
+          include: true,
+        }));
+      if (mappedValues.length) {
+        await saveImportValueMappings(activeJob.id, mappedValues);
+      }
+
+      const userMappings = csvUserRows.map(user => {
+        const candidateEmail = (userEmails[user] || '').trim();
+        const hasEmail = !!candidateEmail && candidateEmail.includes('@');
+        return {
+          source_user_id: user,
+          source_email: hasEmail ? candidateEmail : null,
+          target_user_id: null,
+          resolution: hasEmail ? 'pending' : 'unresolved',
+          include: addUsers && hasEmail,
+        };
+      });
+      if (userMappings.length) {
+        await saveImportUserMappings(activeJob.id, userMappings);
       }
 
       const commitProgress = await commitImportJob(activeJob.id);
@@ -1930,16 +2129,20 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         return (
           <>
             <Typography.Title level={3} style={{ marginBottom: 16, color: '#fff' }}>
-              Upload a CSV file
+              {t('importStep.uploadCsvTitle', { defaultValue: 'Upload a CSV file' })}
             </Typography.Title>
             <Typography.Paragraph type="secondary" style={{ marginBottom: 24, color: '#b0b0b0' }}>
-              Start by finding the <b>Download</b> or <b>Export</b> option on your app and export a
-              CSV file.
+              {t('importStep.uploadCsvHelp', {
+                defaultValue:
+                  'Start by finding the Download or Export option in your app and export a CSV file.',
+              })}
               <br />
               <a href="#" style={{ color: '#4096ff' }}>
-                Structure the CSV
+                {t('importStep.structureCsv', { defaultValue: 'Structure the CSV' })}
               </a>{' '}
-              to ensure the data is in the right format and upload it to begin.
+              {t('importStep.structureCsvSuffix', {
+                defaultValue: 'to ensure the data is in the right format and upload it to begin.',
+              })}
             </Typography.Paragraph>
             <Upload.Dragger
               style={{
@@ -1951,33 +2154,19 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               accept=".csv"
               showUploadList={false}
               beforeUpload={file => {
+                uploadedCsvFileRef.current = file;
                 const reader = new FileReader();
                 reader.onload = e => {
                   const text = e.target?.result as string;
-                  setCsvText(text || '');
-                  const parsed = Papa.parse<Record<string, any>>(text, {
-                    header: true,
-                    skipEmptyLines: true,
-                  });
-                  if (parsed.meta.fields) {
-                    setCsvColumns(parsed.meta.fields);
-                    // Reset mappings and checkboxes
-                    setFieldMappings({});
-                    setIncludeInImport(
-                      Object.fromEntries(
-                        (parsed.meta.fields as string[]).map((f: string) => [f, true])
-                      )
-                    );
-                  }
-                  setCsvRows(
-                    Array.isArray(parsed.data) ? (parsed.data as Record<string, any>[]) : []
-                  );
+                  parseCsvData(text || '');
                 };
-                reader.readAsText(file);
+                reader.readAsText(file, encoding);
                 return false; // Prevent upload
               }}
             >
-              <Button type="primary">Upload CSV file</Button>
+              <Button type="primary">
+                {t('importStep.uploadCsvCta', { defaultValue: 'Upload CSV file' })}
+              </Button>
             </Upload.Dragger>
             <Collapse
               ghost
@@ -1986,18 +2175,35 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               style={{ marginBottom: 8 }}
             >
               <Collapse.Panel
-                header={<span style={{ color: '#4096ff' }}>CSV file settings</span>}
+                header={
+                  <span style={{ color: '#4096ff' }}>
+                    {t('importStep.csvSettings', { defaultValue: 'CSV file settings' })}
+                  </span>
+                }
                 key="csv"
                 style={{ color: '#fff', background: 'transparent' }}
               >
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 8 }}>
-                  <span>File encoding</span>
-                  <Tooltip title="The character encoding of your CSV file.">
+                  <span>{t('importStep.fileEncoding', { defaultValue: 'File encoding' })}</span>
+                  <Tooltip
+                    title={t('importStep.fileEncodingHelp', {
+                      defaultValue: 'The character encoding of your CSV file.',
+                    })}
+                  >
                     <InfoCircleOutlined style={{ color: '#4096ff' }} />
                   </Tooltip>
                   <Select
                     value={encoding}
-                    onChange={setEncoding}
+                    onChange={value => {
+                      setEncoding(value);
+                      const file = uploadedCsvFileRef.current;
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = e => {
+                        parseCsvData((e.target?.result as string) || '');
+                      };
+                      reader.readAsText(file, value);
+                    }}
                     style={{ width: 120 }}
                     options={[
                       { value: 'US-ASCII', label: 'US-ASCII' },
@@ -2008,8 +2214,14 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                       { value: 'UTF-16', label: 'UTF-16' },
                     ]}
                   />
-                  <span style={{ marginLeft: 32 }}>Delimiter</span>
-                  <Tooltip title="The character that separates values in your CSV file.">
+                  <span style={{ marginLeft: 32 }}>
+                    {t('importStep.delimiter', { defaultValue: 'Delimiter' })}
+                  </span>
+                  <Tooltip
+                    title={t('importStep.delimiterHelp', {
+                      defaultValue: 'The character that separates values in your CSV file.',
+                    })}
+                  >
                     <InfoCircleOutlined style={{ color: '#4096ff' }} />
                   </Tooltip>
                   <Input
@@ -2028,20 +2240,30 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             >
               <Collapse.Panel
                 header={
-                  <span style={{ color: '#4096ff' }}>Upload a configuration file (optional)</span>
+                  <span style={{ color: '#4096ff' }}>
+                    {t('importStep.configurationUploadTitle', {
+                      defaultValue: 'Upload a configuration file (optional)',
+                    })}
+                  </span>
                 }
                 key="config"
                 style={{ color: '#fff', background: 'transparent' }}
               >
                 <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 8 }}>
-                  Adding a configuration file will bring in preferences selected in a previous
-                  import such as mapped fields and users.{' '}
+                  {t('importStep.configurationUploadHelp', {
+                    defaultValue:
+                      'Adding a configuration file will bring in preferences selected in a previous import such as mapped fields and users.',
+                  })}{' '}
                   <a href="#" style={{ color: '#4096ff' }}>
-                    Learn about using configuration files
+                    {t('importStep.configurationUploadDocs', {
+                      defaultValue: 'Learn about using configuration files',
+                    })}
                   </a>
                 </Typography.Paragraph>
                 <Upload disabled>
-                  <Button disabled>Upload File</Button>
+                  <Button disabled>
+                    {t('importStep.configurationUploadCta', { defaultValue: 'Upload file' })}
+                  </Button>
                 </Upload>
               </Collapse.Panel>
             </Collapse>
@@ -2197,7 +2419,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         return (
           <div style={{ width: '100%' }}>
             <Typography.Title level={3} style={{ color: '#fff', marginBottom: 8 }}>
-              Map space fields
+              {t('importStep.mapSpaceFields', { defaultValue: 'Map space fields' })}
             </Typography.Title>
             <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 16 }}>
               Weâ€™ve automatically mapped a few columns from the CSV file to{' '}
@@ -2273,7 +2495,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             {/* Search and filter row */}
             <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
               <Input
-                placeholder="Search columns in CSV"
+                placeholder={t('importStep.searchCsvColumns', {
+                  defaultValue: 'Search columns in CSV',
+                })}
                 style={{
                   width: 260,
                   background: '#18181a',
@@ -2282,9 +2506,15 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 }}
               />
               <Select defaultValue="all" style={{ width: 120 }}>
-                <Select.Option value="all">Fields: All</Select.Option>
-                <Select.Option value="mapped">Mapped</Select.Option>
-                <Select.Option value="unmapped">Unmapped</Select.Option>
+                <Select.Option value="all">
+                  {t('importStep.fieldsFilterAll', { defaultValue: 'Fields: All' })}
+                </Select.Option>
+                <Select.Option value="mapped">
+                  {t('common.mapped', { defaultValue: 'Mapped' })}
+                </Select.Option>
+                <Select.Option value="unmapped">
+                  {t('common.unmapped', { defaultValue: 'Unmapped' })}
+                </Select.Option>
               </Select>
             </div>
             <div
@@ -2313,13 +2543,19 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 }}
               >
                 <span style={{ flex: 2, paddingLeft: 8 }}>Columns in CSV</span>
-                <span style={{ flex: 2 }}>Worklenz fields</span>
-                <span style={{ width: 140, textAlign: 'center' }}>Include in import</span>
+                <span style={{ flex: 2 }}>
+                  {t('importStep.worklenzFields', { defaultValue: 'Worklenz fields' })}
+                </span>
+                <span style={{ width: 140, textAlign: 'center' }}>
+                  {t('importStep.includeInImport', { defaultValue: 'Include in import' })}
+                </span>
               </div>
               {/* Mapping rows for each CSV column */}
               {csvColumns.length === 0 ? (
                 <div style={{ color: '#888', margin: '24px 0' }}>
-                  Upload a CSV file to map fields.
+                  {t('importStep.uploadCsvToMapFields', {
+                    defaultValue: 'Upload a CSV file to map fields.',
+                  })}
                 </div>
               ) : (
                 csvColumns.map(col => (
@@ -2337,7 +2573,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                     <span style={{ flex: 2, paddingLeft: 8, color: '#fff' }}>{col}</span>
                     <span style={{ flex: 2 }}>
                       <AutoComplete
-                        placeholder="Select or type a field to map"
+                        placeholder={t('importStep.selectOrTypeField', {
+                          defaultValue: 'Select or type a field to map',
+                        })}
                         style={{ width: '100%' }}
                         value={fieldMappings[col] || ''}
                         onChange={val => setFieldMappings(m => ({ ...m, [col]: val }))}
@@ -2349,11 +2587,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                       />
                     </span>
                     <span style={{ width: 140, textAlign: 'center' }}>
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={includeInImport[col] !== false}
                         onChange={e => setIncludeInImport(i => ({ ...i, [col]: e.target.checked }))}
-                        style={{ accentColor: '#4096ff', width: 18, height: 18 }}
                       />
                     </span>
                   </div>
@@ -2392,7 +2628,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             </Typography.Paragraph>
             <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
               <Input
-                placeholder="Search values"
+                placeholder={t('importStep.searchValues', { defaultValue: 'Search values' })}
                 value={searchValue}
                 onChange={e => setSearchValue(e.target.value)}
                 style={{
@@ -2408,9 +2644,15 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 style={{ width: 120 }}
                 styles={{ popup: { root: { background: '#23272f', color: '#fff' } } }}
               >
-                <Select.Option value="all">Values: All</Select.Option>
-                <Select.Option value="mapped">Mapped</Select.Option>
-                <Select.Option value="unmapped">Unmapped</Select.Option>
+                <Select.Option value="all">
+                  {t('importStep.valuesFilterAll', { defaultValue: 'Values: All' })}
+                </Select.Option>
+                <Select.Option value="mapped">
+                  {t('common.mapped', { defaultValue: 'Mapped' })}
+                </Select.Option>
+                <Select.Option value="unmapped">
+                  {t('common.unmapped', { defaultValue: 'Unmapped' })}
+                </Select.Option>
               </Select>
             </div>
             <div
@@ -2424,21 +2666,15 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               }}
             >
               <span style={{ flex: 2, paddingLeft: 8 }}>
-                <span role="img" aria-label="values" style={{ marginRight: 8 }}>
-                  ðŸ“¦
-                </span>
-                Values in the selected column
+                <InboxOutlined style={{ marginRight: 8 }} />
+                {t('importStep.valuesInSelectedColumn', {
+                  defaultValue: 'Values in the selected column',
+                })}
               </span>
               <span style={{ flex: 1 }}></span>
               <span style={{ flex: 2, display: 'flex', alignItems: 'center' }}>
-                <span
-                  role="img"
-                  aria-label="work types"
-                  style={{ marginRight: 8, color: '#4096ff' }}
-                >
-                  ðŸ·ï¸
-                </span>
-                Worklenz work types
+                <TableOutlined style={{ marginRight: 8, color: '#4096ff' }} />
+                {t('importStep.worklenzWorkTypes', { defaultValue: 'Worklenz work types' })}
               </span>
             </div>
             {filteredValues.length === 0 ? (
@@ -2466,7 +2702,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                     <Select
                       value={workTypeMapping[value] || undefined}
                       onChange={val => setWorkTypeMapping(m => ({ ...m, [value]: val }))}
-                      placeholder="Select work type"
+                      placeholder={t('importStep.selectWorkType', {
+                        defaultValue: 'Select work type',
+                      })}
                       style={{
                         width: '100%',
                         background: '#23272f',
@@ -2524,101 +2762,59 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         );
       case 4:
         // Move users step
-        // Real user detection: check for user-related columns in the CSV
-        const userColumnKeywords = ['assignee', 'reporter', 'email', 'user', 'username'];
-        const userColumns = csvColumns.filter(col =>
-          userColumnKeywords.some(keyword => col.toLowerCase().includes(keyword))
-        );
-        const noUsers = userColumns.length === 0;
-
-        // Extract unique user values from the CSV for userColumns
-        // For now, we don't have the parsed CSV rows in state, so we'll mock with empty array if not available
-        // TODO: Replace with actual parsed CSV data if available
-        let userRows: string[] = [];
-        if (!noUsers && window && (window as any).parsedCsvRows) {
-          // If parsedCsvRows is globally available (for dev/testing)
-          const parsedRows = (window as any).parsedCsvRows as Record<string, any>[];
-          const usersSet = new Set<string>();
-          parsedRows.forEach(row => {
-            userColumns.forEach(col => {
-              if (row[col] && typeof row[col] === 'string') {
-                usersSet.add(row[col]);
-              }
-            });
-          });
-          userRows = Array.from(usersSet);
-        }
+        const noUsers = csvUserRows.length === 0;
+        const usersMovingCount = csvUserRows.filter(user => {
+          const candidate = (userEmails[user] || '').trim();
+          return addUsers && !!candidate && candidate.includes('@');
+        }).length;
 
         return (
           <div style={{ width: '100%' }}>
             <Typography.Title level={3} style={{ color: '#fff', marginBottom: 16 }}>
-              Move users to Worklenz
+              {t('importStep.moveUsersToWorklenz', { defaultValue: 'Move users to Worklenz' })}
             </Typography.Title>
             {noUsers ? (
-              <div
+              <Card
                 style={{
-                  background: '#19345c',
-                  borderRadius: 8,
-                  padding: 24,
-                  color: '#fff',
                   marginBottom: 24,
-                  maxWidth: 600,
+                  maxWidth: 680,
+                  background: '#19345c',
+                  borderColor: '#2f4f80',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-                  <span style={{ fontSize: 20, marginRight: 10, color: '#60a5fa' }}>â„¹ï¸</span>
-                  <span style={{ fontWeight: 600, fontSize: 18 }}>
-                    There are no users in the CSV file
-                  </span>
-                </div>
-                <div style={{ color: '#cbd5e1', fontSize: 15, marginBottom: 8 }}>
-                  You can proceed with the import by selecting Next or restart the import by
-                  uploading a CSV file with user information. If you choose to proceed without
-                  adding user information:
-                </div>
-                <ul style={{ color: '#fff', fontSize: 15, marginLeft: 24, marginBottom: 0 }}>
-                  <li>Assignee and reporter fields will be unassigned.</li>
-                  <li>User @mentions in comments will be converted to plain text.</li>
-                  <li>Commenter names will change to Anonymous.</li>
-                </ul>
-              </div>
+                <Typography.Title level={4} style={{ color: '#fff', marginBottom: 8 }}>
+                  {t('importStep.noUsersInCsvTitle', {
+                    defaultValue: 'There are no users in the CSV file',
+                  })}
+                </Typography.Title>
+                <Typography.Paragraph style={{ color: '#cbd5e1', marginBottom: 12 }}>
+                  {t('importStep.noUsersInCsvDescription', {
+                    defaultValue:
+                      'You can proceed with import, or restart with a CSV that includes user data. If you proceed:',
+                  })}
+                </Typography.Paragraph>
+                <Typography.Paragraph style={{ color: '#fff', marginBottom: 0 }}>
+                  {t('importStep.noUsersImpact', {
+                    defaultValue:
+                      'Assignee/reporter fields remain unassigned, mentions become plain text, and commenter names become Anonymous.',
+                  })}
+                </Typography.Paragraph>
+              </Card>
             ) : (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-                  <div
-                    style={{
-                      background: addUsers ? '#22c55e' : '#23272f',
-                      borderRadius: 16,
-                      width: 48,
-                      height: 28,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: addUsers ? 'flex-end' : 'flex-start',
-                      padding: 4,
-                      cursor: 'pointer',
-                      marginRight: 12,
-                      transition: 'background 0.2s',
-                    }}
-                    onClick={() => setAddUsers(v => !v)}
-                  >
-                    <div
-                      style={{
-                        width: 20,
-                        height: 20,
-                        borderRadius: '50%',
-                        background: '#fff',
-                        boxShadow: '0 1px 4px #0002',
-                        transition: 'all 0.2s',
-                      }}
-                    />
-                  </div>
+                  <Switch checked={addUsers} onChange={setAddUsers} style={{ marginRight: 12 }} />
                   <span style={{ color: '#22c55e', fontWeight: 600, fontSize: 18 }}>
-                    Add users into your space
+                    {t('importStep.addUsersIntoSpace', {
+                      defaultValue: 'Add users into your space',
+                    })}
                   </span>
                 </div>
                 <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 20 }}>
-                  Enter a valid email address next to the user information to add a user to the
-                  space. Users without a corresponding email address wonâ€™t be imported.
+                  {t('importStep.addUsersHelp', {
+                    defaultValue:
+                      "Enter a valid email address for each user. Users without valid emails won't be imported.",
+                  })}
                 </Typography.Paragraph>
                 {/* Table header */}
                 <div
@@ -2632,15 +2828,23 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   }}
                 >
                   <span style={{ flex: 2, paddingLeft: 8 }}>
-                    <span style={{ marginRight: 8 }}>ðŸ“„</span>Users in CSV ({userRows.length})
+                    <UserOutlined style={{ marginRight: 8 }} />
+                    {t('importStep.usersInCsv', {
+                      defaultValue: 'Users in CSV ({{count}})',
+                      count: csvUserRows.length,
+                    })}
                   </span>
                   <span style={{ width: 40 }}></span>
                   <span style={{ flex: 3 }}>
-                    <span style={{ marginRight: 8 }}>ðŸ›«</span>Users moving to Worklenz (0)
+                    <UserAddOutlined style={{ marginRight: 8 }} />
+                    {t('importStep.usersMovingToWorklenz', {
+                      defaultValue: 'Users moving to Worklenz ({{count}})',
+                      count: usersMovingCount,
+                    })}
                   </span>
                 </div>
                 {/* User mapping rows */}
-                {userRows.map((user, idx) => (
+                {csvUserRows.map((user, idx) => (
                   <div
                     key={user + idx}
                     style={{
@@ -2660,7 +2864,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                     </span>
                     <span style={{ flex: 3 }}>
                       <Input
-                        placeholder="Enter email"
+                        placeholder={t('importStep.enterEmail', { defaultValue: 'Enter email' })}
                         value={userEmails[user] || ''}
                         onChange={e =>
                           setUserEmails(emails => ({ ...emails, [user]: e.target.value }))
@@ -2685,19 +2889,22 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         const reviewSpaceType = spaceType || 'software';
         const mappedFields = Object.values(fieldMappings).filter(Boolean).length;
         const totalFields = csvColumns.length;
-        const workTypes = 1; // TODO: get from mapping logic
-        const usersCount = Object.values(userEmails).filter(Boolean).length;
-        const workItems = 9993; // TODO: get from CSV row count
+        const workTypes = Object.values(workTypeMapping).filter(Boolean).length || 1;
+        const usersCount = csvUserRows.filter(user => {
+          const email = (userEmails[user] || '').trim();
+          return addUsers && !!email && email.includes('@');
+        }).length;
+        const workItems = csvRows.length;
         return (
           <div style={{ width: '100%' }}>
             <Typography.Title level={3} style={{ color: '#fff', marginBottom: 8 }}>
-              Review space details
+              {t('importStep.reviewSpaceDetails', { defaultValue: 'Review space details' })}
             </Typography.Title>
             <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 24 }}>
-              Weâ€™re ready to import your teamâ€™s data. Hereâ€™s a summary of whatâ€™s being
-              imported into Worklenz.
-              <br />
-              Confirm the details before starting the import.
+              {t('importStep.reviewSpaceDetailsHelp', {
+                defaultValue:
+                  "We're ready to import your team's data. Here's a summary of what will be imported into Worklenz.",
+              })}
             </Typography.Paragraph>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 600 }}>
               {/* Space card */}
@@ -2718,10 +2925,17 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 />
                 <div>
                   <div style={{ color: '#fff', fontWeight: 600, fontSize: 18 }}>
-                    1 Worklenz space: {reviewSpaceName}
+                    {t('importStep.reviewSpaceCardTitle', {
+                      defaultValue: '1 Worklenz space: {{spaceName}}',
+                      spaceName: reviewSpaceName,
+                    })}
                   </div>
                   <div style={{ color: '#b0b0b0', fontSize: 15 }}>
-                    A team-managed software space ({reviewSpaceType}) will be created.
+                    {t('importStep.reviewSpaceCardDescription', {
+                      defaultValue:
+                        'A team-managed software space ({{spaceType}}) will be created.',
+                      spaceType: reviewSpaceType,
+                    })}
                   </div>
                 </div>
               </div>
@@ -2743,10 +2957,18 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 />
                 <div>
                   <div style={{ color: '#fff', fontWeight: 600, fontSize: 18 }}>
-                    {mappedFields}/{totalFields} fields
+                    {t('importStep.reviewFieldsCardTitle', {
+                      defaultValue: '{{mapped}}/{{total}} fields',
+                      mapped: mappedFields,
+                      total: totalFields,
+                    })}
                   </div>
                   <div style={{ color: '#b0b0b0', fontSize: 15 }}>
-                    {mappedFields} columns will be mapped to existing Worklenz fields.
+                    {t('importStep.reviewFieldsCardDescription', {
+                      defaultValue:
+                        '{{mapped}} columns will be mapped to existing Worklenz fields.',
+                      mapped: mappedFields,
+                    })}
                   </div>
                 </div>
               </div>
@@ -2768,11 +2990,16 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 />
                 <div>
                   <div style={{ color: '#fff', fontWeight: 600, fontSize: 18 }}>
-                    {workTypes} work type
+                    {t('importStep.reviewWorkTypesCardTitle', {
+                      defaultValue: '{{count}} work type',
+                      count: workTypes,
+                    })}
                   </div>
                   <div style={{ color: '#b0b0b0', fontSize: 15 }}>
-                    Since no values were mapped to Worklenz work types, all work items will be
-                    mapped to Task (level 0) by default.
+                    {t('importStep.reviewWorkTypesCardDescription', {
+                      defaultValue:
+                        'If values are not mapped to Worklenz work types, all work items are mapped to Task (level 0) by default.',
+                    })}
                   </div>
                 </div>
               </div>
@@ -2794,12 +3021,22 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 />
                 <div>
                   <div style={{ color: '#fff', fontWeight: 600, fontSize: 18 }}>
-                    {usersCount === 0 ? 'No users' : `${usersCount} users`}
+                    {usersCount === 0
+                      ? t('importStep.reviewUsersNone', { defaultValue: 'No users' })
+                      : t('importStep.reviewUsersCount', {
+                          defaultValue: '{{count}} users',
+                          count: usersCount,
+                        })}
                   </div>
                   <div style={{ color: '#b0b0b0', fontSize: 15 }}>
                     {usersCount === 0
-                      ? "You haven't added users to the space. Assignee and reporter fields will be unassigned and user @mentions in comments will be converted to plain text."
-                      : 'Users will be added to the space.'}
+                      ? t('importStep.reviewUsersNoneDescription', {
+                          defaultValue:
+                            "You haven't added users to the space. Assignee/reporter fields will be unassigned and @mentions become plain text.",
+                        })
+                      : t('importStep.reviewUsersAddedDescription', {
+                          defaultValue: 'Users will be added to the space.',
+                        })}
                   </div>
                 </div>
               </div>
@@ -2821,12 +3058,19 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 />
                 <div>
                   <div style={{ color: '#fff', fontWeight: 600, fontSize: 18 }}>
-                    {workItems} work items
+                    {t('importStep.reviewWorkItemsCardTitle', {
+                      defaultValue: '{{count}} work items',
+                      count: workItems,
+                    })}
                   </div>
                   <div style={{ color: '#b0b0b0', fontSize: 15 }}>
-                    Each row of the CSV data will be imported as a work item.{' '}
+                    {t('importStep.reviewWorkItemsCardDescription', {
+                      defaultValue: 'Each row of the CSV data will be imported as a work item.',
+                    })}{' '}
                     <a href="#" style={{ color: '#4096ff' }}>
-                      What is a work item?
+                      {t('importStep.reviewWorkItemsDocs', {
+                        defaultValue: 'What is a work item?',
+                      })}
                     </a>
                   </div>
                 </div>
@@ -2834,9 +3078,13 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             </div>
             <div style={{ marginTop: 32, color: '#8fa7d3', fontSize: 15 }}>
               <a href="#" style={{ color: '#8fa7d3', textDecoration: 'underline' }}>
-                Download a configuration file
+                {t('importStep.downloadConfiguration', {
+                  defaultValue: 'Download a configuration file',
+                })}
               </a>{' '}
-              to use the same space preferences in your next import.
+              {t('importStep.downloadConfigurationSuffix', {
+                defaultValue: 'to use the same space preferences in your next import.',
+              })}
             </div>
           </div>
         );

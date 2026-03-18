@@ -2,12 +2,12 @@ import React from 'react';
 import { Modal } from '@/shared/antd-imports';
 import ImportExportSettings from '@/pages/settings/import-export/ImportExportSettings';
 
-interface ProjectImportExportModalProps {
+interface ProjectImportModalProps {
   open: boolean;
   onClose: () => void;
 }
 
-export const ProjectImportExportModal: React.FC<ProjectImportExportModalProps> = ({
+export const ProjectImportModal: React.FC<ProjectImportModalProps> = ({
   open,
   onClose,
 }) => {
@@ -21,7 +21,6 @@ export const ProjectImportExportModal: React.FC<ProjectImportExportModalProps> =
       styles={{
         body: {
           padding: 0,
-          height: 834,
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
@@ -31,11 +30,11 @@ export const ProjectImportExportModal: React.FC<ProjectImportExportModalProps> =
           overflow: 'hidden',
         },
       }}
-      destroyOnClose
+      destroyOnHidden
     >
       <ImportExportSettings />
     </Modal>
   );
 };
 
-export default ProjectImportExportModal;
+export default ProjectImportModal;
