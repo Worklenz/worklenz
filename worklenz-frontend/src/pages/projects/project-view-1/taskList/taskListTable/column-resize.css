@@ -191,6 +191,15 @@ th.max-width-reached .column-resize-handle {
   pointer-events: auto;
 }
 
+/* TaskListV2: don't reserve layout space for drag handle */
+.tasklist-v2-column-headers .column-drag-handle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 0;
+}
+
 [data-theme="dark"] .column-drag-handle {
   border-color: rgba(16, 185, 129, 0.5);
   background: rgba(16, 185, 129, 0.15);

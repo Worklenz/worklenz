@@ -887,7 +887,7 @@ const TaskListV2Section: React.FC = () => {
           strategy={horizontalListSortingStrategy}
         >
           <div
-            className="border-b border-gray-200 dark:border-gray-700"
+            className="border-b border-gray-200 dark:border-gray-700 tasklist-v2-column-headers"
             style={{
               width: '100%',
               minWidth: 'max-content',
