@@ -216,23 +216,25 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
+    const numericInput = input.replace(/\D/g, '');
 
-    setPhoneNumber(input);
+    setPhoneNumber(numericInput);
     isUpdatingRef.current = true;
 
     // Send empty string when input is cleared
-    if (!input || input.trim() === '') {
+    if (!numericInput) {
       onChange?.('');
       return;
     }
 
     // Format and send international number
     const formatter = new AsYouType(selectedCountry);
-    formatter.input(input);
+    formatter.input(numericInput);
 
     const phoneNumberObj = formatter.getNumber();
     const fullNumber =
-      phoneNumberObj?.number || `+${getCountryCallingCode(selectedCountry)}${input}`;
+      phoneNumberObj?.number ||
+      `+${getCountryCallingCode(selectedCountry)}${numericInput}`;
 
     onChange?.(fullNumber);
   };
@@ -283,6 +285,8 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
         onChange={handlePhoneChange}
         placeholder={placeholder}
         disabled={disabled}
+        inputMode="numeric"
+        pattern="[0-9]*"
         style={{ width: '60%' }}
       />
     </Input.Group>
