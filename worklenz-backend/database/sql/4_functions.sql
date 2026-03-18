@@ -1757,20 +1757,20 @@ DECLARE
     _is_ltd    BOOLEAN := FALSE;
     _result    JSON;
 BEGIN
-    SELECT EXISTS(SELECT id FROM licensing_custom_subs WHERE user_id = _user_id) INTO _is_custom;
+    SELECT EXISTS(SELECT 1 FROM licensing_custom_subs WHERE user_id = _user_id) INTO _is_custom;
     SELECT EXISTS(SELECT 1 FROM licensing_coupon_codes WHERE redeemed_by = _user_id) INTO _is_ltd;
 
     SELECT ROW_TO_JSON(rec)
     INTO _result
-    FROM (SELECT (SELECT name FROM users WHERE ud.user_id = users.id),
-                 (SELECT email FROM users WHERE ud.user_id = users.id),
-                 contact_number,
-                 contact_number_secondary,
-                 trial_in_progress,
-                 trial_expire_date,
-                 unit_price::NUMERIC,
-                 cancel_url,
-                 subscription_status AS status,
+    FROM (SELECT (SELECT name FROM users WHERE ud.user_id = users.id) AS name,
+                 (SELECT email FROM users WHERE ud.user_id = users.id) AS email,
+                 ud.contact_number,
+                 ud.contact_number_secondary,
+                 ud.trial_in_progress,
+                 ud.trial_expire_date,
+                 lus.unit_price::NUMERIC,
+                 lus.cancel_url,
+                 ud.subscription_status AS status,
                  lus.cancellation_effective_date,
                  lus.paused_at,
                  lus.paused_from::DATE,
@@ -1795,17 +1795,24 @@ BEGIN
                  (SELECT billing_type FROM licensing_pricing_plans WHERE id = lus.plan_id),
                  (CASE
                       WHEN ud.subscription_status = 'trialing' THEN ud.trial_expire_date::DATE
-                      WHEN EXISTS (SELECT 1 FROM licensing_custom_subs lcs WHERE lcs.user_id = ud.user_id) THEN
-                          (SELECT end_date FROM licensing_custom_subs lcs WHERE lcs.user_id = ud.user_id)::DATE
-                      WHEN EXISTS (SELECT 1 FROM licensing_user_subscriptions lus WHERE lus.user_id = ud.user_id) THEN
-                          (SELECT next_bill_date::DATE - INTERVAL '1 day'
-                           FROM licensing_user_subscriptions lus
-                           WHERE lus.user_id = ud.user_id)::DATE
+                      WHEN (_is_custom) THEN
+                          (SELECT MAX(end_date)::DATE FROM licensing_custom_subs lcs WHERE lcs.user_id = ud.user_id)
+                      WHEN lus.id IS NOT NULL THEN
+                          (NULLIF(lus.next_bill_date, '')::DATE - INTERVAL '1 day')::DATE
                      END) AS valid_till_date,
-                 is_lkr_billing
-          FROM organizations ud
-                   LEFT JOIN licensing_user_subscriptions lus ON ud.user_id = lus.user_id
-          WHERE ud.user_id = _user_id) rec;
+                 ud.is_lkr_billing
+          FROM (SELECT *
+                FROM organizations
+                WHERE user_id = _user_id
+                ORDER BY created_at DESC NULLS LAST
+                LIMIT 1) ud
+                   LEFT JOIN LATERAL (SELECT *
+                                      FROM licensing_user_subscriptions
+                                      WHERE user_id = ud.user_id
+                                        AND active = TRUE
+                                        AND COALESCE(status, '') <> 'deleted'
+                                      ORDER BY NULLIF(next_bill_date, '')::DATE DESC NULLS LAST
+                                      LIMIT 1) lus ON TRUE) rec;
     RETURN _result;
 END;
 $$;
