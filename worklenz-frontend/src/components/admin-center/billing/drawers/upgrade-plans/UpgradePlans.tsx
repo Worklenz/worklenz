@@ -1,22 +1,21 @@
 import { useEffect, useState, useMemo } from 'react';
-import {
-  Col,
-  Flex,
-  Row,
-  Typography,
-  message,
-  Space,
-  Alert,
-} from '@/shared/antd-imports';
+import { Col, Flex, Row, Typography, message, Space, Alert } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
-import { IPricingPlans, IUpgradeSubscriptionPlanResponse } from '@/types/admin-center/admin-center.types';
+import {
+  IPricingPlans,
+  IUpgradeSubscriptionPlanResponse,
+} from '@/types/admin-center/admin-center.types';
 import logger from '@/utils/errorLogger';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IPaddlePlans, SUBSCRIPTION_STATUS } from '@/shared/constants';
 import { useAuthService } from '@/hooks/useAuth';
-import { fetchBillingInfo, fetchStorageInfo, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import {
+  fetchBillingInfo,
+  fetchStorageInfo,
+  toggleUpgradeModal,
+} from '@/features/admin-center/admin-center.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { billingApiService, IPricingPlan } from '@/api/admin-center/billing.api.service';
 import { authApiService } from '@/api/auth/auth.api.service';
@@ -32,17 +31,12 @@ import {
   UserType,
   PlanType as MixpanelPlanType,
   BillingFrequency as MixpanelBillingFrequency,
-  PricingModel
+  PricingModel,
 } from '@/types/mixpanel-events.types';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
 import { isOnBusinessTrial } from '@/utils/subscription-utils';
 
-import {
-  PlanPriceDisplay,
-  PlanCardSkeleton,
-  PlanCard,
-  PlanSelectionControls
-} from './components';
+import { PlanPriceDisplay, PlanCardSkeleton, PlanCard, PlanSelectionControls } from './components';
 import {
   usePricingCalculations,
   useTeamSizeOptions,
@@ -52,10 +46,7 @@ import {
 } from './hooks';
 import { PricingData, AppSumoDiscountInfo, PlanType, BillingFrequency } from './types';
 import { getInitialPricingData, mapTierBasedPricingToFrontend } from './utils';
-import {
-  TEAM_SIZE_THRESHOLD,
-  MAX_TEAM_SIZE,
-} from './constants';
+import { TEAM_SIZE_THRESHOLD, MAX_TEAM_SIZE } from './constants';
 
 import './upgrade-plans.css';
 
@@ -132,7 +123,7 @@ const UpgradePlans = () => {
     getPerUserMonthlyPrice,
     getPerUserAnnualPrice,
     calculateOriginalMonthlyTotal,
-    calculateOriginalAnnualTotal
+    calculateOriginalAnnualTotal,
   } = usePricingCalculations(teamSize, pricingData, isAppSumoUser);
 
   // Show "Up to 30% off" label only for annual billing frequency
@@ -150,11 +141,16 @@ const UpgradePlans = () => {
   // Helper: plan ranking for upgrade/downgrade comparison
   const getPlanRank = (plan?: MixpanelPlanType): number => {
     switch (plan) {
-      case 'free': return 0;
-      case 'pro': return 1;
-      case 'business': return 2;
-      case 'enterprise': return 3;
-      default: return -1;
+      case 'free':
+        return 0;
+      case 'pro':
+        return 1;
+      case 'business':
+        return 2;
+      case 'enterprise':
+        return 3;
+      default:
+        return -1;
     }
   };
 
@@ -178,7 +174,11 @@ const UpgradePlans = () => {
     return max ?? Number.POSITIVE_INFINITY;
   };
 
-  const calculateTotalCostForPlan = (planType: 'pro' | 'business' | 'enterprise', teamSize: number, isAnnual: boolean): number => {
+  const calculateTotalCostForPlan = (
+    planType: 'pro' | 'business' | 'enterprise',
+    teamSize: number,
+    isAnnual: boolean
+  ): number => {
     if (planType === 'enterprise') {
       return isAnnual
         ? parseFloat(calculateAnnualTotal('enterprise'))
@@ -187,7 +187,12 @@ const UpgradePlans = () => {
 
     const calculateCostForSpecificTeamSize = (plan: 'pro' | 'business' | 'enterprise') => {
       let finalPrice = 0;
-      let planData = plan === 'pro' ? pricingData.pro : plan === 'business' ? pricingData.business : pricingData.enterprise;
+      let planData =
+        plan === 'pro'
+          ? pricingData.pro
+          : plan === 'business'
+            ? pricingData.business
+            : pricingData.enterprise;
 
       if (planData?.pricing_model?.startsWith('promo_')) {
         finalPrice = parseFloat(planData.monthly_base_price || '0');
@@ -203,7 +208,10 @@ const UpgradePlans = () => {
             ? parseFloat(pricingData.pro_small.annual_per_user_price || '0')
             : parseFloat(pricingData.pro_small.monthly_per_user_price || '0');
           finalPrice = perUserPrice * teamSize;
-        } else if (plan === 'business' && pricingData.business_small?.pricing_model === 'per_user') {
+        } else if (
+          plan === 'business' &&
+          pricingData.business_small?.pricing_model === 'per_user'
+        ) {
           const perUserPrice = isAnnual
             ? parseFloat(pricingData.business_small.annual_per_user_price || '0')
             : parseFloat(pricingData.business_small.monthly_per_user_price || '0');
@@ -219,7 +227,8 @@ const UpgradePlans = () => {
           const includedUsers = parseInt(planData.included_users) || 0;
           const extraUsers = Math.max(0, teamSize - includedUsers);
           const perUserPrice = isAnnual
-            ? parseFloat(planData.annual_per_user_price || planData.additional_user_price || '0') * 12
+            ? parseFloat(planData.annual_per_user_price || planData.additional_user_price || '0') *
+              12
             : parseFloat(planData.monthly_per_user_price || planData.additional_user_price || '0');
           finalPrice = basePrice + extraUsers * perUserPrice;
         }
@@ -235,7 +244,8 @@ const UpgradePlans = () => {
           const includedUsers = parseInt(planData.included_users) || 0;
           const extraUsers = Math.max(0, teamSize - includedUsers);
           const perUserPrice = isAnnual
-            ? parseFloat(planData.annual_per_user_price || planData.additional_user_price || '0') * 12
+            ? parseFloat(planData.annual_per_user_price || planData.additional_user_price || '0') *
+              12
             : parseFloat(planData.monthly_per_user_price || planData.additional_user_price || '0');
           finalPrice = basePrice + extraUsers * perUserPrice;
         }
@@ -345,7 +355,9 @@ const UpgradePlans = () => {
       old_team_size: oldSize,
       new_team_size: size,
       selected_plan: autoPlan as MixpanelPlanType,
-      pricing_model: getEffectivePricingModel(autoPlan as 'pro' | 'business' | 'enterprise') as PricingModel,
+      pricing_model: getEffectivePricingModel(
+        autoPlan as 'pro' | 'business' | 'enterprise'
+      ) as PricingModel,
     };
     trackMixpanelEvent(MixpanelBillingEvents.TEAM_SIZE_CHANGED, eventProps);
   };
@@ -386,9 +398,10 @@ const UpgradePlans = () => {
       setSelectedCard(paddlePlans.FREE);
     }
 
-    const effectivePricingModel = planType !== 'free' && planType !== 'enterprise'
-      ? getEffectivePricingModel(planType as 'pro' | 'business')
-      : 'base_plan';
+    const effectivePricingModel =
+      planType !== 'free' && planType !== 'enterprise'
+        ? getEffectivePricingModel(planType as 'pro' | 'business')
+        : 'base_plan';
 
     const eventProps: PlanSelectionEventProps = {
       user_type: getUserType,
@@ -402,8 +415,14 @@ const UpgradePlans = () => {
       billing_frequency: billingFrequency as MixpanelBillingFrequency,
       selected_team_size: teamSize,
       pricing_model: effectivePricingModel as PricingModel,
-      calculated_monthly_price: planType !== 'free' ? parseFloat(calculateMonthlyTotal(planType as 'pro' | 'business' | 'enterprise')) : 0,
-      calculated_annual_price: planType !== 'free' ? parseFloat(calculateAnnualTotal(planType as 'pro' | 'business' | 'enterprise')) : 0,
+      calculated_monthly_price:
+        planType !== 'free'
+          ? parseFloat(calculateMonthlyTotal(planType as 'pro' | 'business' | 'enterprise'))
+          : 0,
+      calculated_annual_price:
+        planType !== 'free'
+          ? parseFloat(calculateAnnualTotal(planType as 'pro' | 'business' | 'enterprise'))
+          : 0,
       discount_applied: isAppSumoUser,
       discount_percentage: isAppSumoUser ? 50 : undefined,
       is_small_team: teamSize <= TEAM_SIZE_THRESHOLD,
@@ -598,44 +617,63 @@ const UpgradePlans = () => {
       />
 
       {/* Pricing Model Information */}
-      {!isAppSumoUser && !isLoadingPlans && (pricingData.pro_small || pricingData.business_small) && (
-        <Row justify="center" style={{ marginBottom: 8 }}>
-          <Space direction="vertical" size="small" style={{ textAlign: 'center' }}>
-            {billingInfo?.total_used && (
-              <Typography.Text type="secondary" style={{ fontSize: '14px' }}>
-                {teamSize <= TEAM_SIZE_THRESHOLD && (pricingData.pro_small || pricingData.business_small)
-                  ? t('pricing-modal:pricingModel.autoPerUser', 'Automatically using per-user pricing for {{count}} user{{s}}', {
-                    count: teamSize,
-                    s: teamSize > 1 ? 's' : ''
-                  })
-                  : t('pricing-modal:pricingModel.autoBase', 'Automatically using base plan pricing for {{count}} user{{s}}', {
-                    count: teamSize,
-                    s: teamSize > 1 ? 's' : ''
-                  })}
-              </Typography.Text>
-            )}
-            {(() => {
-              if (isAppSumoUser) return null;
-              if (selectedPlanType === 'enterprise' || !selectedPlanType) return null;
-              const effectiveModel = getEffectivePricingModel(selectedPlanType as 'pro' | 'business' | 'enterprise');
-              if (effectiveModel !== 'base_plan') return null;
-              const planData = selectedPlanType === 'pro' ? pricingData.pro : pricingData.business;
-              const included = Number(planData?.included_users || planData?.users_included);
-              if (!included || Number.isNaN(included)) return null;
-              if (teamSize <= included) return null;
-              const perUserMonthly = planData?.monthly_per_user_price || planData?.additional_user_price || '5.99';
-              return (
-                <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
-                  {t('pricing-modal:pricingModel.additionalUserCharge', 'Includes {{included}} users. Each additional user is ${{price}}/month.', {
-                    included,
-                    price: perUserMonthly,
-                  })}
+      {!isAppSumoUser &&
+        !isLoadingPlans &&
+        (pricingData.pro_small || pricingData.business_small) && (
+          <Row justify="center" style={{ marginBottom: 8 }}>
+            <Space direction="vertical" size="small" style={{ textAlign: 'center' }}>
+              {billingInfo?.total_used && (
+                <Typography.Text type="secondary" style={{ fontSize: '14px' }}>
+                  {teamSize <= TEAM_SIZE_THRESHOLD &&
+                  (pricingData.pro_small || pricingData.business_small)
+                    ? t(
+                        'pricing-modal:pricingModel.autoPerUser',
+                        'Automatically using per-user pricing for {{count}} user{{s}}',
+                        {
+                          count: teamSize,
+                          s: teamSize > 1 ? 's' : '',
+                        }
+                      )
+                    : t(
+                        'pricing-modal:pricingModel.autoBase',
+                        'Automatically using base plan pricing for {{count}} user{{s}}',
+                        {
+                          count: teamSize,
+                          s: teamSize > 1 ? 's' : '',
+                        }
+                      )}
                 </Typography.Text>
-              );
-            })()}
-          </Space>
-        </Row>
-      )}
+              )}
+              {(() => {
+                if (isAppSumoUser) return null;
+                if (selectedPlanType === 'enterprise' || !selectedPlanType) return null;
+                const effectiveModel = getEffectivePricingModel(
+                  selectedPlanType as 'pro' | 'business' | 'enterprise'
+                );
+                if (effectiveModel !== 'base_plan') return null;
+                const planData =
+                  selectedPlanType === 'pro' ? pricingData.pro : pricingData.business;
+                const included = Number(planData?.included_users || planData?.users_included);
+                if (!included || Number.isNaN(included)) return null;
+                if (teamSize <= included) return null;
+                const perUserMonthly =
+                  planData?.monthly_per_user_price || planData?.additional_user_price || '5.99';
+                return (
+                  <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+                    {t(
+                      'pricing-modal:pricingModel.additionalUserCharge',
+                      'Includes {{included}} users. Each additional user is ${{price}}/month.',
+                      {
+                        included,
+                        price: perUserMonthly,
+                      }
+                    )}
+                  </Typography.Text>
+                );
+              })()}
+            </Space>
+          </Row>
+        )}
 
       {/* Pricing Cards */}
       <Row className="w-full" gutter={[12, 12]} style={{ marginTop: 8 }}>
@@ -643,12 +681,20 @@ const UpgradePlans = () => {
           <>
             {!isAppSumoUser && (
               <>
-                <Col xs={24} lg={6}><PlanCardSkeleton /></Col>
-                <Col xs={24} lg={6}><PlanCardSkeleton /></Col>
+                <Col xs={24} lg={6}>
+                  <PlanCardSkeleton />
+                </Col>
+                <Col xs={24} lg={6}>
+                  <PlanCardSkeleton />
+                </Col>
               </>
             )}
-            <Col xs={24} lg={isAppSumoUser ? 12 : 6}><PlanCardSkeleton /></Col>
-            <Col xs={24} lg={isAppSumoUser ? 12 : 6}><PlanCardSkeleton /></Col>
+            <Col xs={24} lg={isAppSumoUser ? 12 : 6}>
+              <PlanCardSkeleton />
+            </Col>
+            <Col xs={24} lg={isAppSumoUser ? 12 : 6}>
+              <PlanCardSkeleton />
+            </Col>
           </>
         ) : (
           <>
@@ -710,7 +756,10 @@ const UpgradePlans = () => {
                   }
                   selectedPlanType={selectedPlanType}
                   onPlanSelect={handlePlanSelect}
-                  primaryActionLabel={t('pricing-modal:buttons.choosePlan', 'Continue with Selected Plan')}
+                  primaryActionLabel={t(
+                    'pricing-modal:buttons.choosePlan',
+                    'Continue with Selected Plan'
+                  )}
                   onPrimaryAction={() => {
                     handlePlanSelect('pro');
                     void continueWithPaddlePlan('pro');
@@ -720,11 +769,19 @@ const UpgradePlans = () => {
                   footerNote={(() => {
                     if (billingFrequency === 'annual') {
                       const annualTotal = calculateAnnualTotal('pro');
-                      const userText = t('pricing-modal:billing.forUsers', ' for {{count}} user{{s}}', { count: teamSize, s: teamSize > 1 ? 's' : '' });
+                      const userText = t(
+                        'pricing-modal:billing.forUsers',
+                        ' for {{count}} user{{s}}',
+                        { count: teamSize, s: teamSize > 1 ? 's' : '' }
+                      );
                       return `$${annualTotal}/year${userText}`;
                     } else {
                       const monthlyTotal = calculateMonthlyTotal('pro');
-                      const userText = t('pricing-modal:billing.forUsers', ' for {{count}} user{{s}}', { count: teamSize, s: teamSize > 1 ? 's' : '' });
+                      const userText = t(
+                        'pricing-modal:billing.forUsers',
+                        ' for {{count}} user{{s}}',
+                        { count: teamSize, s: teamSize > 1 ? 's' : '' }
+                      );
                       return `$${monthlyTotal}/month${userText}`;
                     }
                   })()}
@@ -741,7 +798,11 @@ const UpgradePlans = () => {
             <Col xs={24} lg={isAppSumoUser ? 24 : 6}>
               <PlanCard
                 planType="business"
-                title={isAppSumoUser ? t('pricing-modal:plans.business.namePromo', 'Business (AppSumo Special)') : t('pricing-modal:plans.business.name')}
+                title={
+                  isAppSumoUser
+                    ? t('pricing-modal:plans.business.namePromo', 'Business (AppSumo Special)')
+                    : t('pricing-modal:plans.business.name')
+                }
                 description={t('pricing-modal:plans.business.description')}
                 features={generateBusinessPlanFeatures()}
                 priceDisplay={
@@ -761,12 +822,18 @@ const UpgradePlans = () => {
                 selectedPlanType={selectedPlanType}
                 onPlanSelect={handlePlanSelect}
                 primaryActionLabel={
-                  trialEligibilityChecked && canStartBusinessTrial && !isOnBusinessTrial(currentSession)
+                  trialEligibilityChecked &&
+                  canStartBusinessTrial &&
+                  !isOnBusinessTrial(currentSession)
                     ? t('business-trial-start', { defaultValue: 'Start Free Trial' })
                     : t('pricing-modal:buttons.choosePlan', 'Continue with Selected Plan')
                 }
                 onPrimaryAction={() => {
-                  if (trialEligibilityChecked && canStartBusinessTrial && !isOnBusinessTrial(currentSession)) {
+                  if (
+                    trialEligibilityChecked &&
+                    canStartBusinessTrial &&
+                    !isOnBusinessTrial(currentSession)
+                  ) {
                     void startBusinessTrial();
                   } else {
                     handlePlanSelect('business');
@@ -775,18 +842,28 @@ const UpgradePlans = () => {
                 }}
                 primaryActionDisabled={isLoadingPlans}
                 primaryActionLoading={
-                  trialEligibilityChecked && canStartBusinessTrial && !isOnBusinessTrial(currentSession)
+                  trialEligibilityChecked &&
+                  canStartBusinessTrial &&
+                  !isOnBusinessTrial(currentSession)
                     ? businessTrialLoading
                     : loadingPlanType === 'business'
                 }
                 footerNote={(() => {
                   if (billingFrequency === 'annual') {
                     const annualTotal = calculateAnnualTotal('business');
-                    const userText = t('pricing-modal:billing.forUsers', ' for {{count}} user{{s}}', { count: teamSize, s: teamSize > 1 ? 's' : '' });
+                    const userText = t(
+                      'pricing-modal:billing.forUsers',
+                      ' for {{count}} user{{s}}',
+                      { count: teamSize, s: teamSize > 1 ? 's' : '' }
+                    );
                     return `$${annualTotal}/year${userText}`;
                   } else {
                     const monthlyTotal = calculateMonthlyTotal('business');
-                    const userText = t('pricing-modal:billing.forUsers', ' for {{count}} user{{s}}', { count: teamSize, s: teamSize > 1 ? 's' : '' });
+                    const userText = t(
+                      'pricing-modal:billing.forUsers',
+                      ' for {{count}} user{{s}}',
+                      { count: teamSize, s: teamSize > 1 ? 's' : '' }
+                    );
                     return `$${monthlyTotal}/month${userText}`;
                   }
                 })()}
@@ -822,7 +899,10 @@ const UpgradePlans = () => {
                   }
                   selectedPlanType={selectedPlanType}
                   onPlanSelect={handlePlanSelect}
-                  primaryActionLabel={t('pricing-modal:buttons.choosePlan', 'Continue with Selected Plan')}
+                  primaryActionLabel={t(
+                    'pricing-modal:buttons.choosePlan',
+                    'Continue with Selected Plan'
+                  )}
                   onPrimaryAction={() => {
                     handlePlanSelect('enterprise');
                     void continueWithPaddlePlan('enterprise');

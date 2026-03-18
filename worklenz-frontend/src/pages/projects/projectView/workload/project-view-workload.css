@@ -28,14 +28,14 @@
 }
 
 /* Dark mode scrollbar */
-[data-theme='dark'] .workload-scroll-container {
+[data-theme="dark"] .workload-scroll-container {
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
-[data-theme='dark'] .workload-scroll-container::-webkit-scrollbar-thumb {
+[data-theme="dark"] .workload-scroll-container::-webkit-scrollbar-thumb {
   background-color: rgba(255, 255, 255, 0.2);
 }
 
-[data-theme='dark'] .workload-scroll-container::-webkit-scrollbar-thumb:hover {
+[data-theme="dark"] .workload-scroll-container::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.3);
 }

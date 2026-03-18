@@ -321,10 +321,16 @@ const ProjectViewFinance = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      message.success(t('messages.financeDataExportedSuccessfully', { defaultValue: 'Finance data exported successfully' }));
+      message.success(
+        t('messages.financeDataExportedSuccessfully', {
+          defaultValue: 'Finance data exported successfully',
+        })
+      );
     } catch (error) {
       console.error('Export failed:', error);
-      message.error(t('messages.failedToExportFinanceData', { defaultValue: 'Failed to export finance data' }));
+      message.error(
+        t('messages.failedToExportFinanceData', { defaultValue: 'Failed to export finance data' })
+      );
     } finally {
       setExporting(false);
     }
@@ -332,7 +338,11 @@ const ProjectViewFinance = () => {
 
   const handleCurrencyChange = async (currency: string) => {
     if (!projectId || !hasEditPermission) {
-      message.error(t('messages.noPermissionToChangeCurrency', { defaultValue: 'You do not have permission to change the project currency' }));
+      message.error(
+        t('messages.noPermissionToChangeCurrency', {
+          defaultValue: 'You do not have permission to change the project currency',
+        })
+      );
       return;
     }
 
@@ -346,10 +356,18 @@ const ProjectViewFinance = () => {
       dispatch(updateProjectCurrency(upperCaseCurrency));
       dispatch(updateProjectFinanceCurrency(upperCaseCurrency));
 
-      message.success(t('messages.projectCurrencyUpdatedSuccessfully', { defaultValue: 'Project currency updated successfully' }));
+      message.success(
+        t('messages.projectCurrencyUpdatedSuccessfully', {
+          defaultValue: 'Project currency updated successfully',
+        })
+      );
     } catch (error) {
       console.error('Currency update failed:', error);
-      message.error(t('messages.failedToUpdateProjectCurrency', { defaultValue: 'Failed to update project currency' }));
+      message.error(
+        t('messages.failedToUpdateProjectCurrency', {
+          defaultValue: 'Failed to update project currency',
+        })
+      );
     } finally {
       setUpdatingCurrency(false);
     }
@@ -357,13 +375,21 @@ const ProjectViewFinance = () => {
 
   const handleBudgetUpdate = async () => {
     if (!projectId || !hasEditPermission) {
-      message.error(t('messages.noPermissionToChangeBudget', { defaultValue: 'You do not have permission to change the project budget' }));
+      message.error(
+        t('messages.noPermissionToChangeBudget', {
+          defaultValue: 'You do not have permission to change the project budget',
+        })
+      );
       return;
     }
 
     const budget = parseFloat(budgetValue);
     if (isNaN(budget) || budget < 0) {
-      message.error(t('messages.pleaseEnterValidBudgetAmount', { defaultValue: 'Please enter a valid budget amount' }));
+      message.error(
+        t('messages.pleaseEnterValidBudgetAmount', {
+          defaultValue: 'Please enter a valid budget amount',
+        })
+      );
       return;
     }
 
@@ -377,11 +403,19 @@ const ProjectViewFinance = () => {
       // Also refresh the main project data to update budget statistics
       dispatch(getProject(projectId));
 
-      message.success(t('messages.projectBudgetUpdatedSuccessfully', { defaultValue: 'Project budget updated successfully' }));
+      message.success(
+        t('messages.projectBudgetUpdatedSuccessfully', {
+          defaultValue: 'Project budget updated successfully',
+        })
+      );
       setBudgetModalVisible(false);
     } catch (error) {
       console.error('Budget update failed:', error);
-      message.error(t('messages.failedToUpdateProjectBudget', { defaultValue: 'Failed to update project budget' }));
+      message.error(
+        t('messages.failedToUpdateProjectBudget', {
+          defaultValue: 'Failed to update project budget',
+        })
+      );
     } finally {
       setUpdatingBudget(false);
     }
@@ -403,13 +437,24 @@ const ProjectViewFinance = () => {
     {
       key: 'phases',
       value: 'phases',
-      label: phaseList.length > 0 ? project?.phase_label || t('phaseText', { defaultValue: 'Phase' }) : t('phaseText', { defaultValue: 'Phase' }),
+      label:
+        phaseList.length > 0
+          ? project?.phase_label || t('phaseText', { defaultValue: 'Phase' })
+          : t('phaseText', { defaultValue: 'Phase' }),
     },
   ];
 
   const billableFilterOptions = [
-    { key: 'billable', value: 'billable', label: t('billableOnlyText', { defaultValue: 'Billable Only' }) },
-    { key: 'non-billable', value: 'non-billable', label: t('nonBillableOnlyText', { defaultValue: 'Non-Billable Only' }) },
+    {
+      key: 'billable',
+      value: 'billable',
+      label: t('billableOnlyText', { defaultValue: 'Billable Only' }),
+    },
+    {
+      key: 'non-billable',
+      value: 'non-billable',
+      label: t('nonBillableOnlyText', { defaultValue: 'Non-Billable Only' }),
+    },
     { key: 'all', value: 'all', label: t('allTasksText', { defaultValue: 'All Tasks' }) },
   ];
 
@@ -417,8 +462,13 @@ const ProjectViewFinance = () => {
     <Flex vertical gap={16} style={{ overflowX: 'hidden' }}>
       {!hasBusinessAccess && (
         <Alert
-          message={t('alerts.businessPlanRequired.message', { defaultValue: 'Business Plan Required' })}
-          description={t('alerts.businessPlanRequired.description', { defaultValue: 'Project finance features are available only on Business and Enterprise plans. Upgrade your plan to access these features.' })}
+          message={t('alerts.businessPlanRequired.message', {
+            defaultValue: 'Business Plan Required',
+          })}
+          description={t('alerts.businessPlanRequired.description', {
+            defaultValue:
+              'Project finance features are available only on Business and Enterprise plans. Upgrade your plan to access these features.',
+          })}
           type="warning"
           showIcon
           style={{ marginBottom: 16 }}
@@ -430,7 +480,15 @@ const ProjectViewFinance = () => {
         <Flex gap={16} align="center" justify="space-between">
           <Flex gap={16} align="center">
             <Flex>
-              <Tooltip title={!hasBusinessAccess ? t('tooltips.availableOnlyOnBusinessPlan', { defaultValue: 'Available only on Business plan' }) : ''}>
+              <Tooltip
+                title={
+                  !hasBusinessAccess
+                    ? t('tooltips.availableOnlyOnBusinessPlan', {
+                        defaultValue: 'Available only on Business plan',
+                      })
+                    : ''
+                }
+              >
                 <Button
                   className={`${activeTab === 'finance' && 'border-[#1890ff] text-[#1890ff]'} rounded-r-none`}
                   onClick={() => hasBusinessAccess && dispatch(setActiveTab('finance'))}
@@ -439,7 +497,15 @@ const ProjectViewFinance = () => {
                   {t('financeText', { defaultValue: 'Finance' })}
                 </Button>
               </Tooltip>
-              <Tooltip title={!hasBusinessAccess ? t('tooltips.availableOnlyOnBusinessPlan', { defaultValue: 'Available only on Business plan' }) : ''}>
+              <Tooltip
+                title={
+                  !hasBusinessAccess
+                    ? t('tooltips.availableOnlyOnBusinessPlan', {
+                        defaultValue: 'Available only on Business plan',
+                      })
+                    : ''
+                }
+              >
                 <Button
                   className={`${activeTab === 'ratecard' && 'border-[#1890ff] text-[#1890ff]'} rounded-l-none`}
                   onClick={() => hasBusinessAccess && dispatch(setActiveTab('ratecard'))}
@@ -480,7 +546,15 @@ const ProjectViewFinance = () => {
           </Flex>
 
           {activeTab === 'finance' ? (
-            <Tooltip title={!hasBusinessAccess ? t('tooltips.availableOnlyOnBusinessPlan', { defaultValue: 'Available only on Business plan' }) : ''}>
+            <Tooltip
+              title={
+                !hasBusinessAccess
+                  ? t('tooltips.availableOnlyOnBusinessPlan', {
+                      defaultValue: 'Available only on Business plan',
+                    })
+                  : ''
+              }
+            >
               <Button
                 type="primary"
                 icon={<DownOutlined />}
@@ -510,7 +584,15 @@ const ProjectViewFinance = () => {
                   onChange={handleCurrencyChange}
                 />
               </Flex>
-              <Tooltip title={!hasBusinessAccess ? t('tooltips.availableOnlyOnBusinessPlan', { defaultValue: 'Available only on Business plan' }) : ''}>
+              <Tooltip
+                title={
+                  !hasBusinessAccess
+                    ? t('tooltips.availableOnlyOnBusinessPlan', {
+                        defaultValue: 'Available only on Business plan',
+                      })
+                    : ''
+                }
+              >
                 <Button
                   type="primary"
                   onClick={() => dispatch(toggleImportRatecardsDrawer())}
@@ -536,7 +618,10 @@ const ProjectViewFinance = () => {
             {!hasEditPermission && hasBusinessAccess && (
               <Alert
                 message={t('alerts.limitedAccess.message', { defaultValue: 'Limited Access' })}
-                description={t('alerts.limitedAccess.financeDescription', { defaultValue: 'You can view finance data but cannot edit fixed costs. Only project managers, team admins, and team owners can make changes.' })}
+                description={t('alerts.limitedAccess.financeDescription', {
+                  defaultValue:
+                    'You can view finance data but cannot edit fixed costs. Only project managers, team admins, and team owners can make changes.',
+                })}
                 type="info"
                 showIcon
                 style={{ marginBottom: 16 }}
@@ -549,15 +634,23 @@ const ProjectViewFinance = () => {
                 <Flex align="center" justify="space-between">
                   <Flex align="center" gap={8}>
                     <CalculatorOutlined />
-                    <Typography.Text strong>{t('projectBudgetOverviewText', { defaultValue: 'Project Budget Overview' })}</Typography.Text>
+                    <Typography.Text strong>
+                      {t('projectBudgetOverviewText', { defaultValue: 'Project Budget Overview' })}
+                    </Typography.Text>
                     {!budgetStatistics.hasManualBudget && (
                       <Typography.Text type="warning" style={{ fontSize: '12px' }}>
-                        {t('budgetStatistics.noManualBudgetSet', { defaultValue: '(No Manual Budget Set)' })}
+                        {t('budgetStatistics.noManualBudgetSet', {
+                          defaultValue: '(No Manual Budget Set)',
+                        })}
                       </Typography.Text>
                     )}
                   </Flex>
                   {hasEditPermission && (
-                    <Tooltip title={t('tooltips.budgetCalculationSettings', { defaultValue: 'Budget & Calculation Settings' })}>
+                    <Tooltip
+                      title={t('tooltips.budgetCalculationSettings', {
+                        defaultValue: 'Budget & Calculation Settings',
+                      })}
+                    >
                       <Button
                         type="text"
                         icon={<SettingOutlined />}
@@ -575,12 +668,20 @@ const ProjectViewFinance = () => {
             >
               <Row gutter={[12, 8]}>
                 <Col xs={12} sm={8} md={6} lg={4} xl={3}>
-                  <Tooltip title={t('budgetOverviewTooltips.manualBudget', { defaultValue: 'Manual project budget amount set by project manager' })}>
+                  <Tooltip
+                    title={t('budgetOverviewTooltips.manualBudget', {
+                      defaultValue: 'Manual project budget amount set by project manager',
+                    })}
+                  >
                     <div style={{ textAlign: 'center', position: 'relative' }}>
                       <Statistic
                         title={
                           <Flex align="center" justify="center" gap={4}>
-                            <span>{t('budgetStatistics.manualBudget', { defaultValue: 'Manual Budget' })}</span>
+                            <span>
+                              {t('budgetStatistics.manualBudget', {
+                                defaultValue: 'Manual Budget',
+                              })}
+                            </span>
                             {hasEditPermission && (
                               <Button
                                 type="text"
@@ -609,9 +710,15 @@ const ProjectViewFinance = () => {
                   </Tooltip>
                 </Col>
                 <Col xs={12} sm={8} md={6} lg={4} xl={3}>
-                  <Tooltip title={t('budgetOverviewTooltips.totalActualCost', { defaultValue: 'Total actual cost including fixed costs' })}>
+                  <Tooltip
+                    title={t('budgetOverviewTooltips.totalActualCost', {
+                      defaultValue: 'Total actual cost including fixed costs',
+                    })}
+                  >
                     <Statistic
-                      title={t('budgetStatistics.totalActualCost', { defaultValue: 'Total Actual Cost' })}
+                      title={t('budgetStatistics.totalActualCost', {
+                        defaultValue: 'Total Actual Cost',
+                      })}
                       value={budgetStatistics.totalActualCost}
                       precision={2}
                       prefix={projectCurrency.toUpperCase()}
@@ -621,7 +728,11 @@ const ProjectViewFinance = () => {
                   </Tooltip>
                 </Col>
                 <Col xs={12} sm={8} md={6} lg={4} xl={3}>
-                  <Tooltip title={t('budgetOverviewTooltips.variance', { defaultValue: 'Difference between manual budget and actual cost' })}>
+                  <Tooltip
+                    title={t('budgetOverviewTooltips.variance', {
+                      defaultValue: 'Difference between manual budget and actual cost',
+                    })}
+                  >
                     <Statistic
                       title={t('budgetStatistics.variance', { defaultValue: 'Variance' })}
                       value={Math.abs(budgetStatistics.totalVariance)}
@@ -643,9 +754,15 @@ const ProjectViewFinance = () => {
                   </Tooltip>
                 </Col>
                 <Col xs={12} sm={8} md={6} lg={4} xl={3}>
-                  <Tooltip title={t('budgetOverviewTooltips.utilization', { defaultValue: 'Percentage of manual budget utilized' })}>
+                  <Tooltip
+                    title={t('budgetOverviewTooltips.utilization', {
+                      defaultValue: 'Percentage of manual budget utilized',
+                    })}
+                  >
                     <Statistic
-                      title={t('budgetStatistics.budgetUtilization', { defaultValue: 'Budget Utilization' })}
+                      title={t('budgetStatistics.budgetUtilization', {
+                        defaultValue: 'Budget Utilization',
+                      })}
                       value={budgetStatistics.budgetUtilization}
                       precision={1}
                       suffix="%"
@@ -663,9 +780,15 @@ const ProjectViewFinance = () => {
                   </Tooltip>
                 </Col>
                 <Col xs={12} sm={8} md={6} lg={4} xl={3}>
-                  <Tooltip title={t('budgetOverviewTooltips.estimatedHours', { defaultValue: 'Total estimated hours from all tasks' })}>
+                  <Tooltip
+                    title={t('budgetOverviewTooltips.estimatedHours', {
+                      defaultValue: 'Total estimated hours from all tasks',
+                    })}
+                  >
                     <Statistic
-                      title={t('budgetStatistics.estimatedHours', { defaultValue: 'Estimated Hours' })}
+                      title={t('budgetStatistics.estimatedHours', {
+                        defaultValue: 'Estimated Hours',
+                      })}
                       value={budgetStatistics.totalEstimatedHours}
                       precision={1}
                       suffix="h"
@@ -675,7 +798,11 @@ const ProjectViewFinance = () => {
                   </Tooltip>
                 </Col>
                 <Col xs={12} sm={8} md={6} lg={4} xl={3}>
-                  <Tooltip title={t('budgetOverviewTooltips.fixedCosts', { defaultValue: 'Total fixed costs from all tasks' })}>
+                  <Tooltip
+                    title={t('budgetOverviewTooltips.fixedCosts', {
+                      defaultValue: 'Total fixed costs from all tasks',
+                    })}
+                  >
                     <Statistic
                       title={t('budgetStatistics.fixedCosts', { defaultValue: 'Fixed Costs' })}
                       value={budgetStatistics.totalFixedCost}
@@ -687,9 +814,15 @@ const ProjectViewFinance = () => {
                   </Tooltip>
                 </Col>
                 <Col xs={12} sm={8} md={6} lg={4} xl={3}>
-                  <Tooltip title={t('budgetOverviewTooltips.timeBasedCost', { defaultValue: 'Actual cost from time tracking (excluding fixed costs)' })}>
+                  <Tooltip
+                    title={t('budgetOverviewTooltips.timeBasedCost', {
+                      defaultValue: 'Actual cost from time tracking (excluding fixed costs)',
+                    })}
+                  >
                     <Statistic
-                      title={t('budgetStatistics.timeBasedCost', { defaultValue: 'Time-based Cost' })}
+                      title={t('budgetStatistics.timeBasedCost', {
+                        defaultValue: 'Time-based Cost',
+                      })}
                       value={budgetStatistics.totalTimeBasedCost}
                       precision={2}
                       prefix={projectCurrency.toUpperCase()}
@@ -699,9 +832,15 @@ const ProjectViewFinance = () => {
                   </Tooltip>
                 </Col>
                 <Col xs={12} sm={8} md={6} lg={4} xl={3}>
-                  <Tooltip title={t('budgetOverviewTooltips.remainingBudget', { defaultValue: 'Remaining budget amount' })}>
+                  <Tooltip
+                    title={t('budgetOverviewTooltips.remainingBudget', {
+                      defaultValue: 'Remaining budget amount',
+                    })}
+                  >
                     <Statistic
-                      title={t('budgetStatistics.remainingBudget', { defaultValue: 'Remaining Budget' })}
+                      title={t('budgetStatistics.remainingBudget', {
+                        defaultValue: 'Remaining Budget',
+                      })}
                       value={Math.abs(budgetStatistics.totalVariance)}
                       precision={2}
                       prefix={budgetStatistics.totalVariance >= 0 ? '+' : '-'}
@@ -725,7 +864,10 @@ const ProjectViewFinance = () => {
             {!hasEditPermission && hasBusinessAccess && (
               <Alert
                 message={t('alerts.limitedAccess.message', { defaultValue: 'Limited Access' })}
-                description={t('alerts.limitedAccess.ratecardDescription', { defaultValue: 'You can view rate card data but cannot edit rates or manage member assignments. Only project managers, team admins, and team owners can make changes.' })}
+                description={t('alerts.limitedAccess.ratecardDescription', {
+                  defaultValue:
+                    'You can view rate card data but cannot edit rates or manage member assignments. Only project managers, team admins, and team owners can make changes.',
+                })}
                 type="info"
                 showIcon
                 style={{ marginBottom: 16 }}
@@ -733,7 +875,10 @@ const ProjectViewFinance = () => {
             )}
             <RateCardTable />
             <Typography.Text type="danger" style={{ display: 'block', marginTop: '10px' }}>
-              {t('ratecardImportantNotice', { defaultValue: '* This rate card is generated based on the company\'s standard job titles and rates. However, you have the flexibility to modify it according to the project. These changes will not impact the organization\'s standard job titles and rates.' })}
+              {t('ratecardImportantNotice', {
+                defaultValue:
+                  "* This rate card is generated based on the company's standard job titles and rates. However, you have the flexibility to modify it according to the project. These changes will not impact the organization's standard job titles and rates.",
+              })}
             </Typography.Text>
             <ImportRatecardsDrawer />
           </Flex>
@@ -751,7 +896,12 @@ const ProjectViewFinance = () => {
         cancelText={t('budgetModal.cancelButton', { defaultValue: 'Cancel' })}
       >
         <div style={{ marginBottom: 16 }}>
-          <Typography.Text type="secondary">{t('budgetModal.description', { defaultValue: 'Set a manual budget for this project. This budget will be used for all financial calculations and should include both time-based costs and fixed costs.' })}</Typography.Text>
+          <Typography.Text type="secondary">
+            {t('budgetModal.description', {
+              defaultValue:
+                'Set a manual budget for this project. This budget will be used for all financial calculations and should include both time-based costs and fixed costs.',
+            })}
+          </Typography.Text>
         </div>
         <Input
           type="number"

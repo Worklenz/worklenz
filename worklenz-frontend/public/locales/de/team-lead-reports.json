@@ -1,7 +1,7 @@
 {
   "title": "Meine Team-Berichte",
   "subtitle": "Zeiterfassung und Leistungseinblicke für Ihre Teammitglieder",
-  
+
   "dateRange": {
     "label": "Zeitraum",
     "showing": "Anzeigen",
@@ -103,4 +103,3 @@
 
   "export": "Exportieren"
 }
-

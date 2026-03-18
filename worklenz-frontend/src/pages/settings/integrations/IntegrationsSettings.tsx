@@ -52,11 +52,11 @@ function IntegrationCard({ icon, title, description, available, children }: Inte
             >
               {t('connect', { defaultValue: 'Connect' })}
             </Button>
-            ) : (
-              <Button disabled size="large" className="w-full h-12 text-base font-medium">
-                {t('comingSoon', { defaultValue: 'Coming Soon' })}
-              </Button>
-            )}
+          ) : (
+            <Button disabled size="large" className="w-full h-12 text-base font-medium">
+              {t('comingSoon', { defaultValue: 'Coming Soon' })}
+            </Button>
+          )}
         </div>
       </div>
     </Card>
@@ -83,16 +83,16 @@ function IntegrationsSettings() {
           <SlackIntegration />
         </IntegrationCard>
 
-         {/* MS Teams Integration - Coming Soon */}
-         <IntegrationCard
-           icon={<MSTeamsIcon />}
-           title={t('teams.title', { defaultValue: 'Microsoft Teams' })}
-           description={t('teams.description', {
-             defaultValue:
-               'Integrate Microsoft Teams with your Worklenz team to receive real-time notifications, create tasks from Teams, and keep your team synchronized across both platforms.',
-           })}
-           available={false}
-         />
+        {/* MS Teams Integration - Coming Soon */}
+        <IntegrationCard
+          icon={<MSTeamsIcon />}
+          title={t('teams.title', { defaultValue: 'Microsoft Teams' })}
+          description={t('teams.description', {
+            defaultValue:
+              'Integrate Microsoft Teams with your Worklenz team to receive real-time notifications, create tasks from Teams, and keep your team synchronized across both platforms.',
+          })}
+          available={false}
+        />
 
         {/* GitHub Integration - Coming Soon */}
         <IntegrationCard

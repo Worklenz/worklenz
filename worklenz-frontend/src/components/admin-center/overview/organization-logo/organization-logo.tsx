@@ -1,5 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Flex, Typography, Spin, message, Tooltip, Button, Popconfirm, Alert } from '@/shared/antd-imports';
+import {
+  Flex,
+  Typography,
+  Spin,
+  message,
+  Tooltip,
+  Button,
+  Popconfirm,
+  Alert,
+} from '@/shared/antd-imports';
 import {
   LoadingOutlined,
   PlusOutlined,
@@ -104,7 +113,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
       const img = new Image();
       const objectUrl = URL.createObjectURL(file);
 
-      const dimensionErrors = await new Promise<string[]>((resolve) => {
+      const dimensionErrors = await new Promise<string[]>(resolve => {
         img.onload = () => {
           const errors: string[] = [];
 
@@ -134,7 +143,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
 
       // Block upload if dimension/aspect ratio validation fails
       if (dimensionErrors.length > 0) {
-        dimensionErrors.forEach((err) => message.error(err));
+        dimensionErrors.forEach(err => message.error(err));
         return;
       }
 
@@ -297,7 +306,13 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
           }}
         />
       ) : (
-        <Flex align="center" justify="center" vertical gap={12} style={{ height: '100%', padding: '16px' }}>
+        <Flex
+          align="center"
+          justify="center"
+          vertical
+          gap={12}
+          style={{ height: '100%', padding: '16px' }}
+        >
           <div
             style={{
               width: '48px',
@@ -316,7 +331,10 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
           <Typography.Text type="secondary" style={{ fontSize: 13, textAlign: 'center' }}>
             {t('uploadLogo')}
           </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 11, textAlign: 'center', opacity: 0.7 }}>
+          <Typography.Text
+            type="secondary"
+            style={{ fontSize: 11, textAlign: 'center', opacity: 0.7 }}
+          >
             {t('logoSupportedFormats')}
           </Typography.Text>
         </Flex>
@@ -397,7 +415,10 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
               </Typography.Text>
             )}
 
-            <Typography.Text type="secondary" style={{ fontSize: 11, lineHeight: 1.5, marginTop: 8, opacity: 0.7 }}>
+            <Typography.Text
+              type="secondary"
+              style={{ fontSize: 11, lineHeight: 1.5, marginTop: 8, opacity: 0.7 }}
+            >
               {t('logoUsage')}
             </Typography.Text>
           </Flex>

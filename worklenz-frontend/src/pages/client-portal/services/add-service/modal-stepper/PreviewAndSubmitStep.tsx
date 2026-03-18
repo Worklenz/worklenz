@@ -31,7 +31,7 @@ const PreviewAndSubmitStep = ({ setCurrent, service }: PreviewAndSubmitStepProps
 
   const navigate = useNavigate();
   const [createService, { isLoading }] = useCreateOrganizationServiceMutation();
-  
+
   // Get Ant Design theme tokens
   const { token } = theme.useToken();
 
@@ -46,29 +46,33 @@ const PreviewAndSubmitStep = ({ setCurrent, service }: PreviewAndSubmitStepProps
 
       // Extract image data if present
       console.log('Service data before processing:', service.service_data);
-      if (service.service_data?.images && service.service_data.images.length > 0 && service.service_data.imageFile) {
+      if (
+        service.service_data?.images &&
+        service.service_data.images.length > 0 &&
+        service.service_data.imageFile
+      ) {
         const base64Image = service.service_data.images[0];
         const imageFile = service.service_data.imageFile;
-        
+
         console.log('Found image data:', {
           hasImage: !!base64Image,
           imageLength: base64Image?.length,
           imageFile,
-          startsWithData: base64Image?.startsWith('data:')
+          startsWithData: base64Image?.startsWith('data:'),
         });
-        
+
         // Only process if it's base64 data (starts with 'data:')
         if (base64Image.startsWith('data:')) {
           imageData = base64Image;
           imageName = imageFile.fileName;
           imageType = imageFile.fileType;
-          
+
           console.log('Sending image data:', {
             imageName,
             imageType,
-            imageDataLength: imageData.length
+            imageDataLength: imageData.length,
           });
-          
+
           // Remove image data from service_data since it will be handled separately
           serviceDataToSave = {
             ...serviceDataToSave,
@@ -80,16 +84,17 @@ const PreviewAndSubmitStep = ({ setCurrent, service }: PreviewAndSubmitStepProps
         console.log('No image data found in service:', {
           hasImages: !!service.service_data?.images,
           imagesLength: service.service_data?.images?.length,
-          hasImageFile: !!service.service_data?.imageFile
+          hasImageFile: !!service.service_data?.imageFile,
         });
       }
 
       // Create service with image in single request
       await createService({
         name: service.name,
-        description: typeof service.service_data?.description === 'string' 
-          ? service.service_data.description 
-          : service.service_data?.description?.toString() || '',
+        description:
+          typeof service.service_data?.description === 'string'
+            ? service.service_data.description
+            : service.service_data?.description?.toString() || '',
         service_data: serviceDataToSave,
         is_public: service.is_public ?? true,
         price: service.price,
@@ -100,7 +105,7 @@ const PreviewAndSubmitStep = ({ setCurrent, service }: PreviewAndSubmitStepProps
         imageName,
         imageType,
       }).unwrap();
-      
+
       message.success(t('serviceCreatedSuccessfully') || 'Service created successfully!');
       navigate(-1); // Go back to services list
     } catch (error) {
@@ -144,20 +149,20 @@ const PreviewAndSubmitStep = ({ setCurrent, service }: PreviewAndSubmitStepProps
                 </Typography.Text>
               </Flex>
             }
-            style={{ 
+            style={{
               boxShadow: `0 4px 12px ${token.colorFillQuaternary}`,
-              border: `2px solid ${token.colorPrimaryBg}`
+              border: `2px solid ${token.colorPrimaryBg}`,
             }}
           >
             {/* Service Header */}
             <div style={{ marginBottom: 20 }}>
-              <Typography.Title 
-                level={2} 
-                style={{ 
-                  margin: 0, 
+              <Typography.Title
+                level={2}
+                style={{
+                  margin: 0,
                   marginBottom: 8,
                   color: token.colorPrimary,
-                  fontSize: 24
+                  fontSize: 24,
                 }}
               >
                 {service.name || 'Untitled Service'}
@@ -191,17 +196,24 @@ const PreviewAndSubmitStep = ({ setCurrent, service }: PreviewAndSubmitStepProps
                 <Flex gap={16} wrap>
                   {service.price !== null && service.price !== undefined && (
                     <div>
-                      <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+                      <Typography.Text
+                        type="secondary"
+                        style={{ fontSize: 12, display: 'block', marginBottom: 4 }}
+                      >
                         Price
                       </Typography.Text>
                       <Typography.Text strong style={{ fontSize: 18, color: token.colorSuccess }}>
-                        {getCurrencyLabel(service.currency || 'usd').split(' - ')[0]} {service.price.toFixed(2)}
+                        {getCurrencyLabel(service.currency || 'usd').split(' - ')[0]}{' '}
+                        {service.price.toFixed(2)}
                       </Typography.Text>
                     </div>
                   )}
                   {service.category && (
                     <div>
-                      <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+                      <Typography.Text
+                        type="secondary"
+                        style={{ fontSize: 12, display: 'block', marginBottom: 4 }}
+                      >
                         Category
                       </Typography.Text>
                       <Tag color="blue" style={{ fontSize: 13 }}>
@@ -215,7 +227,10 @@ const PreviewAndSubmitStep = ({ setCurrent, service }: PreviewAndSubmitStepProps
 
             {/* Service Description */}
             <div>
-              <Typography.Title level={5} style={{ marginBottom: 12, color: token.colorTextSecondary }}>
+              <Typography.Title
+                level={5}
+                style={{ marginBottom: 12, color: token.colorTextSecondary }}
+              >
                 Service Description
               </Typography.Title>
               {service?.service_data?.description ? (
@@ -225,7 +240,7 @@ const PreviewAndSubmitStep = ({ setCurrent, service }: PreviewAndSubmitStepProps
                     backgroundColor: token.colorFillAlter,
                     borderRadius: token.borderRadius,
                     border: `1px solid ${token.colorBorder}`,
-                    lineHeight: 1.6
+                    lineHeight: 1.6,
                   }}
                   dangerouslySetInnerHTML={{
                     __html: service.service_data.description,
@@ -259,7 +274,8 @@ const PreviewAndSubmitStep = ({ setCurrent, service }: PreviewAndSubmitStepProps
                     Request Form
                   </Typography.Title>
                   <Tag color="blue">
-                    {service.service_data.request_form.length} question{service.service_data.request_form.length !== 1 ? 's' : ''}
+                    {service.service_data.request_form.length} question
+                    {service.service_data.request_form.length !== 1 ? 's' : ''}
                   </Tag>
                 </Flex>
               }
@@ -268,7 +284,7 @@ const PreviewAndSubmitStep = ({ setCurrent, service }: PreviewAndSubmitStepProps
               <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
                 Clients will fill out this form when requesting your service:
               </Typography.Text>
-              
+
               <Flex vertical gap={16}>
                 {service.service_data.request_form.map((item, index) => (
                   <div
@@ -294,36 +310,44 @@ const PreviewAndSubmitStep = ({ setCurrent, service }: PreviewAndSubmitStepProps
                         }
                         style={{ fontSize: 10 }}
                       >
-                        {item.type === 'multipleChoice' ? 'Multiple Choice' : 
-                         item.type === 'attachment' ? 'File Upload' : 'Text Answer'}
+                        {item.type === 'multipleChoice'
+                          ? 'Multiple Choice'
+                          : item.type === 'attachment'
+                            ? 'File Upload'
+                            : 'Text Answer'}
                       </Tag>
                     </Flex>
 
-                    {item.type === 'multipleChoice' && item.answer && Array.isArray(item.answer) && (
-                      <div style={{ marginLeft: 16 }}>
-                        <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
-                          Available options:
-                        </Typography.Text>
-                        <Flex wrap gap={6}>
-                          {item.answer.map((option, optionIndex) => (
-                            <span
-                              key={optionIndex}
-                              style={{
-                                padding: '4px 8px',
-                                backgroundColor: token.colorPrimaryBg,
-                                border: `1px solid ${token.colorPrimaryBorder}`,
-                                borderRadius: 16,
-                                fontSize: 11,
-                                color: token.colorPrimary
-                              }}
-                            >
-                              {option}
-                            </span>
-                          ))}
-                        </Flex>
-                      </div>
-                    )}
-                    
+                    {item.type === 'multipleChoice' &&
+                      item.answer &&
+                      Array.isArray(item.answer) && (
+                        <div style={{ marginLeft: 16 }}>
+                          <Typography.Text
+                            type="secondary"
+                            style={{ fontSize: 12, display: 'block', marginBottom: 8 }}
+                          >
+                            Available options:
+                          </Typography.Text>
+                          <Flex wrap gap={6}>
+                            {item.answer.map((option, optionIndex) => (
+                              <span
+                                key={optionIndex}
+                                style={{
+                                  padding: '4px 8px',
+                                  backgroundColor: token.colorPrimaryBg,
+                                  border: `1px solid ${token.colorPrimaryBorder}`,
+                                  borderRadius: 16,
+                                  fontSize: 11,
+                                  color: token.colorPrimary,
+                                }}
+                              >
+                                {option}
+                              </span>
+                            ))}
+                          </Flex>
+                        </div>
+                      )}
+
                     {item.type === 'text' && (
                       <div style={{ marginLeft: 16 }}>
                         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -331,7 +355,7 @@ const PreviewAndSubmitStep = ({ setCurrent, service }: PreviewAndSubmitStepProps
                         </Typography.Text>
                       </div>
                     )}
-                    
+
                     {item.type === 'attachment' && (
                       <div style={{ marginLeft: 16 }}>
                         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -344,7 +368,9 @@ const PreviewAndSubmitStep = ({ setCurrent, service }: PreviewAndSubmitStepProps
               </Flex>
             </Card>
           ) : (
-            <Card style={{ textAlign: 'center', padding: 24, backgroundColor: token.colorFillAlter }}>
+            <Card
+              style={{ textAlign: 'center', padding: 24, backgroundColor: token.colorFillAlter }}
+            >
               <Typography.Text type="secondary">
                 No custom request form - clients can request this service directly
               </Typography.Text>
@@ -354,16 +380,15 @@ const PreviewAndSubmitStep = ({ setCurrent, service }: PreviewAndSubmitStepProps
       </div>
 
       {/* Fixed Action Buttons */}
-      <div style={{
-        borderTop: `1px solid ${token.colorBorder}`,
-        paddingTop: 16,
-        flexShrink: 0
-      }}>
+      <div
+        style={{
+          borderTop: `1px solid ${token.colorBorder}`,
+          paddingTop: 16,
+          flexShrink: 0,
+        }}
+      >
         <Flex justify="space-between" align="center">
-          <Button
-            onClick={() => setCurrent(1)}
-            size="large"
-          >
+          <Button onClick={() => setCurrent(1)} size="large">
             ← Previous
           </Button>
 

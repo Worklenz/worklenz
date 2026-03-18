@@ -215,9 +215,9 @@ const UserActivityFeed: React.FC = () => {
       }
       extra={
         <Tooltip title={t('tasks.refresh')}>
-          <Button 
-            shape="circle" 
-            icon={<SyncOutlined spin={isLoading} />} 
+          <Button
+            shape="circle"
+            icon={<SyncOutlined spin={isLoading} />}
             onClick={handleRefresh}
             disabled={isLoading}
           />

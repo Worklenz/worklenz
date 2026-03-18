@@ -123,6 +123,8 @@
     "email_already_registered_title": "Email Already Registered",
     "email_already_registered_message": "A user with this email already exists. Please login instead.",
     "invalid_credentials": "Invalid email or password",
+    "invalid_credentials_title": "Invalid Credentials",
+    "invalid_credentials_message": "Invalid email or password",
     "token_required": "Token is required",
     "token_invalid": "Invalid or expired token",
     "invitation_invalid": "Invalid or expired invitation",

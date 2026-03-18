@@ -37,7 +37,13 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           c.email,
           c.company_name,
           c.phone,
+          c.phone_country_code,
           c.address,
+          c.address_line_1,
+          c.city,
+          c.state,
+          c.zip_code,
+          c.country,
           c.contact_person,
           c.status,
           c.team_id,
@@ -105,7 +111,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         query += ` WHERE ${whereConditions.join(" AND ")}`;
       }
 
-      query += ` GROUP BY c.id, c.name, c.email, c.company_name, c.phone, c.address, c.contact_person, c.status, c.team_id, c.created_at, c.updated_at`;
+      query += ` GROUP BY c.id, c.name, c.email, c.company_name, c.phone, c.phone_country_code, c.address, c.contact_person, c.status, c.team_id, c.created_at, c.updated_at`;
 
       // Add sorting
       const sortField = String(sortBy || "name");
@@ -186,6 +192,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           email: row.email,
           company_name: row.company_name,
           phone: row.phone,
+          phone_country_code: row.phone_country_code,
           address: row.address,
           contact_person: row.contact_person,
           status: row.status || "active",
@@ -241,6 +248,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       if (clientData.email) clientData.email = clientData.email.trim();
       if (clientData.company_name) clientData.company_name = clientData.company_name.trim();
       if (clientData.phone) clientData.phone = clientData.phone.trim();
+      if (clientData.phone_country_code) clientData.phone_country_code = clientData.phone_country_code.trim().toUpperCase();
       if (clientData.address) clientData.address = clientData.address.trim();
       if (clientData.address_line_1) clientData.address_line_1 = clientData.address_line_1.trim();
       if (clientData.city) clientData.city = clientData.city.trim();
@@ -252,7 +260,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       // Check if client with same email already exists in this team
       if (clientData.email) {
         const existingClientQuery = `
-          SELECT id, name, email, company_name, phone, address, contact_person, status, created_at, updated_at
+          SELECT id, name, email, company_name, phone, phone_country_code, address, contact_person, status, created_at, updated_at
           FROM clients 
           WHERE LOWER(email) = LOWER($1) AND team_id = $2
         `;
@@ -284,6 +292,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
                 email: existingClient.email,
                 company_name: existingClient.company_name,
                 phone: existingClient.phone,
+                phone_country_code: existingClient.phone_country_code,
                 address: existingClient.address,
                 contact_person: existingClient.contact_person,
                 status: existingClient.status,
@@ -308,6 +317,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           email,
           company_name,
           phone,
+          phone_country_code,
           address,
           address_line_1,
           city,
@@ -317,8 +327,8 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           contact_person,
           status,
           team_id
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-        RETURNING id, name, email, company_name, phone, address, address_line_1, city, state, zip_code, country, contact_person, status, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        RETURNING id, name, email, company_name, phone, phone_country_code, address, address_line_1, city, state, zip_code, country, contact_person, status, created_at, updated_at
       `;
 
       const values = [
@@ -326,6 +336,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         clientData.email || null,
         clientData.company_name || null,
         clientData.phone || null,
+        clientData.phone_country_code || null,
         clientData.address || null,
         clientData.address_line_1 || null,
         clientData.city || null,
@@ -334,7 +345,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         clientData.country || null,
         clientData.contact_person || null,
         clientData.status || "pending",
-        teamId,
+        teamId
       ];
 
       const result = await db.query(query, values);
@@ -364,6 +375,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
             email: newClient.email,
             company_name: newClient.company_name,
             phone: newClient.phone,
+            phone_country_code: newClient.phone_country_code,
             address: newClient.address,
             address_line_1: newClient.address_line_1,
             city: newClient.city,
@@ -564,6 +576,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           c.email,
           c.company_name,
           c.phone,
+          c.phone_country_code,
           c.address,
           c.contact_person,
           c.status,
@@ -574,7 +587,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         FROM clients c
         LEFT JOIN projects p ON c.id = p.client_id
         WHERE c.id = $1 AND c.team_id = $2
-        GROUP BY c.id, c.name, c.email, c.company_name, c.phone, c.address, c.contact_person, c.status, c.team_id, c.created_at, c.updated_at
+        GROUP BY c.id, c.name, c.email, c.company_name, c.phone, c.phone_country_code, c.address, c.address_line_1, c.city, c.state, c.zip_code, c.country, c.contact_person, c.status, c.team_id, c.created_at, c.updated_at
       `;
 
       const result = await db.query(query, [id, teamId]);
@@ -592,7 +605,13 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         email: client.email,
         company_name: client.company_name,
         phone: client.phone,
+        phone_country_code: client.phone_country_code,
         address: client.address,
+        address_line_1: client.address_line_1,
+        city: client.city,
+        state: client.state,
+        zip_code: client.zip_code,
+        country: client.country,
         contact_person: client.contact_person,
         status: client.status || "active",
         created_at: client.created_at,
@@ -648,7 +667,13 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           c.email,
           c.company_name,
           c.phone,
+          c.phone_country_code,
           c.address,
+          c.address_line_1,
+          c.city,
+          c.state,
+          c.zip_code,
+          c.country,
           c.contact_person,
           c.status,
           c.team_id,
@@ -658,7 +683,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         FROM clients c
         LEFT JOIN projects p ON c.id = p.client_id
         WHERE c.id = $1 AND c.team_id = $2
-        GROUP BY c.id, c.name, c.email, c.company_name, c.phone, c.address, c.contact_person, c.status, c.team_id, c.created_at, c.updated_at
+        GROUP BY c.id, c.name, c.email, c.company_name, c.phone, c.phone_country_code, c.address, c.address_line_1, c.city, c.state, c.zip_code, c.country, c.contact_person, c.status, c.team_id, c.created_at, c.updated_at
       `;
 
       const clientResult = await db.query(clientQuery, [id, teamId]);
@@ -721,7 +746,13 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         email: client.email,
         company_name: client.company_name,
         phone: client.phone,
+        phone_country_code: client.phone_country_code,
         address: client.address,
+        address_line_1: client.address_line_1,
+        city: client.city,
+        state: client.state,
+        zip_code: client.zip_code,
+        country: client.country,
         contact_person: client.contact_person,
         status: client.status || "active",
         created_at: client.created_at,
@@ -815,6 +846,12 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         paramIndex++;
       }
 
+      if (updateData.phone_country_code !== undefined) {
+        updateFields.push(`phone_country_code = $${paramIndex}`);
+        updateValues.push(updateData.phone_country_code?.trim() ? updateData.phone_country_code.trim().toUpperCase() : null);
+        paramIndex++;
+      }
+
       if (updateData.address !== undefined) {
         updateFields.push(`address = $${paramIndex}`);
         updateValues.push(updateData.address || null);
@@ -876,7 +913,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         UPDATE clients
         SET ${updateFields.join(", ")}
         WHERE id = $${paramIndex} AND team_id = $${paramIndex + 1}
-        RETURNING id, name, email, company_name, phone, address, address_line_1, city, state, zip_code, country, contact_person, status, created_at, updated_at
+        RETURNING id, name, email, company_name, phone, phone_country_code, address, address_line_1, city, state, zip_code, country, contact_person, status, created_at, updated_at
       `;
 
       const result = await db.query(query, updateValues);
@@ -911,12 +948,14 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         email: updatedClient.email,
         company_name: updatedClient.company_name,
         phone: updatedClient.phone,
+        phone_country_code: updatedClient.phone_country_code,
         address: updatedClient.address,
         address_line_1: updatedClient.address_line_1,
         city: updatedClient.city,
         state: updatedClient.state,
         zip_code: updatedClient.zip_code,
         country: updatedClient.country,
+        contact_person: updatedClient.contact_person,
         status: updatedClient.status || "active",
         created_at: updatedClient.created_at,
         updated_at: updatedClient.updated_at
@@ -1749,6 +1788,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           email: client.email,
           companyName: client.company_name,
           phone: client.phone,
+          phoneCountryCode: client.phone_country_code,
           address: client.address,
           contactPerson: client.contact_person,
           status: client.status,

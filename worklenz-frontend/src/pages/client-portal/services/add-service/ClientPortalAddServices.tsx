@@ -1,4 +1,13 @@
-import { Button, Card, Flex, Steps, Typography, Alert, Progress, theme } from '@/shared/antd-imports';
+import {
+  Button,
+  Card,
+  Flex,
+  Steps,
+  Typography,
+  Alert,
+  Progress,
+  theme,
+} from '@/shared/antd-imports';
 import React, { useState, useEffect } from 'react';
 import { nanoid } from '@reduxjs/toolkit';
 import { useTranslation } from 'react-i18next';
@@ -35,20 +44,23 @@ const ClientPortalAddServices = () => {
 
   // Responsive height management for MacBook screens
   const getResponsiveHeight = () => {
-    if (windowHeight <= 800) { // MacBook Air 13" and similar
+    if (windowHeight <= 800) {
+      // MacBook Air 13" and similar
       return {
         cardMinHeight: 'calc(100vh - 140px)',
-        contentMinHeight: 'calc(100vh - 180px)'
+        contentMinHeight: 'calc(100vh - 180px)',
       };
-    } else if (windowHeight <= 900) { // MacBook Pro 13"/14"
+    } else if (windowHeight <= 900) {
+      // MacBook Pro 13"/14"
       return {
         cardMinHeight: 'calc(100vh - 160px)',
-        contentMinHeight: 'calc(100vh - 200px)'
+        contentMinHeight: 'calc(100vh - 200px)',
       };
-    } else { // MacBook Pro 16" and larger screens
+    } else {
+      // MacBook Pro 16" and larger screens
       return {
         cardMinHeight: 'calc(100vh - 180px)',
-        contentMinHeight: 'calc(100vh - 220px)'
+        contentMinHeight: 'calc(100vh - 220px)',
       };
     }
   };
@@ -106,14 +118,14 @@ const ClientPortalAddServices = () => {
   // Calculate completion percentage
   const getCompletionPercentage = () => {
     let percentage = 0;
-    
+
     // Step 1: Service Details (40% of total)
     if (service.name && service.service_data?.description) {
       percentage += 40;
     } else if (service.name || service.service_data?.description) {
       percentage += 20;
     }
-    
+
     // Step 2: Request Form (30% of total)
     if (current >= 1) {
       if (service.service_data?.request_form && service.service_data.request_form.length > 0) {
@@ -122,12 +134,12 @@ const ClientPortalAddServices = () => {
         percentage += 15;
       }
     }
-    
+
     // Step 3: Preview (30% of total)
     if (current >= 2) {
       percentage += 30;
     }
-    
+
     return Math.min(percentage, 100);
   };
 
@@ -251,7 +263,13 @@ const ClientPortalAddServices = () => {
           minHeight: getResponsiveHeight().cardMinHeight,
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', minHeight: getResponsiveHeight().contentMinHeight }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: getResponsiveHeight().contentMinHeight,
+          }}
+        >
           <Steps
             current={current}
             className="clients-portal-services-steper"

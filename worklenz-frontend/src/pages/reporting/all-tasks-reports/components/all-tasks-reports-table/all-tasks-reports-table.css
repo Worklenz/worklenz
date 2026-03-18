@@ -52,7 +52,7 @@
 }
 
 /* Dark mode specific */
-:root[data-theme='dark'] .all-tasks-table .ant-table-row:hover > td {
+:root[data-theme="dark"] .all-tasks-table .ant-table-row:hover > td {
   background-color: rgba(255, 255, 255, 0.04) !important;
 }
 

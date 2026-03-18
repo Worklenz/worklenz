@@ -54,7 +54,7 @@ export const initializeCsrfToken = async (): Promise<void> => {
       await tokenInitializationPromise;
       return;
     }
-    
+
     // Start initialization
     tokenInitializationPromise = refreshCsrfToken();
     await tokenInitializationPromise;
@@ -105,14 +105,16 @@ apiClient.interceptors.request.use(
     // Skip CSRF token for GET requests to /csrf-token endpoint (circular dependency)
     const isCsrfTokenEndpoint = config.url?.includes('/csrf-token');
     const isGetRequest = config.method?.toLowerCase() === 'get';
-    
+
     // Only add CSRF token to state-changing requests (POST, PUT, DELETE, PATCH)
-    const isStateChanging = ['post', 'put', 'delete', 'patch'].includes(config.method?.toLowerCase() || '');
-    
+    const isStateChanging = ['post', 'put', 'delete', 'patch'].includes(
+      config.method?.toLowerCase() || ''
+    );
+
     if (isStateChanging && !isCsrfTokenEndpoint) {
       // Skip token check for retries - they already have the token in headers
       const isRetry = (config as any)?._retryCount > 0;
-      
+
       if (!isRetry) {
         // Ensure we have a CSRF token before making state-changing requests
         if (!csrfToken) {
@@ -145,7 +147,7 @@ apiClient.interceptors.request.use(
       // For retries, use the token from headers (already set in error handler)
       // For new requests, use the stored token
       const tokenToUse = isRetry ? config.headers?.['X-CSRF-Token'] : csrfToken;
-      
+
       if (tokenToUse) {
         config.headers = config.headers || {};
         config.headers['X-CSRF-Token'] = tokenToUse;
@@ -168,7 +170,7 @@ apiClient.interceptors.response.use(
     // TEMPORARY: Disable CSRF token rotation to prevent race conditions with concurrent requests
     // Token rotation causes issues when multiple requests are in flight
     // The token is still validated, but won't rotate after each request
-    
+
     // Handle CSRF token rotation from successful responses
     // Check for new token in response header (from CSRF rotation middleware)
     // const newTokenFromHeader = response.headers['x-csrf-token'];
@@ -176,7 +178,7 @@ apiClient.interceptors.response.use(
     //   csrfToken = newTokenFromHeader;
     //   console.log('[CSRF] Token rotated from response header');
     // }
-    
+
     // Check for new token in response body (from CSRF rotation middleware)
     // if (response.data && typeof response.data === 'object' && response.data.csrfToken) {
     //   csrfToken = response.data.csrfToken;
@@ -197,10 +199,10 @@ apiClient.interceptors.response.use(
 
       // Don't show alerts for CSRF token rotation responses (they're just metadata)
       const isCsrfTokenResponse = response.config?.url?.includes('/csrf-token');
-      
+
       // Don't show error alerts for successful retries (they were already handled)
       const isRetry = (response.config as any)?._retryCount > 0;
-      
+
       if (!isCsrfTokenResponse && message && message.charAt(0) !== '$') {
         // For retried requests, only show success messages, not errors
         // (errors were already handled in the error interceptor)
@@ -224,11 +226,10 @@ apiClient.interceptors.response.use(
 
     // Handle CSRF token errors
     // Check for CSRF errors in multiple ways to ensure we catch them
-    const isCsrfError = 
+    const isCsrfError =
       errorResponse?.status === 403 &&
-      (
-        // Check error code
-        (error as any).code === 'EBADCSRFTOKEN' ||
+      // Check error code
+      ((error as any).code === 'EBADCSRFTOKEN' ||
         // Check response message
         (typeof errorResponse.data === 'object' &&
           errorResponse.data !== null &&
@@ -239,76 +240,81 @@ apiClient.interceptors.response.use(
             errorResponse.data.message === 'Invalid CSRF token')) ||
         // Check error message in response body (alternative format)
         (typeof errorResponse.data === 'string' &&
-          errorResponse.data.toLowerCase().includes('csrf'))
-      );
-    
+          errorResponse.data.toLowerCase().includes('csrf')));
+
     if (isCsrfError) {
       // Check if this is already a retry
       const retryCount = (error.config as any)?._retryCount || 0;
-      
+
       // Prevent infinite retry loops
       if (retryCount >= 2) {
-        alertService.error('Security Error', 'Unable to refresh security token. Please log in again.');
+        alertService.error(
+          'Security Error',
+          'Unable to refresh security token. Please log in again.'
+        );
         window.location.href = '/auth/login';
         return Promise.reject(error);
       }
 
-        // Try to refresh the CSRF token and retry the request
-        // For CSRF errors, we need to force a refresh (token is invalid)
-        // Use deduplication pattern to prevent concurrent refresh requests
-        let newToken: string | null = null;
-        if (tokenInitializationPromise) {
-          // If refresh is already in progress, wait for it
+      // Try to refresh the CSRF token and retry the request
+      // For CSRF errors, we need to force a refresh (token is invalid)
+      // Use deduplication pattern to prevent concurrent refresh requests
+      let newToken: string | null = null;
+      if (tokenInitializationPromise) {
+        // If refresh is already in progress, wait for it
+        newToken = await tokenInitializationPromise;
+      } else {
+        // Start a new refresh
+        try {
+          tokenInitializationPromise = refreshCsrfToken();
           newToken = await tokenInitializationPromise;
-        } else {
-          // Start a new refresh
-          try {
-            tokenInitializationPromise = refreshCsrfToken();
-            newToken = await tokenInitializationPromise;
-            tokenInitializationPromise = null;
-          } catch (refreshError) {
-            tokenInitializationPromise = null;
-            console.error('[CSRF] Failed to refresh CSRF token in error handler:', refreshError);
-          }
+          tokenInitializationPromise = null;
+        } catch (refreshError) {
+          tokenInitializationPromise = null;
+          console.error('[CSRF] Failed to refresh CSRF token in error handler:', refreshError);
         }
-        
-        if (newToken && error.config) {
-          // Token is already updated in refreshCsrfToken, no need to update here
-          
-          // Mark that we're retrying
-          (error.config as any)._retryCount = retryCount + 1;
-          
-          // Create a fresh config to avoid any issues with the original error config
-          // Make sure to preserve the original config but update headers
-          const retryConfig = {
-            ...error.config,
-            headers: {
-              ...error.config.headers,
-              'X-CSRF-Token': newToken,
-            },
-            // Clear any retry flags that might interfere
-            _retryCount: retryCount + 1,
-          };
-          
-          // Retry the original request with the new token
-          try {
-            const retryResponse = await apiClient(retryConfig);
-            return retryResponse;
-          } catch (retryError: any) {
-            // If retry also fails, show error and handle
-            if (retryError.response?.status === 403) {
-              // Still CSRF error after retry - likely session issue
-              alertService.error('Security Error', 'Session expired. Please log in again.');
-              window.location.href = '/auth/login';
-            }
-            return Promise.reject(retryError);
+      }
+
+      if (newToken && error.config) {
+        // Token is already updated in refreshCsrfToken, no need to update here
+
+        // Mark that we're retrying
+        (error.config as any)._retryCount = retryCount + 1;
+
+        // Create a fresh config to avoid any issues with the original error config
+        // Make sure to preserve the original config but update headers
+        const retryConfig = {
+          ...error.config,
+          headers: {
+            ...error.config.headers,
+            'X-CSRF-Token': newToken,
+          },
+          // Clear any retry flags that might interfere
+          _retryCount: retryCount + 1,
+        };
+
+        // Retry the original request with the new token
+        try {
+          const retryResponse = await apiClient(retryConfig);
+          return retryResponse;
+        } catch (retryError: any) {
+          // If retry also fails, show error and handle
+          if (retryError.response?.status === 403) {
+            // Still CSRF error after retry - likely session issue
+            alertService.error('Security Error', 'Session expired. Please log in again.');
+            window.location.href = '/auth/login';
           }
-        } else {
-          // If token refresh failed, redirect to login
-          alertService.error('Security Error', 'Unable to refresh security token. Please log in again.');
-          window.location.href = '/auth/login';
-          return Promise.reject(error);
+          return Promise.reject(retryError);
         }
+      } else {
+        // If token refresh failed, redirect to login
+        alertService.error(
+          'Security Error',
+          'Unable to refresh security token. Please log in again.'
+        );
+        window.location.href = '/auth/login';
+        return Promise.reject(error);
+      }
     }
 
     // Add 401 unauthorized handling
@@ -338,13 +344,13 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 403) {
       const errorData = error.response.data as any;
       const errorMessage = errorData?.message || 'Access denied';
-      
+
       // Check if this is a project access error - don't show alert, let component handle it
       if (errorMessage.toLowerCase().includes('project') || errorData?.body?.requiresTeamSwitch) {
         // Suppress alert - the project-view component will show appropriate messages
         return Promise.reject(error);
       }
-      
+
       // For other 403 errors, show alert
       alertService.error('Access Denied', errorMessage);
       return Promise.reject(error);

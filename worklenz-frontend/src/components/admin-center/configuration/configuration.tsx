@@ -138,8 +138,8 @@ const Configuration: React.FC = React.memo(() => {
                       if (!value || value.trim() === '') return Promise.resolve();
                       if (validatePhoneNumber(value)) return Promise.resolve();
                       return Promise.reject(new Error('Invalid phone number for selected country'));
-                    }
-                  }
+                    },
+                  },
                 ]}
               >
                 <PhoneInput placeholder="Enter phone number" />

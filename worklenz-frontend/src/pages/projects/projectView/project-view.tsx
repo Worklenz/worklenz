@@ -109,7 +109,7 @@ const ProjectView = React.memo(() => {
   const [pinnedTab, setPinnedTab] = useState<string>(urlParams.pinnedTab);
   const [taskid, setTaskId] = useState<string>(urlParams.taskId);
   const [isInitialized, setIsInitialized] = useState(false);
-  
+
   // Use ref to prevent duplicate API calls and error messages
   const isLoadingRef = useRef(false);
   const hasShownErrorRef = useRef(false);
@@ -122,7 +122,7 @@ const ProjectView = React.memo(() => {
     // Validate that the tab from URL is not disabled before setting it
     const filteredTabItems = getFilteredTabItems(currentSession, selectedProject);
     const requestedTab = filteredTabItems.find(item => item.key === urlParams.tab);
-    
+
     // If tab is disabled, redirect to first available tab and show upgrade modal
     if (requestedTab?.disabled) {
       const firstAvailableTab = filteredTabItems.find(item => !item.disabled);
@@ -136,7 +136,7 @@ const ProjectView = React.memo(() => {
     } else {
       setActiveTab(urlParams.tab);
     }
-    
+
     setPinnedTab(urlParams.pinnedTab);
     setTaskId(urlParams.taskId);
   }, [urlParams, currentSession, selectedProject, dispatch]);
@@ -219,7 +219,7 @@ const ProjectView = React.memo(() => {
 
           // Load new project data
           dispatch(setProjectId(projectId));
-          
+
           // Set project context for field visibility
           dispatch(setProjectContext(projectId));
 
@@ -229,7 +229,7 @@ const ProjectView = React.memo(() => {
             dispatch(fetchStatuses(projectId)),
             dispatch(fetchLabels()),
           ]);
-          
+
           // Check if project fetch was rejected (access denied or not found)
           if (projectResult.status === 'rejected') {
             // Redirect to projects list
@@ -240,40 +240,43 @@ const ProjectView = React.memo(() => {
           // Check if project fetch was fulfilled
           if (projectResult.status === 'fulfilled') {
             const result = projectResult.value as any;
-            
+
             // Check if the Redux action was rejected (type ends with '/rejected')
             if (result.type && result.type.includes('/rejected')) {
               const payload = result.payload;
-              
+
               // Check if it's a 403 error (access denied)
               if (payload?.statusCode === 403) {
                 // Check if user needs to switch teams (backend has already verified project access)
                 // The backend only sets requiresTeamSwitch=true if the user actually has access to the project
                 if (payload.requiresTeamSwitch && payload.projectTeamId) {
-                  console.log('Project belongs to different team, switching teams...', payload.projectTeamId);
-                  
+                  console.log(
+                    'Project belongs to different team, switching teams...',
+                    payload.projectTeamId
+                  );
+
                   // Show message that we're switching teams (only once)
                   if (!hasShownErrorRef.current) {
                     hasShownErrorRef.current = true;
                     message.info(
-                      t('Switching to project team...', { 
-                        defaultValue: 'Switching to project team...' 
+                      t('Switching to project team...', {
+                        defaultValue: 'Switching to project team...',
                       })
                     );
                   }
-                  
+
                   try {
                     // Switch to the project's team
                     const switchResult = await dispatch(setActiveTeam(payload.projectTeamId));
-                    
+
                     if (setActiveTeam.fulfilled.match(switchResult)) {
                       // Team switched successfully, reload the page to refresh session
                       message.success(
-                        t('Team switched successfully', { 
-                          defaultValue: 'Team switched successfully' 
+                        t('Team switched successfully', {
+                          defaultValue: 'Team switched successfully',
                         })
                       );
-                      
+
                       // Reload the page to get new session with correct team
                       window.location.reload();
                       return;
@@ -282,8 +285,8 @@ const ProjectView = React.memo(() => {
                       if (!hasShownErrorRef.current) {
                         hasShownErrorRef.current = true;
                         message.error(
-                          t('Failed to switch teams', { 
-                            defaultValue: 'Failed to switch teams' 
+                          t('Failed to switch teams', {
+                            defaultValue: 'Failed to switch teams',
                           })
                         );
                       }
@@ -295,8 +298,8 @@ const ProjectView = React.memo(() => {
                     if (!hasShownErrorRef.current) {
                       hasShownErrorRef.current = true;
                       message.error(
-                        t('Failed to switch teams', { 
-                          defaultValue: 'Failed to switch teams' 
+                        t('Failed to switch teams', {
+                          defaultValue: 'Failed to switch teams',
                         })
                       );
                     }
@@ -304,35 +307,35 @@ const ProjectView = React.memo(() => {
                     return;
                   }
                 }
-                
+
                 // Access denied (user doesn't have access to the project)
                 console.log('Access denied to project:', projectId);
                 if (!hasShownErrorRef.current) {
                   hasShownErrorRef.current = true;
                   message.error(
-                    payload?.message || 
-                    t('You do not have permission to access this project', { 
-                      defaultValue: 'You do not have permission to access this project' 
-                    })
+                    payload?.message ||
+                      t('You do not have permission to access this project', {
+                        defaultValue: 'You do not have permission to access this project',
+                      })
                   );
                 }
                 navigate('/worklenz/projects');
                 return;
               }
-              
+
               // For other errors, also redirect
               if (!hasShownErrorRef.current) {
                 hasShownErrorRef.current = true;
                 message.error(
-                  t('Failed to load project', { 
-                    defaultValue: 'Failed to load project' 
+                  t('Failed to load project', {
+                    defaultValue: 'Failed to load project',
                   })
                 );
               }
               navigate('/worklenz/projects');
               return;
             }
-            
+
             // Check if project data is missing
             if (!result.payload) {
               navigate('/worklenz/projects');
@@ -419,7 +422,7 @@ const ProjectView = React.memo(() => {
             user_type: currentSession?.subscription_type?.toLowerCase(),
             trial_expired: true,
             project_id: projectId,
-            source: 'project_finance_tab'
+            source: 'project_finance_tab',
           });
         }
         dispatch(toggleUpgradeModal());
@@ -430,7 +433,7 @@ const ProjectView = React.memo(() => {
       if (key === 'finance') {
         const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
         const hasFinanceAccess = hasFinanceViewPermission(currentSession, selectedProject);
-        
+
         trackMixpanelEvent('finance_tab_clicked', {
           source: 'project_view_header',
           project_id: projectId,
@@ -458,7 +461,16 @@ const ProjectView = React.memo(() => {
         { replace: true }
       );
     },
-    [dispatch, location.pathname, navigate, pinnedTab, currentSession, selectedProject, projectId, trackMixpanelEvent]
+    [
+      dispatch,
+      location.pathname,
+      navigate,
+      pinnedTab,
+      currentSession,
+      selectedProject,
+      projectId,
+      trackMixpanelEvent,
+    ]
   );
 
   // Memoized tab menu items with enhanced styling
@@ -473,7 +485,7 @@ const ProjectView = React.memo(() => {
     const menuItems = filteredTabItems.map(item => {
       const premiumTabs = ['finance', 'project-insights-member-overview', 'roadmap', 'workload'];
       const isPremiumTab = premiumTabs.includes(item.key);
-      
+
       return {
         key: item.key,
         disabled: false, // Never disable at Ant Design level - we handle clicks manually
@@ -489,7 +501,9 @@ const ProjectView = React.memo(() => {
               }}
             >
               <span style={{ fontWeight: 500, fontSize: '13px' }}>{item.label}</span>
-              {item.disabled && <CrownOutlined style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }} />}
+              {item.disabled && (
+                <CrownOutlined style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }} />
+              )}
               {(item.key === 'tasks-list' || item.key === 'board') && !item.disabled && (
                 <ConfigProvider wave={{ disabled: true }}>
                   <Button
@@ -567,14 +581,15 @@ const ProjectView = React.memo(() => {
         {/* Non-critical components - load after delay with suspense fallback */}
         {shouldLoadSecondaryComponents && (
           <Suspense fallback={<SuspenseFallback />}>
-            {selectedProject && createPortal(
-              <InviteProjectMembers 
-                projectId={selectedProject.id || ''} 
-                projectName={selectedProject.name || ''} 
-              />, 
-              document.body, 
-              'project-member-drawer'
-            )}
+            {selectedProject &&
+              createPortal(
+                <InviteProjectMembers
+                  projectId={selectedProject.id || ''}
+                  projectName={selectedProject.name || ''}
+                />,
+                document.body,
+                'project-member-drawer'
+              )}
             {createPortal(<PhaseDrawer />, document.body, 'phase-drawer')}
             {createPortal(<StatusDrawer />, document.body, 'status-drawer')}
             {createPortal(<DeleteStatusDrawer />, document.body, 'delete-status-drawer')}

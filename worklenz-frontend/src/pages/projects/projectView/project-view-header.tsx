@@ -301,9 +301,7 @@ const ProjectViewHeader = memo(() => {
               margin: 0,
             }}
           >
-            <span style={{ fontSize: 12, color: textColor }}>
-              {selectedProject.category_name}
-            </span>
+            <span style={{ fontSize: 12, color: textColor }}>{selectedProject.category_name}</span>
           </Tag>
         </Tooltip>
       );
@@ -427,7 +425,12 @@ const ProjectViewHeader = memo(() => {
           key="invite-tooltip"
           title={t('inviteTooltip', { defaultValue: 'Invite team members to this project' })}
         >
-          <Button key="invite" type="primary" icon={<UsergroupAddOutlined />} onClick={handleInvite}>
+          <Button
+            key="invite"
+            type="primary"
+            icon={<UsergroupAddOutlined />}
+            onClick={handleInvite}
+          >
             {t('invite', { defaultValue: 'Invite' })}
           </Button>
         </Tooltip>

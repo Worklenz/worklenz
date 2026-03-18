@@ -40,13 +40,13 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
 
   // Default status colors for common statuses (fallback when backend doesn't provide colors)
   const defaultStatusColors: Record<string, string> = {
-    'todo': '#6b7280', // gray-500
+    todo: '#6b7280', // gray-500
     'to do': '#6b7280',
-    'to_do': '#6b7280',
-    'doing': '#3b82f6', // blue-500
+    to_do: '#6b7280',
+    doing: '#3b82f6', // blue-500
     'in progress': '#3b82f6',
-    'in_progress': '#3b82f6',
-    'done': '#10b981', // emerald-500
+    in_progress: '#3b82f6',
+    done: '#10b981', // emerald-500
   };
 
   // Find current status details
@@ -86,7 +86,9 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
         if (!canContinue) {
           alertService.error(
             t('errors.taskNotCompleted', { defaultValue: 'Task is not completed' }),
-            t('errors.completeTaskDependencies', { defaultValue: 'Please complete the task dependencies before proceeding' })
+            t('errors.completeTaskDependencies', {
+              defaultValue: 'Please complete the task dependencies before proceeding',
+            })
           );
           setIsOpen(false);
           return;

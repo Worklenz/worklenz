@@ -184,7 +184,7 @@ export const scheduleApi = createApi({
       // Add authentication headers
       headers.set('Content-Type', 'application/json');
       headers.set('Accept', 'application/json');
-      
+
       // Add CSRF token for state-changing requests
       const isStateChanging = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(type || '');
       if (isStateChanging) {
@@ -195,7 +195,7 @@ export const scheduleApi = createApi({
           headers.set('X-CSRF-Token', csrfToken);
         }
       }
-      
+
       return headers;
     },
   }),
@@ -272,7 +272,7 @@ export const scheduleApi = createApi({
     // Task Timeline Endpoints (NEW)
     // ============================================
     fetchTaskTimeline: builder.query<IServerResponse<TaskTimelineItem[]>, TaskTimelineFilters>({
-      query: (filters) => {
+      query: filters => {
         const params = new URLSearchParams();
         if (filters.startDate) params.append('startDate', filters.startDate);
         if (filters.endDate) params.append('endDate', filters.endDate);
@@ -303,7 +303,7 @@ export const scheduleApi = createApi({
     }),
 
     fetchTaskConflicts: builder.query<IServerResponse<{ conflicts: TaskConflict[] }>, string>({
-      query: (taskId) => `/tasks/${taskId}/conflicts`,
+      query: taskId => `/tasks/${taskId}/conflicts`,
       providesTags: ['Conflicts'],
     }),
 
@@ -311,7 +311,7 @@ export const scheduleApi = createApi({
     // Time-Off Endpoints (NEW)
     // ============================================
     fetchTimeOff: builder.query<IServerResponse<TimeOffEntry[]>, TimeOffFilters>({
-      query: (filters) => {
+      query: filters => {
         const params = new URLSearchParams();
         if (filters.teamMemberId) params.append('teamMemberId', filters.teamMemberId);
         if (filters.startDate) params.append('startDate', filters.startDate);
@@ -321,13 +321,17 @@ export const scheduleApi = createApi({
       providesTags: ['TimeOff'],
     }),
 
-    fetchTimeOffSummary: builder.query<IServerResponse<TimeOffSummary[]>, { startDate: string; endDate: string }>({
-      query: ({ startDate, endDate }) => `/time-off/summary?startDate=${startDate}&endDate=${endDate}`,
+    fetchTimeOffSummary: builder.query<
+      IServerResponse<TimeOffSummary[]>,
+      { startDate: string; endDate: string }
+    >({
+      query: ({ startDate, endDate }) =>
+        `/time-off/summary?startDate=${startDate}&endDate=${endDate}`,
       providesTags: ['TimeOff'],
     }),
 
     createTimeOff: builder.mutation<IServerResponse<TimeOffEntry>, CreateTimeOffRequest>({
-      query: (body) => ({
+      query: body => ({
         url: '/time-off',
         method: 'POST',
         body,
@@ -345,7 +349,7 @@ export const scheduleApi = createApi({
     }),
 
     deleteTimeOff: builder.mutation<IServerResponse<null>, string>({
-      query: (id) => ({
+      query: id => ({
         url: `/time-off/${id}`,
         method: 'DELETE',
       }),
@@ -464,7 +468,10 @@ export const scheduleApi = createApi({
     // ============================================
     // Capacity Management Endpoints (NEW)
     // ============================================
-    fetchDailyCapacity: builder.query<IServerResponse<any[]>, { startDate: string; endDate: string; teamMemberId?: string }>({
+    fetchDailyCapacity: builder.query<
+      IServerResponse<any[]>,
+      { startDate: string; endDate: string; teamMemberId?: string }
+    >({
       query: ({ startDate, endDate, teamMemberId }) => {
         const params = new URLSearchParams();
         params.append('startDate', startDate);
@@ -475,20 +482,29 @@ export const scheduleApi = createApi({
       providesTags: ['Capacity'],
     }),
 
-    fetchCapacitySummary: builder.query<IServerResponse<any>, { startDate: string; endDate: string }>({
-      query: ({ startDate, endDate }) => 
+    fetchCapacitySummary: builder.query<
+      IServerResponse<any>,
+      { startDate: string; endDate: string }
+    >({
+      query: ({ startDate, endDate }) =>
         `/capacity/summary?startDate=${startDate}&endDate=${endDate}`,
       providesTags: ['Capacity'],
     }),
 
-    fetchCapacityConflicts: builder.query<IServerResponse<any[]>, { startDate: string; endDate: string }>({
-      query: ({ startDate, endDate }) => 
+    fetchCapacityConflicts: builder.query<
+      IServerResponse<any[]>,
+      { startDate: string; endDate: string }
+    >({
+      query: ({ startDate, endDate }) =>
         `/capacity/conflicts?startDate=${startDate}&endDate=${endDate}`,
       providesTags: ['Capacity'],
     }),
 
     // Member Schedule Summary
-    fetchMemberScheduleSummary: builder.query<IServerResponse<any>, { memberId: string; startDate: string; endDate: string; projectId?: string }>({
+    fetchMemberScheduleSummary: builder.query<
+      IServerResponse<any>,
+      { memberId: string; startDate: string; endDate: string; projectId?: string }
+    >({
       query: ({ memberId, startDate, endDate, projectId }) => {
         const params = new URLSearchParams();
         params.append('startDate', startDate);
@@ -501,7 +517,10 @@ export const scheduleApi = createApi({
 
     // Fetch tasks for a specific project and member (old schedule controller)
     // Note: This uses the OLD schedule API at /api/schedule-gannt (not v2)
-    fetchProjectMemberTasks: builder.query<IServerResponse<any>, { projectId: string; memberId: string; startDate?: string; endDate?: string; group?: string }>({
+    fetchProjectMemberTasks: builder.query<
+      IServerResponse<any>,
+      { projectId: string; memberId: string; startDate?: string; endDate?: string; group?: string }
+    >({
       query: ({ projectId, memberId, startDate, endDate, group }) => {
         const params = new URLSearchParams();
         // Member filtering is done via 'members' query param (space-separated member IDs)
@@ -573,7 +592,7 @@ export const {
   useLazyFetchDailyCapacityQuery,
   useFetchCapacitySummaryQuery,
   useFetchCapacityConflictsQuery,
-  
+
   // Member Schedule Summary hooks
   useFetchMemberScheduleSummaryQuery,
   useLazyFetchMemberScheduleSummaryQuery,

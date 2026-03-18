@@ -14,7 +14,9 @@ import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallba
 import ChunkErrorHandler from '@/utils/chunk-error-handler';
 
 // Lazy load the NotFoundPage component for better code splitting
-const NotFoundPage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/404-page/404-page'), 'NotFoundPage'));
+const NotFoundPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(() => import('@/pages/404-page/404-page'), 'NotFoundPage')
+);
 
 interface GuardProps {
   children: React.ReactNode;

@@ -1,13 +1,18 @@
 import React, { memo } from 'react';
 import { Flex, Skeleton } from '@/shared/antd-imports';
 
-const TAB_LABELS = ['Task List', 'Board', 'Insights', 'Files', 'Members', 'Updates', 'Roadmap', 'Workload'];
-
-const SKELETON_GROUPS = [
-  { rows: 3 },
-  { rows: 4 },
-  { rows: 2 },
+const TAB_LABELS = [
+  'Task List',
+  'Board',
+  'Insights',
+  'Files',
+  'Members',
+  'Updates',
+  'Roadmap',
+  'Workload',
 ];
+
+const SKELETON_GROUPS = [{ rows: 3 }, { rows: 4 }, { rows: 2 }];
 
 const SkeletonRow: React.FC = () => (
   <div
@@ -103,7 +108,10 @@ const ProjectViewSkeleton: React.FC = memo(() => {
               padding: '8px 12px',
               fontSize: 13,
               color: 'var(--ant-color-text-quaternary)',
-              borderBottom: label === 'Task List' ? '2px solid var(--ant-color-primary)' : '2px solid transparent',
+              borderBottom:
+                label === 'Task List'
+                  ? '2px solid var(--ant-color-primary)'
+                  : '2px solid transparent',
               marginBottom: -1,
               whiteSpace: 'nowrap',
             }}

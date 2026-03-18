@@ -1,9 +1,5 @@
 import { useEffect, useRef } from 'react';
-import {
-  Form,
-  ConfigProvider,
-  Flex,
-} from '@/shared/antd-imports';
+import { Form, ConfigProvider, Flex } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { ITaskFormViewModel, ITaskViewModel } from '@/types/tasks/task.types';
 
@@ -70,7 +66,7 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
   const { t } = useTranslation('task-drawer/task-drawer');
   const [form] = Form.useForm();
   const { project } = useAppSelector(state => state.projectReducer);
-  
+
   // Use ref to track the current task ID to prevent unnecessary form resets
   const previousTaskIdRef = useRef<string | null>(null);
 
@@ -101,7 +97,7 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
         progress_value: task?.progress_value || null,
         weight: task?.weight || null,
       });
-      
+
       // Update the ref to track the current task
       previousTaskIdRef.current = currentTaskId;
     }

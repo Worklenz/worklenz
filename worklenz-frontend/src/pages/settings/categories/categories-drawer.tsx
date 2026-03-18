@@ -331,7 +331,7 @@ const CategoriesDrawer = ({
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (!drawerOpen) return;  // ← guard: only run when opening
+    if (!drawerOpen) return; // ← guard: only run when opening
     if (categoryId) {
       getCategoryById(categoryId);
     } else {

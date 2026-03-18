@@ -198,21 +198,35 @@ const CurrentPlanDetails = () => {
     if (urlParams.get('action') === 'upgrade-plans') {
       dispatch(toggleUpgradeModal());
       // Clean up URL to remove the query parameter
-      window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname + window.location.hash
+      );
     }
   }, [dispatch]);
 
   const checkSubscriptionStatus = useCallback(
     (allowedStatuses: string[]) => {
-      if (!billingInfo?.status || billingInfo.is_ltd_user || billingInfo.subscription_type === ISUBSCRIPTION_TYPE.TRIAL) return false;
+      if (
+        !billingInfo?.status ||
+        billingInfo.is_ltd_user ||
+        billingInfo.subscription_type === ISUBSCRIPTION_TYPE.TRIAL
+      )
+        return false;
       return allowedStatuses.includes(billingInfo.status);
     },
     [billingInfo?.status, billingInfo?.is_ltd_user]
   );
 
   const shouldShowRedeemButton = useMemo(() => {
-    const validSubscriptionTypes = [ISUBSCRIPTION_TYPE.FREE, ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL, ISUBSCRIPTION_TYPE.TRIAL] as ISUBSCRIPTION_TYPE[];
-    if (validSubscriptionTypes.includes(billingInfo?.subscription_type as ISUBSCRIPTION_TYPE)) return true;
+    const validSubscriptionTypes = [
+      ISUBSCRIPTION_TYPE.FREE,
+      ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL,
+      ISUBSCRIPTION_TYPE.TRIAL,
+    ] as ISUBSCRIPTION_TYPE[];
+    if (validSubscriptionTypes.includes(billingInfo?.subscription_type as ISUBSCRIPTION_TYPE))
+      return true;
     return billingInfo?.ltd_users ? billingInfo.ltd_users < LTD_USER_LIMIT : false;
   }, [billingInfo?.subscription_type, billingInfo?.ltd_users]);
 
@@ -249,12 +263,12 @@ const CurrentPlanDetails = () => {
   const isAppSumoUser = useMemo(() => {
     const planName = billingInfo?.plan_name?.toLowerCase() || '';
     const subscriptionType = currentSession?.subscription_type?.toLowerCase() || '';
-    
+
     // First check if user is on trial - trial users should never be considered AppSumo users
     if (currentSession?.subscription_type === 'TRIAL') {
       return false;
     }
-    
+
     return (
       planName.includes('appsumo') ||
       subscriptionType.includes('appsumo') ||
@@ -290,43 +304,52 @@ const CurrentPlanDetails = () => {
         )}
 
         {billingInfo.trial_in_progress && (
-          <Button type="primary" onClick={() => {
-            trackMixpanelEvent(evt_upgrade_plan_click, {
-              user_type: currentSession?.subscription_type?.toLowerCase(),
-              current_plan: billingInfo.plan_name,
-              subscription_type: billingInfo.subscription_type,
-              source: 'admin_center_billing'
-            });
-            dispatch(toggleUpgradeModal());
-          }}>
+          <Button
+            type="primary"
+            onClick={() => {
+              trackMixpanelEvent(evt_upgrade_plan_click, {
+                user_type: currentSession?.subscription_type?.toLowerCase(),
+                current_plan: billingInfo.plan_name,
+                subscription_type: billingInfo.subscription_type,
+                source: 'admin_center_billing',
+              });
+              dispatch(toggleUpgradeModal());
+            }}
+          >
             {t('upgradePlan')}
           </Button>
         )}
 
         {billingInfo.subscription_type === ISUBSCRIPTION_TYPE.FREE && (
-          <Button type="primary" onClick={() => {
-            trackMixpanelEvent(evt_upgrade_plan_click, {
-              user_type: 'free',
-              current_plan: billingInfo.plan_name,
-              subscription_type: billingInfo.subscription_type,
-              source: 'admin_center_billing'
-            });
-            dispatch(toggleUpgradeModal());
-          }}>
+          <Button
+            type="primary"
+            onClick={() => {
+              trackMixpanelEvent(evt_upgrade_plan_click, {
+                user_type: 'free',
+                current_plan: billingInfo.plan_name,
+                subscription_type: billingInfo.subscription_type,
+                source: 'admin_center_billing',
+              });
+              dispatch(toggleUpgradeModal());
+            }}
+          >
             {t('upgradePlan')}
           </Button>
         )}
 
         {billingInfo.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL && (
-          <Button type="primary" onClick={() => {
-            trackMixpanelEvent(evt_upgrade_plan_click, {
-              user_type: 'appsumo',
-              current_plan: billingInfo.plan_name,
-              subscription_type: billingInfo.subscription_type,
-              source: 'admin_center_billing'
-            });
-            dispatch(toggleUpgradeModal());
-          }}>
+          <Button
+            type="primary"
+            onClick={() => {
+              trackMixpanelEvent(evt_upgrade_plan_click, {
+                user_type: 'appsumo',
+                current_plan: billingInfo.plan_name,
+                subscription_type: billingInfo.subscription_type,
+                source: 'admin_center_billing',
+              });
+              dispatch(toggleUpgradeModal());
+            }}
+          >
             {t('upgradePlan')}
           </Button>
         )}

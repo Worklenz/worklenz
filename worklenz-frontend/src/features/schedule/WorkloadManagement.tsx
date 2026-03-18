@@ -268,11 +268,10 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
       Modal.confirm({
         title: t('rebalanceWorkload', { defaultValue: 'Rebalance Workload' }),
         icon: <ExclamationCircleOutlined />,
-        content:
-          t('rebalanceConfirm', {
-            defaultValue:
-              'This will automatically redistribute tasks to optimize workload. Continue?',
-          }),
+        content: t('rebalanceConfirm', {
+          defaultValue:
+            'This will automatically redistribute tasks to optimize workload. Continue?',
+        }),
         onOk: async () => {
           try {
             await rebalanceWorkload({
@@ -417,10 +416,7 @@ const WorkloadManagement: React.FC<ResourceAllocationProps> = ({ memberId, onClo
           />
         </TabPane>
 
-        <TabPane
-          tab={t('allocation', { defaultValue: 'Resource Allocation' })}
-          key="allocation"
-        >
+        <TabPane tab={t('allocation', { defaultValue: 'Resource Allocation' })} key="allocation">
           <Space direction="vertical" style={{ width: '100%' }}>
             <Flex gap={16} align="center">
               <Text strong>{t('selectMember', { defaultValue: 'Select Member' })}:</Text>

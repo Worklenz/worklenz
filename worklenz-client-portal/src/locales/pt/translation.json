@@ -125,6 +125,8 @@
     "email_already_registered_title": "E-mail Já Registrado",
     "email_already_registered_message": "Um usuário com este e-mail já existe. Por favor, faça login.",
     "invalid_credentials": "E-mail ou senha inválidos",
+    "invalid_credentials_title": "Credenciais inválidas",
+    "invalid_credentials_message": "E-mail ou senha inválidos",
     "token_required": "Token é obrigatório",
     "token_invalid": "Token inválido ou expirado",
     "invitation_invalid": "Convite inválido ou expirado",

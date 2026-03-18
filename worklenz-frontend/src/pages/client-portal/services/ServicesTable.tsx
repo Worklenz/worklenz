@@ -128,10 +128,10 @@ const ServicesTable = () => {
 
         return (
           <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-            <Button 
-              type="text" 
-              icon={<MoreOutlined />} 
-              style={{ border: 'none' }} 
+            <Button
+              type="text"
+              icon={<MoreOutlined />}
+              style={{ border: 'none' }}
               onClick={e => e.stopPropagation()}
             />
           </Dropdown>
@@ -183,7 +183,12 @@ const ServicesTable = () => {
   }
 
   // Handle empty state
-  if (!servicesData || !servicesData.body || !servicesData.body.data || servicesData.body.data.length === 0) {
+  if (
+    !servicesData ||
+    !servicesData.body ||
+    !servicesData.body.data ||
+    servicesData.body.data.length === 0
+  ) {
     return (
       <Card style={{ height: 'calc(100vh - 280px)' }}>
         <Empty

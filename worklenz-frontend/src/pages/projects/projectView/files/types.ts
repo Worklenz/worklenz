@@ -1,5 +1,8 @@
 import type { UploadFile } from 'antd/es/upload/interface';
-import type { ProjectFilesSortField, ProjectFilesSortOrder } from '@/types/projects/project-files.types';
+import type {
+  ProjectFilesSortField,
+  ProjectFilesSortOrder,
+} from '@/types/projects/project-files.types';
 import type { ITaskAttachmentViewModel } from '@/types/tasks/task-attachment-view-model';
 
 export type PendingUploadFile = UploadFile & { errorMessage?: string };

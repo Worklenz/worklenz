@@ -92,6 +92,19 @@
     "peopleField": "Personenfeld",
     "noDate": "Kein Datum",
     "unsupportedField": "Nicht unterstützter Feldtyp",
+    "datePlaceholder": "Datum festlegen",
+    "numberPlaceholder": "0",
+    "percentagePlaceholder": "0%",
+    "selectOption": "Option auswählen",
+    "noOptionsAvailable": "Keine Optionen verfügbar",
+    "updating": "Wird aktualisiert...",
+    "peopleDropdown": {
+      "searchMembers": "Mitglieder suchen...",
+      "pending": "Ausstehend",
+      "loadingMembers": "Mitglieder werden geladen...",
+      "noMembersFound": "Keine Mitglieder gefunden",
+      "inviteMember": "Mitglied einladen"
+    },
 
     "modal": {
       "addFieldTitle": "Feld hinzufügen",

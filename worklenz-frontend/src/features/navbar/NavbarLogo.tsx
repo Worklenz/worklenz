@@ -25,8 +25,12 @@ const NavbarLogo = () => {
     }
     // Otherwise use default Worklenz logo (with Christmas variant if applicable)
     return themeMode === 'dark'
-      ? (isChristmasSeason ? XMAS_LOGO_DARK : LOGO_DARK)
-      : (isChristmasSeason ? XMAS_LOGO_LIGHT : LOGO_LIGHT);
+      ? isChristmasSeason
+        ? XMAS_LOGO_DARK
+        : LOGO_DARK
+      : isChristmasSeason
+        ? XMAS_LOGO_LIGHT
+        : LOGO_LIGHT;
   }, [organization?.logo_url, themeMode, isChristmasSeason]);
 
   const logoHeight = useMemo(() => {
@@ -51,12 +55,17 @@ const NavbarLogo = () => {
             marginBottom: isChristmasSeason && !organization?.logo_url ? 12 : 0,
             objectFit: 'contain',
           }}
-          onError={(e) => {
+          onError={e => {
             // Fallback to default logo on error
             const target = e.target as HTMLImageElement;
-            target.src = themeMode === 'dark'
-              ? (isChristmasSeason ? XMAS_LOGO_DARK : LOGO_DARK)
-              : (isChristmasSeason ? XMAS_LOGO_LIGHT : LOGO_LIGHT);
+            target.src =
+              themeMode === 'dark'
+                ? isChristmasSeason
+                  ? XMAS_LOGO_DARK
+                  : LOGO_DARK
+                : isChristmasSeason
+                  ? XMAS_LOGO_LIGHT
+                  : LOGO_LIGHT;
           }}
         />
       </div>

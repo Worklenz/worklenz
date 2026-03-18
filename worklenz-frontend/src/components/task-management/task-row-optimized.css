@@ -230,7 +230,9 @@
 
 .task-row-optimized.is-dragging {
   border: 3px solid #1890ff !important;
-  box-shadow: 0 0 24px 4px #1890ff, 0 6px 16px rgba(0, 0, 0, 0.18);
+  box-shadow:
+    0 0 24px 4px #1890ff,
+    0 6px 16px rgba(0, 0, 0, 0.18);
   opacity: 0.85 !important;
   background: var(--task-bg-primary, #fff) !important;
   z-index: 2000 !important;
@@ -240,7 +242,9 @@
 .dark .task-row-optimized.is-dragging,
 [data-theme="dark"] .task-row-optimized.is-dragging {
   border: 3px solid #40a9ff !important;
-  box-shadow: 0 0 24px 4px #40a9ff, 0 6px 16px rgba(0, 0, 0, 0.38);
+  box-shadow:
+    0 0 24px 4px #40a9ff,
+    0 6px 16px rgba(0, 0, 0, 0.38);
   background: var(--task-bg-primary, #1f1f1f) !important;
 }
 
@@ -295,8 +299,13 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
 }
 
 .task-name-edit-active {

@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Input, Select, Space } from '@/shared/antd-imports';
-import { getCountries, getCountryCallingCode, parsePhoneNumber, AsYouType } from 'libphonenumber-js';
+import {
+  getCountries,
+  getCountryCallingCode,
+  parsePhoneNumber,
+  AsYouType,
+} from 'libphonenumber-js';
 import type { CountryCode } from 'libphonenumber-js';
 // Import flag icons from country-flag-icons
 import * as flags from 'country-flag-icons/react/3x2';
@@ -8,6 +13,7 @@ import * as flags from 'country-flag-icons/react/3x2';
 interface PhoneInputProps {
   value?: string;
   onChange?: (value: string) => void;
+  onCountryChange?: (country: CountryCode) => void;
   placeholder?: string;
   disabled?: boolean;
   defaultCountry?: CountryCode;
@@ -88,7 +94,7 @@ const getFlagEmoji = (countryCode: string): string => {
     const codePoints = countryCode
       .toUpperCase()
       .split('')
-      .map((char) => 127397 + char.charCodeAt(0));
+      .map(char => 127397 + char.charCodeAt(0));
     return String.fromCodePoint(...codePoints);
   } catch (error) {
     // Fallback to country code if emoji fails
@@ -97,40 +103,41 @@ const getFlagEmoji = (countryCode: string): string => {
 };
 
 // SVG Flag component using country-flag-icons
-const FlagIcon: React.FC<{ countryCode: string; style?: React.CSSProperties }> = ({ 
-  countryCode, 
-  style = {} 
+const FlagIcon: React.FC<{ countryCode: string; style?: React.CSSProperties }> = ({
+  countryCode,
+  style = {},
 }) => {
   // Get the flag component dynamically
   const FlagComponent = flags[countryCode as keyof typeof flags];
-  
+
   if (FlagComponent) {
     return (
-      <FlagComponent 
+      <FlagComponent
         style={{
           width: '20px',
           height: '15px',
           borderRadius: '2px',
           objectFit: 'cover',
-          ...style
+          ...style,
         }}
         title={`${countryNames[countryCode] || countryCode} flag`}
       />
     );
   }
-  
+
   // Fallback to emoji if SVG flag is not available
   const flagEmoji = getFlagEmoji(countryCode);
   return (
-    <span 
+    <span
       style={{
         fontSize: '16px',
-        fontFamily: 'Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, Android Emoji, EmojiSymbols, EmojiOne Mozilla, Twemoji Mozilla, Segoe UI Symbol, Noto Emoji',
+        fontFamily:
+          'Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, Android Emoji, EmojiSymbols, EmojiOne Mozilla, Twemoji Mozilla, Segoe UI Symbol, Noto Emoji',
         lineHeight: 1,
         display: 'inline-block',
         minWidth: '20px',
         textAlign: 'center',
-        ...style
+        ...style,
       }}
       title={`${countryNames[countryCode] || countryCode} flag`}
     >
@@ -142,6 +149,7 @@ const FlagIcon: React.FC<{ countryCode: string; style?: React.CSSProperties }> =
 const PhoneInput: React.FC<PhoneInputProps> = ({
   value,
   onChange,
+  onCountryChange,
   placeholder = 'Enter phone number',
   disabled = false,
   defaultCountry = 'US',
@@ -161,11 +169,15 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
 
     if (value) {
       try {
-        const parsed = parsePhoneNumber(value);
+        const parsed = parsePhoneNumber(value, defaultCountry);
         if (parsed) {
-          setSelectedCountry(parsed.country || defaultCountry);
+          const resolvedCountry = parsed.country || defaultCountry;
+          setSelectedCountry(resolvedCountry);
+          onCountryChange?.(resolvedCountry);
           setPhoneNumber(parsed.nationalNumber);
         } else {
+          setSelectedCountry(defaultCountry);
+          onCountryChange?.(defaultCountry);
           // Ignore malformed international numbers to prevent display issues
           if (value.startsWith('+')) {
             return;
@@ -173,6 +185,8 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
           setPhoneNumber(value);
         }
       } catch {
+        setSelectedCountry(defaultCountry);
+        onCountryChange?.(defaultCountry);
         // Ignore malformed international numbers to prevent display issues
         if (value.startsWith('+')) {
           return;
@@ -180,18 +194,22 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
         setPhoneNumber(value);
       }
     } else {
+      setSelectedCountry(defaultCountry);
+      onCountryChange?.(defaultCountry);
       setPhoneNumber('');
     }
-  }, [value, defaultCountry]);
+  }, [value, defaultCountry, onCountryChange]);
 
   const handleCountryChange = (country: CountryCode) => {
     setSelectedCountry(country);
+    onCountryChange?.(country);
     isUpdatingRef.current = true;
 
     if (phoneNumber) {
       const formatter = new AsYouType(country);
       formatter.input(phoneNumber);
-      const fullNumber = formatter.getNumber()?.number || `+${getCountryCallingCode(country)}${phoneNumber}`;
+      const fullNumber =
+        formatter.getNumber()?.number || `+${getCountryCallingCode(country)}${phoneNumber}`;
       onChange?.(fullNumber);
     }
   };
@@ -213,7 +231,8 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
     formatter.input(input);
 
     const phoneNumberObj = formatter.getNumber();
-    const fullNumber = phoneNumberObj?.number || `+${getCountryCallingCode(selectedCountry)}${input}`;
+    const fullNumber =
+      phoneNumberObj?.number || `+${getCountryCallingCode(selectedCountry)}${input}`;
 
     onChange?.(fullNumber);
   };
@@ -227,7 +246,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({
       return nameA.localeCompare(nameB);
     });
 
-    return sortedCountries.map((country) => {
+    return sortedCountries.map(country => {
       const callingCode = getCountryCallingCode(country);
       const displayName = countryNames[country] || country;
 

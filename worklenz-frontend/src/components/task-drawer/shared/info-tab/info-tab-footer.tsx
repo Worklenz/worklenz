@@ -1,12 +1,4 @@
-import {
-  Button,
-  Flex,
-  Form,
-  Typography,
-  message,
-  Tooltip,
-  Space,
-} from '@/shared/antd-imports';
+import { Button, Flex, Form, Typography, message, Tooltip, Space } from '@/shared/antd-imports';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PaperClipOutlined, DeleteOutlined, PlusOutlined } from '@/shared/antd-imports';
@@ -99,8 +91,7 @@ const CustomMentionsInput = ({
 
     const mentionClass =
       themeMode === 'light' ? 'mention-highlight-light' : 'mention-highlight-dark';
-    const urlClass =
-      themeMode === 'light' ? 'url-highlight-light' : 'url-highlight-dark';
+    const urlClass = themeMode === 'light' ? 'url-highlight-light' : 'url-highlight-dark';
 
     // ── Step 1: collect mention ranges ──────────────────────────────────────
     type Range = { start: number; end: number; html: string };
@@ -116,13 +107,10 @@ const CustomMentionsInput = ({
 
         const beforeChar = index === 0 ? '' : text[index - 1];
         const afterChar =
-          index + mentionText.length < text.length
-            ? text[index + mentionText.length]
-            : '';
+          index + mentionText.length < text.length ? text[index + mentionText.length] : '';
 
         const isValidBefore = index === 0 || /\s/.test(beforeChar);
-        const isValidAfter =
-          afterChar === '' || /\s/.test(afterChar) || afterChar === ',';
+        const isValidAfter = afterChar === '' || /\s/.test(afterChar) || afterChar === ',';
 
         if (isValidBefore && isValidAfter) {
           const end = index + mentionText.length;
@@ -156,9 +144,7 @@ const CustomMentionsInput = ({
       const rawUrl = urlMatch[0];
 
       // Skip if this URL is entirely inside an existing mention range
-      const overlaps = ranges.some(
-        r => start >= r.start && end <= r.end
-      );
+      const overlaps = ranges.some(r => start >= r.start && end <= r.end);
       if (!overlaps) {
         ranges.push({
           start,
@@ -208,10 +194,7 @@ const CustomMentionsInput = ({
         plainText += node.textContent || '';
       } else if (node.nodeType === Node.ELEMENT_NODE) {
         const el = node as Element;
-        if (
-          el.getAttribute('data-mention') === 'true' ||
-          el.getAttribute('data-url') === 'true'
-        ) {
+        if (el.getAttribute('data-mention') === 'true' || el.getAttribute('data-url') === 'true') {
           // For both mentions and URL spans, use their text content as-is
           plainText += node.textContent || '';
         } else {
@@ -233,17 +216,11 @@ const CustomMentionsInput = ({
     try {
       if (!range.startContainer || !range.endContainer) return false;
 
-      if (
-        !document.contains(range.startContainer) ||
-        !document.contains(range.endContainer)
-      ) {
+      if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
         return false;
       }
 
-      if (
-        !editableRef.current ||
-        !document.contains(editableRef.current)
-      ) {
+      if (!editableRef.current || !document.contains(editableRef.current)) {
         return false;
       }
 
@@ -273,10 +250,7 @@ const CustomMentionsInput = ({
       range = selection.getRangeAt(0);
 
       if (!range.startContainer || !range.endContainer) return 0;
-      if (
-        !document.contains(range.startContainer) ||
-        !document.contains(range.endContainer)
-      ) {
+      if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
         return 0;
       }
 
@@ -333,10 +307,7 @@ const CustomMentionsInput = ({
     try {
       range = selection.getRangeAt(0);
       if (!range.startContainer || !range.endContainer) return false;
-      if (
-        !document.contains(range.startContainer) ||
-        !document.contains(range.endContainer)
-      ) {
+      if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
         return false;
       }
     } catch (e) {
@@ -349,10 +320,7 @@ const CustomMentionsInput = ({
     while (node && node !== editableRef.current) {
       if (node.nodeType === Node.ELEMENT_NODE) {
         const el = node as Element;
-        if (
-          el.getAttribute('data-mention') === 'true' ||
-          el.getAttribute('data-url') === 'true'
-        ) {
+        if (el.getAttribute('data-mention') === 'true' || el.getAttribute('data-url') === 'true') {
           return true;
         }
       }
@@ -374,10 +342,7 @@ const CustomMentionsInput = ({
     try {
       range = selection.getRangeAt(0);
       if (!range.startContainer || !range.endContainer) return;
-      if (
-        !document.contains(range.startContainer) ||
-        !document.contains(range.endContainer)
-      ) {
+      if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
         return;
       }
     } catch (e) {
@@ -389,8 +354,7 @@ const CustomMentionsInput = ({
         ? range.commonAncestorContainer.parentNode
         : range.commonAncestorContainer;
 
-    if (!mention || mention === editableRef.current || !document.contains(mention))
-      return;
+    if (!mention || mention === editableRef.current || !document.contains(mention)) return;
 
     const newRange = document.createRange();
     let nextSibling = mention.nextSibling;
@@ -475,13 +439,7 @@ const CustomMentionsInput = ({
 
   // Handle key down events
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (
-      isCursorInMention() &&
-      e.key.length === 1 &&
-      !e.ctrlKey &&
-      !e.metaKey &&
-      !e.altKey
-    ) {
+    if (isCursorInMention() && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
       moveCursorAfterMentionWithSpace();
 
@@ -491,10 +449,7 @@ const CustomMentionsInput = ({
         try {
           range = selection.getRangeAt(0);
           if (!range.startContainer || !range.endContainer) return;
-          if (
-            !document.contains(range.startContainer) ||
-            !document.contains(range.endContainer)
-          ) {
+          if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
             return;
           }
         } catch (err) {
@@ -517,10 +472,7 @@ const CustomMentionsInput = ({
       return;
     }
 
-    if (
-      isCursorInMention() &&
-      (e.key === 'ArrowLeft' || e.key === 'ArrowRight')
-    ) {
+    if (isCursorInMention() && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
       e.preventDefault();
       moveCursorAfterMentionWithSpace();
       return;
@@ -533,10 +485,7 @@ const CustomMentionsInput = ({
         try {
           range = selection.getRangeAt(0);
           if (!range.startContainer || !range.endContainer) return;
-          if (
-            !document.contains(range.startContainer) ||
-            !document.contains(range.endContainer)
-          ) {
+          if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
             return;
           }
         } catch (err) {
@@ -544,8 +493,7 @@ const CustomMentionsInput = ({
         }
 
         if (e.key === 'Backspace' && range.collapsed) {
-          const previousNode =
-            range.startContainer.childNodes[range.startOffset - 1];
+          const previousNode = range.startContainer.childNodes[range.startOffset - 1];
           if (
             previousNode &&
             previousNode.nodeType === Node.ELEMENT_NODE &&
@@ -579,8 +527,7 @@ const CustomMentionsInput = ({
         }
 
         if (e.key === 'Delete' && range.collapsed) {
-          const nextNode =
-            range.startContainer.childNodes[range.startOffset];
+          const nextNode = range.startContainer.childNodes[range.startOffset];
           if (
             nextNode &&
             nextNode.nodeType === Node.ELEMENT_NODE &&
@@ -605,9 +552,7 @@ const CustomMentionsInput = ({
     if (isDropdownOpen) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setSelectedIndex(prev =>
-          Math.min(prev + 1, filteredOptions.length - 1)
-        );
+        setSelectedIndex(prev => Math.min(prev + 1, filteredOptions.length - 1));
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setSelectedIndex(prev => Math.max(prev - 1, 0));
@@ -672,10 +617,7 @@ const CustomMentionsInput = ({
         const textLength = node.textContent?.length || 0;
         if (currentPos + textLength >= offset) {
           try {
-            newRange.setStart(
-              node,
-              Math.min(offset - currentPos, textLength)
-            );
+            newRange.setStart(node, Math.min(offset - currentPos, textLength));
             newRange.collapse(true);
             found = true;
             return true;
@@ -690,10 +632,7 @@ const CustomMentionsInput = ({
 
       if (node.nodeType === Node.ELEMENT_NODE) {
         const el = node as Element;
-        if (
-          el.getAttribute('data-mention') === 'true' ||
-          el.getAttribute('data-url') === 'true'
-        ) {
+        if (el.getAttribute('data-mention') === 'true' || el.getAttribute('data-url') === 'true') {
           const textLength = node.textContent?.length || 0;
           if (currentPos + textLength >= offset) {
             const nextSibling = node.nextSibling;
@@ -766,21 +705,14 @@ const CustomMentionsInput = ({
 
   // Update contenteditable with highlighted HTML
   useEffect(() => {
-    if (
-      editableRef.current &&
-      value !== undefined &&
-      !isUpdatingRef.current
-    ) {
+    if (editableRef.current && value !== undefined && !isUpdatingRef.current) {
       isUpdatingRef.current = true;
 
       const highlighted = createHighlightedHTML(value);
 
       if (editableRef.current.innerHTML !== highlighted) {
         const selection = window.getSelection();
-        const offset =
-          selection && selection.rangeCount > 0
-            ? getCursorPosition()
-            : value.length;
+        const offset = selection && selection.rangeCount > 0 ? getCursorPosition() : value.length;
 
         editableRef.current.innerHTML = highlighted;
 
@@ -868,11 +800,7 @@ const CustomMentionsInput = ({
           border: `1px solid ${themeWiseColor('#d9d9d9', '#434343', themeMode)}`,
           borderRadius: style?.borderRadius || 4,
           backgroundColor: themeWiseColor('#fff', '#141414', themeMode),
-          color: themeWiseColor(
-            'rgba(0, 0, 0, 0.85)',
-            'rgba(255, 255, 255, 0.85)',
-            themeMode
-          ),
+          color: themeWiseColor('rgba(0, 0, 0, 0.85)', 'rgba(255, 255, 255, 0.85)', themeMode),
           outline: 'none',
           whiteSpace: 'pre-wrap',
           wordWrap: 'break-word',
@@ -887,11 +815,7 @@ const CustomMentionsInput = ({
           style={{
             backgroundColor: themeWiseColor('#fff', '#1f1f1f', themeMode),
             borderColor: themeWiseColor('#d9d9d9', '#434343', themeMode),
-            color: themeWiseColor(
-              'rgba(0, 0, 0, 0.85)',
-              'rgba(255, 255, 255, 0.85)',
-              themeMode
-            ),
+            color: themeWiseColor('rgba(0, 0, 0, 0.85)', 'rgba(255, 255, 255, 0.85)', themeMode),
             position: 'absolute',
             top: '100%',
             left: 0,
@@ -934,9 +858,7 @@ const InfoTabFooter = () => {
   const [attachmentComment, setAttachmentComment] = useState<boolean>(false);
   const [selectedFiles, setSelectedFiles] = useState<ITaskAttachment[]>([]);
 
-  const { taskFormViewModel, selectedTaskId } = useAppSelector(
-    state => state.taskDrawerReducer
-  );
+  const { taskFormViewModel, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
   const { projectId } = useAppSelector(state => state.projectReducer);
   const dispatch = useAppDispatch();
 
@@ -953,9 +875,7 @@ const InfoTabFooter = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
-  const projectMembersList = useAppSelector(
-    state => state.projectMemberReducer.membersList
-  );
+  const projectMembersList = useAppSelector(state => state.projectMemberReducer.membersList);
 
   const createdFromNow = useMemo(() => {
     const createdAt = taskFormViewModel?.task?.created_at;
@@ -1000,9 +920,7 @@ const InfoTabFooter = () => {
       const res = await teamMembersApiService.get(1, 10, null, null, null, true);
 
       if (res.done) {
-        setMembers(
-          res.body.data?.filter(t => !t.pending_invitation) as ITeamMember[]
-        );
+        setMembers(res.body.data?.filter(t => !t.pending_invitation) as ITeamMember[]);
       }
     } catch (error) {
       console.error('Failed to fetch members:', error);
@@ -1026,9 +944,7 @@ const InfoTabFooter = () => {
       if (!selectedMember) return;
 
       setSelectedMembers(prev =>
-        prev.some(
-          mention => mention.team_member_id === selectedMember.id
-        )
+        prev.some(mention => mention.team_member_id === selectedMember.id)
           ? prev
           : [
               ...prev,
@@ -1064,9 +980,9 @@ const InfoTabFooter = () => {
       const body: ITaskCommentsCreateRequest = {
         task_id: selectedTaskId,
         content: commentValue || '',
-        mentions: Array.from(
-          new Set(selectedMembers.map(member => JSON.stringify(member)))
-        ).map(str => JSON.parse(str)),
+        mentions: Array.from(new Set(selectedMembers.map(member => JSON.stringify(member)))).map(
+          str => JSON.parse(str)
+        ),
         attachments: selectedFiles,
       };
 
@@ -1102,16 +1018,8 @@ const InfoTabFooter = () => {
     t,
   ]);
 
-  const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    if (
-      !event.target.files ||
-      !event.target.files.length ||
-      !selectedTaskId ||
-      !projectId
-    )
-      return;
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || !event.target.files.length || !selectedTaskId || !projectId) return;
 
     const files = Array.from(event.target.files);
 
@@ -1291,18 +1199,11 @@ const InfoTabFooter = () => {
                   align="center"
                   style={{
                     marginTop: 8,
-                    cursor:
-                      selectedFiles.length >= MAXIMUM_FILE_COUNT
-                        ? 'not-allowed'
-                        : 'pointer',
-                    opacity:
-                      selectedFiles.length >= MAXIMUM_FILE_COUNT ? 0.5 : 1,
+                    cursor: selectedFiles.length >= MAXIMUM_FILE_COUNT ? 'not-allowed' : 'pointer',
+                    opacity: selectedFiles.length >= MAXIMUM_FILE_COUNT ? 0.5 : 1,
                   }}
                   onClick={() => {
-                    if (
-                      selectedFiles.length < MAXIMUM_FILE_COUNT &&
-                      !uploading
-                    ) {
+                    if (selectedFiles.length < MAXIMUM_FILE_COUNT && !uploading) {
                       fileInputRef.current?.click();
                     }
                   }}
@@ -1310,9 +1211,7 @@ const InfoTabFooter = () => {
                   <Button
                     type="link"
                     icon={<PlusOutlined />}
-                    disabled={
-                      selectedFiles.length >= MAXIMUM_FILE_COUNT || uploading
-                    }
+                    disabled={selectedFiles.length >= MAXIMUM_FILE_COUNT || uploading}
                   >
                     {t('taskInfoTab.comments.addMoreFiles', {
                       defaultValue: 'Add More Files',
@@ -1340,9 +1239,7 @@ const InfoTabFooter = () => {
                 filterOption={(input: string, option: any) => {
                   if (!input) return true;
                   const optionLabel = option?.label || '';
-                  return optionLabel
-                    .toLowerCase()
-                    .includes(input.toLowerCase());
+                  return optionLabel.toLowerCase().includes(input.toLowerCase());
                 }}
                 style={{
                   minHeight: 100,
@@ -1373,9 +1270,7 @@ const InfoTabFooter = () => {
                 ref={fileInputRef}
                 style={{ display: 'none' }}
                 onChange={handleFileChange}
-                disabled={
-                  uploading || selectedFiles.length >= MAXIMUM_FILE_COUNT
-                }
+                disabled={uploading || selectedFiles.length >= MAXIMUM_FILE_COUNT}
                 multiple
               />
               <Tooltip
@@ -1393,9 +1288,7 @@ const InfoTabFooter = () => {
                 <Button
                   icon={<PaperClipOutlined />}
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={
-                    uploading || selectedFiles.length >= MAXIMUM_FILE_COUNT
-                  }
+                  disabled={uploading || selectedFiles.length >= MAXIMUM_FILE_COUNT}
                 />
               </Tooltip>
 
@@ -1421,16 +1314,8 @@ const InfoTabFooter = () => {
         </Form>
       )}
 
-      <Flex
-        align="center"
-        justify="space-between"
-        style={{ width: '100%', marginTop: 8 }}
-      >
-        <Tooltip
-          title={
-            createdFromNow !== 'N/A' ? `Created ${createdFromNow}` : 'N/A'
-          }
-        >
+      <Flex align="center" justify="space-between" style={{ width: '100%', marginTop: 8 }}>
+        <Tooltip title={createdFromNow !== 'N/A' ? `Created ${createdFromNow}` : 'N/A'}>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {t('taskInfoTab.comments.createdBy', {
               defaultValue: 'Created {time} by {user}',
@@ -1439,11 +1324,7 @@ const InfoTabFooter = () => {
             })}
           </Typography.Text>
         </Tooltip>
-        <Tooltip
-          title={
-            updatedFromNow !== 'N/A' ? `Updated ${updatedFromNow}` : 'N/A'
-          }
-        >
+        <Tooltip title={updatedFromNow !== 'N/A' ? `Updated ${updatedFromNow}` : 'N/A'}>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {t('taskInfoTab.comments.updatedTime', {
               defaultValue: 'Updated {time}',

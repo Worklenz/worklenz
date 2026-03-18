@@ -26,7 +26,10 @@ import './template-drawer.css';
 import { SearchOutlined } from '@/shared/antd-imports';
 import logger from '@/utils/errorLogger';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { evt_project_import_from_template_click, evt_project_import_tasks_click } from '@/shared/worklenz-analytics-events';
+import {
+  evt_project_import_from_template_click,
+  evt_project_import_tasks_click,
+} from '@/shared/worklenz-analytics-events';
 
 const { Title, Text } = Typography;
 

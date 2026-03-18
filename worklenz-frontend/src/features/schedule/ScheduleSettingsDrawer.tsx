@@ -22,7 +22,7 @@ const ScheduleSettingsDrawer: React.FC = () => {
 
   const { workingDays, workingHours, loading } = useAppSelector(state => state.scheduleReducer);
   const { date, type } = useAppSelector(state => state.scheduleReducer);
-  
+
   // Track if settings have been loaded at least once
   const hasLoadedSettings = useRef(false);
 
@@ -47,20 +47,22 @@ const ScheduleSettingsDrawer: React.FC = () => {
       dispatch(toggleSettingsDrawer());
       dispatch(fetchDateList({ date, type }));
       dispatch(fetchTeamData());
-      
+
       // Invalidate all schedule-related cache to force refetch
-      dispatch(scheduleApi.util.invalidateTags([
-        'DateList', 
-        'Members', 
-        'MemberProjects', 
-        'Capacity', 
-        'Workload', 
-        'CapacityReport',
-        'Conflicts',
-        'TaskTimeline',
-        'TimeOff'
-      ]));
-      
+      dispatch(
+        scheduleApi.util.invalidateTags([
+          'DateList',
+          'Members',
+          'MemberProjects',
+          'Capacity',
+          'Workload',
+          'CapacityReport',
+          'Conflicts',
+          'TaskTimeline',
+          'TimeOff',
+        ])
+      );
+
       // Trigger refresh in the schedule page
       dispatch(triggerScheduleRefresh());
     } catch (error) {
@@ -78,10 +80,7 @@ const ScheduleSettingsDrawer: React.FC = () => {
     >
       <Skeleton loading={loading} active paragraph={{ rows: 1 }}>
         <Form layout="vertical" form={form} onFinish={handleFormSubmit}>
-          <Form.Item 
-            label={t('workingDays', { defaultValue: 'Working Days' })} 
-            name="workingDays"
-          >
+          <Form.Item label={t('workingDays', { defaultValue: 'Working Days' })} name="workingDays">
             <Checkbox.Group>
               <Row>
                 <Col span={8} style={{ paddingBottom: '8px' }}>
@@ -91,16 +90,22 @@ const ScheduleSettingsDrawer: React.FC = () => {
                   <Checkbox value="Tuesday">{t('tuesday', { defaultValue: 'Tuesday' })}</Checkbox>
                 </Col>
                 <Col span={8} style={{ paddingBottom: '8px' }}>
-                  <Checkbox value="Wednesday">{t('wednesday', { defaultValue: 'Wednesday' })}</Checkbox>
+                  <Checkbox value="Wednesday">
+                    {t('wednesday', { defaultValue: 'Wednesday' })}
+                  </Checkbox>
                 </Col>
                 <Col span={8} style={{ paddingBottom: '8px' }}>
-                  <Checkbox value="Thursday">{t('thursday', { defaultValue: 'Thursday' })}</Checkbox>
+                  <Checkbox value="Thursday">
+                    {t('thursday', { defaultValue: 'Thursday' })}
+                  </Checkbox>
                 </Col>
                 <Col span={8} style={{ paddingBottom: '8px' }}>
                   <Checkbox value="Friday">{t('friday', { defaultValue: 'Friday' })}</Checkbox>
                 </Col>
                 <Col span={8} style={{ paddingBottom: '8px' }}>
-                  <Checkbox value="Saturday">{t('saturday', { defaultValue: 'Saturday' })}</Checkbox>
+                  <Checkbox value="Saturday">
+                    {t('saturday', { defaultValue: 'Saturday' })}
+                  </Checkbox>
                 </Col>
                 <Col span={8} style={{ paddingBottom: '8px' }}>
                   <Checkbox value="Sunday">{t('sunday', { defaultValue: 'Sunday' })}</Checkbox>
@@ -109,14 +114,18 @@ const ScheduleSettingsDrawer: React.FC = () => {
             </Checkbox.Group>
           </Form.Item>
 
-          <Form.Item 
-            label={t('workingHours', { defaultValue: 'Working Hours' })} 
+          <Form.Item
+            label={t('workingHours', { defaultValue: 'Working Hours' })}
             name="workingHours"
           >
             <Input
               max={24}
               type="number"
-              suffix={<span style={{ color: 'rgba(0, 0, 0, 0.46)' }}>{t('hours', { defaultValue: 'hours' })}</span>}
+              suffix={
+                <span style={{ color: 'rgba(0, 0, 0, 0.46)' }}>
+                  {t('hours', { defaultValue: 'hours' })}
+                </span>
+              }
             />
           </Form.Item>
 

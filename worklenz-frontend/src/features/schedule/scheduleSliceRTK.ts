@@ -207,7 +207,10 @@ const scheduleSlice = createSlice({
       state.selectedDate = action.payload;
     },
 
-    setSelectedDateRange: (state, action: PayloadAction<{ start: string | null; end: string | null } | null>) => {
+    setSelectedDateRange: (
+      state,
+      action: PayloadAction<{ start: string | null; end: string | null } | null>
+    ) => {
       state.selectedDateRange = action.payload;
     },
 

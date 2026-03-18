@@ -60,10 +60,11 @@ export const SearchFilter: React.FC<SearchFilterProps> = ({
           onClick={handleToggle}
           title={t('search', { defaultValue: 'Search' })}
           aria-label={t('search', { defaultValue: 'Search' })}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${themeClasses.containerBg === 'bg-gray-800'
-            ? 'focus:ring-offset-gray-900'
-            : 'focus:ring-offset-white'
-            }`}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText} ${
+            themeClasses.containerBg === 'bg-gray-800'
+              ? 'focus:ring-offset-gray-900'
+              : 'focus:ring-offset-white'
+          }`}
         >
           <SearchOutlined className="w-3.5 h-3.5" />
           <span>{t('search', { defaultValue: 'Search' })}</span>
@@ -77,20 +78,24 @@ export const SearchFilter: React.FC<SearchFilterProps> = ({
               type="text"
               value={localValue}
               onChange={e => setLocalValue(e.target.value)}
-              placeholder={placeholder || t('searchTasks', { defaultValue: 'Search tasks by name or key...' })}
-              className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-150 ${isDarkMode
-                ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
-                : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
-                }`}
+              placeholder={
+                placeholder || t('searchTasks', { defaultValue: 'Search tasks by name or key...' })
+              }
+              className={`w-full pr-4 pl-8 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-150 ${
+                isDarkMode
+                  ? 'bg-gray-700 text-gray-100 placeholder-gray-400 border-gray-600'
+                  : 'bg-white text-gray-900 placeholder-gray-400 border-gray-300'
+              }`}
             />
             {localValue && (
               <button
                 type="button"
                 onClick={handleClear}
-                className={`absolute right-1.5 top-1/2 transform -translate-y-1/2 transition-colors duration-150 ${isDarkMode
-                  ? 'text-gray-400 hover:text-gray-200'
-                  : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                className={`absolute right-1.5 top-1/2 transform -translate-y-1/2 transition-colors duration-150 ${
+                  isDarkMode
+                    ? 'text-gray-400 hover:text-gray-200'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
               >
                 <CloseOutlined className="w-3.5 h-3.5" />
               </button>
@@ -98,10 +103,11 @@ export const SearchFilter: React.FC<SearchFilterProps> = ({
           </div>
           <button
             type="submit"
-            className={`px-2.5 py-1.5 text-xs font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200 ${isDarkMode
-              ? 'text-white bg-gray-600 hover:bg-gray-700'
-              : 'text-gray-800 bg-gray-200 hover:bg-gray-300'
-              }`}
+            className={`px-2.5 py-1.5 text-xs font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200 ${
+              isDarkMode
+                ? 'text-white bg-gray-600 hover:bg-gray-700'
+                : 'text-gray-800 bg-gray-200 hover:bg-gray-300'
+            }`}
           >
             {t('search', { defaultValue: 'Search' })}
           </button>
@@ -112,8 +118,9 @@ export const SearchFilter: React.FC<SearchFilterProps> = ({
               onChange('');
               setIsExpanded(false);
             }}
-            className={`px-2.5 py-1.5 text-xs font-medium transition-colors duration-200 ${isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
-              }`}
+            className={`px-2.5 py-1.5 text-xs font-medium transition-colors duration-200 ${
+              isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'
+            }`}
           >
             {t('cancel', { defaultValue: 'Cancel' })}
           </button>

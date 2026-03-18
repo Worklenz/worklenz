@@ -341,6 +341,15 @@ const CustomColumnCell: React.FC<{
   // If columnType is not provided, try to determine it from columnObj
   const fieldType = columnType || columnObj?.fieldType;
 
+  console.log('[CustomColumnCell] Debug info:', {
+    columnKey,
+    columnType,
+    columnObjFieldType: columnObj?.fieldType,
+    finalFieldType: fieldType,
+    columnObj: columnObj,
+    taskId: task.id,
+  });
+
   if (!fieldType) {
     return <span className="text-gray-400">No field type</span>;
   }
@@ -363,6 +372,15 @@ const CustomColumnCell: React.FC<{
       return (
         <PeopleFieldCell
           selectedMemberIds={selectedMemberIds}
+          task={task}
+          columnKey={columnKey}
+          updateValue={updateTaskCustomColumnValue}
+        />
+      );
+    case 'text':
+      return (
+        <TextFieldCell
+          value={customValue || ''}
           task={task}
           columnKey={columnKey}
           updateValue={updateTaskCustomColumnValue}
@@ -590,6 +608,71 @@ const PeopleFieldCell: React.FC<{
         />
       </Flex>
     </Dropdown>
+  );
+};
+
+const TextFieldCell: React.FC<{
+  value: string;
+  task: IProjectTask;
+  columnKey: string;
+  updateValue: (taskId: string, columnKey: string, value: string) => void;
+}> = ({ value, task, columnKey, updateValue }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [localValue, setLocalValue] = useState(value || '');
+  const inputRef = useRef<InputRef>(null);
+
+  useEffect(() => {
+    setLocalValue(value || '');
+  }, [value]);
+
+  const handleSave = () => {
+    if (task.id) {
+      updateValue(task.id, columnKey, localValue);
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setLocalValue(value || '');
+    setIsEditing(false);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <Input
+        ref={inputRef}
+        value={localValue}
+        onChange={e => setLocalValue(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={handleKeyPress}
+        size="small"
+        style={{ fontSize: '12px' }}
+        autoFocus
+      />
+    );
+  }
+
+  return (
+    <div
+      className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded text-xs min-h-[22px] flex items-center"
+      onClick={() => {
+        setIsEditing(true);
+        setTimeout(() => inputRef.current?.focus(), 0);
+      }}
+      title={value || 'Click to edit'}
+    >
+      <Typography.Text className="text-xs truncate">
+        {value || <span className="text-gray-400 italic">Click to add text</span>}
+      </Typography.Text>
+    </div>
   );
 };
 
@@ -1029,6 +1112,17 @@ const renderCustomColumnContent = (
   // If columnType is not provided, try to determine it from columnObj
   const fieldType = columnType || columnObj?.fieldType;
 
+  console.log('[renderCustomColumnContent] Debug info:', {
+    columnKey,
+    columnType,
+    columnObjFieldType: columnObj?.fieldType,
+    finalFieldType: fieldType,
+    columnObj: columnObj,
+    taskId: task.id,
+    customComponents: Object.keys(customComponents || {}),
+    hasComponent: !!customComponents?.[fieldType as CustomFieldsTypes],
+  });
+
   if (!fieldType) {
     console.warn('No field type provided for custom column', columnKey);
     return null;
@@ -1300,6 +1394,65 @@ const renderCustomColumnContent = (
         />
       );
     },
+    text: () => {
+      const [isEditing, setIsEditing] = useState(false);
+      const [localValue, setLocalValue] = useState(customValue || '');
+      const inputRef = useRef<InputRef>(null);
+
+      useEffect(() => {
+        setLocalValue(customValue || '');
+      }, [customValue]);
+
+      const handleSave = () => {
+        if (task.id) {
+          updateTaskCustomColumnValue(task.id, columnKey, localValue);
+        }
+        setIsEditing(false);
+      };
+
+      const handleCancel = () => {
+        setLocalValue(customValue || '');
+        setIsEditing(false);
+      };
+
+      const handleKeyPress = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+          handleSave();
+        } else if (e.key === 'Escape') {
+          handleCancel();
+        }
+      };
+
+      if (isEditing) {
+        return (
+          <Input
+            ref={inputRef}
+            value={localValue}
+            onChange={e => setLocalValue(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={handleKeyPress}
+            size="small"
+            style={{ fontSize: '12px' }}
+            autoFocus
+          />
+        );
+      }
+
+      return (
+        <div
+          className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded text-xs min-h-[22px] flex items-center"
+          onClick={() => {
+            setIsEditing(true);
+            setTimeout(() => inputRef.current?.focus(), 0);
+          }}
+          title={customValue || 'Click to edit'}
+        >
+          <Typography.Text className="text-xs truncate">
+            {customValue || <span className="text-gray-400 italic">Click to add text</span>}
+          </Typography.Text>
+        </div>
+      );
+    },
     selection: () => {
       return (
         <SelectionFieldCell
@@ -1313,7 +1466,11 @@ const renderCustomColumnContent = (
     },
   };
 
-  return customComponents[fieldType] ? customComponents[fieldType]() : null;
+  return customComponents[fieldType] ? (
+    customComponents[fieldType]()
+  ) : (
+    <span>Unsupported field type: {fieldType}</span>
+  );
 };
 
 const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, activeId, groupBy }) => {

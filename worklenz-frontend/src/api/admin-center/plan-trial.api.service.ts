@@ -73,11 +73,12 @@ export class PlanTrialApiService {
   /**
    * Convert trial to paid subscription
    */
-  public static async convertTrial(trialId: string): Promise<IServerResponse<{ message: string; plan_tier_id?: string }>> {
-    const response = await apiClient.post<IServerResponse<{ message: string; plan_tier_id?: string }>>(
-      `${this.rootUrl}/plan-trials/trial/convert`,
-      { trial_id: trialId }
-    );
+  public static async convertTrial(
+    trialId: string
+  ): Promise<IServerResponse<{ message: string; plan_tier_id?: string }>> {
+    const response = await apiClient.post<
+      IServerResponse<{ message: string; plan_tier_id?: string }>
+    >(`${this.rootUrl}/plan-trials/trial/convert`, { trial_id: trialId });
     return response.data;
   }
 

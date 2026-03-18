@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, memo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, memo, useEffect, useRef } from 'react';
 import { Tooltip, Flex, Dropdown, DatePicker, Input } from '@/shared/antd-imports';
 import { PlusOutlined, SettingOutlined, CrownOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,10 @@ import dayjs from 'dayjs';
 import { useAuthService } from '@/hooks/useAuth';
 import { isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import {
+  getTaskCustomFieldDisplayName,
+  parsePeopleCustomFieldValue,
+} from '@/utils/task-custom-columns';
 
 // Add Custom Column Button Component
 export const AddCustomColumnButton: React.FC = memo(() => {
@@ -91,11 +95,7 @@ export const CustomColumnHeader: React.FC<{
   const [isHovered, setIsHovered] = useState(false);
 
   const displayName =
-    column.name ||
-    column.label ||
-    column.custom_column_obj?.fieldTitle ||
-    column.custom_column_obj?.field_title ||
-    t('customColumns.customColumnHeader');
+    getTaskCustomFieldDisplayName(column) || t('customColumns.customColumnHeader');
 
   return (
     <Flex
@@ -124,7 +124,11 @@ export const CustomColumnHeader: React.FC<{
 export const CustomColumnCell: React.FC<{
   column: any;
   task: any;
-  updateTaskCustomColumnValue: (taskId: string, columnKey: string, value: string) => void;
+  updateTaskCustomColumnValue: (
+    taskId: string,
+    columnKey: string,
+    value: string | number | boolean | string[] | null
+  ) => void;
 }> = memo(({ column, task, updateTaskCustomColumnValue }) => {
   const { t } = useTranslation('task-list-table');
 
@@ -165,6 +169,15 @@ export const CustomColumnCell: React.FC<{
           updateTaskCustomColumnValue={updateTaskCustomColumnValue}
         />
       );
+    case 'text':
+      return (
+        <TextCustomColumnCell
+          task={task}
+          columnKey={column.key}
+          customValue={customValue}
+          updateTaskCustomColumnValue={updateTaskCustomColumnValue}
+        />
+      );
     case 'selection':
       return (
         <SelectionCustomColumnCell
@@ -189,7 +202,11 @@ export const PeopleCustomColumnCell: React.FC<{
   task: any;
   columnKey: string;
   customValue: any;
-  updateTaskCustomColumnValue: (taskId: string, columnKey: string, value: string) => void;
+  updateTaskCustomColumnValue: (
+    taskId: string,
+    columnKey: string,
+    value: string | number | boolean | string[] | null
+  ) => void;
 }> = memo(({ task, columnKey, customValue, updateTaskCustomColumnValue }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set());
@@ -201,11 +218,7 @@ export const PeopleCustomColumnCell: React.FC<{
 
   // Parse selected member IDs from custom value
   const selectedMemberIds = useMemo(() => {
-    try {
-      return customValue ? JSON.parse(customValue) : [];
-    } catch (e) {
-      return [];
-    }
+    return parsePeopleCustomFieldValue(customValue);
   }, [customValue]);
 
   // Use optimistic updates when there are pending changes, otherwise use actual value
@@ -245,7 +258,7 @@ export const PeopleCustomColumnCell: React.FC<{
       setOptimisticSelectedIds(newSelectedIds);
 
       if (task.id) {
-        updateTaskCustomColumnValue(task.id, columnKey, JSON.stringify(newSelectedIds));
+        updateTaskCustomColumnValue(task.id, columnKey, newSelectedIds);
       }
 
       // Remove from pending changes after socket update is processed
@@ -306,8 +319,13 @@ export const DateCustomColumnCell: React.FC<{
   task: any;
   columnKey: string;
   customValue: any;
-  updateTaskCustomColumnValue: (taskId: string, columnKey: string, value: string) => void;
+  updateTaskCustomColumnValue: (
+    taskId: string,
+    columnKey: string,
+    value: string | number | boolean | string[] | null
+  ) => void;
 }> = memo(({ task, columnKey, customValue, updateTaskCustomColumnValue }) => {
+  const { t } = useTranslation('task-list-table');
   const [isOpen, setIsOpen] = useState(false);
   const dateValue = customValue ? dayjs(customValue) : null;
   const isDarkMode = useAppSelector(state => state.themeReducer.mode === 'dark');
@@ -327,7 +345,13 @@ export const DateCustomColumnCell: React.FC<{
           onOpenChange={setIsOpen}
           value={dateValue}
           onChange={handleDateChange}
-          placeholder={dateValue ? '' : 'Set date'}
+          placeholder={
+            dateValue
+              ? ''
+              : t('customColumns.datePlaceholder', {
+                  defaultValue: 'Set date',
+                })
+          }
           format="MMM DD, YYYY"
           suffixIcon={null}
           size="small"
@@ -359,8 +383,13 @@ export const NumberCustomColumnCell: React.FC<{
   columnKey: string;
   customValue: any;
   columnObj: any;
-  updateTaskCustomColumnValue: (taskId: string, columnKey: string, value: string) => void;
+  updateTaskCustomColumnValue: (
+    taskId: string,
+    columnKey: string,
+    value: string | number | boolean | string[] | null
+  ) => void;
 }> = memo(({ task, columnKey, customValue, columnObj, updateTaskCustomColumnValue }) => {
+  const { t } = useTranslation('task-list-table');
   const [inputValue, setInputValue] = useState(String(customValue || ''));
   const [isEditing, setIsEditing] = useState(false);
   const isDarkMode = useAppSelector(state => state.themeReducer.mode === 'dark');
@@ -447,7 +476,15 @@ export const NumberCustomColumnCell: React.FC<{
         onFocus={handleFocus}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        placeholder={numberType === 'percentage' ? '0%' : '0'}
+        placeholder={
+          numberType === 'percentage'
+            ? t('customColumns.percentagePlaceholder', {
+                defaultValue: '0%',
+              })
+            : t('customColumns.numberPlaceholder', {
+                defaultValue: '0',
+              })
+        }
         size="small"
         variant="borderless"
         style={{
@@ -472,11 +509,16 @@ export const SelectionCustomColumnCell: React.FC<{
   columnKey: string;
   customValue: any;
   columnObj: any;
-  updateTaskCustomColumnValue: (taskId: string, columnKey: string, value: string) => void;
+  updateTaskCustomColumnValue: (
+    taskId: string,
+    columnKey: string,
+    value: string | number | boolean | string[] | null
+  ) => void;
 }> = memo(({ task, columnKey, customValue, columnObj, updateTaskCustomColumnValue }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const isDarkMode = useAppSelector(state => state.themeReducer.mode === 'dark');
+  const { t } = useTranslation('task-list-table');
   const selectionsList = columnObj?.selectionsList || [];
 
   const selectedOption = selectionsList.find(
@@ -521,7 +563,9 @@ export const SelectionCustomColumnCell: React.FC<{
         }
       `}
       >
-        Select option
+        {t('customColumns.selectOption', {
+          defaultValue: 'Select option',
+        })}
       </div>
 
       {/* Options */}
@@ -575,7 +619,11 @@ export const SelectionCustomColumnCell: React.FC<{
           `}
           >
             <div className="mb-2">📋</div>
-            <div>No options available</div>
+            <div>
+              {t('customColumns.noOptionsAvailable', {
+                defaultValue: 'No options available',
+              })}
+            </div>
           </div>
         )}
       </div>
@@ -618,7 +666,9 @@ export const SelectionCustomColumnCell: React.FC<{
               `}
               />
               <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                Updating...
+                {t('customColumns.updating', {
+                  defaultValue: 'Updating...',
+                })}
               </span>
             </div>
           ) : selectedOption ? (
@@ -652,7 +702,9 @@ export const SelectionCustomColumnCell: React.FC<{
                 className={`w-3 h-3 rounded-full border-2 border-dashed ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}
               />
               <span className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                Select
+                {t('selectText', {
+                  defaultValue: 'Select',
+                })}
               </span>
               <svg
                 className={`w-4 h-4 ml-auto transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}
@@ -676,3 +728,82 @@ export const SelectionCustomColumnCell: React.FC<{
 });
 
 SelectionCustomColumnCell.displayName = 'SelectionCustomColumnCell';
+
+// Text Field Cell Component
+export const TextCustomColumnCell: React.FC<{
+  task: any;
+  columnKey: string;
+  customValue: any;
+  updateTaskCustomColumnValue: (taskId: string, columnKey: string, value: string) => void;
+}> = memo(({ task, columnKey, customValue, updateTaskCustomColumnValue }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [localValue, setLocalValue] = useState(customValue || '');
+  const inputRef = useRef<any>(null);
+
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const isDarkMode = themeMode === 'dark';
+
+  useEffect(() => {
+    setLocalValue(customValue || '');
+  }, [customValue]);
+
+  const handleSave = async () => {
+    if (task.id) {
+      await updateTaskCustomColumnValue(task.id, columnKey, localValue);
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setLocalValue(customValue || '');
+    setIsEditing(false);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="w-full">
+        <Input
+          ref={inputRef}
+          value={localValue}
+          onChange={e => setLocalValue(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={handleKeyPress}
+          size="small"
+          className={`text-xs ${
+            isDarkMode
+              ? 'bg-gray-800 border-gray-600 text-gray-200'
+              : 'bg-white border-gray-300 text-gray-900'
+          }`}
+          autoFocus
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`cursor-pointer hover:bg-opacity-50 px-2 py-1 rounded text-xs min-h-[22px] flex items-center transition-all duration-200 ${
+        isDarkMode ? 'hover:bg-gray-700 text-gray-200' : 'hover:bg-gray-100 text-gray-900'
+      }`}
+      onClick={() => {
+        setIsEditing(true);
+        setTimeout(() => inputRef.current?.focus(), 0);
+      }}
+      title={customValue || 'Click to add text'}
+    >
+      <span className={`text-xs truncate ${!customValue && 'italic text-opacity-60'}`}>
+        {customValue || 'Click to add text'}
+      </span>
+    </div>
+  );
+});
+
+TextCustomColumnCell.displayName = 'TextCustomColumnCell';

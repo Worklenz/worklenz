@@ -1,13 +1,52 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
-import { Card, Table, Typography, Spin, Alert, Avatar, Tag, Space, DatePicker, Row, Col, Statistic, Button, Modal, Pagination, Dropdown, List, Divider, Flex, theme, CheckCircleOutlined, Tooltip } from '@/shared/antd-imports';
-import { UserOutlined, ClockCircleOutlined, ProjectOutlined, CalendarOutlined, EyeOutlined, DownOutlined, InfoCircleOutlined } from '@/shared/antd-imports';
+import {
+  Card,
+  Table,
+  Typography,
+  Spin,
+  Alert,
+  Avatar,
+  Tag,
+  Space,
+  DatePicker,
+  Row,
+  Col,
+  Statistic,
+  Button,
+  Modal,
+  Pagination,
+  Dropdown,
+  List,
+  Divider,
+  Flex,
+  theme,
+  CheckCircleOutlined,
+  Tooltip,
+} from '@/shared/antd-imports';
+import {
+  UserOutlined,
+  ClockCircleOutlined,
+  ProjectOutlined,
+  CalendarOutlined,
+  EyeOutlined,
+  DownOutlined,
+  InfoCircleOutlined,
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import { teamLeadReportsApiService, TeamMember, TimeLogsSummary, DetailedTimeLog, PerformanceStats } from '@/api/team-lead-reports/team-lead-reports.api.service';
+import {
+  teamLeadReportsApiService,
+  TeamMember,
+  TimeLogsSummary,
+  DetailedTimeLog,
+  PerformanceStats,
+} from '@/api/team-lead-reports/team-lead-reports.api.service';
 import { getRoleColor } from '@/types/roles/role.types';
 import { formatSecondsToCompactHoursMinutes } from '@/utils/time-format.utils';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
-import TeamLeadTimeChart, { TeamLeadTimeChartRef } from '@/components/team-lead-reports/TeamLeadTimeChart';
+import TeamLeadTimeChart, {
+  TeamLeadTimeChartRef,
+} from '@/components/team-lead-reports/TeamLeadTimeChart';
 import TotalTimeUtilization from '@/components/reporting/time-reports/total-time-utilization/total-time-utilization';
 import TeamLeadReportsHeader from '@/components/team-lead-reports/TeamLeadReportsHeader';
 import { IRPTTimeTotals } from '@/types/reporting/reporting.types';
@@ -19,7 +58,7 @@ const TeamLeadReports: React.FC = () => {
   const { t } = useTranslation('team-lead-reports');
   const { token } = theme.useToken();
   const chartRef = useRef<TeamLeadTimeChartRef>(null);
-  
+
   // State management
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [timeLogsSummary, setTimeLogsSummary] = useState<TimeLogsSummary[]>([]);
@@ -33,12 +72,12 @@ const TeamLeadReports: React.FC = () => {
     total_estimated_hours: '0',
     total_utilization: '0',
   });
-  
+
   // Date picker state
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
   const [selectedTimeFrame, setSelectedTimeFrame] = useState<string>('thisWeek');
   const [customRange, setCustomRange] = useState<[string, string] | null>(null);
-  
+
   // Modal state for detailed time logs
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [detailedLogs, setDetailedLogs] = useState<DetailedTimeLog[]>([]);
@@ -66,11 +105,11 @@ const TeamLeadReports: React.FC = () => {
   // Fetch time logs summary
   const fetchTimeLogsSummary = useCallback(async () => {
     if (!dateRange) return;
-    
+
     try {
       const startDate = dateRange[0].format('YYYY-MM-DD');
       const endDate = dateRange[1].format('YYYY-MM-DD');
-      
+
       const response = await teamLeadReportsApiService.getTeamTimeLogsSummary(startDate, endDate);
       if (response.done && response.body) {
         // New response format with filteredRows and totals
@@ -89,11 +128,11 @@ const TeamLeadReports: React.FC = () => {
   // Fetch performance stats
   const fetchPerformanceStats = useCallback(async () => {
     if (!dateRange) return;
-    
+
     try {
       const startDate = dateRange[0].format('YYYY-MM-DD');
       const endDate = dateRange[1].format('YYYY-MM-DD');
-      
+
       const response = await teamLeadReportsApiService.getTeamPerformanceStats(startDate, endDate);
       if (response.done) {
         setPerformanceStats(response.body);
@@ -105,36 +144,39 @@ const TeamLeadReports: React.FC = () => {
   }, [dateRange]);
 
   // Fetch detailed time logs for a member
-  const fetchDetailedLogs = useCallback(async (memberId: string, page: number = 1) => {
-    if (!memberId) return;
-    
-    try {
-      setLogsLoading(true);
-      const startDate = dateRange?.[0]?.format('YYYY-MM-DD');
-      const endDate = dateRange?.[1]?.format('YYYY-MM-DD');
-      
-      const response = await teamLeadReportsApiService.getMemberDetailedTimeLogs(
-        memberId, 
-        startDate, 
-        endDate, 
-        page, 
-        logsPagination.pageSize
-      );
-      
-      if (response.done) {
-        setDetailedLogs(response.body.logs);
-        setLogsPagination(prev => ({
-          ...prev,
-          current: response.body.pagination.page,
-          total: response.body.pagination.total,
-        }));
+  const fetchDetailedLogs = useCallback(
+    async (memberId: string, page: number = 1) => {
+      if (!memberId) return;
+
+      try {
+        setLogsLoading(true);
+        const startDate = dateRange?.[0]?.format('YYYY-MM-DD');
+        const endDate = dateRange?.[1]?.format('YYYY-MM-DD');
+
+        const response = await teamLeadReportsApiService.getMemberDetailedTimeLogs(
+          memberId,
+          startDate,
+          endDate,
+          page,
+          logsPagination.pageSize
+        );
+
+        if (response.done) {
+          setDetailedLogs(response.body.logs);
+          setLogsPagination(prev => ({
+            ...prev,
+            current: response.body.pagination.page,
+            total: response.body.pagination.total,
+          }));
+        }
+      } catch (err) {
+        console.error('Error fetching detailed logs:', err);
+      } finally {
+        setLogsLoading(false);
       }
-    } catch (err) {
-      console.error('Error fetching detailed logs:', err);
-    } finally {
-      setLogsLoading(false);
-    }
-  }, [dateRange, logsPagination.pageSize]);
+    },
+    [dateRange, logsPagination.pageSize]
+  );
 
   // Initialize data
   // Initialize default date range
@@ -157,18 +199,15 @@ const TeamLeadReports: React.FC = () => {
         setDateRangeLoading(true);
       }
       setError(null);
-      
+
       try {
         // Only fetch team members once (they don't depend on date range)
         if (teamMembers.length === 0) {
           await fetchTeamMembers();
         }
-        
+
         // Fetch date-dependent data
-        await Promise.all([
-          fetchTimeLogsSummary(),
-          fetchPerformanceStats(),
-        ]);
+        await Promise.all([fetchTimeLogsSummary(), fetchPerformanceStats()]);
       } catch (err) {
         setError(t('errors.failedToLoad'));
       } finally {
@@ -393,7 +432,7 @@ const TeamLeadReports: React.FC = () => {
       title: t('timeTracking.lastActivity'),
       dataIndex: 'last_log_date',
       key: 'last_activity',
-      render: (date: string) => date ? dayjs(date).format('MMM DD, YYYY') : '-',
+      render: (date: string) => (date ? dayjs(date).format('MMM DD, YYYY') : '-'),
     },
     {
       title: t('timeTracking.actions'),
@@ -401,8 +440,8 @@ const TeamLeadReports: React.FC = () => {
       render: (_, record) => {
         const member = teamMembers.find(m => m.managed_member_id === record.managed_member_id);
         return member ? (
-          <Button 
-            size="small" 
+          <Button
+            size="small"
             icon={<EyeOutlined />}
             onClick={() => handleViewDetailedLogs(member)}
           >
@@ -436,10 +475,16 @@ const TeamLeadReports: React.FC = () => {
       key: 'tasks',
       render: (_, record) => (
         <Space direction="vertical" size="small">
-          <Text>{record.assigned_tasks} {t('performance.assigned')}</Text>
-          <Text type="success">{record.completed_tasks} {t('performance.completed')}</Text>
+          <Text>
+            {record.assigned_tasks} {t('performance.assigned')}
+          </Text>
+          <Text type="success">
+            {record.completed_tasks} {t('performance.completed')}
+          </Text>
           {record.overdue_tasks > 0 && (
-            <Text type="danger">{record.overdue_tasks} {t('performance.overdue')}</Text>
+            <Text type="danger">
+              {record.overdue_tasks} {t('performance.overdue')}
+            </Text>
           )}
         </Space>
       ),
@@ -456,9 +501,14 @@ const TeamLeadReports: React.FC = () => {
       dataIndex: 'completion_percentage',
       key: 'completion',
       render: (percentage: number | string | null | undefined) => {
-        const numPercentage = typeof percentage === 'number' ? percentage : parseFloat(percentage as string) || 0;
+        const numPercentage =
+          typeof percentage === 'number' ? percentage : parseFloat(percentage as string) || 0;
         return (
-          <Text style={{ color: numPercentage >= 80 ? '#52c41a' : numPercentage >= 60 ? '#faad14' : '#ff4d4f' }}>
+          <Text
+            style={{
+              color: numPercentage >= 80 ? '#52c41a' : numPercentage >= 60 ? '#faad14' : '#ff4d4f',
+            }}
+          >
             {numPercentage.toFixed(1)}%
           </Text>
         );
@@ -576,15 +626,16 @@ const TeamLeadReports: React.FC = () => {
 
   // Calculate summary statistics
   const totalTeamMembers = teamMembers.length;
-  
+
   // Calculate total time logged (values are in seconds, despite the field name)
   const totalTimeLogged = timeLogsSummary.reduce((sum, member) => {
-    const timeValue = typeof member.total_time_minutes === 'string' 
-      ? parseFloat(member.total_time_minutes) || 0 
-      : member.total_time_minutes || 0;
+    const timeValue =
+      typeof member.total_time_minutes === 'string'
+        ? parseFloat(member.total_time_minutes) || 0
+        : member.total_time_minutes || 0;
     return sum + timeValue;
   }, 0);
-  
+
   const totalProjects = Math.max(...timeLogsSummary.map(m => m.projects_worked_on), 0);
 
   return (
@@ -594,255 +645,262 @@ const TeamLeadReports: React.FC = () => {
         exportType={[{ key: 'png', label: 'PNG' }]}
         export={handleExport}
       />
-      
-      <TotalTimeUtilization 
-        totals={totals} 
-        dateRange={dateRange ? [dateRange[0].format('YYYY-MM-DD'), dateRange[1].format('YYYY-MM-DD')] : undefined} 
+
+      <TotalTimeUtilization
+        totals={totals}
+        dateRange={
+          dateRange
+            ? [dateRange[0].format('YYYY-MM-DD'), dateRange[1].format('YYYY-MM-DD')]
+            : undefined
+        }
       />
 
       <div style={{ padding: 24 }}>
-
-      {/* Date Range Filter */}
-      <Card size="small" style={{ marginBottom: 16 }}>
-        <Flex justify="space-between" align="center">
-          <Space>
-            <CalendarOutlined />
-            <Text>{t('dateRange.label')}:</Text>
-            <Dropdown
-              trigger={['click']}
-              dropdownRender={() => (
-                <Card
-                  styles={{
-                    body: {
-                      padding: 0,
-                      minWidth: 320,
-                      maxHeight: 400,
-                      overflowY: 'auto',
-                    },
-                  }}
-                >
-                  <List style={{ padding: 0 }}>
-                    {dateRangeItems.map(item => (
-                      <List.Item
-                        key={item.key}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          gap: 24,
-                          padding: '8px 12px',
-                          backgroundColor:
-                            selectedTimeFrame === item.label ? token.colorPrimaryBg : 'transparent',
-                          border: 'none',
-                          cursor: 'pointer',
-                        }}
-                        onClick={() => handleDurationSelect(item)}
-                      >
-                        <Text
-                          style={{
-                            color: selectedTimeFrame === item.label ? token.colorPrimary : 'inherit',
-                          }}
-                        >
-                          {t(`dateRange.${item.label}`)}
-                        </Text>
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {item.dates
-                            ? dayjs(item.dates.split(' - ')[0]).format('MMM DD, YYYY') +
-                              ' - ' +
-                              dayjs(item.dates.split(' - ')[1]).format('MMM DD, YYYY')
-                            : ''}
-                        </Text>
-                      </List.Item>
-                    ))}
-                  </List>
-
-                  <Divider style={{ marginBlock: 12 }} />
-
-                  <Flex vertical gap={8} style={{ padding: 12 }}>
-                    <Text>{t('dateRange.custom')}</Text>
-                    <RangePicker
-                      format={'MMM DD, YYYY'}
-                      onChange={handleCustomDateRangeChange}
-                      value={customRange ? [dayjs(customRange[0]), dayjs(customRange[1])] : null}
-                    />
-                    <Button
-                      type="primary"
-                      size="small"
-                      style={{ width: 'fit-content', alignSelf: 'flex-end' }}
-                      onClick={applyCustomDateFilter}
-                      disabled={!customRange}
-                    >
-                      {t('dateRange.apply')}
-                    </Button>
-                  </Flex>
-                </Card>
-              )}
-              onOpenChange={open => setIsDateDropdownOpen(open)}
-              open={isDateDropdownOpen}
-            >
-              <Button icon={<DownOutlined />} iconPosition="end">
-                {getDisplayLabel()}
-              </Button>
-            </Dropdown>
-          </Space>
-          
-          {/* Selected Date Range Display */}
-          {dateRange && (
+        {/* Date Range Filter */}
+        <Card size="small" style={{ marginBottom: 16 }}>
+          <Flex justify="space-between" align="center">
             <Space>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {t('dateRange.showing')}:
-              </Text>
-              <Tag color="blue" style={{ margin: 0 }}>
-                {dayjs(dateRange[0]).format('MMM DD, YYYY')} - {dayjs(dateRange[1]).format('MMM DD, YYYY')}
-              </Tag>
-              {dateRangeLoading && (
-                <Spin size="small" />
-              )}
+              <CalendarOutlined />
+              <Text>{t('dateRange.label')}:</Text>
+              <Dropdown
+                trigger={['click']}
+                dropdownRender={() => (
+                  <Card
+                    styles={{
+                      body: {
+                        padding: 0,
+                        minWidth: 320,
+                        maxHeight: 400,
+                        overflowY: 'auto',
+                      },
+                    }}
+                  >
+                    <List style={{ padding: 0 }}>
+                      {dateRangeItems.map(item => (
+                        <List.Item
+                          key={item.key}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            gap: 24,
+                            padding: '8px 12px',
+                            backgroundColor:
+                              selectedTimeFrame === item.label
+                                ? token.colorPrimaryBg
+                                : 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => handleDurationSelect(item)}
+                        >
+                          <Text
+                            style={{
+                              color:
+                                selectedTimeFrame === item.label ? token.colorPrimary : 'inherit',
+                            }}
+                          >
+                            {t(`dateRange.${item.label}`)}
+                          </Text>
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            {item.dates
+                              ? dayjs(item.dates.split(' - ')[0]).format('MMM DD, YYYY') +
+                                ' - ' +
+                                dayjs(item.dates.split(' - ')[1]).format('MMM DD, YYYY')
+                              : ''}
+                          </Text>
+                        </List.Item>
+                      ))}
+                    </List>
+
+                    <Divider style={{ marginBlock: 12 }} />
+
+                    <Flex vertical gap={8} style={{ padding: 12 }}>
+                      <Text>{t('dateRange.custom')}</Text>
+                      <RangePicker
+                        format={'MMM DD, YYYY'}
+                        onChange={handleCustomDateRangeChange}
+                        value={customRange ? [dayjs(customRange[0]), dayjs(customRange[1])] : null}
+                      />
+                      <Button
+                        type="primary"
+                        size="small"
+                        style={{ width: 'fit-content', alignSelf: 'flex-end' }}
+                        onClick={applyCustomDateFilter}
+                        disabled={!customRange}
+                      >
+                        {t('dateRange.apply')}
+                      </Button>
+                    </Flex>
+                  </Card>
+                )}
+                onOpenChange={open => setIsDateDropdownOpen(open)}
+                open={isDateDropdownOpen}
+              >
+                <Button icon={<DownOutlined />} iconPosition="end">
+                  {getDisplayLabel()}
+                </Button>
+              </Dropdown>
             </Space>
-          )}
-        </Flex>
-      </Card>
 
-      {/* Team Time Chart */}
-      <Card
-        style={{ borderRadius: '4px', marginBottom: 24 }}
-        title={
-          <div style={{ padding: '16px 0' }}>
-            <Title level={4} style={{ margin: 0 }}>
-              <ClockCircleOutlined /> {t('timeTracking.chartTitle', { defaultValue: 'Team Time Tracking Chart' })}
-            </Title>
-          </div>
-        }
-        styles={{
-          body: {
-            maxHeight: 'calc(100vh - 300px)',
-            overflowY: 'auto',
-            padding: '16px',
-          },
-        }}
-      >
-        <TeamLeadTimeChart
-          dateRange={dateRange ? [dateRange[0].format('YYYY-MM-DD'), dateRange[1].format('YYYY-MM-DD')] : null}
-          chartData={timeLogsSummary}
-          loading={loading || dateRangeLoading}
-          onTotalsUpdate={handleTotalsUpdate}
-          ref={chartRef}
-        />
-      </Card>
+            {/* Selected Date Range Display */}
+            {dateRange && (
+              <Space>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {t('dateRange.showing')}:
+                </Text>
+                <Tag color="blue" style={{ margin: 0 }}>
+                  {dayjs(dateRange[0]).format('MMM DD, YYYY')} -{' '}
+                  {dayjs(dateRange[1]).format('MMM DD, YYYY')}
+                </Tag>
+                {dateRangeLoading && <Spin size="small" />}
+              </Space>
+            )}
+          </Flex>
+        </Card>
 
-      {/* Summary Statistics */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={8}>
-          <Card>
-            <Statistic
-              title={
-                <Space>
-                  {t('summary.totalMembers')}
-                  <Tooltip title={t('summary.totalMembersTooltip')}>
-                    <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
-                  </Tooltip>
-                </Space>
-              }
-              value={totalTeamMembers}
-              prefix={<UserOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card>
-            <Statistic
-              title={
-                <Space>
-                  {t('summary.totalTimeLogged')}
-                  <Tooltip title={t('summary.totalTimeLoggedTooltip')}>
-                    <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
-                  </Tooltip>
-                </Space>
-              }
-              value={formatDuration(totalTimeLogged)}
-              prefix={<ClockCircleOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card>
-            <Statistic
-              title={
-                <Space>
-                  {t('summary.activeProjects')}
-                  <Tooltip title={t('summary.activeProjectsTooltip')}>
-                    <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
-                  </Tooltip>
-                </Space>
-              }
-              value={totalProjects}
-              prefix={<ProjectOutlined />}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Time Logs Summary Table */}
-      <Card 
-        title={t('timeTracking.title')}
-        style={{ marginBottom: 24 }}
-        extra={<ClockCircleOutlined />}
-      >
-        <Table
-          columns={timeLogsColumns}
-          dataSource={timeLogsSummary}
-          rowKey="managed_member_id"
-          size="small"
-          pagination={{ pageSize: 10 }}
-          loading={loading || dateRangeLoading}
-        />
-      </Card>
-
-      {/* Performance Stats Table */}
-      <Card 
-        title={t('performance.title')}
-        extra={<CheckCircleOutlined />}
-      >
-        <Table
-          columns={performanceColumns}
-          dataSource={performanceStats}
-          rowKey="managed_member_id"
-          size="small"
-          pagination={{ pageSize: 10 }}
-          loading={loading || dateRangeLoading}
-        />
-      </Card>
-
-      {/* Detailed Logs Modal */}
-      <Modal
-        title={`${t('detailedLogs.title')} ${t('detailedLogs.for')} ${selectedMember?.managed_member_name}`}
-        open={logsModalVisible}
-        onCancel={() => setLogsModalVisible(false)}
-        width={1000}
-        footer={null}
-      >
-        <Spin spinning={logsLoading}>
-          <Table
-            columns={detailedLogsColumns}
-            dataSource={detailedLogs}
-            rowKey="time_log_id"
-            size="small"
-            pagination={false}
+        {/* Team Time Chart */}
+        <Card
+          style={{ borderRadius: '4px', marginBottom: 24 }}
+          title={
+            <div style={{ padding: '16px 0' }}>
+              <Title level={4} style={{ margin: 0 }}>
+                <ClockCircleOutlined />{' '}
+                {t('timeTracking.chartTitle', { defaultValue: 'Team Time Tracking Chart' })}
+              </Title>
+            </div>
+          }
+          styles={{
+            body: {
+              maxHeight: 'calc(100vh - 300px)',
+              overflowY: 'auto',
+              padding: '16px',
+            },
+          }}
+        >
+          <TeamLeadTimeChart
+            dateRange={
+              dateRange
+                ? [dateRange[0].format('YYYY-MM-DD'), dateRange[1].format('YYYY-MM-DD')]
+                : null
+            }
+            chartData={timeLogsSummary}
+            loading={loading || dateRangeLoading}
+            onTotalsUpdate={handleTotalsUpdate}
+            ref={chartRef}
           />
-          <div style={{ marginTop: 16, textAlign: 'center' }}>
-            <Pagination
-              current={logsPagination.current}
-              pageSize={logsPagination.pageSize}
-              total={logsPagination.total}
-              onChange={handleLogsPaginationChange}
-              showSizeChanger
-              showQuickJumper
-              showTotal={(total, range) => 
-                `${range[0]}-${range[1]} ${t('detailedLogs.of', { defaultValue: 'of' })} ${total} ${t('detailedLogs.timeLogsRange')}`
-              }
+        </Card>
+
+        {/* Summary Statistics */}
+        <Row gutter={16} style={{ marginBottom: 24 }}>
+          <Col xs={24} sm={8}>
+            <Card>
+              <Statistic
+                title={
+                  <Space>
+                    {t('summary.totalMembers')}
+                    <Tooltip title={t('summary.totalMembersTooltip')}>
+                      <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
+                    </Tooltip>
+                  </Space>
+                }
+                value={totalTeamMembers}
+                prefix={<UserOutlined />}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={8}>
+            <Card>
+              <Statistic
+                title={
+                  <Space>
+                    {t('summary.totalTimeLogged')}
+                    <Tooltip title={t('summary.totalTimeLoggedTooltip')}>
+                      <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
+                    </Tooltip>
+                  </Space>
+                }
+                value={formatDuration(totalTimeLogged)}
+                prefix={<ClockCircleOutlined />}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={8}>
+            <Card>
+              <Statistic
+                title={
+                  <Space>
+                    {t('summary.activeProjects')}
+                    <Tooltip title={t('summary.activeProjectsTooltip')}>
+                      <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'help' }} />
+                    </Tooltip>
+                  </Space>
+                }
+                value={totalProjects}
+                prefix={<ProjectOutlined />}
+              />
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Time Logs Summary Table */}
+        <Card
+          title={t('timeTracking.title')}
+          style={{ marginBottom: 24 }}
+          extra={<ClockCircleOutlined />}
+        >
+          <Table
+            columns={timeLogsColumns}
+            dataSource={timeLogsSummary}
+            rowKey="managed_member_id"
+            size="small"
+            pagination={{ pageSize: 10 }}
+            loading={loading || dateRangeLoading}
+          />
+        </Card>
+
+        {/* Performance Stats Table */}
+        <Card title={t('performance.title')} extra={<CheckCircleOutlined />}>
+          <Table
+            columns={performanceColumns}
+            dataSource={performanceStats}
+            rowKey="managed_member_id"
+            size="small"
+            pagination={{ pageSize: 10 }}
+            loading={loading || dateRangeLoading}
+          />
+        </Card>
+
+        {/* Detailed Logs Modal */}
+        <Modal
+          title={`${t('detailedLogs.title')} ${t('detailedLogs.for')} ${selectedMember?.managed_member_name}`}
+          open={logsModalVisible}
+          onCancel={() => setLogsModalVisible(false)}
+          width={1000}
+          footer={null}
+        >
+          <Spin spinning={logsLoading}>
+            <Table
+              columns={detailedLogsColumns}
+              dataSource={detailedLogs}
+              rowKey="time_log_id"
+              size="small"
+              pagination={false}
             />
-          </div>
-        </Spin>
-      </Modal>
+            <div style={{ marginTop: 16, textAlign: 'center' }}>
+              <Pagination
+                current={logsPagination.current}
+                pageSize={logsPagination.pageSize}
+                total={logsPagination.total}
+                onChange={handleLogsPaginationChange}
+                showSizeChanger
+                showQuickJumper
+                showTotal={(total, range) =>
+                  `${range[0]}-${range[1]} ${t('detailedLogs.of', { defaultValue: 'of' })} ${total} ${t('detailedLogs.timeLogsRange')}`
+                }
+              />
+            </div>
+          </Spin>
+        </Modal>
       </div>
     </Flex>
   );

@@ -15,7 +15,7 @@ export const PlanPriceDisplay: React.FC<PlanPriceDisplayProps> = ({
   subtitle,
   isAppSumoUser,
   originalMonthlyPrice,
-  originalAnnualPrice
+  originalAnnualPrice,
 }) => {
   const { t } = useTranslation(['admin-center/current-bill', 'pricing-modal']);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -23,7 +23,8 @@ export const PlanPriceDisplay: React.FC<PlanPriceDisplayProps> = ({
   // Theme-aware colors
   const textColor = themeMode === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.65)';
   const labelColor = themeMode === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)';
-  const strikethroughColor = themeMode === 'dark' ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.45)';
+  const strikethroughColor =
+    themeMode === 'dark' ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.45)';
 
   // Determine which pricing to show based on billing frequency
   const isAnnual = billingFrequency === 'annual';
@@ -35,11 +36,16 @@ export const PlanPriceDisplay: React.FC<PlanPriceDisplayProps> = ({
   };
   const monthlyNumeric = parseAmount(perUserMonthlyPrice ?? monthlyPrice);
   const annualNumeric = parseAmount(annualPrice);
-  const computedAnnualMonthly = annualNumeric !== undefined ? (annualNumeric / 12).toFixed(2) : undefined;
-  const computedAnnualFromMonthly = monthlyNumeric !== undefined ? (monthlyNumeric * 12).toFixed(2) : undefined;
+  const computedAnnualMonthly =
+    annualNumeric !== undefined ? (annualNumeric / 12).toFixed(2) : undefined;
+  const computedAnnualFromMonthly =
+    monthlyNumeric !== undefined ? (monthlyNumeric * 12).toFixed(2) : undefined;
   const displayedAnnualTotal = isAnnual
-    ? (annualNumeric !== undefined ? annualNumeric.toFixed(2) : computedAnnualFromMonthly)
-    : (computedAnnualFromMonthly ?? (annualNumeric !== undefined ? annualNumeric.toFixed(2) : undefined));
+    ? annualNumeric !== undefined
+      ? annualNumeric.toFixed(2)
+      : computedAnnualFromMonthly
+    : (computedAnnualFromMonthly ??
+      (annualNumeric !== undefined ? annualNumeric.toFixed(2) : undefined));
 
   // Compute savings percentage for annual vs monthly*12
   const savingsPercent = (() => {
@@ -67,17 +73,26 @@ export const PlanPriceDisplay: React.FC<PlanPriceDisplayProps> = ({
                     color: strikethroughColor,
                     textDecoration: 'line-through',
                     display: 'block',
-                    marginBottom: '2px'
+                    marginBottom: '2px',
                   }}
                 >
-                  ${(parseFloat(originalAnnualPrice) / 12).toFixed(2)} {t('pricing-modal:pricing.perUser')} {t('pricing-modal:billing.perMonth', '/month')}
+                  ${(parseFloat(originalAnnualPrice) / 12).toFixed(2)}{' '}
+                  {t('pricing-modal:pricing.perUser')}{' '}
+                  {t('pricing-modal:billing.perMonth', '/month')}
                 </Typography.Text>
               )}
 
               <Typography.Title level={2} style={{ fontSize: '28px', margin: 0, lineHeight: 1.2 }}>
                 ${perUserAnnualPrice || (parseFloat(displayedAnnualTotal) / 12).toFixed(2)}
               </Typography.Title>
-              <Typography.Text style={{ fontSize: '14px', marginBottom: '4px', display: 'block', color: labelColor }}>
+              <Typography.Text
+                style={{
+                  fontSize: '14px',
+                  marginBottom: '4px',
+                  display: 'block',
+                  color: labelColor,
+                }}
+              >
                 {t('pricing-modal:pricing.perUser')} {t('pricing-modal:billing.perMonth', '/month')}
               </Typography.Text>
               <Typography.Text style={{ fontSize: '12px', color: textColor, display: 'block' }}>
@@ -95,17 +110,25 @@ export const PlanPriceDisplay: React.FC<PlanPriceDisplayProps> = ({
                     color: strikethroughColor,
                     textDecoration: 'line-through',
                     display: 'block',
-                    marginBottom: '2px'
+                    marginBottom: '2px',
                   }}
                 >
-                  ${originalMonthlyPrice} {t('pricing-modal:pricing.perUser')} {t('pricing-modal:billing.perMonth', '/month')}
+                  ${originalMonthlyPrice} {t('pricing-modal:pricing.perUser')}{' '}
+                  {t('pricing-modal:billing.perMonth', '/month')}
                 </Typography.Text>
               )}
 
               <Typography.Title level={2} style={{ fontSize: '28px', margin: 0, lineHeight: 1.2 }}>
                 ${monthlyNumeric !== undefined ? monthlyNumeric.toFixed(2) : perUserMonthlyPrice}
               </Typography.Title>
-              <Typography.Text style={{ fontSize: '14px', marginBottom: '4px', display: 'block', color: labelColor }}>
+              <Typography.Text
+                style={{
+                  fontSize: '14px',
+                  marginBottom: '4px',
+                  display: 'block',
+                  color: labelColor,
+                }}
+              >
                 {t('pricing-modal:pricing.perUser')} {t('pricing-modal:billing.perMonth', '/month')}
               </Typography.Text>
             </>
@@ -125,17 +148,25 @@ export const PlanPriceDisplay: React.FC<PlanPriceDisplayProps> = ({
                     color: strikethroughColor,
                     textDecoration: 'line-through',
                     display: 'block',
-                    marginBottom: '2px'
+                    marginBottom: '2px',
                   }}
                 >
-                  ${(parseFloat(originalAnnualPrice) / 12).toFixed(2)} {t('pricing-modal:billing.perMonth', '/month')}
+                  ${(parseFloat(originalAnnualPrice) / 12).toFixed(2)}{' '}
+                  {t('pricing-modal:billing.perMonth', '/month')}
                 </Typography.Text>
               )}
 
               <Typography.Title level={2} style={{ fontSize: '28px', margin: 0, lineHeight: 1.2 }}>
                 ${(parseFloat(displayedAnnualTotal) / 12).toFixed(2)}
               </Typography.Title>
-              <Typography.Text style={{ fontSize: '14px', marginBottom: '4px', display: 'block', color: labelColor }}>
+              <Typography.Text
+                style={{
+                  fontSize: '14px',
+                  marginBottom: '4px',
+                  display: 'block',
+                  color: labelColor,
+                }}
+              >
                 {t('pricing-modal:billing.perMonth', '/month')}
               </Typography.Text>
               <Typography.Text style={{ fontSize: '12px', color: textColor, display: 'block' }}>
@@ -153,7 +184,7 @@ export const PlanPriceDisplay: React.FC<PlanPriceDisplayProps> = ({
                     color: strikethroughColor,
                     textDecoration: 'line-through',
                     display: 'block',
-                    marginBottom: '2px'
+                    marginBottom: '2px',
                   }}
                 >
                   ${originalMonthlyPrice} {t('pricing-modal:billing.perMonth', '/month')}
@@ -163,7 +194,14 @@ export const PlanPriceDisplay: React.FC<PlanPriceDisplayProps> = ({
               <Typography.Title level={2} style={{ fontSize: '28px', margin: 0, lineHeight: 1.2 }}>
                 ${monthlyNumeric !== undefined ? monthlyNumeric.toFixed(2) : monthlyPrice}
               </Typography.Title>
-              <Typography.Text style={{ fontSize: '14px', marginBottom: '4px', display: 'block', color: labelColor }}>
+              <Typography.Text
+                style={{
+                  fontSize: '14px',
+                  marginBottom: '4px',
+                  display: 'block',
+                  color: labelColor,
+                }}
+              >
                 {t('pricing-modal:billing.perMonth', '/month')}
               </Typography.Text>
             </>

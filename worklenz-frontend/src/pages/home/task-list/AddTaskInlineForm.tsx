@@ -105,7 +105,7 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
     const endDate = calendarView
       ? homeTasksConfig.selected_date?.format('YYYY-MM-DD')
       : calculateEndDate(values.dueDate);
-    
+
     const newTask = {
       name: values.name,
       project_id: values.project,

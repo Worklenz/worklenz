@@ -22,4 +22,3 @@ export const DEFAULT_COLUMN_WIDTHS = {
 
 // Storage key prefix for column widths
 export const COLUMN_WIDTH_STORAGE_PREFIX = 'worklenz.taskList.columnWidths';
-

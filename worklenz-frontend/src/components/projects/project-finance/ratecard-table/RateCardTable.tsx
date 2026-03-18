@@ -233,7 +233,7 @@ const RateCardTable: React.FC = () => {
       ? Number(reduxRole?.man_day_rate ?? 0)
       : Number(reduxRole?.rate ?? 0);
     const inputValue = Number(value) || 0;
-    
+
     if (inputValue !== reduxValue) {
       const payload = {
         id: roles[index].id!,

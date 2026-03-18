@@ -35,10 +35,7 @@ const prepareContentForEditing = (content: string): string => {
 
   // 2. Replace <a href="...">label</a> with the raw href value so users see
   //    the original URL they typed, not the display label
-  const withRawUrls = withoutMentionSpans.replace(
-    /<a[^>]*href="([^"]*)"[^>]*>[^<]*<\/a>/gi,
-    '$1'
-  );
+  const withRawUrls = withoutMentionSpans.replace(/<a[^>]*href="([^"]*)"[^>]*>[^<]*<\/a>/gi, '$1');
 
   // 3. Strip any remaining HTML tags
   return withRawUrls.replace(/<[^>]*>/g, '');

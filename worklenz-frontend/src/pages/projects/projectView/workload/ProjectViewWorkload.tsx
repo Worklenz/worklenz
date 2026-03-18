@@ -9,7 +9,10 @@ import WorkloadChart from './components/WorkloadChart';
 import WorkloadCalendar from './components/WorkloadCalendar';
 import WorkloadTable from './components/WorkloadTable';
 import WorkloadFilters from './components/WorkloadFilters';
-import { useGetProjectWorkloadQuery, useGetWorkloadMembersQuery } from '@/api/project-workload/project-workload.api.service';
+import {
+  useGetProjectWorkloadQuery,
+  useGetWorkloadMembersQuery,
+} from '@/api/project-workload/project-workload.api.service';
 import projectWorkloadApi from '@/api/project-workload/project-workload.api.service';
 import { setWorkloadView, setDateRange } from '@/features/project-workload/projectWorkloadSlice';
 import dayjs from 'dayjs';
@@ -33,10 +36,10 @@ const ProjectViewWorkload = React.memo(() => {
     refetch,
     isFetching,
   } = useGetProjectWorkloadQuery(
-    { 
+    {
       projectId: projectId!,
       startDate: dateRange.startDate,
-      endDate: dateRange.endDate
+      endDate: dateRange.endDate,
     },
     {
       skip: !projectId,
@@ -54,10 +57,10 @@ const ProjectViewWorkload = React.memo(() => {
     refetch: fallbackRefetch,
     isFetching: fallbackFetching,
   } = useGetWorkloadMembersQuery(
-    { 
+    {
       projectId: projectId!,
       startDate: dateRange.startDate,
-      endDate: dateRange.endDate
+      endDate: dateRange.endDate,
     },
     {
       skip: !projectId || !error, // Only use fallback if main query has error
@@ -171,7 +174,12 @@ const ProjectViewWorkload = React.memo(() => {
       );
     }
 
-    if (!finalData || (!finalData.members && !finalData.body) || (finalData.members && finalData.members.length === 0) || (finalData.body && finalData.body.length === 0)) {
+    if (
+      !finalData ||
+      (!finalData.members && !finalData.body) ||
+      (finalData.members && finalData.members.length === 0) ||
+      (finalData.body && finalData.body.length === 0)
+    ) {
       return (
         <div style={{ padding: '60px 0', textAlign: 'center' }}>
           <Empty
@@ -210,7 +218,13 @@ const ProjectViewWorkload = React.memo(() => {
       }}
     >
       {/* Fixed Header Section - View Tabs and Filters */}
-      <Flex justify="space-between" align="center" wrap="wrap" gap={16} style={{ marginBottom: '16px' }}>
+      <Flex
+        justify="space-between"
+        align="center"
+        wrap="wrap"
+        gap={16}
+        style={{ marginBottom: '16px' }}
+      >
         <Segmented
           value={localView}
           onChange={handleViewChange}
@@ -228,9 +242,9 @@ const ProjectViewWorkload = React.memo(() => {
       </Flex>
 
       {/* Scrollable Content Section */}
-      <div 
-        className="workload-scroll-container" 
-        style={{ 
+      <div
+        className="workload-scroll-container"
+        style={{
           flex: 1,
           overflowY: 'auto',
           overflowX: 'hidden',
@@ -249,9 +263,7 @@ const ProjectViewWorkload = React.memo(() => {
             <>
               <WorkloadOverview data={finalData as any} isLoading={finalLoading} />
 
-              <Card>
-                {renderContent()}
-              </Card>
+              <Card>{renderContent()}</Card>
             </>
           )}
         </Flex>

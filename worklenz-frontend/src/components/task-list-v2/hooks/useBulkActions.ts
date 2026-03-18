@@ -38,7 +38,7 @@ export const useBulkActions = () => {
   const { projectId } = useParams();
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { t } = useTranslation('task-list-table');
-  
+
   // FIX: Get archived state from taskManagement slice instead of taskReducer
   const archived = useAppSelector(state => state.taskManagement.archived);
 
@@ -87,12 +87,17 @@ export const useBulkActions = () => {
             if (selectedTaskIds.length > 1) {
               alertService.warning(
                 t('errors.incompleteDependencies', { defaultValue: 'Incomplete Dependencies!' }),
-                t('errors.someDependenciesNotCompleted', { defaultValue: 'Some tasks were not updated. Please ensure all dependent tasks are completed before proceeding.' })
+                t('errors.someDependenciesNotCompleted', {
+                  defaultValue:
+                    'Some tasks were not updated. Please ensure all dependent tasks are completed before proceeding.',
+                })
               );
             } else {
               alertService.error(
                 t('errors.taskNotCompleted', { defaultValue: 'Task is not completed' }),
-                t('errors.completeTaskDependencies', { defaultValue: 'Please complete the task dependencies before proceeding' })
+                t('errors.completeTaskDependencies', {
+                  defaultValue: 'Please complete the task dependencies before proceeding',
+                })
               );
             }
             return;
@@ -364,7 +369,7 @@ export const useBulkActions = () => {
 
       try {
         updateLoadingState('dueDate', true);
-        
+
         const body: IBulkTasksDueDateChangeRequest = {
           tasks: selectedTaskIds,
           end_date: date || null,

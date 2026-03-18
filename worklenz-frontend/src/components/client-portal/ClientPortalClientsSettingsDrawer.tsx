@@ -1,4 +1,14 @@
-import { Drawer, Typography, Input, Flex, Select, Table, message, TableColumnsType, theme } from '@/shared/antd-imports';
+import {
+  Drawer,
+  Typography,
+  Input,
+  Flex,
+  Select,
+  Table,
+  message,
+  TableColumnsType,
+  theme,
+} from '@/shared/antd-imports';
 import React, { useState, useMemo } from 'react';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
@@ -9,7 +19,7 @@ import {
   updateClientName,
 } from '../../features/clients-portal/clients/clients-slice';
 import { useGetProjectsQuery } from '../../api/projects/projects.v1.api.service';
-import { 
+import {
   useGetClientDetailsQuery,
   useAssignProjectToClientMutation,
   ClientPortalProject,
@@ -27,7 +37,8 @@ const getClientPortalProjectColumns = (
       title: t('name', { defaultValue: 'Name' }),
       key: 'name',
       dataIndex: 'name',
-      sorter: (a: ClientPortalProject, b: ClientPortalProject) => (a.name || '').localeCompare(b.name || ''),
+      sorter: (a: ClientPortalProject, b: ClientPortalProject) =>
+        (a.name || '').localeCompare(b.name || ''),
       width: 240,
       showSorterTooltip: false,
       render: (text, record) => {
@@ -45,7 +56,8 @@ const getClientPortalProjectColumns = (
       title: t('status', { defaultValue: 'Status' }),
       key: 'status',
       dataIndex: 'status',
-      sorter: (a: ClientPortalProject, b: ClientPortalProject) => (a.status || '').localeCompare(b.status || ''),
+      sorter: (a: ClientPortalProject, b: ClientPortalProject) =>
+        (a.status || '').localeCompare(b.status || ''),
       showSorterTooltip: false,
     },
     {
@@ -74,7 +86,7 @@ const getClientPortalProjectColumns = (
       showSorterTooltip: false,
       render: (date: string) => {
         if (!date) return '-';
-        
+
         const now = new Date();
         const updatedDate = new Date(date);
 
@@ -168,32 +180,28 @@ const ClientPortalClientsSettingsDrawer = () => {
   }, [token]);
 
   // get drawer data from client reducer
-  const {
-    isClientSettingsDrawerOpen,
-    selectedClientId,
-  } = useAppSelector(state => state.clientsPortalReducer.clientsReducer);
+  const { isClientSettingsDrawerOpen, selectedClientId } = useAppSelector(
+    state => state.clientsPortalReducer.clientsReducer
+  );
 
   const dispatch = useAppDispatch();
 
   // Fetch client details
-  const { 
-    data: clientDetails, 
+  const {
+    data: clientDetails,
     isLoading: isLoadingClient,
-    refetch: refetchClientDetails 
-  } = useGetClientDetailsQuery(
-    selectedClientId!,
-    {
-      skip: !selectedClientId,
-    }
-  );
+    refetch: refetchClientDetails,
+  } = useGetClientDetailsQuery(selectedClientId!, {
+    skip: !selectedClientId,
+  });
 
   const client = clientDetails?.body;
 
   // Fetch available projects using RTK Query - get all projects for the team
-  const { 
-    data: availableProjects, 
+  const {
+    data: availableProjects,
     isLoading: isLoadingProjects,
-    error: projectsError 
+    error: projectsError,
   } = useGetProjectsQuery(
     {
       index: 1,
@@ -228,27 +236,27 @@ const ClientPortalClientsSettingsDrawer = () => {
     // Check response structure - projects API returns IServerResponse<IProjectsViewModel>
     // Structure: response.body.data (array) and response.body.total
     const projectsData = availableProjects?.body?.data;
-    
+
     if (!projectsData || !Array.isArray(projectsData) || projectsData.length === 0) {
       return [];
     }
 
-    const assignedProjectIds = client?.projects?.map((p) => p.id).filter((id): id is string => !!id) || [];
-    
-    const filtered = projectsData
-      .filter((project: IProjectViewModel) => {
-        // Must have id and name
-        if (!project.id || !project.name) return false;
-        
-        // Exclude if already assigned to this client
-        if (assignedProjectIds.includes(project.id)) return false;
-        
-        // Exclude if already assigned to another client (client_id is set and not null)
-        if (project.client_id) return false;
-        
-        return true;
-      });
-    
+    const assignedProjectIds =
+      client?.projects?.map(p => p.id).filter((id): id is string => !!id) || [];
+
+    const filtered = projectsData.filter((project: IProjectViewModel) => {
+      // Must have id and name
+      if (!project.id || !project.name) return false;
+
+      // Exclude if already assigned to this client
+      if (assignedProjectIds.includes(project.id)) return false;
+
+      // Exclude if already assigned to another client (client_id is set and not null)
+      if (project.client_id) return false;
+
+      return true;
+    });
+
     return filtered.map((project: IProjectViewModel) => ({
       label: project.name,
       value: project.id!,
@@ -286,13 +294,16 @@ const ClientPortalClientsSettingsDrawer = () => {
         projectId,
       }).unwrap();
 
-      message.success(t('projectAssignedSuccessMessage', { defaultValue: 'Project assigned successfully' }));
-      
+      message.success(
+        t('projectAssignedSuccessMessage', { defaultValue: 'Project assigned successfully' })
+      );
+
       // Refetch client details to update the project list
       await refetchClientDetails();
     } catch (error: any) {
       message.error(
-        error?.data?.message || t('projectAssignedErrorMessage', { defaultValue: 'Failed to assign project' })
+        error?.data?.message ||
+          t('projectAssignedErrorMessage', { defaultValue: 'Failed to assign project' })
       );
     }
   };
@@ -332,7 +343,9 @@ const ClientPortalClientsSettingsDrawer = () => {
             {t('assignProjectLabel', { defaultValue: 'Assign Project' })}
           </Typography.Title>
           <Typography.Text type="secondary">
-            {t('assignProjectDescription', { defaultValue: 'Select a project to assign to this client' })}
+            {t('assignProjectDescription', {
+              defaultValue: 'Select a project to assign to this client',
+            })}
           </Typography.Text>
           <Select
             showSearch

@@ -1,4 +1,13 @@
-import { Drawer, Empty, Segmented, Typography, Spin, Button, Flex, theme } from '@/shared/antd-imports';
+import {
+  Drawer,
+  Empty,
+  Segmented,
+  Typography,
+  Spin,
+  Button,
+  Flex,
+  theme,
+} from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -138,11 +147,7 @@ const NotificationDrawer = () => {
     };
 
     if (isPushEnabled()) {
-      createPush(
-        notification.message,
-        'Worklenz',
-        notification.team_id || null
-      );
+      createPush(notification.message, 'Worklenz', notification.team_id || null);
     }
 
     showNotification(notification);
@@ -202,10 +207,8 @@ const NotificationDrawer = () => {
           navigate(
             `${notification.url}${toQueryString({ task: notification.params?.task, tab: notification.params?.tab })}`
           );
-        } else if (notification.project){
-          navigate(
-            `${notification.url}`
-          )
+        } else if (notification.project) {
+          navigate(`${notification.url}`);
         }
       } catch (error) {
         console.error('Error navigating to URL:', error);
@@ -250,10 +253,7 @@ const NotificationDrawer = () => {
         SocketEvents.NOTIFICATIONS_UPDATE.toString(),
         handleNotificationsUpdate
       );
-      socket?.removeListener(
-        SocketEvents.TEAM_MEMBER_REMOVED.toString(),
-        handleTeamMemberRemoved
-      );
+      socket?.removeListener(SocketEvents.TEAM_MEMBER_REMOVED.toString(), handleTeamMemberRemoved);
     };
   }, [socket, dispatch]);
 
@@ -297,8 +297,8 @@ const NotificationDrawer = () => {
           }}
         />
 
-        <Button 
-          type="link" 
+        <Button
+          type="link"
           onClick={handleMarkAllAsRead}
           onMouseEnter={() => setIsMarkAllHovered(true)}
           onMouseLeave={() => setIsMarkAllHovered(false)}

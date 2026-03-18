@@ -78,7 +78,7 @@ const SettingTeamDrawer: React.FC<SettingTeamDrawerProps> = ({
       if (response.done) {
         // Close the drawer first
         setIsSettingDrawerOpen(false);
-        
+
         // Reload the teams table to reflect the updated name
         if (reloadTeams) {
           // Small delay to ensure smooth UI transition

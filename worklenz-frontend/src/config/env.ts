@@ -81,7 +81,9 @@ export const getClientPortalBaseUrl = (): string => {
   // Or use the same hostname with different subdomain
   if (hostname.includes('worklenz.com')) {
     // Replace 'app' with 'client' or use the same hostname
-    const clientHostname = hostname.replace('app.', 'client.').replace('worklenz.com', 'worklenz.com');
+    const clientHostname = hostname
+      .replace('app.', 'client.')
+      .replace('worklenz.com', 'worklenz.com');
     return `${protocol}//${clientHostname}`;
   }
 

@@ -105,9 +105,9 @@ const UpdateMemberDrawer = ({
       const res = await teamMembersApiService.get(1, 1000, 'name', 'asc', '', true);
       if (res.done) {
         // Filter for Team Leads only and exclude the member being assigned
-        const leads = res.body.data?.filter(
-          m => m.id !== selectedMemberId && m.role_name === 'Team Lead'
-        ) || [];
+        const leads =
+          res.body.data?.filter(m => m.id !== selectedMemberId && m.role_name === 'Team Lead') ||
+          [];
         setTeamLeads(leads);
       }
     } catch (error) {

@@ -41,9 +41,7 @@ export const CategoryCell: React.FC<{
           filterByCategory(record.category_id);
         }}
       >
-        <span style={{ fontSize: 12, color: textColor }}>
-          {record.category_name}
-        </span>
+        <span style={{ fontSize: 12, color: textColor }}>{record.category_name}</span>
       </Tag>
     </Tooltip>
   );

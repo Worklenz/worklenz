@@ -1088,33 +1088,49 @@ CREATE OR REPLACE FUNCTION create_task(_body json) RETURNS json
 AS
 $$
 DECLARE
-    _assignee      TEXT;
-    _attachment_id TEXT;
-    _assignee_id   UUID;
-    _task_id       UUID;
-    _label         JSON;
+    _assignee                 TEXT;
+    _attachment_id            TEXT;
+    _assignee_id              UUID;
+    _task_id                  UUID;
+    _label                    JSON;
+    _auto_assign_task_creator BOOLEAN;
+    _reporter_id              UUID;
+    _project_id               UUID;
+    _team_id                  UUID;
+    _team_member_id           UUID;
+    _is_admin                 BOOLEAN;
+    _already_assigned         BOOLEAN := FALSE;
 BEGIN
+    _reporter_id = (_body ->> 'reporter_id')::UUID;
+    _project_id = (_body ->> 'project_id')::UUID;
+    _team_id = (_body ->> 'team_id')::UUID;
+
     INSERT INTO tasks (name, done, priority_id, project_id, reporter_id, start_date, end_date, total_minutes,
                        description, parent_task_id, status_id, sort_order)
     VALUES (TRIM((_body ->> 'name')::TEXT), (FALSE),
             COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM task_priorities WHERE value = 1)),
-            (_body ->> 'project_id')::UUID,
-            (_body ->> 'reporter_id')::UUID,
+            _project_id,
+            _reporter_id,
             (_body ->> 'start')::TIMESTAMPTZ,
             (_body ->> 'end')::TIMESTAMPTZ,
             (_body ->> 'total_minutes')::NUMERIC,
             (_body ->> 'description')::TEXT,
             (_body ->> 'parent_task_id')::UUID,
             (_body ->> 'status_id')::UUID,
-            COALESCE((SELECT MAX(sort_order) + 1 FROM tasks WHERE project_id = (_body ->> 'project_id')::UUID), 0))
+            COALESCE((SELECT MAX(sort_order) + 1 FROM tasks WHERE project_id = _project_id), 0))
     RETURNING id INTO _task_id;
 
-    -- insert task assignees
+    -- Insert task assignees from the request.
     FOR _assignee IN SELECT * FROM JSON_ARRAY_ELEMENTS((_body ->> 'assignees')::JSON)
         LOOP
             _assignee_id = TRIM('"' FROM _assignee)::UUID;
-            PERFORM create_task_assignee(_assignee_id, (_body ->> 'project_id')::UUID, _task_id,
-                                         (_body ->> 'reporter_id')::UUID);
+            PERFORM create_task_assignee(_assignee_id, _project_id, _task_id, _reporter_id);
+
+            IF _assignee_id IN (
+                SELECT id FROM team_members WHERE user_id = _reporter_id
+            ) THEN
+                _already_assigned := TRUE;
+            END IF;
         END LOOP;
 
     FOR _attachment_id IN SELECT * FROM JSON_ARRAY_ELEMENTS((_body ->> 'attachments')::JSON)
@@ -1124,12 +1140,40 @@ BEGIN
 
     FOR _label IN SELECT * FROM JSON_ARRAY_ELEMENTS((_body ->> 'labels')::JSON)
         LOOP
-            PERFORM assign_or_create_label((_body ->> 'team_id')::UUID, _task_id, (_label ->> 'name')::TEXT,
-                                           (_label ->> 'color')::TEXT);
+            PERFORM assign_or_create_label(_team_id, _task_id, (_label ->> 'name')::TEXT, (_label ->> 'color')::TEXT);
         END LOOP;
 
-    RETURN get_task_form_view_model((_body ->> 'reporter_id')::UUID, (_body ->> 'team_id')::UUID, _task_id,
-                                    (_body ->> 'project_id')::UUID);
+    -- Auto-assign the creator unless they were explicitly assigned already.
+    IF _already_assigned IS FALSE THEN
+        SELECT auto_assign_task_creator INTO _auto_assign_task_creator
+        FROM projects
+        WHERE id = _project_id;
+
+        IF _auto_assign_task_creator IS TRUE THEN
+            SELECT tm.id, (r.admin_role OR r.owner) INTO _team_member_id, _is_admin
+            FROM team_members tm
+            INNER JOIN roles r ON tm.role_id = r.id
+            WHERE tm.user_id = _reporter_id
+              AND tm.team_id = _team_id;
+
+            IF _team_member_id IS NOT NULL THEN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM project_members
+                    WHERE project_id = _project_id
+                      AND team_member_id = _team_member_id
+                ) THEN
+                    IF _is_admin IS TRUE THEN
+                        PERFORM create_task_assignee(_team_member_id, _project_id, _task_id, _reporter_id);
+                    END IF;
+                ELSE
+                    PERFORM create_task_assignee(_team_member_id, _project_id, _task_id, _reporter_id);
+                END IF;
+            END IF;
+        END IF;
+    END IF;
+
+    RETURN get_task_form_view_model(_reporter_id, _team_id, _task_id, _project_id);
 END;
 $$;
 
@@ -3679,6 +3723,8 @@ DECLARE
     _team_members JSON;
     _assignees    JSON;
     _phases       JSON;
+    _custom_columns JSON;
+    _custom_column_values JSON;
 BEGIN
 
     -- Select task info
@@ -3695,6 +3741,7 @@ BEGIN
                  project_id,
                  created_at,
                  updated_at,
+                 completed_at,
                  status_id,
                  parent_task_id,
                  sort_order,
@@ -3773,14 +3820,110 @@ BEGIN
 
     SELECT get_task_assignees(_task_id) INTO _assignees;
 
+    SELECT COALESCE(
+               JSON_AGG(
+                   JSON_BUILD_OBJECT(
+                       'key', rec.key,
+                       'id', rec.id,
+                       'name', rec.name,
+                       'width', rec.width,
+                       'pinned', rec.is_visible,
+                       'custom_column', TRUE,
+                       'custom_column_obj', JSON_BUILD_OBJECT(
+                           'fieldType', rec.field_type,
+                           'fieldTitle', rec.field_title,
+                           'numberType', rec.number_type,
+                           'decimals', rec.decimals,
+                           'label', rec.label,
+                           'labelPosition', rec.label_position,
+                           'previewValue', rec.preview_value,
+                           'expression', rec.expression,
+                           'firstNumericColumnKey', rec.first_numeric_column_key,
+                           'secondNumericColumnKey', rec.second_numeric_column_key,
+                           'selectionsList', COALESCE(rec.selections_list, '[]'::JSON),
+                           'labelsList', COALESCE(rec.labels_list, '[]'::JSON)
+                       )
+                   )
+                   ORDER BY rec.created_at
+               ),
+               '[]'::JSON
+           )
+    INTO _custom_columns
+    FROM (
+             SELECT cc.id,
+                    cc.key,
+                    cc.name,
+                    cc.width,
+                    cc.is_visible,
+                    cc.created_at,
+                    cc.field_type,
+                    cf.field_title,
+                    cf.number_type,
+                    cf.decimals,
+                    cf.label,
+                    cf.label_position,
+                    cf.preview_value,
+                    cf.expression,
+                    cf.first_numeric_column_key,
+                    cf.second_numeric_column_key,
+                    (SELECT JSON_AGG(
+                                    JSON_BUILD_OBJECT(
+                                            'selection_id', so.selection_id,
+                                            'selection_name', so.selection_name,
+                                            'selection_color', so.selection_color
+                                    )
+                            ORDER BY so.selection_order
+                            )
+                     FROM cc_selection_options so
+                     WHERE so.column_id = cc.id) AS selections_list,
+                    (SELECT JSON_AGG(
+                                    JSON_BUILD_OBJECT(
+                                            'label_id', lo.label_id,
+                                            'label_name', lo.label_name,
+                                            'label_color', lo.label_color
+                                    )
+                            ORDER BY lo.label_order
+                            )
+                     FROM cc_label_options lo
+                     WHERE lo.column_id = cc.id) AS labels_list
+             FROM cc_custom_columns cc
+                      LEFT JOIN cc_column_configurations cf ON cf.column_id = cc.id
+             WHERE cc.project_id = _project_id
+               AND cc.is_visible IS TRUE
+         ) rec;
+
+    SELECT COALESCE(
+               JSON_OBJECT_AGG(rec.key, rec.value),
+               '{}'::JSON
+           )
+    INTO _custom_column_values
+    FROM (
+             SELECT cc.key,
+                    CASE
+                        WHEN ccv.text_value IS NOT NULL THEN TO_JSON(ccv.text_value)
+                        WHEN ccv.number_value IS NOT NULL THEN TO_JSON(ccv.number_value)
+                        WHEN ccv.boolean_value IS NOT NULL THEN TO_JSON(ccv.boolean_value)
+                        WHEN ccv.date_value IS NOT NULL THEN TO_JSON(ccv.date_value)
+                        WHEN ccv.json_value IS NOT NULL THEN ccv.json_value::JSON
+                        ELSE NULL::JSON
+                        END AS value
+             FROM cc_column_values ccv
+                      INNER JOIN cc_custom_columns cc ON ccv.column_id = cc.id
+             WHERE ccv.task_id = _task_id
+               AND cc.project_id = _project_id
+               AND cc.is_visible IS TRUE
+         ) rec
+    WHERE rec.value IS NOT NULL;
+
     RETURN JSON_BUILD_OBJECT(
-        'task', _task,
+        'task', (_task::JSONB || JSONB_BUILD_OBJECT('custom_column_values', COALESCE(_custom_column_values, '{}'::JSON)::JSONB))::JSON,
         'priorities', _priorities,
         'projects', _projects,
         'statuses', _statuses,
         'team_members', _team_members,
         'assignees', _assignees,
-        'phases', _phases
+        'phases', _phases,
+        'custom_columns', _custom_columns
         );
 END;
 $$;

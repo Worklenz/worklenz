@@ -7,7 +7,9 @@ export type DueDateStatus = 'overdue' | 'today' | 'tomorrow' | 'upcoming';
  * @param dueDate - The due date to check (string or Dayjs)
  * @returns The status of the due date
  */
-export const getDueDateStatus = (dueDate: string | Dayjs | null | undefined): DueDateStatus | null => {
+export const getDueDateStatus = (
+  dueDate: string | Dayjs | null | undefined
+): DueDateStatus | null => {
   if (!dueDate) return null;
 
   const date = (typeof dueDate === 'string' ? dayjs(dueDate) : dueDate).startOf('day');
@@ -31,7 +33,10 @@ export const getDueDateStatus = (dueDate: string | Dayjs | null | undefined): Du
  * @param isDarkMode - Whether dark mode is active
  * @returns Tailwind CSS classes for text color
  */
-export const getDueDateColorClass = (status: DueDateStatus | null, isDarkMode: boolean = false): string => {
+export const getDueDateColorClass = (
+  status: DueDateStatus | null,
+  isDarkMode: boolean = false
+): string => {
   if (!status) return '';
 
   switch (status) {

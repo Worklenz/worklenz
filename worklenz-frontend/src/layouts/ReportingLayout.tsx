@@ -7,7 +7,10 @@ import ReportingSider from '../pages/reporting/sidebar/reporting-sider';
 import { Outlet } from 'react-router-dom';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { setCurrentOrganization } from '@/features/reporting/reporting.slice';
-import { toggleUpgradeModal, fetchOrganizationDetails } from '@/features/admin-center/admin-center.slice';
+import {
+  toggleUpgradeModal,
+  fetchOrganizationDetails,
+} from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '../hooks/useAuth';
 import UpgradePlans from '@/components/admin-center/billing/drawers/upgrade-plans/UpgradePlans';
 import logger from '@/utils/errorLogger';

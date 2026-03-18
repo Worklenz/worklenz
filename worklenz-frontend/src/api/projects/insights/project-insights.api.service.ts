@@ -30,11 +30,23 @@ export const projectInsightsApiService = {
     return response.data;
   },
 
+  // getLastUpdatedTasks: async (
+  //   id: string,
+  //   include_archived: boolean
+  // ): Promise<IServerResponse<IInsightTasks[]>> => {
+  //   const url = `${rootUrl}/last-updated/${id}?archived=${include_archived}`;
+  //   const response = await apiClient.get<IServerResponse<IInsightTasks[]>>(url);
+  //   return response.data;
+  // },
+
+  //change 1
   getLastUpdatedTasks: async (
     id: string,
-    include_archived: boolean
+    include_archived: boolean,
+    limit = 20,
+    offset = 0
   ): Promise<IServerResponse<IInsightTasks[]>> => {
-    const url = `${rootUrl}/last-updated/${id}?archived=${include_archived}`;
+    const url = `${rootUrl}/last-updated/${id}?archived=${include_archived}&limit=${limit}&offset=${offset}`;
     const response = await apiClient.get<IServerResponse<IInsightTasks[]>>(url);
     return response.data;
   },

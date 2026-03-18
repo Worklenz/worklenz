@@ -21,15 +21,7 @@ interface AddTaskRowProps {
 }
 
 const AddTaskRow: React.FC<AddTaskRowProps> = memo(
-  ({
-    groupId,
-    groupType,
-    groupValue,
-    projectId,
-    visibleColumns,
-    rowId,
-    autoFocus = false,
-  }) => {
+  ({ groupId, groupType, groupValue, projectId, visibleColumns, rowId, autoFocus = false }) => {
     const [isAdding, setIsAdding] = useState(autoFocus);
     const [taskName, setTaskName] = useState('');
     const inputRef = useRef<any>(null);
@@ -94,15 +86,7 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
       } catch (error) {
         console.error('Error creating task:', error);
       }
-    }, [
-      taskName,
-      projectId,
-      groupType,
-      groupValue,
-      socket,
-      connected,
-      currentSession,
-    ]);
+    }, [taskName, projectId, groupType, groupValue, socket, connected, currentSession]);
 
     const handleCancel = useCallback(() => {
       if (taskName.trim() === '') {

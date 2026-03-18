@@ -86,7 +86,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
       const menuRect = menuRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
       const viewportWidth = window.innerWidth;
-      
+
       let newX = position.x;
       let newY = position.y;
 
@@ -99,7 +99,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
       if (position.y + menuRect.height > viewportHeight) {
         // Open above the cursor instead of below
         newY = position.y - menuRect.height;
-        
+
         // If opening above would go beyond top edge, position at top with margin
         if (newY < 10) {
           newY = 10;
@@ -227,16 +227,16 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
 
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_context_menu_archive);
-        
+
         // Remove task from current view (whether archived or normal)
         dispatch(deleteTask(task.id));
         dispatch(deselectAll());
-        
+
         // Note: We DON'T call fetchTasksV3 here because:
         // - If archiving: task is moved to archived list, not needed in current view
         // - If unarchiving: task is moved to normal list, but we're still viewing archived
         // The task will appear in the correct list when user switches views
-        
+
         if (task.parent_task_id) {
           socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.parent_task_id);
         }
@@ -286,10 +286,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
         if (task.status !== targetId) {
           const canContinue = await checkTaskDependencyStatus(task.id, targetId);
           if (!canContinue) {
-            alertService.error(
-              t('errors.taskNotCompleted'),
-              t('errors.completeTaskDependencies')
-            );
+            alertService.error(t('errors.taskNotCompleted'), t('errors.completeTaskDependencies'));
             onClose();
             return;
           }
@@ -310,7 +307,16 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
         onClose();
       }
     },
-    [projectId, task.id, task.status, task.parent_task_id, currentSession?.team_id, socket, onClose, t]
+    [
+      projectId,
+      task.id,
+      task.status,
+      task.parent_task_id,
+      currentSession?.team_id,
+      socket,
+      onClose,
+      t,
+    ]
   );
 
   const handlePriorityMoveTo = useCallback(
@@ -454,11 +460,11 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     if (!projectId || !task.id) return;
 
     try {
-      dispatch(setDuplicateTask({taskId: task.id, title: task.title}));
+      dispatch(setDuplicateTask({ taskId: task.id, title: task.title }));
       dispatch(setDuplicateTaskModalStatus(true));
     } catch (error) {
       logger.error('Error open duplicate task modal:', error);
-    }finally {
+    } finally {
       onClose();
     }
   }, [projectId, task.id, dispatch, onClose]);
@@ -481,7 +487,8 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
             <span>{t('contextMenu.assignToMe')}</span>
           </button>
         ),
-      }, {
+      },
+      {
         key: 'duplicateTask',
         label: (
           <button
@@ -563,7 +570,9 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
             <div className="flex items-center gap-2">
               <InboxOutlined className="text-gray-500 dark:text-gray-400" />
               <span>{archived ? t('contextMenu.unarchive') : t('contextMenu.archive')}</span>
-              {isFree && !archived && <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />}
+              {isFree && !archived && (
+                <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
+              )}
             </div>
           </button>
         ),
@@ -645,8 +654,14 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     if (showDeleteConfirm) {
       const isSubtask = !!task.parent_task_id;
       const confirmMessage = isSubtask
-        ? t('contextMenu.deleteSubtaskConfirmMessage', { defaultValue: 'Are you sure you want to delete this subtask? This action cannot be undone.' })
-        : t('contextMenu.deleteConfirmMessage', { defaultValue: 'Are you sure you want to delete this task? This action cannot be undone.' });
+        ? t('contextMenu.deleteSubtaskConfirmMessage', {
+            defaultValue:
+              'Are you sure you want to delete this subtask? This action cannot be undone.',
+          })
+        : t('contextMenu.deleteConfirmMessage', {
+            defaultValue:
+              'Are you sure you want to delete this task? This action cannot be undone.',
+          });
 
       items.push({
         key: 'delete-confirm',

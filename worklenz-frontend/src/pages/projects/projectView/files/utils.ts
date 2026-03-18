@@ -24,7 +24,10 @@ export const getFileTypeIcon = (type?: string) => {
   return IconsMap[type] || IconsMap['search'];
 };
 
-export const isBlockedExtension = (fileName: string, blockedExtensions: readonly string[]): boolean => {
+export const isBlockedExtension = (
+  fileName: string,
+  blockedExtensions: readonly string[]
+): boolean => {
   const ext = fileName.split('.').pop()?.toLowerCase() || '';
   return blockedExtensions.includes(ext);
 };

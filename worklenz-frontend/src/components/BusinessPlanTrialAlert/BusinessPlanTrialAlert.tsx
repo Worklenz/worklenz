@@ -2,13 +2,23 @@ import { Alert, Button, Space, Spin, message } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { CloseOutlined, GiftOutlined, ClockCircleOutlined, RocketOutlined } from '@ant-design/icons';
+import {
+  CloseOutlined,
+  GiftOutlined,
+  ClockCircleOutlined,
+  RocketOutlined,
+} from '@ant-design/icons';
 import { useAuthService } from '@/hooks/useAuth';
 import { isOnBusinessTrial, getPlanTrialDaysRemaining } from '@/utils/subscription-utils';
 import { PlanTrialApiService } from '@/api/admin-center/plan-trial.api.service';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { MixpanelBillingEvents, BusinessTrialEventProps, BusinessTrialStartEventProps, BusinessTrialStatusEventProps } from '@/types/mixpanel-events.types';
+import {
+  MixpanelBillingEvents,
+  BusinessTrialEventProps,
+  BusinessTrialStartEventProps,
+  BusinessTrialStatusEventProps,
+} from '@/types/mixpanel-events.types';
 import { authApiService } from '@/api/auth/auth.api.service';
 import { setSession } from '@/utils/session-helper';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -37,7 +47,11 @@ export const BusinessPlanTrialAlert = () => {
 
   // Helper function to create base trial properties
   const getBaseTrialProperties = (): BusinessTrialEventProps => ({
-    user_type: isOnTrial ? 'trial' : (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.PADDLE ? 'paid' : 'free'),
+    user_type: isOnTrial
+      ? 'trial'
+      : currentSession?.subscription_type === ISUBSCRIPTION_TYPE.PADDLE
+        ? 'paid'
+        : 'free',
     current_plan: currentSession?.plan_name,
     trial_days_remaining: trialDaysRemaining,
     team_size: currentSession?.team_member_count,
@@ -45,7 +59,7 @@ export const BusinessPlanTrialAlert = () => {
     trial_type: 'business_plan' as const,
     trial_duration_days: 7,
     source_component: 'BusinessPlanTrialAlert',
-    display_location: 'header_banner'
+    display_location: 'header_banner',
   });
 
   useEffect(() => {
@@ -82,8 +96,9 @@ export const BusinessPlanTrialAlert = () => {
 
     // Check if already on Business/Enterprise plan (both regular Paddle and AppSumo/Lifetime deals)
     const planName = currentSession?.plan_name?.toLowerCase() || '';
-    const hasBusinessOrEnterprise = planName.includes('business') || planName.includes('enterprise');
-    
+    const hasBusinessOrEnterprise =
+      planName.includes('business') || planName.includes('enterprise');
+
     if (
       subscriptionType === ISUBSCRIPTION_TYPE.PADDLE ||
       subscriptionType === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL
@@ -104,7 +119,7 @@ export const BusinessPlanTrialAlert = () => {
         ...getBaseTrialProperties(),
         trial_active: true,
         days_elapsed: 7 - trialDaysRemaining,
-        check_source: 'trial_status_banner'
+        check_source: 'trial_status_banner',
       });
 
       return;
@@ -117,7 +132,7 @@ export const BusinessPlanTrialAlert = () => {
     isOnTrial,
     currentSession?.subscription_type,
     currentSession?.plan_name,
-    currentSession?.plan_trial_plan_id
+    currentSession?.plan_trial_plan_id,
   ]);
 
   const checkTrialEligibility = async () => {
@@ -133,12 +148,15 @@ export const BusinessPlanTrialAlert = () => {
         trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_ELIGIBLE, {
           ...getBaseTrialProperties(),
           trial_active: false,
-          check_source: 'component_mount'
+          check_source: 'component_mount',
         });
 
         if (canStart) {
           // Track that offer is being viewed
-          trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_OFFER_VIEWED, getBaseTrialProperties());
+          trackMixpanelEvent(
+            MixpanelBillingEvents.BUSINESS_TRIAL_OFFER_VIEWED,
+            getBaseTrialProperties()
+          );
         }
       }
     } catch (error) {
@@ -157,7 +175,7 @@ export const BusinessPlanTrialAlert = () => {
     const startEventProps: BusinessTrialStartEventProps = {
       ...getBaseTrialProperties(),
       start_method: 'banner_click',
-      original_plan: currentSession?.plan_name as any
+      original_plan: currentSession?.plan_name as any,
     };
 
     try {
@@ -166,8 +184,12 @@ export const BusinessPlanTrialAlert = () => {
         // Track successful trial start
         trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_STARTED, startEventProps);
 
-        message.success(t('business-trial-started', { defaultValue: 'Business trial started successfully! Updating...' }));
-        
+        message.success(
+          t('business-trial-started', {
+            defaultValue: 'Business trial started successfully! Updating...',
+          })
+        );
+
         // Refetch user session data to get updated subscription info
         try {
           const authorizeResponse = await authApiService.verify();
@@ -175,10 +197,10 @@ export const BusinessPlanTrialAlert = () => {
             setSession(authorizeResponse.user);
             dispatch(setUser(authorizeResponse.user));
             authService.setCurrentSession(authorizeResponse.user);
-            
+
             // Hide the alert after session update
             setVisible(false);
-            
+
             // Optionally reload after a short delay to ensure all components are updated
             setTimeout(() => window.location.reload(), 1000);
           }
@@ -188,12 +210,15 @@ export const BusinessPlanTrialAlert = () => {
           setTimeout(() => window.location.reload(), 1500);
         }
       } else {
-        message.error(response.message || t('business-trial-start-failed', { defaultValue: 'Failed to start trial' }));
+        message.error(
+          response.message ||
+            t('business-trial-start-failed', { defaultValue: 'Failed to start trial' })
+        );
       }
     } catch (error: any) {
       message.error(
         error.response?.data?.message ||
-        t('business-trial-start-failed', { defaultValue: 'Failed to start trial' })
+          t('business-trial-start-failed', { defaultValue: 'Failed to start trial' })
       );
     } finally {
       setStarting(false);
@@ -205,18 +230,22 @@ export const BusinessPlanTrialAlert = () => {
     trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_UPGRADE_INITIATED, {
       ...getBaseTrialProperties(),
       trial_active: isOnTrial,
-      days_elapsed: isOnTrial ? (7 - trialDaysRemaining) : undefined,
-      check_source: 'upgrade_button_click'
+      days_elapsed: isOnTrial ? 7 - trialDaysRemaining : undefined,
+      check_source: 'upgrade_button_click',
     });
 
     // Track business trial upgrade nav bar click (new event)
     trackMixpanelEvent('business_trial_upgrade_nav_bar', {
-      user_type: isOnTrial ? 'trial' : (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.PADDLE ? 'paid' : 'free'),
+      user_type: isOnTrial
+        ? 'trial'
+        : currentSession?.subscription_type === ISUBSCRIPTION_TYPE.PADDLE
+          ? 'paid'
+          : 'free',
       current_plan: currentSession?.plan_name,
       trial_days_remaining: trialDaysRemaining,
       trial_active: isOnTrial,
-      days_elapsed: isOnTrial ? (7 - trialDaysRemaining) : undefined,
-      source: 'business_trial_banner'
+      days_elapsed: isOnTrial ? 7 - trialDaysRemaining : undefined,
+      source: 'business_trial_banner',
     });
 
     // Open the upgrade plans modal directly
@@ -228,7 +257,7 @@ export const BusinessPlanTrialAlert = () => {
     trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_DISMISSED, {
       ...getBaseTrialProperties(),
       trial_active: isOnTrial,
-      check_source: 'dismiss_button_click'
+      check_source: 'dismiss_button_click',
     });
 
     setVisible(false);
@@ -248,14 +277,17 @@ export const BusinessPlanTrialAlert = () => {
         style={{
           width: '100%',
           padding: '12px 48px',
-          background: 'linear-gradient(90deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%)',
+          background:
+            'linear-gradient(90deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%)',
           borderBottom: '1px solid rgba(102,126,234,0.2)',
-          textAlign: 'center'
+          textAlign: 'center',
         }}
       >
         <Space>
           <Spin size="small" />
-          <span>{t('business-trial-checking', { defaultValue: 'Checking trial availability...' })}</span>
+          <span>
+            {t('business-trial-checking', { defaultValue: 'Checking trial availability...' })}
+          </span>
         </Space>
       </div>
     );
@@ -265,13 +297,18 @@ export const BusinessPlanTrialAlert = () => {
   if (isOnTrial) {
     const getMessage = () => {
       if (trialDaysRemaining === 0) {
-        return t('business-trial-expires-today', { defaultValue: 'Your Business trial expires today!' });
+        return t('business-trial-expires-today', {
+          defaultValue: 'Your Business trial expires today!',
+        });
       } else if (trialDaysRemaining === 1) {
-        return t('business-trial-days-remaining', { days: 1, defaultValue: '1 day remaining in your Business trial' });
+        return t('business-trial-days-remaining', {
+          days: 1,
+          defaultValue: '1 day remaining in your Business trial',
+        });
       } else {
         return t('business-trial-days-remaining_plural', {
           days: trialDaysRemaining,
-          defaultValue: `${trialDaysRemaining} days remaining in your Business trial`
+          defaultValue: `${trialDaysRemaining} days remaining in your Business trial`,
         });
       }
     };
@@ -281,9 +318,10 @@ export const BusinessPlanTrialAlert = () => {
         style={{
           width: '100%',
           padding: '8px 48px',
-          background: 'linear-gradient(90deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)',
+          background:
+            'linear-gradient(90deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%)',
           borderBottom: '1px solid rgba(102,126,234,0.3)',
-          backdropFilter: 'blur(10px)'
+          backdropFilter: 'blur(10px)',
         }}
       >
         <Alert
@@ -303,7 +341,7 @@ export const BusinessPlanTrialAlert = () => {
                   onClick={handleUpgrade}
                   style={{
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    border: 'none'
+                    border: 'none',
                   }}
                 >
                   {t('business-trial-upgrade', { defaultValue: 'Upgrade Now' })}
@@ -325,7 +363,7 @@ export const BusinessPlanTrialAlert = () => {
           style={{
             border: 'none',
             background: 'transparent',
-            padding: '4px 0'
+            padding: '4px 0',
           }}
         />
       </div>
@@ -341,7 +379,7 @@ export const BusinessPlanTrialAlert = () => {
           padding: '8px 48px',
           background: 'linear-gradient(90deg, rgba(255,165,0,0.08) 0%, rgba(255,193,7,0.08) 100%)',
           borderBottom: '1px solid rgba(255,165,0,0.3)',
-          backdropFilter: 'blur(10px)'
+          backdropFilter: 'blur(10px)',
         }}
       >
         <Alert
@@ -353,7 +391,10 @@ export const BusinessPlanTrialAlert = () => {
                   {t('business-trial-offer', { defaultValue: 'Try Business Plan Free for 7 Days' })}
                 </span>
                 <span style={{ opacity: 0.85 }}>
-                  - {t('business-trial-unlock', { defaultValue: 'Unlock Client Portal, Project Finance & More' })}
+                  -{' '}
+                  {t('business-trial-unlock', {
+                    defaultValue: 'Unlock Client Portal, Project Finance & More',
+                  })}
                 </span>
                 <span style={{ opacity: 0.7, fontSize: 13 }}>
                   {t('business-trial-no-card', { defaultValue: 'No credit card required' })}
@@ -370,13 +411,12 @@ export const BusinessPlanTrialAlert = () => {
                     background: 'linear-gradient(135deg, #ff8c00 0%, #ffc107 100%)',
                     border: 'none',
                     fontWeight: 600,
-                    boxShadow: '0 2px 8px rgba(255,140,0,0.3)'
+                    boxShadow: '0 2px 8px rgba(255,140,0,0.3)',
                   }}
                 >
-                  {starting ?
-                    t('business-trial-starting', { defaultValue: 'Starting...' }) :
-                    t('business-trial-start', { defaultValue: 'Start Free Trial' })
-                  }
+                  {starting
+                    ? t('business-trial-starting', { defaultValue: 'Starting...' })
+                    : t('business-trial-start', { defaultValue: 'Start Free Trial' })}
                 </Button>
                 <Button
                   type="text"
@@ -395,7 +435,7 @@ export const BusinessPlanTrialAlert = () => {
           style={{
             border: 'none',
             background: 'transparent',
-            padding: '4px 0'
+            padding: '4px 0',
           }}
         />
       </div>

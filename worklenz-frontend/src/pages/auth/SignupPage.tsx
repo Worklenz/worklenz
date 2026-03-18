@@ -521,7 +521,11 @@ const SignupPage = () => {
                       borderRadius: 4,
                     }}
                   >
-                    <img src={googleIcon} alt="google icon" style={{ maxWidth: 20, width: '100%' }} />
+                    <img
+                      src={googleIcon}
+                      alt="google icon"
+                      style={{ maxWidth: 20, width: '100%' }}
+                    />
                     {t('signInWithGoogleButton')}
                   </Button>
                 )}

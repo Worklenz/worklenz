@@ -5,34 +5,32 @@ import { API_BASE_URL } from '@/shared/constants';
 const rootUrl = `${API_BASE_URL}/team-management`;
 
 export const teamManagementApiService = {
-  assignManager: async (
-    teamMemberId: string, 
-    managerId: string
-  ): Promise<IServerResponse<any>> => {
+  assignManager: async (teamMemberId: string, managerId: string): Promise<IServerResponse<any>> => {
     const response = await apiClient.post<IServerResponse<any>>(`${rootUrl}/assign-manager`, {
       teamMemberId,
-      managerId
+      managerId,
     });
     return response.data;
   },
 
   bulkAssignMembers: async (
-    teamLeadId: string, 
+    teamLeadId: string,
     memberIds: string[]
   ): Promise<IServerResponse<any>> => {
     const response = await apiClient.post<IServerResponse<any>>(`${rootUrl}/bulk-assign-members`, {
       teamLeadId,
-      memberIds
+      memberIds,
     });
     return response.data;
   },
 
-  removeManagerAssignment: async (
-    teamMemberId: string
-  ): Promise<IServerResponse<any>> => {
-    const response = await apiClient.post<IServerResponse<any>>(`${rootUrl}/remove-manager-assignment`, {
-      teamMemberId
-    });
+  removeManagerAssignment: async (teamMemberId: string): Promise<IServerResponse<any>> => {
+    const response = await apiClient.post<IServerResponse<any>>(
+      `${rootUrl}/remove-manager-assignment`,
+      {
+        teamMemberId,
+      }
+    );
     return response.data;
   },
 

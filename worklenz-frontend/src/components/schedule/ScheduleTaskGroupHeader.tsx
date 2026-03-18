@@ -70,10 +70,7 @@ const ScheduleTaskGroupHeader: React.FC<ScheduleTaskGroupHeaderProps> = ({
         {/* Group name and count - matching TaskGroupHeader layout */}
         <div className="flex items-center flex-1 ml-1">
           <div className="flex items-center">
-            <span
-              className="text-sm font-semibold pr-2"
-              style={{ color: headerTextColor }}
-            >
+            <span className="text-sm font-semibold pr-2" style={{ color: headerTextColor }}>
               {group.name}
             </span>
             <span className="text-sm font-semibold ml-1" style={{ color: headerTextColor }}>

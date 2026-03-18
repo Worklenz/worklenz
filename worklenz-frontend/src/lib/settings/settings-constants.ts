@@ -38,9 +38,7 @@ const TaskTemplatesSettings = lazy(
 const TeamMembersSettings = lazy(
   () => import('@/pages/settings/team-members/team-members-settings')
 );
-const TeamHierarchy = lazy(
-  () => import('@/components/settings/team-hierarchy/team-hierarchy')
-);
+const TeamHierarchy = lazy(() => import('@/components/settings/team-hierarchy/team-hierarchy'));
 const TeamsSettings = lazy(() => import('../../pages/settings/teams/teams-settings'));
 const ChangePassword = lazy(() => import('@/pages/settings/change-password/change-password'));
 const LanguageAndRegionSettings = lazy(
@@ -48,7 +46,9 @@ const LanguageAndRegionSettings = lazy(
 );
 const AppearanceSettings = lazy(() => import('@/pages/settings/appearance/appearance-settings'));
 const AccountDeletion = lazy(() => import('@/pages/settings/account-deletion/AccountDeletion'));
-const IntegrationsSettings = lazy(() => import('@/pages/settings/integrations/IntegrationsSettings'));
+const IntegrationsSettings = lazy(
+  () => import('@/pages/settings/integrations/IntegrationsSettings')
+);
 
 // type of menu item in settings sidebar
 type SettingMenuItem = {
