@@ -430,6 +430,23 @@ class ClientPortalAPI {
     return this.request(`/chats/${date}${queryString ? `?${queryString}` : ''}`);
   }
 
+  async createChat(chatData: {
+    subject: string;
+    message: string;
+    recipientType?: 'client' | 'team';
+    recipientId?: string;
+  }): Promise<ApiResponse<{ chatId: string; message: string }>> {
+    return this.request(`/chats`, {
+      method: 'POST',
+      data: {
+        recipientType: chatData.recipientType || 'team',
+        recipientId: chatData.recipientId || 'organization',
+        subject: chatData.subject,
+        message: chatData.message,
+      },
+    });
+  }
+
   async sendMessage(chatId: string, messageData: { message: string; messageType?: string; fileUrl?: string }): Promise<ApiResponse<any>> {
     return this.request<any>(`/chats/${chatId}/messages`, {
       method: 'POST',
