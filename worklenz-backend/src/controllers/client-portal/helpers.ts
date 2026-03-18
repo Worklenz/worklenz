@@ -59,12 +59,11 @@ export function generateInvitationEmailHTML(data: IInvitationEmailData): string 
  * Generate HTML email template for welcome email after account creation
  */
 export function generateWelcomeEmailHTML(data: IWelcomeEmailData): string {
-  const primaryColor = data.primaryColor || "#52c41a";
-  const headerBgColor = primaryColor;
-  // Calculate a slightly darker shade for hover/gradient
-  const darkerColor = hexToRgb(primaryColor)
-    ? adjustBrightness(primaryColor, -20)
-    : "#389e0d";
+  const primaryColor = "#1f2937";
+  const hoverColor = "#111827";
+  const mutedTextColor = "#4b5563";
+  const subtleBackground = "#f9fafb";
+  const subtleBorder = "#e5e7eb";
 
   return `
     <!DOCTYPE html>
@@ -76,21 +75,21 @@ export function generateWelcomeEmailHTML(data: IWelcomeEmailData): string {
       <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
         .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .header { background: linear-gradient(135deg, ${headerBgColor} 0%, ${darkerColor} 100%); color: white; padding: 40px 20px; text-align: center; }
+        .header { background: #ffffff; color: ${primaryColor}; padding: 40px 20px; text-align: center; border-bottom: 2px solid ${subtleBorder}; }
         .header-logo { max-width: 120px; max-height: 60px; margin-bottom: 16px; }
         .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
         .content { padding: 40px 30px; background: white; }
         .content p { margin: 0 0 16px 0; font-size: 16px; }
         .content strong { color: ${primaryColor}; }
-        .button { display: inline-block; background: ${primaryColor}; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; margin: 24px 0; font-weight: 500; font-size: 16px; transition: background-color 0.3s; }
-        .button:hover { background: ${darkerColor}; }
-        .features { background: #f6ffed; padding: 20px; border-radius: 6px; margin: 24px 0; border: 1px solid #d9f7be; }
+        .button { display: inline-block; background: transparent; color: ${primaryColor}; padding: 14px 28px; text-decoration: none; border-radius: 6px; margin: 24px 0; font-weight: 600; font-size: 16px; border: 2px solid ${primaryColor}; transition: background-color 0.3s, border-color 0.3s; }
+        .button:hover { background: ${subtleBackground}; border-color: ${hoverColor}; }
+        .features { background: ${subtleBackground}; padding: 20px; border-radius: 6px; margin: 24px 0; border: 1px solid ${subtleBorder}; }
         .features h3 { margin: 0 0 12px 0; color: ${primaryColor}; font-size: 18px; }
         .features ul { margin: 0; padding-left: 20px; }
-        .features li { margin: 8px 0; color: #666; }
+        .features li { margin: 8px 0; color: ${mutedTextColor}; }
         .footer { padding: 30px; text-align: center; color: #666; font-size: 14px; background: #f8f9fa; border-top: 1px solid #e8e8e8; }
         .footer p { margin: 8px 0; }
-        .success-badge { background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 6px; padding: 16px; margin: 24px 0; text-align: center; }
+        .success-badge { background: ${subtleBackground}; border: 1px solid ${subtleBorder}; border-radius: 6px; padding: 16px; margin: 24px 0; text-align: center; }
         .success-badge p { margin: 0; color: ${primaryColor}; font-weight: 500; }
         @media (max-width: 600px) {
           .container { margin: 0; border-radius: 0; }
