@@ -282,16 +282,12 @@ const TaskContextMenu = ({ visible, position, selectedTask, onClose, t }: TaskCo
       label: t('contextMenu.moveTo'),
       children: getMoveToOptions(),
     },
-    ...(!selectedTask?.parent_task_id
-      ? [
-          {
-            key: '3',
-            icon: <InboxOutlined />,
-            label: archived ? t('contextMenu.unarchive') : t('contextMenu.archive'),
-            onClick: handleArchive,
-          },
-        ]
-      : []),
+    {
+      key: '3',
+      icon: <InboxOutlined />,
+      label: archived ? t('contextMenu.unarchive') : t('contextMenu.archive'),
+      onClick: handleArchive,
+    },
     ...(selectedTask?.sub_tasks_count === 0 && !selectedTask?.parent_task_id
       ? [
           {

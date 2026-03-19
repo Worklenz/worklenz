@@ -239,7 +239,13 @@ const TaskCard: React.FC<TaskCardProps> = memo(
           dispatch(toggleTaskExpansion(task.id));
         } else if (task.sub_tasks_count && task.sub_tasks_count > 0) {
           dispatch(toggleTaskExpansion(task.id));
-          dispatch(fetchBoardSubTasks({ taskId: task.id, projectId }));
+          dispatch(
+            fetchBoardSubTasks({
+              taskId: task.id,
+              projectId,
+              parentTaskIdForQuery: task.parent_task_container_id || task.id,
+            })
+          );
         } else {
           dispatch(toggleTaskExpansion(task.id));
         }
@@ -275,7 +281,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                   sectionId: '',
                   subtask: {
                     id: task.id,
-                    parent_task_id: task.parent_task_id || '',
+                    parent_task_id: task.parent_task_container_id || task.parent_task_id || '',
                     manual_progress: false,
                   },
                   mode: 'delete',
@@ -314,16 +320,16 @@ const TaskCard: React.FC<TaskCardProps> = memo(
         if (res.done) {
           // Remove task from current view (it will appear in the other view when user toggles filter)
           if (task.is_sub_task) {
-            dispatch(
-              updateEnhancedKanbanSubtask({
-                sectionId: '',
-                subtask: {
-                  id: task.id,
-                  parent_task_id: task.parent_task_id || '',
-                  manual_progress: false,
-                },
-                mode: 'delete',
-              })
+              dispatch(
+                updateEnhancedKanbanSubtask({
+                  sectionId: '',
+                  subtask: {
+                    id: task.id,
+                    parent_task_id: task.parent_task_container_id || task.parent_task_id || '',
+                    manual_progress: false,
+                  },
+                  mode: 'delete',
+                })
             );
           } else {
             dispatch(deleteKanbanTask(task.id));
@@ -440,7 +446,9 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                 }}
                 onClick={() => handleArchiveTask(selectedTask || null)}
               >
-                {archived ? t('unarchive', 'Unarchive') : t('archive', 'Archive')}
+                {archived
+                  ? t('unarchive', { defaultValue: 'Unarchive' })
+                  : t('archive', { defaultValue: 'Archive' })}
               </Button>
               <Button
                 type="text"

@@ -41,5 +41,7 @@
   "SET_DUE_DATE": "Definir Data de Vencimento",
   "CLEAR_DUE_DATE": "Limpar Data de Vencimento",
   "DUE_DATE_UPDATED": "Data de vencimento atualizada com sucesso",
-  "DUE_DATE_CLEARED": "Data de vencimento limpa com sucesso"
+  "DUE_DATE_CLEARED": "Data de vencimento limpa com sucesso",
+  "archiveSuccessTitle": "Atualização em massa concluída",
+  "archiveSuccessMessage": "{{parentCount}} tarefas e {{subtaskCount}} subtarefas foram {{action}}das."
 }

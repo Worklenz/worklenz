@@ -1556,7 +1556,12 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
   const toggleSelectAll = () => {
     if (!taskList) return;
     const allTaskIds = taskList
-      .flatMap(task => [task.id, ...(task.sub_tasks?.map(subtask => subtask.id) || [])])
+      .flatMap(task => [
+        ...(task.is_parent_container ? [] : [task.id]),
+        ...(task.sub_tasks
+          ?.filter(subtask => !subtask.is_parent_container)
+          .map(subtask => subtask.id) || []),
+      ])
       .filter(Boolean) as string[];
 
     if (isSelectAll) {
@@ -1579,6 +1584,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
   };
 
   const toggleRowSelection = (task: IProjectTask) => {
+    if (task.is_parent_container) return;
     if (!task.id) return;
     const taskIdsSet = new Set(selectedTaskIdsList);
     const selectedTasksSet = new Set(
@@ -1758,6 +1764,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
   // Now update the renderTaskRow function to use our memoized component
   const renderTaskRow = (task: IProjectTask | undefined, isSubtask = false) => {
     if (!task?.id) return null;
+    const isParentContainer = !!task.is_parent_container;
 
     return (
       <DraggableRow key={task.id} task={task} groupId={tableId}>
@@ -1780,14 +1787,19 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
               }}
             >
               <Flex gap={8} align="center" justify={isSubtask ? 'flex-end' : 'flex-start'}>
-                {!isSubtask && (
+                {!isSubtask && !isParentContainer && (
                   <div {...attributes} {...listeners}>
                     <HolderOutlined style={{ cursor: 'grab' }} />
                   </div>
                 )}
                 <Checkbox
                   checked={selectedTaskIdsList.includes(task.id || '')}
-                  onChange={() => toggleRowSelection(task)}
+                  onChange={() => {
+                    if (!isParentContainer) {
+                      toggleRowSelection(task);
+                    }
+                  }}
+                  disabled={isParentContainer}
                 />
               </Flex>
             </td>
@@ -1821,7 +1833,11 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                   className={`${getColumnStyles(column.key, false)} ${isKeyColumn ? 'sticky-key-column' : ''}`}
                   style={cellStyle}
                   data-task-cell
-                  onContextMenu={e => handleContextMenu(e, task)}
+                  onContextMenu={e => {
+                    if (!isParentContainer) {
+                      handleContextMenu(e, task);
+                    }
+                  }}
                 >
                   <CustomCell
                     column={column}
@@ -2152,7 +2168,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                               {updatedTask?.sub_tasks?.map(subtask =>
                                 subtask?.id ? renderTaskRow(subtask, true) : null
                               )}
-                              {showAddSubtaskFor !== updatedTask.id && (
+                              {!updatedTask.is_parent_container && showAddSubtaskFor !== updatedTask.id && (
                                 <tr key={`add-subtask-link-${updatedTask.id}`}>
                                   <td colSpan={visibleColumns.length + 1}>
                                     <div
@@ -2170,7 +2186,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
                                   </td>
                                 </tr>
                               )}
-                              {showAddSubtaskFor === updatedTask.id && (
+                              {!updatedTask.is_parent_container && showAddSubtaskFor === updatedTask.id && (
                                 <tr key={`add-subtask-input-${updatedTask.id}`}>
                                   <td colSpan={visibleColumns.length + 1}>
                                     <AddTaskListRow groupId={tableId} parentTask={updatedTask.id} />

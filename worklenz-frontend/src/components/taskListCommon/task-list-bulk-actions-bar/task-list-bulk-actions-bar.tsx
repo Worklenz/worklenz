@@ -82,7 +82,7 @@ const TaskListBulkActionsBar = () => {
   const [updatingDelete, setUpdatingDelete] = useState(false);
 
   // Selectors
-  const { selectedTaskIdsList } = useAppSelector(state => state.bulkActionReducer);
+  const { selectedTaskIdsList, selectedTasks } = useAppSelector(state => state.bulkActionReducer);
   const statusList = useAppSelector(state => state.taskStatusReducer.status);
   const priorityList = useAppSelector(state => state.priorityReducer.priorities);
   const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
@@ -227,6 +227,25 @@ const TaskListBulkActionsBar = () => {
       };
       const res = await taskListBulkActionsApiService.archiveTasks(body, archived);
       if (res.done) {
+        const selectedSubtasksCount = selectedTasks.filter(task => !!task.parent_task_id).length;
+        const selectedParentTasksCount = Math.max(
+          selectedTaskIdsList.length - selectedSubtasksCount,
+          0
+        );
+        const actionKey = archived ? 'unarchive' : 'archive';
+
+        alertService.success(
+          t('archiveSuccessTitle', { defaultValue: 'Bulk update complete' }),
+          t('archiveSuccessMessage', {
+            defaultValue:
+              selectedSubtasksCount > 0
+                ? '{{parentCount}} tasks and {{subtaskCount}} subtasks {{action}}d.'
+                : '{{parentCount}} tasks {{action}}d.',
+            parentCount: selectedParentTasksCount,
+            subtaskCount: selectedSubtasksCount,
+            action: actionKey,
+          })
+        );
         trackMixpanelEvent(evt_project_task_list_bulk_archive);
         dispatch(deselectAll());
         dispatch(fetchTaskGroups(projectId));
