@@ -5,10 +5,12 @@ import { TableProps } from 'antd/lib';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
 import logger from '@/utils/errorLogger';
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';
-import { IDeadlineTaskStats, IInsightTasks } from '@/types/project/project-insights.types';
+// import { IDeadlineTaskStats, IInsightTasks } from '@/types/project/project-insights.types';
 import ProjectStatsCard from '@/components/projects/project-stats-card';
 import warningIcon from '@assets/icons/insightsIcons/warning.png';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { IDeadlineTaskStats } from '@/types/project/project-insights.types';
+import { IInsightTasks } from '@/types/project/projectInsights.types';
 
 const ProjectDeadline = () => {
   const { includeArchivedTasks, projectId } = useAppSelector(state => state.projectInsightsReducer);
@@ -44,12 +46,14 @@ const ProjectDeadline = () => {
     {
       key: 'name',
       title: 'Name',
-      render: (record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
+      // render: (record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
+      render: (_: any, record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
     },
     {
       key: 'status',
       title: 'Status',
-      render: (record: IInsightTasks) => (
+      // render: (record: IInsightTasks) => (
+      render: (_: any, record: IInsightTasks) => (
         <Flex
           gap={4}
           style={{
@@ -68,7 +72,7 @@ const ProjectDeadline = () => {
               fontSize: 13,
             }}
           >
-            {record.status}
+            {record.status_name}
           </Typography.Text>
         </Flex>
       ),
@@ -76,7 +80,8 @@ const ProjectDeadline = () => {
     {
       key: 'dueDate',
       title: 'Due Date',
-      render: (record: IInsightTasks) => (
+      // render: (record: IInsightTasks) => (
+      render: (_: any, record: IInsightTasks) => (
         <Typography.Text>
           {record.end_date ? simpleDateFormat(record.end_date) : 'N/A'}
         </Typography.Text>
@@ -115,7 +120,8 @@ const ProjectDeadline = () => {
           className="custom-two-colors-row-table"
           dataSource={data?.tasks}
           columns={columns}
-          rowKey={record => record.taskId}
+          // rowKey={record => record.taskId}
+          rowKey={record => record.id}
           pagination={{
             showSizeChanger: true,
             defaultPageSize: 20,
