@@ -471,14 +471,18 @@ export default class TasksControllerV2 extends TasksControllerBase {
         // Fallback: if parent_task is not provided, this shouldn't happen but handle gracefully
         subTasksFilter = "1 = 0"; // Return no results
       } else {
-        subTasksFilter = "parent_task_id IS NULL";
+        // In archived mode we need archived subtasks too, so they can be shown under parent containers.
+        subTasksFilter =
+          options.archived === "true"
+            ? "(parent_task_id IS NULL OR parent_task_id IS NOT NULL)"
+            : "parent_task_id IS NULL";
       }
     }
 
     const filters = [
       projectIdFilter,
       subTasksFilter,
-      isSubTasks ? "1 = 1" : archivedFilter,
+      archivedFilter,
       isSubTasks ? "1 = 1" : filterByAssignee,
       statusesResult.clause,
       priorityResult.clause,
@@ -623,6 +627,10 @@ export default class TasksControllerV2 extends TasksControllerBase {
              t.parent_task_id,
              t.parent_task_id IS NOT NULL AS is_sub_task,
              (SELECT name FROM tasks WHERE id = t.parent_task_id) AS parent_task_name,
+             (SELECT CONCAT((SELECT key FROM projects WHERE id = p.project_id), '-', p.task_no)
+              FROM tasks p
+              WHERE p.id = t.parent_task_id) AS parent_task_key,
+             (SELECT archived FROM tasks WHERE id = t.parent_task_id) AS parent_task_archived,
              (SELECT COUNT(*)::INT
               FROM tasks subtask
               WHERE subtask.parent_task_id = t.id
@@ -1649,6 +1657,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         id: task.id,
         task_key: task.task_key || "",
         title: task.name || "",
+        name: task.name || "",
         description: task.description || "",
         // Use dynamic status mapping from database
         status: statusCategoryMap[task.status] || task.status,
@@ -1689,6 +1698,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
         priorityColor: task.priority_color,
         // Add subtask count
         sub_tasks_count: task.sub_tasks_count || 0,
+        sub_tasks: task.sub_tasks || [],
+        show_sub_tasks: !!task.show_sub_tasks,
+        is_sub_task: !!task.is_sub_task,
+        parent_task_id: task.parent_task_id || null,
+        parent_task_name: task.parent_task_name || null,
+        parent_task_key: task.parent_task_key || null,
+        parent_task_archived: task.parent_task_archived ?? null,
         // Add flag for auto-expansion when filters match descendants
         has_filtered_children: !!task.has_filtered_children,
         // Add indicator fields for frontend icons
@@ -1700,6 +1716,59 @@ export default class TasksControllerV2 extends TasksControllerBase {
         reporter: task.reporter || null,
       };
     });
+
+    const isArchivedMode = req.query.archived === "true";
+    if (isArchivedMode && !isSubTasks) {
+      const subTasksByParent = new Map<string, any[]>();
+      const topLevelTasks: any[] = [];
+
+      for (const task of transformedTasks) {
+        if (task.parent_task_id) {
+          const parentId = String(task.parent_task_id);
+          const list = subTasksByParent.get(parentId) || [];
+          list.push(task);
+          subTasksByParent.set(parentId, list);
+        } else {
+          topLevelTasks.push(task);
+        }
+      }
+
+      for (const [parentId, subtasks] of subTasksByParent.entries()) {
+        subtasks.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+        const existingParent = topLevelTasks.find((task) => String(task.id) === parentId);
+        if (existingParent) {
+          existingParent.show_sub_tasks = true;
+          existingParent.sub_tasks = subtasks;
+          existingParent.sub_tasks_count = subtasks.length;
+          continue;
+        }
+
+        const [firstSubtask] = subtasks;
+        const syntheticParent = {
+          ...firstSubtask,
+          id: `archived-parent-container-${parentId}`,
+          parent_task_container_id: parentId,
+          task_key: firstSubtask.parent_task_key || firstSubtask.task_key || "",
+          title: firstSubtask.parent_task_name || "Parent Task",
+          name: firstSubtask.parent_task_name || "Parent Task",
+          is_sub_task: false,
+          archived: false,
+          is_parent_container: true,
+          parent_task_not_archived: true,
+          show_sub_tasks: true,
+          sub_tasks: subtasks,
+          sub_tasks_count: subtasks.length,
+          order: Math.max((firstSubtask.order || 0) - 0.001, 0),
+        };
+
+        topLevelTasks.push(syntheticParent);
+      }
+
+      topLevelTasks.sort((a, b) => (a.order || 0) - (b.order || 0));
+      transformedTasks.length = 0;
+      transformedTasks.push(...topLevelTasks);
+    }
 
 
     const groupedResponse: Record<string, any> = {};

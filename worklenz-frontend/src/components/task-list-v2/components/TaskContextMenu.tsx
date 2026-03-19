@@ -229,7 +229,12 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
         trackMixpanelEvent(evt_project_task_list_context_menu_archive);
         
         // Remove task from current view (whether archived or normal)
-        dispatch(deleteTask(task.id));
+        dispatch(
+          deleteTask({
+            taskId: task.id,
+            parentTaskId: task.parent_task_container_id || task.parent_task_id,
+          })
+        );
         dispatch(deselectAll());
         
         // Note: We DON'T call fetchTasksV3 here because:
@@ -551,24 +556,21 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
       });
     }
 
-    // Add Archive/Unarchive for parent tasks only
-    if (!task?.parent_task_id) {
-      items.push({
-        key: 'archive',
-        label: (
-          <button
-            onClick={handleArchive}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
-          >
-            <div className="flex items-center gap-2">
-              <InboxOutlined className="text-gray-500 dark:text-gray-400" />
-              <span>{archived ? t('contextMenu.unarchive') : t('contextMenu.archive')}</span>
-              {isFree && !archived && <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />}
-            </div>
-          </button>
-        ),
-      });
-    }
+    items.push({
+      key: 'archive',
+      label: (
+        <button
+          onClick={handleArchive}
+          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+        >
+          <div className="flex items-center gap-2">
+            <InboxOutlined className="text-gray-500 dark:text-gray-400" />
+            <span>{archived ? t('contextMenu.unarchive') : t('contextMenu.archive')}</span>
+            {isFree && !archived && <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />}
+          </div>
+        </button>
+      ),
+    });
 
     // Add Convert to Sub Task for parent tasks with no subtasks
     if (task?.sub_tasks_count === 0 && !task?.parent_task_id) {

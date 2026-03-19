@@ -41,5 +41,7 @@
   "SET_DUE_DATE": "Set Due Date",
   "CLEAR_DUE_DATE": "Clear Due Date",
   "DUE_DATE_UPDATED": "Due date updated successfully",
-  "DUE_DATE_CLEARED": "Due date cleared successfully"
+  "DUE_DATE_CLEARED": "Due date cleared successfully",
+  "archiveSuccessTitle": "Bulk update complete",
+  "archiveSuccessMessage": "{{parentCount}} tasks and {{subtaskCount}} subtasks {{action}}d."
 }

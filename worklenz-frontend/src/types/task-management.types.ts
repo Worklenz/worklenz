@@ -28,7 +28,10 @@ export interface Task {
   show_sub_tasks?: boolean;
   has_filtered_children?: boolean; // Flag to auto-expand when filtered descendants exist
   parent_task_id?: string;
+  parent_task_container_id?: string;
   is_sub_task?: boolean; // Add this property
+  is_parent_container?: boolean;
+  parent_task_not_archived?: boolean;
   progress?: number;
   weight?: number;
   color?: string;

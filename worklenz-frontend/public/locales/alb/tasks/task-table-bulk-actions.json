@@ -41,5 +41,7 @@
   "SET_DUE_DATE": "Cakto Datën e Afatit",
   "CLEAR_DUE_DATE": "Pastro Datën e Afatit",
   "DUE_DATE_UPDATED": "Data e afatit u përditësua me sukses",
-  "DUE_DATE_CLEARED": "Data e afatit u pastrua me sukses"
+  "DUE_DATE_CLEARED": "Data e afatit u pastrua me sukses",
+  "archiveSuccessTitle": "Përditësimi në grup u krye",
+  "archiveSuccessMessage": "{{parentCount}} detyra dhe {{subtaskCount}} nën-detyra u {{action}}uan."
 }

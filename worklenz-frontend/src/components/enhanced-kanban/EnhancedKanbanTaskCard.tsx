@@ -141,7 +141,13 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
         } else if (subtaskCount > 0) {
           // If we have a subtask count but no loaded subtasks, fetch them
           dispatch(toggleTaskExpansion(task.id));
-          dispatch(fetchBoardSubTasks({ taskId: task.id, projectId }));
+          dispatch(
+            fetchBoardSubTasks({
+              taskId: task.id,
+              projectId,
+              parentTaskIdForQuery: task.parent_task_container_id || task.id,
+            })
+          );
         } else {
           // If no subtasks exist, just toggle visibility (will show empty state)
           dispatch(toggleTaskExpansion(task.id));

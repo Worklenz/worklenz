@@ -65,12 +65,30 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
     const handleToggleExpansion = useCallback(
       (e: React.MouseEvent) => {
         e.stopPropagation();
+        if (task.is_parent_container) {
+          dispatch(toggleTaskExpansion(task.id));
+          return;
+        }
         if (!task.show_sub_tasks && (!task.sub_tasks || task.sub_tasks.length === 0)) {
-          dispatch(fetchSubTasks({ taskId: task.id, projectId }));
+          dispatch(
+            fetchSubTasks({
+              taskId: task.id,
+              projectId,
+              parentTaskIdForQuery: task.parent_task_container_id || task.id,
+            })
+          );
         }
         dispatch(toggleTaskExpansion(task.id));
       },
-      [dispatch, task.id, task.sub_tasks, task.show_sub_tasks, projectId]
+      [
+        dispatch,
+        task.id,
+        task.sub_tasks,
+        task.show_sub_tasks,
+        task.is_parent_container,
+        task.parent_task_container_id,
+        projectId,
+      ]
     );
 
     const handleTaskNameSave = useCallback(() => {
@@ -205,9 +223,13 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
                     onClick={e => {
                       e.stopPropagation();
                       e.preventDefault();
+                      if (task.is_parent_container) return;
                       onEditTaskName(true);
                     }}
-                    onContextMenu={handleContextMenu}
+                    onContextMenu={e => {
+                      if (task.is_parent_container) return;
+                      handleContextMenu(e);
+                    }}
                     title={taskDisplayName}
                   >
                     {taskDisplayName}
@@ -245,6 +267,16 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
                         className="text-gray-500 dark:text-gray-400"
                         style={{ fontSize: 12 }}
                       />
+                    </Tooltip>
+                  )}
+
+                  {task.parent_task_not_archived && (
+                    <Tooltip
+                      title={t('activeParentTooltip', { defaultValue: 'Parent task is not archived' })}
+                    >
+                      <div className="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-[11px] leading-4 text-gray-600 dark:text-gray-300">
+                        {t('activeParentBadge', { defaultValue: 'Active parent' })}
+                      </div>
                     </Tooltip>
                   )}
 

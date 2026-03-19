@@ -175,6 +175,9 @@ const transformV3TaskToProjectTask = (task: any, projectId: string): IProjectTas
   task_key: task.task_key || '',
   project_id: projectId,
   parent_task_id: task.parent_task_id || null,
+  parent_task_container_id: task.parent_task_container_id || undefined,
+  is_parent_container: !!task.is_parent_container,
+  parent_task_not_archived: !!task.parent_task_not_archived,
   status: task.originalStatusId || task.status,
   status_id: task.originalStatusId || task.status,
   status_color: task.statusColor,
@@ -196,8 +199,10 @@ const transformV3TaskToProjectTask = (task: any, projectId: string): IProjectTas
   sub_tasks_count: task.sub_tasks_count || 0,
   total_tasks_count: task.sub_tasks_count || 0,
   completed_count: 0,
-  show_sub_tasks: task.has_filtered_children || false,
-  sub_tasks: [],
+  show_sub_tasks: task.show_sub_tasks || task.has_filtered_children || false,
+  sub_tasks: (task.sub_tasks || []).map((subtask: any) =>
+    transformV3TaskToProjectTask(subtask, projectId)
+  ),
   sub_tasks_loading: false,
   created_at: task.createdAt || task.created_at,
   updated_at: task.updatedAt || task.updated_at,
@@ -352,7 +357,11 @@ export const reorderEnhancedKanbanGroups = createAsyncThunk(
 export const fetchBoardSubTasks = createAsyncThunk(
   'enhancedKanban/fetchBoardSubTasks',
   async (
-    { taskId, projectId }: { taskId: string; projectId: string },
+    {
+      taskId,
+      projectId,
+      parentTaskIdForQuery,
+    }: { taskId: string; projectId: string; parentTaskIdForQuery?: string },
     { rejectWithValue, getState }
   ) => {
     try {
@@ -373,6 +382,7 @@ export const fetchBoardSubTasks = createAsyncThunk(
 
       // Get search value
       const searchValue = state.enhancedKanbanReducer.search || '';
+      const archivedState = state.enhancedKanbanReducer.archived;
 
       // Get current grouping
       const currentGrouping = state.enhancedKanbanReducer.groupBy || 'status';
@@ -380,7 +390,7 @@ export const fetchBoardSubTasks = createAsyncThunk(
       // Use the filtered task list API instead of the basic subtasks API
       const config: ITaskListConfigV2 = {
         id: projectId,
-        archived: false,
+        archived: archivedState,
         group: currentGrouping,
         field: '',
         order: '',
@@ -391,7 +401,7 @@ export const fetchBoardSubTasks = createAsyncThunk(
         isSubtasksInclude: false,
         labels: selectedLabels,
         priorities: selectedPriorities,
-        parent_task: taskId,
+        parent_task: parentTaskIdForQuery || taskId,
       };
 
       const response = await tasksApiService.getTaskListV3(config);
@@ -403,7 +413,7 @@ export const fetchBoardSubTasks = createAsyncThunk(
         name: task.title || task.name,
         task_no: task.task_key,
         project_id: projectId,
-        parent_task_id: taskId,
+        parent_task_id: task.parent_task_id || taskId,
         status_id: task.originalStatusId || task.status,
         priority_id: task.originalPriorityId || task.priority,
         priority_color: task.priorityColor,
@@ -418,9 +428,12 @@ export const fetchBoardSubTasks = createAsyncThunk(
         sub_tasks_count: task.sub_tasks_count || 0,
         total_tasks_count: task.sub_tasks_count || 0,
         completed_count: 0,
-        show_sub_tasks: false,
+        show_sub_tasks: task.show_sub_tasks || task.has_filtered_children || false,
         sub_tasks: [],
         sub_tasks_loading: false,
+        parent_task_container_id: task.parent_task_container_id || undefined,
+        is_parent_container: !!task.is_parent_container,
+        parent_task_not_archived: !!task.parent_task_not_archived,
         created_at: task.createdAt || task.created_at,
         updated_at: task.updatedAt || task.updated_at,
       } as IProjectTask));
@@ -1069,6 +1082,19 @@ const enhancedKanbanSlice = createSlice({
         updateTaskWithSubtask(result.task);
         // Update group cache
         state.groupCache[result.groupId] = result.group;
+        return;
+      }
+
+      // Fallback for synthetic archived parent containers or stale parent references:
+      // remove/add by matching subtask id across all parents.
+      if (mode === 'delete') {
+        state.taskGroups.forEach(group => {
+          group.tasks.forEach(task => {
+            if (!task.sub_tasks?.some(t => t.id === subtask.id)) return;
+            updateTaskWithSubtask(task);
+            state.groupCache[group.id] = group;
+          });
+        });
       }
     },
 
