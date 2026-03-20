@@ -15,7 +15,7 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { Card, Spin, Empty, Alert } from '@/shared/antd-imports';
-import { RootState } from '@/app/store';
+import { RootState , store  } from '@/app/store';
 import {
   selectAllTasks,
   selectLoading,
@@ -26,6 +26,7 @@ import {
   selectTaskGroupsV3,
   fetchSubTasks,
   setSort,
+  updateTask,
 } from '@/features/task-management/task-management.slice';
 import { selectCurrentGrouping } from '@/features/task-management/grouping.slice';
 import {
@@ -784,6 +785,42 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
     [selectedTaskIds, projectId, trackMixpanelEvent, dispatch]
   );
 
+  const handleBulkSetStartDate = useCallback(
+    async (date: string) => {
+      if (!projectId) return;
+      try {
+        const body: IBulkTasksDueDateChangeRequest = {
+          tasks: selectedTaskIds,
+          start_date: date || null,
+        };
+        const res = await taskListBulkActionsApiService.changeStartDate(body, projectId);
+        if (res.done) {
+          trackMixpanelEvent(evt_project_task_list_bulk_change_due_date);
+
+          // Mirror exactly what socket handleStartDateChange does
+          selectedTaskIds.forEach(id => {
+            const currentTask = store.getState().taskManagement.entities[id];
+            if (currentTask) {
+              dispatch(updateTask({
+                ...currentTask,
+                startDate: date || undefined,
+                updatedAt: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              }));
+            }
+          });
+
+          dispatch(deselectAllBulk());
+          dispatch(clearSelection());
+        }
+      } catch (error) {
+        logger.error('Error changing start date:', error);
+        alertService.error('Error', 'Failed to update start date');
+      }
+    },
+    [selectedTaskIds, projectId, trackMixpanelEvent, dispatch]
+  );
+
   // Cleanup effect
   useEffect(() => {
     return () => {
@@ -914,6 +951,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
         onBulkDuplicate={handleBulkDuplicate}
         onBulkExport={handleBulkExport}
         onBulkSetDueDate={handleBulkSetDueDate}
+        onBulkSetStartDate={handleBulkSetStartDate}
       />
 
       <style>{`

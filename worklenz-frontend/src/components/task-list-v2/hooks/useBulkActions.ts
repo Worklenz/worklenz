@@ -55,6 +55,7 @@ export const useBulkActions = () => {
     duplicate: false,
     export: false,
     dueDate: false,
+    startDate: false,
   });
 
   // Helper function to update loading state
@@ -395,6 +396,38 @@ export const useBulkActions = () => {
     [projectId, trackMixpanelEvent, dispatch, refetchTasks, updateLoadingState]
   );
 
+  const handleBulkSetStartDate = useCallback(
+    async (date: string, selectedTaskIds: string[]) => {
+      if (!projectId || !selectedTaskIds.length) return;
+
+      try {
+        updateLoadingState('startDate', true);
+
+        const body: IBulkTasksDueDateChangeRequest = {
+          tasks: selectedTaskIds,
+          start_date: date || null,
+        };
+
+        const res = await taskListBulkActionsApiService.changeStartDate(body, projectId);
+        console.log('START DATE RESPONSE:', res); // temporary log
+        if (res.done) {
+          trackMixpanelEvent(evt_project_task_list_bulk_change_due_date);
+          dispatch(clearSelection());
+          await dispatch(fetchTasksV3(projectId)); // wait for refetch to complete
+        } else {
+          console.log('res.done is false — API did not return done:true');
+          alertService.error('Error', 'Failed to update start date');
+        }
+      } catch (error) {
+        logger.error('Error setting start date:', error);
+        alertService.error('Error', 'Failed to update start date');
+      } finally {
+        updateLoadingState('startDate', false);
+      }
+    },
+    [projectId, trackMixpanelEvent, dispatch, updateLoadingState]
+  );
+
   return {
     handleClearSelection,
     handleBulkStatusChange,
@@ -408,6 +441,7 @@ export const useBulkActions = () => {
     handleBulkDuplicate,
     handleBulkExport,
     handleBulkSetDueDate,
+    handleBulkSetStartDate,
     loadingStates,
   };
 };

@@ -1537,6 +1537,7 @@ const TaskListV2Section: React.FC = () => {
                 onBulkDuplicate={() => bulkActions.handleBulkDuplicate(selectedTaskIds)}
                 onBulkExport={() => bulkActions.handleBulkExport(selectedTaskIds)}
                 onBulkSetDueDate={date => bulkActions.handleBulkSetDueDate(date, selectedTaskIds)}
+                onBulkSetStartDate={date => bulkActions.handleBulkSetStartDate(date, selectedTaskIds)}
               />
             </div>
           )}
