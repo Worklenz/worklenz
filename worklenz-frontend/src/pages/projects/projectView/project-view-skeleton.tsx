@@ -16,18 +16,23 @@ const SkeletonRow: React.FC = () => (
       alignItems: 'center',
       height: 42,
       borderBottom: '1px solid var(--ant-color-border)',
-      gap: 8,
-      paddingInline: 8,
+      gap: 24,
+      paddingInline: 24,
     }}
   >
+    <Skeleton.Button size="small" shape="square" active style={{ width: 28, minWidth: 28 }} />
+    <Skeleton.Input active size="small" style={{ width: 280 }} />
+    <Skeleton.Button active size="small" style={{ width: 80 }} />
+    <Skeleton.Button active size="small" style={{ width: 70 }} />
+
     <Skeleton.Button size="small" shape="circle" active style={{ width: 28, minWidth: 28 }} />
-    <Skeleton.Input active size="small" style={{ width: 220 }} />
-    <div style={{ flex: 1 }} />
-    <Skeleton.Button active size="small" style={{ width: 80 }} />
-    <Skeleton.Button active size="small" style={{ width: 80 }} />
     <Skeleton.Avatar size="small" active />
     <Skeleton.Avatar size="small" active />
-    <Skeleton.Button active size="small" style={{ width: 90 }} />
+    <Skeleton.Button active size="small" style={{ width: 200 }} />
+    <Skeleton.Button active size="small" style={{ width: 150 }} />
+    <Skeleton.Button active size="small" style={{ width: 150 }} />
+    <Skeleton.Button active size="small" style={{ width: 80 }} />
+    <Skeleton.Button active size="small" style={{ width: 110 }} />
   </div>
 );
 
@@ -38,16 +43,16 @@ const SkeletonGroup: React.FC<{ rows: number }> = ({ rows }) => (
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 8,
-        padding: '6px 8px',
+        gap: 12,
+        padding: '8px 12px',
         borderRadius: 4,
-        marginBottom: 2,
+        marginBottom: 6,
         background: 'var(--ant-color-fill-quaternary)',
       }}
     >
       <Skeleton.Button size="small" shape="circle" active style={{ width: 20, minWidth: 20 }} />
-      <Skeleton.Input active size="small" style={{ width: 120 }} />
-      <Skeleton.Button active size="small" style={{ width: 28 }} />
+      <Skeleton.Input active size="small" style={{ width: 170 }} />
+      <Skeleton.Button active size="small" style={{ width: 42 }} />
     </div>
     {/* Task rows */}
     {Array.from({ length: rows }, (_, i) => (
@@ -64,25 +69,25 @@ const ProjectViewSkeleton: React.FC = memo(() => {
         style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          justifyContent: 'flex-start',
           padding: '8px 0',
           marginBottom: 4,
           flexWrap: 'wrap',
-          gap: 8,
+          gap: 12,
         }}
       >
-        <Flex align="center" gap={8}>
+        <Flex align="center" gap={12}>
           <Skeleton.Button active size="small" shape="circle" style={{ width: 28, minWidth: 28 }} />
-          <Skeleton.Input active size="small" style={{ width: 80 }} />
+          <Skeleton.Input active size="small" style={{ width: 110 }} />
           <span style={{ color: 'var(--ant-color-text-quaternary)' }}>/</span>
-          <Skeleton.Input active size="small" style={{ width: 180 }} />
-          <Skeleton.Button active size="small" style={{ width: 60 }} />
-        </Flex>
-        <Flex gap={8}>
+          <Skeleton.Input active size="small" style={{ width: 240 }} />
           <Skeleton.Button active size="small" style={{ width: 90 }} />
-          <Skeleton.Button active size="small" style={{ width: 80 }} />
-          <Skeleton.Button active size="small" style={{ width: 36 }} />
-          <Skeleton.Button active size="small" style={{ width: 36 }} />
+        </Flex>
+        <Flex gap={12}>
+          <Skeleton.Button active size="small" style={{ width: 120 }} />
+          <Skeleton.Button active size="small" style={{ width: 110 }} />
+          <Skeleton.Button active size="small" style={{ width: 44 }} />
+          <Skeleton.Button active size="small" style={{ width: 44 }} />
         </Flex>
       </div>
 
@@ -114,12 +119,11 @@ const ProjectViewSkeleton: React.FC = memo(() => {
       </div>
 
       {/* Filters bar skeleton */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
-        <Skeleton.Button active size="small" style={{ width: 80 }} />
-        <Skeleton.Button active size="small" style={{ width: 80 }} />
-        <Skeleton.Button active size="small" style={{ width: 80 }} />
-        <div style={{ flex: 1 }} />
-        <Skeleton.Button active size="small" style={{ width: 60 }} />
+      <div style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'center' }}>
+        <Skeleton.Button active size="small" style={{ width: 110 }} />
+        <Skeleton.Button active size="small" style={{ width: 110 }} />
+        <Skeleton.Button active size="small" style={{ width: 110 }} />
+        <Skeleton.Button active size="small" style={{ width: 90 }} />
       </div>
 
       {/* Column headers skeleton */}
@@ -136,13 +140,12 @@ const ProjectViewSkeleton: React.FC = memo(() => {
         }}
       >
         <Skeleton.Button size="small" shape="circle" active style={{ width: 20, minWidth: 20 }} />
-        <Skeleton.Input active size="small" style={{ width: 220 }} />
-        <div style={{ flex: 1 }} />
-        <Skeleton.Button active size="small" style={{ width: 80 }} />
-        <Skeleton.Button active size="small" style={{ width: 80 }} />
-        <Skeleton.Button active size="small" style={{ width: 90 }} />
-        <Skeleton.Button active size="small" style={{ width: 90 }} />
-        <Skeleton.Button active size="small" style={{ width: 80 }} />
+        <Skeleton.Input active size="small" style={{ width: 280 }} />
+        <Skeleton.Button active size="small" style={{ width: 110 }} />
+        <Skeleton.Button active size="small" style={{ width: 110 }} />
+        <Skeleton.Button active size="small" style={{ width: 120 }} />
+        <Skeleton.Button active size="small" style={{ width: 120 }} />
+        <Skeleton.Button active size="small" style={{ width: 110 }} />
       </div>
 
       {/* Task groups skeleton */}
