@@ -9,6 +9,7 @@ import { IDeadlineTaskStats, IInsightTasks } from '@/types/project/project-insig
 import ProjectStatsCard from '@/components/projects/project-stats-card';
 import warningIcon from '@assets/icons/insightsIcons/warning.png';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import {format} from 'date-fns'
 
 const ProjectDeadline = () => {
   const { includeArchivedTasks, projectId } = useAppSelector(state => state.projectInsightsReducer);
@@ -89,7 +90,7 @@ const ProjectDeadline = () => {
       className="custom-insights-card"
       title={
         <Typography.Text style={{ fontSize: 16, fontWeight: 500 }}>
-          Project Deadline <span style={{ color: colors.lightGray }}>{data?.project_end_date}</span>
+          Project Deadline <span style={{ color: colors.lightGray }}>{data?.project_end_date?format(new Date(data.project_end_date),'yyyy-MM-dd'):''}</span>
         </Typography.Text>
       }
       style={{ width: '100%' }}
