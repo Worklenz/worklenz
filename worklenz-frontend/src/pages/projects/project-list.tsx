@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ProjectViewType, ProjectGroupBy } from '@/types/project/project.types';
 import { setViewMode, setGroupBy } from '@features/project/project-view-slice';
@@ -90,16 +90,35 @@ const SEARCH_DEBOUNCE_MS = 500;
 const MAX_SEARCH_LENGTH = 100;
 const DEFAULT_PROJECT_SORT_FIELD = 'name';
 const DEFAULT_PROJECT_SORT_ORDER = 'ascend';
+const SEARCH_QUERY_PARAM = 'search';
+const PAGE_QUERY_PARAM = 'page';
+const SIZE_QUERY_PARAM = 'size';
+
+const parsePositiveIntegerParam = (value: string | null): number | null => {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return null;
+  }
+
+  return parsed;
+};
 
 const ProjectList: React.FC = () => {
   const [filteredInfo, setFilteredInfo] = useState<Record<string, FilterValue | null>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const hasHydratedSearchFromUrl = useRef(false);
+  const hasHydratedPaginationFromUrl = useRef(false);
 
   const { t } = useTranslation('all-project-list');
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const [urlSearchParams, setUrlSearchParams] = useSearchParams();
   useDocumentTitle('Projects');
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
   const { trackMixpanelEvent } = useMixpanelTracking();
@@ -700,6 +719,86 @@ const ProjectList: React.FC = () => {
     }
   }, [dispatch, getFilterIndex, groupBy, groupedRequestParams.groupBy, requestParams.filter]);
 
+  // Hydrate search from URL once on initial load
+  useEffect(() => {
+    if (hasHydratedSearchFromUrl.current) {
+      return;
+    }
+    hasHydratedSearchFromUrl.current = true;
+
+    const searchFromUrl = (urlSearchParams.get(SEARCH_QUERY_PARAM) || '').trim();
+
+    if (!searchFromUrl) {
+      return;
+    }
+
+    if (requestParams.search !== searchFromUrl) {
+      dispatch(
+        setRequestParams({
+          search: searchFromUrl,
+          index: 1,
+        })
+      );
+    }
+
+    if (groupedRequestParams.search !== searchFromUrl) {
+      dispatch(
+        setGroupedRequestParams(
+          buildGroupedParams({
+            search: searchFromUrl,
+            index: 1,
+          })
+        )
+      );
+    }
+
+    setSearchValue(prevValue => (prevValue === searchFromUrl ? prevValue : searchFromUrl));
+  }, [
+    dispatch,
+    urlSearchParams,
+    requestParams.search,
+    groupedRequestParams.search,
+    buildGroupedParams,
+  ]);
+
+  // Hydrate pagination from URL once on initial load
+  useEffect(() => {
+    if (hasHydratedPaginationFromUrl.current) {
+      return;
+    }
+    hasHydratedPaginationFromUrl.current = true;
+
+    const pageFromUrl = parsePositiveIntegerParam(urlSearchParams.get(PAGE_QUERY_PARAM));
+    const sizeFromUrl = parsePositiveIntegerParam(urlSearchParams.get(SIZE_QUERY_PARAM));
+
+    const listUpdates: Partial<typeof requestParams> = {};
+    const groupedUpdates: Partial<typeof groupedRequestParams> = {};
+
+    if (pageFromUrl && pageFromUrl !== requestParams.index) {
+      listUpdates.index = pageFromUrl;
+      groupedUpdates.index = pageFromUrl;
+    }
+
+    if (sizeFromUrl && sizeFromUrl !== requestParams.size) {
+      listUpdates.size = sizeFromUrl;
+      groupedUpdates.size = sizeFromUrl;
+    }
+
+    if (Object.keys(listUpdates).length > 0) {
+      dispatch(setRequestParams(listUpdates));
+    }
+
+    if (Object.keys(groupedUpdates).length > 0) {
+      dispatch(setGroupedRequestParams(buildGroupedParams(groupedUpdates)));
+    }
+  }, [
+    dispatch,
+    urlSearchParams,
+    requestParams.index,
+    requestParams.size,
+    buildGroupedParams,
+  ]);
+
   // Separate effect for tracking page visits - only run once
   useEffect(() => {
     trackMixpanelEvent(evt_projects_page_visit);
@@ -751,14 +850,90 @@ const ProjectList: React.FC = () => {
     loadLookups();
   }, [dispatch, projectStatuses.length, projectCategories.length, projectHealths.length]);
 
-  // Sync search input value with Redux state
+  // Sync search input only when Redux search changes (e.g. external resets/view switches)
   useEffect(() => {
     const currentSearch =
       viewMode === ProjectViewType.LIST ? requestParams.search : groupedRequestParams.search;
-    if (searchValue !== (currentSearch || '')) {
-      setSearchValue(currentSearch || '');
+
+    setSearchValue(prevValue => {
+      const normalizedSearch = currentSearch || '';
+      return prevValue === normalizedSearch ? prevValue : normalizedSearch;
+    });
+  }, [requestParams.search, groupedRequestParams.search, viewMode]);
+
+  // Keep URL search query in sync with the active view search
+  useEffect(() => {
+    const activeSearch =
+      (viewMode === ProjectViewType.LIST ? requestParams.search : groupedRequestParams.search) || '';
+    const normalizedSearch = activeSearch.trim();
+    const currentUrlSearch = (urlSearchParams.get(SEARCH_QUERY_PARAM) || '').trim();
+
+    if (currentUrlSearch === normalizedSearch) {
+      return;
     }
-  }, [requestParams.search, groupedRequestParams.search, viewMode, searchValue]);
+
+    setUrlSearchParams(
+      prevParams => {
+        const nextParams = new URLSearchParams(prevParams);
+
+        if (normalizedSearch) {
+          nextParams.set(SEARCH_QUERY_PARAM, normalizedSearch);
+        } else {
+          nextParams.delete(SEARCH_QUERY_PARAM);
+        }
+
+        return nextParams;
+      },
+      { replace: true }
+    );
+  }, [
+    viewMode,
+    requestParams.search,
+    groupedRequestParams.search,
+    urlSearchParams,
+    setUrlSearchParams,
+  ]);
+
+  // Keep URL pagination query in sync with active view pagination
+  useEffect(() => {
+    const activeIndex =
+      viewMode === ProjectViewType.LIST ? requestParams.index : groupedRequestParams.index;
+    const activeSize = viewMode === ProjectViewType.LIST ? requestParams.size : groupedRequestParams.size;
+
+    const normalizedPage = activeIndex || 1;
+    const normalizedSize = activeSize || DEFAULT_PAGE_SIZE;
+
+    const desiredPage = normalizedPage.toString();
+    const desiredSize = normalizedSize.toString();
+    const currentUrlPage = urlSearchParams.get(PAGE_QUERY_PARAM) || '';
+    const currentUrlSize = urlSearchParams.get(SIZE_QUERY_PARAM) || '';
+
+    const isSamePage = currentUrlPage === desiredPage;
+    const isSameSize = currentUrlSize === desiredSize;
+
+    if (isSamePage && isSameSize) {
+      return;
+    }
+
+    setUrlSearchParams(
+      prevParams => {
+        const nextParams = new URLSearchParams(prevParams);
+        nextParams.set(PAGE_QUERY_PARAM, desiredPage);
+        nextParams.set(SIZE_QUERY_PARAM, desiredSize);
+
+        return nextParams;
+      },
+      { replace: true }
+    );
+  }, [
+    viewMode,
+    requestParams.index,
+    requestParams.size,
+    groupedRequestParams.index,
+    groupedRequestParams.size,
+    urlSearchParams,
+    setUrlSearchParams,
+  ]);
 
   // Optimize loading state management
   useEffect(() => {
