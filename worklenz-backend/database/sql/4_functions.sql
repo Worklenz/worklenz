@@ -158,15 +158,20 @@ DECLARE
     _archive_value BOOLEAN = ((_body ->> 'type')::TEXT = 'archive');
     _output        JSON;
 BEGIN
-    WITH selected_ids AS (SELECT DISTINCT (elem.value ->> 'id')::UUID AS id
-                          FROM JSON_ARRAY_ELEMENTS((_body ->> 'tasks')::JSON) AS elem(value)),
-         parent_ids AS (SELECT id FROM tasks WHERE id IN (SELECT id FROM selected_ids) AND parent_task_id IS NULL),
-         selected_and_descendants AS (SELECT id
-                                      FROM selected_ids
-                                      UNION
-                                      SELECT t.id
-                                      FROM tasks t
-                                      WHERE t.parent_task_id IN (SELECT id FROM parent_ids))
+    WITH RECURSIVE selected_ids AS (
+        SELECT DISTINCT (elem.value ->> 'id')::UUID AS id
+        FROM JSON_ARRAY_ELEMENTS((_body ->> 'tasks')::JSON) AS elem(value)
+    ),
+    selected_and_descendants AS (
+        -- Base set: explicitly selected tasks (supports direct subtask selection)
+        SELECT id
+        FROM selected_ids
+        UNION
+        -- Recursive set: include all descendants at any nesting level
+        SELECT t.id
+        FROM tasks t
+                 INNER JOIN selected_and_descendants sd ON t.parent_task_id = sd.id
+    )
     UPDATE tasks
     SET archived = _archive_value
     WHERE id IN (SELECT id FROM selected_and_descendants);

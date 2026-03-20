@@ -62,6 +62,7 @@ const initialState: TaskManagementState = {
   entities: {},
   loading: false,
   error: null,
+  loadedProjectId: null,
   groups: [],
   grouping: undefined,
   selectedPriorities: [],
@@ -912,6 +913,7 @@ const taskManagementSlice = createSlice({
     resetTaskManagement: state => {
       state.loading = false;
       state.error = null;
+      state.loadedProjectId = null;
       state.groups = [];
       state.grouping = undefined;
       state.selectedPriorities = [];
@@ -1123,6 +1125,7 @@ const taskManagementSlice = createSlice({
       })
       .addCase(fetchTasksV3.fulfilled, (state, action) => {
         state.loading = false;
+        state.loadedProjectId = action.meta.arg;
         const { allTasks, groups, grouping } = action.payload;
 
         // Preserve existing timer state from old tasks before replacing

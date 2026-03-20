@@ -181,9 +181,15 @@ const transformV3TaskToProjectTask = (task: any, projectId: string): IProjectTas
   status: task.originalStatusId || task.status,
   status_id: task.originalStatusId || task.status,
   status_color: task.statusColor,
-  priority: task.originalPriorityId || task.priority,
-  priority_color: task.priorityColor,
-  priority_value: task.priority === 'high' ? 2 : task.priority === 'medium' ? 1 : 0,
+  priority: task.is_parent_container ? undefined : (task.originalPriorityId || task.priority),
+  priority_color: task.is_parent_container ? undefined : task.priorityColor,
+  priority_value: task.is_parent_container
+    ? undefined
+    : task.priority === 'high'
+      ? 2
+      : task.priority === 'medium'
+        ? 1
+        : 0,
   phase_id: task.phase_id || null,
   phase_name: task.phase || '',
   end_date: task.dueDate || task.end_date,
@@ -528,6 +534,61 @@ const deleteTaskFromGroup = (
   }
 };
 
+const removeTaskFromCacheRecursively = (
+  task: IProjectTask | undefined,
+  taskCache: Record<string, IProjectTask>
+): void => {
+  if (!task) return;
+  if (task.id) {
+    delete taskCache[task.id];
+  }
+  (task.sub_tasks || []).forEach(subTask => removeTaskFromCacheRecursively(subTask, taskCache));
+};
+
+const removeTaskFromNestedSubtasks = (
+  parent: IProjectTask,
+  taskId: string,
+  taskCache: Record<string, IProjectTask>
+): boolean => {
+  if (!parent.sub_tasks?.length) return false;
+
+  const directIndex = parent.sub_tasks.findIndex(st => st.id === taskId);
+  if (directIndex !== -1) {
+    const [removedSubtask] = parent.sub_tasks.splice(directIndex, 1);
+    parent.sub_tasks_count = Math.max(0, (parent.sub_tasks_count || 1) - 1);
+    removeTaskFromCacheRecursively(removedSubtask, taskCache);
+    return true;
+  }
+
+  for (const child of parent.sub_tasks) {
+    if (removeTaskFromNestedSubtasks(child, taskId, taskCache)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+const cleanupEmptyParentContainers = (
+  taskGroups: ITaskListGroup[],
+  taskCache: Record<string, IProjectTask>
+): void => {
+  taskGroups.forEach(group => {
+    group.tasks = group.tasks.filter(task => {
+      const isEmptyContainer =
+        !!task.is_parent_container &&
+        (!task.sub_tasks || task.sub_tasks.length === 0 || (task.sub_tasks_count || 0) <= 0);
+      if (isEmptyContainer) {
+        if (task.id) {
+          delete taskCache[task.id];
+        }
+        return false;
+      }
+      return true;
+    });
+  });
+};
+
 const enhancedKanbanSlice = createSlice({
   name: 'enhancedKanbanReducer',
   initialState,
@@ -870,15 +931,37 @@ const enhancedKanbanSlice = createSlice({
     // Task deletion
     deleteTask: (state, action: PayloadAction<string>) => {
       const taskId = action.payload;
+      let removed = false;
 
-      // Remove from all groups
+      for (const group of state.taskGroups) {
+        const taskIndex = group.tasks.findIndex(task => task.id === taskId);
+        if (taskIndex !== -1) {
+          const [removedTask] = group.tasks.splice(taskIndex, 1);
+          removeTaskFromCacheRecursively(removedTask, state.taskCache);
+          removed = true;
+          break;
+        }
+
+        for (const parentTask of group.tasks) {
+          if (removeTaskFromNestedSubtasks(parentTask, taskId, state.taskCache)) {
+            removed = true;
+            break;
+          }
+        }
+
+        if (removed) break;
+      }
+
+      cleanupEmptyParentContainers(state.taskGroups, state.taskCache);
       state.taskGroups.forEach(group => {
-        group.tasks = group.tasks.filter(task => task.id !== taskId);
+        state.groupCache[group.id] = group;
       });
 
-      // Remove from caches
-      delete state.taskCache[taskId];
+      if (!removed) {
+        delete state.taskCache[taskId];
+      }
       state.selectedTaskIds = state.selectedTaskIds.filter(id => id !== taskId);
+      delete state.expandedSubtasks[taskId];
     },
 
     // Reset state
@@ -1054,8 +1137,12 @@ const enhancedKanbanSlice = createSlice({
           task.sub_tasks.push({ ...subtask });
         } else {
           // Remove the subtask
-          task.sub_tasks = task.sub_tasks.filter(t => t.id !== subtask.id);
-          task.sub_tasks_count = Math.max(0, (task.sub_tasks_count || 1) - 1);
+          const subtaskIndex = task.sub_tasks.findIndex(t => t.id === subtask.id);
+          if (subtaskIndex !== -1) {
+            const [removedSubtask] = task.sub_tasks.splice(subtaskIndex, 1);
+            task.sub_tasks_count = Math.max(0, (task.sub_tasks_count || 1) - 1);
+            removeTaskFromCacheRecursively(removedSubtask, state.taskCache);
+          }
         }
 
         // Update cache
@@ -1090,12 +1177,18 @@ const enhancedKanbanSlice = createSlice({
       if (mode === 'delete') {
         state.taskGroups.forEach(group => {
           group.tasks.forEach(task => {
-            if (!task.sub_tasks?.some(t => t.id === subtask.id)) return;
-            updateTaskWithSubtask(task);
-            state.groupCache[group.id] = group;
+            if (!subtask.id) return;
+            if (removeTaskFromNestedSubtasks(task, subtask.id, state.taskCache)) {
+              state.groupCache[group.id] = group;
+            }
           });
         });
       }
+
+      cleanupEmptyParentContainers(state.taskGroups, state.taskCache);
+      state.taskGroups.forEach(group => {
+        state.groupCache[group.id] = group;
+      });
     },
 
     setEditableSection: (state, action: PayloadAction<string | null>) => {

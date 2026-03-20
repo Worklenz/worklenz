@@ -37,7 +37,6 @@ import {
   fetchBoardSubTasks,
   deleteTask as deleteKanbanTask,
   updateEnhancedKanbanSubtask,
-  fetchEnhancedKanbanGroups,
   updateEnhancedKanbanTaskAssignees,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import TaskProgressCircle from './TaskProgressCircle';
@@ -307,7 +306,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
 
     // Archive/Unarchive logic
     const handleArchiveTask = async (task: IProjectTask | null) => {
-      if (!task || !task.id || !projectId) return;
+      if (!task || !task.id || !projectId || task.is_parent_container) return;
       
       try {
         const body = {
@@ -494,6 +493,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
             onDragEnd={onDragEnd} // <-- add this
             onClick={e => handleCardClick(e, task.id!)}
             onContextMenu={e => {
+              if (task.is_parent_container) return;
               e.preventDefault();
               setContextMenu({ visible: true, x: e.clientX, y: e.clientY });
               setSelectedTask(task);
@@ -522,15 +522,17 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                 ))}
               </div>
               <div className="task-content" style={{ display: 'flex', alignItems: 'center' }}>
-                <span
-                  className="w-2 h-2 rounded-full inline-block"
-                  style={{
-                    backgroundColor:
-                      themeMode === 'dark'
-                        ? task.priority_color_dark || task.priority_color || '#d9d9d9'
-                        : task.priority_color || '#d9d9d9',
-                  }}
-                ></span>
+                {!task.is_parent_container && (
+                  <span
+                    className="w-2 h-2 rounded-full inline-block"
+                    style={{
+                      backgroundColor:
+                        themeMode === 'dark'
+                          ? task.priority_color_dark || task.priority_color || '#d9d9d9'
+                          : task.priority_color || '#d9d9d9',
+                    }}
+                  ></span>
+                )}
                 <div className="task-title" title={task.name} style={{ marginLeft: 8 }}>
                   {task.name}
                 </div>
@@ -791,7 +793,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                           setSelectedTask(sub);
                         }}
                       >
-                        {sub.priority_color || sub.priority_color_dark ? (
+                        {!sub.is_parent_container && (sub.priority_color || sub.priority_color_dark) ? (
                           <span
                             className="w-2 h-2 rounded-full inline-block"
                             style={{

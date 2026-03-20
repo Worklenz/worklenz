@@ -239,10 +239,12 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
           </Flex>
           <Flex gap={4} align="center">
             {/* Action Icons */}
-            <div
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: task.priority_color || '#d9d9d9' }}
-            />
+            {!task.is_parent_container && (
+              <div
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: task.priority_color || '#d9d9d9' }}
+              />
+            )}
             <Typography.Text style={{ fontWeight: 500 }} ellipsis={{ tooltip: safeTextDisplay(task.name) }}>
               {safeTextDisplay(task.name)}
             </Typography.Text>

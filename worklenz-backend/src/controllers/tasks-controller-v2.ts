@@ -1721,8 +1721,15 @@ export default class TasksControllerV2 extends TasksControllerBase {
     if (isArchivedMode && !isSubTasks) {
       const subTasksByParent = new Map<string, any[]>();
       const topLevelTasks: any[] = [];
+      // Track all real task IDs present in the archived payload (top-level + nested).
+      // This prevents creating duplicate synthetic parent containers when a real parent
+      // task exists but is not a top-level row.
+      const existingRealTaskIds = new Set<string>();
 
       for (const task of transformedTasks) {
+        if (task.id) {
+          existingRealTaskIds.add(String(task.id));
+        }
         if (task.parent_task_id) {
           const parentId = String(task.parent_task_id);
           const list = subTasksByParent.get(parentId) || [];
@@ -1744,6 +1751,12 @@ export default class TasksControllerV2 extends TasksControllerBase {
           continue;
         }
 
+        // Parent exists in the archived dataset as a real task (likely nested under another
+        // archived parent). Skip synthetic container to avoid duplicated standalone rows.
+        if (existingRealTaskIds.has(parentId)) {
+          continue;
+        }
+
         const [firstSubtask] = subtasks;
         const syntheticParent = {
           ...firstSubtask,
@@ -1756,6 +1769,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
           archived: false,
           is_parent_container: true,
           parent_task_not_archived: true,
+          // Synthetic rows are structural containers, not real tasks.
+          // Keep priority unset so UI does not display misleading inherited values.
+          priority: null,
+          originalPriorityId: null,
+          priorityColor: null,
+          priority_color: null,
+          priority_value: null,
           show_sub_tasks: true,
           sub_tasks: subtasks,
           sub_tasks_count: subtasks.length,

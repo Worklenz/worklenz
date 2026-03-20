@@ -111,6 +111,7 @@ export interface TaskManagementState {
   entities: Record<string, Task>;
   loading: boolean;
   error: string | null;
+  loadedProjectId: string | null;
   groups: TaskGroup[];
   grouping: string | undefined;
   selectedPriorities: string[];

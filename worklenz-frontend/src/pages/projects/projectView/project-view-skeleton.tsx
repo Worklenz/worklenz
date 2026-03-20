@@ -58,7 +58,7 @@ const SkeletonGroup: React.FC<{ rows: number }> = ({ rows }) => (
 
 const ProjectViewSkeleton: React.FC = memo(() => {
   return (
-    <div style={{ marginBlockEnd: 12, minHeight: '80vh' }}>
+    <div style={{ marginBlockEnd: 12, minHeight: '80vh', paddingTop: 24 }}>
       {/* Header skeleton */}
       <div
         style={{
