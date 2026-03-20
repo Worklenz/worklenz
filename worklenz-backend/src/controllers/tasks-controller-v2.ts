@@ -631,6 +631,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
               FROM tasks p
               WHERE p.id = t.parent_task_id) AS parent_task_key,
              (SELECT archived FROM tasks WHERE id = t.parent_task_id) AS parent_task_archived,
+             (SELECT priority_id FROM tasks WHERE id = t.parent_task_id) AS parent_task_priority_id,
+             (SELECT value
+              FROM task_priorities
+              WHERE id = (SELECT priority_id FROM tasks WHERE id = t.parent_task_id)) AS parent_task_priority_value,
+             (SELECT color_code
+              FROM task_priorities
+              WHERE id = (SELECT priority_id FROM tasks WHERE id = t.parent_task_id)) AS parent_task_priority_color,
              (SELECT COUNT(*)::INT
               FROM tasks subtask
               WHERE subtask.parent_task_id = t.id
@@ -1705,6 +1712,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
         parent_task_name: task.parent_task_name || null,
         parent_task_key: task.parent_task_key || null,
         parent_task_archived: task.parent_task_archived ?? null,
+        parent_task_priority_id: task.parent_task_priority_id || null,
+        parent_task_priority_value: task.parent_task_priority_value ?? null,
+        parent_task_priority_color: task.parent_task_priority_color || null,
         // Add flag for auto-expansion when filters match descendants
         has_filtered_children: !!task.has_filtered_children,
         // Add indicator fields for frontend icons
@@ -1769,13 +1779,15 @@ export default class TasksControllerV2 extends TasksControllerBase {
           archived: false,
           is_parent_container: true,
           parent_task_not_archived: true,
-          // Synthetic rows are structural containers, not real tasks.
-          // Keep priority unset so UI does not display misleading inherited values.
-          priority: null,
-          originalPriorityId: null,
-          priorityColor: null,
-          priority_color: null,
-          priority_value: null,
+          // Synthetic rows should reflect the real parent task's priority when available.
+          priority:
+            priorityMap[firstSubtask.parent_task_priority_value?.toString()] ||
+            firstSubtask.priority ||
+            "medium",
+          originalPriorityId: firstSubtask.parent_task_priority_id || null,
+          priorityColor: firstSubtask.parent_task_priority_color || null,
+          priority_color: firstSubtask.parent_task_priority_color || null,
+          priority_value: firstSubtask.parent_task_priority_value ?? null,
           show_sub_tasks: true,
           sub_tasks: subtasks,
           sub_tasks_count: subtasks.length,
