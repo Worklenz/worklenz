@@ -174,6 +174,7 @@ const SortablePhaseItem: React.FC<PhaseItemProps & { id: string }> = ({
               onChange={e => setEditName(e.target.value)}
               onBlur={handleSave}
               onKeyDown={handleKeyDown}
+              maxLength={50}
               className={`font-medium text-xs border-0 px-1 py-1 shadow-none ${
                 isDarkMode
                   ? 'bg-transparent text-gray-200 placeholder-gray-400'
@@ -507,6 +508,7 @@ const ManagePhaseModal: React.FC<ManagePhaseModalProps> = ({ open, onClose, proj
               onChange={e => setPhaseName(e.currentTarget.value)}
               onPressEnter={handlePhaseNameBlur}
               onBlur={handlePhaseNameBlur}
+              maxLength={50}
               disabled={isSaving}
               size="small"
             />
@@ -545,6 +547,7 @@ const ManagePhaseModal: React.FC<ManagePhaseModalProps> = ({ open, onClose, proj
                 value={newPhaseName}
                 onChange={e => setNewPhaseName(e.target.value)}
                 onKeyDown={handleKeyDown}
+                maxLength={50}
                 className={`flex-1 ${
                   isDarkMode
                     ? 'bg-gray-600 border-gray-500 text-gray-100 placeholder-gray-400'
