@@ -76,6 +76,14 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+const parseCsvOrigins = (value?: string): string[] => {
+  if (!value) return [];
+  return value
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+};
+
 // CORS configuration
 const allowedOrigins = [
   isProduction()
@@ -88,11 +96,11 @@ const allowedOrigins = [
         `https://react.worklenz.com`,
         `https://www.react.worklenz.com`,
         `https://wl-client.ceydigital.dev`,
-        `https://appleid.apple.com`,  // Allow Apple Sign-In OAuth requests
+        `https://appleid.apple.com`, // Allow Apple Sign-In OAuth requests
         `https://api.ncinga.worklenz.com`,
-        process.env.SERVER_CORS || "",  // Add hostname from env
-        process.env.FRONTEND_URL || ""  // Support FRONTEND_URL as well
-      ].filter(Boolean)  // Remove empty strings
+        `https://ncinga.worklenz.com`,
+        `https://www.ncinga.worklenz.com`,
+      ]
     : [
       "http://localhost:3000",
       "http://localhost:5173",
@@ -101,11 +109,14 @@ const allowedOrigins = [
       "http://127.0.0.1:3000",
       "http://127.0.0.1:5000",
       `http://localhost:5000`,
-      `https://appleid.apple.com`,  // Allow Apple Sign-In OAuth requests
-      process.env.SERVER_CORS || "",  // Add hostname from env
-      process.env.FRONTEND_URL || ""  // Support FRONTEND_URL as well
-    ].filter(Boolean)  // Remove empty strings
+      `https://appleid.apple.com`, // Allow Apple Sign-In OAuth requests
+    ]
 ].flat();
+
+allowedOrigins.push(
+  ...parseCsvOrigins(process.env.SERVER_CORS),
+  ...parseCsvOrigins(process.env.FRONTEND_URL)
+);
 
 app.use(cors({
   origin: (origin, callback) => {
