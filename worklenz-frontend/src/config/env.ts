@@ -24,7 +24,22 @@ export const getApiUrl = (): string => {
     return import.meta.env.VITE_API_URL;
   }
 
-  // Default for development
+  // Fallback for deployed environments when VITE_API_URL is not injected.
+  // Example: ncinga.worklenz.com -> api.ncinga.worklenz.com
+  // Example: app.worklenz.com -> api.worklenz.com
+  const { protocol, hostname } = window.location;
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+  if (!isLocalhost && hostname.includes('.')) {
+    if (hostname.startsWith('app.')) {
+      return `${protocol}//api.${hostname.slice(4)}`;
+    }
+
+    if (!hostname.startsWith('api.')) {
+      return `${protocol}//api.${hostname}`;
+    }
+  }
+
+  // Default for local development
   return 'http://localhost:3000';
 };
 
