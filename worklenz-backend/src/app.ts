@@ -89,6 +89,7 @@ const allowedOrigins = [
         `https://www.react.worklenz.com`,
         `https://wl-client.ceydigital.dev`,
         `https://appleid.apple.com`,  // Allow Apple Sign-In OAuth requests
+        `https://api.ncinga.worklenz.com`,
         process.env.SERVER_CORS || "",  // Add hostname from env
         process.env.FRONTEND_URL || ""  // Support FRONTEND_URL as well
       ].filter(Boolean)  // Remove empty strings
