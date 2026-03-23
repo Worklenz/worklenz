@@ -96,5 +96,7 @@
   "expiredDayAgo": "{{days}}天前",
   "expiredDaysAgo": "{{days}}天前",
   "continueWith": "继续使用{{plan}}",
-  "changeToPlan": "更改为{{plan}}"
+  "changeToPlan": "更改为{{plan}}",
+  "managementUrl": "管理链接",
+  "updateCardDetails": "更新银行卡信息"
 }

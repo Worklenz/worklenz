@@ -246,6 +246,17 @@ const CurrentPlanDetails = () => {
     );
   }, [billingInfo]);
 
+  const shouldShowManagementUrl = useMemo(() => {
+    const managementUrl = billingInfo?.cancel_url;
+    if (!managementUrl) return false;
+
+    const subscriptionType = billingInfo?.subscription_type || currentSession?.subscription_type;
+    return (
+      subscriptionType === ISUBSCRIPTION_TYPE.PADDLE ||
+      subscriptionType === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS
+    );
+  }, [billingInfo?.cancel_url, billingInfo?.subscription_type, currentSession?.subscription_type]);
+
   const isAppSumoUser = useMemo(() => {
     const planName = billingInfo?.plan_name?.toLowerCase() || '';
     const subscriptionType = currentSession?.subscription_type?.toLowerCase() || '';
@@ -648,6 +659,21 @@ const CurrentPlanDetails = () => {
     >
       <Flex vertical>
         <div style={{ marginBottom: '14px' }}>{renderSubscriptionContent()}</div>
+
+        {shouldShowManagementUrl && (
+          <Flex vertical style={{ marginBottom: 12 }}>
+            <Typography.Text strong>
+              {t('managementUrl', { defaultValue: 'Management URL' })}
+            </Typography.Text>
+            <Typography.Link
+              href={billingInfo?.cancel_url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t('updateCardDetails', { defaultValue: 'Update card details' })}
+            </Typography.Link>
+          </Flex>
+        )}
 
         {shouldShowAppSumoBusinessUnlock && (
           <Alert
