@@ -175,6 +175,7 @@ const SortablePhaseItem: React.FC<PhaseItemProps & { id: string }> = ({
               onBlur={handleSave}
               onKeyDown={handleKeyDown}
               maxLength={50}
+              showCount
               className={`font-medium text-xs border-0 px-1 py-1 shadow-none ${
                 isDarkMode
                   ? 'bg-transparent text-gray-200 placeholder-gray-400'
@@ -502,6 +503,7 @@ const ManagePhaseModal: React.FC<ManagePhaseModalProps> = ({ open, onClose, proj
             >
               {t('phaseLabel')}
             </Text>
+            {/* Input 3 — Phase label */}
             <Input
               placeholder={t('enterPhaseName')}
               value={phaseName}
@@ -509,6 +511,7 @@ const ManagePhaseModal: React.FC<ManagePhaseModalProps> = ({ open, onClose, proj
               onPressEnter={handlePhaseNameBlur}
               onBlur={handlePhaseNameBlur}
               maxLength={50}
+              showCount
               disabled={isSaving}
               size="small"
             />
@@ -542,12 +545,14 @@ const ManagePhaseModal: React.FC<ManagePhaseModalProps> = ({ open, onClose, proj
             } shadow-sm`}
           >
             <div className="flex gap-2">
+              {/* Input 2 — Add new phase */}
               <Input
                 placeholder={t('enterNewPhaseName')}
                 value={newPhaseName}
                 onChange={e => setNewPhaseName(e.target.value)}
                 onKeyDown={handleKeyDown}
                 maxLength={50}
+                showCount
                 className={`flex-1 ${
                   isDarkMode
                     ? 'bg-gray-600 border-gray-500 text-gray-100 placeholder-gray-400'
