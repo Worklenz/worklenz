@@ -1,0 +1,14 @@
+{
+  "taskList": "Lista zadań",
+  "board": "Tablica",
+  "insights": "Wglądy",
+  "files": "Pliki",
+  "members": "Członkowie",
+  "updates": "Aktualizacje",
+  "projectView": "Widok projektu",
+  "loading": "Ładowanie projektu...",
+  "error": "Błąd ładowania projektu",
+  "pinnedTab": "Przypięta jako domyślna zakładka",
+  "pinTab": "Przypnij jako domyślną zakładkę",
+  "unpinTab": "Odepnij domyślną zakładkę"
+}

@@ -1,0 +1,18 @@
+{
+  "nameColumn": "Imię",
+  "jobTitleColumn": "Stanowisko",
+  "emailColumn": "E-mail",
+  "tasksColumn": "Zadania",
+  "taskProgressColumn": "Postęp zadania",
+  "accessColumn": "Dostęp",
+  "fileIconAlt": "Ikona pliku",
+  "deleteConfirmationTitle": "Czy na pewno?",
+  "deleteConfirmationOk": "Tak",
+  "deleteConfirmationCancel": "Anuluj",
+  "refreshButtonTooltip": "Odśwież członków",
+  "deleteButtonTooltip": "Usuń z projektu",
+  "memberCount": "Członek",
+  "membersCountPlural": "Członkowie",
+  "emptyText": "Brak załączników w projekcie.",
+  "searchPlaceholder": "Szukaj członków"
+}

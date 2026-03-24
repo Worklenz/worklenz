@@ -26,6 +26,12 @@ export const currentDateString = (): string => {
     case 'alb':
       locale = 'sq'; // Albanian locale code for dayjs
       break;
+    case 'pl':
+      locale = 'pl';
+      break;
+    case 'ko':
+      locale = 'ko';
+      break;
     default:
       locale = 'en';
   }
@@ -50,6 +56,12 @@ export const currentDateString = (): string => {
       break;
     case 'alb':
       todayText = 'Sot është';
+      break;
+    case 'pl':
+      todayText = 'Dziś jest';
+      break;
+    case 'ko':
+      todayText = '오늘은';
       break;
     default:
       todayText = 'Today is';

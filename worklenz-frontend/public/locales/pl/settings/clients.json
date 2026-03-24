@@ -1,0 +1,22 @@
+{
+  "nameColumn": "Nazwa",
+  "projectColumn": "Projekt",
+  "noProjectsAvailable": "Brak dostępnych projektów",
+  "deleteConfirmationTitle": "Czy na pewno?",
+  "deleteConfirmationOk": "Tak",
+  "deleteConfirmationCancel": "Anuluj",
+  "searchPlaceholder": "Szukaj po nazwie",
+  "createClient": "Utwórz klienta",
+  "pinTooltip": "Kliknij, aby przypiąć to do menu głównego",
+  "createClientDrawerTitle": "Utwórz klienta",
+  "updateClientDrawerTitle": "Zaktualizuj klienta",
+  "nameLabel": "Nazwa",
+  "namePlaceholder": "Nazwa",
+  "nameRequiredError": "Proszę podać nazwę",
+  "createButton": "Utwórz",
+  "updateButton": "Zaktualizuj",
+  "createClientSuccessMessage": "Klient utworzony pomyślnie!",
+  "createClientErrorMessage": "Utworzenie klienta nie powiodło się!",
+  "updateClientSuccessMessage": "Klient zaktualizowany pomyślnie!",
+  "updateClientErrorMessage": "Aktualizacja klienta nie powiodła się!"
+}

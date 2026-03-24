@@ -1,0 +1,14 @@
+{
+  "uploadError": "Możesz przesłać tylko plik JPG/PNG!",
+  "uploadSizeError": "Obraz musi być mniejszy niż 2MB!",
+  "upload": "Prześlij",
+  "nameLabel": "Imię",
+  "nameRequiredError": "Imię jest wymagane",
+  "emailLabel": "Email",
+  "emailRequiredError": "Email jest wymagany",
+  "saveChanges": "Zapisz zmiany",
+  "profileJoinedText": "Dołączył miesiąc temu",
+  "profileLastUpdatedText": "Ostatnia aktualizacja miesiąc temu",
+  "avatarTooltip": "Kliknij, aby przesłać awatar",
+  "title": "Ustawienia profilu"
+}

@@ -1,0 +1,11 @@
+{
+  "title": "Ustawienia powiadomień",
+  "emailTitle": "Wysyłaj mi powiadomienia e-mail",
+  "emailDescription": "Obejmuje to nowe przydziały zadań",
+  "dailyDigestTitle": "Wysyłaj mi codzienne podsumowanie",
+  "dailyDigestDescription": "Każdego wieczoru otrzymasz podsumowanie ostatniej aktywności w zadaniach.",
+  "popupTitle": "Wyświetlaj powiadomienia na moim komputerze, gdy Worklenz jest otwarty",
+  "popupDescription": "Wyskakujące powiadomienia mogą być wyłączone przez Twoją przeglądarkę. Zmień ustawienia przeglądarki, aby je zezwolić.",
+  "unreadItemsTitle": "Pokaż liczbę nieprzeczytanych elementów",
+  "unreadItemsDescription": "Zobaczysz liczniki dla każdego powiadomienia."
+}

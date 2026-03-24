@@ -1,0 +1,14 @@
+{
+  "title": "Zweryfikuj e-mail resetujący",
+  "description": "Wprowadź swoje nowe hasło",
+  "placeholder": "Wprowadź swoje nowe hasło",
+  "confirmPasswordPlaceholder": "Potwierdź swoje nowe hasło",
+  "passwordHint": "Minimum 8 znaków, z dużymi i małymi literami, cyfrą i symbolem.",
+  "resetPasswordButton": "Zresetuj hasło",
+  "orText": "Lub",
+  "resendResetEmail": "Wyślij ponownie e-mail resetujący",
+  "passwordRequired": "Proszę wprowadzić swoje nowe hasło",
+  "returnToLoginButton": "Wróć do logowania",
+  "confirmPasswordRequired": "Proszę potwierdzić swoje nowe hasło",
+  "passwordMismatch": "Hasła nie są zgodne"
+}

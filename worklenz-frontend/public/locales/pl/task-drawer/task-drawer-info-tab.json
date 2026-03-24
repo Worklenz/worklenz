@@ -1,0 +1,30 @@
+{
+  "details": {
+    "task-key": "Klucz zadania",
+    "phase": "Faza",
+    "assignees": "Przypisani",
+    "due-date": "Termin",
+    "time-estimation": "Szacowany czas",
+    "priority": "Priorytet",
+    "labels": "Etykiety",
+    "billable": "Płatne",
+    "notify": "Powiadom",
+    "when-done-notify": "Po zakończeniu powiadom",
+    "start-date": "Data rozpoczęcia",
+    "end-date": "Data zakończenia",
+    "hide-start-date": "Ukryj datę rozpoczęcia",
+    "show-start-date": "Pokaż datę rozpoczęcia",
+    "hours": "Godziny",
+    "minutes": "Minuty",
+    "recurring": "Powtarzające się"
+  },
+  "description": {
+    "title": "Opis",
+    "placeholder": "Dodaj bardziej szczegółowy opis..."
+  },
+  "subTasks": {
+    "title": "Podzadania",
+    "add-sub-task": "Dodaj podzadanie",
+    "refresh-sub-tasks": "Odśwież podzadania"
+  }
+}

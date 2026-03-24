@@ -1,0 +1,11 @@
+{
+  "overview": "Przegląd",
+  "name": "Nazwa organizacji",
+  "owner": "Właściciel organizacji",
+  "admins": "Administratorzy organizacji",
+  "contactNumber": "Dodaj numer kontaktowy",
+  "edit": "Edytuj",
+  "emailAddress": "Adres e-mail",
+  "enterOrganizationName": "Wprowadź nazwę organizacji",
+  "ownerSuffix": " (Właściciel)"
+}

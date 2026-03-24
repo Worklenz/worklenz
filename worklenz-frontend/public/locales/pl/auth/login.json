@@ -1,0 +1,27 @@
+{
+  "headerDescription": "Zaloguj się do swojego konta",
+  "emailLabel": "E-mail",
+  "emailPlaceholder": "Wprowadź swój e-mail",
+  "emailRequired": "Proszę wprowadzić swój e-mail!",
+  "passwordLabel": "Hasło",
+  "passwordPlaceholder": "Wprowadź swoje hasło",
+  "passwordRequired": "Proszę wprowadzić swoje hasło!",
+  "rememberMe": "Zapamiętaj mnie",
+  "loginButton": "Zaloguj się",
+  "signupButton": "Zarejestruj się",
+  "forgotPasswordButton": "Nie pamiętasz hasła?",
+  "signInWithGoogleButton": "Zaloguj się przez Google",
+  "dontHaveAccountText": "Nie masz konta?",
+  "orText": "LUB",
+  "successMessage": "Zalogowano pomyślnie!",
+  "loginError": "Logowanie nie powiodło się",
+  "googleLoginError": "Logowanie przez Google nie powiodło się",
+  "validationMessages": {
+    "email": "Proszę wprowadzić prawidłowy adres e-mail",
+    "password": "Hasło musi mieć co najmniej 8 znaków"
+  },
+  "errorMessages": {
+    "loginErrorTitle": "Logowanie nie powiodło się",
+    "loginErrorMessage": "Proszę sprawdzić swój e-mail i hasło i spróbować ponownie"
+  }
+}
