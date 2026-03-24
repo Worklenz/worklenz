@@ -41,6 +41,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import { isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { CrownOutlined } from '@/shared/antd-imports';
+import { Calendar, Calendar1 } from 'lucide-react';
 import type { Dayjs } from 'dayjs';
 
 const { Text } = Typography;
@@ -823,8 +824,8 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
               )}
             >
               <Button
-                icon={<CalendarOutlined />}
-                style={makeButtonStyle(isDarkMode ? '#34d399' : '#10b981')}
+                icon={<Calendar size={16} />}
+                style={makeButtonStyle()}
                 className="bulk-action-start-date-btn"
                 size="small"
                 type="text"
@@ -855,8 +856,8 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
               )}
             >
               <Button
-                icon={<CalendarOutlined />}
-                style={makeButtonStyle(isDarkMode ? '#fbbf24' : '#f59e0b')}
+                icon={<Calendar1 size={16} />}
+                style={makeButtonStyle()}
                 className="bulk-action-due-date-btn"
                 size="small"
                 type="text"

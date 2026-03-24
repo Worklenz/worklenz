@@ -51,6 +51,7 @@
     "jspdf": "^3.0.0",
     "libphonenumber-js": "^1.12.33",
     "lodash-es": "^4.17.21",
+    "lucide-react": "^1.0.1",
     "mixpanel-browser": "^2.56.0",
     "nanoid": "^5.1.5",
     "papaparse": "^5.5.3",
