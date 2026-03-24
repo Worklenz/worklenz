@@ -167,6 +167,12 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                     WHERE id = $1;`;
     const result = await db.query(q, [template_id]);
     const [data] = result.rows;
+    if (!data) return null;
+
+    if (!Array.isArray(data.phases)) {
+      data.phases = [];
+    }
+
     for (const phase of data.phases) {
       phase.color_code = getColor(phase.name);
     }
@@ -360,8 +366,13 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
 
     for await (const label of labels) {
       const q = `INSERT INTO team_labels(name, color_code, team_id)
-                VALUES ($1, $2, $3)
-                ON CONFLICT (name, team_id) DO NOTHING;`;
+                 SELECT TRIM($1), $2, $3
+                 WHERE NOT EXISTS (
+                   SELECT 1
+                   FROM team_labels
+                   WHERE team_id = $3
+                     AND LOWER(TRIM(name)) = LOWER(TRIM($1))
+                 );`;
       await db.query(q, [label.name, label.color_code, team_id]);
     }
   }
