@@ -1,4 +1,6 @@
 import dayjs from 'dayjs';
+import 'dayjs/locale/pl';
+import 'dayjs/locale/ko';
 import { getLanguageFromLocalStorage } from './language-utils';
 
 export const currentDateString = (): string => {

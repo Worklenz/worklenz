@@ -72,5 +72,10 @@ export const greetingString = (name: string): string => {
     return `${greetingPrefix} ${name}, ${localizedTimePeriod}!`;
   }
 
+  // Handle languages with empty greetingSuffix (e.g., Korean)
+  if (!greetingSuffix) {
+    return `${greetingPrefix} ${name}, ${localizedTimePeriod}!`;
+  }
+
   return `${greetingPrefix} ${name}, ${greetingSuffix} ${localizedTimePeriod}!`;
 };

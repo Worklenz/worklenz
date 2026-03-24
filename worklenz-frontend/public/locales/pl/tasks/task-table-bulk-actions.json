@@ -33,9 +33,11 @@
   "DELETE": "Usuń",
   "CANCEL": "Anuluj",
   "CLEAR_SELECTION": "Wyczyść zaznaczenie",
-  "TASKS_SELECTED": "{{count}} wybrane zadanie",
-  "TASKS_SELECTED_plural": "{{count}} wybrane zadania",
-  "DELETE_TASKS_CONFIRM": "Usunąć {{count}} zadanie?",
-  "DELETE_TASKS_CONFIRM_plural": "Usunąć {{count}} zadań?",
-  "DELETE_TASKS_WARNING": "Tej czynności nie można cofnąć."
+  "DELETE_TASKS_WARNING": "Tej czynności nie można cofnąć.",
+  "TASKS_SELECTED_one": "{{count}} wybrane zadanie",
+  "TASKS_SELECTED_few": "{{count}} wybrane zadania",
+  "TASKS_SELECTED_many": "{{count}} wybranych zadań",
+  "DELETE_TASKS_CONFIRM_one": "Usunąć {{count}} zadanie?",
+  "DELETE_TASKS_CONFIRM_few": "Usunąć {{count}} zadania?",
+  "DELETE_TASKS_CONFIRM_many": "Usunąć {{count}} zadań?"
 }

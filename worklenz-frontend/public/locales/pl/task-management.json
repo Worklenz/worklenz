@@ -34,5 +34,16 @@
       "dependencies": "Zadanie ma zależności",
       "recurring": "Zadanie cykliczne"
     }
+  },
+  "tooltips": {
+    "subtasks_one": "{{count}} podzadanie",
+    "subtasks_few": "{{count}} podzadania",
+    "subtasks_many": "{{count}} podzadań",
+    "comments_one": "{{count}} komentarz",
+    "comments_few": "{{count}} komentarze",
+    "comments_many": "{{count}} komentarzy",
+    "attachments_one": "{{count}} załącznik",
+    "attachments_few": "{{count}} załączniki",
+    "attachments_many": "{{count}} załączników"
   }
 }
