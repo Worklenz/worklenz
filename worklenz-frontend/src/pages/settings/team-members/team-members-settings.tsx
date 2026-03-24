@@ -358,7 +358,21 @@ const TeamMembersSettings = () => {
             )}
           </div>
         ),
-      },
+      },{
+  key: 'job_title',
+  dataIndex: 'job_title',
+  title: t('jobTitleColumn'),
+  sorter: true,
+  onCell: (record: ITeamMemberViewModel) => ({
+    onClick: () => handleMemberClick(record.id || '', record.role_name),
+    style: { cursor: 'pointer' },
+  }),
+  render: (_, record: ITeamMemberViewModel) => (
+    <Typography.Text>
+      {record.job_title || <Typography.Text type="secondary">Select a Job Title</Typography.Text>}
+    </Typography.Text>
+  ),
+},
       {
         key: 'role_name',
         dataIndex: 'role_name',
