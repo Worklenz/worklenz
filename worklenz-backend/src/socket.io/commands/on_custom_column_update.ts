@@ -109,6 +109,9 @@ export const on_task_custom_column_update = async (_io: Server, socket: Socket, 
     let jsonValue = null;
     
     switch (fieldType) {
+      case "text":
+        textValue = String(value);
+        break;
       case "number":
         numberValue = parseFloat(String(value));
         break;
