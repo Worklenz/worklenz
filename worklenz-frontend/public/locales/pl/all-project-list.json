@@ -30,5 +30,7 @@
     "category": "Kategoria",
     "client": "Klient"
   },
-  "noPermission": "Nie masz uprawnień do wykonania tej akcji"
+  "noPermission": "Nie masz uprawnień do wykonania tej akcji",
+  "addToFavorites": "Dodaj do ulubionych",
+  "removeFromFavorites": "Usuń z ulubionych"
 }

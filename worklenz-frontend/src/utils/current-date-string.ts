@@ -3,71 +3,33 @@ import 'dayjs/locale/pl';
 import 'dayjs/locale/ko';
 import { getLanguageFromLocalStorage } from './language-utils';
 
+const localeMap: Record<string, string> = {
+  'en': 'en',
+  'es': 'es',
+  'pt': 'pt',
+  'de': 'de',
+  'zh_cn': 'zh-cn',
+  'alb': 'sq',
+  'pl': 'pl',
+  'ko': 'ko',
+};
+
+const todayTextMap: Record<string, string> = {
+  'en': 'Today is',
+  'es': 'Hoy es',
+  'pt': 'Hoje é',
+  'de': 'Heute ist',
+  'zh_cn': '今天是',
+  'alb': 'Sot është',
+  'pl': 'Dziś jest',
+  'ko': '오늘은',
+};
+
 export const currentDateString = (): string => {
   const date = dayjs();
   const localeString = getLanguageFromLocalStorage();
-  
-  // Map language codes to dayjs locales
-  let locale = 'en'; // Default to English
-  switch (localeString) {
-    case 'en':
-      locale = 'en';
-      break;
-    case 'es':
-      locale = 'es';
-      break;
-    case 'pt':
-      locale = 'pt';
-      break;
-    case 'de':
-      locale = 'de';
-      break;
-    case 'zh_cn':
-      locale = 'zh-cn';
-      break;
-    case 'alb':
-      locale = 'sq'; // Albanian locale code for dayjs
-      break;
-    case 'pl':
-      locale = 'pl';
-      break;
-    case 'ko':
-      locale = 'ko';
-      break;
-    default:
-      locale = 'en';
-  }
-
-  // Get localized "Today is" text
-  let todayText = 'Today is'; // Default English
-  switch (localeString) {
-    case 'en':
-      todayText = 'Today is';
-      break;
-    case 'es':
-      todayText = 'Hoy es';
-      break;
-    case 'pt':
-      todayText = 'Hoje é';
-      break;
-    case 'de':
-      todayText = 'Heute ist';
-      break;
-    case 'zh_cn':
-      todayText = '今天是';
-      break;
-    case 'alb':
-      todayText = 'Sot është';
-      break;
-    case 'pl':
-      todayText = 'Dziś jest';
-      break;
-    case 'ko':
-      todayText = '오늘은';
-      break;
-    default:
-      todayText = 'Today is';
-  }
+  const locale = localeMap[localeString] || 'en';
+  const todayText = todayTextMap[localeString] || 'Today is';
 
   return `${todayText} ${date.locale(locale).format('dddd, MMMM DD, YYYY')}`;
 };

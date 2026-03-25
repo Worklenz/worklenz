@@ -124,6 +124,8 @@
     "markAsDoneTitle": "Oznaczyć zadanie jako zakończone?",
     "confirmMarkAsDone": "Tak, oznacz jako zakończone",
     "cancelMarkAsDone": "Nie, zachowaj obecny status",
-    "markAsDoneDescription": "Ustawiłeś postęp na 100%. Czy chcesz zaktualizować status zadania na „Zakończone”?"
-  }
+    “markAsDoneDescription”: “Ustawiłeś postęp na 100%. Czy chcesz zaktualizować status zadania na „Zakończone”?”
+  },
+  “todayText”: “Dzisiaj”,
+  “yesterdayText”: “Wczoraj”
 }

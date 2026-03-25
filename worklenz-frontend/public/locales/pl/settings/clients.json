@@ -18,5 +18,7 @@
   "createClientSuccessMessage": "Klient utworzony pomyślnie!",
   "createClientErrorMessage": "Utworzenie klienta nie powiodło się!",
   "updateClientSuccessMessage": "Klient zaktualizowany pomyślnie!",
-  "updateClientErrorMessage": "Aktualizacja klienta nie powiodła się!"
+  "updateClientErrorMessage": "Aktualizacja klienta nie powiodła się!",
+  "editButton": "Edytuj",
+  "deleteButton": "Usuń"
 }

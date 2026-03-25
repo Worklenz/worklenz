@@ -45,5 +45,7 @@
     "attachments_one": "{{count}} załącznik",
     "attachments_few": "{{count}} załączniki",
     "attachments_many": "{{count}} załączników"
-  }
+  },
+  "selectPhase": "Wybierz",
+  "noData": "Brak danych"
 }

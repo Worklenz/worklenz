@@ -58,5 +58,8 @@
     "timeLoggedTaskAriaLabel": "Zadanie z zalogowanym czasem:",
     "errorLoadingRecentTasks": "Błąd ładowania ostatnich zadań",
     "errorLoadingTimeLoggedTasks": "Błąd ładowania zadań z zalogowanym czasem"
-  }
+  },
+  "clickOpenTaskForm": "Kliknij, aby otworzyć zadanie",
+  "addToFavorites": "Dodaj do ulubionych",
+  "removeFromFavorites": "Usuń z ulubionych"
 }

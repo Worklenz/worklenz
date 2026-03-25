@@ -85,5 +85,9 @@
   "sortByField": "Sortuj według {{field}}",
   "ascendingOrder": "Rosnąco",
   "descendingOrder": "Malejąco",
-  "currentSort": "Aktualne sortowanie: {{field}} {{order}}"
+  "currentSort": "Aktualne sortowanie: {{field}} {{order}}",
+  "dragStatusesHint": "Przeciągnij statusy, aby zmienić ich kolejność w kategoriach lub przeciągnij między kategoriami, aby zmienić ich typ.",
+  "statusCategoryNote": "Uwaga: Każda kategoria musi mieć co najmniej jeden status. Nie można przenieść statusu, jeśli jest jedynym w swojej kategorii.",
+  "dragToReorder": "Przeciągnij, aby zmienić kolejność",
+  "selectText": "Wybierz"
 }

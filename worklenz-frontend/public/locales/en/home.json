@@ -58,5 +58,8 @@
     "timeLoggedTaskAriaLabel": "Time logged task:",
     "errorLoadingRecentTasks": "Error loading recent tasks",
     "errorLoadingTimeLoggedTasks": "Error loading time logged tasks"
-  }
+  },
+  "clickOpenTaskForm": "Click to open task form",
+  "addToFavorites": "Add to favorites",
+  "removeFromFavorites": "Remove from favorites"
 }

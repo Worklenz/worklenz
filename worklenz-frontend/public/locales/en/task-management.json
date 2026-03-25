@@ -35,5 +35,7 @@
       "dependencies": "Task has dependencies",
       "recurring": "Recurring task"
     }
-  }
+  },
+  "selectPhase": "Select",
+  "noData": "No data"
 }

@@ -18,5 +18,7 @@
   "createClientSuccessMessage": "Create client success!",
   "createClientErrorMessage": "Create client failed!",
   "updateClientSuccessMessage": "Update client success!",
-  "updateClientErrorMessage": "Update client failed!"
+  "updateClientErrorMessage": "Update client failed!",
+  "editButton": "Edit",
+  "deleteButton": "Delete"
 }
