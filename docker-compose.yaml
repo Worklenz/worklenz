@@ -14,6 +14,8 @@ services:
       - ./scripts/db-init-wrapper.sh:/docker-entrypoint-initdb.d/00-init-wrapper.sh:ro
       - ./worklenz-backend/database:/database:ro
       - ./backups:/pg_backups
+    ports:
+      - "5432:5432"
     networks:
       - worklenz-backend
     healthcheck:
