@@ -18,10 +18,16 @@ export default class BotTasksController {
    * Batch body:
    *   { tasks: [{ name, project_id, ... }, ...] }
    */
+  private static readonly UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
   public static async create(req: Request, res: Response) {
     try {
       const userId = (req as any).user?.id as string;
       const teamId = (req as any).user?.team_id as string;
+
+      if (!userId || !teamId || !BotTasksController.UUID_RE.test(userId) || !BotTasksController.UUID_RE.test(teamId)) {
+        return res.status(400).json(new ServerResponse(false, null, "Invalid user or team context"));
+      }
 
       const tasks = Array.isArray(req.body.tasks) ? req.body.tasks : [req.body];
       const created = [];
@@ -31,8 +37,17 @@ export default class BotTasksController {
           continue; // skip tasks without a name
         }
 
-        if (!task.project_id) {
-          continue; // skip tasks without a project
+        if (!task.project_id || !BotTasksController.UUID_RE.test(task.project_id)) {
+          continue; // skip tasks without a valid project UUID
+        }
+
+        // Verify project belongs to the bot's team
+        const projectCheck = await db.query(
+          `SELECT id FROM projects WHERE id = $1 AND team_id = $2`,
+          [task.project_id, teamId]
+        );
+        if (projectCheck.rows.length === 0) {
+          continue; // skip tasks for projects outside the bot's team
         }
 
         const payload = {

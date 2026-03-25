@@ -44,7 +44,9 @@ BEGIN
       AND deactivated_at IS NULL;
 
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'No active client user found for email: %', p_email;
+        -- Return a dummy token to prevent email enumeration.
+        -- The caller sends "check your email" regardless; no link is actually sent.
+        v_token := encode(gen_random_bytes(32), 'hex');
     END IF;
 
     RETURN v_token;

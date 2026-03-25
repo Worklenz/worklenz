@@ -19,6 +19,7 @@ interface StatusChangePayload {
     old_status: string;
     new_status: string;
     client_id: string;
+    visibility: string;
     timestamp: string;
 }
 
@@ -39,12 +40,20 @@ export async function startPpmNotificationListener(dbConfig: any /*, io: SocketI
         const payload: StatusChangePayload = JSON.parse(msg.payload);
         console.log("[PPM] Status change:", payload);
 
+        // SECURITY: Never route internal_only deliverable events to client rooms
+        const isClientVisible = payload.visibility === "client_visible";
+
         // Route based on new status
         switch (payload.new_status) {
             case "client_review":
                 // Task moved to client review → notify client portal users
-                console.log(`[PPM] → Notify client ${payload.client_id}: deliverable ready for review`);
-                // io.to(`client:${payload.client_id}`).emit("deliverable:review", payload);
+                // Only emit to client room if deliverable is client_visible
+                if (isClientVisible) {
+                    console.log(`[PPM] → Notify client ${payload.client_id}: deliverable ready for review`);
+                    // io.to(`client:${payload.client_id}`).emit("deliverable:review", payload);
+                } else {
+                    console.log(`[PPM] → Internal-only deliverable ${payload.deliverable_id} skipped for client notification`);
+                }
                 break;
 
             case "approved":

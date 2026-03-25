@@ -4,6 +4,10 @@ import { ServerResponse } from "../models/server-response";
 
 const jwtSecret: Secret = process.env.JWT_SECRET ?? "";
 
+if (!process.env.JWT_SECRET) {
+  console.error("[SECURITY] JWT_SECRET is not set — bot auth will reject all tokens");
+}
+
 export interface IBotTokenPayload {
   service: string;
   team_id: string;

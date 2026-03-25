@@ -4,6 +4,10 @@ import { log_error } from "../../shared/utils";
 
 const jwtSecret: Secret = process.env.JWT_SECRET ?? "";
 
+if (!process.env.JWT_SECRET) {
+  console.error("[SECURITY] JWT_SECRET is not set — PPMBot token generation will use empty secret");
+}
+
 export interface IActionItem {
   name: string;
   description?: string;
