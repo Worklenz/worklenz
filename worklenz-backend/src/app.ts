@@ -22,6 +22,7 @@ import sessionMiddleware from "./middlewares/session-middleware";
 import safeControllerFunction from "./shared/safe-controller-function";
 import AwsSesController from "./controllers/aws-ses-controller";
 import { CSP_POLICIES } from "./shared/csp";
+import botTasksApiRouter from "./routes/bot-tasks-api-router";
 
 const app = express();
 
@@ -190,6 +191,9 @@ const apiLimiter = rateLimit({
   standardHeaders: false,
   legacyHeaders: false,
 });
+
+// Bot API (service account JWT auth, no session/CSRF required)
+app.use("/ppm/api/bot", apiLimiter, botTasksApiRouter);
 
 // Routes
 app.use("/api/v1", apiLimiter, isLoggedIn, apiRouter);
