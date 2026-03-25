@@ -1,0 +1,41 @@
+{
+  "overview": {
+    "title": "Przegląd",
+    "statusOverview": "Przegląd statusu",
+    "priorityOverview": "Przegląd priorytetów",
+    "lastUpdatedTasks": "Ostatnio zaktualizowane zadania"
+  },
+  "members": {
+    "title": "Członkowie",
+    "tooltip": "Członkowie",
+    "tasksByMembers": "Zadania według członków",
+    "tasksByMembersTooltip": "Zadania według członków",
+    "name": "Nazwa",
+    "taskCount": "Liczba zadań",
+    "contribution": "Wkład",
+    "completed": "Ukończone",
+    "incomplete": "Nieukończone",
+    "overdue": "Zaległe",
+    "progress": "Postęp"
+  },
+  "tasks": {
+    "overdueTasks": "Zaległe zadania",
+    "overLoggedTasks": "Zadania z nadmiernie zarejestrowanym czasem",
+    "tasksCompletedEarly": "Zadania ukończone przed terminem",
+    "tasksCompletedLate": "Zadania ukończone po terminie",
+    "overLoggedTasksTooltip": "Zadania, dla których zarejestrowano czas przekraczający szacowany czas",
+    "overdueTasksTooltip": "Zadania, których termin minął"
+  },
+  "common": {
+    "seeAll": "Zobacz wszystkie",
+    "totalLoggedHours": "Całkowita liczba zarejestrowanych godzin",
+    "totalEstimation": "Całkowite oszacowanie",
+    "completedTasks": "Ukończone zadania",
+    "incompleteTasks": "Nieukończone zadania",
+    "overdueTasks": "Zaległe zadania",
+    "overdueTasksTooltip": "Zadania, których termin minął",
+    "totalLoggedHoursTooltip": "Szacowanie zadań i zarejestrowany czas dla zadań.",
+    "includeArchivedTasks": "Uwzględnij zarchiwizowane zadania",
+    "export": "Eksportuj"
+  }
+}

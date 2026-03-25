@@ -1,0 +1,16 @@
+{
+  "title": "Zespoły",
+  "team": "Zespół",
+  "teams": "Zespoły",
+  "name": "Nazwa",
+  "created": "Utworzono",
+  "ownsBy": "Właściciel",
+  "edit": "Edytuj",
+  "editTeam": "Edytuj zespół",
+  "pinTooltip": "Kliknij, aby przypiąć to do menu głównego",
+  "editTeamName": "Edytuj nazwę zespołu",
+  "updateName": "Zaktualizuj nazwę",
+  "namePlaceholder": "Nazwa",
+  "nameRequired": "Proszę wprowadzić nazwę",
+  "updateFailed": "Zmiana nazwy zespołu nie powiodła się!"
+}

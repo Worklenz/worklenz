@@ -1,0 +1,20 @@
+{
+  "nameColumn": "Nazwa",
+  "deleteConfirmationTitle": "Czy na pewno?",
+  "deleteConfirmationOk": "Tak",
+  "deleteConfirmationCancel": "Anuluj",
+  "searchPlaceholder": "Szukaj po nazwie",
+  "createJobTitleButton": "Utwórz stanowisko",
+  "pinTooltip": "Kliknij, aby przypiąć to do menu głównego",
+  "createJobTitleDrawerTitle": "Utwórz stanowisko",
+  "updateJobTitleDrawerTitle": "Edytuj stanowisko",
+  "nameLabel": "Nazwa",
+  "namePlaceholder": "Nazwa",
+  "nameRequiredError": "Proszę podać nazwę",
+  "createButton": "Utwórz",
+  "updateButton": "Aktualizuj",
+  "createJobTitleSuccessMessage": "Pomyślnie utworzono stanowisko!",
+  "createJobTitleErrorMessage": "Nie udało się utworzyć stanowiska!",
+  "updateJobTitleSuccessMessage": "Pomyślnie zaktualizowano stanowisko!",
+  "updateJobTitleErrorMessage": "Nie udało się zaktualizować stanowiska!"
+}

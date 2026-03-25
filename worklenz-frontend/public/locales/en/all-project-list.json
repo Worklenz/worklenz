@@ -30,5 +30,7 @@
     "category": "Category",
     "client": "Client"
   },
-  "noPermission": "You don't have permission to perform this action"
+  "noPermission": "You don't have permission to perform this action",
+  "addToFavorites": "Add to favorites",
+  "removeFromFavorites": "Remove from favorites"
 }

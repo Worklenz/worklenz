@@ -91,5 +91,9 @@
   "sortByField": "Sort by {{field}}",
   "ascendingOrder": "Ascending",
   "descendingOrder": "Descending",
-  "currentSort": "Current sort: {{field}} {{order}}"
+  "currentSort": "Current sort: {{field}} {{order}}",
+  "dragStatusesHint": "Drag statuses to reorder them within categories or drag between categories to change their type.",
+  "statusCategoryNote": "Note: Each category must have at least one status. You cannot move a status if it is the only one in its category.",
+  "dragToReorder": "Drag to reorder",
+  "selectText": "Select"
 }

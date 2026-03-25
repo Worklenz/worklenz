@@ -1,0 +1,19 @@
+{
+  "title": "Edytuj Szablon Zadania",
+  "cancelText": "Anuluj",
+  "saveText": "Zapisz",
+  "templateNameText": "Nazwa Szablonu",
+  "selectedTasks": "Wybrane Zadania",
+  "removeTask": "Usuń",
+  "description": "Opis",
+  "phase": "Faza",
+  "statuses": "Statusy",
+  "priorities": "Priorytety",
+  "labels": "Etykiety",
+  "tasks": "Zadania",
+  "noTemplateSelected": "Nie wybrano szablonu",
+  "noDescription": "Brak opisu",
+  "worklenzTemplates": "Szablony Worklenz",
+  "yourTemplatesLibrary": "Twoja Biblioteka",
+  "searchTemplates": "Szukaj Szablonów"
+}

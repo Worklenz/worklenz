@@ -5,6 +5,8 @@ import 'dayjs/locale/de';
 import 'dayjs/locale/es';
 import 'dayjs/locale/pt';
 import 'dayjs/locale/zh-cn';
+import 'dayjs/locale/pl';
+import 'dayjs/locale/ko';
 import { getLanguageFromLocalStorage } from './language-utils';
 
 // Initialize plugins
@@ -19,7 +21,9 @@ const getLocaleFromLanguage = (language: string): string => {
     'es': 'es',
     'pt': 'pt',
     'alb': 'en', // Albanian not supported by dayjs, fallback to English
-    'zh': 'zh-cn'
+    'zh': 'zh-cn',
+    'pl': 'pl',
+    'ko': 'ko'
   };
   return localeMap[language] || 'en';
 };

@@ -41,6 +41,18 @@ export const greetingString = (name: string): string => {
     morning = 'Morgen';
     afternoon = 'Tag';
     evening = 'Abend';
+  } else if (language === 'pl') {
+    greetingPrefix = 'Cześć';
+    greetingSuffix = 'Dobry';
+    morning = 'poranek';
+    afternoon = 'dzień';
+    evening = 'wieczór';
+  } else if (language === 'ko') {
+    greetingPrefix = '안녕하세요';
+    greetingSuffix = '';
+    morning = '좋은 아침';
+    afternoon = '좋은 오후';
+    evening = '좋은 저녁';
   } else if (language === 'zh_cn') {
     greetingPrefix = '你好';
     greetingSuffix = '';
@@ -57,6 +69,11 @@ export const greetingString = (name: string): string => {
 
   // Handle Chinese language which has different structure
   if (language === 'zh_cn') {
+    return `${greetingPrefix} ${name}, ${localizedTimePeriod}!`;
+  }
+
+  // Handle languages with empty greetingSuffix (e.g., Korean)
+  if (!greetingSuffix) {
     return `${greetingPrefix} ${name}, ${localizedTimePeriod}!`;
   }
 

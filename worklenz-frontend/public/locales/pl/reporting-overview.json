@@ -1,0 +1,22 @@
+{
+  "overviewTitle": "Przegląd",
+  "includeArchivedButton": "Uwzględnij zarchiwizowane projekty",
+  "teamCount": "Zespół",
+  "teamCountPlural": "Zespoły",
+  "projectCount": "Projekt",
+  "projectCountPlural": "Projekty",
+  "memberCount": "Członek",
+  "memberCountPlural": "Członkowie",
+  "activeProjectCount": "Aktywny projekt",
+  "activeProjectCountPlural": "Aktywne projekty",
+  "overdueProjectCount": "Zaległy projekt",
+  "overdueProjectCountPlural": "Zaległe projekty",
+  "unassignedMemberCount": "Nieprzypisany członek",
+  "unassignedMemberCountPlural": "Nieprzypisani członkowie",
+  "memberWithOverdueTaskCount": "Członek z zaległym zadaniem",
+  "memberWithOverdueTaskCountPlural": "Członkowie z zaległymi zadaniami",
+  "teamsText": "Zespoły",
+  "nameColumn": "Nazwa",
+  "projectsColumn": "Projekty",
+  "membersColumn": "Członkowie"
+}

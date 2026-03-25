@@ -1,0 +1,14 @@
+{
+  "nameColumn": "Nazwa",
+  "attachedTaskColumn": "Załączone zadanie",
+  "sizeColumn": "Rozmiar",
+  "uploadedByColumn": "Przesłane przez",
+  "uploadedAtColumn": "Przesłano o",
+  "fileIconAlt": "Ikona pliku",
+  "titleDescriptionText": "Wszystkie załączniki do zadań w tym projekcie pojawią się tutaj.",
+  "deleteConfirmationTitle": "Czy na pewno?",
+  "deleteConfirmationOk": "Tak",
+  "deleteConfirmationCancel": "Anuluj",
+  "segmentedTooltip": "Wkrótce! Przełączaj między widokiem listy a widokiem miniatur.",
+  "emptyText": "W projekcie nie ma załączników."
+}

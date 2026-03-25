@@ -1,0 +1,12 @@
+{
+  "createTaskTemplate": "Utwórz szablon zadania",
+  "editTaskTemplate": "Edytuj szablon zadania",
+  "cancelText": "Anuluj",
+  "saveText": "Zapisz",
+  "templateNameText": "Nazwa szablonu",
+  "templateNameRequired": "Nazwa szablonu jest wymagana",
+  "selectedTasks": "Wybrane zadania",
+  "removeTask": "Usuń",
+  "cancelButton": "Anuluj",
+  "saveButton": "Zapisz"
+}

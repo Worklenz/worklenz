@@ -1,0 +1,51 @@
+{
+  "noTasksInGroup": "Brak zadań w tej grupie",
+  "noTasksInGroupDescription": "Dodaj zadanie, aby rozpocząć",
+  "addFirstTask": "Dodaj swoje pierwsze zadanie",
+  "openTask": "Otwórz",
+  "subtask": "podzadanie",
+  "subtasks": "podzadania",
+  "comment": "komentarz",
+  "comments": "komentarze",
+  "attachment": "załącznik",
+  "attachments": "załączniki",
+  "enterSubtaskName": "Wprowadź nazwę podzadania...",
+  "add": "Dodaj",
+  "cancel": "Anuluj",
+  "renameGroup": "Zmień nazwę grupy",
+  "renameStatus": "Zmień nazwę statusu",
+  "renamePhase": "Zmień nazwę fazy",
+  "changeCategory": "Zmień kategorię",
+  "clickToEditGroupName": "Kliknij, aby edytować nazwę grupy",
+  "enterGroupName": "Wprowadź nazwę grupy",
+  "todo": "Do zrobienia",
+  "inProgress": "W trakcie",
+  "done": "Zrobione",
+  "defaultTaskName": "Zadanie bez tytułu",
+  "indicators": {
+    "tooltips": {
+      "subtasks": "{{count}} podzadanie",
+      "subtasks_plural": "{{count}} podzadania",
+      "comments": "{{count}} komentarz",
+      "comments_plural": "{{count}} komentarze",
+      "attachments": "{{count}} załącznik",
+      "attachments_plural": "{{count}} załączniki",
+      "subscribers": "Zadanie ma subskrybentów",
+      "dependencies": "Zadanie ma zależności",
+      "recurring": "Zadanie cykliczne"
+    }
+  },
+  "tooltips": {
+    "subtasks_one": "{{count}} podzadanie",
+    "subtasks_few": "{{count}} podzadania",
+    "subtasks_many": "{{count}} podzadań",
+    "comments_one": "{{count}} komentarz",
+    "comments_few": "{{count}} komentarze",
+    "comments_many": "{{count}} komentarzy",
+    "attachments_one": "{{count}} załącznik",
+    "attachments_few": "{{count}} załączniki",
+    "attachments_many": "{{count}} załączników"
+  },
+  "selectPhase": "Wybierz",
+  "noData": "Brak danych"
+}

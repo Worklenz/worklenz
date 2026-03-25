@@ -1,0 +1,12 @@
+{
+  "membersCount": "Liczba członków",
+  "createdAt": "Utworzono o",
+  "projectName": "Nazwa projektu",
+  "teamName": "Nazwa zespołu",
+  "refreshProjects": "Odśwież projekty",
+  "searchPlaceholder": "Szukaj według nazwy projektu",
+  "deleteProject": "Czy na pewno chcesz usunąć ten projekt?",
+  "confirm": "Potwierdź",
+  "cancel": "Anuluj",
+  "delete": "Usuń projekt"
+}

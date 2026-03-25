@@ -1,0 +1,27 @@
+{
+  "title": "Zapisz jako szablon",
+  "templateName": "Nazwa szablonu",
+  "includes": "Co powinno być uwzględnione w szablonie z projektu?",
+  "includesOptions": {
+    "statuses": "Statusy",
+    "phases": "Fazy",
+    "labels": "Etykiety"
+  },
+  "taskIncludes": "Co powinno być uwzględnione w szablonie z zadań?",
+  "taskIncludesOptions": {
+    "statuses": "Statusy",
+    "phases": "Fazy",
+    "labels": "Etykiety",
+    "name": "Nazwa",
+    "priority": "Priorytet",
+    "status": "Status",
+    "phase": "Faza",
+    "label": "Etykieta",
+    "timeEstimate": "Szacowany czas",
+    "description": "Opis",
+    "subTasks": "Podzadania"
+  },
+  "cancel": "Anuluj",
+  "save": "Zapisz",
+  "templateNamePlaceholder": "Wprowadź nazwę szablonu"
+}

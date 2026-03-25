@@ -1,0 +1,11 @@
+{
+  "importTaskTemplate": "Importuj Szablon Zadania",
+  "templateName": "Nazwa Szablonu",
+  "templateDescription": "Opis Szablonu",
+  "selectedTasks": "Wybrane Zadania",
+  "tasks": "Zadania",
+  "templates": "Szablony",
+  "remove": "Usuń",
+  "cancel": "Anuluj",
+  "import": "Importuj"
+}

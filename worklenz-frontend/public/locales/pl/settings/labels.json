@@ -1,0 +1,15 @@
+{
+  "labelColumn": "Etykieta",
+  "deleteConfirmationTitle": "Czy na pewno?",
+  "deleteConfirmationOk": "Tak",
+  "deleteConfirmationCancel": "Anuluj",
+  "associatedTaskColumn": "Liczba powiązanych zadań",
+  "searchPlaceholder": "Szukaj po nazwie",
+  "emptyText": "Etykiety można tworzyć podczas aktualizowania lub tworzenia zadań.",
+  "pinTooltip": "Kliknij, aby przypiąć to do menu głównego",
+  "colorChangeTooltip": "Kliknij, aby zmienić kolor",
+  "pageTitle": "Zarządzaj etykietami",
+  "deleteConfirmTitle": "Czy na pewno chcesz to usunąć?",
+  "deleteButton": "Usuń",
+  "cancelButton": "Anuluj"
+}
