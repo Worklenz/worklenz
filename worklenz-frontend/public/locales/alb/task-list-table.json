@@ -132,6 +132,7 @@
 
     "fieldTypes": {
       "people": "Njerëz",
+      "text": "Tekst",
       "number": "Numër",
       "date": "Data",
       "selection": "Zgjedhje",
