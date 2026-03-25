@@ -152,6 +152,9 @@
   "errorSwitchingPricingModel": "Failed to switch pricing model",
   "switchTo": "Switch to",
   "pricing": "pricing",
+  "managementUrl": "Management URL",
+  "openManagementUrl": "Open management URL",
+  "updateCardDetails": "Update card details",
 
   "upgradeToUnlockFeatures": "Upgrade to unlock premium features",
   "currentPlanLimits": "Current plan includes:",

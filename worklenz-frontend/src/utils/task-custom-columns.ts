@@ -5,6 +5,7 @@ export const DRAWER_SUPPORTED_CUSTOM_FIELD_TYPES = [
   'number',
   'selection',
   'people',
+  'text',
 ] as const;
 
 export const isDrawerSupportedCustomField = (column: ITaskCustomColumn) =>

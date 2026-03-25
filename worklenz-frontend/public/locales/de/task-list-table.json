@@ -26,6 +26,8 @@
   "reporterColumn": "Melder",
   "dueTimeColumn": "Fällige Zeit",
   "moveColumnHandle": "Spalte verschieben",
+  "activeParentBadge": "Aktive übergeordnete Aufgabe",
+  "activeParentTooltip": "Übergeordnete Aufgabe ist nicht archiviert",
   "todoSelectorText": "Zu erledigen",
   "doingSelectorText": "Tun",
   "doneSelectorText": "Erledigt",
@@ -39,6 +41,7 @@
 
   "addTaskText": "Aufgabe hinzufügen",
   "addSubTaskText": "+ Unteraufgabe hinzufügen",
+  "addSubTaskInputPlaceholder": "Namen der Unteraufgabe eingeben und mit Enter speichern",
   "addTaskInputPlaceholder": "Aufgabe eingeben und Enter drücken",
   "noTasksInGroup": "Keine Aufgaben in dieser Gruppe",
   "dropTaskHere": "Aufgabe hier ablegen",
@@ -129,6 +132,7 @@
 
     "fieldTypes": {
       "people": "Personen",
+      "text": "Text",
       "number": "Zahl",
       "date": "Datum",
       "selection": "Auswahl",

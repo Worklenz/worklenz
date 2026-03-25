@@ -26,6 +26,8 @@
   "reporterColumn": "Reporter",
   "moveColumnHandle": "Move column",
   "dueTimeColumn": "Due Time",
+  "activeParentBadge": "Active parent",
+  "activeParentTooltip": "Parent task is not archived",
   "todoSelectorText": "To Do",
   "doingSelectorText": "Doing",
   "doneSelectorText": "Done",
@@ -40,6 +42,7 @@
   "addTaskText": "Add Task",
   "addSubTaskText": "Add Sub Task",
   "addTaskInputPlaceholder": "Type your task and hit enter",
+  "addSubTaskInputPlaceholder": "Type subtask name and press Enter to save",
   "noTasksInGroup": "No tasks in this group",
   "dropTaskHere": "Drop task here",
 
@@ -134,6 +137,7 @@
 
     "fieldTypes": {
       "people": "People",
+      "text": "Text",
       "number": "Number",
       "date": "Date",
       "selection": "Selection",

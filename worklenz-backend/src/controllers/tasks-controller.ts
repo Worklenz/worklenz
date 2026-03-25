@@ -91,7 +91,6 @@ export default class TasksController extends TasksControllerBase {
         FROM cc_custom_columns cc
         LEFT JOIN cc_column_configurations cf ON cf.column_id = cc.id
         WHERE cc.project_id = $1
-          AND cc.is_visible IS TRUE
       )
       SELECT COALESCE(
         json_agg(
@@ -154,7 +153,6 @@ export default class TasksController extends TasksControllerBase {
         JOIN cc_custom_columns cc ON ccv.column_id = cc.id
         WHERE ccv.task_id = $1
           AND cc.project_id = $2
-          AND cc.is_visible IS TRUE
       ) AS custom_cols
       WHERE custom_cols.value IS NOT NULL;
     `;
@@ -763,6 +761,10 @@ export default class TasksController extends TasksControllerBase {
       t.completed_count = info.total_completed;
       t.total_tasks_count = info.total_tasks;
     }
+
+    // Ensure task drawer always receives the latest custom column values
+    // even if helper transformations overwrite task properties.
+    t.custom_column_values = customColumnValues;
 
     data.view_model.task = t;
 

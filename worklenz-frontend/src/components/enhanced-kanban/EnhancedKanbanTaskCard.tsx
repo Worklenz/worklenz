@@ -146,7 +146,13 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
         } else if (subtaskCount > 0) {
           // If we have a subtask count but no loaded subtasks, fetch them
           dispatch(toggleTaskExpansion(task.id));
-          dispatch(fetchBoardSubTasks({ taskId: task.id, projectId }));
+          dispatch(
+            fetchBoardSubTasks({
+              taskId: task.id,
+              projectId,
+              parentTaskIdForQuery: task.parent_task_container_id || task.id,
+            })
+          );
         } else {
           // If no subtasks exist, just toggle visibility (will show empty state)
           dispatch(toggleTaskExpansion(task.id));
@@ -238,14 +244,13 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
           </Flex>
           <Flex gap={4} align="center">
             {/* Action Icons */}
-            <div
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: task.priority_color || '#d9d9d9' }}
-            />
-            <Typography.Text
-              style={{ fontWeight: 500 }}
-              ellipsis={{ tooltip: safeTextDisplay(task.name) }}
-            >
+            {!task.is_parent_container && (
+              <div
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: task.priority_color || '#d9d9d9' }}
+              />
+            )}
+            <Typography.Text style={{ fontWeight: 500 }} ellipsis={{ tooltip: safeTextDisplay(task.name) }}>
               {safeTextDisplay(task.name)}
             </Typography.Text>
           </Flex>

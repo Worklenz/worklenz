@@ -229,7 +229,12 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
         trackMixpanelEvent(evt_project_task_list_context_menu_archive);
 
         // Remove task from current view (whether archived or normal)
-        dispatch(deleteTask(task.id));
+        dispatch(
+          deleteTask({
+            taskId: task.id,
+            parentTaskId: task.parent_task_container_id || task.parent_task_id,
+          })
+        );
         dispatch(deselectAll());
 
         // Note: We DON'T call fetchTasksV3 here because:

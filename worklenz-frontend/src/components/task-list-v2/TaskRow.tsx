@@ -42,11 +42,22 @@ const TaskRow: React.FC<TaskRowProps> = memo(
     const isSelected = useAppSelector(state => selectIsTaskSelected(state, taskId));
     const themeMode = useAppSelector(state => state.themeReducer.mode);
     const isDarkMode = themeMode === 'dark';
-
-    // Early return if task is not found
-    if (!task) {
-      return null;
-    }
+    const safeTask = useMemo(
+      () =>
+        task || {
+          id: taskId,
+          title: '',
+          name: '',
+          status: 'todo',
+          priority: 'medium',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          sub_tasks: [],
+          sub_tasks_count: 0,
+          show_sub_tasks: false,
+        },
+      [task, taskId]
+    );
 
     // Use extracted hooks for state management
     const {
@@ -61,10 +72,10 @@ const TaskRow: React.FC<TaskRowProps> = memo(
       formattedDates,
       dateValues,
       labelsAdapter,
-    } = useTaskRowState(task);
+    } = useTaskRowState(safeTask);
 
     const { handleCheckboxChange, handleTaskNameSave, handleTaskNameEdit } = useTaskRowActions({
-      task,
+      task: safeTask,
       taskId,
       taskName,
       editTaskName,
@@ -74,17 +85,17 @@ const TaskRow: React.FC<TaskRowProps> = memo(
     // Drag and drop functionality - only enable for parent tasks
     const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } =
       useSortable({
-        id: task.id,
+        id: safeTask.id || taskId,
         data: {
           type: 'task',
-          task,
+          task: safeTask,
         },
-        disabled: isSubtask, // Disable drag and drop for subtasks
+        disabled: isSubtask || !task, // Disable drag and drop for subtasks and placeholders
       });
 
     // Use extracted column renderer hook
     const { renderColumn } = useTaskRowColumns({
-      task,
+      task: safeTask,
       projectId,
       isSubtask,
       isSelected,
@@ -109,6 +120,11 @@ const TaskRow: React.FC<TaskRowProps> = memo(
       listeners,
       depth,
     });
+
+    // Render null only after all hooks are called to keep hook ordering stable
+    if (!task) {
+      return null;
+    }
 
     // Memoize style object to prevent unnecessary re-renders
     const style = useMemo(

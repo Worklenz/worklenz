@@ -15,6 +15,7 @@ export const selectGroups = (state: RootState) => state.taskManagement.groups;
 export const selectGrouping = (state: RootState) => state.taskManagement.grouping;
 export const selectLoading = (state: RootState) => state.taskManagement.loading;
 export const selectError = (state: RootState) => state.taskManagement.error;
+export const selectLoadedProjectId = (state: RootState) => state.taskManagement.loadedProjectId;
 export const selectSelectedPriorities = (state: RootState) =>
   state.taskManagement.selectedPriorities;
 export const selectSearch = (state: RootState) => state.taskManagement.search;

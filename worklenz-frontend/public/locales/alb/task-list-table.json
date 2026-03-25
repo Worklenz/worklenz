@@ -26,6 +26,8 @@
   "reporterColumn": "Raportuesi",
   "moveColumnHandle": "Zhvendos kolonën",
   "dueTimeColumn": "Koha e Afatit",
+  "activeParentBadge": "Prind aktiv",
+  "activeParentTooltip": "Detyra prind nuk është e arkivuar",
   "todoSelectorText": "Për të Bërë",
   "doingSelectorText": "Duke bërë",
   "doneSelectorText": "E Përfunduar",
@@ -39,6 +41,7 @@
 
   "addTaskText": "Shto Detyrë",
   "addSubTaskText": "+ Shto Nën-Detyrë",
+  "addSubTaskInputPlaceholder": "Shkruaj emrin e nën-detyrës dhe shtyp Enter për ta ruajtur",
   "noTasksInGroup": "Nuk ka detyra në këtë grup",
   "dropTaskHere": "Lëshoje detyrën këtu",
   "addTaskInputPlaceholder": "Shkruaj detyrën dhe shtyp Enter",
@@ -129,6 +132,7 @@
 
     "fieldTypes": {
       "people": "Njerëz",
+      "text": "Tekst",
       "number": "Numër",
       "date": "Data",
       "selection": "Zgjedhje",

@@ -21,7 +21,11 @@ import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { hasFinanceViewPermission } from '@/utils/finance-permissions';
 import { getProject, setProjectId, setProjectView } from '@/features/project/project.slice';
-import { fetchStatuses, resetStatuses } from '@/features/taskAttributes/taskStatusSlice';
+import {
+  fetchStatuses,
+  fetchStatusesCategories,
+  resetStatuses,
+} from '@/features/taskAttributes/taskStatusSlice';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import ProjectViewHeader from './project-view-header';
@@ -58,6 +62,8 @@ import { evt_paywall_hit } from '@/shared/worklenz-analytics-events';
 
 // Import critical components synchronously to avoid suspense interruptions
 import TaskDrawer from '@components/task-drawer/task-drawer';
+import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
+import { fetchTaskListColumns, fetchTasksV3 } from '@/features/task-management/task-management.slice';
 
 // Lazy load non-critical components with better error handling
 const DeleteStatusDrawer = React.lazy(
@@ -223,11 +229,22 @@ const ProjectView = React.memo(() => {
           // Set project context for field visibility
           dispatch(setProjectContext(projectId));
 
+          const requestedTab = searchParams.get('tab') || 'tasks-list';
+          const shouldPreloadTaskList = requestedTab === 'tasks-list';
+
           // Load project and essential data in parallel
           const [projectResult] = await Promise.allSettled([
             dispatch(getProject(projectId)),
             dispatch(fetchStatuses(projectId)),
             dispatch(fetchLabels()),
+            ...(shouldPreloadTaskList
+              ? [
+                  dispatch(fetchTasksV3(projectId)),
+                  dispatch(fetchTaskListColumns(projectId)),
+                  dispatch(fetchPhasesByProjectId(projectId)),
+                  dispatch(fetchStatusesCategories()),
+                ]
+              : []),
           ]);
 
           // Check if project fetch was rejected (access denied or not found)
@@ -354,7 +371,7 @@ const ProjectView = React.memo(() => {
 
       loadProjectData();
     }
-  }, [dispatch, projectId, isInitialized, navigate, t]);
+  }, [dispatch, projectId, isInitialized, navigate, t, searchParams]);
 
   // Effect for handling task drawer opening from URL params
   useEffect(() => {

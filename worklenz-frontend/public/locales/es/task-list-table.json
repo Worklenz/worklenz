@@ -26,6 +26,8 @@
   "reporterColumn": "Reportador",
   "moveColumnHandle": "Mover columna",
   "dueTimeColumn": "Hora de vencimiento",
+  "activeParentBadge": "Padre activo",
+  "activeParentTooltip": "La tarea padre no está archivada",
   "todoSelectorText": "Por hacer",
   "doingSelectorText": "En progreso",
   "doneSelectorText": "Completado",
@@ -39,6 +41,7 @@
 
   "addTaskText": "Agregar tarea",
   "addSubTaskText": "Agregar subtarea",
+  "addSubTaskInputPlaceholder": "Escribe el nombre de la subtarea y presiona Enter para guardar",
   "noTasksInGroup": "No hay tareas en este grupo",
   "dropTaskHere": "Soltar tarea aquí",
   "addTaskInputPlaceholder": "Escribe tu tarea y presiona enter",
@@ -129,6 +132,7 @@
 
     "fieldTypes": {
       "people": "Personas",
+      "text": "Texto",
       "number": "Número",
       "date": "Fecha",
       "selection": "Selección",

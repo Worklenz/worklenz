@@ -1,14 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
-import {
-  Badge,
-  DatePicker,
-  Flex,
-  InputNumber,
-  Select,
-  Typography,
-  message,
-} from '@/shared/antd-imports';
+import { Badge, DatePicker, Flex, Input, InputNumber, Select, Typography, message } from '@/shared/antd-imports';
 import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';
 import { store } from '@/app/store';
 import AvatarGroup from '@/components/AvatarGroup';
@@ -354,6 +346,22 @@ const TaskDrawerCustomFields = ({
             rawValue={rawValue}
             teamMembers={teamMembers}
             onValueChange={async (currentColumn, value) => handleValueChange(currentColumn, value)}
+          />
+        );
+      }
+
+      case 'text': {
+        return (
+          <Input
+            value={rawValue == null ? '' : String(rawValue)}
+            className="w-full"
+            placeholder={t('taskInfoTab.details.customFields.enterText', {
+              defaultValue: 'Enter text',
+            })}
+            onBlur={event => void handleValueChange(column, event.target.value || null)}
+            onPressEnter={event =>
+              void handleValueChange(column, (event.currentTarget as HTMLInputElement).value || null)
+            }
           />
         );
       }

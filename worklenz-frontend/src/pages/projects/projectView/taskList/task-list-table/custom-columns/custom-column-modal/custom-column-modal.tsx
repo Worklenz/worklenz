@@ -150,7 +150,7 @@ const CustomColumnModal = () => {
     {
       key: 'text',
       value: 'text',
-      label: 'Text',
+      label: t('customColumns.fieldTypes.text'),
       disabled: false,
     },
     {

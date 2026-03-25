@@ -41,6 +41,7 @@ import {
   selectColumns,
   selectCustomColumns,
   selectLoadingColumns,
+  selectLoadedProjectId,
   setDuplicateTaskModalStatus,
 } from '@/features/task-management/task-management.slice';
 import { setProjectContext } from '@/features/task-management/taskListFields.slice';
@@ -269,6 +270,7 @@ const TaskListV2Section: React.FC = () => {
   const grouping = useAppSelector(selectGrouping);
   const loading = useAppSelector(selectLoading);
   const error = useAppSelector(selectError);
+  const loadedProjectId = useAppSelector(selectLoadedProjectId);
   const currentGrouping = useAppSelector(selectCurrentGrouping);
   const selectedTaskIds = useAppSelector(selectSelectedTaskIds);
   const lastSelectedTaskId = useAppSelector(selectLastSelectedTaskId);
@@ -551,16 +553,32 @@ const TaskListV2Section: React.FC = () => {
   }, [dispatch, urlProjectId]);
 
   // Effects
+  const shouldFetchInitialData = useMemo(() => {
+    if (!urlProjectId) return false;
+    return loadedProjectId !== urlProjectId || columns.length === 0;
+  }, [urlProjectId, loadedProjectId, columns.length]);
+
+  const shouldShowInitialSkeleton = useMemo(() => {
+    // Prevent a brief empty-state flash before initial fetch dispatch flips loading=true
+    return !!urlProjectId && shouldFetchInitialData && groups.length === 0;
+  }, [urlProjectId, shouldFetchInitialData, groups.length]);
+
+  useEffect(() => {
+    if (!urlProjectId || !shouldFetchInitialData) {
+      return;
+    }
+
+    dispatch(fetchTasksV3(urlProjectId));
+    dispatch(fetchTaskListColumns(urlProjectId));
+    dispatch(fetchPhasesByProjectId(urlProjectId));
+    dispatch(fetchStatusesCategories());
+  }, [dispatch, urlProjectId, shouldFetchInitialData]);
+
   useEffect(() => {
     if (urlProjectId) {
-      dispatch(fetchTasksV3(urlProjectId));
-      dispatch(fetchTaskListColumns(urlProjectId));
-      dispatch(fetchPhasesByProjectId(urlProjectId));
-      dispatch(fetchStatusesCategories());
-
       trackMixpanelEvent(evt_project_task_list_visit, { project_id: urlProjectId });
     }
-  }, [dispatch, urlProjectId]);
+  }, [trackMixpanelEvent, urlProjectId]);
 
   // Initialize field visibility from database when columns are loaded (only once)
   useEffect(() => {
@@ -883,7 +901,7 @@ const TaskListV2Section: React.FC = () => {
           strategy={horizontalListSortingStrategy}
         >
           <div
-            className="border-b border-gray-200 dark:border-gray-700"
+            className="border-b border-gray-200 dark:border-gray-700 tasklist-v2-column-headers"
             style={{
               width: '100%',
               minWidth: 'max-content',
@@ -1280,7 +1298,7 @@ const TaskListV2Section: React.FC = () => {
   ]);
 
   // Loading and error states
-  if (loading || loadingColumns) {
+  if (loading || loadingColumns || shouldShowInitialSkeleton) {
     return <TaskListSkeleton visibleColumns={visibleColumns} />;
   }
   if (error)

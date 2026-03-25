@@ -41,5 +41,7 @@
   "SET_DUE_DATE": "Establecer Fecha de Vencimiento",
   "CLEAR_DUE_DATE": "Borrar Fecha de Vencimiento",
   "DUE_DATE_UPDATED": "Fecha de vencimiento actualizada correctamente",
-  "DUE_DATE_CLEARED": "Fecha de vencimiento borrada correctamente"
+  "DUE_DATE_CLEARED": "Fecha de vencimiento borrada correctamente",
+  "archiveSuccessTitle": "Actualización masiva completada",
+  "archiveSuccessMessage": "Se {{action}}ron {{parentCount}} tareas y {{subtaskCount}} subtareas."
 }
