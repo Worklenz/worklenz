@@ -94,15 +94,14 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       project.actual_time = int(project.actual_time);
       project.estimated_time_string = this.convertMinutesToHoursAndMinutes(int(project.estimated_time));
       project.actual_time_string = this.convertSecondsToHoursAndMinutes(int(project.actual_time));
-      
-      // FIX: Format dates consistently like tasks to avoid timezone issues
+
       if (project.start_date) {
-        project.start_date = moment(project.start_date).format('YYYY-MM-DD');
+        project.start_date = moment.utc(project.start_date).format('YYYY-MM-DD');
       }
       if (project.end_date) {
-        project.end_date = moment(project.end_date).format('YYYY-MM-DD');
+        project.end_date = moment.utc(project.end_date).format('YYYY-MM-DD');
       }
-      
+
       project.tasks_stat = {
         todo: this.getPercentage(int(project.tasks_stat.todo), +project.tasks_stat.total),
         doing: this.getPercentage(int(project.tasks_stat.doing), +project.tasks_stat.total),
@@ -486,13 +485,14 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       done_tasks: int(row.done_tasks),
       doing_tasks: int(row.doing_tasks),
       todo_tasks: int(row.todo_tasks),
+    
       projects: row.projects.map((project: any) => {
         // FIX: Format dates consistently like tasks to avoid timezone issues
         if (project.start_date) {
-          project.start_date = moment(project.start_date).format('YYYY-MM-DD');
+          project.start_date = moment.utc(project.start_date).format('YYYY-MM-DD');
         }
         if (project.end_date) {
-          project.end_date = moment(project.end_date).format('YYYY-MM-DD');
+          project.end_date = moment.utc(project.end_date).format('YYYY-MM-DD');
         }
         return project;
       })
