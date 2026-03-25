@@ -178,6 +178,15 @@ export const CustomColumnCell: React.FC<{
           updateTaskCustomColumnValue={updateTaskCustomColumnValue}
         />
       );
+    case 'text':
+      return (
+        <TextCustomColumnCell
+          task={task}
+          columnKey={column.key}
+          customValue={customValue}
+          updateTaskCustomColumnValue={updateTaskCustomColumnValue}
+        />
+      );
     default:
       return (
         <span className="text-sm text-gray-400 px-2">{t('customColumns.unsupportedField')}</span>
@@ -186,6 +195,53 @@ export const CustomColumnCell: React.FC<{
 });
 
 CustomColumnCell.displayName = 'CustomColumnCell';
+
+export const TextCustomColumnCell: React.FC<{
+  task: any;
+  columnKey: string;
+  customValue: any;
+  updateTaskCustomColumnValue: (
+    taskId: string,
+    columnKey: string,
+    value: string | number | boolean | string[] | null
+  ) => void;
+}> = memo(({ task, columnKey, customValue, updateTaskCustomColumnValue }) => {
+  const { t } = useTranslation('task-list-table');
+  const [inputValue, setInputValue] = useState(String(customValue || ''));
+
+  useEffect(() => {
+    setInputValue(String(customValue || ''));
+  }, [customValue]);
+
+  const handleBlur = () => {
+    if (!task.id) return;
+
+    const nextValue = inputValue.trim();
+    const currentValue = String(customValue || '').trim();
+
+    if (nextValue === currentValue) return;
+    updateTaskCustomColumnValue(task.id, columnKey, nextValue || null);
+  };
+
+  return (
+    <div className="px-2">
+      <Input
+        value={inputValue}
+        onChange={e => setInputValue(e.target.value)}
+        onBlur={handleBlur}
+        onPressEnter={event => {
+          if (!task.id) return;
+          updateTaskCustomColumnValue(task.id, columnKey, event.currentTarget.value.trim() || null);
+        }}
+        placeholder={t('customColumns.textPlaceholder', { defaultValue: 'Enter text' })}
+        size="small"
+        variant="borderless"
+      />
+    </div>
+  );
+});
+
+TextCustomColumnCell.displayName = 'TextCustomColumnCell';
 
 // People Field Cell Component
 export const PeopleCustomColumnCell: React.FC<{

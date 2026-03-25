@@ -420,6 +420,15 @@ const CustomColumnCell: React.FC<{
           updateValue={updateTaskCustomColumnValue}
         />
       );
+    case 'text':
+      return (
+        <TextFieldCell
+          value={customValue}
+          task={task}
+          columnKey={columnKey}
+          updateValue={updateTaskCustomColumnValue}
+        />
+      );
     default:
       return <span>Unsupported field type: {fieldType}</span>;
   }
