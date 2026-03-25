@@ -1,15 +1,5 @@
 import React from 'react';
-import {
-  Button,
-  DatePicker,
-  Form,
-  Input,
-  TimePicker,
-  Flex,
-  InputNumber,
-  Segmented,
-  Typography,
-} from '@/shared/antd-imports';
+import { Button, DatePicker, Form, Input, TimePicker, Flex, InputNumber, Segmented } from '@/shared/antd-imports';
 import { ClockCircleOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs, { Dayjs } from 'dayjs';
@@ -379,9 +369,10 @@ const TimeLogForm = ({
       >
         <Form.Item
           label={t('taskTimeLogTab.timeLogForm.inputMode', { defaultValue: 'Input Mode' })}
-          style={{ marginBlockEnd: 8 }}
+          style={{ marginBlockEnd: 6 }}
         >
           <Segmented
+            size="small"
             value={inputMode}
             onChange={value => handleModeChange(value as TimeLogInputMode)}
             options={[
@@ -398,25 +389,27 @@ const TimeLogForm = ({
           />
         </Form.Item>
 
-        <Form.Item
-          name="date"
-          label={t('taskTimeLogTab.timeLogForm.date')}
-          rules={[
-            {
-              required: true,
-              message: t('taskTimeLogTab.timeLogForm.selectDateError'),
-            },
-          ]}
-        >
-          <DatePicker
-            style={{ width: '100%' }}
-            disabledDate={current => current && current.toDate() > new Date()}
-          />
-        </Form.Item>
-
         {inputMode === 'duration' ? (
-          <Form.Item style={{ marginBlockEnd: 8 }}>
+          <Form.Item style={{ marginBlockEnd: 6 }}>
             <Flex gap={8} wrap="wrap" style={{ width: '100%' }}>
+              <Form.Item
+                name="date"
+                label={t('taskTimeLogTab.timeLogForm.date')}
+                rules={[
+                  {
+                    required: true,
+                    message: t('taskTimeLogTab.timeLogForm.selectDateError'),
+                  },
+                ]}
+                style={{ flex: 1.4, minWidth: 170, marginBlockEnd: 0 }}
+              >
+                <DatePicker
+                  size="small"
+                  style={{ width: '100%' }}
+                  disabledDate={current => current && current.toDate() > new Date()}
+                />
+              </Form.Item>
+
               <Form.Item
                 name="hours"
                 label={t('taskTimeLogTab.timeLogForm.hours', { defaultValue: 'Hours' })}
@@ -431,7 +424,7 @@ const TimeLogForm = ({
                 ]}
                 style={{ flex: 1, minWidth: 120, marginBlockEnd: 0 }}
               >
-                <InputNumber min={0} precision={0} style={{ width: '100%' }} />
+                <InputNumber size="small" min={0} precision={0} style={{ width: '100%' }} />
               </Form.Item>
 
               <Form.Item
@@ -449,12 +442,30 @@ const TimeLogForm = ({
                 ]}
                 style={{ flex: 1, minWidth: 120, marginBlockEnd: 0 }}
               >
-                <InputNumber min={0} max={59} precision={0} style={{ width: '100%' }} />
+                <InputNumber size="small" min={0} max={59} precision={0} style={{ width: '100%' }} />
               </Form.Item>
             </Flex>
           </Form.Item>
         ) : (
-          <Form.Item style={{ marginBlockEnd: 8 }}>
+          <>
+            <Form.Item
+              name="date"
+              label={t('taskTimeLogTab.timeLogForm.date')}
+              rules={[
+                {
+                  required: true,
+                  message: t('taskTimeLogTab.timeLogForm.selectDateError'),
+                },
+              ]}
+            >
+              <DatePicker
+                size="small"
+                style={{ width: '100%' }}
+                disabledDate={current => current && current.toDate() > new Date()}
+              />
+            </Form.Item>
+
+            <Form.Item style={{ marginBlockEnd: 6 }}>
             <Flex gap={8} wrap="wrap" style={{ width: '100%' }}>
               <Form.Item
                 name="startTime"
@@ -467,7 +478,7 @@ const TimeLogForm = ({
                 ]}
                 style={{ flex: 1, minWidth: 140, marginBlockEnd: 0 }}
               >
-                <TimePicker format="HH:mm" style={{ width: '100%' }} />
+                <TimePicker size="small" format="HH:mm" style={{ width: '100%' }} />
               </Form.Item>
 
               <Form.Item
@@ -481,28 +492,17 @@ const TimeLogForm = ({
                 ]}
                 style={{ flex: 1, minWidth: 140, marginBlockEnd: 0 }}
               >
-                <TimePicker format="HH:mm" style={{ width: '100%' }} />
+                <TimePicker size="small" format="HH:mm" style={{ width: '100%' }} />
               </Form.Item>
             </Flex>
-          </Form.Item>
+            </Form.Item>
+          </>
         )}
-
-        <Form.Item style={{ marginBlockEnd: 12 }}>
-          <Typography.Text type="secondary">
-            {inputMode === 'duration'
-              ? t('taskTimeLogTab.timeLogForm.durationHelper', {
-                  defaultValue: 'Log total time with hours and minutes.',
-                })
-              : t('taskTimeLogTab.timeLogForm.timeRangeHelper', {
-                  defaultValue: 'Log time by selecting start and end times.',
-                })}
-          </Typography.Text>
-        </Form.Item>
 
         <Form.Item
           name="description"
           label={t('taskTimeLogTab.timeLogForm.workDescription')}
-          style={{ marginBlockEnd: 12 }}
+          style={{ marginBlockEnd: 10 }}
         >
           <Input.TextArea
             placeholder={t('taskTimeLogTab.timeLogForm.descriptionPlaceholder')}
