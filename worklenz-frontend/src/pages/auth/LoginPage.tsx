@@ -39,8 +39,8 @@ const LoginPage: React.FC = () => {
   const { t } = useTranslation('auth/login');
   const isMobile = useMediaQuery({ query: '(max-width: 576px)' });
   const dispatch = useAppDispatch();
-  const { isLoading } = useAppSelector(state => state.auth);
   const { trackMixpanelEvent } = useMixpanelTracking();
+  const [loginLoading, setLoginLoading] = useState(false);
   const [form] = Form.useForm<LoginFormValues>();
   const currentSession = useAuthService().getCurrentSession();
   const [urlParams, setUrlParams] = useState({
@@ -101,11 +101,8 @@ const LoginPage: React.FC = () => {
   const onFinish = useCallback(
     async (values: LoginFormValues) => {
       try {
+        setLoginLoading(true);
         trackMixpanelEvent(evt_login_with_email_click);
-
-        // if (teamId) {
-        //   localStorage.setItem(WORKLENZ_REDIRECT_PROJ_KEY, teamId);
-        // }
 
         // Normalize email to lowercase for case-insensitive comparison
         const normalizedValues = {
@@ -126,6 +123,8 @@ const LoginPage: React.FC = () => {
           t('errorMessages.loginErrorTitle'),
           t('errorMessages.loginErrorMessage')
         );
+      } finally {
+        setLoginLoading(false);
       }
     },
     [dispatch, navigate, t, trackMixpanelEvent]
@@ -231,7 +230,7 @@ const LoginPage: React.FC = () => {
               type="primary"
               htmlType="submit"
               size="large"
-              loading={isLoading}
+              loading={loginLoading}
               style={styles.button}
             >
               {t('loginButton')}
