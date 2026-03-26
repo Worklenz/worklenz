@@ -123,14 +123,15 @@ const {
   getTokenFromRequest: (req: Request) => req.headers["x-csrf-token"] as string || (req.body && req.body["_csrf"])
 });
 
-// Apply CSRF selectively (exclude webhooks and public routes)
+// Apply CSRF selectively (exclude webhooks, public routes, and PPM portal/bot)
 app.use((req, res, next) => {
+  const p = req.originalUrl || req.path;
   if (
-    req.path.startsWith("/webhook/") ||
-    req.path.startsWith("/secure/") ||
-    req.path.startsWith("/api/") ||
-    req.path.startsWith("/public/") ||
-    req.path.startsWith("/ppm/api/portal/")
+    p.startsWith("/webhook/") ||
+    p.startsWith("/secure/") ||
+    p.startsWith("/api/") ||
+    p.startsWith("/public/") ||
+    p.startsWith("/ppm/")
   ) {
     next();
   } else {
