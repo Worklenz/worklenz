@@ -42,17 +42,21 @@ export default class ProjectInsightsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async getLastUpdatedtasks(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const {archived} = req.query;
+    const {archived, limit = 20, offset = 0} = req.query;
+
+    const countQ = `SELECT COUNT(*) FROM tasks WHERE project_id = $1 AND CASE WHEN ($2 IS TRUE) THEN project_id IS NOT NULL ELSE archived IS FALSE END;`;
+    const countResult = await db.query(countQ, [req.params.id, archived === "true"]);
+    const total = parseInt(countResult.rows[0].count);
 
     const q = `SELECT get_last_updated_tasks_by_project($1, $2, $3, $4) AS last_updated;`;
-    const result = await db.query(q, [req.params.id, 10, 0, archived]);
+    const result = await db.query(q, [req.params.id, limit, offset, archived]);
     const [data] = result.rows;
 
     for (const task of data.last_updated) {
       task.status_color = task.status_color + TASK_STATUS_COLOR_ALPHA;
     }
 
-    return res.status(200).send(new ServerResponse(true, data.last_updated));
+    return res.status(200).send(new ServerResponse(true, { tasks: data.last_updated, total }));
   }
 
 

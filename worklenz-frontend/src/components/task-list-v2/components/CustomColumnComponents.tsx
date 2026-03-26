@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, memo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, memo, useEffect, useRef } from 'react';
 import { Tooltip, Flex, Dropdown, DatePicker, Input } from '@/shared/antd-imports';
 import { PlusOutlined, SettingOutlined, CrownOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -165,6 +165,15 @@ export const CustomColumnCell: React.FC<{
           columnKey={column.key}
           customValue={customValue}
           columnObj={column.custom_column_obj}
+          updateTaskCustomColumnValue={updateTaskCustomColumnValue}
+        />
+      );
+    case 'text':
+      return (
+        <TextCustomColumnCell
+          task={task}
+          columnKey={column.key}
+          customValue={customValue}
           updateTaskCustomColumnValue={updateTaskCustomColumnValue}
         />
       );
@@ -774,3 +783,82 @@ export const SelectionCustomColumnCell: React.FC<{
 });
 
 SelectionCustomColumnCell.displayName = 'SelectionCustomColumnCell';
+
+// Text Field Cell Component
+export const TextCustomColumnCell: React.FC<{
+  task: any;
+  columnKey: string;
+  customValue: any;
+  updateTaskCustomColumnValue: (taskId: string, columnKey: string, value: string) => void;
+}> = memo(({ task, columnKey, customValue, updateTaskCustomColumnValue }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [localValue, setLocalValue] = useState(customValue || '');
+  const inputRef = useRef<any>(null);
+
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const isDarkMode = themeMode === 'dark';
+
+  useEffect(() => {
+    setLocalValue(customValue || '');
+  }, [customValue]);
+
+  const handleSave = async () => {
+    if (task.id) {
+      await updateTaskCustomColumnValue(task.id, columnKey, localValue);
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setLocalValue(customValue || '');
+    setIsEditing(false);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="w-full">
+        <Input
+          ref={inputRef}
+          value={localValue}
+          onChange={e => setLocalValue(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={handleKeyPress}
+          size="small"
+          className={`text-xs ${
+            isDarkMode
+              ? 'bg-gray-800 border-gray-600 text-gray-200'
+              : 'bg-white border-gray-300 text-gray-900'
+          }`}
+          autoFocus
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`cursor-pointer hover:bg-opacity-50 px-2 py-1 rounded text-xs min-h-[22px] flex items-center transition-all duration-200 ${
+        isDarkMode ? 'hover:bg-gray-700 text-gray-200' : 'hover:bg-gray-100 text-gray-900'
+      }`}
+      onClick={() => {
+        setIsEditing(true);
+        setTimeout(() => inputRef.current?.focus(), 0);
+      }}
+      title={customValue || 'Click to add text'}
+    >
+      <span className={`text-xs truncate ${!customValue && 'italic text-opacity-60'}`}>
+        {customValue || 'Click to add text'}
+      </span>
+    </div>
+  );
+});
+
+TextCustomColumnCell.displayName = 'TextCustomColumnCell';

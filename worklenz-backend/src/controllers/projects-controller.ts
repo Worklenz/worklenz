@@ -275,7 +275,7 @@ export default class ProjectsController extends WorklenzControllerBase {
         FROM project_categories 
         WHERE id = projects.category_id
       )`,
-      'client_name': 'client_id',
+      'client_name': `(SELECT name FROM clients WHERE id = projects.client_id)`, // fix bug 751
       'project_owner': 'owner_id',
     };
 
