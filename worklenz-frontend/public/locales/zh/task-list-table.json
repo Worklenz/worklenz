@@ -125,6 +125,7 @@
 
     "fieldTypes": {
       "people": "人员",
+      "text": "文本",
       "number": "数字",
       "date": "日期",
       "selection": "选择",

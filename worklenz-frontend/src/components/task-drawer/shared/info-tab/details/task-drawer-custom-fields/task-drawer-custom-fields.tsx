@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
-import { Badge, DatePicker, Flex, InputNumber, Select, Typography, message } from '@/shared/antd-imports';
+import { Badge, DatePicker, Flex, Input, InputNumber, Select, Typography, message } from '@/shared/antd-imports';
 import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';
 import { store } from '@/app/store';
 import AvatarGroup from '@/components/AvatarGroup';
@@ -146,6 +146,7 @@ const TaskDrawerCustomFields = ({
   const { socket, connected } = useSocket();
   const { t } = useTranslation('task-drawer/task-drawer');
   const [numberDraftValues, setNumberDraftValues] = useState<Record<string, number | null>>({});
+  const [textDraftValues, setTextDraftValues] = useState<Record<string, string>>({});
 
   const visibleSupportedColumns = getDrawerSupportedCustomFields(customColumns);
 
@@ -250,6 +251,31 @@ const TaskDrawerCustomFields = ({
     });
   };
 
+  const commitTextValue = async (column: ITaskCustomColumn, rawValue: ITaskCustomColumnValue) => {
+    const hasDraftValue = Object.prototype.hasOwnProperty.call(textDraftValues, column.key);
+    const nextDraftValue = hasDraftValue ? textDraftValues[column.key] : null;
+    const nextValue = nextDraftValue === '' ? null : nextDraftValue;
+    const currentValue = rawValue == null ? null : String(rawValue);
+
+    if (nextValue === currentValue) {
+      if (hasDraftValue) {
+        setTextDraftValues(currentValues => {
+          const updatedValues = { ...currentValues };
+          delete updatedValues[column.key];
+          return updatedValues;
+        });
+      }
+      return;
+    }
+
+    await handleValueChange(column, nextValue);
+    setTextDraftValues(currentValues => {
+      const updatedValues = { ...currentValues };
+      delete updatedValues[column.key];
+      return updatedValues;
+    });
+  };
+
   const renderField = (column: ITaskCustomColumn) => {
     const fieldType = column.custom_column_obj?.fieldType;
     const rawValue = task?.custom_column_values?.[column.key] ?? null;
@@ -341,6 +367,32 @@ const TaskDrawerCustomFields = ({
             rawValue={rawValue}
             teamMembers={teamMembers}
             onValueChange={async (currentColumn, value) => handleValueChange(currentColumn, value)}
+          />
+        );
+      }
+
+      case 'text': {
+        return (
+          <Input
+            value={
+              Object.prototype.hasOwnProperty.call(textDraftValues, column.key)
+                ? textDraftValues[column.key]
+                : rawValue == null
+                  ? ''
+                  : String(rawValue)
+            }
+            className="w-full"
+            placeholder={t('taskInfoTab.details.customFields.enterText', {
+              defaultValue: 'Enter text',
+            })}
+            onChange={event =>
+              setTextDraftValues(currentValues => ({
+                ...currentValues,
+                [column.key]: event.target.value,
+              }))
+            }
+            onBlur={() => void commitTextValue(column, rawValue)}
+            onPressEnter={() => void commitTextValue(column, rawValue)}
           />
         );
       }

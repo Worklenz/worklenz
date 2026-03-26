@@ -1,6 +1,12 @@
 import { ITaskCustomColumn, ITaskCustomColumnValue } from '@/types/tasks/task.types';
 
-export const DRAWER_SUPPORTED_CUSTOM_FIELD_TYPES = ['date', 'number', 'selection', 'people'] as const;
+export const DRAWER_SUPPORTED_CUSTOM_FIELD_TYPES = [
+  'date',
+  'number',
+  'selection',
+  'people',
+  'text',
+] as const;
 
 export const isDrawerSupportedCustomField = (column: ITaskCustomColumn) =>
   DRAWER_SUPPORTED_CUSTOM_FIELD_TYPES.includes(

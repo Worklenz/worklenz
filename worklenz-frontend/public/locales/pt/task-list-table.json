@@ -132,6 +132,7 @@
 
     "fieldTypes": {
       "people": "Pessoas",
+      "text": "Texto",
       "number": "Número",
       "date": "Data",
       "selection": "Seleção",

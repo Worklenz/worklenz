@@ -123,6 +123,8 @@
   "errorSwitchingPricingModel": "Fehler beim Wechseln des Preismodells",
   "switchTo": "Wechseln zu",
   "pricing": "Preisgestaltung",
+  "managementUrl": "Verwaltungs-URL",
+  "updateCardDetails": "Kartendaten aktualisieren",
 
   "upgradeToUnlockFeatures": "Upgrade für Premium-Funktionen",
   "currentPlanLimits": "Aktueller Plan beinhaltet:",

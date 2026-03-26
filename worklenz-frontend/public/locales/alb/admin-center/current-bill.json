@@ -113,5 +113,7 @@
   "expiredDaysAgo": "{{days}} ditë më parë",
 
   "continueWith": "Vazhdo me {{plan}}",
-  "changeToPlan": "Ndrysho në {{plan}}"
+  "changeToPlan": "Ndrysho në {{plan}}",
+  "managementUrl": "URL e menaxhimit",
+  "updateCardDetails": "Përditëso detajet e kartës"
 }

@@ -1379,6 +1379,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
     let jsonValue = null;
 
     switch (fieldType) {
+      case "text":
+        textValue = String(value);
+        break;
       case "number":
         numberValue = parseFloat(String(value));
         break;
