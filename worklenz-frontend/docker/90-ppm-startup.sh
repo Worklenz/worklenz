@@ -93,6 +93,8 @@ server {
         proxy_set_header X-Forwarded-Proto https;
         proxy_set_header Cookie \$http_cookie;
         proxy_pass_header Set-Cookie;
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
     }
 
     location /health {
