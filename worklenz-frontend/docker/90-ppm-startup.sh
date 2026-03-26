@@ -4,6 +4,9 @@ set -e
 LISTEN_PORT="${PORT:-5000}"
 BACKEND="${BACKEND_URL:-http://localhost:3000}"
 
+# Read DNS resolver from /etc/resolv.conf (varies by platform)
+DNS_RESOLVER=$(awk '/^nameserver/{print $2; exit}' /etc/resolv.conf 2>/dev/null || echo "8.8.8.8")
+
 cat > /usr/share/nginx/html/env-config.js <<EOF
 window.VITE_API_URL = "";
 window.VITE_SOCKET_URL = "";
@@ -18,7 +21,7 @@ EOF
 cat > /etc/nginx/conf.d/default.conf <<EOF
 # Use Railway's internal DNS resolver with short TTL so backend IP changes
 # are picked up after redeploys (nginx caches DNS forever by default).
-resolver 127.0.0.11 valid=10s ipv6=off;
+resolver ${DNS_RESOLVER} valid=10s ipv6=off;
 
 server {
     listen ${LISTEN_PORT};
@@ -118,4 +121,4 @@ server {
 }
 EOF
 
-echo "PPM: nginx on :${LISTEN_PORT} -> ${BACKEND}"
+echo "PPM: nginx on :${LISTEN_PORT} -> ${BACKEND} (resolver: ${DNS_RESOLVER})"
