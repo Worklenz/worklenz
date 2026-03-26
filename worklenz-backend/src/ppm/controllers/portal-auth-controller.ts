@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import db from "../../config/db";
 import { ServerResponse } from "../../models/server-response";
 import { log_error } from "../../shared/utils";
+import { sendEmail } from "../../shared/email";
 
 export default class PortalAuthController {
   /**
@@ -26,7 +27,26 @@ export default class PortalAuthController {
 
       const token = result.rows[0]?.token;
 
-      // Token is emailed to the user via the magic link flow.
+      if (token) {
+        const baseUrl = (process.env.PPM_PORTAL_URL || `${req.protocol}://${req.get("host")}`).replace(/\/$/, "");
+        const magicLink = `${baseUrl}/portal/login?token=${token}`;
+
+        await sendEmail({
+          to: [email.trim().toLowerCase()],
+          subject: "Your TaskFlow Portal Sign-In Link",
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
+              <h2 style="color: #0061FF; margin-bottom: 24px;">Sign in to your portal</h2>
+              <p style="color: #333; line-height: 1.6;">Click the button below to securely sign in to your project portal. This link expires in 15 minutes.</p>
+              <a href="${magicLink}" style="display: inline-block; background: #0061FF; color: #fff; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 24px 0;">Sign In to Portal</a>
+              <p style="color: #999; font-size: 13px; margin-top: 24px;">If you didn't request this, you can safely ignore this email.</p>
+              <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+              <p style="color: #bbb; font-size: 12px;">Prestige Pro Media &mdash; TaskFlow</p>
+            </div>
+          `,
+        });
+      }
+
       return res.status(200).json(new ServerResponse(true, null, "If an account exists for this email, a magic link has been sent."));
     } catch (error) {
       log_error(error);
