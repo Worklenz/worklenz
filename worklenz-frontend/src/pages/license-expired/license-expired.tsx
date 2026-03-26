@@ -35,7 +35,7 @@ const LicenseExpired = () => {
             type="primary"
             key="console"
             size="large"
-            onClick={() => navigate('/worklenz/admin-center/billing')}
+            onClick={() => navigate('/taskflow/admin-center/billing')}
           >
             {t('button') || fallbackButton}
           </Button>

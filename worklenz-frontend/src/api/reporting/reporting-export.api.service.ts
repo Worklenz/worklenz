@@ -1,8 +1,9 @@
 import { toQueryString } from '@/utils/toQueryString';
 import { API_BASE_URL } from '@/shared/constants';
+import config from '@/config/env';
 import { ITimeLogBreakdownReq } from '@/types/reporting/reporting.types';
 
-const rootUrl = `${import.meta.env.VITE_API_URL}${API_BASE_URL}/reporting-export`;
+const rootUrl = `${config.apiUrl}${API_BASE_URL}/reporting-export`;
 
 export const reportingExportApiService = {
   exportOverviewProjectsByTeam(teamId: string, teamName: string) {

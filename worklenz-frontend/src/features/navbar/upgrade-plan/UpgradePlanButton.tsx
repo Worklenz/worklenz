@@ -112,7 +112,7 @@ const UpgradePlanButton = () => {
       size="small"
       type="primary"
       icon={getButtonIcon()}
-      onClick={() => navigate('/worklenz/admin-center/billing')}
+      onClick={() => navigate('/taskflow/admin-center/billing')}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-2px)';
         e.currentTarget.style.boxShadow = themeMode === 'dark' 

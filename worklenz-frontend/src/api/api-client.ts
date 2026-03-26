@@ -139,11 +139,11 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // Add 401 unauthorized handling
+    // PPM-OVERRIDE: Don't auto-redirect on 401 — let the app's protected routes
+    // handle auth state naturally. The aggressive redirect was causing logouts
+    // when background requests (timers, notifications) raced during page loads.
     if (error.response?.status === 401) {
-      alertService.error('Session Expired', 'Please log in again');
-      // Redirect to login page or trigger re-authentication
-      window.location.href = '/auth/login'; // Adjust this path as needed
+      console.warn('[API] 401 on', error.config?.url);
       return Promise.reject(error);
     }
 

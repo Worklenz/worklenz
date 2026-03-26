@@ -13,14 +13,15 @@ declare global {
 }
 
 export const getApiUrl = (): string => {
-  // First check runtime-injected environment variables
-  if (window.VITE_API_URL) {
+  // PPM-OVERRIDE: Check runtime env vars first. Empty string is valid (same-origin proxy).
+  if (typeof window.VITE_API_URL === 'string') {
     return window.VITE_API_URL;
   }
 
-  // Then check build-time environment variables
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+  // Then check build-time environment variables (skip placeholders)
+  const buildTimeUrl = import.meta.env.VITE_API_URL;
+  if (buildTimeUrl && !buildTimeUrl.startsWith('__')) {
+    return buildTimeUrl;
   }
 
   // Default for development
@@ -28,14 +29,15 @@ export const getApiUrl = (): string => {
 };
 
 export const getSocketUrl = (): string => {
-  // First check runtime-injected environment variables
-  if (window.VITE_SOCKET_URL) {
+  // PPM-OVERRIDE: Check runtime env vars first. Empty string is valid (same-origin proxy).
+  if (typeof window.VITE_SOCKET_URL === 'string') {
     return window.VITE_SOCKET_URL;
   }
 
-  // Then check build-time environment variables
-  if (import.meta.env.VITE_SOCKET_URL) {
-    return import.meta.env.VITE_SOCKET_URL;
+  // Then check build-time environment variables (skip placeholders)
+  const buildTimeUrl = import.meta.env.VITE_SOCKET_URL;
+  if (buildTimeUrl && !buildTimeUrl.startsWith('__')) {
+    return buildTimeUrl;
   }
 
   // Default based on API URL (convert http->ws or https->wss)
@@ -46,8 +48,8 @@ export const getSocketUrl = (): string => {
     return apiUrl.replace('http://', 'ws://');
   }
 
-  // Final fallback
-  return 'ws://localhost:3000';
+  // Final fallback — empty string means same-origin
+  return '';
 };
 
 export default {

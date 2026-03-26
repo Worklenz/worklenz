@@ -49,7 +49,7 @@ const MobileMenuButton = () => {
       label: (
         <Card className="mobile-menu-card" bordered={false} style={{ width: 230 }}>
           {navLinks.map((navEl, index) => (
-            <NavLink key={index} to={`/worklenz/${navEl.name}`}>
+            <NavLink key={index} to={`/taskflow/${navEl.name}`}>
               <Typography.Text strong>
                 <Space>
                   {navEl.icon}

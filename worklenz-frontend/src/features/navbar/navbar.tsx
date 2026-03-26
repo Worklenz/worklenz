@@ -95,7 +95,7 @@ const Navbar = () => {
   );
 
   useEffect(() => {
-    const afterWorklenzString = location.pathname.split('/worklenz/')[1];
+    const afterWorklenzString = location.pathname.split('/taskflow/')[1];
     const pathKey = afterWorklenzString.split('/')[0];
 
     setCurrent(pathKey ?? 'home');

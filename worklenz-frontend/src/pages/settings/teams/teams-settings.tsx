@@ -80,7 +80,7 @@ const TeamsSettings = () => {
 
         <Tooltip title={t('pinTooltip')} trigger={'hover'}>
           {/* this button pin this route to navbar  */}
-          <PinRouteToNavbarButton name="teams" path="/worklenz/settings/teams" adminOnly={true} />
+          <PinRouteToNavbarButton name="teams" path="/taskflow/settings/teams" adminOnly={true} />
         </Tooltip>
       </Flex>
 

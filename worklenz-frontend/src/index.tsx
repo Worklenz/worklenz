@@ -30,12 +30,17 @@ root.render(
   <ConfigProvider
     theme={{
       algorithm: initialTheme === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
+      // PPM-OVERRIDE: PPM brand blue as primary color
+      token: {
+        colorPrimary: '#0061FF',
+        fontFamily: '"Space Grotesk", -apple-system, BlinkMacSystemFont, "Inter", Roboto, "Helvetica Neue", Arial, sans-serif',
+      },
       components: {
         Layout: {
           colorBgLayout: initialTheme === 'dark' ? colors.darkGray : '#fafafa',
         },
         Spin: {
-          colorPrimary: initialTheme === 'dark' ? '#fff' : '#1890ff',
+          colorPrimary: initialTheme === 'dark' ? '#fff' : '#0061FF',
         },
       },
     }}

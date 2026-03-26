@@ -15,6 +15,6 @@ router.get("/auth/signup", safeControllerFunction(IndexController.signup));
 router.get("/auth/login", safeControllerFunction(IndexController.login));
 router.get(["/teams"], IndexController.admin);
 router.get(["/auth", "/auth/**"], IndexController.auth);
-router.get(["/worklenz", "/worklenz/**"], IndexController.worklenz);
+router.get(["/taskflow", "/taskflow/**"], IndexController.worklenz);
 
 export default router;

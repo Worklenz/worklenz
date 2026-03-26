@@ -64,7 +64,7 @@ export const TrialExpirationAlert = () => {
   };
 
   const handleUpgrade = () => {
-    navigate('/worklenz/admin-center/billing');
+    navigate('/taskflow/admin-center/billing');
   };
 
   if (!visible || daysRemaining === null) {

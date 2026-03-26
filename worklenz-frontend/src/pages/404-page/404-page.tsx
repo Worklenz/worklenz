@@ -23,7 +23,7 @@ const NotFoundPage = () => {
       <Flex vertical gap={8} align="center">
         <Typography.Title style={{ marginBlockEnd: 0 }}>404</Typography.Title>
         <Typography.Text style={{ textAlign: 'center' }}>{t('doesNotExistText')}</Typography.Text>
-        <Button type="primary" href="/worklenz/home">
+        <Button type="primary" href="/taskflow/home">
           {t('backHomeButton')}
         </Button>
       </Flex>

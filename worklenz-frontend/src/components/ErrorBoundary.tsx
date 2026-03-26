@@ -50,7 +50,7 @@ const ErrorFallback: React.FC<{ error?: Error }> = ({ error }) => {
   };
 
   const handleGoHome = () => {
-    navigate('/worklenz/home');
+    navigate('/taskflow/home');
     window.location.reload();
   };
 

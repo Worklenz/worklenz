@@ -50,7 +50,7 @@ const ForgotPasswordPage = () => {
         if (session?.authenticated) {
           setSession(session.user);
           dispatch(setUser(session.user));
-          navigate('/worklenz/home');
+          navigate('/taskflow/home');
         }
       } catch (error) {
         logger.error('Failed to verify authentication status', error);

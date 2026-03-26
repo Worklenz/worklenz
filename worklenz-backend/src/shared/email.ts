@@ -1,11 +1,14 @@
-import {SendEmailCommand, SESClient} from "@aws-sdk/client-ses";
+// PPM-OVERRIDE: Replaced AWS SES with Resend for transactional email
+import {Resend} from "resend";
 import {Validator} from "jsonschema";
 import {QueryResult} from "pg";
 import {log_error, isValidateEmail} from "./utils";
 import emailRequestSchema from "../json_schemas/email-request-schema";
 import db from "../config/db";
 
-const sesClient = new SESClient({region: process.env.AWS_REGION});
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+const FROM_EMAIL = process.env.EMAIL_FROM || "TaskFlow <noreply@ppmnotifications.com>";
 
 export interface IEmail {
   to?: string[];
@@ -70,29 +73,19 @@ export async function sendEmail(email: IEmail): Promise<string | null> {
 
     if (!isValidMailBody(options)) return null;
 
-    const charset = "UTF-8";
-
-    const command = new SendEmailCommand({
-      Destination: {
-        ToAddresses: options.to
-      },
-      Message: {
-        Subject: {
-          Charset: charset,
-          Data: options.subject
-        },
-        Body: {
-          Html: {
-            Charset: charset,
-            Data: options.html
-          }
-        }
-      },
-      Source: "Worklenz <noreply@worklenz.com>"
+    const {data, error} = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
     });
 
-    const res = await sesClient.send(command);
-    return res.MessageId || null;
+    if (error) {
+      log_error(error);
+      return null;
+    }
+
+    return data?.id || null;
   } catch (e) {
     log_error(e);
   }

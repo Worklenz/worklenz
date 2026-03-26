@@ -251,7 +251,7 @@ const ProjectViewHeader = memo(() => {
 
   // Memoized navigation handler
   const handleNavigateToProjects = useCallback(() => {
-    navigate('/worklenz/projects');
+    navigate('/taskflow/projects');
   }, [navigate]);
 
   // Memoized save as template handler

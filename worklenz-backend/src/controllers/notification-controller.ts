@@ -34,7 +34,7 @@ export default class NotificationController extends WorklenzControllerBase {
 
     for (const item of result.rows) {
       item.team_color = getColor(item.team_name);
-      item.url = item.project_id ? `/worklenz/projects/${item.project_id}` : null;
+      item.url = item.project_id ? `/taskflow/projects/${item.project_id}` : null;
       item.params = {task: item.task_id, tab: "tasks-list"};
     }
 

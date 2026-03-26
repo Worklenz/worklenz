@@ -15,7 +15,7 @@ const Unauthorized = () => {
         title={t('title')}
         subTitle={t('subtitle')}
         extra={
-          <Button type="primary" key="console" onClick={() => navigate('/worklenz/home')}>
+          <Button type="primary" key="console" onClick={() => navigate('/taskflow/home')}>
             {t('button')}
           </Button>
         }

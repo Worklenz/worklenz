@@ -1,5 +1,5 @@
 import { notification } from '@/shared/antd-imports';
-import { IWorklenzNotification } from '@/types/notifications/notifications.types';
+import { ITaskFlowNotification } from '@/types/notifications/notifications.types';
 import { teamsApiService } from '@/api/teams/teams.api.service';
 import { toQueryString } from '@/utils/toQueryString';
 import { BankOutlined } from '@/shared/antd-imports';
@@ -8,7 +8,7 @@ import './push-notification-template.css';
 const PushNotificationTemplate = ({
   notification: notificationData,
 }: {
-  notification: IWorklenzNotification;
+  notification: ITaskFlowNotification;
 }) => {
   const handleClick = async () => {
     if (notificationData.url) {
@@ -52,7 +52,7 @@ const PushNotificationTemplate = ({
             {notificationData.team}
           </>
         )}
-        {!notificationData.team && 'Worklenz'}
+        {!notificationData.team && 'TaskFlow'}
       </div>
       <div
         style={{
@@ -67,7 +67,7 @@ const PushNotificationTemplate = ({
   );
 };
 
-let notificationQueue: IWorklenzNotification[] = [];
+let notificationQueue: ITaskFlowNotification[] = [];
 let isProcessing = false;
 
 const processNotificationQueue = () => {
@@ -99,7 +99,7 @@ const processNotificationQueue = () => {
   }
 };
 
-export const showNotification = (notificationData: IWorklenzNotification) => {
+export const showNotification = (notificationData: ITaskFlowNotification) => {
   notificationQueue.push(notificationData);
   processNotificationQueue();
 };

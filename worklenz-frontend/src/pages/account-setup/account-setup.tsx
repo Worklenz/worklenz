@@ -26,8 +26,8 @@ import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { getUserSession, setSession } from '@/utils/session-helper';
 import { validateEmail } from '@/utils/validateEmail';
 import { sanitizeInput } from '@/utils/sanitizeInput';
-import logo from '@/assets/images/worklenz-light-mode.png';
-import logoDark from '@/assets/images/worklenz-dark-mode.png';
+// PPM-OVERRIDE: Replace Worklenz logo with PPM branding
+import PPMLogo from '@/components/ppm/PPMLogo';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 
 import './account-setup.css';
@@ -147,7 +147,7 @@ const AccountSetup: React.FC = () => {
           setSession(response.user);
           dispatch(setUser(response.user));
           if (response?.user?.setup_completed) {
-            navigate('/worklenz/home');
+            navigate('/taskflow/home');
           }
         }
       } catch (error) {
@@ -208,7 +208,7 @@ const AccountSetup: React.FC = () => {
           logger.error('Failed to refresh user session after setup completion', error);
         }
         
-        navigate(`/worklenz/projects/${res.body.id}?tab=tasks-list&pinned_tab=tasks-list`);
+        navigate(`/taskflow/projects/${res.body.id}?tab=tasks-list&pinned_tab=tasks-list`);
       }
     } catch (error) {
       logger.error('completeAccountSetup', error);
@@ -261,7 +261,7 @@ const AccountSetup: React.FC = () => {
           logger.error('Failed to refresh user session after template setup completion', error);
         }
         
-        navigate(`/worklenz/projects/${res.body.id}?tab=tasks-list&pinned_tab=tasks-list`);
+        navigate(`/taskflow/projects/${res.body.id}?tab=tasks-list&pinned_tab=tasks-list`);
       }
     } catch (error) {
       logger.error('completeAccountSetupWithTemplate', error);
@@ -534,7 +534,7 @@ const AccountSetup: React.FC = () => {
 
       {/* Logo */}
       <div className="mb-4">
-        <img src={isDarkMode ? logoDark : logo} alt="Logo" width={235} height={50} />
+        <PPMLogo size="large" showSubtitle={true} />
       </div>
       
       {/* Title */}

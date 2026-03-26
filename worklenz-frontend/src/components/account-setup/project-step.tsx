@@ -156,7 +156,7 @@ export const ProjectStep: React.FC<Props> = ({ onEnter, styles, isDarkMode = fal
         } catch (error) {
           logger.error('Failed to refresh user session after template setup completion', error);
         }
-        navigate(`/worklenz/projects/${res.body.id}?tab=tasks-list&pinned_tab=tasks-list`);
+        navigate(`/taskflow/projects/${res.body.id}?tab=tasks-list&pinned_tab=tasks-list`);
       }
     } catch (error) {
       logger.error('createFromTemplate', error);

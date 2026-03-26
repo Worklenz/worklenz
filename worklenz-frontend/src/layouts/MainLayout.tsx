@@ -43,6 +43,19 @@ const MainLayout = memo(() => {
         <Layout.Content className={`px-4 sm:px-8 lg:px-12 xl:px-16 ${!isProjectView ? 'overflow-x-hidden max-w-[1400px]' : ''} mx-auto w-full`}>
           <Outlet />
         </Layout.Content>
+
+        {/* PPM-OVERRIDE: Powered by Worklenz footer */}
+        <Layout.Footer style={{ textAlign: 'center', padding: '12px 24px', fontSize: 12, color: themeMode === 'dark' ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)' }}>
+          Powered by{' '}
+          <a
+            href="https://github.com/Worklenz/worklenz"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: themeMode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)' }}
+          >
+            Worklenz
+          </a>
+        </Layout.Footer>
       </Layout>
     </ConfigProvider>
   );

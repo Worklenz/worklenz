@@ -262,7 +262,7 @@ describe('ForgotPasswordPage', () => {
     renderWithProviders(<ForgotPasswordPage />);
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/worklenz/home');
+      expect(mockNavigate).toHaveBeenCalledWith('/taskflow/home');
     });
   });
 

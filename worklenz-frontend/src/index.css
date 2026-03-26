@@ -1,4 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+/* PPM-OVERRIDE: Add Space Grotesk (Area Inktrap alternative) alongside Inter */
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Space+Grotesk:wght@300..700&display=swap");
 @import url("./styles/customOverrides.css");
 @import url("./styles/task-management.css");
 
@@ -29,7 +30,7 @@ body {
 
 html.dark,
 html.dark body {
-  background-color: #181818;
+  background-color: #171719;
   color: #ffffff;
 }
 
@@ -59,8 +60,9 @@ html.light body {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  /* PPM-OVERRIDE: Space Grotesk as primary font (Area Inktrap alternative) */
   font-family:
-    -apple-system, BlinkMacSystemFont, "Inter", Roboto, "Helvetica Neue", Arial, "Noto Sans",
+    "Space Grotesk", -apple-system, BlinkMacSystemFont, "Inter", Roboto, "Helvetica Neue", Arial, "Noto Sans",
     sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
 }
 
@@ -69,9 +71,9 @@ html.light body {
   border: none;
 }
 
+/* PPM-OVERRIDE: Updated link color to PPM blue */
 .blue-link {
-  color: #1890ff;
-  /* This is Ant Design's default link color */
+  color: #0061FF;
 }
 
 .ps__rail-y {

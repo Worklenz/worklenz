@@ -144,7 +144,7 @@ describe('AuthenticatingPage', () => {
 
     expect(setSession).toHaveBeenCalledWith(mockUser);
     expect(setUser).toHaveBeenCalledWith(mockUser);
-    expect(mockNavigate).toHaveBeenCalledWith('/worklenz/setup');
+    expect(mockNavigate).toHaveBeenCalledWith('/taskflow/setup');
   });
 
   it('redirects to home after successful authentication', async () => {
@@ -168,7 +168,7 @@ describe('AuthenticatingPage', () => {
 
     expect(setSession).toHaveBeenCalledWith(mockUser);
     expect(setUser).toHaveBeenCalledWith(mockUser);
-    expect(mockNavigate).toHaveBeenCalledWith('/worklenz/home');
+    expect(mockNavigate).toHaveBeenCalledWith('/taskflow/home');
   });
 
   it('redirects to project when redirect key is present in localStorage', async () => {
@@ -209,7 +209,7 @@ describe('AuthenticatingPage', () => {
 
     expect(setSession).toHaveBeenCalledWith(mockUser);
     expect(setUser).toHaveBeenCalledWith(mockUser);
-    expect(hrefValue).toBe(`/worklenz/projects/${projectId}?tab=tasks-list`);
+    expect(hrefValue).toBe(`/taskflow/projects/${projectId}?tab=tasks-list`);
     expect(localStorage.getItem('worklenz_redirect_proj')).toBeNull();
   });
 

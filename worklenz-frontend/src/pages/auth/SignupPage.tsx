@@ -11,6 +11,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import googleIcon from '@/assets/images/google-icon.png';
 import PageHeader from '@components/AuthPageHeader';
 
+import config from '@/config/env';
 import { authApiService } from '@/api/auth/auth.api.service';
 import { IUserSignUpRequest } from '@/types/auth/signup.types';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -264,7 +265,7 @@ const SignupPage = () => {
     try {
       trackMixpanelEvent(evt_signup_with_google_click);
       const queryParams = getInvitationQueryParams();
-      const url = `${import.meta.env.VITE_API_URL}/secure/google${queryParams ? `?${queryParams}` : ''}`;
+      const url = `${config.apiUrl}/secure/google${queryParams ? `?${queryParams}` : ''}`;
       window.location.href = url;
     } catch (error) {
       message.error('Failed to redirect to Google sign up');

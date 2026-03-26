@@ -255,7 +255,7 @@ services:
       # Runtime environment variables (injected at startup)
       VITE_API_URL: ${VITE_API_URL}
       VITE_SOCKET_URL: ${VITE_SOCKET_URL}
-      VITE_APP_TITLE: ${VITE_APP_TITLE:-Worklenz}
+      VITE_APP_TITLE: ${VITE_APP_TITLE:-PPM TaskFlow}
       VITE_APP_ENV: production
       VITE_ENABLE_RECAPTCHA: ${VITE_ENABLE_RECAPTCHA:-false}
       VITE_RECAPTCHA_SITE_KEY: ${VITE_RECAPTCHA_SITE_KEY:-}

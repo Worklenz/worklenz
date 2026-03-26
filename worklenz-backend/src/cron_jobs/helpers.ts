@@ -24,7 +24,7 @@ function mapMembers(project: ITaskAssignmentModelProject) {
 }
 
 function updateUrls(project: ITaskAssignmentModelProject) {
-  project.url = `${getBaseUrl()}/worklenz/projects/${project.id}`;
+  project.url = `${getBaseUrl()}/taskflow/projects/${project.id}`;
   if (project.tasks) {
     project.tasks = project.tasks.map(task => {
       if (task.id)

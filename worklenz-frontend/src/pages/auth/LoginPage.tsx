@@ -12,6 +12,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import PageHeader from '@components/AuthPageHeader';
 import googleIcon from '@assets/images/google-icon.png';
 import { login, verifyAuthentication } from '@/features/auth/authSlice';
+import config from '@/config/env';
 import logger from '@/utils/errorLogger';
 import { setUser } from '@/features/user/userSlice';
 import { setSession } from '@/utils/session-helper';
@@ -69,7 +70,7 @@ const LoginPage: React.FC = () => {
       if (session?.authenticated) {
         setSession(session.user);
         dispatch(setUser(session.user));
-        navigate('/worklenz/home');
+        navigate('/taskflow/home');
       }
     } catch (error) {
       logger.error('Failed to verify authentication status', error);
@@ -91,7 +92,7 @@ const LoginPage: React.FC = () => {
 
     trackMixpanelEvent(evt_login_page_visit);
     if (currentSession && !currentSession?.setup_completed) {
-      navigate('/worklenz/setup');
+      navigate('/taskflow/setup');
       return;
     }
     void verifyAuthStatus();
@@ -133,7 +134,7 @@ const LoginPage: React.FC = () => {
   const handleGoogleLogin = useCallback(() => {
     try {
       trackMixpanelEvent(evt_login_with_google_click);
-      window.location.href = `${import.meta.env.VITE_API_URL}/secure/google`;
+      window.location.href = `${config.apiUrl}/secure/google`;
     } catch (error) {
       logger.error('Google login failed', error);
     }

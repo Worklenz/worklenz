@@ -580,7 +580,7 @@ const ProjectList: React.FC = () => {
     (project_id: string | undefined, default_view: string | undefined) => {
       if (project_id) {
         navigate(
-          `/worklenz/projects/${project_id}?tab=${default_view === 'BOARD' ? 'board' : 'tasks-list'}&pinned_tab=${default_view === 'BOARD' ? 'board' : 'tasks-list'}`
+          `/taskflow/projects/${project_id}?tab=${default_view === 'BOARD' ? 'board' : 'tasks-list'}&pinned_tab=${default_view === 'BOARD' ? 'board' : 'tasks-list'}`
         );
       }
     },

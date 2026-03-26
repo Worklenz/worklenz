@@ -21,7 +21,7 @@ const AdminCenterSidebar: React.FC = () => {
         <Flex gap={8} justify="space-between" className="admin-center-sidebar-button">
           <Flex gap={8}>
             {item.icon}
-            <Link to={`/worklenz/admin-center/${item.endpoint}`}>{t(item.name)}</Link>
+            <Link to={`/taskflow/admin-center/${item.endpoint}`}>{t(item.name)}</Link>
           </Flex>
           <RightOutlined style={{ fontSize: 12, fontWeight: 'bold' }} />
         </Flex>
@@ -44,7 +44,7 @@ const AdminCenterSidebar: React.FC = () => {
     >
       <Menu
         items={items}
-        selectedKeys={[location.pathname.split('/worklenz/admin-center/')[1] || '']}
+        selectedKeys={[location.pathname.split('/taskflow/admin-center/')[1] || '']}
         mode="vertical"
         style={{ border: 'none', width: '100%' }}
       />

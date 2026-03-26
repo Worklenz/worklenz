@@ -23,6 +23,7 @@ import safeControllerFunction from "./shared/safe-controller-function";
 import AwsSesController from "./controllers/aws-ses-controller";
 import { CSP_POLICIES } from "./shared/csp";
 import botTasksApiRouter from "./routes/bot-tasks-api-router";
+import portalApiRouter from "./ppm/routes/portal-api-router";
 
 const app = express();
 
@@ -128,7 +129,8 @@ app.use((req, res, next) => {
     req.path.startsWith("/webhook/") ||
     req.path.startsWith("/secure/") ||
     req.path.startsWith("/api/") ||
-    req.path.startsWith("/public/")
+    req.path.startsWith("/public/") ||
+    req.path.startsWith("/ppm/api/portal/")
   ) {
     next();
   } else {
@@ -194,6 +196,9 @@ const apiLimiter = rateLimit({
 
 // Bot API (service account JWT auth, no session/CSRF required)
 app.use("/ppm/api/bot", apiLimiter, botTasksApiRouter);
+
+// PPM Client Portal API (magic-link auth, no CSRF required)
+app.use("/ppm/api/portal", apiLimiter, portalApiRouter);
 
 // Routes
 app.use("/api/v1", apiLimiter, isLoggedIn, apiRouter);

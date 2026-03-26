@@ -28,7 +28,7 @@ async function onDailyDigestJobTick() {
       digest.greeting = `Hi ${digest.name},`;
       digest.note = `Here's your ${moment().format("dddd")} update!`;
       digest.base_url = `${getBaseUrl()}/worklenz`;
-      digest.settings_url = `${getBaseUrl()}/worklenz/settings/notifications`;
+      digest.settings_url = `${getBaseUrl()}/taskflow/settings/notifications`;
 
       digest.recently_assigned = mapTeams(digest.recently_assigned);
       digest.overdue = mapTeams(digest.overdue);

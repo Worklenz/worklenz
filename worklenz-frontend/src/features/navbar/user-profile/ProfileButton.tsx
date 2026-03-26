@@ -87,17 +87,17 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
           style={{ width: 230 }}
         >
           {isOwnerOrAdmin && !isLicenseExpired && (
-            <Link to="/worklenz/admin-center/overview" style={getLinkStyle()}>
+            <Link to="/taskflow/admin-center/overview" style={getLinkStyle()}>
               {t('adminCenter')}
             </Link>
           )}
           {!isLicenseExpired && (
-            <Link to="/worklenz/settings/profile" style={getLinkStyle()}>
+            <Link to="/taskflow/settings/profile" style={getLinkStyle()}>
               {t('settings')}
             </Link>
           )}
           {isLicenseExpired && (
-            <Link to="/worklenz/settings/account-deletion" style={getDangerLinkStyle()}>
+            <Link to="/taskflow/settings/account-deletion" style={getDangerLinkStyle()}>
               {t('deleteAccount')}
             </Link>
           )}

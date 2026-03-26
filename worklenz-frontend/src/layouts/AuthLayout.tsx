@@ -36,6 +36,19 @@ const AuthLayout = () => {
         >
           <Outlet />
         </Flex>
+
+        {/* PPM-OVERRIDE: Powered by Worklenz footer */}
+        <div style={{ textAlign: 'center', padding: '12px 24px', fontSize: 12, color: themeMode === 'dark' ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)' }}>
+          Powered by{' '}
+          <a
+            href="https://github.com/Worklenz/worklenz"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: themeMode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)' }}
+          >
+            Worklenz
+          </a>
+        </div>
       </Layout>
     </ConfigProvider>
   );

@@ -48,7 +48,7 @@ export default class IndexController extends WorklenzControllerBase {
 
   public static auth(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     if (req.isAuthenticated())
-      return res.redirect("/worklenz");
+      return res.redirect("/taskflow");
     return res.render("admin");
   }
 
@@ -77,7 +77,7 @@ export default class IndexController extends WorklenzControllerBase {
     }
 
     if (req.isAuthenticated())
-      return res.redirect("/worklenz");
+      return res.redirect("/taskflow");
 
     return res.render("admin");
   }
@@ -95,7 +95,7 @@ export default class IndexController extends WorklenzControllerBase {
     }
 
     if (req.isAuthenticated())
-      return res.redirect("/worklenz");
+      return res.redirect("/taskflow");
 
     return res.render("admin");
   }

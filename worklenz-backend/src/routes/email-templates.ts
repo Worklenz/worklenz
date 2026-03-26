@@ -98,7 +98,7 @@ router.get("/task-moved-to-done", (req: IWorkLenzRequest, res: IWorkLenzResponse
   const task = {
     name: "Soloman's Island Project - SIM Registration + Central DB + KYC",
     members: "Dinindu, Dinindu Wanniarachchi, Pasindu Ishan",
-    url: "http://localhost:4200/worklenz/projects/6de9c9df-2193-4212-8d64-9dfc36a83ed2?tab=tasks-list&task=f8b3fc45-a28b-4d8f-985e-9e43f8577aa8",
+    url: "http://localhost:4200/taskflow/projects/6de9c9df-2193-4212-8d64-9dfc36a83ed2?tab=tasks-list&task=f8b3fc45-a28b-4d8f-985e-9e43f8577aa8",
     team_name: "Automation",
     project_name: "Allen LLC"
   };

@@ -11,7 +11,7 @@ import {
 import { NOTIFICATION_OPTION_READ, NOTIFICATION_OPTION_UNREAD } from '@/shared/constants';
 import { useTranslation } from 'react-i18next';
 import { SocketEvents } from '@/shared/socket-events';
-import { IWorklenzNotification } from '@/types/notifications/notifications.types';
+import { ITaskFlowNotification } from '@/types/notifications/notifications.types';
 import { useSocket } from '@/socket/socketContext';
 import { ITeamInvitationViewModel } from '@/types/notifications/notifications.types';
 import logger from '@/utils/errorLogger';
@@ -77,12 +77,12 @@ const NotificationDrawer = () => {
     dispatch(fetchInvitations());
   };
 
-  const handleNotificationsUpdate = async (notification: IWorklenzNotification) => {
+  const handleNotificationsUpdate = async (notification: ITaskFlowNotification) => {
     dispatch(fetchNotifications(notificationType));
     dispatch(fetchInvitations());
 
     if (isPushEnabled()) {
-      const title = notification.team ? `${notification.team} | Worklenz` : 'Worklenz';
+      const title = notification.team ? `${notification.team} | TaskFlow` : 'TaskFlow';
       let url = notification.url;
       if (url && notification.params && Object.keys(notification.params).length) {
         const q = toQueryString(notification.params);
@@ -97,7 +97,7 @@ const NotificationDrawer = () => {
   };
 
   const handleTeamInvitationsUpdate = async (data: ITeamInvitationViewModel) => {
-    const notification: IWorklenzNotification = {
+    const notification: ITaskFlowNotification = {
       id: data.id || '',
       team: data.team_name || '',
       team_id: data.team_id || '',
@@ -107,7 +107,7 @@ const NotificationDrawer = () => {
     if (isPushEnabled()) {
       createPush(
         notification.message,
-        notification.team || 'Worklenz',
+        notification.team || 'TaskFlow',
         notification.team_id || null
       );
     }
@@ -152,7 +152,7 @@ const NotificationDrawer = () => {
     }
   };
 
-  const goToUrl = async (event: React.MouseEvent, notification: IWorklenzNotification) => {
+  const goToUrl = async (event: React.MouseEvent, notification: ITaskFlowNotification) => {
     event.preventDefault();
     event.stopPropagation();
     if (notification.url) {

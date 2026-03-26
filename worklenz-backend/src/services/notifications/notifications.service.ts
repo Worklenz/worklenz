@@ -40,7 +40,7 @@ export class NotificationsService {
   }
 
   public static sendNotification(receiver: IReceiver): void {
-    const url = receiver.project_id ? `/worklenz/projects/${receiver.project_id}` : null;
+    const url = receiver.project_id ? `/taskflow/projects/${receiver.project_id}` : null;
     const notification = new WorklenzNotification(receiver.team, receiver.team_id, receiver.message, url);
 
     if (receiver.project) {

@@ -3,7 +3,7 @@
 
   "setupYourAccount": "Configura tu cuenta.",
   "organizationStepTitle": "Nombra tu organización",
-  "organizationStepWelcome": "¡Bienvenido a Worklenz!",
+  "organizationStepWelcome": "¡Bienvenido a TaskFlow!",
   "organizationStepDescription": "Comencemos configurando tu organización. Este será el espacio de trabajo principal para tu equipo.",
   "organizationStepLabel": "Nombre de la organización",
   "organizationStepPlaceholder": "ej. Corporación Acme",
@@ -76,7 +76,7 @@
   
   "yourNeedsTitle": "¿Cuáles son tus principales necesidades?",
   "yourNeedsDescription": "Selecciona todas las que apliquen para ayudarnos a configurar tu espacio de trabajo",
-  "yourNeedsQuestion": "¿Cómo usarás principalmente Worklenz?",
+  "yourNeedsQuestion": "¿Cómo usarás principalmente TaskFlow?",
   "useCaseTaskOrg": "Organizar y hacer seguimiento de tareas",
   "useCaseTeamCollab": "Trabajar juntos sin problemas", 
   "useCaseResourceMgmt": "Gestionar tiempo y recursos",
@@ -88,12 +88,12 @@
   "previousToolsPlaceholder": "ej., Asana, Trello, Jira, Monday.com, etc.",
   
   "discoveryTitle": "Una última cosa...",
-  "discoveryDescription": "Ayúdanos a entender cómo descubriste Worklenz",
+  "discoveryDescription": "Ayúdanos a entender cómo descubriste TaskFlow",
   "discoveryQuestion": "¿Cómo te enteraste de nosotros?",
   "allSetTitle": "¡Ya estás listo!",
-  "allSetDescription": "Vamos a crear tu primer proyecto y comenzar con Worklenz",
+  "allSetDescription": "Vamos a crear tu primer proyecto y comenzar con TaskFlow",
   "surveyCompleteTitle": "¡Gracias!",
-  "surveyCompleteDescription": "Tu retroalimentación nos ayuda a mejorar Worklenz para todos",
+  "surveyCompleteDescription": "Tu retroalimentación nos ayuda a mejorar TaskFlow para todos",
   "aboutYouStepName": "Sobre ti",
   "yourNeedsStepName": "Tus necesidades", 
   "discoveryStepName": "Descubrimiento",
@@ -128,7 +128,7 @@
   "addAnotherTask": "Añadir otra tarea ({{current}}/{{max}})",
 
   "surveyStepTitle": "Cuéntanos sobre ti",
-  "surveyStepLabel": "Ayúdanos a personalizar tu experiencia de Worklenz respondiendo algunas preguntas.",
+  "surveyStepLabel": "Ayúdanos a personalizar tu experiencia de TaskFlow respondiendo algunas preguntas.",
   
   "organizationType": "¿Qué describe mejor tu organización?",
   "organizationTypeFreelancer": "Freelancer",
@@ -146,7 +146,7 @@
   "userRoleOperations": "Operaciones",
   "userRoleOther": "Otro",
   
-  "mainUseCases": "¿Para qué usarás principalmente Worklenz?",
+  "mainUseCases": "¿Para qué usarás principalmente TaskFlow?",
   "mainUseCasesTaskManagement": "Gestión de tareas",
   "mainUseCasesTeamCollaboration": "Colaboración de equipo",
   "mainUseCasesResourcePlanning": "Planificación de recursos",
@@ -154,10 +154,10 @@
   "mainUseCasesTimeTracking": "Seguimiento de tiempo",
   "mainUseCasesOther": "Otro",
   
-  "previousTools": "¿Qué herramienta(s) usabas antes de Worklenz?",
+  "previousTools": "¿Qué herramienta(s) usabas antes de TaskFlow?",
   "previousToolsPlaceholder": "ej. Trello, Asana, Monday.com",
   
-  "howHeardAbout": "¿Cómo conociste Worklenz?",
+  "howHeardAbout": "¿Cómo conociste TaskFlow?",
   "howHeardAboutGoogleSearch": "Búsqueda de Google",
   "howHeardAboutTwitter": "Twitter",
   "howHeardAboutLinkedin": "LinkedIn",

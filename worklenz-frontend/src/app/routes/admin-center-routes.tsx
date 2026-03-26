@@ -10,7 +10,7 @@ const AdminCenterGuard = ({ children }: { children: React.ReactNode }) => {
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
 
   if (!isOwnerOrAdmin) {
-    return <Navigate to="/worklenz/unauthorized" replace />;
+    return <Navigate to="/taskflow/unauthorized" replace />;
   }
 
   return <>{children}</>;

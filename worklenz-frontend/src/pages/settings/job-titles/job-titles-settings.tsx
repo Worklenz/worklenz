@@ -184,7 +184,7 @@ const JobTitlesSettings = () => {
             <Tooltip title={t('pinTooltip')} trigger={'hover'}>
               <PinRouteToNavbarButton
                 name="jobTitles"
-                path="/worklenz/settings/job-titles"
+                path="/taskflow/settings/job-titles"
                 adminOnly
               />
             </Tooltip>

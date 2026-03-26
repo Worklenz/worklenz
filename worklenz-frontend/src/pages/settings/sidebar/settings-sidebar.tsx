@@ -13,7 +13,7 @@ const SettingSidebar: React.FC = () => {
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
 
   const getCurrentActiveKey = () => {
-    const pathParts = location.pathname.split('/worklenz/settings/');
+    const pathParts = location.pathname.split('/taskflow/settings/');
     if (pathParts.length < 2) return '';
     return pathParts[1].split('/')[0];
   };
@@ -34,7 +34,7 @@ const SettingSidebar: React.FC = () => {
             <Flex gap={8} align="center">
               {item.icon}
               <Link 
-                to={`/worklenz/settings/${item.endpoint}`}
+                to={`/taskflow/settings/${item.endpoint}`}
                 style={{ color: isDangerous ? '#ff4d4f' : undefined }}
               >
                 {t(item.name)}

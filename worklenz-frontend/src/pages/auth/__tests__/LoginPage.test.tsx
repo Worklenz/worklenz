@@ -291,7 +291,7 @@ describe('LoginPage', () => {
     renderWithProviders(<LoginPage />);
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/worklenz/home');
+      expect(mockNavigate).toHaveBeenCalledWith('/taskflow/home');
     });
   });
 
@@ -311,7 +311,7 @@ describe('LoginPage', () => {
     renderWithProviders(<LoginPage />);
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/worklenz/setup');
+      expect(mockNavigate).toHaveBeenCalledWith('/taskflow/setup');
     });
   });
 });

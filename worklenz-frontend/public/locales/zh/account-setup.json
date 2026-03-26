@@ -1,8 +1,8 @@
 {
   "continue": "继续",
-  "setupYourAccount": "设置您的 Worklenz 账户。",
+  "setupYourAccount": "设置您的 TaskFlow 账户。",
   "organizationStepTitle": "命名您的组织",
-  "organizationStepWelcome": "欢迎使用 Worklenz！",
+  "organizationStepWelcome": "欢迎使用 TaskFlow！",
   "organizationStepDescription": "让我们从设置您的组织开始。这将是您团队的主要工作空间。",
   "organizationStepLabel": "组织名称",
   "organizationStepPlaceholder": "例如：Acme 公司",
@@ -74,7 +74,7 @@
 
   "yourNeedsTitle": "您的主要需求是什么？",
   "yourNeedsDescription": "请选择所有适用项，帮助我们设置您的工作区",
-  "yourNeedsQuestion": "您主要如何使用 Worklenz？",
+  "yourNeedsQuestion": "您主要如何使用 TaskFlow？",
   "useCaseTaskOrg": "组织和跟踪任务",
   "useCaseTeamCollab": "团队协作",
   "useCaseResourceMgmt": "管理时间和资源",
@@ -86,12 +86,12 @@
   "previousToolsPlaceholder": "例如：Asana、Trello、Jira、Monday.com 等",
 
   "discoveryTitle": "最后一个问题……",
-  "discoveryDescription": "帮助我们了解您是如何发现 Worklenz 的",
+  "discoveryDescription": "帮助我们了解您是如何发现 TaskFlow 的",
   "discoveryQuestion": "您是如何听说我们的？",
   "allSetTitle": "一切就绪！",
-  "allSetDescription": "让我们创建您的第一个项目并开始使用 Worklenz 吧",
+  "allSetDescription": "让我们创建您的第一个项目并开始使用 TaskFlow 吧",
   "surveyCompleteTitle": "谢谢！",
-  "surveyCompleteDescription": "您的反馈有助于我们为所有人改进 Worklenz",
+  "surveyCompleteDescription": "您的反馈有助于我们为所有人改进 TaskFlow",
   "aboutYouStepName": "关于您",
   "yourNeedsStepName": "您的需求",
   "discoveryStepName": "发现",
@@ -126,7 +126,7 @@
   "addAnotherTask": "添加另一个任务 ({{current}}/{{max}})",
 
   "surveyStepTitle": "告诉我们关于您的信息",
-  "surveyStepLabel": "通过回答几个问题帮助我们个性化您的 Worklenz 体验。",
+  "surveyStepLabel": "通过回答几个问题帮助我们个性化您的 TaskFlow 体验。",
 
   "organizationType": "哪项最能描述您的组织？",
   "organizationTypeFreelancer": "自由职业者",
@@ -144,7 +144,7 @@
   "userRoleOperations": "运营",
   "userRoleOther": "其他",
 
-  "mainUseCases": "您主要将 Worklenz 用于什么？",
+  "mainUseCases": "您主要将 TaskFlow 用于什么？",
   "mainUseCasesTaskManagement": "任务管理",
   "mainUseCasesTeamCollaboration": "团队协作",
   "mainUseCasesResourcePlanning": "资源规划",
@@ -152,10 +152,10 @@
   "mainUseCasesTimeTracking": "时间跟踪",
   "mainUseCasesOther": "其他",
 
-  "previousTools": "在使用 Worklenz 之前您用过哪些工具？",
+  "previousTools": "在使用 TaskFlow 之前您用过哪些工具？",
   "previousToolsPlaceholder": "例如：Trello、Asana、Monday.com",
 
-  "howHeardAbout": "您是如何了解 Worklenz 的？",
+  "howHeardAbout": "您是如何了解 TaskFlow 的？",
   "howHeardAboutGoogleSearch": "Google 搜索",
   "howHeardAboutTwitter": "Twitter",
   "howHeardAboutLinkedin": "LinkedIn",

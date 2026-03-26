@@ -30,7 +30,7 @@ import {
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { projectColors } from '@/lib/project/project-constants';
-import { setProject, setProjectId } from '@/features/project/project.slice';
+import { getProject, setProject, setProjectId } from '@/features/project/project.slice';
 import { fetchProjectCategories } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
 import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/projectHealthSlice';
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
@@ -236,11 +236,14 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         if (!editMode) {
           trackMixpanelEvent(evt_projects_create);
           navigate(
-            `/worklenz/projects/${response.data.body.id}?tab=tasks-list&pinned_tab=tasks-list`
+            `/taskflow/projects/${response.data.body.id}?tab=tasks-list&pinned_tab=tasks-list`
           );
         }
         refetchProjects();
-        window.location.reload(); // Refresh the page
+        // PPM-OVERRIDE: Refresh current project view so name/settings update without reload
+        if (editMode && projectId) {
+          dispatch(getProject(projectId));
+        }
       } else {
         notification.error({ message: response?.data?.message });
         logger.error(
@@ -323,9 +326,8 @@ const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         dispatch(setProjectData({} as IProjectViewModel));
         dispatch(setProjectId(null));
         dispatch(toggleProjectDrawer());
-        navigate('/worklenz/projects');
+        navigate('/taskflow/projects');
         refetchProjects();
-        window.location.reload(); // Refresh the page
       } else {
         notification.error({ message: res?.data?.message });
         logger.error('Error deleting project', res?.data?.message);

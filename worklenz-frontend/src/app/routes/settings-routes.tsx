@@ -16,7 +16,7 @@ const SettingsGuard = ({
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
 
   if (adminRequired && !isOwnerOrAdmin) {
-    return <Navigate to="/worklenz/unauthorized" replace />;
+    return <Navigate to="/taskflow/unauthorized" replace />;
   }
 
   return <>{children}</>;

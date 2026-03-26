@@ -19,13 +19,13 @@ const ReportingSider = () => {
             label: t(`${item.name}`),
             children: item.children.map(child => ({
               key: child.key,
-              label: <Link to={`/worklenz/reporting/${child.endpoint}`}>{t(`${child.name}`)}</Link>,
+              label: <Link to={`/taskflow/reporting/${child.endpoint}`}>{t(`${child.name}`)}</Link>,
             })),
           };
         }
         return {
           key: item.key,
-          label: <Link to={`/worklenz/reporting/${item.endpoint}`}>{t(`${item.name}`)}</Link>,
+          label: <Link to={`/taskflow/reporting/${item.endpoint}`}>{t(`${item.name}`)}</Link>,
         };
       }),
     [t]
@@ -33,7 +33,7 @@ const ReportingSider = () => {
 
   // Memoize the active key calculation
   const activeKey = useMemo(() => {
-    const afterWorklenzString = location.pathname?.split('/worklenz/reporting/')[1];
+    const afterWorklenzString = location.pathname?.split('/taskflow/reporting/')[1];
     return afterWorklenzString?.split('/')[0];
   }, [location.pathname]);
 

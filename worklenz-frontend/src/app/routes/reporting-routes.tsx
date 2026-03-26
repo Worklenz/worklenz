@@ -18,7 +18,7 @@ const flattenedItems = flattenItems(reportingsItems);
 
 const reportingRoutes: RouteObject[] = [
   {
-    path: 'worklenz/reporting',
+    path: 'taskflow/reporting',
     element: <ReportingLayout />,
     children: flattenedItems.map(item => ({
       path: item.endpoint,

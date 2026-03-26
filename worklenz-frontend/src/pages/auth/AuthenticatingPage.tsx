@@ -21,11 +21,11 @@ const AuthenticatingPage: React.FC = () => {
     const project = localStorage.getItem(WORKLENZ_REDIRECT_PROJ_KEY);
     if (project) {
       localStorage.removeItem(WORKLENZ_REDIRECT_PROJ_KEY);
-      window.location.href = `/worklenz/projects/${project}?tab=tasks-list`;
+      window.location.href = `/taskflow/projects/${project}?tab=tasks-list`;
       return;
     }
 
-    navigate('/worklenz/home');
+    navigate('/taskflow/home');
   };
 
   useEffect(() => {
@@ -42,7 +42,7 @@ const AuthenticatingPage: React.FC = () => {
         dispatch(setUser(session.user));
 
         if (!session.user.setup_completed) {
-          return navigate('/worklenz/setup');
+          return navigate('/taskflow/setup');
         }
 
         // Redirect based on setup status

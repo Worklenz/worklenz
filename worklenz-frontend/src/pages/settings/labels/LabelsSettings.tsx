@@ -159,7 +159,7 @@ const LabelsSettings = () => {
 
             <Tooltip title={t('pinTooltip', 'Click to pin this into the main menu')} trigger={'hover'}>
               {/* this button pin this route to navbar  */}
-              <PinRouteToNavbarButton name="labels" path="/worklenz/settings/labels" />
+              <PinRouteToNavbarButton name="labels" path="/taskflow/settings/labels" />
             </Tooltip>
           </Flex>
         </Flex>

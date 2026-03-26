@@ -6,6 +6,7 @@ import mainRoutes from './main-routes';
 import notFoundRoute from './not-found-route';
 import accountSetupRoute from './account-setup-routes';
 import reportingRoutes from './reporting-routes';
+import portalRoutes from '@components/ppm/portal/portal-routes';
 import { useAuthService } from '@/hooks/useAuth';
 import { AuthenticatedLayout } from '@/layouts/AuthenticatedLayout';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -52,7 +53,7 @@ export const AdminGuard = memo(({ children }: GuardProps) => {
   }
 
   if (!isAdmin) {
-    return <Navigate to="/worklenz/unauthorized" />;
+    return <Navigate to="/taskflow/unauthorized" />;
   }
 
   return <>{children}</>;
@@ -64,8 +65,8 @@ export const LicenseExpiryGuard = memo(({ children }: GuardProps) => {
   const { isLicenseExpired, location } = useAuthStatus();
   const authService = useAuthService();
 
-  const isAdminCenterRoute = location.pathname.includes('/worklenz/admin-center');
-  const isAccountDeletionRoute = location.pathname.includes('/worklenz/settings/account-deletion');
+  const isAdminCenterRoute = location.pathname.includes('/taskflow/admin-center');
+  const isAccountDeletionRoute = location.pathname.includes('/taskflow/settings/account-deletion');
 
   // Show modal instead of redirecting, but not on admin center routes or account deletion
   const showModal = isLicenseExpired && !isAdminCenterRoute && !isAccountDeletionRoute;
@@ -99,7 +100,7 @@ export const SetupGuard = memo(({ children }: GuardProps) => {
   }
 
   if (!isSetupComplete) {
-    return <Navigate to="/worklenz/setup" />;
+    return <Navigate to="/taskflow/setup" />;
   }
 
   return <>{children}</>;
@@ -116,7 +117,7 @@ export const AuthAndSetupGuard = memo(({ children }: GuardProps) => {
   }
 
   if (!isSetupComplete) {
-    return <Navigate to="/worklenz/setup" />;
+    return <Navigate to="/taskflow/setup" />;
   }
 
   return <>{children}</>;
@@ -191,7 +192,7 @@ const StaticLicenseExpired = memo(() => {
             fontSize: '16px',
             cursor: 'pointer',
           }}
-          onClick={() => (window.location.href = '/worklenz/admin-center/billing')}
+          onClick={() => (window.location.href = '/taskflow/admin-center/billing')}
         >
           Upgrade now
         </button>
@@ -203,7 +204,7 @@ const StaticLicenseExpired = memo(() => {
 StaticLicenseExpired.displayName = 'StaticLicenseExpired';
 
 // Create route arrays (moved outside of useMemo to avoid hook violations)
-const publicRoutes = [...rootRoutes, ...authRoutes, notFoundRoute];
+const publicRoutes = [...rootRoutes, ...authRoutes, ...portalRoutes, notFoundRoute];
 
 // Apply combined guard to main routes that require both auth and setup completion
 const protectedMainRoutes = wrapRoutes(mainRoutes, AuthAndSetupGuard);

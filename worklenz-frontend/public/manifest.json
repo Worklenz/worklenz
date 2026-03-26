@@ -1,7 +1,7 @@
 {
-  "name": "Worklenz - Project Management",
-  "short_name": "Worklenz",
-  "description": "A comprehensive project management application for teams",
+  "name": "Prestige Pro Media - TaskFlow",
+  "short_name": "PPM TaskFlow",
+  "description": "Project management and client portal for Prestige Pro Media",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

@@ -10,7 +10,7 @@ export const authLoader = async () => {
   }
 
   if (session.user.is_expired) {
-    return redirect('/worklenz/license-expired');
+    return redirect('/taskflow/license-expired');
   }
 
   return session;

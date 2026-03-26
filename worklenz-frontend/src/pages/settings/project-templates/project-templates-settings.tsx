@@ -55,7 +55,7 @@ const ProjectTemplatesSettings = () => {
             <Button
               size="small"
               onClick={() =>
-                navigate(`/worklenz/settings/project-templates/edit/${record.id}/${record.name}`)
+                navigate(`/taskflow/settings/project-templates/edit/${record.id}/${record.name}`)
               }
             >
               <EditOutlined />
