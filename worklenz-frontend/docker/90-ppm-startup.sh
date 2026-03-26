@@ -4,6 +4,9 @@ set -e
 LISTEN_PORT="${PORT:-5000}"
 BACKEND="${BACKEND_URL:-http://localhost:3000}"
 
+# Read DNS resolver from /etc/resolv.conf (Railway uses fd12::10)
+DNS_RESOLVER=$(awk '/^nameserver/{print $2; exit}' /etc/resolv.conf 2>/dev/null || echo "8.8.8.8")
+
 cat > /usr/share/nginx/html/env-config.js <<EOF
 window.VITE_API_URL = "";
 window.VITE_SOCKET_URL = "";
@@ -16,14 +19,21 @@ window.VITE_ENABLE_SURVEY_MODAL = "${VITE_ENABLE_SURVEY_MODAL:-false}";
 EOF
 
 cat > /etc/nginx/conf.d/default.conf <<EOF
+# Dynamic DNS resolution so backend IP changes are picked up after redeploys.
+# Railway's internal resolver is fd12::10 (read from /etc/resolv.conf).
+resolver [${DNS_RESOLVER}] valid=10s;
+
 server {
     listen ${LISTEN_PORT};
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
 
+    # Using a variable forces nginx to re-resolve DNS on each request
+    set \$backend ${BACKEND};
+
     location /api/ {
-        proxy_pass ${BACKEND}/api/;
+        proxy_pass \$backend/api/;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -34,7 +44,7 @@ server {
     }
 
     location /secure/ {
-        proxy_pass ${BACKEND}/secure/;
+        proxy_pass \$backend/secure/;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -45,7 +55,7 @@ server {
     }
 
     location /csrf-token {
-        proxy_pass ${BACKEND}/csrf-token;
+        proxy_pass \$backend/csrf-token;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -56,7 +66,7 @@ server {
     }
 
     location /ppm/ {
-        proxy_pass ${BACKEND}/ppm/;
+        proxy_pass \$backend/ppm/;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -67,13 +77,13 @@ server {
     }
 
     location /public/ {
-        proxy_pass ${BACKEND}/public/;
+        proxy_pass \$backend/public/;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
     }
 
     location /socket {
-        proxy_pass ${BACKEND}/socket;
+        proxy_pass \$backend/socket;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -111,7 +121,4 @@ server {
 }
 EOF
 
-echo "PPM: nginx on :${LISTEN_PORT} -> ${BACKEND}"
-echo "PPM: resolv.conf contents:"
-cat /etc/resolv.conf
-echo "PPM: end resolv.conf"
+echo "PPM: nginx on :${LISTEN_PORT} -> ${BACKEND} (resolver: ${DNS_RESOLVER})"
