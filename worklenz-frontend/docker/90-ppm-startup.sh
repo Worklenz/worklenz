@@ -112,3 +112,6 @@ server {
 EOF
 
 echo "PPM: nginx on :${LISTEN_PORT} -> ${BACKEND}"
+echo "PPM: resolv.conf contents:"
+cat /etc/resolv.conf
+echo "PPM: end resolv.conf"
