@@ -46,7 +46,7 @@ const AuthLayout = () => {
             rel="noopener noreferrer"
             style={{ color: themeMode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)' }}
           >
-            Worklenz
+            TaskFlow
           </a>
         </div>
       </Layout>

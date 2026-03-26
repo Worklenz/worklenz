@@ -184,6 +184,7 @@ const LoginPage: React.FC = () => {
         layout="vertical"
         autoComplete="off"
         requiredMark="optional"
+        validateTrigger="onSubmit"
         initialValues={{ remember: true }}
         onFinish={onFinish}
         style={{ width: '100%' }}
