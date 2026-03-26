@@ -16,14 +16,21 @@ window.VITE_ENABLE_SURVEY_MODAL = "${VITE_ENABLE_SURVEY_MODAL:-false}";
 EOF
 
 cat > /etc/nginx/conf.d/default.conf <<EOF
+# Use Railway's internal DNS resolver with short TTL so backend IP changes
+# are picked up after redeploys (nginx caches DNS forever by default).
+resolver 127.0.0.11 valid=10s ipv6=off;
+
 server {
     listen ${LISTEN_PORT};
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
 
+    # Using a variable forces nginx to re-resolve DNS on each request
+    set \$backend ${BACKEND};
+
     location /api/ {
-        proxy_pass ${BACKEND}/api/;
+        proxy_pass \$backend/api/;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -34,7 +41,7 @@ server {
     }
 
     location /secure/ {
-        proxy_pass ${BACKEND}/secure/;
+        proxy_pass \$backend/secure/;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -45,7 +52,7 @@ server {
     }
 
     location /csrf-token {
-        proxy_pass ${BACKEND}/csrf-token;
+        proxy_pass \$backend/csrf-token;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -56,7 +63,7 @@ server {
     }
 
     location /ppm/ {
-        proxy_pass ${BACKEND}/ppm/;
+        proxy_pass \$backend/ppm/;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -67,13 +74,13 @@ server {
     }
 
     location /public/ {
-        proxy_pass ${BACKEND}/public/;
+        proxy_pass \$backend/public/;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
     }
 
     location /socket {
-        proxy_pass ${BACKEND}/socket;
+        proxy_pass \$backend/socket;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
