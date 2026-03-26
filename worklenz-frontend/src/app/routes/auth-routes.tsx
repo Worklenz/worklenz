@@ -3,13 +3,22 @@ import AuthLayout from '@/layouts/AuthLayout';
 import { Navigate } from 'react-router-dom';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 
+// PPM-OVERRIDE: Auto-reload on stale chunk errors after deploys
+const lazyWithReload = (importFn: () => Promise<any>) =>
+  lazy(() =>
+    importFn().catch(() => {
+      window.location.reload();
+      return new Promise(() => {}); // never resolves — reload handles it
+    })
+  );
+
 // Lazy load auth page components for better code splitting
-const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
-const SignupPage = lazy(() => import('@/pages/auth/SignupPage'));
-const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'));
-const LoggingOutPage = lazy(() => import('@/pages/auth/LoggingOutPage'));
-const AuthenticatingPage = lazy(() => import('@/pages/auth/AuthenticatingPage'));
-const VerifyResetEmailPage = lazy(() => import('@/pages/auth/VerifyResetEmailPage'));
+const LoginPage = lazyWithReload(() => import('@/pages/auth/LoginPage'));
+const SignupPage = lazyWithReload(() => import('@/pages/auth/SignupPage'));
+const ForgotPasswordPage = lazyWithReload(() => import('@/pages/auth/ForgotPasswordPage'));
+const LoggingOutPage = lazyWithReload(() => import('@/pages/auth/LoggingOutPage'));
+const AuthenticatingPage = lazyWithReload(() => import('@/pages/auth/AuthenticatingPage'));
+const VerifyResetEmailPage = lazyWithReload(() => import('@/pages/auth/VerifyResetEmailPage'));
 
 const authRoutes = [
   {
