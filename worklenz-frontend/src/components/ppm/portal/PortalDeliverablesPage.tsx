@@ -28,14 +28,6 @@ const PortalDeliverablesPage: React.FC = () => {
   const [filter, setFilter] = useState<FilterKey>('all');
   const [view, setView] = useState<ViewMode>('card');
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/portal/login', { replace: true });
-      return;
-    }
-    loadDeliverables();
-  }, [user, navigate, loadDeliverables]);
-
   const loadDeliverables = useCallback(async () => {
     setLoading(true);
     try {
@@ -44,6 +36,14 @@ const PortalDeliverablesPage: React.FC = () => {
     } catch { /* handled */ }
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/portal/login', { replace: true });
+      return;
+    }
+    loadDeliverables();
+  }, [user, navigate, loadDeliverables]);
 
   const filtered = deliverables.filter((d) => {
     const matchesSearch =
