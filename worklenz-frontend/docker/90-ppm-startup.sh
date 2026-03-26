@@ -18,9 +18,10 @@ window.VITE_ENABLE_GOOGLE_LOGIN = "${VITE_ENABLE_GOOGLE_LOGIN:-false}";
 window.VITE_ENABLE_SURVEY_MODAL = "${VITE_ENABLE_SURVEY_MODAL:-false}";
 EOF
 
+# When proxy_pass uses a variable, nginx does NOT do path substitution —
+# the full original request URI is forwarded as-is, which is what we want.
+# The variable forces nginx to re-resolve DNS on each request.
 cat > /etc/nginx/conf.d/default.conf <<EOF
-# Dynamic DNS resolution so backend IP changes are picked up after redeploys.
-# Railway's internal resolver is fd12::10 (read from /etc/resolv.conf).
 resolver [${DNS_RESOLVER}] valid=10s;
 
 server {
@@ -29,11 +30,10 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    # Using a variable forces nginx to re-resolve DNS on each request
     set \$backend ${BACKEND};
 
     location /api/ {
-        proxy_pass \$backend/api/;
+        proxy_pass \$backend;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -44,7 +44,7 @@ server {
     }
 
     location /secure/ {
-        proxy_pass \$backend/secure/;
+        proxy_pass \$backend;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -55,7 +55,7 @@ server {
     }
 
     location /csrf-token {
-        proxy_pass \$backend/csrf-token;
+        proxy_pass \$backend;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -66,7 +66,7 @@ server {
     }
 
     location /ppm/ {
-        proxy_pass \$backend/ppm/;
+        proxy_pass \$backend;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -77,13 +77,13 @@ server {
     }
 
     location /public/ {
-        proxy_pass \$backend/public/;
+        proxy_pass \$backend;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
     }
 
     location /socket {
-        proxy_pass \$backend/socket;
+        proxy_pass \$backend;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -101,7 +101,6 @@ server {
         add_header Content-Type text/plain;
     }
 
-    # Never cache env-config.js or index.html (runtime config + SPA entry)
     location = /env-config.js {
         add_header Cache-Control "no-store, no-cache, must-revalidate";
     }
