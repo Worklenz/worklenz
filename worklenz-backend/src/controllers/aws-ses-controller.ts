@@ -1,3 +1,7 @@
+// PPM-OVERRIDE: SES webhook handlers are inactive — email now uses Resend.
+// These routes remain as stubs to avoid breaking the route registrations.
+// TODO: Replace with Resend webhook handlers when bounce/complaint tracking is needed.
+
 import {IWorkLenzRequest} from "../interfaces/worklenz-request";
 import {IWorkLenzResponse} from "../interfaces/worklenz-response";
 import {ServerResponse} from "../models/server-response";
