@@ -3,6 +3,7 @@ import db from "../../config/db";
 import {SocketEvents} from "../events";
 
 import {getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates} from "../util";
+import { PPM_TIME_INCREMENT } from "../../ppm/utils/time-rounding"; // PPM-OVERRIDE: 15-min increment enforcement
 
 export async function on_task_timer_stop(_io: Server, socket: Socket, data?: string) {
   let client;
@@ -36,6 +37,7 @@ export async function on_task_timer_stop(_io: Server, socket: Socket, data?: str
 
     try {
       // First, get the timer data and calculate time spent
+      // PPM-OVERRIDE: Round timer to nearest 15-min increment (minimum 15 min)
       const timerQuery = `
         WITH timer_data AS (
           SELECT start_time
@@ -44,11 +46,16 @@ export async function on_task_timer_stop(_io: Server, socket: Socket, data?: str
         ),
         time_calculation AS (
           SELECT
-            COALESCE(
-              EXTRACT(EPOCH FROM (
-                DATE_TRUNC('second', (CURRENT_TIMESTAMP - timer_data.start_time::TIMESTAMPTZ))
-              )::INTERVAL),
-              0
+            GREATEST(
+              ROUND(
+                COALESCE(
+                  EXTRACT(EPOCH FROM (
+                    DATE_TRUNC('second', (CURRENT_TIMESTAMP - timer_data.start_time::TIMESTAMPTZ))
+                  )::INTERVAL),
+                  0
+                ) / ${PPM_TIME_INCREMENT}
+              ) * ${PPM_TIME_INCREMENT},
+              ${PPM_TIME_INCREMENT}
             ) as time_spent,
             timer_data.start_time
           FROM timer_data

@@ -1,0 +1,36 @@
+.ppm-project-calendar-wrapper {
+  overflow: auto;
+}
+
+.ppm-project-calendar .ant-picker-calendar-date-content {
+  height: 60px !important;
+  overflow-y: auto;
+}
+
+.ppm-calendar-tasks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ppm-calendar-tasks li {
+  cursor: pointer;
+  padding: 1px 0;
+  border-radius: 3px;
+  transition: background 0.15s;
+}
+
+.ppm-calendar-tasks li:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ppm-calendar-overflow {
+  cursor: default;
+  padding-left: 14px;
+}
+
+/* Compact badge text */
+.ppm-calendar-tasks .ant-badge-status-text {
+  font-size: 12px !important;
+  line-height: 1.3;
+}

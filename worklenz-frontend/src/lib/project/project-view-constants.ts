@@ -7,6 +7,10 @@ import ProjectViewEnhancedBoard from '@/pages/projects/projectView/enhancedBoard
 import TaskListV2 from '@/components/task-list-v2/TaskListV2';
 
 // Lazy load less critical components
+// PPM-OVERRIDE: Calendar view for project tasks by due date
+const ProjectViewCalendar = React.lazy(
+  () => import('@/pages/projects/projectView/calendar/project-view-calendar')
+);
 const ProjectViewInsights = React.lazy(
   () => import('@/pages/projects/projectView/insights/project-view-insights')
 );
@@ -39,6 +43,7 @@ const getTabLabel = (key: string): string => {
       const fallbacks: Record<string, string> = {
         taskList: 'Task List',
         board: 'Board',
+        calendar: 'Calendar',
         insights: 'Insights',
         files: 'Files',
         members: 'Members',
@@ -79,6 +84,16 @@ export const tabItems: TabItems[] = [
   },
   {
     index: 2,
+    key: 'calendar',
+    label: getTabLabel('calendar'),
+    element: React.createElement(
+      Suspense,
+      { fallback: React.createElement(InlineSuspenseFallback) },
+      React.createElement(ProjectViewCalendar)
+    ),
+  },
+  {
+    index: 3,
     key: 'project-insights-member-overview',
     label: getTabLabel('insights'),
     element: React.createElement(
@@ -88,7 +103,7 @@ export const tabItems: TabItems[] = [
     ),
   },
   {
-    index: 3,
+    index: 4,
     key: 'all-attachments',
     label: getTabLabel('files'),
     element: React.createElement(
@@ -98,7 +113,7 @@ export const tabItems: TabItems[] = [
     ),
   },
   {
-    index: 4,
+    index: 5,
     key: 'members',
     label: getTabLabel('members'),
     element: React.createElement(
@@ -108,7 +123,7 @@ export const tabItems: TabItems[] = [
     ),
   },
   {
-    index: 5,
+    index: 6,
     key: 'updates',
     label: getTabLabel('updates'),
     element: React.createElement(
@@ -129,6 +144,9 @@ export const updateTabLabels = () => {
           break;
         case 'board':
           item.label = getTabLabel('board');
+          break;
+        case 'calendar':
+          item.label = getTabLabel('calendar');
           break;
         case 'project-insights-member-overview':
           item.label = getTabLabel('insights');

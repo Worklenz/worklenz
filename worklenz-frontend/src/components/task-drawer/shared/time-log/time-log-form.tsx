@@ -126,11 +126,16 @@ const TimeLogForm = ({
 
     const diff = formattedStartTime.diff(formattedEndTime, 'seconds');
 
+    // PPM-OVERRIDE: Round to nearest 15-min increment (minimum 15 min)
+    const rawSeconds = Math.floor(Math.abs(diff));
+    const INCREMENT = 900;
+    const rounded = rawSeconds <= 0 ? INCREMENT : Math.max(Math.round(rawSeconds / INCREMENT) * INCREMENT, INCREMENT);
+
     return {
       id: mode === 'edit' && initialValues?.id ? initialValues.id : taskFormViewModel?.task?.id,
       project_id: taskFormViewModel?.task?.project_id as string,
       formatted_start: formattedStartTime.toISOString(),
-      seconds_spent: Math.floor(Math.abs(diff)),
+      seconds_spent: rounded,
       description: map.description,
     };
   };
@@ -232,7 +237,7 @@ const TimeLogForm = ({
                                 label={t('taskTimeLogTab.timeLogForm.startTime')}
                   rules={[{ required: true, message: t('taskTimeLogTab.timeLogForm.selectStartTimeError') }]}
             >
-              <TimePicker format="HH:mm" />
+              <TimePicker format="HH:mm" minuteStep={15} />
             </Form.Item>
 
             <Form.Item
@@ -240,9 +245,13 @@ const TimeLogForm = ({
                                 label={t('taskTimeLogTab.timeLogForm.endTime')}
                   rules={[{ required: true, message: t('taskTimeLogTab.timeLogForm.selectEndTimeError') }]}
             >
-              <TimePicker format="HH:mm" />
+              <TimePicker format="HH:mm" minuteStep={15} />
             </Form.Item>
           </Flex>
+          {/* PPM-OVERRIDE: 15-min increment hint */}
+          <div style={{ fontSize: 12, color: '#8f98a4', marginTop: -4, marginBottom: 4 }}>
+            Time is rounded to 15-minute increments
+          </div>
         </Form.Item>
 
                     <Form.Item name="description" label={t('taskTimeLogTab.timeLogForm.workDescription')} style={{ marginBlockEnd: 12 }}>

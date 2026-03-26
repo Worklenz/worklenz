@@ -15,6 +15,7 @@ import {startCronJobs} from "../cron_jobs";
 import FileConstants from "../shared/file-constants";
 import {initRedis} from "../redis/client";
 import DbTaskStatusChangeListener from "../pg_notify_listeners/db-task-status-changed";
+import PpmStatusChangeListener from "../ppm/listeners/ppm-status-change-listener"; // PPM-OVERRIDE: Phase 1 LISTEN/NOTIFY
 
 function normalizePort(val?: string) {
   const p = parseInt(val || "0", 10);
@@ -63,6 +64,7 @@ IO.setInstance(io);
 
 function onError(error: any) {
   DbTaskStatusChangeListener.disconnect();
+  PpmStatusChangeListener.disconnect(); // PPM-OVERRIDE
 
   if (error.syscall !== "listen") {
     throw error;
@@ -99,12 +101,14 @@ function onListening() {
   // void initRedis();
   FileConstants.init();
   void DbTaskStatusChangeListener.connect();
+  void PpmStatusChangeListener.connect(); // PPM-OVERRIDE: Phase 1 status change routing
 
   console.info(`Listening on ${bind}`);
 }
 
 function onClose() {
   DbTaskStatusChangeListener.disconnect();
+  PpmStatusChangeListener.disconnect(); // PPM-OVERRIDE
 }
 
 server.on("error", onError);
