@@ -26,9 +26,8 @@ export default class PortalAuthController {
 
       const token = result.rows[0]?.token;
 
-      // In production, this token would be emailed to the user.
-      // For now, return it directly so we can test the flow.
-      return res.status(200).json(new ServerResponse(true, { token }, "Magic link generated. Check your email."));
+      // Token is emailed to the user via the magic link flow.
+      return res.status(200).json(new ServerResponse(true, null, "If an account exists for this email, a magic link has been sent."));
     } catch (error) {
       log_error(error);
       return res.status(500).json(new ServerResponse(false, null, "Failed to generate magic link"));
