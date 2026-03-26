@@ -1,6 +1,7 @@
 // PPM Phase 1: 15-minute time tracking increment enforcement
 
-export const PPM_TIME_INCREMENT = parseInt(process.env.PPM_TIME_INCREMENT || "900", 10);
+const parsed = parseInt(process.env.PPM_TIME_INCREMENT || "900", 10);
+export const PPM_TIME_INCREMENT = Number.isFinite(parsed) && parsed > 0 ? parsed : 900;
 
 /**
  * Rounds seconds to the nearest 15-minute (900s) increment.

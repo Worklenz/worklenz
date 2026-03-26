@@ -57,6 +57,7 @@ const getTabLabel = (key: string): string => {
     const fallbacks: Record<string, string> = {
       taskList: 'Task List',
       board: 'Board',
+      calendar: 'Calendar',
       insights: 'Insights',
       files: 'Files',
       members: 'Members',

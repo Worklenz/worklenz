@@ -27,6 +27,9 @@ export default class PortalAuthController {
 
       const token = result.rows[0]?.token;
 
+      // Only send email when token is non-null (real user).
+      // ppm_generate_magic_link returns NULL for unknown emails.
+      // Anti-enumeration: HTTP response is the same either way.
       if (token) {
         const baseUrl = (process.env.PPM_PORTAL_URL || `${req.protocol}://${req.get("host")}`).replace(/\/$/, "");
         const magicLink = `${baseUrl}/portal/login?token=${token}`;
@@ -47,6 +50,7 @@ export default class PortalAuthController {
         });
       }
 
+      // Same response regardless of whether email exists — prevents enumeration
       return res.status(200).json(new ServerResponse(true, null, "If an account exists for this email, a magic link has been sent."));
     } catch (error) {
       log_error(error);

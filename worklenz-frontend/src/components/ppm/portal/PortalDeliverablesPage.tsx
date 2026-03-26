@@ -5,7 +5,6 @@ import { SearchOutlined, AppstoreOutlined, UnorderedListOutlined } from '@ant-de
 import { portalApi, IDeliverable } from './portal-api';
 import { usePortal } from './portal-context';
 import StatusBadge from './StatusBadge';
-import { getClientLabel } from './status-labels';
 
 const { Title, Text } = Typography;
 
@@ -35,7 +34,7 @@ const PortalDeliverablesPage: React.FC = () => {
       return;
     }
     loadDeliverables();
-  }, [user, navigate]);
+  }, [user, navigate, loadDeliverables]);
 
   const loadDeliverables = useCallback(async () => {
     setLoading(true);

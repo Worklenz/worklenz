@@ -27,7 +27,7 @@ export async function on_task_timer_stop(_io: Server, socket: Socket, data?: str
     }
 
     // Validate UUID format (defense in depth - parameterized queries already provide security)
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(body.task_id)) {
       socket.emit(SocketEvents.TASK_TIMER_STOP.toString(), null);
       return;
@@ -53,9 +53,9 @@ export async function on_task_timer_stop(_io: Server, socket: Socket, data?: str
                     DATE_TRUNC('second', (CURRENT_TIMESTAMP - timer_data.start_time::TIMESTAMPTZ))
                   )::INTERVAL),
                   0
-                ) / ${PPM_TIME_INCREMENT}
-              ) * ${PPM_TIME_INCREMENT},
-              ${PPM_TIME_INCREMENT}
+                ) / $3
+              ) * $3,
+              $3
             ) as time_spent,
             timer_data.start_time
           FROM timer_data
@@ -65,7 +65,7 @@ export async function on_task_timer_stop(_io: Server, socket: Socket, data?: str
         FROM time_calculation
         WHERE time_spent > 0;
       `;
-      await client.query(timerQuery, [userId, body.task_id]);
+      await client.query(timerQuery, [userId, body.task_id, PPM_TIME_INCREMENT]);
 
       // Then, delete the timer
       const deleteQuery = `DELETE FROM task_timers WHERE user_id = $1 AND task_id = $2;`;

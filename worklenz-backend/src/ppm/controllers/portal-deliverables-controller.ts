@@ -33,16 +33,21 @@ const DELIVERABLE_JOINS = `
   LEFT JOIN ppm_dropdown_options p ON d.priority_id = p.id
 `;
 
-/** Helper: acquire a connection, set RLS context, run callback, commit/rollback. */
+/** Helper: acquire a connection, set RLS context + role, run callback, commit/rollback.
+ *  SET ROLE ppm_client_role ensures RLS policies are actually enforced
+ *  (table owner bypasses RLS by default). RESET ROLE restores the original role. */
 async function withClientScope<T>(clientId: string, fn: (conn: any) => Promise<T>): Promise<T> {
   const conn = await db.pool.connect();
   try {
     await conn.query("BEGIN");
     await conn.query("SELECT set_config('ppm.current_client_id', $1, true)", [clientId]);
+    await conn.query("SET ROLE ppm_client_role");
     const result = await fn(conn);
+    await conn.query("RESET ROLE");
     await conn.query("COMMIT");
     return result;
   } catch (error) {
+    await conn.query("RESET ROLE");
     await conn.query("ROLLBACK");
     throw error;
   } finally {
@@ -162,6 +167,9 @@ export default class PortalDeliverablesController {
       if (!comment || typeof comment !== "string" || !comment.trim()) {
         return res.status(400).json(new ServerResponse(false, null, "Revision feedback is required"));
       }
+      if (comment.length > 10000) {
+        return res.status(400).json(new ServerResponse(false, null, "Comment exceeds maximum length (10,000 characters)"));
+      }
 
       const ppmClient = (req as any).ppmClient as IPPMClientSession;
       if (ppmClient.role === "viewer") {
@@ -215,6 +223,9 @@ export default class PortalDeliverablesController {
       const { comment } = req.body;
       if (!comment || typeof comment !== "string" || !comment.trim()) {
         return res.status(400).json(new ServerResponse(false, null, "Comment is required"));
+      }
+      if (comment.length > 10000) {
+        return res.status(400).json(new ServerResponse(false, null, "Comment exceeds maximum length (10,000 characters)"));
       }
 
       const ppmClient = (req as any).ppmClient as IPPMClientSession;
@@ -274,9 +285,10 @@ export default class PortalDeliverablesController {
           FROM ppm_audit_log
           WHERE entity_type = 'deliverable'
             AND entity_id = $1
+            AND client_id = $2
             AND action IN ('comment', 'revision_requested')
           ORDER BY created_at ASC
-        `, [id]);
+        `, [id, ppmClient.clientId]);
         return result.rows;
       });
 
@@ -300,17 +312,20 @@ export default class PortalDeliverablesController {
     try {
       const ppmClient = (req as any).ppmClient as IPPMClientSession;
 
-      const result = await db.query(`
-        SELECT name, branding_config
-        FROM ppm_clients
-        WHERE id = $1
-      `, [ppmClient.clientId]);
+      const row = await withClientScope(ppmClient.clientId, async (conn) => {
+        const result = await conn.query(`
+          SELECT name, branding_config
+          FROM ppm_clients
+          WHERE id = $1
+        `, [ppmClient.clientId]);
+        return result.rows[0] || null;
+      });
 
-      if (result.rows.length === 0) {
+      if (!row) {
         return res.status(404).json(new ServerResponse(false, null, "Client not found"));
       }
 
-      return res.status(200).json(new ServerResponse(true, result.rows[0]));
+      return res.status(200).json(new ServerResponse(true, row));
     } catch (error) {
       log_error(error);
       return res.status(500).json(new ServerResponse(false, null, "Failed to fetch branding"));

@@ -165,13 +165,10 @@ const TimeLogForm = ({
 
     try {
       if (mode === 'edit' && initialValues?.id) {
-        console.log('Updating time log:', requestBody);
         await taskTimeLogsApiService.update(initialValues.id, requestBody);
       } else {
-        console.log('Creating new time log:', requestBody);
         await taskTimeLogsApiService.create(requestBody);
       }
-      console.log('Received values:', values);
 
       // Call onSubmitSuccess if provided, otherwise just cancel
       if (onSubmitSuccess) {
