@@ -1,5 +1,10 @@
 import { ImportProvider, ProviderResult } from "./provider-types";
-import { ImportJob, StageTaskRow, UserMappingRow } from "../imports-service";
+import {
+  AttachmentPlanRow,
+  ImportJob,
+  StageTaskRow,
+  UserMappingRow,
+} from "../imports-service";
 import { getWithRetries } from "./http-utils";
 import db from "../../config/db";
 
@@ -43,7 +48,33 @@ interface JiraIssue {
     comment?: {
       comments?: Array<{ body?: string; author?: any; created?: string }>;
     };
-    attachment?: Array<{ filename?: string; content?: string; size?: number }>;
+    attachment?: Array<{
+      filename?: string;
+      content?: string;
+      size?: number;
+      mimeType?: string;
+      created?: string;
+      author?: {
+        displayName?: string;
+        accountId?: string;
+        emailAddress?: string;
+      };
+    }>;
+    worklog?: {
+      total?: number;
+      worklogs?: Array<{
+        author?: {
+          displayName?: string;
+          accountId?: string;
+          emailAddress?: string;
+        };
+        comment?: any;
+        timeSpent?: string;
+        timeSpentSeconds?: number;
+        started?: string;
+        created?: string;
+      }>;
+    };
     parent?: {
       id?: string;
       key?: string;
@@ -53,6 +84,9 @@ interface JiraIssue {
       originalEstimate?: string;
       remainingEstimate?: string;
       timeSpent?: string;
+      originalEstimateSeconds?: number;
+      remainingEstimateSeconds?: number;
+      timeSpentSeconds?: number;
     };
     progress?: {
       progress?: number;
@@ -128,7 +162,16 @@ const STANDARD_FIELD_CANDIDATES: Array<{
   { name: "Original estimate", target: "estimation" },
   { name: "Time Spent", target: "timeTracking" },
   { name: "Progress", target: "progress" },
-  { name: "Key", target: "key" },
+  { name: "Reporter email", target: "reporterEmail" },
+  { name: "Comments", target: "comments" },
+  { name: "Work logs", target: "workLogs" },
+  { name: "Work logged (seconds)", target: "workLoggedSeconds" },
+  { name: "Attachments", target: "attachments" },
+  { name: "Attachment URLs", target: "attachmentUrls" },
+  { name: "Original estimate (seconds)", target: "originalEstimateSeconds" },
+  { name: "Remaining estimate (seconds)", target: "remainingEstimateSeconds" },
+  { name: "Time Spent (seconds)", target: "timeSpentSeconds" },
+  { name: "Key", target: "jiraKey" },
 ];
 
 const STATUS_HIERARCHY_FALLBACK = [
@@ -364,12 +407,125 @@ export default class JiraProvider implements ImportProvider {
     issue: JiraIssue,
     projectName?: string | null,
     fieldNameById?: Map<string, string>
-  ): Record<string, unknown> {
+  ): { raw: Record<string, unknown>; attachmentPlans: AttachmentPlanRow[] } {
+    const attachmentPlans: AttachmentPlanRow[] = [];
     const fields = issue.fields;
+    const comments = Array.isArray(fields.comment?.comments)
+      ? fields.comment?.comments || []
+      : [];
+    const structuredComments = comments.map((comment) => ({
+      body: this.formatDescription(comment?.body),
+      author:
+        comment?.author?.displayName ||
+        comment?.author?.emailAddress ||
+        "Unknown",
+      created: comment?.created || null,
+    }));
+    const commentLines = comments
+      .map((comment) => {
+        const body = this.formatDescription(comment?.body);
+        if (!body) return null;
+        const author =
+          comment?.author?.displayName ||
+          comment?.author?.emailAddress ||
+          "Unknown";
+        const created = comment?.created ? ` (${comment.created})` : "";
+        return `${author}${created}: ${body}`;
+      })
+      .filter((line): line is string => !!line);
+
+    const worklogs = Array.isArray(fields.worklog?.worklogs)
+      ? fields.worklog?.worklogs || []
+      : [];
+    const structuredWorklogs = worklogs.map((worklog) => ({
+      author:
+        worklog?.author?.displayName ||
+        worklog?.author?.emailAddress ||
+        "Unknown",
+      started: worklog?.started || null,
+      created: worklog?.created || null,
+      timeSpent: worklog?.timeSpent || "",
+      timeSpentSeconds: Number(worklog?.timeSpentSeconds || 0),
+      comment: this.formatDescription(worklog?.comment),
+    }));
+    const worklogLines = worklogs
+      .map((worklog) => {
+        const author =
+          worklog?.author?.displayName ||
+          worklog?.author?.emailAddress ||
+          "Unknown";
+        const spent = worklog?.timeSpent || "";
+        const started = worklog?.started ? ` (${worklog.started})` : "";
+        const comment = this.formatDescription(worklog?.comment);
+        const suffix = comment ? ` - ${comment}` : "";
+        return `${author}${started}: ${spent}${suffix}`.trim();
+      })
+      .filter(Boolean);
+    const worklogSeconds = worklogs.reduce(
+      (sum, entry) => sum + Number(entry?.timeSpentSeconds || 0),
+      0
+    );
+
+    const attachments = Array.isArray(fields.attachment)
+      ? fields.attachment || []
+      : [];
+    const structuredAttachments: Array<{
+      filename: string;
+      url: string;
+      mimeType: string | null;
+      size: number | null;
+      created: string | null;
+      author: string;
+    }> = [];
+    const attachmentNames: string[] = [];
+    const attachmentUrls: string[] = [];
+    attachments.forEach((attachment) => {
+      if (attachment?.filename) {
+        attachmentNames.push(attachment.filename);
+      }
+      if (attachment?.content) {
+        attachmentUrls.push(attachment.content);
+        structuredAttachments.push({
+          filename: attachment.filename || "attachment",
+          url: attachment.content,
+          mimeType: attachment.mimeType || null,
+          size: attachment.size ?? null,
+          created: attachment.created || null,
+          author:
+            attachment.author?.displayName ||
+            attachment.author?.emailAddress ||
+            "Unknown",
+        });
+        attachmentPlans.push({
+          source_url: attachment.content,
+          filename: attachment.filename || null,
+          content_type: attachment.mimeType || null,
+          size_bytes: attachment.size ?? null,
+          status: "planned",
+        });
+      }
+    });
+
+    const baseDescription = this.formatDescription(fields.description);
+    const descriptionSections: string[] = [];
+    if (baseDescription) {
+      descriptionSections.push(baseDescription);
+    }
+    if (commentLines.length) {
+      descriptionSections.push(`Jira comments:\n${commentLines.join("\n")}`);
+    }
+    if (worklogLines.length) {
+      descriptionSections.push(`Jira work logs:\n${worklogLines.join("\n")}`);
+    }
+    if (attachmentUrls.length) {
+      descriptionSections.push(`Jira attachments:\n${attachmentUrls.join("\n")}`);
+    }
+    const enrichedDescription = descriptionSections.join("\n\n");
+
     const raw: Record<string, unknown> = {
       Key: issue.key || "",
       Summary: fields.summary || "",
-      Description: this.formatDescription(fields.description),
+      Description: enrichedDescription,
       Assignee:
         fields.assignee?.emailAddress || fields.assignee?.displayName || "",
       "Assignee name": fields.assignee?.displayName || "",
@@ -377,6 +533,7 @@ export default class JiraProvider implements ImportProvider {
       Reporter:
         fields.reporter?.emailAddress || fields.reporter?.displayName || "",
       "Reporter name": fields.reporter?.displayName || "",
+      "Reporter email": fields.reporter?.emailAddress || "",
       Creator: fields.creator?.displayName || "",
       Priority: fields.priority?.name || "",
       Status: fields.status?.name || "",
@@ -388,8 +545,13 @@ export default class JiraProvider implements ImportProvider {
       Resolved: fields.resolutiondate || "",
       Labels: Array.isArray(fields.labels) ? fields.labels.join(", ") : "",
       "Original estimate": fields.timetracking?.originalEstimate || "",
+      "Original estimate (seconds)":
+        fields.timetracking?.originalEstimateSeconds || 0,
       "Remaining Estimate": fields.timetracking?.remainingEstimate || "",
+      "Remaining estimate (seconds)":
+        fields.timetracking?.remainingEstimateSeconds || 0,
       "Time Spent": fields.timetracking?.timeSpent || "",
+      "Time Spent (seconds)": fields.timetracking?.timeSpentSeconds || 0,
       Progress: fields.progress?.percent || "",
       "Work Ratio": fields.workratio || "",
       Environment: fields.environment || "",
@@ -401,6 +563,16 @@ export default class JiraProvider implements ImportProvider {
       Project: projectName || "",
       Parent: fields.parent?.key || "",
       "Sub-tasks": Array.isArray(fields.subtasks) ? fields.subtasks.length : 0,
+      Comments: commentLines.join("\n"),
+      "Comments count": commentLines.length,
+      "Work logs": worklogLines.join("\n"),
+      "Work logged (seconds)": worklogSeconds,
+      Attachments: attachmentNames.join(", "),
+      "Attachment URLs": attachmentUrls.join("\n"),
+      "Attachment count": attachmentNames.length,
+      __jira_comments: structuredComments,
+      __jira_worklogs: structuredWorklogs,
+      __jira_attachments: structuredAttachments,
     };
 
     // Add custom fields
@@ -422,7 +594,7 @@ export default class JiraProvider implements ImportProvider {
       }
     });
 
-    return raw;
+    return { raw, attachmentPlans };
   }
 
   private async buildHierarchy(
@@ -515,6 +687,7 @@ export default class JiraProvider implements ImportProvider {
     );
     const fieldMappings = this.buildFieldMappings(jiraFields);
     const tasks: StageTaskRow[] = [];
+    const attachments: AttachmentPlanRow[] = [];
     const assigneeDirectory = new Map<
       string,
       { source_user_id?: string | null; source_email?: string | null }
@@ -546,12 +719,16 @@ export default class JiraProvider implements ImportProvider {
       const issues = response.issues || [];
 
       for (const issue of issues) {
-        const raw = this.buildRawTask(
+        const taskData = this.buildRawTask(
           issue,
           options.projectName,
           new Map(jiraFields.map((f) => [f.id, f.name]))
         );
+        const raw = taskData.raw;
         const fields = issue.fields;
+        if (taskData.attachmentPlans.length) {
+          attachments.push(...taskData.attachmentPlans);
+        }
 
         // Track assignees
         const assigneeEmail = fields.assignee?.emailAddress?.toLowerCase();
@@ -564,11 +741,6 @@ export default class JiraProvider implements ImportProvider {
           }
         }
 
-        // Determine if task is completed
-        const isCompleted =
-          fields.status?.statusCategory?.key === "done" ||
-          fields.status?.statusCategory?.name?.toLowerCase() === "done";
-
         tasks.push({
           source_task_id: issue.id,
           parent_source_task_id: fields.parent?.id || null,
@@ -580,6 +752,7 @@ export default class JiraProvider implements ImportProvider {
           assignee_source_id:
             fields.assignee?.emailAddress || fields.assignee?.accountId || null,
           worktype: fields.status?.name || null,
+          attachments_planned: taskData.attachmentPlans.length > 0,
           raw,
         });
       }
@@ -595,6 +768,6 @@ export default class JiraProvider implements ImportProvider {
     );
     const users = await this.buildUserMappings(job, assigneeDirectory);
 
-    return { tasks, fields: fieldMappings, hierarchy, users };
+    return { tasks, fields: fieldMappings, hierarchy, users, attachments };
   }
 }
