@@ -22,10 +22,6 @@ export const ProjectImportModal: React.FC<ProjectImportModalProps> = ({ open, on
           display: 'flex',
           flexDirection: 'column',
         },
-        content: {
-          borderRadius: 20,
-          overflow: 'hidden',
-        },
       }}
       destroyOnHidden
     >

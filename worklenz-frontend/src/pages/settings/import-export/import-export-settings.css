@@ -66,6 +66,17 @@
   height: 28px;
 }
 
+.import-source-icon .import-source-icon-wide {
+  width: 34px;
+  height: 20px;
+}
+
+.import-source-icon img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
 .section-title {
   margin-top: 2px;
   margin-bottom: 8px !important;
@@ -120,9 +131,16 @@
 }
 
 .csv-dropzone-icon {
-  font-size: 32px;
-  color: #4096ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 8px;
+}
+
+.csv-dropzone-icon img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
 }
 
 .csv-dropzone-title {

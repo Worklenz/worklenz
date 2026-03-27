@@ -302,18 +302,18 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const steps =
     integrationType === 'direct'
       ? [
-          tt('steps.selectList', 'Select list'),
-          tt('steps.createSpace', 'Create space'),
-          tt('steps.reviewImport', 'Review Details & Import'),
-        ]
+        tt('steps.selectList', 'Select list'),
+        tt('steps.createSpace', 'Create space'),
+        tt('steps.reviewImport', 'Review Details & Import'),
+      ]
       : [
-          tt('steps.uploadCsv', 'Upload CSV'),
-          tt('steps.setupSpace', 'Set up space'),
-          tt('steps.mapFields', 'Map fields'),
-          tt('steps.mapValues', 'Map values'),
-          tt('steps.moveUsers', 'Move users'),
-          tt('steps.reviewDetails', 'Review details'),
-        ];
+        tt('steps.uploadCsv', 'Upload CSV'),
+        tt('steps.setupSpace', 'Set up space'),
+        tt('steps.mapFields', 'Map fields'),
+        tt('steps.mapValues', 'Map values'),
+        tt('steps.moveUsers', 'Move users'),
+        tt('steps.reviewDetails', 'Review details'),
+      ];
 
   const [step, setStep] = React.useState(0);
   const totalSteps = steps.length;
@@ -1375,19 +1375,19 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             ? asanaWorkspaces.map(ws => ({ value: ws.id, label: ws.name }))
             : lowerKey === 'clickup'
               ? clickupTeams.flatMap(team =>
-                  team.spaces.map(space => ({
-                    value: space.id,
-                    label: `${team.name} â€¢ ${space.name}`,
-                  }))
-                )
+                team.spaces.map(space => ({
+                  value: space.id,
+                  label: `${team.name} â€¢ ${space.name}`,
+                }))
+              )
               : isJira
                 ? jiraProjects.map(p => ({ value: p.key, label: p.name }))
                 : [];
         const projectOptions =
           lowerKey === 'asana'
             ? asanaProjects
-                .filter(p => !selectedWorkspace || p.workspaceId === selectedWorkspace)
-                .map(p => ({ value: p.id, label: p.name }))
+              .filter(p => !selectedWorkspace || p.workspaceId === selectedWorkspace)
+              .map(p => ({ value: p.id, label: p.name }))
             : isJira
               ? jiraProjects.map(p => ({ value: p.key, label: p.name }))
               : [];
@@ -1721,13 +1721,13 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               description:
                 hierarchyCount > 0
                   ? t('importStep.hierarchyLevelsMapped', {
-                      defaultValue: '{{count}} hierarchy levels mapped',
-                      count: hierarchyCount,
-                    })
+                    defaultValue: '{{count}} hierarchy levels mapped',
+                    count: hierarchyCount,
+                  })
                   : t('importStep.sectionsMapped', {
-                      defaultValue: 'Sections from {{source}} are mapped to Status',
-                      source: source.label || 'source',
-                    }),
+                    defaultValue: 'Sections from {{source}} are mapped to Status',
+                    source: source.label || 'source',
+                  }),
               iconBg: '#1f6feb',
               icon: <ApartmentOutlined style={{ color: '#fff' }} />,
               action: () => setReviewSubScreen('hierarchy'),
@@ -1739,14 +1739,14 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               description:
                 fieldMappingRows.length > 0
                   ? t('importStep.fieldsMapped', {
-                      defaultValue: '{{mapped}}/{{total}} fields mapped',
-                      mapped: mappedFieldCount,
-                      total: fieldMappingRows.length,
-                    })
+                    defaultValue: '{{mapped}}/{{total}} fields mapped',
+                    mapped: mappedFieldCount,
+                    total: fieldMappingRows.length,
+                  })
                   : t('importStep.fieldsAutoMap', {
-                      defaultValue: 'Fields will auto-map from {{source}}',
-                      source: source.label || 'source',
-                    }),
+                    defaultValue: 'Fields will auto-map from {{source}}',
+                    source: source.label || 'source',
+                  }),
               iconBg: '#6e56cf',
               icon: <TableOutlined style={{ color: '#fff' }} />,
               action: () => setReviewSubScreen('fieldMapping'),
@@ -3118,19 +3118,19 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                     {usersCount === 0
                       ? t('importStep.reviewUsersNone', { defaultValue: 'No users' })
                       : t('importStep.reviewUsersCount', {
-                          defaultValue: '{{count}} users',
-                          count: usersCount,
-                        })}
+                        defaultValue: '{{count}} users',
+                        count: usersCount,
+                      })}
                   </div>
                   <div style={{ color: '#b0b0b0', fontSize: 15 }}>
                     {usersCount === 0
                       ? t('importStep.reviewUsersNoneDescription', {
-                          defaultValue:
-                            "You haven't added users to the space. Assignee/reporter fields will be unassigned and @mentions become plain text.",
-                        })
+                        defaultValue:
+                          "You haven't added users to the space. Assignee/reporter fields will be unassigned and @mentions become plain text.",
+                      })
                       : t('importStep.reviewUsersAddedDescription', {
-                          defaultValue: 'Users will be added to the space.',
-                        })}
+                        defaultValue: 'Users will be added to the space.',
+                      })}
                   </div>
                 </div>
               </div>
@@ -3188,28 +3188,34 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   }
 
   const showIllustration = !(integrationType === 'direct' && step === 2);
+  const normalizedSourceIcon = React.useMemo(() => {
+    if (!source?.icon || !React.isValidElement(source.icon)) return source?.icon;
+
+    const isImageTag = typeof source.icon.type === 'string' && source.icon.type === 'img';
+    if (!isImageTag) return source.icon;
+
+    const currentStyle = (source.icon.props as { style?: React.CSSProperties })?.style || {};
+    return React.cloneElement(source.icon as React.ReactElement<any>, {
+      style: {
+        ...currentStyle,
+        width: 40,
+        height: 40,
+        maxWidth: 40,
+        maxHeight: 40,
+        objectFit: 'contain',
+      },
+    });
+  }, [source?.icon]);
 
   const renderAuthGate = () => {
     if (lowerKey === 'asana') {
       return (
-        <div
-          style={{
-            width: 820,
-            height: 245,
-            padding: '40px 40px',
-            borderRadius: themeToken.borderRadiusLG,
-            background: themeToken.colorPrimaryBg,
-            margin: '0 auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 10,
-          }}
-        >
-          <Typography.Title level={2} style={{ color: themeToken.colorText, margin: 0 }}>
+        <div style={{ padding: 48, background: themeToken.colorBgLayout }}>
+          <Typography.Title level={4} style={{ color: themeToken.colorText, marginBottom: 8 }}>
             {t('auth.asanaTitle', 'Connect Asana to import')}
           </Typography.Title>
           <Typography.Paragraph
-            style={{ color: themeToken.colorTextSecondary, fontSize: 16, margin: 0 }}
+            style={{ color: themeToken.colorTextSecondary, marginBottom: 16 }}
           >
             {t(
               'auth.asanaBody',
@@ -3221,10 +3227,13 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               {authError}
             </Typography.Text>
           )}
-          <Button type="primary" size="middle" loading={authLoading} onClick={handleAsanaAuth}>
-            {t('auth.asanaCta', 'Allow Permission')}
-          </Button>
-          <div style={{ color: themeToken.colorTextSecondary }}>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+            <Button onClick={onClose}>{t('common.cancel', 'Cancel')}</Button>
+            <Button type="primary" loading={authLoading} onClick={handleAsanaAuth}>
+              {t('auth.asanaCta', 'Allow Permission')}
+            </Button>
+          </div>
+          <div style={{ color: themeToken.colorTextSecondary, marginTop: 12 }}>
             {t('auth.asanaHint', 'Opens a new tab to Asana')}
           </div>
         </div>
@@ -3423,152 +3432,191 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               )}
             </Typography.Paragraph>
 
-            <div
+            <form
               style={{
                 border: `1px solid ${themeToken.colorBorderSecondary}`,
                 borderRadius: themeToken.borderRadiusLG,
                 background: themeToken.colorBgContainer,
                 padding: 20,
               }}
+              autoComplete="off"
+              onSubmit={e => e.preventDefault()}
             >
-            <Typography.Text
-              type="secondary"
-              style={{ display: 'block', marginBottom: 14, fontSize: 12 }}
-            >
-              {t('auth.jiraRequiredFields', {
-                defaultValue: 'All fields are required to connect to Jira.',
-              })}
-            </Typography.Text>
-
-            <div style={{ marginBottom: 16 }}>
-            <label
-              style={{
-                color: themeToken.colorText,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                marginBottom: 4,
-              }}
-            >
-              {t('auth.jiraEmail', { defaultValue: 'Email' })} *
-              <Tooltip title={t('auth.jiraEmailTooltip', { defaultValue: 'Use the Atlassian account email tied to this Jira site.' })}>
-                <InfoCircleOutlined
-                  aria-label={t('auth.jiraEmailTooltipAriaLabel', {
-                    defaultValue: 'Jira email guidance',
-                  })}
-                  style={{ color: themeToken.colorTextSecondary }}
-                />
-              </Tooltip>
-            </label>
-            <Input
-              placeholder={t('auth.jiraEmailPlaceholder', 'your-email@company.com')}
-              value={jiraEmail}
-              onChange={e => setJiraEmail(e.target.value)}
-              status={jiraEmailInvalid ? 'error' : ''}
-            />
-            <Typography.Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
-              {t('auth.jiraEmailHint', {
-                defaultValue: 'Example: jane@company.com',
-              })}
-            </Typography.Text>
-            {jiraEmailInvalid && (
-              <Typography.Text type="danger" style={{ display: 'block', marginTop: 4 }}>
-                {t('auth.jiraEmailInvalid', { defaultValue: 'Enter a valid email address.' })}
-              </Typography.Text>
-            )}
-          </div>
-
-            <div style={{ marginBottom: 16 }}>
-            <label
-              style={{
-                color: themeToken.colorText,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                marginBottom: 4,
-              }}
-            >
-              {t('auth.jiraDomain', { defaultValue: 'Domain' })} *
-              <Tooltip
-                title={t('auth.jiraDomainTooltip', {
-                  defaultValue:
-                    'Enter your Jira Cloud domain only, for example yourcompany.atlassian.net (no https:// or paths).',
-                })}
+              <input
+                type="text"
+                name="jira-decoy-username"
+                autoComplete="username"
+                tabIndex={-1}
+                aria-hidden="true"
+                style={{ display: 'none' }}
+              />
+              <input
+                type="password"
+                name="jira-decoy-password"
+                autoComplete="current-password"
+                tabIndex={-1}
+                aria-hidden="true"
+                style={{ display: 'none' }}
+              />
+              <Typography.Text
+                type="secondary"
+                style={{ display: 'block', marginBottom: 14, fontSize: 12 }}
               >
-                <InfoCircleOutlined
-                  aria-label={t('auth.jiraDomainTooltipAriaLabel', {
-                    defaultValue: 'Jira domain guidance',
-                  })}
-                  style={{ color: themeToken.colorTextSecondary }}
-                />
-              </Tooltip>
-            </label>
-            <Input
-              placeholder={t('auth.jiraDomainPlaceholder', 'yourcompany.atlassian.net')}
-              value={jiraDomain}
-              onChange={e => setJiraDomain(e.target.value)}
-              onBlur={e => setJiraDomain(normalizeDomain(e.target.value))}
-              status={jiraDomainInvalid ? 'error' : ''}
-            />
-            <Typography.Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
-              {t('auth.jiraDomainHint', {
-                defaultValue: 'Use only the host name. Example: yourcompany.atlassian.net',
-              })}
-            </Typography.Text>
-            {jiraDomainInvalid && (
-              <Typography.Text type="danger" style={{ display: 'block', marginTop: 4 }}>
-                {t('auth.jiraDomainInvalid', {
-                  defaultValue:
-                    'Enter a valid domain, for example yourcompany.atlassian.net (without https://).',
+                {t('auth.jiraRequiredFields', {
+                  defaultValue: 'All fields are required to connect to Jira.',
                 })}
               </Typography.Text>
-            )}
-          </div>
 
-            <div style={{ marginBottom: 0 }}>
-            <label
-              style={{
-                color: themeToken.colorText,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                marginBottom: 4,
-              }}
-            >
-              {t('auth.jiraToken', { defaultValue: 'API Token' })} *
-              <Tooltip
-                title={t('auth.jiraTokenTooltip', {
-                  defaultValue:
-                    'Create a token at id.atlassian.com/manage-profile/security/api-tokens, then paste that token here.',
-                })}
-              >
-                <InfoCircleOutlined
-                  aria-label={t('auth.jiraTokenTooltipAriaLabel', {
-                    defaultValue: 'How to get a Jira API token',
-                  })}
-                  style={{ color: themeToken.colorTextSecondary }}
+              <div style={{ marginBottom: 16 }}>
+                <label
+                  style={{
+                    color: themeToken.colorText,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    marginBottom: 4,
+                  }}
+                >
+                  {t('auth.jiraEmail', { defaultValue: 'Email' })} *
+                  <Tooltip title={t('auth.jiraEmailTooltip', { defaultValue: 'Use the Atlassian account email tied to this Jira site.' })}>
+                    <InfoCircleOutlined
+                      aria-label={t('auth.jiraEmailTooltipAriaLabel', {
+                        defaultValue: 'Jira email guidance',
+                      })}
+                      style={{ color: themeToken.colorTextSecondary }}
+                    />
+                  </Tooltip>
+                </label>
+                <Input
+                  placeholder={t('auth.jiraEmailPlaceholder', 'your-email@company.com')}
+                  name="jira-connect-email"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  value={jiraEmail}
+                  onChange={e => setJiraEmail(e.target.value)}
+                  status={jiraEmailInvalid ? 'error' : ''}
                 />
-              </Tooltip>
-            </label>
-            <Input.Password
-              placeholder={t('auth.jiraTokenPlaceholder', 'Paste your JIRA API token')}
-              value={jiraToken}
-              onChange={e => setJiraToken(e.target.value)}
-            />
-            <Typography.Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
-              {t('auth.jiraTokenHint', {
-                defaultValue: 'Generate your token from Atlassian account security settings.',
-              })}{' '}
-              <a
-                href="https://id.atlassian.com/manage-profile/security/api-tokens"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {t('auth.jiraTokenLink', { defaultValue: 'Open token page' })}
-              </a>
-            </Typography.Text>
-            </div>
-          </div>
+                <Typography.Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+                  {t('auth.jiraEmailHint', {
+                    defaultValue: 'Example: jane@company.com',
+                  })}
+                </Typography.Text>
+                {jiraEmailInvalid && (
+                  <Typography.Text type="danger" style={{ display: 'block', marginTop: 4 }}>
+                    {t('auth.jiraEmailInvalid', { defaultValue: 'Enter a valid email address.' })}
+                  </Typography.Text>
+                )}
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label
+                  style={{
+                    color: themeToken.colorText,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    marginBottom: 4,
+                  }}
+                >
+                  {t('auth.jiraDomain', { defaultValue: 'Domain' })} *
+                  <Tooltip
+                    title={t('auth.jiraDomainTooltip', {
+                      defaultValue:
+                        'Enter your Jira Cloud domain only, for example yourcompany.atlassian.net (no https:// or paths).',
+                    })}
+                  >
+                    <InfoCircleOutlined
+                      aria-label={t('auth.jiraDomainTooltipAriaLabel', {
+                        defaultValue: 'Jira domain guidance',
+                      })}
+                      style={{ color: themeToken.colorTextSecondary }}
+                    />
+                  </Tooltip>
+                </label>
+                <Input
+                  placeholder={t('auth.jiraDomainPlaceholder', 'yourcompany.atlassian.net')}
+                  name="jira-connect-domain"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  value={jiraDomain}
+                  onChange={e => setJiraDomain(e.target.value)}
+                  onBlur={e => setJiraDomain(normalizeDomain(e.target.value))}
+                  status={jiraDomainInvalid ? 'error' : ''}
+                />
+                <Typography.Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+                  {t('auth.jiraDomainHint', {
+                    defaultValue: 'Use only the host name. Example: yourcompany.atlassian.net',
+                  })}
+                </Typography.Text>
+                {jiraDomainInvalid && (
+                  <Typography.Text type="danger" style={{ display: 'block', marginTop: 4 }}>
+                    {t('auth.jiraDomainInvalid', {
+                      defaultValue:
+                        'Enter a valid domain, for example yourcompany.atlassian.net (without https://).',
+                    })}
+                  </Typography.Text>
+                )}
+              </div>
+
+              <div style={{ marginBottom: 0 }}>
+                <label
+                  style={{
+                    color: themeToken.colorText,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    marginBottom: 4,
+                  }}
+                >
+                  {t('auth.jiraToken', { defaultValue: 'API Token' })} *
+                  <Tooltip
+                    title={t('auth.jiraTokenTooltip', {
+                      defaultValue:
+                        'Create a token at id.atlassian.com/manage-profile/security/api-tokens, then paste that token here.',
+                    })}
+                  >
+                    <InfoCircleOutlined
+                      aria-label={t('auth.jiraTokenTooltipAriaLabel', {
+                        defaultValue: 'How to get a Jira API token',
+                      })}
+                      style={{ color: themeToken.colorTextSecondary }}
+                    />
+                  </Tooltip>
+                </label>
+                <Input.Password
+                  placeholder={t('auth.jiraTokenPlaceholder', 'Paste your JIRA API token')}
+                  name="jira-connect-api-token"
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  value={jiraToken}
+                  onChange={e => setJiraToken(e.target.value)}
+                />
+                <Typography.Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+                  {t('auth.jiraTokenHint', {
+                    defaultValue: 'Generate your token from Atlassian account security settings.',
+                  })}{' '}
+                  <a
+                    href="https://id.atlassian.com/manage-profile/security/api-tokens"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('auth.jiraTokenLink', { defaultValue: 'Open token page' })}
+                  </a>
+                </Typography.Text>
+              </div>
+            </form>
           </div>
 
           {authError && (
@@ -3681,7 +3729,19 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       >
         <div className="heading" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           {showIllustration && source?.icon && (
-            <div style={{ display: 'grid', placeItems: 'center', fontSize: 36 }}>{source.icon}</div>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                display: 'grid',
+                placeItems: 'center',
+                fontSize: 36,
+                overflow: 'hidden',
+                flex: '0 0 40px',
+              }}
+            >
+              {normalizedSourceIcon}
+            </div>
           )}
           <Typography.Title level={3} style={{ margin: 0, fontSize: 26 }}>
             {source.label}
