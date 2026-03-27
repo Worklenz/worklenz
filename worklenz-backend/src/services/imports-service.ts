@@ -679,6 +679,12 @@ const STANDARD_TARGET_FIELDS = new Set<string>([
 
 const TARGET_FIELD_ALIASES: Record<string, string> = {
   key: "key",
+  title: "key",
+  name: "key",
+  task: "key",
+  taskname: "key",
+  tasktitle: "key",
+  summary: "key",
   description: "description",
   progress: "progress",
   status: "status",
@@ -1121,8 +1127,16 @@ export const mapRawToTaskFields = (
 
 class ImportsService {
   async createJob(input: CreateImportJobInput): Promise<ImportJob> {
-    const q = `INSERT INTO import_jobs (provider, flow_type, created_by, target_project_id, target_space_type, target_template, source_reference)
-               VALUES ($1,$2,$3,$4,$5,$6,$7)
+    const q = `INSERT INTO import_jobs (
+                 provider,
+                 flow_type,
+                 created_by,
+                 target_project_id,
+                 target_space_type,
+                 target_template,
+                 source_reference
+               )
+               VALUES ($1::text,$2::text,$3::uuid,$4::uuid,$5::text,$6::text,$7::jsonb)
                RETURNING *;`;
     const params = [
       input.provider,

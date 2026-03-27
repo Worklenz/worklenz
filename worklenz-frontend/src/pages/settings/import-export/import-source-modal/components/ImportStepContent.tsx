@@ -72,15 +72,13 @@ interface ImportStepContentProps {
     >
   >;
   uploadedCsvFileRef: React.MutableRefObject<File | null>;
-  parseCsvData: (text: string) => void;
+  parseCsvData: (text: string) => { columnsCount: number; rowsCount: number };
   encoding: string;
   setEncoding: React.Dispatch<React.SetStateAction<string>>;
   delimiter: string;
   setDelimiter: React.Dispatch<React.SetStateAction<string>>;
   csvSettingsOpen: boolean;
   setCsvSettingsOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  configOpen: boolean;
-  setConfigOpen: React.Dispatch<React.SetStateAction<boolean>>;
   csvColumns: string[];
   fieldMappings: Record<string, string>;
   setFieldMappings: React.Dispatch<React.SetStateAction<Record<string, string>>>;
@@ -166,8 +164,6 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
     setDelimiter,
     csvSettingsOpen,
     setCsvSettingsOpen,
-    configOpen,
-    setConfigOpen,
     csvColumns,
     fieldMappings,
     setFieldMappings,
@@ -266,9 +262,7 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
           setDelimiter={setDelimiter}
           csvSettingsOpen={csvSettingsOpen}
           setCsvSettingsOpen={setCsvSettingsOpen}
-          configOpen={configOpen}
-          setConfigOpen={setConfigOpen}
-          sourceLabel={sourceLabel || 'your app'}
+          sourceLabel={sourceLabel || t('importStep.yourApp', { defaultValue: 'your app' })}
           spaceType={spaceType}
           setSpaceType={setSpaceType}
           spaceTemplate={spaceTemplate}
@@ -284,6 +278,7 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
         <CsvMappingStepsContent
           step={step}
           t={t}
+          themeToken={themeToken}
           csvColumns={csvColumns}
           fieldMappings={fieldMappings}
           setFieldMappings={setFieldMappings}
@@ -310,8 +305,8 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
       return (
         <CsvReviewStepContent
           t={t}
+          themeToken={themeToken}
           spaceName={spaceName}
-          spaceType={spaceType}
           fieldMappings={fieldMappings}
           csvColumns={csvColumns}
           workTypeMapping={workTypeMapping}
@@ -325,4 +320,3 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
       return null;
   }
 };
-

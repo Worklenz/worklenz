@@ -27,6 +27,8 @@
   "importStep": {
     "selectList": "Select a source",
     "selectListHelp": "Select the workspace and list/board you’d like to import data from. Required fields are marked with an asterisk.",
+    "mapSpaceFields": "Map fields",
+    "mapFieldsDescription": "We've automatically mapped several CSV columns to Worklenz fields. Review the mappings and map any unmapped columns. Map the issue type column to import issue type values, and map issue ID and parent columns to preserve hierarchy.",
     "workspaceLabel": "Workspace *",
     "projectLabel": "List/Project *",
     "boardLabel": "Board *",

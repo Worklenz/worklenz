@@ -124,7 +124,7 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
     width: '100%',
     maxWidth: 820,
     margin: '0 auto',
-    background: '#2684FF08',
+    background: themeToken.colorPrimaryBg,
     borderRadius: 12,
     padding: 32,
   };
@@ -162,13 +162,13 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
       <div style={{ display: 'flex', justifyContent: 'center' }}>
         <div style={directContainerStyle}>
           <Typography.Title level={3} style={{ marginBottom: 8 }}>
-            {t('importStep.selectList', 'Select a source')}
+            {t('importStep.selectList', { defaultValue: 'Select a source' })}
           </Typography.Title>
           <Typography.Paragraph style={{ color: themeToken.colorTextSecondary }}>
-            {t(
-              'importStep.selectListHelp',
-              'Select the workspace and list/board youâ€™d like to import data from. Required fields are marked with an asterisk.'
-            )}
+            {t('importStep.selectListHelp', {
+              defaultValue:
+                "Select the workspace and list/board you'd like to import data from. Required fields are marked with an asterisk.",
+            })}
           </Typography.Paragraph>
           <div style={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>
             {lowerKey !== 'monday' && lowerKey !== 'jira' && lowerKey !== 'trello' && (

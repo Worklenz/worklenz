@@ -269,7 +269,6 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     Array<{ source_level: string; target_level: string; position?: number }>
   >([]);
   const [csvSettingsOpen, setCsvSettingsOpen] = React.useState(false);
-  const [configOpen, setConfigOpen] = React.useState(false);
   const [encoding, setEncoding] = React.useState('UTF-8');
 
   // State for CSV columns and mapping
@@ -306,18 +305,26 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     (text: string) => {
       const parsed = parseCsvText(text || '', delimiter.trim() || undefined);
       const fields = parsed.fields.map(field => String(field).trim()).filter(Boolean);
+      const rows = Array.isArray(parsed.rows) ? (parsed.rows as Record<string, any>[]) : [];
       setCsvText(text || '');
       setCsvColumns(fields);
       setFieldMappings({});
       setIncludeInImport(Object.fromEntries(fields.map((f: string) => [f, true])));
-      setCsvRows(Array.isArray(parsed.rows) ? (parsed.rows as Record<string, any>[]) : []);
+      setCsvRows(rows);
       setUserEmails({});
+      return {
+        columnsCount: fields.length,
+        rowsCount: rows.length,
+      };
     },
     [delimiter]
   );
   const worklenzFieldOptions = React.useMemo(
     () => [
-      { value: 'key', label: tt('fields.key', 'Key') },
+      {
+        value: 'key',
+        label: tt('fields.taskTitle', 'Task name / Title'),
+      },
       { value: 'description', label: tt('fields.description', 'Description') },
       { value: 'progress', label: tt('fields.progress', 'Progress') },
       { value: 'status', label: tt('fields.status', 'Status') },
@@ -493,6 +500,24 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   ]);
 
   const navigationDisabled = authNeeded && !authCompleted;
+  const hasTaskTitleMapping = React.useMemo(() => {
+    const aliases = new Set([
+      'key',
+      'title',
+      'name',
+      'task',
+      'taskname',
+      'tasktitle',
+      'summary',
+    ]);
+
+    return Object.entries(fieldMappings).some(([sourceColumn, targetField]) => {
+      if (!targetField) return false;
+      if (includeInImport[sourceColumn] === false) return false;
+      const normalized = targetField.toLowerCase().replace(/[^a-z0-9]/g, '');
+      return aliases.has(normalized);
+    });
+  }, [fieldMappings, includeInImport]);
 
   const { ensureImportJob, ensureDefaultProjectStatusId, persistAsanaSelection } =
     useImportJobHelpers({
@@ -509,7 +534,18 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     });
 
   const handleBack = () => setStep(s => Math.max(0, s - 1));
-  const handleNext = () => setStep(s => Math.min(totalSteps - 1, s + 1));
+  const handleNext = () => {
+    if (integrationType === 'csv' && step === 2 && !hasTaskTitleMapping) {
+      message.error(
+        t('importStep.taskTitleRequired', {
+          defaultValue:
+            'Task name / Title mapping is required. Map at least one CSV column to Task name / Title.',
+        })
+      );
+      return;
+    }
+    setStep(s => Math.min(totalSteps - 1, s + 1));
+  };
   const handleModalClose = () => {
     setStep(0);
     onClose();
@@ -806,7 +842,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
           display: 'flex',
           flexDirection: 'column',
           background: themeToken.colorBgElevated,
-          overflowY: 'auto',
+          overflow: 'hidden',
         },
       }}
     >
@@ -861,7 +897,17 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             </div>
           ) : (
             <>
-              <div className="content-body" style={{ flex: 1 }}>
+              <div
+                className="content-body"
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: integrationType === 'csv' ? 'auto' : 'visible',
+                  overflowX: 'hidden',
+                  maxHeight: integrationType === 'csv' ? 'calc(100vh - 340px)' : undefined,
+                  paddingRight: integrationType === 'csv' ? 4 : 0,
+                }}
+              >
                 <ImportStepContent
                   integrationType={integrationType as 'direct' | 'csv'}
                   step={step}
@@ -870,7 +916,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   authCompleted={authCompleted}
                   t={t}
                   themeToken={themeToken}
-                  sourceLabel={activeSource?.label || 'your app'}
+                  sourceLabel={activeSource?.label || t('importStep.yourApp', { defaultValue: 'your app' })}
                   source={activeSource}
                   asanaWorkspaces={asanaWorkspaces}
                   clickupTeams={clickupTeams}
@@ -924,8 +970,6 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   setDelimiter={setDelimiter}
                   csvSettingsOpen={csvSettingsOpen}
                   setCsvSettingsOpen={setCsvSettingsOpen}
-                  configOpen={configOpen}
-                  setConfigOpen={setConfigOpen}
                   csvColumns={csvColumns}
                   fieldMappings={fieldMappings}
                   setFieldMappings={setFieldMappings}
@@ -974,6 +1018,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   disabled={
                     navigationDisabled ||
                     isImporting ||
+                    (integrationType === 'csv' && step === 2 && !hasTaskTitleMapping) ||
                     (step === totalSteps - 1 &&
                       integrationType === 'csv' &&
                       (!csvText.trim() || !spaceName.trim()))

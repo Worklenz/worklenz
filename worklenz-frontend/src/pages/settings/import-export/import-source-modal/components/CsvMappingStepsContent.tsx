@@ -1,4 +1,5 @@
 import React from 'react';
+import { FixedSizeList, ListChildComponentProps } from 'react-window';
 import {
   AutoComplete,
   Card,
@@ -14,6 +15,9 @@ import {
   UserOutlined,
 } from '@/shared/antd-imports';
 
+const MOVE_USERS_ROW_HEIGHT = 52;
+const MOVE_USERS_MAX_LIST_HEIGHT = 420;
+
 interface WorkTypeOption {
   key: string;
   label: string;
@@ -21,9 +25,29 @@ interface WorkTypeOption {
   level: number;
 }
 
+interface MoveUserListData {
+  users: string[];
+  userEmails: Record<string, string>;
+  setUserEmails: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  t: (key: string, defaultValueOrOptions?: any, options?: any) => string;
+  palette: {
+    text: string;
+    textSecondary: string;
+    textMuted: string;
+    primary: string;
+    inputBg: string;
+    rowBg: string;
+    border: string;
+    infoBg: string;
+    infoBorder: string;
+    success: string;
+  };
+}
+
 interface CsvMappingStepsContentProps {
   step: number;
   t: (key: string, defaultValueOrOptions?: any, options?: any) => string;
+  themeToken: any;
   csvColumns: string[];
   fieldMappings: Record<string, string>;
   setFieldMappings: React.Dispatch<React.SetStateAction<Record<string, string>>>;
@@ -46,9 +70,58 @@ interface CsvMappingStepsContentProps {
   setAddUsers: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+const MoveUsersRow = ({ index, style, data }: ListChildComponentProps<MoveUserListData>) => {
+  const user = data.users[index];
+
+  return (
+    <div
+      style={{
+        ...style,
+        display: 'flex',
+        alignItems: 'center',
+        background: data.palette.rowBg,
+        borderRadius: 6,
+        marginBottom: 4,
+        minHeight: 44,
+        paddingRight: 8,
+      }}
+    >
+      <span
+        style={{
+          flex: 2,
+          paddingLeft: 8,
+          color: data.palette.text,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {user}
+      </span>
+      <span style={{ width: 40, textAlign: 'center', color: data.palette.primary, fontSize: 20 }}>
+        &rarr;
+      </span>
+      <span style={{ flex: 3 }}>
+        <Input
+          placeholder={data.t('importStep.enterEmail', { defaultValue: 'Enter email' })}
+          value={data.userEmails[user] || ''}
+          onChange={e => data.setUserEmails(emails => ({ ...emails, [user]: e.target.value }))}
+          style={{
+            width: '100%',
+            background: data.palette.inputBg,
+            color: data.palette.text,
+            border: `1px solid ${data.palette.border}`,
+          }}
+        />
+      </span>
+    </div>
+  );
+};
+
 export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
   step,
   t,
+  themeToken,
   csvColumns,
   fieldMappings,
   setFieldMappings,
@@ -70,72 +143,161 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
   addUsers,
   setAddUsers,
 }) => {
+  const browserLocale = React.useMemo(() => {
+    if (typeof navigator !== 'undefined' && navigator.language) return navigator.language;
+    return 'en-US';
+  }, []);
+
+  const browserTimezone = React.useMemo(() => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    } catch (error) {
+      return 'UTC';
+    }
+  }, []);
+
+  const timezoneOptions = React.useMemo(() => {
+    const common = ['UTC', 'Asia/Colombo', 'America/New_York', 'Europe/London'];
+    const all = Array.from(new Set([browserTimezone, ...common]));
+    return all.map(zone => ({ value: zone, label: zone }));
+  }, [browserTimezone]);
+
+  const palette = React.useMemo(
+    () => ({
+      text: themeToken.colorText,
+      textSecondary: themeToken.colorTextSecondary,
+      textMuted: themeToken.colorTextTertiary || themeToken.colorTextSecondary,
+      primary: themeToken.colorPrimary,
+      inputBg: themeToken.colorBgContainer,
+      rowBg: themeToken.colorBgElevated,
+      border: themeToken.colorBorder,
+      infoBg: themeToken.colorInfoBg || themeToken.colorBgElevated,
+      infoBorder: themeToken.colorInfoBorder || themeToken.colorBorder,
+      success: themeToken.colorSuccess || '#22c55e',
+    }),
+    [themeToken]
+  );
+
+  const fieldLabelByValue = React.useMemo(() => {
+    const map = new Map<string, string>();
+    worklenzFieldOptions.forEach(option => {
+      map.set(option.value, option.label);
+    });
+    return map;
+  }, [worklenzFieldOptions]);
+
+  const fieldValueByLabel = React.useMemo(() => {
+    const map = new Map<string, string>();
+    worklenzFieldOptions.forEach(option => {
+      map.set(option.label, option.value);
+    });
+    return map;
+  }, [worklenzFieldOptions]);
+
+  const autocompleteOptions = React.useMemo(
+    () =>
+      worklenzFieldOptions.map(option => ({
+        value: option.label,
+        label: option.label,
+      })),
+    [worklenzFieldOptions]
+  );
+
+  const knownTargetKeys = React.useMemo(() => {
+    const known = new Set<string>();
+    worklenzFieldOptions.forEach(option => {
+      known.add(option.value.toLowerCase().replace(/[^a-z0-9]/g, ''));
+      known.add(option.label.toLowerCase().replace(/[^a-z0-9]/g, ''));
+    });
+    return known;
+  }, [worklenzFieldOptions]);
+
   if (step === 2) {
     return (
       <div style={{ width: '100%' }}>
-        <Typography.Title level={3} style={{ color: '#fff', marginBottom: 8 }}>
-          {t('importStep.mapSpaceFields', { defaultValue: 'Map space fields' })}
+        <Typography.Title level={3} style={{ color: palette.text, marginBottom: 8 }}>
+          {t('importStep.mapSpaceFields', { defaultValue: '' })}
         </Typography.Title>
-        <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 16 }}>
-          We&apos;ve automatically mapped a few columns from the CSV file to{' '}
-          <b>Worklenz fields</b>. Verify and{' '}
-          <a href="#" style={{ color: '#4096ff' }}>
-            map any remaining columns
-          </a>
-          . Map issue type field to bring in issue type values and map issue ID and parent fields
-          to establish hierarchies.{' '}
-          <a href="#" style={{ color: '#4096ff' }}>
-            Read about mapping issue types
-          </a>
+        <Typography.Paragraph style={{ color: palette.textSecondary, marginBottom: 16 }}>
+          {t('importStep.mapFieldsDescription', { defaultValue: '' })}
         </Typography.Paragraph>
 
         <Collapse ghost style={{ marginBottom: 16 }} bordered={false} expandIconPosition="start">
           <Collapse.Panel
-            header={<span style={{ color: '#4096ff', fontSize: 15 }}>&gt; Date and time format options</span>}
+            header={
+              <span style={{ color: palette.primary, fontSize: 15 }}>
+                &gt; Date and time parsing options (optional)
+              </span>
+            }
             key="dateTimeFormat"
             style={{ background: 'transparent', border: 'none', padding: 0 }}
           >
+            <Typography.Paragraph style={{ color: palette.textSecondary, marginBottom: 8 }}>
+              {t('importStep.dateParsingOptional', {
+                defaultValue:
+                  'Use these only if imported dates look incorrect. By default, we try to infer values from your CSV and browser settings.',
+              })}
+            </Typography.Paragraph>
             <div style={{ display: 'flex', gap: 24, marginBottom: 8, marginTop: 8 }}>
               <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <Typography.Text style={{ color: '#fff', fontWeight: 500, marginBottom: 2 }}>
-                  Date and time format<span style={{ color: '#ff4d4f' }}>*</span>
+                <Typography.Text style={{ color: palette.text, fontWeight: 500, marginBottom: 2 }}>
+                  {t('importStep.dateTimeFormatOptional', {
+                    defaultValue: 'Date and time format (optional)',
+                  })}
                 </Typography.Text>
                 <Input
-                  placeholder="dd/MMM/yy h:mm a"
+                  placeholder={t('importStep.dateTimeFormatPlaceholder', {
+                    defaultValue: 'Auto-detect (e.g. dd/MMM/yy h:mm a)',
+                  })}
                   style={{
                     width: '100%',
-                    background: '#18181a',
-                    color: '#fff',
-                    border: '1px solid #333',
+                    background: palette.inputBg,
+                    color: palette.text,
+                    border: `1px solid ${palette.border}`,
                   }}
                 />
-                <Typography.Text style={{ color: '#888', fontSize: 12 }}>
+                <Typography.Text style={{ color: palette.textMuted, fontSize: 12 }}>
                   e.g. dd/MMM/yy h:mm a
                 </Typography.Text>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <Typography.Text style={{ color: '#fff', fontWeight: 500, marginBottom: 2 }}>
-                  Locale
+                <Typography.Text style={{ color: palette.text, fontWeight: 500, marginBottom: 2 }}>
+                  {t('importStep.localeOptional', { defaultValue: 'Locale (optional)' })}
                 </Typography.Text>
-                <Select defaultValue="en" style={{ width: '100%' }}>
-                  <Select.Option value="en">English (US)</Select.Option>
+                <Select defaultValue={browserLocale} style={{ width: '100%' }}>
+                  <Select.Option value={browserLocale}>
+                    {t('importStep.detectedLocale', {
+                      defaultValue: '{{locale}} (detected)',
+                      locale: browserLocale,
+                    })}
+                  </Select.Option>
+                  <Select.Option value="en-US">English (US)</Select.Option>
                   <Select.Option value="fr">French (FR)</Select.Option>
                   <Select.Option value="de">German (DE)</Select.Option>
                 </Select>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <Typography.Text style={{ color: '#fff', fontWeight: 500, marginBottom: 2 }}>
-                  Timezone
+                <Typography.Text style={{ color: palette.text, fontWeight: 500, marginBottom: 2 }}>
+                  {t('importStep.timezoneOptional', { defaultValue: 'Timezone (optional)' })}
                 </Typography.Text>
-                <Select defaultValue="colombo" style={{ width: '100%' }}>
-                  <Select.Option value="colombo">Asia/Colombo (UTC+5:30)</Select.Option>
-                  <Select.Option value="newyork">America/New_York (UTC-5)</Select.Option>
-                  <Select.Option value="london">Europe/London (UTC+0)</Select.Option>
+                <Select defaultValue={browserTimezone} style={{ width: '100%' }}>
+                  {timezoneOptions.map(option => (
+                    <Select.Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Select.Option>
+                  ))}
                 </Select>
               </div>
             </div>
           </Collapse.Panel>
         </Collapse>
+
+        <Typography.Text style={{ color: palette.textSecondary, display: 'block', marginBottom: 12 }}>
+          {t('importStep.customColumnHint', {
+            defaultValue:
+              'Need a custom column? Type a new name in the Worklenz field box while mapping.',
+          })}
+        </Typography.Text>
 
         <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
           <Input
@@ -144,9 +306,9 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
             })}
             style={{
               width: 260,
-              background: '#18181a',
-              color: '#fff',
-              border: '1px solid #333',
+              background: palette.inputBg,
+              color: palette.text,
+              border: `1px solid ${palette.border}`,
             }}
           />
           <Select defaultValue="all" style={{ width: 120 }}>
@@ -178,7 +340,7 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
             style={{
               display: 'flex',
               alignItems: 'center',
-              color: '#b0b0b0',
+              color: palette.textSecondary,
               fontWeight: 500,
               fontSize: 14,
               marginBottom: 4,
@@ -194,7 +356,7 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
           </div>
 
           {csvColumns.length === 0 ? (
-            <div style={{ color: '#888', margin: '24px 0' }}>
+            <div style={{ color: palette.textMuted, margin: '24px 0' }}>
               {t('importStep.uploadCsvToMapFields', {
                 defaultValue: 'Upload a CSV file to map fields.',
               })}
@@ -206,27 +368,55 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  background: '#23272f',
+                  background: palette.rowBg,
                   borderRadius: 6,
                   marginBottom: 4,
                   minHeight: 44,
                 }}
               >
-                <span style={{ flex: 2, paddingLeft: 8, color: '#fff' }}>{col}</span>
+                <span style={{ flex: 2, paddingLeft: 8, color: palette.text }}>{col}</span>
                 <span style={{ flex: 2 }}>
-                  <AutoComplete
-                    placeholder={t('importStep.selectOrTypeField', {
-                      defaultValue: 'Select or type a field to map',
-                    })}
-                    style={{ width: '100%' }}
-                    value={fieldMappings[col] || ''}
-                    onChange={val => setFieldMappings(m => ({ ...m, [col]: val }))}
-                    options={worklenzFieldOptions}
-                    allowClear
-                    filterOption={(inputValue, option) =>
-                      option?.label?.toLowerCase().includes(inputValue.toLowerCase()) || false
-                    }
-                  />
+                  {(() => {
+                    const storedValue = fieldMappings[col] || '';
+                    const displayValue = fieldLabelByValue.get(storedValue) || storedValue;
+                    const normalizedStored = storedValue.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const isCustomFieldCandidate =
+                      !!normalizedStored && !knownTargetKeys.has(normalizedStored);
+                    return (
+                      <>
+                        <AutoComplete
+                          placeholder={t('importStep.selectOrTypeField', {
+                            defaultValue: 'Select or type a field to map',
+                          })}
+                          style={{ width: '100%' }}
+                          value={displayValue}
+                          onChange={val => {
+                            const normalized = fieldValueByLabel.get(val) || val;
+                            setFieldMappings(m => ({ ...m, [col]: normalized }));
+                          }}
+                          options={autocompleteOptions}
+                          allowClear
+                          filterOption={(inputValue, option) =>
+                            option?.label?.toLowerCase().includes(inputValue.toLowerCase()) || false
+                          }
+                        />
+                        {isCustomFieldCandidate && (
+                          <Typography.Text
+                            style={{
+                              color: palette.primary,
+                              fontSize: 12,
+                              marginTop: 4,
+                              display: 'inline-block',
+                            }}
+                          >
+                            {t('importStep.customFieldWillBeCreated', {
+                              defaultValue: 'Will create custom field',
+                            })}
+                          </Typography.Text>
+                        )}
+                      </>
+                    );
+                  })()}
                 </span>
                 <span style={{ width: 140, textAlign: 'center' }}>
                   <Checkbox
@@ -255,15 +445,15 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
 
     return (
       <div style={{ width: '100%' }}>
-        <Typography.Title level={3} style={{ color: '#fff', marginBottom: 8 }}>
+        <Typography.Title level={3} style={{ color: palette.text, marginBottom: 8 }}>
           {t('importStep.mapValues', 'Map values to work types')}
         </Typography.Title>
-        <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 16 }}>
+        <Typography.Paragraph style={{ color: palette.textSecondary, marginBottom: 16 }}>
           {t(
             'importStep.mapValuesHelp',
             'Build more structure into your space by mapping values in your Status column to Worklenz statuses.'
           )}{' '}
-          <a href="#" style={{ color: '#4096ff' }}>
+          <a href="#" style={{ color: palette.primary }}>
             {t('importStep.mapValuesDocs', 'Read about mapping work types')}
           </a>
         </Typography.Paragraph>
@@ -274,16 +464,16 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
             onChange={e => setSearchValue(e.target.value)}
             style={{
               width: 220,
-              background: '#18181a',
-              color: '#fff',
-              border: '1px solid #333',
+              background: palette.inputBg,
+              color: palette.text,
+              border: `1px solid ${palette.border}`,
             }}
           />
           <Select
             value={filter}
             onChange={setFilter}
             style={{ width: 120 }}
-            styles={{ popup: { root: { background: '#23272f', color: '#fff' } } }}
+            styles={{ popup: { root: { background: palette.rowBg, color: palette.text } } }}
           >
             <Select.Option value="all">
               {t('importStep.valuesFilterAll', { defaultValue: 'Values: All' })}
@@ -298,7 +488,7 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
           style={{
             display: 'flex',
             alignItems: 'center',
-            color: '#b0b0b0',
+            color: palette.textSecondary,
             fontWeight: 500,
             fontSize: 15,
             marginBottom: 8,
@@ -312,13 +502,13 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
           </span>
           <span style={{ flex: 1 }}></span>
           <span style={{ flex: 2, display: 'flex', alignItems: 'center' }}>
-            <TableOutlined style={{ marginRight: 8, color: '#4096ff' }} />
+            <TableOutlined style={{ marginRight: 8, color: palette.primary }} />
             {t('importStep.worklenzWorkTypes', { defaultValue: 'Worklenz work types' })}
           </span>
         </div>
 
         {filteredValues.length === 0 ? (
-          <div style={{ color: '#888', margin: '24px 0' }}>{emptyValuesMessage}</div>
+          <div style={{ color: palette.textMuted, margin: '24px 0' }}>{emptyValuesMessage}</div>
         ) : (
           filteredValues.map(value => (
             <div
@@ -326,14 +516,16 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                background: '#18181a',
+                background: palette.inputBg,
                 borderRadius: 8,
                 marginBottom: 8,
                 minHeight: 44,
               }}
             >
-              <span style={{ flex: 2, paddingLeft: 8, color: '#fff', fontSize: 16 }}>{value}</span>
-              <span style={{ flex: 1, textAlign: 'center', color: '#b0b0b0', fontSize: 20 }}>
+              <span style={{ flex: 2, paddingLeft: 8, color: palette.text, fontSize: 16 }}>
+                {value}
+              </span>
+              <span style={{ flex: 1, textAlign: 'center', color: palette.textSecondary, fontSize: 20 }}>
                 &rarr;
               </span>
               <span style={{ flex: 2 }}>
@@ -345,17 +537,17 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
                   })}
                   style={{
                     width: '100%',
-                    background: '#23272f',
-                    color: '#fff',
-                    border: '1px solid #333',
+                    background: palette.rowBg,
+                    color: palette.text,
+                    border: `1px solid ${palette.border}`,
                   }}
-                  styles={{ popup: { root: { background: '#23272f', color: '#fff' } } }}
+                  styles={{ popup: { root: { background: palette.rowBg, color: palette.text } } }}
                   popupRender={menu => (
                     <>
                       <div
                         style={{
                           padding: '8px 12px',
-                          color: '#b0b0b0',
+                          color: palette.textSecondary,
                           fontWeight: 500,
                           fontSize: 13,
                         }}
@@ -363,9 +555,9 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
                         MAP TO A SUGGESTED WORK TYPE
                       </div>
                       {menu}
-                      <div style={{ borderTop: '1px solid #333', margin: '8px 0' }} />
+                      <div style={{ borderTop: `1px solid ${palette.border}`, margin: '8px 0' }} />
                       <div
-                        style={{ padding: '8px 12px', color: '#4096ff', cursor: 'pointer' }}
+                        style={{ padding: '8px 12px', color: palette.primary, cursor: 'pointer' }}
                         onClick={() => {
                           setWorkTypeMapping(m => {
                             const copy = { ...m };
@@ -384,8 +576,8 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
                     <Select.Option key={wt.key} value={wt.key} label={wt.label}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {wt.icon}
-                        <span style={{ color: '#fff' }}>{wt.label}</span>
-                        <span style={{ color: '#b0b0b0', fontSize: 13, marginLeft: 8 }}>
+                        <span style={{ color: palette.text }}>{wt.label}</span>
+                        <span style={{ color: palette.textSecondary, fontSize: 13, marginLeft: 8 }}>
                           {t('importStep.statusLevel', 'Level')} {wt.level}
                         </span>
                       </span>
@@ -406,10 +598,24 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
       const candidate = (userEmails[user] || '').trim();
       return addUsers && !!candidate && candidate.includes('@');
     }).length;
+    const usersListHeight = Math.min(
+      csvUserRows.length * MOVE_USERS_ROW_HEIGHT,
+      MOVE_USERS_MAX_LIST_HEIGHT
+    );
+    const userListData = React.useMemo<MoveUserListData>(
+      () => ({
+        users: csvUserRows,
+        userEmails,
+        setUserEmails,
+        t,
+        palette,
+      }),
+      [csvUserRows, palette, setUserEmails, t, userEmails]
+    );
 
     return (
       <div style={{ width: '100%' }}>
-        <Typography.Title level={3} style={{ color: '#fff', marginBottom: 16 }}>
+        <Typography.Title level={3} style={{ color: palette.text, marginBottom: 16 }}>
           {t('importStep.moveUsersToWorklenz', { defaultValue: 'Move users to Worklenz' })}
         </Typography.Title>
 
@@ -418,22 +624,22 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
             style={{
               marginBottom: 24,
               maxWidth: 680,
-              background: '#19345c',
-              borderColor: '#2f4f80',
+              background: palette.infoBg,
+              borderColor: palette.infoBorder,
             }}
           >
-            <Typography.Title level={4} style={{ color: '#fff', marginBottom: 8 }}>
+            <Typography.Title level={4} style={{ color: palette.text, marginBottom: 8 }}>
               {t('importStep.noUsersInCsvTitle', {
                 defaultValue: 'There are no users in the CSV file',
               })}
             </Typography.Title>
-            <Typography.Paragraph style={{ color: '#cbd5e1', marginBottom: 12 }}>
+            <Typography.Paragraph style={{ color: palette.textSecondary, marginBottom: 12 }}>
               {t('importStep.noUsersInCsvDescription', {
                 defaultValue:
                   'You can proceed with import, or restart with a CSV that includes user data. If you proceed:',
               })}
             </Typography.Paragraph>
-            <Typography.Paragraph style={{ color: '#fff', marginBottom: 0 }}>
+            <Typography.Paragraph style={{ color: palette.text, marginBottom: 0 }}>
               {t('importStep.noUsersImpact', {
                 defaultValue:
                   'Assignee/reporter fields remain unassigned, mentions become plain text, and commenter names become Anonymous.',
@@ -444,13 +650,13 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
           <>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
               <Switch checked={addUsers} onChange={setAddUsers} style={{ marginRight: 12 }} />
-              <span style={{ color: '#22c55e', fontWeight: 600, fontSize: 18 }}>
+              <span style={{ color: palette.success, fontWeight: 600, fontSize: 18 }}>
                 {t('importStep.addUsersIntoSpace', {
                   defaultValue: 'Add users into your space',
                 })}
               </span>
             </div>
-            <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 20 }}>
+            <Typography.Paragraph style={{ color: palette.textSecondary, marginBottom: 20 }}>
               {t('importStep.addUsersHelp', {
                 defaultValue:
                   "Enter a valid email address for each user. Users without valid emails won't be imported.",
@@ -461,7 +667,7 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                color: '#b0b0b0',
+                color: palette.textSecondary,
                 fontWeight: 500,
                 fontSize: 15,
                 marginBottom: 4,
@@ -484,37 +690,16 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
               </span>
             </div>
 
-            {csvUserRows.map((user, idx) => (
-              <div
-                key={`${user}-${idx}`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  background: '#23272f',
-                  borderRadius: 6,
-                  marginBottom: 4,
-                  minHeight: 44,
-                }}
-              >
-                <span style={{ flex: 2, paddingLeft: 8, color: '#fff' }}>{user}</span>
-                <span style={{ width: 40, textAlign: 'center', color: '#4096ff', fontSize: 20 }}>
-                  &rarr;
-                </span>
-                <span style={{ flex: 3 }}>
-                  <Input
-                    placeholder={t('importStep.enterEmail', { defaultValue: 'Enter email' })}
-                    value={userEmails[user] || ''}
-                    onChange={e => setUserEmails(emails => ({ ...emails, [user]: e.target.value }))}
-                    style={{
-                      width: '100%',
-                      background: '#18181a',
-                      color: '#fff',
-                      border: '1px solid #333',
-                    }}
-                  />
-                </span>
-              </div>
-            ))}
+            <FixedSizeList
+              width="100%"
+              height={usersListHeight}
+              itemCount={csvUserRows.length}
+              itemSize={MOVE_USERS_ROW_HEIGHT}
+              itemData={userListData}
+              overscanCount={6}
+            >
+              {MoveUsersRow}
+            </FixedSizeList>
           </>
         )}
       </div>
