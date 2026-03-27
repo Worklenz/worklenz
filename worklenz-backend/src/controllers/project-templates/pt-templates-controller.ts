@@ -16,6 +16,7 @@ import {
   getCurrentProjectsCount,
   getFreePlanSettings,
 } from "../../shared/paddle-utils";
+import OnboardingController from "../onboarding-controller";
 
 export default class ProjectTemplatesController extends ProjectTemplatesControllerBase {
   @HandleExceptions()
@@ -106,6 +107,11 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
   ): Promise<IWorkLenzResponse> {
     const { id } = req.params;
     const data = await this.getTemplateData(id);
+    if (!data) {
+      return res
+        .status(200)
+        .send(new ServerResponse(false, null, "Template not found."));
+    }
 
     for (const phase of data.phases) {
       phase.color_code = phase.color_code + TASK_STATUS_COLOR_ALPHA;
@@ -292,63 +298,7 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    const { template_id, team_name } = req.body;
-    let project_id: string | null = null;
-
-    await this.updateTeamName(
-      team_name,
-      req.user?.team_id as string,
-      req.user?.id as string
-    );
-
-    const data = await this.getTemplateData(template_id);
-    if (data) {
-      // Store the nested arrays separately
-      const tasks = data.tasks;
-      const phases = data.phases;
-      const labels = data.labels;
-      
-      // Create a clean project object with only the fields needed for create_project
-      const projectData: any = {
-        name: data.name,
-        notes: data.description, // create_project uses 'notes' not 'description'
-        phase_label: data.phase_label,
-        color_code: data.color_code,
-        image_url: data.image_url,
-        team_id: req.user?.team_id || null,
-        user_id: req.user?.id || null,
-        folder_id: null,
-        category_id: null,
-        status_id: await this.getDefaultProjectStatus(),
-        project_created_log: LOG_DESCRIPTIONS.PROJECT_CREATED,
-        project_member_added_log: LOG_DESCRIPTIONS.PROJECT_MEMBER_ADDED,
-        health_id: await this.getDefaultProjectHealth(),
-        working_days: 0,
-        man_days: 0,
-        hours_per_day: 8
-      };
-
-      project_id = await this.importTemplate(projectData);
-
-      await this.insertTeamLabels(labels, req.user?.team_id);
-      await this.insertProjectPhases(phases, project_id as string);
-      await this.insertProjectTasks(
-        tasks,
-        projectData.team_id,
-        project_id as string,
-        projectData.user_id,
-        IO.getSocketById(req.user?.socket_id as string)
-      );
-
-      await this.handleAccountSetup(
-        project_id as string,
-        data.user_id,
-        team_name
-      );
-
-      return res.status(200).send(new ServerResponse(true, { id: project_id }));
-    }
-    return res.status(200).send(new ServerResponse(true, { id: project_id }));
+    return OnboardingController.setupAccountFromTemplate(req, res);
   }
 
   @HandleExceptions()

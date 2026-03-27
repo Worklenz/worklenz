@@ -54,6 +54,7 @@ import type { ImportJob } from '@/api/imports';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 import { IProjectStatus } from '@/types/project/projectStatus.types';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { validateEmail } from '@/utils/validateEmail';
 
 interface ImportSourceModalProps {
   open: boolean;
@@ -157,6 +158,16 @@ const parseCsvText = (
   return { fields, rows };
 };
 
+const normalizeDomain = (value: string): string =>
+  value
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/\/.*$/, '')
+    .toLowerCase();
+
+const isValidDomain = (value: string): boolean =>
+  /^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/i.test(value) && !/\s/.test(value);
+
 export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onClose, source }) => {
   // Prevent ReferenceError by checking for source before any usage
   if (!source) return null;
@@ -240,6 +251,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   React.useEffect(() => {
     setStep(0);
     setReviewSubScreen('main');
+    setShowAdvancedSpaceOptions(false);
     setAuthCompleted(!authNeeded);
     setMondayToken('');
     setSelectedWorkspace('');
@@ -313,6 +325,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   // Toggles for review details
   const [importMembers, setImportMembers] = React.useState(true);
   const [importAttachments, setImportAttachments] = React.useState(true);
+  const [showAdvancedSpaceOptions, setShowAdvancedSpaceOptions] = React.useState(false);
 
   const [fieldMappingRows, setFieldMappingRows] = React.useState<
     Array<{ source_field: string; target_field: string; required?: boolean; include?: boolean }>
@@ -480,16 +493,14 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
 
   const modalDims = React.useMemo(() => {
     if (integrationType === 'csv') {
-      const isReviewStep = step === 5; // step index 5 = "Review details" in CSV flow
       return {
         width: 1180,
-        height: isReviewStep ? 900 : 820,
         stepperMaxWidth: 1120,
       };
     }
 
-    return { width: 900, height: 753, stepperMaxWidth: 820 };
-  }, [integrationType, step]);
+    return { width: 900, stepperMaxWidth: 820 };
+  }, [integrationType]);
   const hierarchyCount = React.useMemo(() => hierarchyRows.length, [hierarchyRows]);
   const hierarchyDisplayRows = React.useMemo(
     () => [...hierarchyRows].sort((a, b) => (a.position || 0) - (b.position || 0)),
@@ -1303,14 +1314,34 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   };
 
   const handleJiraValidate = async () => {
-    if (!job || !jiraToken.trim() || !jiraEmail.trim() || !jiraDomain.trim()) return;
+    const email = jiraEmail.trim();
+    const domain = normalizeDomain(jiraDomain);
+    const token = jiraToken.trim();
+
+    if (!job || !token || !email || !domain) return;
+    if (!validateEmail(email)) {
+      setAuthError(t('auth.jiraEmailInvalid', { defaultValue: 'Enter a valid email address.' }));
+      return;
+    }
+    if (!isValidDomain(domain)) {
+      setAuthError(
+        t('auth.jiraDomainInvalid', {
+          defaultValue:
+            'Enter a valid domain, for example yourcompany.atlassian.net (without https://).',
+        })
+      );
+      return;
+    }
+
+    if (domain !== jiraDomain) setJiraDomain(domain);
+
     setAuthLoading(true);
     setAuthError(null);
     try {
       const resp = await jiraValidate(job.id, {
-        token: jiraToken.trim(),
-        email: jiraEmail.trim(),
-        domain: jiraDomain.trim(),
+        token,
+        email,
+        domain,
       });
       setJiraProjects(resp.projects || []);
       setSelectedJiraProject(resp.projects?.[0]?.key || '');
@@ -1532,7 +1563,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 })}
               </Typography.Paragraph>
               <div style={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>
-                <label>{t('importStep.worklenzSpace', 'Worklenz space')}</label>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>
+                  {t('importStep.worklenzSpace', 'Worklenz space')}
+                </label>
                 <Select
                   style={{ width: '100%', marginBottom: 16 }}
                   value={spaceType}
@@ -1542,15 +1575,68 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                     { value: 'software', label: t('importStep.softwareSpace', 'Software space') },
                   ]}
                 />
-                <label>{t('importStep.spaceName', 'Space name')}</label>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>
+                  {t('importStep.spaceName', 'Space name')}
+                </label>
                 <Input
                   style={{ width: '100%', marginBottom: 8 }}
+                  placeholder={t('importStep.spaceNamePlaceholder', {
+                    defaultValue: 'Enter a space name',
+                  })}
                   value={spaceName}
                   onChange={e => setSpaceName(e.target.value)}
                 />
-                <a href="#" style={{ color: '#4096ff', fontSize: 14 }}>
-                  {t('importStep.showMore', 'Show more')}
-                </a>
+                <Typography.Text
+                  type="secondary"
+                  style={{ display: 'block', marginBottom: 10, fontSize: 12 }}
+                >
+                  {t('importStep.requiredFieldsHint', {
+                    defaultValue: 'Required now: Worklenz space and space name.',
+                  })}
+                </Typography.Text>
+
+                <Button
+                  type="link"
+                  style={{ padding: 0, height: 'auto' }}
+                  onClick={() => setShowAdvancedSpaceOptions(v => !v)}
+                >
+                  {showAdvancedSpaceOptions
+                    ? t('importStep.showLess', { defaultValue: 'Show less' })
+                    : t('importStep.showMore', { defaultValue: 'Show more' })}
+                </Button>
+
+                {showAdvancedSpaceOptions && (
+                  <div
+                    style={{
+                      marginTop: 12,
+                      border: `1px solid ${themeToken.colorBorderSecondary}`,
+                      borderRadius: themeToken.borderRadius,
+                      padding: 12,
+                      background: themeToken.colorBgContainer,
+                    }}
+                  >
+                    <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>
+                      {t('importStep.template', { defaultValue: 'Template' })}
+                    </label>
+                    <Select
+                      style={{ width: '100%' }}
+                      value={spaceTemplate}
+                      onChange={setSpaceTemplate}
+                      options={[
+                        { value: 'scrum', label: t('importStep.templateScrum', 'Scrum') },
+                        { value: 'kanban', label: t('importStep.templateKanban', 'Kanban') },
+                      ]}
+                    />
+                    <Typography.Text
+                      type="secondary"
+                      style={{ display: 'block', marginTop: 8, fontSize: 12 }}
+                    >
+                      {t('importStep.templateHint', {
+                        defaultValue: 'Optional. Keep the default template and continue.',
+                      })}
+                    </Typography.Text>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -2131,16 +2217,19 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       case 0:
         return (
           <>
-            <Typography.Title level={3} style={{ marginBottom: 16, color: '#fff' }}>
+            <Typography.Title level={3} style={{ marginBottom: 16, color: themeToken.colorText }}>
               {t('importStep.uploadCsvTitle', { defaultValue: 'Upload a CSV file' })}
             </Typography.Title>
-            <Typography.Paragraph type="secondary" style={{ marginBottom: 24, color: '#b0b0b0' }}>
+            <Typography.Paragraph
+              type="secondary"
+              style={{ marginBottom: 24, color: themeToken.colorTextSecondary }}
+            >
               {t('importStep.uploadCsvHelp', {
                 defaultValue:
                   'Start by finding the Download or Export option in your app and export a CSV file.',
               })}
               <br />
-              <a href="#" style={{ color: '#4096ff' }}>
+              <a href="#" style={{ color: themeToken.colorPrimary }}>
                 {t('importStep.structureCsv', { defaultValue: 'Structure the CSV' })}
               </a>{' '}
               {t('importStep.structureCsvSuffix', {
@@ -2150,9 +2239,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             <Upload.Dragger
               style={{
                 marginBottom: 24,
-                background: '#232324',
-                border: '1px dashed #333',
-                borderRadius: 8,
+                background: themeToken.colorBgContainer,
+                border: `1px dashed ${themeToken.colorBorder}`,
+                borderRadius: themeToken.borderRadiusLG,
               }}
               accept=".csv"
               showUploadList={false}
@@ -2179,12 +2268,12 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             >
               <Collapse.Panel
                 header={
-                  <span style={{ color: '#4096ff' }}>
+                  <span style={{ color: themeToken.colorPrimary }}>
                     {t('importStep.csvSettings', { defaultValue: 'CSV file settings' })}
                   </span>
                 }
                 key="csv"
-                style={{ color: '#fff', background: 'transparent' }}
+                style={{ color: themeToken.colorText, background: 'transparent' }}
               >
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 8 }}>
                   <span>{t('importStep.fileEncoding', { defaultValue: 'File encoding' })}</span>
@@ -2193,7 +2282,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                       defaultValue: 'The character encoding of your CSV file.',
                     })}
                   >
-                    <InfoCircleOutlined style={{ color: '#4096ff' }} />
+                    <InfoCircleOutlined style={{ color: themeToken.colorPrimary }} />
                   </Tooltip>
                   <Select
                     value={encoding}
@@ -2225,7 +2314,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                       defaultValue: 'The character that separates values in your CSV file.',
                     })}
                   >
-                    <InfoCircleOutlined style={{ color: '#4096ff' }} />
+                    <InfoCircleOutlined style={{ color: themeToken.colorPrimary }} />
                   </Tooltip>
                   <Input
                     value={delimiter}
@@ -2243,21 +2332,23 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             >
               <Collapse.Panel
                 header={
-                  <span style={{ color: '#4096ff' }}>
+                  <span style={{ color: themeToken.colorPrimary }}>
                     {t('importStep.configurationUploadTitle', {
                       defaultValue: 'Upload a configuration file (optional)',
                     })}
                   </span>
                 }
                 key="config"
-                style={{ color: '#fff', background: 'transparent' }}
+                style={{ color: themeToken.colorText, background: 'transparent' }}
               >
-                <Typography.Paragraph style={{ color: '#b0b0b0', marginBottom: 8 }}>
+                <Typography.Paragraph
+                  style={{ color: themeToken.colorTextSecondary, marginBottom: 8 }}
+                >
                   {t('importStep.configurationUploadHelp', {
                     defaultValue:
                       'Adding a configuration file will bring in preferences selected in a previous import such as mapped fields and users.',
                   })}{' '}
-                  <a href="#" style={{ color: '#4096ff' }}>
+                  <a href="#" style={{ color: themeToken.colorPrimary }}>
                     {t('importStep.configurationUploadDocs', {
                       defaultValue: 'Learn about using configuration files',
                     })}
@@ -3106,8 +3197,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
             width: 820,
             height: 245,
             padding: '40px 40px',
-            borderRadius: 10,
-            background: '#067EFC08',
+            borderRadius: themeToken.borderRadiusLG,
+            background: themeToken.colorPrimaryBg,
             margin: '0 auto',
             display: 'flex',
             flexDirection: 'column',
@@ -3142,7 +3233,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
 
     if (lowerKey === 'monday') {
       return (
-        <div style={{ padding: 48, background: themeToken.colorBgLayout, height: '100%' }}>
+        <div style={{ padding: 48, background: themeToken.colorBgLayout }}>
           <Typography.Title level={4} style={{ color: themeToken.colorText, marginBottom: 8 }}>
             {t('auth.mondayTitle', 'Enter your Monday token')}
           </Typography.Title>
@@ -3180,7 +3271,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
 
     if (lowerKey === 'trello') {
       return (
-        <div style={{ padding: 48, background: themeToken.colorBgLayout, height: '100%' }}>
+        <div style={{ padding: 48, background: themeToken.colorBgLayout }}>
           <Typography.Title level={4} style={{ color: themeToken.colorText, marginBottom: 8 }}>
             {t('auth.trelloTitle', 'Connect Trello to import')}
           </Typography.Title>
@@ -3225,7 +3316,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
 
     if (lowerKey === 'clickup') {
       return (
-        <div style={{ padding: 48, background: themeToken.colorBgLayout, height: '100%' }}>
+        <div style={{ padding: 48, background: themeToken.colorBgLayout }}>
           <Typography.Title level={2} style={{ color: themeToken.colorText, marginBottom: 12 }}>
             {t('auth.clickupTitle', 'Connect ClickUp workspace')}
           </Typography.Title>
@@ -3294,70 +3385,216 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     }
 
     if (isJira) {
-      // Align JIRA wrapper styling with Asana: light blue-tinted background container.
+      const jiraEmailTrimmed = jiraEmail.trim();
+      const jiraDomainNormalized = normalizeDomain(jiraDomain);
+      const jiraTokenTrimmed = jiraToken.trim();
+      const jiraEmailInvalid = jiraEmailTrimmed.length > 0 && !validateEmail(jiraEmailTrimmed);
+      const jiraDomainInvalid = jiraDomain.trim().length > 0 && !isValidDomain(jiraDomainNormalized);
+      const jiraCanConnect =
+        !!jiraTokenTrimmed &&
+        !!jiraEmailTrimmed &&
+        !!jiraDomainNormalized &&
+        !jiraEmailInvalid &&
+        !jiraDomainInvalid;
+
       return (
         <div
           style={{
-            padding: 48,
-            background: '#2684FF08',
-            height: '100%',
-            borderRadius: 12,
+            padding: '28px 40px 20px',
+            background: themeToken.colorBgLayout,
           }}
         >
-          <Typography.Title level={2} style={{ color: themeToken.colorText, marginBottom: 12 }}>
-            {t('auth.jiraTitle', 'Connect JIRA')}
-          </Typography.Title>
-          <Typography.Paragraph style={{ color: themeToken.colorTextSecondary, fontSize: 16 }}>
-            {t(
-              'auth.jiraBody',
-              "Enter your JIRA credentials to import projects and issues. You'll need an API token from your JIRA account."
-            )}
-          </Typography.Paragraph>
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 760,
+              margin: '0 auto',
+            }}
+          >
+            <Typography.Title level={2} style={{ color: themeToken.colorText, marginBottom: 8 }}>
+              {t('auth.jiraTitle', 'Connect JIRA')}
+            </Typography.Title>
+            <Typography.Paragraph
+              style={{ color: themeToken.colorTextSecondary, fontSize: 16, marginBottom: 18 }}
+            >
+              {t(
+                'auth.jiraBody',
+                "Enter your JIRA credentials to import projects and issues. You'll need an API token from your JIRA account."
+              )}
+            </Typography.Paragraph>
 
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ color: themeToken.colorText, display: 'block', marginBottom: 4 }}>
-              {t('auth.jiraEmail', 'Email')}
+            <div
+              style={{
+                border: `1px solid ${themeToken.colorBorderSecondary}`,
+                borderRadius: themeToken.borderRadiusLG,
+                background: themeToken.colorBgContainer,
+                padding: 20,
+              }}
+            >
+            <Typography.Text
+              type="secondary"
+              style={{ display: 'block', marginBottom: 14, fontSize: 12 }}
+            >
+              {t('auth.jiraRequiredFields', {
+                defaultValue: 'All fields are required to connect to Jira.',
+              })}
+            </Typography.Text>
+
+            <div style={{ marginBottom: 16 }}>
+            <label
+              style={{
+                color: themeToken.colorText,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                marginBottom: 4,
+              }}
+            >
+              {t('auth.jiraEmail', { defaultValue: 'Email' })} *
+              <Tooltip title={t('auth.jiraEmailTooltip', { defaultValue: 'Use the Atlassian account email tied to this Jira site.' })}>
+                <InfoCircleOutlined
+                  aria-label={t('auth.jiraEmailTooltipAriaLabel', {
+                    defaultValue: 'Jira email guidance',
+                  })}
+                  style={{ color: themeToken.colorTextSecondary }}
+                />
+              </Tooltip>
             </label>
             <Input
               placeholder={t('auth.jiraEmailPlaceholder', 'your-email@company.com')}
               value={jiraEmail}
               onChange={e => setJiraEmail(e.target.value)}
+              status={jiraEmailInvalid ? 'error' : ''}
             />
+            <Typography.Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+              {t('auth.jiraEmailHint', {
+                defaultValue: 'Example: jane@company.com',
+              })}
+            </Typography.Text>
+            {jiraEmailInvalid && (
+              <Typography.Text type="danger" style={{ display: 'block', marginTop: 4 }}>
+                {t('auth.jiraEmailInvalid', { defaultValue: 'Enter a valid email address.' })}
+              </Typography.Text>
+            )}
           </div>
 
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ color: themeToken.colorText, display: 'block', marginBottom: 4 }}>
-              {t('auth.jiraDomain', 'Domain')}
+            <div style={{ marginBottom: 16 }}>
+            <label
+              style={{
+                color: themeToken.colorText,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                marginBottom: 4,
+              }}
+            >
+              {t('auth.jiraDomain', { defaultValue: 'Domain' })} *
+              <Tooltip
+                title={t('auth.jiraDomainTooltip', {
+                  defaultValue:
+                    'Enter your Jira Cloud domain only, for example yourcompany.atlassian.net (no https:// or paths).',
+                })}
+              >
+                <InfoCircleOutlined
+                  aria-label={t('auth.jiraDomainTooltipAriaLabel', {
+                    defaultValue: 'Jira domain guidance',
+                  })}
+                  style={{ color: themeToken.colorTextSecondary }}
+                />
+              </Tooltip>
             </label>
             <Input
               placeholder={t('auth.jiraDomainPlaceholder', 'yourcompany.atlassian.net')}
               value={jiraDomain}
               onChange={e => setJiraDomain(e.target.value)}
+              onBlur={e => setJiraDomain(normalizeDomain(e.target.value))}
+              status={jiraDomainInvalid ? 'error' : ''}
             />
+            <Typography.Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+              {t('auth.jiraDomainHint', {
+                defaultValue: 'Use only the host name. Example: yourcompany.atlassian.net',
+              })}
+            </Typography.Text>
+            {jiraDomainInvalid && (
+              <Typography.Text type="danger" style={{ display: 'block', marginTop: 4 }}>
+                {t('auth.jiraDomainInvalid', {
+                  defaultValue:
+                    'Enter a valid domain, for example yourcompany.atlassian.net (without https://).',
+                })}
+              </Typography.Text>
+            )}
           </div>
 
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ color: themeToken.colorText, display: 'block', marginBottom: 4 }}>
-              {t('auth.jiraToken', 'API Token')}
+            <div style={{ marginBottom: 0 }}>
+            <label
+              style={{
+                color: themeToken.colorText,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                marginBottom: 4,
+              }}
+            >
+              {t('auth.jiraToken', { defaultValue: 'API Token' })} *
+              <Tooltip
+                title={t('auth.jiraTokenTooltip', {
+                  defaultValue:
+                    'Create a token at id.atlassian.com/manage-profile/security/api-tokens, then paste that token here.',
+                })}
+              >
+                <InfoCircleOutlined
+                  aria-label={t('auth.jiraTokenTooltipAriaLabel', {
+                    defaultValue: 'How to get a Jira API token',
+                  })}
+                  style={{ color: themeToken.colorTextSecondary }}
+                />
+              </Tooltip>
             </label>
             <Input.Password
               placeholder={t('auth.jiraTokenPlaceholder', 'Paste your JIRA API token')}
               value={jiraToken}
               onChange={e => setJiraToken(e.target.value)}
             />
+            <Typography.Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+              {t('auth.jiraTokenHint', {
+                defaultValue: 'Generate your token from Atlassian account security settings.',
+              })}{' '}
+              <a
+                href="https://id.atlassian.com/manage-profile/security/api-tokens"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {t('auth.jiraTokenLink', { defaultValue: 'Open token page' })}
+              </a>
+            </Typography.Text>
+            </div>
+          </div>
           </div>
 
           {authError && (
-            <Typography.Text type="danger" style={{ display: 'block', marginBottom: 12 }}>
+            <Typography.Text
+              type="danger"
+              style={{ display: 'block', marginTop: 12, marginBottom: 0, maxWidth: 760, marginLeft: 'auto', marginRight: 'auto' }}
+            >
               {authError}
             </Typography.Text>
           )}
 
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: 12,
+              justifyContent: 'flex-end',
+              marginTop: 16,
+              maxWidth: 760,
+              marginLeft: 'auto',
+              marginRight: 'auto',
+            }}
+          >
             <Button onClick={onClose}>{t('common.cancel', 'Cancel')}</Button>
             <Button
               type="primary"
-              disabled={!jiraToken.trim() || !jiraEmail.trim() || !jiraDomain.trim()}
+              disabled={!jiraCanConnect}
               loading={authLoading}
               onClick={handleJiraValidate}
             >
@@ -3427,16 +3664,14 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       }}
       styles={{
         content: {
-          borderRadius: 20,
-          background: '#fff',
           overflow: 'hidden',
         },
         body: {
-          minHeight: modalDims.height,
-          maxHeight: modalDims.height,
+          maxHeight: 'calc(100vh - 120px)',
           display: 'flex',
           flexDirection: 'column',
-          background: '#fff',
+          background: themeToken.colorBgElevated,
+          overflowY: 'auto',
         },
       }}
     >
@@ -3479,7 +3714,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
 
         <div
           className="content"
-          style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}
+          style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0 }}
         >
           {showCompletion ? (
             <div
@@ -3495,7 +3730,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               {renderCompletionContent()}
             </div>
           ) : authNeeded && !authCompleted ? (
-            <div className="content-body" style={{ height: '100%', padding: 0 }}>
+            <div className="content-body" style={{ padding: 0 }}>
               {renderAuthGate()}
             </div>
           ) : (

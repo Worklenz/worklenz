@@ -90,6 +90,14 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+const parseCsvOrigins = (value?: string): string[] => {
+  if (!value) return [];
+  return value
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+};
+
 // CORS configuration
 const allowedOrigins = [
   isProduction()
@@ -103,63 +111,65 @@ const allowedOrigins = [
         `https://www.react.worklenz.com`,
         `https://wl-client.ceydigital.dev`,
         `https://appleid.apple.com`, // Allow Apple Sign-In OAuth requests
-        process.env.SERVER_CORS || "", // Add hostname from env
-        process.env.FRONTEND_URL || "", // Support FRONTEND_URL as well
-      ].filter(Boolean) // Remove empty strings
+        `https://api.ncinga.worklenz.com`,
+        `https://ncinga.worklenz.com`,
+        `https://www.ncinga.worklenz.com`,
+      ]
     : [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5000",
-        `http://localhost:5000`,
-        `https://appleid.apple.com`, // Allow Apple Sign-In OAuth requests
-        process.env.SERVER_CORS || "", // Add hostname from env
-        process.env.FRONTEND_URL || "", // Support FRONTEND_URL as well
-      ].filter(Boolean), // Remove empty strings
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:3000",
+      "http://127.0.0.1:5000",
+      `http://localhost:5000`,
+      `https://appleid.apple.com`, // Allow Apple Sign-In OAuth requests
+    ]
 ].flat();
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // In development, allow all requests
-      if (!isProduction()) {
-        return callback(null, true);
-      }
-
-      // In production, allow requests without Origin header (for mobile apps, native clients)
-      // Mobile apps and native clients typically don't send Origin headers
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      // If Origin header is present in production, validate it against whitelist
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.log("Blocked origin:", origin, process.env.NODE_ENV);
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allowedHeaders: [
-      "Origin",
-      "X-Requested-With",
-      "Content-Type",
-      "Accept",
-      "Authorization",
-      "X-CSRF-Token",
-      "x-client-token",
-      "Cache-Control",
-      "cache-control",
-      "Pragma",
-      "pragma",
-    ],
-    exposedHeaders: ["Set-Cookie", "X-CSRF-Token"],
-  }),
+allowedOrigins.push(
+  ...parseCsvOrigins(process.env.SERVER_CORS),
+  ...parseCsvOrigins(process.env.FRONTEND_URL)
 );
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // In development, allow all requests
+    if (!isProduction()) {
+      return callback(null, true);
+    }
+    
+    // In production, allow requests without Origin header (for mobile apps, native clients)
+    // Mobile apps and native clients typically don't send Origin headers
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // If Origin header is present in production, validate it against whitelist
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log("Blocked origin:", origin, process.env.NODE_ENV);
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: [
+    "Origin",
+    "X-Requested-With",
+    "Content-Type",
+    "Accept",
+    "Authorization",
+    "X-CSRF-Token",
+    "x-client-token",
+    "Cache-Control",
+    "cache-control",
+    "Pragma",
+    "pragma",
+  ],
+  exposedHeaders: ["Set-Cookie", "X-CSRF-Token"]
+}));
 
 // Handle preflight requests
 app.options("*", cors());

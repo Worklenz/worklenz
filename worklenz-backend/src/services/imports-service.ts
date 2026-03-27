@@ -1,6 +1,10 @@
 import db from "../config/db";
 import { PoolClient } from "pg";
 import slugify from "slugify";
+import axios from "axios";
+import path from "path";
+import { getKey, uploadBuffer } from "../shared/storage";
+import { EncryptionService } from "./encryption.service";
 
 export type ImportFlowType = "direct" | "csv";
 export type ImportStatus =
@@ -101,6 +105,30 @@ export interface CustomFieldValuePlan {
   value: unknown;
 }
 
+interface ImportedJiraComment {
+  author?: string;
+  created?: string | null;
+  body?: string;
+}
+
+interface ImportedJiraWorklog {
+  author?: string;
+  started?: string | null;
+  created?: string | null;
+  timeSpent?: string;
+  timeSpentSeconds?: number;
+  comment?: string;
+}
+
+interface ImportedJiraAttachment {
+  filename?: string;
+  url?: string;
+  mimeType?: string | null;
+  size?: number | null;
+  created?: string | null;
+  author?: string;
+}
+
 type SupportedCustomFieldType =
   | "people"
   | "text"
@@ -187,6 +215,48 @@ const coerceBooleanValue = (value: string): boolean | null => {
 };
 
 const normalizeLabelName = (value: string): string => value.trim();
+
+const clampText = (value: string, maxLen: number): string =>
+  value.length <= maxLen ? value : value.slice(0, Math.max(0, maxLen - 3)) + "...";
+
+const parseImportedArray = <T>(
+  raw: unknown,
+  key: string
+): T[] => {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return [];
+  const source = raw as Record<string, unknown>;
+  const value = source[key];
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => !!item && typeof item === "object") as T[];
+};
+
+const safeDate = (value?: string | null): Date | null => {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const normalizeFileExtension = (
+  filename?: string | null,
+  mimeType?: string | null,
+  sourceUrl?: string | null
+): string => {
+  const fromName = filename ? path.extname(filename).replace(".", "").toLowerCase() : "";
+  if (fromName) return fromName;
+  const fromMime = mimeType
+    ? mimeType
+        .split(";")[0]
+        .split("/")
+        .pop()
+        ?.trim()
+        .toLowerCase() || ""
+    : "";
+  if (fromMime) return fromMime;
+  const fromUrl = sourceUrl
+    ? path.extname(sourceUrl.split("?")[0]).replace(".", "").toLowerCase()
+    : "";
+  return fromUrl || "bin";
+};
 
 const parseLabelValues = (
   value: unknown,
@@ -1413,6 +1483,27 @@ class ImportsService {
       const importOptions = (sourceReference.options as any) || {};
       const shouldImportMembers = importOptions.importMembers !== false;
       const shouldImportAttachments = importOptions.importAttachments !== false;
+      const jiraAuth = (sourceReference?.auth?.jira as any) || {};
+      let jiraToken: string | null = jiraAuth?.api_token || null;
+      if (!jiraToken && jiraAuth?.api_token_encrypted) {
+        try {
+          jiraToken = EncryptionService.decrypt(jiraAuth.api_token_encrypted);
+        } catch (err) {
+          jiraToken = null;
+        }
+      }
+      const jiraEmail =
+        typeof jiraAuth?.email === "string" ? jiraAuth.email.trim() : "";
+      const jiraAuthHeader =
+        jiraToken && jiraEmail
+          ? `Basic ${Buffer.from(`${jiraEmail}:${jiraToken}`).toString("base64")}`
+          : null;
+      const importStats = {
+        comments: 0,
+        worklogs: 0,
+        attachments: 0,
+        attachmentFailures: 0,
+      };
 
       const [
         { rows: staged },
@@ -1499,6 +1590,14 @@ class ImportsService {
       if (targetTeamId) {
         const initialMembers = await loadTeamMemberEmails();
         hydrateTeamMemberEmails(initialMembers);
+      }
+      let creatorTeamMemberId: string | null = null;
+      if (targetTeamId) {
+        const { rows: creatorRows } = await client.query(
+          "SELECT id FROM team_members WHERE team_id = $1 AND user_id = $2 LIMIT 1",
+          [targetTeamId, job.created_by]
+        );
+        creatorTeamMemberId = creatorRows[0]?.id || null;
       }
 
       const ensureAssigneeTeamMembers = async () => {
@@ -2163,6 +2262,137 @@ class ImportsService {
         return teamMemberId ? [teamMemberId] : [];
       };
 
+      const importTaskComments = async (taskId: string, raw: unknown) => {
+        if (!creatorTeamMemberId) return;
+        const comments = parseImportedArray<ImportedJiraComment>(
+          raw,
+          "__jira_comments"
+        );
+        for (const comment of comments) {
+          const body = (comment?.body || "").trim();
+          if (!body) continue;
+          const author = (comment?.author || "Unknown").trim();
+          const createdSuffix = comment?.created ? ` (${comment.created})` : "";
+          const content = clampText(
+            `${author}${createdSuffix}: ${body}`.trim(),
+            5000
+          );
+          if (!content) continue;
+          const createdAt = safeDate(comment?.created || null);
+          const result = await client.query(
+            `INSERT INTO task_comments (user_id, team_member_id, task_id, created_at, updated_at)
+             VALUES ($1, $2, $3, COALESCE($4::timestamptz, NOW()), COALESCE($4::timestamptz, NOW()))
+             RETURNING id`,
+            [job.created_by, creatorTeamMemberId, taskId, createdAt]
+          );
+          const commentId = result.rows?.[0]?.id || null;
+          if (!commentId) continue;
+          await client.query(
+            "INSERT INTO task_comment_contents (index, comment_id, text_content) VALUES ($1, $2, $3)",
+            [0, commentId, content]
+          );
+          importStats.comments += 1;
+        }
+      };
+
+      const importTaskWorklogs = async (taskId: string, raw: unknown) => {
+        const worklogs = parseImportedArray<ImportedJiraWorklog>(
+          raw,
+          "__jira_worklogs"
+        );
+        for (const worklog of worklogs) {
+          const seconds = Math.max(0, Number(worklog?.timeSpentSeconds || 0));
+          if (!seconds) continue;
+          const author = (worklog?.author || "Unknown").trim();
+          const startedSuffix = worklog?.started ? ` (${worklog.started})` : "";
+          const note = (worklog?.comment || "").trim();
+          const description = clampText(
+            `Imported from Jira by ${author}${startedSuffix}${note ? ` - ${note}` : ""}`.trim(),
+            500
+          );
+          const loggedAt = safeDate(worklog?.started || worklog?.created || null);
+          await client.query(
+            `INSERT INTO task_work_log (time_spent, description, task_id, user_id, created_at, updated_at, logged_by_timer)
+             VALUES ($1, $2, $3, $4, COALESCE($5::timestamptz, NOW()), COALESCE($5::timestamptz, NOW()), FALSE)`,
+            [seconds, description || null, taskId, job.created_by, loggedAt]
+          );
+          importStats.worklogs += 1;
+        }
+      };
+
+      const importTaskAttachments = async (taskId: string, raw: unknown) => {
+        if (!shouldImportAttachments || !targetTeamId) return;
+        const attachments = parseImportedArray<ImportedJiraAttachment>(
+          raw,
+          "__jira_attachments"
+        );
+        for (const attachment of attachments) {
+          const sourceUrl = (attachment?.url || "").trim();
+          if (!sourceUrl) continue;
+          const fileName = clampText(
+            (attachment?.filename || "jira-attachment").trim() || "jira-attachment",
+            110
+          );
+          const extension = normalizeFileExtension(
+            fileName,
+            attachment?.mimeType || null,
+            sourceUrl
+          );
+          const contentType =
+            attachment?.mimeType || "application/octet-stream";
+          try {
+            const response = await axios.get<ArrayBuffer>(sourceUrl, {
+              responseType: "arraybuffer",
+              timeout: 30000,
+              headers: jiraAuthHeader
+                ? { Authorization: jiraAuthHeader, Accept: "*/*" }
+                : { Accept: "*/*" },
+            });
+            const buffer = Buffer.from(response.data);
+            const sizeBytes =
+              attachment?.size && attachment.size > 0
+                ? attachment.size
+                : buffer.length;
+            const insert = await client.query(
+              `INSERT INTO task_attachments (name, task_id, team_id, project_id, uploaded_by, size, type)
+               VALUES ($1, $2, $3, $4, $5, $6, $7)
+               RETURNING id`,
+              [
+                fileName,
+                taskId,
+                targetTeamId,
+                job.target_project_id,
+                job.created_by,
+                sizeBytes,
+                extension,
+              ]
+            );
+            const attachmentId = insert.rows?.[0]?.id || null;
+            if (!attachmentId) {
+              importStats.attachmentFailures += 1;
+              continue;
+            }
+            const storageKey = getKey(
+              targetTeamId,
+              job.target_project_id as string,
+              attachmentId,
+              extension
+            );
+            const uploaded = await uploadBuffer(buffer, contentType, storageKey);
+            if (!uploaded) {
+              await client.query("DELETE FROM task_attachments WHERE id = $1", [
+                attachmentId,
+              ]);
+              importStats.attachmentFailures += 1;
+              continue;
+            }
+            importStats.attachments += 1;
+          } catch (err) {
+            importStats.attachmentFailures += 1;
+          }
+        }
+      };
+
       const createTask = async (task: any, parentId?: string | null) => {
         const { patch, customValues } = mapRawToTaskFields(
           task.raw,
@@ -2310,6 +2540,12 @@ class ImportsService {
         }
         createdTasks.push(created);
 
+        if (created?.id) {
+          await importTaskComments(created.id, task.raw);
+          await importTaskWorklogs(created.id, task.raw);
+          await importTaskAttachments(created.id, task.raw);
+        }
+
         if (created?.id && customValues.length) {
           for (const customValue of customValues) {
             let plan = customColumnPlans.get(customValue.columnKey);
@@ -2382,6 +2618,7 @@ class ImportsService {
       await this.appendLog(jobId, "info", "Commit pipeline executed", {
         stats,
         created: createdTasks.length,
+        imported: importStats,
         options: {
           importMembers: shouldImportMembers,
           importAttachments: shouldImportAttachments,

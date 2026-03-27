@@ -79,6 +79,7 @@ import plansApiRouter from "./plans-api-router";
 import usersApiRouter from "./users-api-router";
 import clientPortalApiRouter from "./client-portal-api-router";
 import slackApiRouter from "./slack-api-router";
+import onboardingApiRouter from "./onboarding-api-router";
 import importsApiRouter from "./imports-api-router";
 
 const api = express.Router();
@@ -132,6 +133,7 @@ api.use("/schedule-gannt", scheduleApiRouter);
 api.use("/schedule-gannt-v2", scheduleApiV2Router);
 api.use("/project-managers", projectManagerApiRouter);
 api.use("/surveys", surveyApiRouter);
+api.use("/onboarding", onboardingApiRouter);
 
 api.get("/overview/:id", safeControllerFunction(OverviewController.getById));
 api.get(
