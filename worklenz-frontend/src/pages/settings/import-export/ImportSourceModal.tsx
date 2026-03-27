@@ -3206,6 +3206,28 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       },
     });
   }, [source?.icon]);
+  const modalTitle = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      {showIllustration && source?.icon && (
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: 36,
+            overflow: 'hidden',
+            flex: '0 0 40px',
+          }}
+        >
+          {normalizedSourceIcon}
+        </div>
+      )}
+      <Typography.Title level={3} style={{ margin: 0, fontSize: 26 }}>
+        {source.label}
+      </Typography.Title>
+    </div>
+  );
 
   const renderAuthGate = () => {
     if (lowerKey === 'asana') {
@@ -3705,6 +3727,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       centered
       open={open}
       onCancel={onClose}
+      title={modalTitle}
       footer={null}
       width={modalDims.width}
       style={{
@@ -3713,6 +3736,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       styles={{
         content: {
           overflow: 'hidden',
+        },
+        header: {
+          background: themeToken.colorBgElevated,
         },
         body: {
           maxHeight: 'calc(100vh - 120px)',
@@ -3727,27 +3753,6 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         className="import-modal-body"
         style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}
       >
-        <div className="heading" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {showIllustration && source?.icon && (
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                display: 'grid',
-                placeItems: 'center',
-                fontSize: 36,
-                overflow: 'hidden',
-                flex: '0 0 40px',
-              }}
-            >
-              {normalizedSourceIcon}
-            </div>
-          )}
-          <Typography.Title level={3} style={{ margin: 0, fontSize: 26 }}>
-            {source.label}
-          </Typography.Title>
-        </div>
-
         {!showCompletion && (
           <div
             className="stepper"

@@ -107,7 +107,11 @@ const csvSource: ImportSource = {
   order: 99,
 };
 
-export const ImportExportSettings: React.FC = () => {
+interface ImportExportSettingsProps {
+  showHeader?: boolean;
+}
+
+export const ImportExportSettings: React.FC<ImportExportSettingsProps> = ({ showHeader = true }) => {
   const { t } = useTranslation('settings/import-export');
   const [modalOpen, setModalOpen] = React.useState(false);
   const [selectedSource, setSelectedSource] = React.useState<ImportSource | null>(null);
@@ -124,14 +128,18 @@ export const ImportExportSettings: React.FC = () => {
 
   return (
     <div className="import-export-settings import-export-modal-content-wrapper">
-      <Typography.Title level={2} className="import-header-title">
-        {t('importHeader', { defaultValue: 'Create a project by importing tasks' })}
-      </Typography.Title>
-      <Typography.Paragraph className="import-header-subtitle">
-        {t('importSubHeader', {
-          defaultValue: 'Import from Asana, Jira, Trello, Monday.com, or CSV.',
-        })}
-      </Typography.Paragraph>
+      {showHeader && (
+        <>
+          <Typography.Title level={2} className="import-header-title">
+            {t('importHeader', { defaultValue: 'Create a project by importing tasks' })}
+          </Typography.Title>
+          <Typography.Paragraph className="import-header-subtitle">
+            {t('importSubHeader', {
+              defaultValue: 'Import from Asana, Jira, Trello, Monday.com, or CSV.',
+            })}
+          </Typography.Paragraph>
+        </>
+      )}
       <Typography.Title level={4} className="section-title">
         {t('importFrom', { defaultValue: 'Choose your source' })}
       </Typography.Title>
