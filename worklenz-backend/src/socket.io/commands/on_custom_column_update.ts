@@ -55,6 +55,9 @@ export const on_task_custom_column_update = async (_io: Server, socket: Socket, 
       case "checkbox":
         booleanValue = Boolean(value);
         break;
+      case "labels": // PPM-OVERRIDE: Phase 2 — enable labels field type
+        jsonValue = typeof value === "string" ? value : JSON.stringify(Array.isArray(value) ? value : [value]);
+        break;
       case "people":
         jsonValue = JSON.stringify(Array.isArray(value) ? value : [value]);
         break;

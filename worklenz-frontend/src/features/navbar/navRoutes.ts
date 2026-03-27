@@ -30,4 +30,11 @@ export const navRoutes: NavRoutesType[] = [
     adminOnly: true,
     freePlanFeature: false,
   },
+  // PPM-OVERRIDE: Phase 2 — PPM Dashboard link (adminOnly so only team admins/partners see it)
+  {
+    name: 'PPM',
+    path: '/taskflow/ppm',
+    adminOnly: true,
+    freePlanFeature: true,
+  },
 ];

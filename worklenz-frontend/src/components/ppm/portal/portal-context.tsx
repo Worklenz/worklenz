@@ -51,7 +51,13 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       const res = await portalApi.validateMagicLink(token);
       if (res.done && res.body) {
-        setUser(res.body);
+        // Call getMe() to mint CSRF token (required for write operations)
+        const meRes = await portalApi.getMe();
+        if (meRes.done && meRes.body) {
+          setUser(meRes.body);
+        } else {
+          setUser(res.body);
+        }
         const brandRes = await portalApi.getBranding();
         if (brandRes.done && brandRes.body) setBranding(brandRes.body);
         return true;

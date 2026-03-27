@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, memo, useEffect } from 'react';
-import { Tooltip, Flex, Dropdown, DatePicker, Input } from '@/shared/antd-imports';
+import { Tooltip, Flex, Dropdown, DatePicker, Input, Checkbox, Tag } from '@/shared/antd-imports';
 import { PlusOutlined, SettingOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -137,6 +137,26 @@ export const CustomColumnCell: React.FC<{
     case 'selection':
       return (
         <SelectionCustomColumnCell
+          task={task}
+          columnKey={column.key}
+          customValue={customValue}
+          columnObj={column.custom_column_obj}
+          updateTaskCustomColumnValue={updateTaskCustomColumnValue}
+        />
+      );
+    // PPM-OVERRIDE: Phase 2 — checkbox and labels field types
+    case 'checkbox':
+      return (
+        <CheckboxCustomColumnCell
+          task={task}
+          columnKey={column.key}
+          customValue={customValue}
+          updateTaskCustomColumnValue={updateTaskCustomColumnValue}
+        />
+      );
+    case 'labels':
+      return (
+        <LabelsCustomColumnCell
           task={task}
           columnKey={column.key}
           customValue={customValue}
@@ -595,4 +615,143 @@ export const SelectionCustomColumnCell: React.FC<{
   );
 });
 
-SelectionCustomColumnCell.displayName = 'SelectionCustomColumnCell'; 
+SelectionCustomColumnCell.displayName = 'SelectionCustomColumnCell';
+
+// PPM-OVERRIDE: Phase 2 — Checkbox Field Cell Component
+export const CheckboxCustomColumnCell: React.FC<{
+  task: any;
+  columnKey: string;
+  customValue: any;
+  updateTaskCustomColumnValue: (taskId: string, columnKey: string, value: string) => void;
+}> = memo(({ task, columnKey, customValue, updateTaskCustomColumnValue }) => {
+  const isChecked = customValue === 'true' || customValue === true;
+
+  const handleChange = useCallback((e: any) => {
+    if (task.id) {
+      updateTaskCustomColumnValue(task.id, columnKey, String(e.target.checked));
+    }
+  }, [task.id, columnKey, updateTaskCustomColumnValue]);
+
+  return (
+    <div className="flex items-center justify-center px-2">
+      <Checkbox
+        checked={isChecked}
+        onChange={handleChange}
+      />
+    </div>
+  );
+});
+
+CheckboxCustomColumnCell.displayName = 'CheckboxCustomColumnCell';
+
+// PPM-OVERRIDE: Phase 2 — Labels Field Cell Component
+export const LabelsCustomColumnCell: React.FC<{
+  task: any;
+  columnKey: string;
+  customValue: any;
+  columnObj: any;
+  updateTaskCustomColumnValue: (taskId: string, columnKey: string, value: string) => void;
+}> = memo(({ task, columnKey, customValue, columnObj, updateTaskCustomColumnValue }) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const isDarkMode = useAppSelector(state => state.themeReducer.mode === 'dark');
+  const labelsList = columnObj?.labelsList || [];
+
+  // Parse selected label IDs from custom value
+  const selectedLabelIds = useMemo(() => {
+    try {
+      if (!customValue) return [];
+      const parsed = typeof customValue === 'string' ? JSON.parse(customValue) : customValue;
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }, [customValue]);
+
+  const selectedLabels = useMemo(() => {
+    return labelsList.filter((label: any) => selectedLabelIds.includes(label.label_id));
+  }, [labelsList, selectedLabelIds]);
+
+  const handleLabelToggle = useCallback((labelId: string) => {
+    if (!task.id) return;
+
+    const newSelected = selectedLabelIds.includes(labelId)
+      ? selectedLabelIds.filter((id: string) => id !== labelId)
+      : [...selectedLabelIds, labelId];
+
+    updateTaskCustomColumnValue(task.id, columnKey, JSON.stringify(newSelected));
+    // Don't close dropdown on toggle — allow multi-select
+  }, [task.id, columnKey, selectedLabelIds, updateTaskCustomColumnValue]);
+
+  const dropdownContent = (
+    <div className={`
+      rounded-lg shadow-xl border min-w-[180px] max-h-64 overflow-y-auto custom-column-dropdown
+      ${isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'}
+    `}>
+      <div className={`
+        px-3 py-2 border-b text-xs font-medium
+        ${isDarkMode ? 'border-gray-600 text-gray-300' : 'border-gray-200 text-gray-600'}
+      `}>
+        Select labels
+      </div>
+      <div className="p-1">
+        {labelsList.map((label: any) => {
+          const isSelected = selectedLabelIds.includes(label.label_id);
+          return (
+            <div
+              key={label.label_id}
+              onClick={() => handleLabelToggle(label.label_id)}
+              className={`
+                flex items-center gap-2 p-2 rounded-md cursor-pointer transition-all duration-200
+                ${isSelected
+                  ? isDarkMode ? 'bg-blue-900/50' : 'bg-blue-50'
+                  : isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                }
+              `}
+            >
+              <Checkbox checked={isSelected} />
+              <Tag color={label.label_color} className="m-0">{label.label_name}</Tag>
+            </div>
+          );
+        })}
+        {labelsList.length === 0 && (
+          <div className={`text-center py-4 text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+            No labels configured
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className={`px-2 relative custom-column-cell ${isDropdownOpen ? 'custom-column-focused' : ''}`}>
+      <Dropdown
+        open={isDropdownOpen}
+        onOpenChange={setIsDropdownOpen}
+        dropdownRender={() => dropdownContent}
+        trigger={['click']}
+        placement="bottomLeft"
+        overlayClassName="custom-selection-dropdown"
+        getPopupContainer={(trigger) => trigger.parentElement || document.body}
+      >
+        <div className={`
+          flex items-center gap-1 cursor-pointer rounded-md px-1 py-1 min-h-[28px] flex-wrap
+          ${isDarkMode ? 'hover:bg-gray-700/50' : 'hover:bg-gray-100/50'}
+        `}>
+          {selectedLabels.length > 0 ? (
+            selectedLabels.map((label: any) => (
+              <Tag key={label.label_id} color={label.label_color} className="m-0 text-xs">
+                {label.label_name}
+              </Tag>
+            ))
+          ) : (
+            <span className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              Select
+            </span>
+          )}
+        </div>
+      </Dropdown>
+    </div>
+  );
+});
+
+LabelsCustomColumnCell.displayName = 'LabelsCustomColumnCell';
