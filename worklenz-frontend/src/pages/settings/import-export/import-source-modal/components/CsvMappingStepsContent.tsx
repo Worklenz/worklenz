@@ -602,16 +602,13 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
       csvUserRows.length * MOVE_USERS_ROW_HEIGHT,
       MOVE_USERS_MAX_LIST_HEIGHT
     );
-    const userListData = React.useMemo<MoveUserListData>(
-      () => ({
-        users: csvUserRows,
-        userEmails,
-        setUserEmails,
-        t,
-        palette,
-      }),
-      [csvUserRows, palette, setUserEmails, t, userEmails]
-    );
+    const userListData: MoveUserListData = {
+      users: csvUserRows,
+      userEmails,
+      setUserEmails,
+      t,
+      palette,
+    };
 
     return (
       <div style={{ width: '100%' }}>
