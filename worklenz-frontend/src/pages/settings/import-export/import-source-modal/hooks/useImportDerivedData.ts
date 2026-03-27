@@ -44,17 +44,15 @@ export const useImportDerivedData = ({
     return sourceStatuses.map(status => ({
       key: status.id || status.name || 'status',
       label: status.name || t('importStep.statusFallback', 'Status'),
-      icon: (
-        <span
-          style={{
-            width: 10,
-            height: 10,
-            display: 'inline-block',
-            borderRadius: '50%',
-            background: status.color_code || '#64748b',
-          }}
-        />
-      ),
+      icon: React.createElement('span', {
+        style: {
+          width: 10,
+          height: 10,
+          display: 'inline-block',
+          borderRadius: '50%',
+          background: status.color_code || '#64748b',
+        },
+      }),
       level: typeof status.sort_order === 'number' ? status.sort_order : 0,
     }));
   }, [defaultWorkTypes, t, worklenzStatuses]);
@@ -116,4 +114,3 @@ export const useImportDerivedData = ({
     hierarchyDisplayRows,
   };
 };
-
