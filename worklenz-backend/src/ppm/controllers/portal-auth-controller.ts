@@ -4,6 +4,7 @@ import db from "../../config/db";
 import { ServerResponse } from "../../models/server-response";
 import { log_error } from "../../shared/utils";
 import { sendEmail } from "../../shared/email";
+import { generateCSRFToken } from "../middleware/portal-csrf"; // PPM-OVERRIDE: Phase 2 CSRF
 
 export default class PortalAuthController {
   /**
@@ -111,7 +112,9 @@ export default class PortalAuthController {
   public static async me(req: Request, res: Response) {
     try {
       const client = (req as any).ppmClient;
-      return res.status(200).json(new ServerResponse(true, client));
+      // PPM-OVERRIDE: Phase 2 — include CSRF token for portal write routes
+      const csrfToken = generateCSRFToken(req);
+      return res.status(200).json(new ServerResponse(true, { ...client, csrf_token: csrfToken }));
     } catch (error) {
       log_error(error);
       return res.status(500).json(new ServerResponse(false, null, "Failed to get session info"));

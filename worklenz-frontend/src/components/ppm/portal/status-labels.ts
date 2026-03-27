@@ -11,6 +11,7 @@ export interface StatusConfig {
 }
 
 const STATUS_MAP: Record<string, StatusConfig> = {
+  incoming:        { label: 'Submitted',       color: '#d9d9d9', bgColor: '#fafafa' },
   queued:          { label: 'Submitted',       color: '#8c8c8c', bgColor: '#f5f5f5' },
   in_progress:     { label: 'In Progress',     color: '#1890ff', bgColor: '#e6f7ff' },
   internal_review: { label: 'In Progress',     color: '#1890ff', bgColor: '#e6f7ff' },

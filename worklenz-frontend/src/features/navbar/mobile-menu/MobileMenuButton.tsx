@@ -41,6 +41,11 @@ const MobileMenuButton = () => {
       name: 'help',
       icon: React.createElement(QuestionCircleOutlined),
     },
+    // PPM-OVERRIDE: Phase 2 — PPM Dashboard link
+    {
+      name: 'ppm',
+      icon: React.createElement(ProjectOutlined),
+    },
   ];
 
   const mobileMenu: MenuProps['items'] = [

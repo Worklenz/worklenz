@@ -1,11 +1,9 @@
 import { Request, Response } from "express";
 
-import db from "../../config/db";
 import { ServerResponse } from "../../models/server-response";
 import { log_error } from "../../shared/utils";
 import { IPPMClientSession } from "../middleware/require-client-auth";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { withClientScope, UUID_RE } from "../utils/ppm-db";
 
 const DELIVERABLE_COLUMNS = `
   d.id,
@@ -32,28 +30,6 @@ const DELIVERABLE_JOINS = `
   LEFT JOIN ppm_dropdown_options c ON d.channel_id = c.id
   LEFT JOIN ppm_dropdown_options p ON d.priority_id = p.id
 `;
-
-/** Helper: acquire a connection, set RLS context + role, run callback, commit/rollback.
- *  SET ROLE ppm_client_role ensures RLS policies are actually enforced
- *  (table owner bypasses RLS by default). RESET ROLE restores the original role. */
-async function withClientScope<T>(clientId: string, fn: (conn: any) => Promise<T>): Promise<T> {
-  const conn = await db.pool.connect();
-  try {
-    await conn.query("BEGIN");
-    await conn.query("SELECT set_config('ppm.current_client_id', $1, true)", [clientId]);
-    await conn.query("SET ROLE ppm_client_role");
-    const result = await fn(conn);
-    await conn.query("RESET ROLE");
-    await conn.query("COMMIT");
-    return result;
-  } catch (error) {
-    await conn.query("RESET ROLE");
-    await conn.query("ROLLBACK");
-    throw error;
-  } finally {
-    conn.release();
-  }
-}
 
 export default class PortalDeliverablesController {
   /**

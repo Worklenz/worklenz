@@ -409,7 +409,99 @@ async function main() {
   await exportTasks();
 
   console.log("");
+  await exportPhase2Mappings();
+
+  console.log("");
   console.log("COMMIT;");
+}
+
+// ---------------------------------------------------------------------------
+// Phase 2: Generate mapping SQL for ppm_internal_users, ppm_client_partners,
+// and ppm_client_projects from the staging data
+// ---------------------------------------------------------------------------
+async function exportPhase2Mappings() {
+  console.log("-- =============================================================");
+  console.log("-- Phase 2: ppm_internal_users + ppm_client_partners mappings");
+  console.log("-- These run AFTER staging data is loaded and AFTER core ppm_");
+  console.log("-- Phase 2 migrations (013-019) have been applied.");
+  console.log("-- =============================================================");
+  console.log("");
+
+  // Step 1: Extract unique partner names from ppm_clients staging table
+  // and insert into ppm_internal_users (linking to existing Worklenz users by name)
+  console.log(`-- Insert partners into ppm_internal_users (match by name to existing users table)
+INSERT INTO ppm_internal_users (user_id, ppm_role)
+SELECT DISTINCT u.id, 'partner'
+FROM (
+  SELECT DISTINCT primary_partner AS partner_name FROM ppm_clients WHERE primary_partner IS NOT NULL AND primary_partner != ''
+  UNION
+  SELECT DISTINCT paid_media_owner FROM ppm_clients WHERE paid_media_owner IS NOT NULL AND paid_media_owner != ''
+  UNION
+  SELECT DISTINCT creative_owner FROM ppm_clients WHERE creative_owner IS NOT NULL AND creative_owner != ''
+  UNION
+  SELECT DISTINCT retention_owner FROM ppm_clients WHERE retention_owner IS NOT NULL AND retention_owner != ''
+) partners
+JOIN users u ON u.name = partners.partner_name
+WHERE NOT EXISTS (
+  SELECT 1 FROM ppm_internal_users iu WHERE iu.user_id = u.id
+);
+`);
+
+  // Step 2: Create ppm_client_partners links from staging data
+  console.log(`-- Link partners to clients via ppm_client_partners
+-- Primary partner gets 'primary' role; others get their specialty role
+-- Column is user_id (not partner_id); CHECK constraint: ('primary','creative','paid_media','retention')
+INSERT INTO ppm_client_partners (client_id, user_id, role)
+SELECT c.id, u.id, 'primary'
+FROM ppm_clients staging
+JOIN ppm_clients c ON c.name = staging.name  -- staging table name matches live table
+JOIN users u ON u.name = staging.primary_partner
+WHERE staging.primary_partner IS NOT NULL AND staging.primary_partner != ''
+ON CONFLICT (client_id, user_id, role) DO NOTHING;
+
+-- Paid media owners
+INSERT INTO ppm_client_partners (client_id, user_id, role)
+SELECT c.id, u.id, 'paid_media'
+FROM ppm_clients staging
+JOIN ppm_clients c ON c.name = staging.name
+JOIN users u ON u.name = staging.paid_media_owner
+WHERE staging.paid_media_owner IS NOT NULL AND staging.paid_media_owner != ''
+  AND staging.paid_media_owner != staging.primary_partner
+ON CONFLICT (client_id, user_id, role) DO NOTHING;
+
+-- Creative owners
+INSERT INTO ppm_client_partners (client_id, user_id, role)
+SELECT c.id, u.id, 'creative'
+FROM ppm_clients staging
+JOIN ppm_clients c ON c.name = staging.name
+JOIN users u ON u.name = staging.creative_owner
+WHERE staging.creative_owner IS NOT NULL AND staging.creative_owner != ''
+  AND staging.creative_owner != staging.primary_partner
+ON CONFLICT (client_id, user_id, role) DO NOTHING;
+
+-- Retention owners
+INSERT INTO ppm_client_partners (client_id, user_id, role)
+SELECT c.id, u.id, 'retention'
+FROM ppm_clients staging
+JOIN ppm_clients c ON c.name = staging.name
+JOIN users u ON u.name = staging.retention_owner
+WHERE staging.retention_owner IS NOT NULL AND staging.retention_owner != ''
+  AND staging.retention_owner != staging.primary_partner
+ON CONFLICT (client_id, user_id, role) DO NOTHING;
+`);
+
+  // Step 3: Note about ppm_client_projects (requires manual mapping)
+  console.log(`-- =============================================================
+-- ppm_client_projects: Link clients to Worklenz projects
+-- This requires manual mapping since Monday boards != Worklenz projects.
+-- After creating projects in Worklenz, run:
+--
+--   INSERT INTO ppm_client_projects (client_id, project_id, is_primary)
+--   VALUES ('<client_uuid>', '<project_uuid>', true);
+--
+-- Then run migration 015 to seed PPM statuses for each linked project.
+-- =============================================================
+`);
 }
 
 main().catch((err) => {

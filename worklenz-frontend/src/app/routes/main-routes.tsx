@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react';
 import MainLayout from '@/layouts/MainLayout';
 import settingsRoutes from './settings-routes';
 import adminCenterRoutes from './admin-center-routes';
+import ppmAdminRoutes from '@components/ppm/admin/ppm-admin-routes'; // PPM-OVERRIDE: Phase 2
 import { useAuthService } from '@/hooks/useAuth';
 import { Navigate, useLocation } from 'react-router-dom';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
@@ -106,6 +107,7 @@ const mainRoutes: RouteObject[] = [
       },
       ...settingsRoutes,
       ...adminCenterRoutes,
+      ...ppmAdminRoutes, // PPM-OVERRIDE: Phase 2
     ],
   },
 ];

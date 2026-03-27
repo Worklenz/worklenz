@@ -24,6 +24,7 @@ import AwsSesController from "./controllers/aws-ses-controller";
 import { CSP_POLICIES } from "./shared/csp";
 import botTasksApiRouter from "./routes/bot-tasks-api-router";
 import portalApiRouter from "./ppm/routes/portal-api-router";
+import adminApiRouter from "./ppm/routes/admin-api-router"; // PPM-OVERRIDE: Phase 2 admin API
 
 const app = express();
 
@@ -198,8 +199,12 @@ const apiLimiter = rateLimit({
 // Bot API (service account JWT auth, no session/CSRF required)
 app.use("/ppm/api/bot", apiLimiter, botTasksApiRouter);
 
-// PPM Client Portal API (magic-link auth, no CSRF required)
+// PPM Client Portal API (magic-link auth, portal-level CSRF on writes)
 app.use("/ppm/api/portal", apiLimiter, portalApiRouter);
+
+// PPM Admin API (Worklenz session auth + PPM partner role check)
+// PPM-OVERRIDE: Phase 2 admin API for master dashboard, approval queue, client management
+app.use("/ppm/api/admin", apiLimiter, isLoggedIn, adminApiRouter);
 
 // Routes
 app.use("/api/v1", apiLimiter, isLoggedIn, apiRouter);

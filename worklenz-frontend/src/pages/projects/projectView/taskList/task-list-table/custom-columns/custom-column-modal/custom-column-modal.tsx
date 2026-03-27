@@ -170,13 +170,13 @@ const CustomColumnModal = () => {
       key: 'checkbox',
       value: 'checkbox',
       label: t('customColumns.fieldTypes.checkbox'),
-      disabled: true,
+      disabled: false, // PPM-OVERRIDE: Phase 2 — enable checkbox field type
     },
     {
       key: 'labels',
       value: 'labels',
       label: t('customColumns.fieldTypes.labels'),
-      disabled: true,
+      disabled: false, // PPM-OVERRIDE: Phase 2 — enable labels field type
     },
     {
       key: 'key',
