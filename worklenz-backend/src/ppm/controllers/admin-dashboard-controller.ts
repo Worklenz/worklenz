@@ -59,11 +59,11 @@ export default class AdminDashboardController {
            WHERE cp.client_id = c.id AND cp.role = 'primary' LIMIT 1) AS primary_partner,
           (SELECT COUNT(*) FROM ppm_deliverables d
            WHERE d.client_id = c.id AND d.status NOT IN ('approved', 'done')) AS active_tasks,
-          COALESCE(r.hours_used, 0) AS hours_used,
-          COALESCE(r.hours_budgeted, 0) AS hours_budgeted,
+          COALESCE(r.used_hours, 0) AS hours_used,
+          COALESCE(r.budgeted_hours, 0) AS hours_budgeted,
           CASE
-            WHEN COALESCE(r.hours_budgeted, 0) = 0 THEN 0
-            ELSE ROUND((COALESCE(r.hours_used, 0) / r.hours_budgeted * 100)::numeric, 1)
+            WHEN COALESCE(r.budgeted_hours, 0) = 0 THEN 0
+            ELSE ROUND((COALESCE(r.used_hours, 0) / r.budgeted_hours * 100)::numeric, 1)
           END AS utilization_pct
         FROM ppm_clients c
         LEFT JOIN ppm_retainer_utilization r ON r.client_id = c.id
