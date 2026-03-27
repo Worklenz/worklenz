@@ -112,6 +112,26 @@ apiClient.interceptors.request.use(async (config) => {
   return config;
 });
 
+// Handle admin CSRF errors: clear cached token so next request re-fetches
+apiClient.interceptors.response.use(undefined, async (error) => {
+  const url = error.config?.url || '';
+  if (
+    url.startsWith(BASE) &&
+    error.response?.status === 403 &&
+    !error.config?._adminCsrfRetry
+  ) {
+    // Clear cached token and retry once
+    adminCsrfToken = null;
+    await ensureAdminCsrf();
+    if (adminCsrfToken) {
+      error.config.headers['X-CSRF-Token'] = adminCsrfToken;
+      error.config._adminCsrfRetry = true;
+      return apiClient(error.config);
+    }
+  }
+  return Promise.reject(error);
+});
+
 export const adminApi = {
   // Dashboard
   async getStats() {

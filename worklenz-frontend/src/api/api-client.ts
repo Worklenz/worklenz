@@ -62,17 +62,20 @@ apiClient.interceptors.request.use(
   async config => {
     const requestStart = performance.now();
 
-    // Ensure we have a CSRF token before making requests
-    if (!csrfToken) {
-      const tokenStart = performance.now();
-      await refreshCsrfToken();
-      const tokenEnd = performance.now();
-    }
+    // PPM routes handle their own CSRF tokens — skip the main Worklenz token
+    // to avoid overwriting the admin/portal token set by their own interceptors.
+    const url = config.url || '';
+    if (!url.startsWith('/ppm/')) {
+      // Ensure we have a CSRF token before making requests
+      if (!csrfToken) {
+        await refreshCsrfToken();
+      }
 
-    if (csrfToken) {
-      config.headers['X-CSRF-Token'] = csrfToken;
-    } else {
-      console.warn('No CSRF token available after refresh attempt');
+      if (csrfToken) {
+        config.headers['X-CSRF-Token'] = csrfToken;
+      } else {
+        console.warn('No CSRF token available after refresh attempt');
+      }
     }
 
     const requestEnd = performance.now();
@@ -113,9 +116,11 @@ apiClient.interceptors.response.use(
     const { message, code, name } = error || {};
     const errorResponse = error.response;
 
-    // Handle CSRF token errors
+    // Handle CSRF token errors (only for non-PPM routes — PPM has its own CSRF)
+    const reqUrl = error.config?.url || '';
     if (
       errorResponse?.status === 403 &&
+      !reqUrl.startsWith('/ppm/') &&
       ((typeof errorResponse.data === 'object' &&
         errorResponse.data !== null &&
         'message' in errorResponse.data &&
