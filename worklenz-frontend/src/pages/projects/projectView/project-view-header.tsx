@@ -20,7 +20,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useState, useCallback, useMemo, memo, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal, flushSync } from 'react-dom';
+
 
 import { colors } from '@/styles/colors';
 import { getContrastColor } from '@/utils/colorUtils';
@@ -65,7 +66,7 @@ import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { addTaskCardToTheTop, fetchBoardTaskGroups } from '@/features/board/board-slice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
-import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
+import { fetchTasksV3, setLoading } from '@/features/task-management/task-management.slice';
 import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
 import { isFreeUser } from '@/utils/subscription-utils';
 import { ProjectIntegrationsButton } from '@/components/projects/integrations/ProjectIntegrationsButton';
@@ -90,52 +91,57 @@ const ProjectViewHeader = memo(() => {
 
   const [creatingTask, setCreatingTask] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
-  const [refreshLoading, setRefreshLoading] = useState(false);
+  const projectTasksFetching = useAppSelector(state => state.taskManagement.loading);
   const [isBackButtonHovered, setIsBackButtonHovered] = useState(false);
 
   const subscriptionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleRefresh = useCallback(async () => {
+  const handleRefresh = useCallback(() => {
     if (!projectId) return;
+    dispatch(setLoading(true));
 
-    try {
-      setRefreshLoading(true);
-      const projectPromise = dispatch(getProject(projectId)).unwrap();
-
-      switch (tab) {
-        case 'tasks-list':
-          await Promise.allSettled([
-            projectPromise,
-            dispatch(fetchStatuses(projectId)).unwrap(),
-            dispatch(fetchTaskListColumns(projectId)).unwrap(),
-            dispatch(fetchPhasesByProjectId(projectId)).unwrap(),
-            dispatch(fetchTasksV3(projectId)).unwrap(),
-          ]);
-          break;
-        case 'board':
-          await Promise.allSettled([
-            projectPromise,
-            dispatch(fetchEnhancedKanbanGroups(projectId)).unwrap(),
-          ]);
-          break;
-        case 'workload':
-        case 'roadmap':
-        case 'finance':
-        case 'project-insights-member-overview':
-        case 'all-attachments':
-        case 'members':
-        case 'updates':
-          await projectPromise;
-          dispatch(setRefreshTimestamp());
-          break;
+    const run = async () => {
+      try {
+        const projectPromise = dispatch(getProject(projectId)).unwrap();
+        switch (tab) {
+          case 'tasks-list':
+            await Promise.allSettled([
+              projectPromise,
+              dispatch(fetchStatuses(projectId)).unwrap(),
+              dispatch(fetchTaskListColumns(projectId)).unwrap(),
+              dispatch(fetchPhasesByProjectId(projectId)).unwrap(),
+              dispatch(fetchTasksV3(projectId)).unwrap(),
+            ]);
+            break;
+          case 'board':
+            await Promise.allSettled([
+              projectPromise,
+              dispatch(fetchEnhancedKanbanGroups(projectId)).unwrap(),
+            ]);
+            break;
+          case 'workload':
+          case 'roadmap':
+          case 'finance':
+          case 'project-insights-member-overview':
+          case 'all-attachments':
+          case 'members':
+          case 'updates':
+            await Promise.all([
+              projectPromise,
+              new Promise(resolve => setTimeout(resolve, 1000)), // minimum 1s spin
+            ]);
+            dispatch(setRefreshTimestamp());
+            break;
+        }
+      } catch (error) {
+        logger.error('Error refreshing project data:', error);
+      } finally {
+        dispatch(setLoading(false));
       }
-    } catch (error) {
-      logger.error('Error refreshing project data:', error);
-    } finally {
-      setRefreshLoading(false);
-    }
-  }, [dispatch, projectId, tab]);
+    };
 
+    run();
+  }, [dispatch, projectId, tab]);
   const handleSubscribe = useCallback(() => {
     if (!selectedProject?.id || !socket || subscriptionLoading) return;
 
@@ -356,17 +362,6 @@ const ProjectViewHeader = memo(() => {
   const headerActions = useMemo(() => {
     const actions = [];
 
-    actions.push(
-      <Tooltip key="refresh" title={t('refreshTooltip', { defaultValue: 'Refresh project data' })}>
-        <Button
-          shape="circle"
-          icon={<SyncOutlined spin={refreshLoading} />}
-          onClick={handleRefresh}
-          loading={refreshLoading}
-        />
-      </Tooltip>
-    );
-
     if (isOwnerOrAdmin) {
       actions.push(
         <Tooltip
@@ -481,8 +476,8 @@ const ProjectViewHeader = memo(() => {
       </Flex>
     );
   }, [
-    refreshLoading,
-    handleRefresh,
+    // refreshLoading,
+    // handleRefresh,
     isOwnerOrAdmin,
     handleSaveAsTemplate,
     handleSettingsClick,
@@ -543,9 +538,18 @@ const ProjectViewHeader = memo(() => {
         }}
       >
         <div style={{ flex: 1, minWidth: 0 }}>{pageHeaderTitle}</div>
-        <div style={{ marginLeft: '16px', flexShrink: 0 }}>{headerActions}</div>
+        <Flex gap={4} align="center" style={{ marginLeft: '16px', flexShrink: 0 }}>
+          <Tooltip title={t('refreshTooltip', { defaultValue: 'Refresh project data' })}>
+            <Button
+              shape="circle"
+              icon={<SyncOutlined spin={projectTasksFetching} />}
+              onClick={handleRefresh}
+            />
+          </Tooltip>
+          {headerActions}
+        </Flex>
       </div>
-      {createPortal(<ProjectDrawer onClose={() => {}} />, document.body, 'project-drawer')}
+      {createPortal(<ProjectDrawer onClose={() => { }} />, document.body, 'project-drawer')}
       {createPortal(<ImportTaskTemplate />, document.body, 'import-task-template')}
       {createPortal(<SaveProjectAsTemplate />, document.body, 'save-project-as-template')}
     </>
