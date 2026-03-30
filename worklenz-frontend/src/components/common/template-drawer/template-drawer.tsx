@@ -61,6 +61,10 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<IProjectTemplate | null>(null);
   const [loadingSelectedTemplate, setLoadingSelectedTemplate] = useState(false);
 
+  // ✅ NEW: pagination state for custom templates
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const getSelectedTemplate = async (templateId: string) => {
     try {
       setLoadingSelectedTemplate(true);
@@ -99,6 +103,8 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
       const res = await projectTemplatesApiService.getCustomTemplates();
       if (res.done) {
         setCustomTemplates(res.body);
+        // ✅ NEW: reset to first page whenever templates are reloaded
+        setCurrentPage(1);
       }
     } catch (error) {
       logger.error('Error loading custom templates:', error);
@@ -109,7 +115,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
 
   useEffect(() => {
     getTemplates();
-    // Track opening of the template drawer
     trackMixpanelEvent(evt_project_import_from_template_click, { source: 'template_drawer' });
   }, []);
 
@@ -122,11 +127,16 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
   const handleMenuClick = (templateId: string) => {
     templateSelected(templateId);
     getSelectedTemplate(templateId);
-    // Track Worklenz template selection
     trackMixpanelEvent(evt_project_import_tasks_click, {
       selected_template_id: templateId,
       template_type: 'worklenz',
     });
+  };
+
+  // ✅ NEW: reset to page 1 when search query changes
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
   };
 
   const filteredCustomTemplates = customTemplates.filter(template =>
@@ -314,7 +324,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
         className="temp-details"
         style={{
           flex: 1,
-          // ✅ FIXED: was 'calc(100vh - 200px)' which caused overflow/extra scroll space
           maxHeight: '100%',
           padding: '16px',
           backgroundColor: token.colorBgContainer,
@@ -343,7 +352,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
     setCustomTemplates(updatedCustomTemplates);
     templateSelected(templateId);
     selectedTemplateType('custom');
-    // Track Custom template selection
     trackMixpanelEvent(evt_project_import_tasks_click, {
       selected_template_id: templateId,
       template_type: 'custom',
@@ -351,7 +359,19 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
   };
 
   const customTemplatesContent = (
-    <div style={{ backgroundColor: token.colorBgContainer, padding: '16px' }}>
+    // ✅ FIXED: added custom-templates-tab-panel class + overflowY auto
+    // so the list and pagination are never clipped by parent overflow:hidden
+    <div
+      className="custom-templates-tab-panel"
+      style={{
+        backgroundColor: token.colorBgContainer,
+        padding: '16px',
+        overflowY: 'auto',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <Flex justify="space-between" align="center">
         <Input
           placeholder={t('searchTemplates')}
@@ -362,7 +382,7 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
             borderColor: token.colorBorder,
             color: token.colorText,
           }}
-          onChange={e => setSearchQuery(e.target.value)}
+          onChange={handleSearchChange}
         />
       </Flex>
 
@@ -371,9 +391,24 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
         bordered
         dataSource={filteredCustomTemplates}
         loading={loadingCustomTemplates}
+        pagination={{
+          current: currentPage,
+          pageSize: pageSize,
+          total: filteredCustomTemplates.length,
+          size: 'small',
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50'],
+          showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} templates`,
+          style: { marginTop: '12px', textAlign: 'right' },
+          onChange: (page, size) => {
+            setCurrentPage(page);
+            setPageSize(size);
+          },
+        }}
         style={{
           backgroundColor: token.colorBgContainer,
           borderColor: token.colorBorder,
+          flex: 1,  // ✅ takes remaining space so pagination sits below list
         }}
         renderItem={item => (
           <List.Item
@@ -425,8 +460,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
     }
   };
 
-  // ✅ FIXED: Removed height: '100vh' (overcounts inside modal) and position: 'sticky' wrapper
-  // which left dead space below. Now uses height: '100%' and renders content directly.
   return (
     <div
       className="template-drawer-content"
