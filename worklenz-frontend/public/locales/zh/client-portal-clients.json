@@ -210,6 +210,12 @@
     "not_invited": "未邀请",
     "expired": "已过期"
   },
+  "portalStatusHelp": {
+    "active": "活跃：客户已接受邀请并可访问门户。",
+    "invited": "已邀请：邀请已发送且仍有效，但尚未被接受。",
+    "notInvited": "未邀请：尚未发送任何邀请。",
+    "expired": "已过期：之前的邀请已过期，需要重新发送。"
+  },
 
   "inviteToPortalTooltip": "邀请至门户",
   "resendInviteEmailTooltip": "重新发送邀请邮件",

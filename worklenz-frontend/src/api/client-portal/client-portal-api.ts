@@ -295,7 +295,7 @@ export interface ClientPortalTeamMember {
 export interface CreateClientRequest {
   name: string;
   email: string;
-  company_name?: string;
+  company_name: string;
   phone?: string;
   phone_country_code?: string;
   address?: string;
@@ -304,7 +304,7 @@ export interface CreateClientRequest {
   state?: string;
   zip_code?: string;
   country?: string;
-  contact_person?: string;
+  contact_person: string;
   status?: 'active' | 'inactive' | 'pending';
 }
 

@@ -205,16 +205,30 @@ const AddClientDrawer = () => {
             <Col xs={24} md={12}>
               <Form.Item
                 name="name"
-                label={t('clientNameLabel') || 'Client Name'}
+                label={t('recordNameLabel', { defaultValue: 'Record Name (Internal)' })}
                 rules={[
                   {
                     required: true,
-                    message: t('clientNameRequired') || 'Please enter client name',
+                    message:
+                      t('recordNameRequired', { defaultValue: 'Please enter an internal record name' }) ||
+                      'Please enter an internal record name',
                   },
-                  { min: 2, message: t('clientNameMinLength') || 'At least 2 characters' },
+                  {
+                    min: 2,
+                    message:
+                      t('recordNameMinLength', {
+                        defaultValue: 'Record name must be at least 2 characters',
+                      }) || 'Record name must be at least 2 characters',
+                  },
                 ]}
               >
-                <Input placeholder={t('clientNamePlaceholder') || 'Enter client name'} />
+                <Input
+                  placeholder={
+                    t('recordNamePlaceholder', {
+                      defaultValue: 'Enter internal record name',
+                    }) || 'Enter internal record name'
+                  }
+                />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
@@ -233,19 +247,48 @@ const AddClientDrawer = () => {
 
           <Row gutter={16}>
             <Col xs={24} md={12}>
-              <Form.Item name="company_name" label={t('companyNameLabel') || 'Company Name'}>
-                <Input placeholder={t('companyNamePlaceholder') || 'Enter company name'} />
+              <Form.Item
+                name="company_name"
+                label={t('clientCompanyLabel', { defaultValue: 'Client / Company' })}
+                rules={[
+                  {
+                    required: true,
+                    message:
+                      t('clientCompanyRequired', {
+                        defaultValue: 'Please enter the client company name',
+                      }) || 'Please enter the client company name',
+                  },
+                ]}
+              >
+                <Input
+                  placeholder={
+                    t('clientCompanyPlaceholder', {
+                      defaultValue: 'Enter client company name',
+                    }) || 'Enter client company name'
+                  }
+                />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
               <Form.Item
                 name="contact_person"
-                label={t('contactPersonLabel', { defaultValue: 'Contact Person' })}
+                label={t('primaryContactLabel', { defaultValue: 'Primary Contact (POC)' })}
+                rules={[
+                  {
+                    required: true,
+                    message:
+                      t('primaryContactRequired', {
+                        defaultValue: 'Please enter a primary contact person',
+                      }) || 'Please enter a primary contact person',
+                  },
+                ]}
               >
                 <Input
-                  placeholder={t('contactPersonPlaceholder', {
-                    defaultValue: 'Enter contact person name',
-                  })}
+                  placeholder={
+                    t('primaryContactPlaceholder', {
+                      defaultValue: 'Enter primary contact (POC) name',
+                    }) || 'Enter primary contact (POC) name'
+                  }
                 />
               </Form.Item>
             </Col>

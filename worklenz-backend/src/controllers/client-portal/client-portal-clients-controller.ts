@@ -90,7 +90,9 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         whereConditions.push(
           `(c.name ILIKE $${queryParams.length + 1} OR c.email ILIKE $${
             queryParams.length + 1
-          } OR c.company_name ILIKE $${queryParams.length + 1})`
+          } OR c.company_name ILIKE $${queryParams.length + 1} OR c.contact_person ILIKE $${
+            queryParams.length + 1
+          })`
         );
         queryParams.push(`%${search}%`);
       }
@@ -117,15 +119,25 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       const sortField = String(sortBy || "name");
       const sortDirection = sortOrder === "desc" ? "DESC" : "ASC";
       // Validate sort field and ensure it's a valid column
-      const validSortFields = ["id", "name", "created_at", "updated_at", "assigned_projects_count"];
+      const validSortFields = [
+        "id",
+        "name",
+        "company_name",
+        "created_at",
+        "updated_at",
+        "assigned_projects_count",
+      ];
       const safeSortField = validSortFields.includes(sortField)
         ? sortField
         : "name";
       
-      // Handle special case for assigned_projects_count (it's an aggregated column)
-      const sortColumn = safeSortField === "assigned_projects_count" 
-        ? "assigned_projects_count" 
-        : `c.${safeSortField}`;
+      // Company-first sorting: when sorting by name, sort using company name fallback to record name.
+      const sortColumn =
+        safeSortField === "assigned_projects_count"
+          ? "assigned_projects_count"
+          : safeSortField === "name"
+          ? "COALESCE(NULLIF(TRIM(c.company_name), ''), c.name)"
+          : `c.${safeSortField}`;
       
       query += ` ORDER BY ${sortColumn} ${sortDirection}`;
 
@@ -242,6 +254,18 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         return res
           .status(400)
           .json(new ServerResponse(false, null, "Client name is required"));
+      }
+
+      if (!clientData.company_name?.trim()) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Company name is required"));
+      }
+
+      if (!clientData.contact_person?.trim()) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Primary contact is required"));
       }
       // Trim all string fields
       clientData.name = clientData.name.trim();
