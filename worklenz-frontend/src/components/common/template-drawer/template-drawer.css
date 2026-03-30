@@ -28,7 +28,6 @@
 .template-menu {
   height: 100%;
   overflow-y: auto;
-
   scrollbar-width: thin;
   scrollbar-color: #888 transparent;
 }
@@ -54,7 +53,6 @@
   overflow-y: auto;
   padding: 1rem 1.5rem !important;
   height: 100%;
-
   scrollbar-width: thin;
   scrollbar-color: #888 transparent;
 }
@@ -92,7 +90,7 @@
   background-color: var(--color-paleBlue);
 }
 
-/* Height-filling rules kept global — used by client portal and other height-constrained tabs */
+/* Height-filling rules kept global */
 .ant-tabs-tabpane {
   height: 100%;
 }
@@ -107,20 +105,19 @@
   flex-direction: column;
 }
 
-/* ✅ FIXED: Changed from overflow:hidden to overflow-y:auto so the
-   custom templates list and pagination footer are not clipped */
+/* ✅ content holder fills remaining space and clips overflow
+   so the inner scroll container works correctly */
 .template-drawer-content .ant-tabs-content-holder {
-  overflow-y: auto !important;
+  overflow: hidden !important;
+  flex: 1;
 }
 
+/* ✅ content area fills full height */
 .template-drawer-content .ant-tabs-content {
-  overflow-y: auto;
+  height: 100% !important;
 }
 
-/* ✅ NEW: Custom templates tab panel needs to scroll internally */
-.custom-templates-tab-panel {
-  height: 100%;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+/* ✅ each tab panel fills full height so inner flex layout works */
+.template-drawer-content .ant-tabs-tabpane {
+  height: 100% !important;
 }

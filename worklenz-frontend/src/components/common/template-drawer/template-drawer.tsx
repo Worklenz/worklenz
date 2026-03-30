@@ -61,7 +61,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<IProjectTemplate | null>(null);
   const [loadingSelectedTemplate, setLoadingSelectedTemplate] = useState(false);
 
-  // ✅ NEW: pagination state for custom templates
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -103,7 +102,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
       const res = await projectTemplatesApiService.getCustomTemplates();
       if (res.done) {
         setCustomTemplates(res.body);
-        // ✅ NEW: reset to first page whenever templates are reloaded
         setCurrentPage(1);
       }
     } catch (error) {
@@ -133,7 +131,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
     });
   };
 
-  // ✅ NEW: reset to page 1 when search query changes
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     setCurrentPage(1);
@@ -150,7 +147,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
 
     return (
       <div>
-        {/* Description */}
         <div className="template-detail-row mt-2">
           <div className="template-detail-label">
             <Text strong>{t('description')}</Text>
@@ -160,7 +156,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
           </div>
         </div>
 
-        {/* Phase */}
         <div className="template-detail-row mt-2">
           <div className="template-detail-label">
             <Text strong>{t('phase')}</Text>
@@ -187,7 +182,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
           </div>
         </div>
 
-        {/* Statuses */}
         <div className="template-detail-row mt-2">
           <div className="template-detail-label">
             <Text strong>{t('statuses')}</Text>
@@ -214,7 +208,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
           </div>
         </div>
 
-        {/* Priorities */}
         <div className="template-detail-row mt-2">
           <div className="template-detail-label">
             <Text strong>{t('priorities')}</Text>
@@ -241,7 +234,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
           </div>
         </div>
 
-        {/* Labels */}
         <div className="template-detail-row mt-2">
           <div className="template-detail-label">
             <Text strong>{t('labels')}</Text>
@@ -268,7 +260,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
           </div>
         </div>
 
-        {/* Tasks */}
         <div className="template-detail-row mt-2">
           <div className="template-detail-label">
             <Text strong>{t('tasks')}</Text>
@@ -294,7 +285,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
 
   const menuContent = (
     <div style={{ display: 'flex', height: '100%', backgroundColor: token.colorBgContainer }}>
-      {/* Menu Area */}
       <div
         style={{
           minWidth: '250px',
@@ -319,7 +309,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
           />
         </Skeleton>
       </div>
-      {/* Content Area */}
       <div
         className="temp-details"
         style={{
@@ -359,20 +348,22 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
   };
 
   const customTemplatesContent = (
-    // ✅ FIXED: added custom-templates-tab-panel class + overflowY auto
-    // so the list and pagination are never clipped by parent overflow:hidden
     <div
-      className="custom-templates-tab-panel"
       style={{
         backgroundColor: token.colorBgContainer,
-        padding: '16px',
-        overflowY: 'auto',
-        height: '100%',
         display: 'flex',
         flexDirection: 'column',
+        height: '100%',
       }}
     >
-      <Flex justify="space-between" align="center">
+      {/* ✅ FIXED: search bar is outside scroll area — always stays at top */}
+      <div
+        style={{
+          padding: '16px 16px 8px 16px',
+          backgroundColor: token.colorBgContainer,
+          flexShrink: 0, // ← prevents search bar from shrinking
+        }}
+      >
         <Input
           placeholder={t('searchTemplates')}
           suffix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
@@ -384,54 +375,62 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
           }}
           onChange={handleSearchChange}
         />
-      </Flex>
+      </div>
 
-      <List
-        className="custom-template-list mt-4"
-        bordered
-        dataSource={filteredCustomTemplates}
-        loading={loadingCustomTemplates}
-        pagination={{
-          current: currentPage,
-          pageSize: pageSize,
-          total: filteredCustomTemplates.length,
-          size: 'small',
-          showSizeChanger: true,
-          pageSizeOptions: ['10', '20', '50'],
-          showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} templates`,
-          style: { marginTop: '12px', textAlign: 'right' },
-          onChange: (page, size) => {
-            setCurrentPage(page);
-            setPageSize(size);
-          },
-        }}
+      {/* ✅ FIXED: only this section scrolls, search bar stays fixed above */}
+      <div
         style={{
-          backgroundColor: token.colorBgContainer,
-          borderColor: token.colorBorder,
-          flex: 1,  // ✅ takes remaining space so pagination sits below list
+          flex: 1,
+          overflowY: 'auto',
+          padding: '0 16px 16px 16px',
         }}
-        renderItem={item => (
-          <List.Item
-            key={item.id}
-            onClick={() => handleCustomTemplateClick(item.id || '')}
-            style={{
-              backgroundColor: item.selected ? token.colorPrimaryBg : token.colorBgContainer,
-              borderColor: item.selected ? token.colorPrimary : token.colorBorder,
-              color: token.colorText,
-              cursor: 'pointer',
-            }}
-            className={
-              item.selected && themeMode === 'dark'
-                ? 'selected-custom-template-dark'
-                : item.selected && themeMode === 'light'
-                  ? 'selected-custom-template'
-                  : ''
-            }
-          >
-            <span style={{ color: token.colorText }}>{item.name}</span>
-          </List.Item>
-        )}
-      />
+      >
+        <List
+          className="custom-template-list"
+          bordered
+          dataSource={filteredCustomTemplates}
+          loading={loadingCustomTemplates}
+          pagination={{
+            current: currentPage,
+            pageSize: pageSize,
+            total: filteredCustomTemplates.length,
+            size: 'small',
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50'],
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} templates`,
+            style: { marginTop: '12px', textAlign: 'right' },
+            onChange: (page, size) => {
+              setCurrentPage(page);
+              setPageSize(size);
+            },
+          }}
+          style={{
+            backgroundColor: token.colorBgContainer,
+            borderColor: token.colorBorder,
+          }}
+          renderItem={item => (
+            <List.Item
+              key={item.id}
+              onClick={() => handleCustomTemplateClick(item.id || '')}
+              style={{
+                backgroundColor: item.selected ? token.colorPrimaryBg : token.colorBgContainer,
+                borderColor: item.selected ? token.colorPrimary : token.colorBorder,
+                color: token.colorText,
+                cursor: 'pointer',
+              }}
+              className={
+                item.selected && themeMode === 'dark'
+                  ? 'selected-custom-template-dark'
+                  : item.selected && themeMode === 'light'
+                    ? 'selected-custom-template'
+                    : ''
+              }
+            >
+              <span style={{ color: token.colorText }}>{item.name}</span>
+            </List.Item>
+          )}
+        />
+      </div>
     </div>
   );
 
