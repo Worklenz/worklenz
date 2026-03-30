@@ -41,7 +41,7 @@ export const CsvReviewStepContent: React.FC<CsvReviewStepContentProps> = ({
     const email = (userEmails[user] || '').trim();
     return addUsers && !!email && email.includes('@');
   }).length;
-  const workItems = csvRows.length;
+  const tasksCount = csvRows.length;
   const cardStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
@@ -128,7 +128,7 @@ export const CsvReviewStepContent: React.FC<CsvReviewStepContentProps> = ({
             <div style={{ color: themeToken.colorTextSecondary, fontSize: 15 }}>
               {t('importStep.reviewWorkTypesCardDescription', {
                 defaultValue:
-                  'If values are not mapped to Worklenz work types, all work items are mapped to Task (level 0) by default.',
+                  'If values are not mapped to Worklenz work types, all tasks are mapped to Task (level 0) by default.',
               })}
             </div>
           </div>
@@ -167,17 +167,17 @@ export const CsvReviewStepContent: React.FC<CsvReviewStepContentProps> = ({
           <div>
             <div style={{ color: themeToken.colorText, fontWeight: 600, fontSize: 18 }}>
               {t('importStep.reviewWorkItemsCardTitle', {
-                defaultValue: '{{count}} work items',
-                count: workItems,
+                defaultValue: '{{count}} tasks',
+                count: tasksCount,
               })}
             </div>
             <div style={{ color: themeToken.colorTextSecondary, fontSize: 15 }}>
               {t('importStep.reviewWorkItemsCardDescription', {
-                defaultValue: 'Each row of the CSV data will be imported as a work item.',
+                defaultValue: 'Each row of the CSV data will be imported as a task.',
               })}{' '}
               <a href="#" style={{ color: themeToken.colorPrimary }}>
                 {t('importStep.reviewWorkItemsDocs', {
-                  defaultValue: 'What is a work item?',
+                  defaultValue: 'What is a task?',
                 })}
               </a>
             </div>
