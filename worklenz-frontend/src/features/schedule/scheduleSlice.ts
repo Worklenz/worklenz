@@ -291,6 +291,12 @@ const scheduleSlice = createSlice({
         else member.status = 'available';
       }
     },
+    triggerScheduleRefresh(state) {
+      // This action is used to signal that a refresh should happen
+      // The actual refresh logic is handled in the component
+      // We just increment a counter to trigger useEffect
+      state.error = null;
+    },
   },
   extraReducers: builder => {
     builder
@@ -451,5 +457,6 @@ export const {
   setSelectedMember,
   clearWorkloadData,
   updateMemberAllocation,
+  triggerScheduleRefresh,
 } = scheduleSlice.actions;
 export default scheduleSlice.reducer;

@@ -61,9 +61,9 @@ export default class ClientPortalAttachmentController {
       const fileExtension = getFileExtension(fileName);
 
       // Validate and normalize purpose to match database constraint
-      // Database allows: 'request', 'chat', 'avatar', 'document', 'general'
-      const allowedPurposes = ['request', 'chat', 'avatar', 'document', 'general'];
-      const normalizedPurpose = allowedPurposes.includes(purpose) ? purpose : 'general';
+      // Database allows: 'request', 'chat', 'avatar', 'document', 'payment_proof', 'general'
+      const allowedPurposes = ["request", "chat", "avatar", "document", "payment_proof", "general"];
+      const normalizedPurpose = allowedPurposes.includes(purpose) ? purpose : "general";
 
       // Map purpose to storage purpose type
       const storagePurposeMap: Record<string, ClientPortalStoragePurpose> = {
@@ -71,6 +71,7 @@ export default class ClientPortalAttachmentController {
         "chat": "chat-files",
         "avatar": "avatars",
         "document": "documents",
+        "payment_proof": "payment-proofs",
         "general": "general"
       };
 
@@ -336,7 +337,7 @@ export default class ClientPortalAttachmentController {
 
       // Validate purpose if provided
       if (purpose) {
-        const allowedPurposes = ['request', 'chat', 'avatar', 'document', 'general'];
+        const allowedPurposes = ["request", "chat", "avatar", "document", "payment_proof", "general"];
         if (allowedPurposes.includes(purpose as string)) {
           query += ` AND purpose = $3`;
           queryParams.push(purpose);

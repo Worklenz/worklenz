@@ -10,10 +10,18 @@ import {getTaskDetails, logProgressChange, logStatusChange} from "../../services
 import { assignMemberIfNot } from "./on-quick-assign-or-remove";
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
 import { log_error } from "../../shared/utils";
+import {verifyTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
 
 export async function on_task_status_change(_io: Server, socket: Socket, data?: string) {
   try {
     const body = JSON.parse(data as string);
+    
+    const hasAccess = await verifyTaskAccessSocket(socket, body.task_id);
+    if (!hasAccess) {
+      logUnauthorizedSocketAccess(socket, 'TASK_STATUS_CHANGE', 'task', body.task_id);
+      return;
+    }
+    
     const userId = getLoggedInUserIdFromSocket(socket);
     const taskData = await getTaskDetails(body.task_id, "status_id");
 
@@ -93,14 +101,14 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
       }
     } else {
       // Task is moving from "done" to "todo" or "doing" - reset manual_progress to FALSE
-      // so progress can be recalculated based on subtasks
+      // and clear progress_value so progress can be recalculated based on subtasks
       await db.query(`
         UPDATE tasks
-        SET manual_progress = FALSE
+        SET manual_progress = FALSE, progress_value = NULL
         WHERE id = $1
       `, [body.task_id]);
 
-      log(`Task ${body.task_id} moved from done status - manual_progress reset to FALSE`, null);
+      log(`Task ${body.task_id} moved from done status - manual_progress reset to FALSE and progress_value cleared`, null);
 
       // If this is a subtask, update parent task progress
       if (body.parent_task) {

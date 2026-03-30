@@ -43,6 +43,11 @@ export interface IProjectUpdateCommentViewModel extends IProjectUpdateComment {
   avatar_url?: string;
   color_code?: string;
   mentions: [user_name?: string, user_email?: string];
+  reactions?: any[];
+  edited?: boolean;
+  edit_count?: number;
+  last_edited_at?: string;
+  last_edited_by_name?: string;
 }
 
 export enum IProjectFilter {

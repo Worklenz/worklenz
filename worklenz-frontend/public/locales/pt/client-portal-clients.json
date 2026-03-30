@@ -46,6 +46,9 @@
   "createButton": "Criar Cliente",
   "cancelButton": "Cancelar",
 
+  "basicInformationSection": "Informações Básicas",
+  "contactInformationSection": "Informações de Contato",
+
   "clientNameLabel": "Nome do Cliente",
   "clientNamePlaceholder": "Digite o nome do cliente",
   "clientNameRequired": "Por favor, digite o nome do cliente",
@@ -65,6 +68,20 @@
 
   "addressLabel": "Endereço",
   "addressPlaceholder": "Digite o endereço (opcional)",
+  "addressLine1Label": "Endereço",
+  "addressLine1Placeholder": "Digite o endereço (opcional)",
+  "cityLabel": "Cidade",
+  "cityPlaceholder": "Cidade",
+  "stateLabel": "Estado / Província",
+  "statePlaceholder": "Estado / Província",
+  "zipCodeLabel": "CEP / Código Postal",
+  "zipCodePlaceholder": "Código postal",
+  "countryLabel": "País",
+  "countryPlaceholder": "País",
+  "clientInvitationEmailInfo": "Um e-mail de convite será enviado ao cliente para ingressar no portal. Você também pode compartilhar o link de convite da página de Clientes.",
+
+  "contactPersonLabel": "Pessoa de Contato",
+  "contactPersonPlaceholder": "Digite o nome da pessoa de contato",
 
   "statusLabel": "Status",
 
@@ -188,10 +205,6 @@
 
   "assignProjectTitle": "Atribuir Novo Projeto",
   "assignedProjectsTitle": "Projetos Atribuídos",
-  "statusColumn": "Status",
-  "removeConfirmationOk": "Remover",
-  "removeConfirmationCancel": "Cancelar",
-  "removeProjectTooltip": "Remover Projeto",
 
   "portalStatusColumn": "Status do Portal",
   "portalStatus": {
@@ -202,7 +215,6 @@
   },
 
   "inviteToPortalTooltip": "Convidar para o Portal",
-  "resendInvitationTooltip": "Reenviar Convite",
   "resendInviteEmailTooltip": "Reenviar Email de Convite",
   "copyInviteLinkTooltip": "Copiar Link de Convite",
   "resendInvitationSuccess": "Email de convite enviado com sucesso!",
@@ -221,7 +233,14 @@
   "deactivateClientSuccessMessage": "Cliente desativado com sucesso",
   "deactivateClientErrorMessage": "Falha ao desativar cliente",
   "deactivateTooltip": "Desativar Cliente",
-  "deactivateSelected": "Desativar Selecionados",
+  "activateTooltip": "Ativar Cliente",
+  "activateConfirmationTitle": "Ativar Cliente",
+  "activateConfirmationDescription": "Tem certeza de que deseja ativar este cliente? Eles recuperarão o acesso ao portal.",
+  "activateConfirmationOk": "Ativar",
+  "activateConfirmationCancel": "Cancelar",
+  "activateClientSuccessMessage": "Cliente ativado com sucesso",
+  "activateClientErrorMessage": "Falha ao ativar cliente",
+  "activateButton": "Ativar Cliente",
   "selectClientsToDeactivate": "Por favor selecione clientes para desativar",
   "bulkDeactivateSuccessMessage": "Clientes selecionados desativados com sucesso",
   "bulkDeactivateErrorMessage": "Falha ao desativar clientes selecionados",
@@ -239,5 +258,16 @@
   "emailRequiredTitle": "E-mail Obrigatório",
   "emailRequiredMessage": "Este cliente não possui um endereço de e-mail. Um e-mail é necessário para convidá-lo ao portal.",
   "emailRequiredQuestion": "Gostaria de adicionar um endereço de e-mail e convidá-lo novamente?",
-  "addEmailButton": "Adicionar E-mail e Convidar"
+  "clientAlreadyExists": "Cliente já existe",
+  "invitationAlreadySent": "Convite já enviado",
+  "sendInvitationToExistingClient": "Enviar Convite",
+  "sendInvitationSuccess": "Convite enviado com sucesso",
+  "sendInvitationError": "Falha ao enviar convite",
+  "clientAlreadyHasPortalAccess": "Cliente já tem acesso ao portal",
+  "clientAlreadyHasPendingInvitation": "Convite já enviado. Por favor use a opção de reenviar.",
+  "clientEmailRequired": "E-mail do cliente é obrigatório para o convite",
+  "addEmailButton": "Adicionar E-mail e Convidar",
+  "clientExistsWarning": "Já existe um cliente com este e-mail. Usando o registro de cliente existente.",
+  "clientExistsWithInvitationSent": "Já existe um cliente com este e-mail e um convite já foi enviado.",
+  "clientExistsNoInvitation": "Já existe um cliente com este e-mail. Você pode enviar um convite pela lista de clientes."
 }

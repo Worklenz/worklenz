@@ -13,6 +13,7 @@ import { authApiService } from '@/api/auth/auth.api.service';
 import { setSession } from '@/utils/session-helper';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setUser } from '@/features/user/userSlice';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import logger from '@/utils/errorLogger';
 
 const DISMISS_KEY = 'business-trial-alert-dismissed';
@@ -51,6 +52,13 @@ export const BusinessPlanTrialAlert = () => {
     // Only show for owners/admins
     if (!isOwnerOrAdmin) {
       setVisible(false);
+      return;
+    }
+
+    // Never show Business trial banner to AppSumo LTD users (they unlock Business by redeeming 5 codes)
+    if (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL) {
+      setVisible(false);
+      setEligibilityChecked(true);
       return;
     }
 
@@ -193,7 +201,7 @@ export const BusinessPlanTrialAlert = () => {
   };
 
   const handleUpgrade = () => {
-    // Track upgrade button click
+    // Track upgrade button click (existing event)
     trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_UPGRADE_INITIATED, {
       ...getBaseTrialProperties(),
       trial_active: isOnTrial,
@@ -201,7 +209,18 @@ export const BusinessPlanTrialAlert = () => {
       check_source: 'upgrade_button_click'
     });
 
-    navigate('/worklenz/admin-center/billing');
+    // Track business trial upgrade nav bar click (new event)
+    trackMixpanelEvent('business_trial_upgrade_nav_bar', {
+      user_type: isOnTrial ? 'trial' : (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.PADDLE ? 'paid' : 'free'),
+      current_plan: currentSession?.plan_name,
+      trial_days_remaining: trialDaysRemaining,
+      trial_active: isOnTrial,
+      days_elapsed: isOnTrial ? (7 - trialDaysRemaining) : undefined,
+      source: 'business_trial_banner'
+    });
+
+    // Open the upgrade plans modal directly
+    dispatch(toggleUpgradeModal());
   };
 
   const handleDismiss = () => {

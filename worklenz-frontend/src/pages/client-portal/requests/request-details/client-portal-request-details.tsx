@@ -31,6 +31,7 @@ import {
   CommentOutlined,
   SendOutlined,
   TeamOutlined,
+  DollarOutlined,
 } from '@ant-design/icons';
 import { colors } from '../../../../styles/colors';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -39,9 +40,11 @@ import {
   useUpdateOrganizationRequestStatusMutation,
   useGetRequestCommentsQuery,
   useAddRequestCommentMutation,
+  useGetInvoicesByRequestQuery,
 } from '../../../../api/client-portal/client-portal-api';
 import { message } from 'antd';
 import { durationDateFormat } from '../../../../utils/durationDateFormat';
+import { getCurrencySymbol } from '../../../../shared/currencies';
 
 const { TextArea } = Input;
 
@@ -82,6 +85,10 @@ const ClientPortalRequestDetails = () => {
     : (commentsResponse?.comments || []);
   const [displayedNewCommentsCount, setDisplayedNewCommentsCount] = React.useState<number>(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Fetch invoices for this request
+  const { data: invoicesData } = useGetInvoicesByRequestQuery(id || '', { skip: !id });
+  const invoices = invoicesData?.body?.invoices || [];
 
   // Auto-scroll to bottom when comments change
   useEffect(() => {
@@ -164,6 +171,24 @@ const ClientPortalRequestDetails = () => {
     }
   };
 
+  // Helper to get status color
+  const getStatusColor = (status?: string) => {
+    switch (status?.toLowerCase()) {
+      case 'pending':
+        return 'orange';
+      case 'accepted':
+        return 'blue';
+      case 'in_progress':
+        return 'processing';
+      case 'completed':
+        return 'success';
+      case 'rejected':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
   const items: TabsProps['items'] = [
     {
       key: 'submission',
@@ -194,9 +219,25 @@ const ClientPortalRequestDetails = () => {
             styles={{ body: { padding: '20px 24px' } }}
           >
             <Flex vertical gap={8}>
-              <Typography.Title level={4} style={{ margin: 0, marginBottom: 4 }}>
-                {requestInfo.title || t1('untitledRequest')}
-              </Typography.Title>
+              <Flex align="center" gap={12} style={{ marginBottom: 4 }}>
+                <Typography.Title level={4} style={{ margin: 0 }}>
+                  {requestInfo.title || t1('untitledRequest')}
+                </Typography.Title>
+                <Tag 
+                  color={getStatusColor(selectedRequest?.status || '')}
+                  style={{ 
+                    fontSize: 14, 
+                    padding: '4px 12px',
+                    fontWeight: 500,
+                    borderRadius: 6
+                  }}
+                >
+                  {selectedRequest?.status 
+                    ? selectedRequest.status.charAt(0).toUpperCase() + selectedRequest.status.slice(1).replace("_", " ")
+                    : 'Unknown'
+                  }
+                </Tag>
+              </Flex>
               <Flex align="center" gap={16} wrap="wrap">
                 <Flex align="center" gap={6}>
                   <AppstoreOutlined style={{ color: token.colorTextSecondary, fontSize: 14 }} />
@@ -617,6 +658,105 @@ const ClientPortalRequestDetails = () => {
         </Flex>
       ),
     },
+    {
+      key: 'invoices',
+      label: (
+        <Flex align="center" gap={6}>
+          <DollarOutlined />
+          {t1('invoicesTab') || 'Invoices'}
+          {invoices.length > 0 && (
+            <Badge 
+              count={invoices.length} 
+              style={{ backgroundColor: token.colorPrimary, marginLeft: 4 }} 
+            />
+          )}
+        </Flex>
+      ),
+      children: (
+        <Flex 
+          vertical 
+          gap={16}
+          style={{ 
+            height: 'calc(100vh - 420px)', 
+            overflowY: 'auto', 
+            paddingRight: 12,
+            paddingBottom: 16,
+          }}
+        >
+          {invoices.length === 0 ? (
+            <Empty 
+              description={t1('noInvoices') || 'No invoices for this request yet'}
+              style={{ marginTop: 60 }}
+            />
+          ) : (
+            <>
+              <Typography.Text type="secondary" style={{ fontSize: 13, marginBottom: 8 }}>
+                {t1('invoicesDescription') || `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} linked to this request`}
+              </Typography.Text>
+              {invoices.map((invoice: any) => {
+                const getStatusColor = (status: string) => {
+                  switch (status) {
+                    case 'paid':
+                      return 'success';
+                    case 'sent':
+                      return 'processing';
+                    case 'draft':
+                      return 'default';
+                    case 'overdue':
+                      return 'error';
+                    case 'cancelled':
+                      return 'default';
+                    default:
+                      return 'default';
+                  }
+                };
+
+                return (
+                  <Card
+                    key={invoice.id}
+                    size="small"
+                    hoverable
+                    onClick={() => navigate(`/worklenz/client-portal/invoices/${invoice.id}`)}
+                    style={{
+                      cursor: 'pointer',
+                      borderRadius: 8,
+                      border: `1px solid ${token.colorBorderSecondary}`,
+                    }}
+                  >
+                    <Flex justify="space-between" align="center">
+                      <Flex vertical gap={4}>
+                        <Flex align="center" gap={8}>
+                          <Typography.Text strong>{invoice.invoiceNo}</Typography.Text>
+                          <Tag color={getStatusColor(invoice.status)} style={{ textTransform: 'capitalize', fontSize: 11 }}>
+                            {invoice.status}
+                          </Tag>
+                        </Flex>
+                        <Flex align="center" gap={12}>
+                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                            {getCurrencySymbol(invoice.currency)}{invoice.amount.toFixed(2)}
+                          </Typography.Text>
+                          {invoice.dueDate && (
+                            <>
+                              <Typography.Text type="secondary" style={{ fontSize: 12 }}>•</Typography.Text>
+                              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                                Due: {durationDateFormat(new Date(invoice.dueDate))}
+                              </Typography.Text>
+                            </>
+                          )}
+                        </Flex>
+                      </Flex>
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        {durationDateFormat(new Date(invoice.createdAt))}
+                      </Typography.Text>
+                    </Flex>
+                  </Card>
+                );
+              })}
+            </>
+          )}
+        </Flex>
+      ),
+    },
   ];
 
   if (isLoading) {
@@ -644,15 +784,9 @@ const ClientPortalRequestDetails = () => {
         </Flex>
 
         <Flex gap={12} align="center">
-          {canCreateInvoice && (
-            <Button
-              type="primary"
-              icon={<FileTextOutlined />}
-              onClick={handleCreateInvoice}
-            >
-              {t1('createInvoiceButton') || 'Create Invoice'}
-            </Button>
-          )}
+          <Typography.Text strong style={{ fontSize: 14, color: token.colorTextSecondary }}>
+            {t2('status')}:
+          </Typography.Text>
           <Select
             value={selectedRequest?.status}
             options={[
@@ -665,12 +799,31 @@ const ClientPortalRequestDetails = () => {
             onChange={handleStatusChange}
             loading={isUpdatingStatus}
             disabled={isUpdatingStatus}
-            variant="borderless"
-            labelRender={value => (
-              <Typography.Text style={{ color: colors.skyBlue }}>{value.label}</Typography.Text>
-            )}
-            suffixIcon={<DownOutlined style={{ color: colors.skyBlue }} />}
+            style={{ 
+              minWidth: 140,
+              border: `1px solid ${colors.skyBlue}`,
+              borderRadius: '6px',
+              backgroundColor: token.colorBgContainer
+            }}
+            placeholder="Select status"
+            showSearch
+            filterOption={(input, option) =>
+              (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+            }
+            dropdownStyle={{
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+            }}
           />
+          {canCreateInvoice && (
+            <Button
+              type="primary"
+              icon={<FileTextOutlined />}
+              onClick={handleCreateInvoice}
+            >
+              {t1('createInvoiceButton') || 'Create Invoice'}
+            </Button>
+          )}
         </Flex>
       </Flex>
       <Card 

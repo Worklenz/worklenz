@@ -4,6 +4,7 @@ import {
   evt_billing_pause_plan,
   evt_billing_resume_plan,
   evt_billing_add_more_seats,
+  evt_upgrade_plan_click,
 } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import logger from '@/utils/errorLogger';
@@ -46,6 +47,7 @@ type SeatOption = { label: string; value: number | string };
 const SEAT_COUNT_LIMIT = '100+';
 const BILLING_DELAY_MS = 8000;
 const LTD_USER_LIMIT = 50;
+const APPSUMO_BUSINESS_UNLOCK_CODE_COUNT = 5;
 const BUTTON_STYLE = {
   backgroundColor: '#1890ff',
   borderColor: '#1890ff',
@@ -214,6 +216,16 @@ const CurrentPlanDetails = () => {
     return billingInfo?.ltd_users ? billingInfo.ltd_users < LTD_USER_LIMIT : false;
   }, [billingInfo?.subscription_type, billingInfo?.ltd_users]);
 
+  const shouldShowAppSumoBusinessUnlock = useMemo(() => {
+    const redeemedCodesCount = billingInfo?.redeemed_codes_count ?? 0;
+    const isBusinessPlanActivated = billingInfo?.plan_name === 'Business Plan';
+    return (
+      billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL &&
+      redeemedCodesCount < APPSUMO_BUSINESS_UNLOCK_CODE_COUNT &&
+      !isBusinessPlanActivated
+    );
+  }, [billingInfo?.subscription_type, billingInfo?.redeemed_codes_count, billingInfo?.plan_name]);
+
   const showChangeButton = useMemo(() => {
     return checkSubscriptionStatus([SUBSCRIPTION_STATUS.ACTIVE, SUBSCRIPTION_STATUS.PASTDUE]);
   }, [checkSubscriptionStatus]);
@@ -233,6 +245,17 @@ const CurrentPlanDetails = () => {
       billingInfo.status === SUBSCRIPTION_STATUS.ACTIVE
     );
   }, [billingInfo]);
+
+  const shouldShowManagementUrl = useMemo(() => {
+    const managementUrl = billingInfo?.cancel_url;
+    if (!managementUrl) return false;
+
+    const subscriptionType = billingInfo?.subscription_type || currentSession?.subscription_type;
+    return (
+      subscriptionType === ISUBSCRIPTION_TYPE.PADDLE ||
+      subscriptionType === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS
+    );
+  }, [billingInfo?.cancel_url, billingInfo?.subscription_type, currentSession?.subscription_type]);
 
   const isAppSumoUser = useMemo(() => {
     const planName = billingInfo?.plan_name?.toLowerCase() || '';
@@ -278,19 +301,43 @@ const CurrentPlanDetails = () => {
         )}
 
         {billingInfo.trial_in_progress && (
-          <Button type="primary" onClick={() => dispatch(toggleUpgradeModal())}>
+          <Button type="primary" onClick={() => {
+            trackMixpanelEvent(evt_upgrade_plan_click, {
+              user_type: currentSession?.subscription_type?.toLowerCase(),
+              current_plan: billingInfo.plan_name,
+              subscription_type: billingInfo.subscription_type,
+              source: 'admin_center_billing'
+            });
+            dispatch(toggleUpgradeModal());
+          }}>
             {t('upgradePlan')}
           </Button>
         )}
 
         {billingInfo.subscription_type === ISUBSCRIPTION_TYPE.FREE && (
-          <Button type="primary" onClick={() => dispatch(toggleUpgradeModal())}>
+          <Button type="primary" onClick={() => {
+            trackMixpanelEvent(evt_upgrade_plan_click, {
+              user_type: 'free',
+              current_plan: billingInfo.plan_name,
+              subscription_type: billingInfo.subscription_type,
+              source: 'admin_center_billing'
+            });
+            dispatch(toggleUpgradeModal());
+          }}>
             {t('upgradePlan')}
           </Button>
         )}
 
         {billingInfo.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL && (
-          <Button type="primary" onClick={() => dispatch(toggleUpgradeModal())}>
+          <Button type="primary" onClick={() => {
+            trackMixpanelEvent(evt_upgrade_plan_click, {
+              user_type: 'appsumo',
+              current_plan: billingInfo.plan_name,
+              subscription_type: billingInfo.subscription_type,
+              source: 'admin_center_billing'
+            });
+            dispatch(toggleUpgradeModal());
+          }}>
             {t('upgradePlan')}
           </Button>
         )}
@@ -588,6 +635,11 @@ const CurrentPlanDetails = () => {
     renderCustomSubscriptionInfo,
   ]);
 
+  const appsumoRedeemedCodesCount = useMemo(
+    () => billingInfo?.redeemed_codes_count ?? 0,
+    [billingInfo?.redeemed_codes_count]
+  );
+
   return (
     <Card
       style={{ height: '100%' }}
@@ -608,12 +660,42 @@ const CurrentPlanDetails = () => {
       <Flex vertical>
         <div style={{ marginBottom: '14px' }}>{renderSubscriptionContent()}</div>
 
+        {shouldShowManagementUrl && (
+          <Flex vertical style={{ marginBottom: 12 }}>
+            <Typography.Text strong>
+              {t('managementUrl', { defaultValue: 'Management URL' })}
+            </Typography.Text>
+            <Typography.Link
+              href={billingInfo?.cancel_url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t('updateCardDetails', { defaultValue: 'Update card details' })}
+            </Typography.Link>
+          </Flex>
+        )}
+
+        {shouldShowAppSumoBusinessUnlock && (
+          <Alert
+            type="info"
+            showIcon
+            banner
+            style={{ marginBottom: 12 }}
+            message={t('appsumoBusinessUnlockProgress', {
+              count: appsumoRedeemedCodesCount,
+              required: APPSUMO_BUSINESS_UNLOCK_CODE_COUNT,
+              defaultValue:
+                '{{count}} of {{required}} AppSumo codes redeemed. Redeem {{required}} codes to unlock Business Plan features.',
+            })}
+          />
+        )}
+
         {shouldShowRedeemButton && (
           <>
             <Button
               type="link"
               icon={<TagOutlined />}
-              style={{ margin: 0, padding: 0, width: '90px' }}
+              style={{ paddingLeft: 0 }}
               onClick={() => dispatch(toggleRedeemCodeDrawer())}
             >
               {t('redeemCode')}

@@ -19,7 +19,7 @@ export default defineConfig({
     strictPort: true,
   },
   build: {
-    outDir: 'dist',
+    outDir: process.env.VITE_BUILD_OUTDIR || 'dist',
     sourcemap: true,
   },
   define: {

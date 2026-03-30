@@ -60,13 +60,13 @@ export default class AttachmentController extends WorklenzControllerBase {
     if (!s3Url)
       return res.status(200).send(new ServerResponse(false, null, "Avatar upload failed"));
 
-    const q = "UPDATE users SET avatar_url = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING avatar_url;";
+    const q = "UPDATE users SET avatar_url = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING avatar_url, updated_at;";
     const result = await db.query(q, [req.user?.id, `${s3Url}?v=${smallId(4)}`]);
     const [data] = result.rows;
     if (!data)
       return res.status(200).send(new ServerResponse(false, null, "Avatar upload failed"));
 
-    return res.status(200).send(new ServerResponse(true, { url: data.avatar_url }, "Avatar updated."));
+    return res.status(200).send(new ServerResponse(true, { url: data.avatar_url, updated_at: data.updated_at }, "Avatar updated."));
   }
 
   @HandleExceptions()
@@ -153,7 +153,7 @@ export default class AttachmentController extends WorklenzControllerBase {
     if (data) {
       const key = getKey(data.team_id, data.project_id, data.id, data.type);
       const url = await createPresignedUrlWithClient(key, req.query.file as string);
-      return res.status(200).send(new ServerResponse(true, url));
+      return res.status(200).send(new ServerResponse(true, { url, expires_in: 3600 }));
     }
 
     return res.status(200).send(new ServerResponse(true, null));

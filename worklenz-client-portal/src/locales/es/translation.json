@@ -123,6 +123,8 @@
     "email_already_registered_title": "Correo Electrónico Ya Registrado",
     "email_already_registered_message": "Ya existe un usuario con este correo electrónico. Por favor inicia sesión.",
     "invalid_credentials": "Correo electrónico o contraseña inválidos",
+    "invalid_credentials_title": "Credenciales inválidas",
+    "invalid_credentials_message": "Correo electrónico o contraseña inválidos",
     "token_required": "Se requiere token",
     "token_invalid": "Token inválido o expirado",
     "invitation_invalid": "Invitación inválida o expirada",
@@ -134,7 +136,7 @@
     "network_error": "Error de red. Por favor verifica tu conexión.",
     "server_error": "Error del servidor. Por favor intenta de nuevo más tarde.",
     "worklenz_account_found_title": "Cuenta de Worklenz encontrada",
-    "worklenz_account_found_message": "Este correo electrónico ya está registrado con una cuenta de Worklenz. Por favor usa tu contraseña de Worklenz para registrarte en el portal del cliente."
+    "worklenz_account_found_message": "Este correo electrónico ya está registrado con una cuenta de Worklenz. Por favor usa tu contraseña existente de Worklenz para registrarte en el portal del cliente."
   },
   "dashboard": {
     "title": "Panel",
@@ -200,6 +202,7 @@
     "createFirst": "Crea Tu Primera Solicitud",
     "errorLoading": "Error al cargar solicitudes",
     "errorLoadingDescription": "Error al cargar solicitudes. Por favor intenta de nuevo.",
+    "requestNotFoundDescription": "El elemento solicitado no se pudo encontrar o no tienes acceso a él.",
     "showingRange": "{{start}}-{{end}} de {{total}} solicitudes",
     "pending": "Pendiente",
     "accepted": "Aceptado",
@@ -258,6 +261,9 @@
     "loadingQuestions": "Cargando preguntas...",
     "enterAnswer": "Ingrese su respuesta",
     "noComments": "Aún no hay comentarios. ¡Inicia la conversación!",
+    "startConversation": "Inicia la conversación agregando un comentario a continuación",
+    "requestCompletedNoComments": "Esta solicitud ha sido completada. Los comentarios están deshabilitados.",
+    "requestRejectedNoComments": "Esta solicitud ha sido rechazada. Los comentarios están deshabilitados.",
     "teamMember": "Equipo",
     "client": "Cliente",
     "pressEnterToSend": "Presiona Enter para enviar, Shift+Enter para nueva línea"
@@ -288,6 +294,7 @@
     "title": "Chats",
     "description": "Comunícate con tus proveedores de servicios",
     "conversations": "Conversaciones",
+    "chatTitle": "Chat - {{date}}",
     "chatMessages": "Mensajes del Chat",
     "selectConversation": "Selecciona una conversación",
     "selectToStart": "Selecciona una conversación para comenzar a chatear",

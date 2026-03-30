@@ -19,10 +19,9 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleAddClientDrawer } from '@/features/clients-portal/clients/clients-slice';
-import { useGetClientsQuery } from '@/api/client-portal/client-portal-api';
+import { useGetClientsQuery, ClientPortalClient } from '@/api/client-portal/client-portal-api';
 import ClientsTable from './ClientsTable';
 import AddClientDrawer from '@/components/client-portal/AddClientDrawer';
-import EditClientDrawer from '@/components/client-portal/EditClientDrawer';
 import ClientDetailsDrawer from '@/components/client-portal/ClientDetailsDrawer';
 import ClientTeamsDrawer from '@/components/client-portal/ClientTeamsDrawer';
 import ClientSettingsDrawer from '@/components/client-portal/ClientSettingsDrawer';
@@ -60,16 +59,21 @@ const ClientPortalClients = () => {
 
   // Calculate statistics - properly access the nested structure
   const totalClients = clientsData?.body?.total || 0;
+  // Active clients should be based on portal status, not general client status
+  // A client is "active" if they have portal access (has_portal_access === true)
   const activeClients =
-    clientsData?.body?.clients?.filter((client: any) => client.status === 'active').length || 0;
+    clientsData?.body?.clients?.filter((client: ClientPortalClient) => {
+      // Check if client has active portal access
+      return client.has_portal_access === true || client.portal_status?.status === 'active';
+    }).length || 0;
   const totalProjects =
     clientsData?.body?.clients?.reduce(
-      (sum: number, client: any) => sum + (client.assigned_projects_count || 0),
+      (sum: number, client: ClientPortalClient) => sum + (client.assigned_projects_count || 0),
       0
     ) || 0;
   const totalTeamMembers =
     clientsData?.body?.clients?.reduce(
-      (sum: number, client: any) => sum + (client.team_members?.length || 0),
+      (sum: number, client: ClientPortalClient) => sum + (client.team_members?.length || 0),
       0
     ) || 0;
 
@@ -242,7 +246,6 @@ const ClientPortalClients = () => {
 
       {/* Drawers */}
       {createPortal(<AddClientDrawer />, document.body)}
-      {createPortal(<EditClientDrawer />, document.body)}
       {createPortal(<ClientDetailsDrawer />, document.body)}
       {createPortal(<ClientTeamsDrawer />, document.body)}
       {createPortal(<ClientSettingsDrawer />, document.body)}

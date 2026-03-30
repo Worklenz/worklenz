@@ -1,9 +1,8 @@
-import { Col, ConfigProvider, Flex, Layout } from '@/shared/antd-imports';
+import { Col, Flex, Layout } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useDebouncedMediaQuery } from '@/hooks/useDebouncedMediaQuery';
-import { colors } from '../styles/colors';
 import ClientViewSiderMenu from '../pages/client-view/sidebar/client-view-sider-menu';
 import ClientViewLogo from '../assets/images/client-view-logo.png';
 import { themeWiseColor } from '../utils/themeWiseColor';
@@ -18,21 +17,11 @@ const ClientViewLayout = () => {
   const isDesktop = useDebouncedMediaQuery({ query: '(min-width: 1024px)' });
 
   return (
-    <ConfigProvider
-      theme={{
-        components: {
-          Layout: {
-            colorBgLayout: themeMode === 'dark' ? colors.darkGray : colors.white,
-            headerBg: themeMode === 'dark' ? colors.darkGray : colors.white,
-          },
-        },
+    <Layout
+      style={{
+        minHeight: '100vh',
       }}
     >
-      <Layout
-        style={{
-          minHeight: '100vh',
-        }}
-      >
         <Layout.Header
           className={`shadow-md ${themeMode === 'dark' ? '' : 'shadow-[#18181811]'}`}
           style={{
@@ -87,7 +76,6 @@ const ClientViewLayout = () => {
           </Col>
         </Layout.Content>
       </Layout>
-    </ConfigProvider>
   );
 };
 

@@ -15,6 +15,7 @@ import { useState, useEffect } from 'react';
 import { CopyOutlined, CheckOutlined, ShareAltOutlined } from '@ant-design/icons';
 import { ROLE_NAMES } from '@/types/roles/role.types';
 import { projectMembersApiService } from '@/api/project-members/project-members.api.service';
+import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service'; // ✅ NEW IMPORT
 import { themeWiseColor } from '@/utils/themeWiseColor';
 
 interface FormValues {
@@ -31,6 +32,9 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
     // Email invitation states
     const [loading, setLoading] = useState(false);
 
+    // ✅ NEW: Team member options for the dropdown
+    const [teamMemberOptions, setTeamMemberOptions] = useState<{ value: string; label: string }[]>([]);
+
     // Link invitation states
     const [linkLoading, setLinkLoading] = useState(false);
     const [invitationLink, setInvitationLink] = useState<string>('');
@@ -45,11 +49,31 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
     const themeMode = useAppSelector(state => state.themeReducer.mode);
     const dispatch = useAppDispatch();
 
+    // ✅ UPDATED: Also fetch team members when modal opens
     useEffect(() => {
         if (isDrawerOpen && projectId) {
             checkExistingInvitationLink();
+            fetchTeamMembers(); // ✅ NEW
         }
     }, [isDrawerOpen, projectId]);
+
+    // ✅ NEW: Fetch all team members and build options for the Select dropdown
+    const fetchTeamMembers = async () => {
+        try {
+            const res = await teamMembersApiService.getAll(projectId);
+            if (res.done && res.body) {
+                const options = res.body
+                    .filter(member => member.email)
+                    .map(member => ({
+                        value: member.email,
+                        label: `${member.name} (${member.email})`,
+                    }));
+                setTeamMemberOptions(options);
+            }
+        } catch (error) {
+            console.error('Error fetching team members:', error);
+        }
+    };
 
     const checkExistingInvitationLink = async () => {
         try {
@@ -72,7 +96,6 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
         try {
             setLoading(true);
 
-            // Get emails from form values
             const emailList = values.emails || [];
 
             if (emailList.length === 0) {
@@ -81,14 +104,11 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
                 return;
             }
 
-            // Send invitations for each email - wrap each call to catch individual errors
-            // Note: access_level defaults to MEMBER on backend - can be changed later if needed
             const invitePromises = emailList.map(async (email) => {
                 try {
                     const body = {
                         email: email.trim(),
                         project_id: projectId,
-                        // access_level is omitted - backend defaults to MEMBER
                         role_name:
                             values.access === 'team-lead'
                                 ? ROLE_NAMES.TEAM_LEAD
@@ -111,7 +131,6 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
             const successCount = successResults.length;
             const failCount = failedResults.length;
 
-            // Show detailed feedback
             if (successCount > 0 && failCount > 0) {
                 const failedEmails = failedResults.map(r => r.email).join(', ');
                 message.warning(`${successCount} invited successfully. Failed: ${failedEmails}`);
@@ -125,7 +144,7 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
                 const failedEmails = failedResults.map(r => r.email).join(', ');
                 message.error(`Failed to invite: ${failedEmails}`);
             }
-            } catch (error) {
+        } catch (error) {
             console.error('Error inviting project members:', error);
             message.error(t('projectInvite_inviteFailed'));
         } finally {
@@ -141,7 +160,7 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
                 access_level: 'MEMBER',
                 role_name: ROLE_NAMES.MEMBER,
                 is_admin: false,
-                max_usage: null // Unlimited usage
+                max_usage: null,
             };
 
             const res = await projectMembersApiService.generateInvitationLink(linkData);
@@ -169,9 +188,11 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
         }
     };
 
+    // ✅ UPDATED: Also clear team member options on close
     const handleClose = () => {
         form.resetFields();
         setLinkCopied(false);
+        setTeamMemberOptions([]); // ✅ NEW
         dispatch(toggleProjectMemberDrawer());
     };
 
@@ -201,7 +222,7 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
             }
             open={isDrawerOpen}
             onCancel={handleClose}
-            destroyOnClose={false}
+            destroyOnHidden={false}
             width={500}
             loading={loading}
             footer={
@@ -235,12 +256,10 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
                             rules={[
                                 {
                                     validator: (_, value) => {
-                                        // Check if value exists and has items
                                         if (!value || !Array.isArray(value) || value.length === 0) {
                                             return Promise.reject(new Error(t('projectInvite_emailRequired')));
                                         }
 
-                                        // Validate each email format
                                         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                                         const invalidEmails = value.filter((email: string) => !emailRegex.test(email.trim()));
 
@@ -253,10 +272,16 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
                                 },
                             ]}
                         >
+                            {/* ✅ UPDATED: Now shows all team members immediately on open */}
                             <Select
                                 mode="tags"
                                 style={{ width: '100%' }}
                                 placeholder={t('projectInvite_emailPlaceholder')}
+                                options={teamMemberOptions}
+                                filterOption={(input, option) =>
+                                    option?.value?.toLowerCase().includes(input.toLowerCase()) ||
+                                    option?.label?.toLowerCase().includes(input.toLowerCase())
+                                }
                                 notFoundContent={
                                     <Typography.Text type="secondary">{t('projectInvite_emailHelp')}</Typography.Text>
                                 }
@@ -268,8 +293,8 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
                         </Button>
                     </Flex>
 
-                    <Form.Item 
-                        label={t('projectInvite_teamRoleLabel')} 
+                    <Form.Item
+                        label={t('projectInvite_teamRoleLabel')}
                         name="access"
                         tooltip={t('projectInvite_teamRoleTooltip')}
                     >

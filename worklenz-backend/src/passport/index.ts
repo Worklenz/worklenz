@@ -1,7 +1,7 @@
-import {PassportStatic} from "passport";
+import { PassportStatic } from "passport";
 
-import {deserialize} from "./deserialize";
-import {serialize} from "./serialize";
+import { deserialize } from "./deserialize";
+import { serialize } from "./serialize";
 
 import GoogleLogin from "./passport-strategies/passport-google";
 import GoogleMobileLogin from "./passport-strategies/passport-google-mobile";
@@ -20,7 +20,12 @@ export default (passport: PassportStatic) => {
   passport.use(GoogleLogin);
   passport.use("google-mobile", GoogleMobileLogin);
   passport.use("apple-mobile", AppleMobileLogin);
-  passport.use("apple", AppleWebLogin);
+
+  // Only register Apple Web strategy if it's configured
+  if (AppleWebLogin) {
+    passport.use("apple", AppleWebLogin);
+  }
+
   passport.serializeUser(serialize);
   passport.deserializeUser(deserialize);
 };

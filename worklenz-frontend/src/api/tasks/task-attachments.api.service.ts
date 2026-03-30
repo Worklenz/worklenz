@@ -21,7 +21,7 @@ const taskAttachmentsApiService = {
 
   createAvatarAttachment: async (
     body: IAvatarAttachment
-  ): Promise<IServerResponse<{ url: string }>> => {
+  ): Promise<IServerResponse<{ url: string; updated_at?: string }>> => {
     const response = await apiClient.post(`${rootUrl}/avatar`, body);
     return response.data;
   },
@@ -48,7 +48,7 @@ const taskAttachmentsApiService = {
     return response.data;
   },
 
-  downloadTaskAttachment: async (id: string, filename: string): Promise<IServerResponse<any>> => {
+  downloadTaskAttachment: async (id: string, filename: string): Promise<IServerResponse<{ url: string; expires_in: number }>> => {
     const response = await apiClient.get(`${rootUrl}/download?id=${id}&file=${filename}`);
     return response.data;
   },

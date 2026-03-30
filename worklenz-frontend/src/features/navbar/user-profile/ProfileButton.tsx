@@ -24,6 +24,7 @@ import './profile-button.css';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 interface ProfileButtonProps {
   isOwnerOrAdmin: boolean;
@@ -33,6 +34,7 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
   const { t } = useTranslation('navbar');
   const currentSession = useAppSelector((state: RootState) => state.userReducer);
   const { isLicenseExpired } = useAuthStatus();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const role = getRole();
   const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);
@@ -97,6 +99,20 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
           {isOwnerOrAdmin && (
             <Link to="/worklenz/admin-center/overview" style={getLinkStyle()}>
               {t('adminCenter')}
+            </Link>
+          )}
+          {isOwnerOrAdmin && (
+            <Link 
+              to="/worklenz/admin-center/billing" 
+              style={getLinkStyle()}
+              onClick={() => {
+                trackMixpanelEvent('billing_profile_dropdown_click', {
+                  user_type: currentSession?.subscription_type?.toLowerCase(),
+                  is_owner_or_admin: true
+                });
+              }}
+            >
+              {t('billing', { defaultValue: 'Billing' })}
             </Link>
           )}
           {!isLicenseExpired && (

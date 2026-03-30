@@ -27,9 +27,10 @@ export const useTaskRowActions = ({
   const handleCheckboxChange = useCallback(
     (e: any) => {
       e.stopPropagation(); // Prevent row click when clicking checkbox
+      if (task.is_parent_container) return;
       dispatch(toggleTaskSelection(taskId));
     },
-    [dispatch, taskId]
+    [dispatch, taskId, task.is_parent_container]
   );
 
   // Handle task name save
@@ -62,8 +63,9 @@ export const useTaskRowActions = ({
 
   // Handle task name edit start
   const handleTaskNameEdit = useCallback(() => {
+    if (task.is_parent_container) return;
     setEditTaskName(true);
-  }, [setEditTaskName]);
+  }, [setEditTaskName, task.is_parent_container]);
 
   // Handle task name change
   const handleTaskNameChange = useCallback((name: string) => {

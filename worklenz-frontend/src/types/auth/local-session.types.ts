@@ -37,4 +37,13 @@ export interface ILocalSession extends IUserType {
   trial_days_remaining?: number;   // Days remaining in plan trial
   trial_plan_display_name?: string; // Display name of trial plan
   is_plan_trial?: boolean;         // Quick flag for plan trial status
+  // Manual override flags
+  business_plan_override?: boolean; // Manual override for business plan feature access
+  team_member_limit_override?: boolean; // Manual override to bypass team member limits
+  // AppSumo eligibility
+  appsumo_business_eligible?: boolean; // True if user has 5+ redeemed coupon codes
+  redeemed_codes_count?: number;   // Number of redeemed coupon codes
+  // Timestamp fields
+  created_at?: string;
+  updated_at?: string;
 }

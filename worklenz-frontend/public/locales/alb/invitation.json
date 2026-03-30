@@ -9,6 +9,7 @@
   "in": "në",
   "accessLevel": "Niveli i aksesit",
   "loggedInAs": "Jeni të identifikuar si {{name}}. Detajet tuaja janë parapërpunuar.",
+  "joiningAs": "Ju do të bashkoheni si {{name}} ({{email}})",
   "fullName": "Emri i plotë",
   "fullNameRequired": "Ju lutemi shkruani emrin tuaj të plotë",
   "fullNameMinLength": "Emri duhet të jetë të paktën 2 karaktere",

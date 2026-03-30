@@ -103,7 +103,7 @@ export default class HomePageController extends WorklenzControllerBase {
     }
   }
 
-  private static async getTasksResult(groupByClosure: string, currentTabClosure: string, teamId: string, userId: string) {
+  private static async getTasksResult(groupByClosure: string, currentTabClosure: string, params: any[], teamId: string, userId: string) {
     const q = `
       SELECT t.id,
              t.name,
@@ -147,9 +147,10 @@ export default class HomePageController extends WorklenzControllerBase {
                        WHERE project_id = p.id
                          AND user_id = $2)
         ${groupByClosure}
+        ${currentTabClosure}
       ORDER BY t.end_date ASC`;
 
-    const result = await db.query(q, [teamId, userId]);
+    const result = await db.query(q, params);
     return result.rows;
   }
 
@@ -192,18 +193,26 @@ export default class HomePageController extends WorklenzControllerBase {
     let currentTabClosure = this.getTasksByTabClosure(currentTab as string);
 
     const isCalendarView = req.query.is_calendar_view;
+    let params: any[];
+    let result: any[];
 
-    let result = await this.getTasksResult(groupByClosure, currentTabClosure, teamId as string, userId as string);
+ if (isCalendarView == "true") {
+  const selectedDate = req.query.selected_date as string;
+  const calendarClosure = `AND t.end_date::DATE = $3::DATE`;
+  params = [teamId, userId, selectedDate];
+  result = await this.getTasksResult(groupByClosure, calendarClosure, params, teamId as string, userId as string);
+} else {
+  params = [teamId, userId];
+  // ✅ FIX: pass "" so ALL tasks are fetched regardless of selected tab
+  result = await this.getTasksResult(groupByClosure, "", params, teamId as string, userId as string);
+}
 
-    const counts = await this.getCountsByGroup(result, timeZone, today);
+// ✅ FIX: counts calculated from full task list, not tab-filtered subset
+const counts = await this.getCountsByGroup(result, timeZone, today);
 
-    if (isCalendarView == "true") {
-      currentTabClosure = `AND t.end_date::DATE = '${req.query.selected_date}'`;
-      result = await this.groupBySingleDate(result, timeZone, req.query.selected_date as string);
-    } else {
-      result = await this.groupByDate(currentTab as string, result, timeZone, today);
-    }
-
+if (isCalendarView != "true") {
+  result = await this.groupByDate(currentTab as string, result, timeZone, today);
+}
     // const counts = await this.getCountsResult(groupByClosure, teamId as string, userId as string);
 
     const data = {

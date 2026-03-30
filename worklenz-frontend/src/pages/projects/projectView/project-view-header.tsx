@@ -17,13 +17,13 @@ import {
   SyncOutlined,
   UsergroupAddOutlined,
 } from '@/shared/antd-imports';
-import { PageHeader } from '@ant-design/pro-components';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useState, useCallback, useMemo, memo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 import { colors } from '@/styles/colors';
+import { getContrastColor } from '@/utils/colorUtils';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { SocketEvents } from '@/shared/socket-events';
@@ -58,7 +58,7 @@ import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { getGroupIdByGroupedColumn } from '@/services/task-list/taskList.service';
 import logger from '@/utils/errorLogger';
 import ImportTaskTemplate from '@/components/task-templates/import-task-template';
-import ProjectDrawer from '@/components/projects/project-drawer/project-drawer';
+import { ProjectDrawer } from '@/components/projects/project-drawer/project-drawer';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
@@ -76,7 +76,6 @@ const ProjectViewHeader = memo(() => {
   const dispatch = useAppDispatch();
   const { tab } = useTabSearchParam();
 
-  // Memoize auth service calls to prevent unnecessary re-evaluations
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
   const isOwnerOrAdmin = useMemo(() => authService.isOwnerOrAdmin(), [authService]);
@@ -84,7 +83,6 @@ const ProjectViewHeader = memo(() => {
 
   const { socket } = useSocket();
 
-  // Optimized selectors with shallow equality checks
   const selectedProject = useAppSelector(state => state.projectReducer.project);
   const projectId = useAppSelector(state => state.projectReducer.projectId);
   const loadingGroups = useAppSelector(state => state.taskReducer.loadingGroups);
@@ -92,48 +90,52 @@ const ProjectViewHeader = memo(() => {
 
   const [creatingTask, setCreatingTask] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  const [refreshLoading, setRefreshLoading] = useState(false);
+  const [isBackButtonHovered, setIsBackButtonHovered] = useState(false);
 
-  // Use ref to track subscription timeout
   const subscriptionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Memoized refresh handler with optimized dependencies
-  const handleRefresh = useCallback(() => {
+  const handleRefresh = useCallback(async () => {
     if (!projectId) return;
 
-    dispatch(getProject(projectId));
+    try {
+      setRefreshLoading(true);
+      const projectPromise = dispatch(getProject(projectId)).unwrap();
 
-    switch (tab) {
-      case 'tasks-list':
-        dispatch(fetchStatuses(projectId));
-        dispatch(fetchTaskListColumns(projectId));
-        dispatch(fetchPhasesByProjectId(projectId));
-        dispatch(fetchTasksV3(projectId));
-        break;
-      case 'board':
-        dispatch(fetchEnhancedKanbanGroups(projectId));
-        break;
-      case 'workload':
-        // Trigger workload refresh via timestamp
-        dispatch(setRefreshTimestamp());
-        break;
-      case 'roadmap':
-        // Trigger roadmap refresh via timestamp
-        dispatch(setRefreshTimestamp());
-        break;
-      case 'finance':
-        // Finance already listens to refreshTimestamp, but make it explicit
-        dispatch(setRefreshTimestamp());
-        break;
-      case 'project-insights-member-overview':
-      case 'all-attachments':
-      case 'members':
-      case 'updates':
-        dispatch(setRefreshTimestamp());
-        break;
+      switch (tab) {
+        case 'tasks-list':
+          await Promise.allSettled([
+            projectPromise,
+            dispatch(fetchStatuses(projectId)).unwrap(),
+            dispatch(fetchTaskListColumns(projectId)).unwrap(),
+            dispatch(fetchPhasesByProjectId(projectId)).unwrap(),
+            dispatch(fetchTasksV3(projectId)).unwrap(),
+          ]);
+          break;
+        case 'board':
+          await Promise.allSettled([
+            projectPromise,
+            dispatch(fetchEnhancedKanbanGroups(projectId)).unwrap(),
+          ]);
+          break;
+        case 'workload':
+        case 'roadmap':
+        case 'finance':
+        case 'project-insights-member-overview':
+        case 'all-attachments':
+        case 'members':
+        case 'updates':
+          await projectPromise;
+          dispatch(setRefreshTimestamp());
+          break;
+      }
+    } catch (error) {
+      logger.error('Error refreshing project data:', error);
+    } finally {
+      setRefreshLoading(false);
     }
   }, [dispatch, projectId, tab]);
 
-  // Optimized subscription handler with proper cleanup
   const handleSubscribe = useCallback(() => {
     if (!selectedProject?.id || !socket || subscriptionLoading) return;
 
@@ -141,12 +143,10 @@ const ProjectViewHeader = memo(() => {
       setSubscriptionLoading(true);
       const newSubscriptionState = !selectedProject.subscribed;
 
-      // Clear any existing timeout
       if (subscriptionTimeoutRef.current) {
         clearTimeout(subscriptionTimeoutRef.current);
       }
 
-      // Emit socket event
       socket.emit(SocketEvents.PROJECT_SUBSCRIBERS_CHANGE.toString(), {
         project_id: selectedProject.id,
         user_id: currentSession?.id,
@@ -154,23 +154,12 @@ const ProjectViewHeader = memo(() => {
         mode: newSubscriptionState ? 0 : 1,
       });
 
-      // Listen for response with cleanup
       const handleResponse = (response: any) => {
         try {
-          dispatch(
-            setProject({
-              ...selectedProject,
-              subscribed: newSubscriptionState,
-            })
-          );
+          dispatch(setProject({ ...selectedProject, subscribed: newSubscriptionState }));
         } catch (error) {
           logger.error('Error handling project subscription response:', error);
-          dispatch(
-            setProject({
-              ...selectedProject,
-              subscribed: selectedProject.subscribed,
-            })
-          );
+          dispatch(setProject({ ...selectedProject, subscribed: selectedProject.subscribed }));
         } finally {
           setSubscriptionLoading(false);
           if (subscriptionTimeoutRef.current) {
@@ -182,7 +171,6 @@ const ProjectViewHeader = memo(() => {
 
       socket.once(SocketEvents.PROJECT_SUBSCRIBERS_CHANGE.toString(), handleResponse);
 
-      // Set timeout with ref tracking
       subscriptionTimeoutRef.current = setTimeout(() => {
         setSubscriptionLoading(false);
         logger.error('Project subscription timeout - no response from server');
@@ -194,31 +182,23 @@ const ProjectViewHeader = memo(() => {
     }
   }, [selectedProject, socket, subscriptionLoading, currentSession, dispatch]);
 
-  // Memoized settings handler
   const handleSettingsClick = useCallback(() => {
     if (selectedProject?.id) {
       console.log('Opening project drawer from project view for project:', selectedProject.id);
-
-      // Set project ID first
       dispatch(setProjectId(selectedProject.id));
-
-      // Then fetch project data
       dispatch(fetchProjectData(selectedProject.id))
         .unwrap()
         .then(projectData => {
           console.log('Project data fetched successfully from project view:', projectData);
-          // Open drawer after data is fetched
           dispatch(toggleProjectDrawer());
         })
         .catch(error => {
           console.error('Failed to fetch project data from project view:', error);
-          // Still open drawer even if fetch fails, so user can see error state
           dispatch(toggleProjectDrawer());
         });
     }
   }, [dispatch, selectedProject?.id]);
 
-  // Optimized task creation handler
   const handleCreateTask = useCallback(() => {
     if (!selectedProject?.id || !currentSession?.id || !socket) return;
 
@@ -258,7 +238,6 @@ const ProjectViewHeader = memo(() => {
     }
   }, [selectedProject?.id, currentSession, socket, dispatch, groupBy, tab, t]);
 
-  // Memoized import task template handler
   const handleImportTaskTemplate = useCallback(() => {
     if (isFreeUser(currentSession)) {
       dispatch(toggleUpgradeModal());
@@ -267,12 +246,10 @@ const ProjectViewHeader = memo(() => {
     }
   }, [dispatch, currentSession]);
 
-  // Memoized navigation handler
   const handleNavigateToProjects = useCallback(() => {
     navigate('/worklenz/projects');
   }, [navigate]);
 
-  // Memoized save as template handler
   const handleSaveAsTemplate = useCallback(() => {
     if (isFreeUser(currentSession)) {
       dispatch(toggleUpgradeModal());
@@ -281,12 +258,10 @@ const ProjectViewHeader = memo(() => {
     }
   }, [dispatch, currentSession]);
 
-  // Memoized invite handler
   const handleInvite = useCallback(() => {
     dispatch(toggleProjectMemberDrawer());
   }, [dispatch]);
 
-  // Memoized dropdown items
   const dropdownItems = useMemo(
     () => [
       {
@@ -305,13 +280,14 @@ const ProjectViewHeader = memo(() => {
     [handleImportTaskTemplate, t]
   );
 
-  // Memoized project attributes with optimized date formatting
   const projectAttributes = useMemo(() => {
     if (!selectedProject) return null;
 
     const elements = [];
 
     if (selectedProject.category_id) {
+      const bgColor = selectedProject.category_color || colors.vibrantOrange;
+      const textColor = getContrastColor(bgColor);
       elements.push(
         <Tooltip
           key="category-tooltip"
@@ -319,10 +295,15 @@ const ProjectViewHeader = memo(() => {
         >
           <Tag
             key="category"
-            color={colors.vibrantOrange}
-            style={{ borderRadius: 24, paddingInline: 8, margin: 0 }}
+            style={{
+              backgroundColor: bgColor,
+              border: 'none',
+              margin: 0,
+            }}
           >
-            {selectedProject.category_name}
+            <span style={{ fontSize: 12, color: textColor }}>
+              {selectedProject.category_name}
+            </span>
           </Tag>
         </Tooltip>
       );
@@ -330,10 +311,15 @@ const ProjectViewHeader = memo(() => {
 
     if (selectedProject.status) {
       elements.push(
-        <Tooltip key="status" title={`${t('projectStatusTooltip', { defaultValue: 'Project status' })}: ${selectedProject.status}`}>
+        <Tooltip
+          key="status"
+          title={`${t('projectStatusTooltip', { defaultValue: 'Project status' })}: ${selectedProject.status}`}
+        >
           <ProjectStatusIcon
             iconName={selectedProject.status_icon || ''}
             color={selectedProject.status_color || ''}
+            statusName={selectedProject.status}
+            showName={true}
           />
         </Tooltip>
       );
@@ -362,14 +348,6 @@ const ProjectViewHeader = memo(() => {
       );
     }
 
-    if (selectedProject.notes) {
-      elements.push(
-        <Typography.Text key="notes" type="secondary">
-          {selectedProject.notes}
-        </Typography.Text>
-      );
-    }
-
     return (
       <Flex gap={4} align="center">
         {elements}
@@ -377,38 +355,40 @@ const ProjectViewHeader = memo(() => {
     );
   }, [selectedProject, t]);
 
-  // Memoized header actions with conditional rendering optimization
   const headerActions = useMemo(() => {
     const actions = [];
 
-    // Refresh button
     actions.push(
       <Tooltip key="refresh" title={t('refreshTooltip', { defaultValue: 'Refresh project data' })}>
         <Button
           shape="circle"
-          icon={<SyncOutlined spin={loadingGroups} />}
+          icon={<SyncOutlined spin={refreshLoading} />}
           onClick={handleRefresh}
+          loading={refreshLoading}
         />
       </Tooltip>
     );
 
-    // Save as template (owner/admin/team lead only)
     if (isOwnerOrAdmin) {
       actions.push(
-        <Tooltip key="template" title={t('saveAsTemplateTooltip', { defaultValue: 'Save this project as a template' })}>
+        <Tooltip
+          key="template"
+          title={t('saveAsTemplateTooltip', { defaultValue: 'Save this project as a template' })}
+        >
           <Button shape="circle" icon={<SaveOutlined />} onClick={handleSaveAsTemplate} />
         </Tooltip>
       );
     }
 
-    // Settings button
     actions.push(
-      <Tooltip key="settings" title={t('settingsTooltip', { defaultValue: 'Open project settings' })}>
+      <Tooltip
+        key="settings"
+        title={t('settingsTooltip', { defaultValue: 'Open project settings' })}
+      >
         <Button shape="circle" icon={<SettingOutlined />} onClick={handleSettingsClick} />
       </Tooltip>
     );
 
-    // Integrations button (owner/admin/team lead/project manager only)
     if (isOwnerOrAdmin || isProjectManager) {
       actions.push(
         <ProjectIntegrationsButton
@@ -419,11 +399,14 @@ const ProjectViewHeader = memo(() => {
       );
     }
 
-    // Subscribe button
     actions.push(
       <Tooltip
         key="subscribe"
-        title={selectedProject?.subscribed ? t('unsubscribeTooltip', { defaultValue: 'Unsubscribe from project notifications' }) : t('subscribeTooltip', { defaultValue: 'Subscribe to project notifications' })}
+        title={
+          selectedProject?.subscribed
+            ? t('unsubscribeTooltip', { defaultValue: 'Unsubscribe from project notifications' })
+            : t('subscribeTooltip', { defaultValue: 'Subscribe to project notifications' })
+        }
       >
         <Button
           shape="round"
@@ -431,26 +414,32 @@ const ProjectViewHeader = memo(() => {
           icon={selectedProject?.subscribed ? <BellFilled /> : <BellOutlined />}
           onClick={handleSubscribe}
         >
-          {selectedProject?.subscribed ? t('unsubscribe', { defaultValue: 'Unsubscribe' }) : t('subscribe', { defaultValue: 'Subscribe' })}
+          {selectedProject?.subscribed
+            ? t('unsubscribe', { defaultValue: 'Unsubscribe' })
+            : t('subscribe', { defaultValue: 'Subscribe' })}
         </Button>
       </Tooltip>
     );
 
-    // Invite button (owner/admin/team lead/project manager only)
     if (isOwnerOrAdmin || isProjectManager) {
       actions.push(
-        <Tooltip key="invite-tooltip" title={t('inviteTooltip', { defaultValue: 'Invite team members to this project' })}>
-            <Button key="invite" type="primary" icon={<UsergroupAddOutlined />} onClick={handleInvite}>
-              {t('invite', { defaultValue: 'Invite' })}
-            </Button>
+        <Tooltip
+          key="invite-tooltip"
+          title={t('inviteTooltip', { defaultValue: 'Invite team members to this project' })}
+        >
+          <Button key="invite" type="primary" icon={<UsergroupAddOutlined />} onClick={handleInvite}>
+            {t('invite', { defaultValue: 'Invite' })}
+          </Button>
         </Tooltip>
       );
     }
 
-    // Create task button
     if (isOwnerOrAdmin) {
       actions.push(
-        <Tooltip key="create-task-tooltip" title={t('createTaskTooltip', { defaultValue: 'Create a new task' })}>
+        <Tooltip
+          key="create-task-tooltip"
+          title={t('createTaskTooltip', { defaultValue: 'Create a new task' })}
+        >
           <Dropdown.Button
             key="create-task-dropdown"
             loading={creatingTask}
@@ -466,7 +455,10 @@ const ProjectViewHeader = memo(() => {
       );
     } else {
       actions.push(
-        <Tooltip key="create-task-tooltip" title={t('createTaskTooltip', { defaultValue: 'Create a new task' })}>
+        <Tooltip
+          key="create-task-tooltip"
+          title={t('createTaskTooltip', { defaultValue: 'Create a new task' })}
+        >
           <Button
             key="create-task"
             loading={creatingTask}
@@ -486,7 +478,7 @@ const ProjectViewHeader = memo(() => {
       </Flex>
     );
   }, [
-    loadingGroups,
+    refreshLoading,
     handleRefresh,
     isOwnerOrAdmin,
     handleSaveAsTemplate,
@@ -502,13 +494,19 @@ const ProjectViewHeader = memo(() => {
     handleCreateTask,
   ]);
 
-  // Memoized page header title
   const pageHeaderTitle = useMemo(
     () => (
       <Flex gap={4} align="center">
         <Tooltip title={t('navigateBackTooltip', { defaultValue: 'Go back to projects list' })}>
           <ArrowLeftOutlined
-            style={{ fontSize: 16, cursor: 'pointer' }}
+            style={{
+              fontSize: 16,
+              cursor: 'pointer',
+              transition: 'all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1)',
+              color: isBackButtonHovered ? '#1890ff' : 'inherit',
+            }}
+            onMouseEnter={() => setIsBackButtonHovered(true)}
+            onMouseLeave={() => setIsBackButtonHovered(false)}
             onClick={handleNavigateToProjects}
           />
         </Tooltip>
@@ -518,18 +516,9 @@ const ProjectViewHeader = memo(() => {
         {projectAttributes}
       </Flex>
     ),
-    [handleNavigateToProjects, selectedProject?.name, projectAttributes, t]
+    [handleNavigateToProjects, selectedProject?.name, projectAttributes, t, isBackButtonHovered]
   );
 
-  // Memoized page header styles
-  const pageHeaderStyle = useMemo(
-    () => ({
-      paddingInline: 0,
-    }),
-    []
-  );
-
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (subscriptionTimeoutRef.current) {
@@ -540,12 +529,19 @@ const ProjectViewHeader = memo(() => {
 
   return (
     <>
-      <PageHeader
+      <div
         className="site-page-header"
-        title={pageHeaderTitle}
-        style={pageHeaderStyle}
-        extra={headerActions}
-      />
+        style={{
+          paddingInline: 0,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '16px 0',
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>{pageHeaderTitle}</div>
+        <div style={{ marginLeft: '16px', flexShrink: 0 }}>{headerActions}</div>
+      </div>
       {createPortal(<ProjectDrawer onClose={() => {}} />, document.body, 'project-drawer')}
       {createPortal(<ImportTaskTemplate />, document.body, 'import-task-template')}
       {createPortal(<SaveProjectAsTemplate />, document.body, 'save-project-as-template')}

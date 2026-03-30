@@ -24,7 +24,13 @@ const selectedTeams = (state: ProjectReportsState) => {
 };
 
 export type ProjectReportsViewMode = 'table' | 'grouped';
-export type ProjectReportsGroupBy = 'category' | 'status' | 'health' | 'team' | 'client' | 'manager';
+export type ProjectReportsGroupBy =
+  | 'category'
+  | 'status'
+  | 'health'
+  | 'team'
+  | 'client'
+  | 'manager';
 
 export interface IProjectReportGroup {
   group_id: string;
@@ -87,6 +93,14 @@ export const fetchProjectData = createAsyncThunk(
   'projectReports/fetchProjectData',
   async (_, { getState }) => {
     const state = (getState() as any).projectReportsReducer;
+    const teams = selectedTeams(state);
+
+    // If teams have been loaded but none are selected, return empty result immediately
+    // This handles the "Clear All" case where user deselects all teams
+    if (state.teams.length > 0 && teams.length === 0) {
+      return { total: 0, projects: [] };
+    }
+
     const body: IGetProjectsRequestBody = {
       index: state.index,
       size: state.pageSize,
@@ -99,7 +113,7 @@ export const fetchProjectData = createAsyncThunk(
       categories: state.selectedProjectCategories.map((c: IProjectCategory) => c.id || ''),
       project_managers: state.selectedProjectManagers.map((m: IProjectManager) => m.id || ''),
       archived: state.archived,
-      teams: selectedTeams(state),
+      teams,
     };
     const response = await reportingProjectsApiService.getProjects(body);
     return response.body;
@@ -112,6 +126,13 @@ export const fetchMoreProjectsForGroupedView = createAsyncThunk(
   'projectReports/fetchMoreProjectsForGroupedView',
   async (_, { getState }) => {
     const state = (getState() as any).projectReportsReducer;
+    const teams = selectedTeams(state);
+
+    // If teams have been loaded but none are selected, return empty result immediately
+    if (state.teams.length > 0 && teams.length === 0) {
+      return { total: 0, projects: [] };
+    }
+
     const body: IGetProjectsRequestBody = {
       index: state.index,
       size: state.pageSize,
@@ -124,7 +145,7 @@ export const fetchMoreProjectsForGroupedView = createAsyncThunk(
       categories: state.selectedProjectCategories.map((c: IProjectCategory) => c.id || ''),
       project_managers: state.selectedProjectManagers.map((m: IProjectManager) => m.id || ''),
       archived: state.archived,
-      teams: selectedTeams(state),
+      teams,
     };
     const response = await reportingProjectsApiService.getProjects(body);
     return response.body;
@@ -136,6 +157,13 @@ export const fetchGroupedProjects = createAsyncThunk(
   'projectReports/fetchGroupedProjects',
   async (_, { getState }) => {
     const state = (getState() as any).projectReportsReducer;
+    const teams = selectedTeams(state);
+
+    // If teams have been loaded but none are selected, return empty result immediately
+    if (state.teams.length > 0 && teams.length === 0) {
+      return { groups: [], total_groups: 0 };
+    }
+
     const params = {
       group_by: state.groupBy,
       search: state.searchQuery,
@@ -143,13 +171,22 @@ export const fetchGroupedProjects = createAsyncThunk(
       order: state.order,
       statuses: state.selectedProjectStatuses.map((s: IProjectStatus) => s.id || '').join(','),
       healths: state.selectedProjectHealths.map((h: IProjectHealth) => h.id || '').join(','),
-      categories: state.selectedProjectCategories.map((c: IProjectCategory) => c.id || '').join(','),
-      project_managers: state.selectedProjectManagers.map((m: IProjectManager) => m.id || '').join(','),
-      teams: selectedTeams(state).join(','),
+      categories: state.selectedProjectCategories
+        .map((c: IProjectCategory) => c.id || '')
+        .join(','),
+      project_managers: state.selectedProjectManagers
+        .map((m: IProjectManager) => m.id || '')
+        .join(','),
+      teams: teams.join(','),
       archived: state.archived,
+      // Add pagination parameters (using large size to load all groups for now)
+      // TODO: Implement proper "Load More" functionality in future iteration
+      index: 1,
+      size: 1000,
     };
     const response = await reportingProjectsApiService.getProjectsGrouped(params);
-    return response.body;
+    // Ensure we return a valid structure even if response.body is null
+    return response.body || { groups: [], total_groups: 0 };
   }
 );
 
@@ -172,7 +209,7 @@ const initialState: ProjectReportsState = {
 
   projectList: [],
   total: 0,
-  isLoading: false,
+  isLoading: true,
   error: null,
 
   // Grouped view data
@@ -310,7 +347,26 @@ const projectReportsSlice = createSlice({
       }
     },
     setViewMode: (state, action) => {
-      state.viewMode = action.payload;
+      const newViewMode = action.payload;
+      const previousViewMode = state.viewMode;
+
+      state.viewMode = newViewMode;
+
+      // Reset data when switching between views to ensure fresh data
+      if (previousViewMode !== newViewMode) {
+        if (newViewMode === 'grouped') {
+          // Clear table data when switching to grouped view
+          state.projectList = [];
+          state.total = 0;
+        } else {
+          // Clear grouped data when switching to table view
+          state.groupedProjects = [];
+          state.totalGroups = 0;
+        }
+        // Set loading state to true so component shows spinner instead of empty state
+        state.isLoading = true;
+        state.error = null;
+      }
     },
     setGroupBy: (state, action) => {
       state.groupBy = action.payload;
@@ -320,7 +376,7 @@ const projectReportsSlice = createSlice({
       state.total = 0;
       state.groupedProjects = [];
       state.totalGroups = 0;
-      state.isLoading = false;
+      state.isLoading = true;
       state.error = null;
       state.index = 1;
       state.pageSize = 10;
@@ -328,11 +384,10 @@ const projectReportsSlice = createSlice({
       state.order = 'asc';
       state.searchQuery = '';
       state.filterIndex = filterIndex();
-      state.archived = false;
+      // Note: archived state is preserved to maintain user preference across view changes
     },
     resetAllFilters: state => {
       state.searchQuery = '';
-      state.archived = false;
       state.index = 1;
       state.viewMode = 'table';
       state.groupBy = 'category';
@@ -343,6 +398,7 @@ const projectReportsSlice = createSlice({
       state.selectedProjectHealths = [];
       state.selectedProjectCategories = [];
       state.selectedProjectManagers = [];
+      // Note: archived state is preserved to maintain user preference across view changes
     },
   },
   extraReducers: builder => {
@@ -350,7 +406,13 @@ const projectReportsSlice = createSlice({
       .addCase(fetchReportingTeams.fulfilled, (state, action) => {
         const teams = [];
         for (const team of action.payload) {
-          teams.push({ selected: true, name: team.name, id: team.id, projects_count: team.projects_count, members: team.members });
+          teams.push({
+            selected: true,
+            name: team.name,
+            id: team.id,
+            projects_count: team.projects_count,
+            members: team.members,
+          });
         }
         state.teams = teams;
         state.loadingTeams = false;
@@ -414,8 +476,8 @@ const projectReportsSlice = createSlice({
       })
       .addCase(fetchGroupedProjects.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.groupedProjects = action.payload.groups || [];
-        state.totalGroups = action.payload.total_groups || 0;
+        state.groupedProjects = action.payload?.groups || [];
+        state.totalGroups = action.payload?.total_groups || 0;
       })
       .addCase(fetchGroupedProjects.rejected, (state, action) => {
         state.isLoading = false;

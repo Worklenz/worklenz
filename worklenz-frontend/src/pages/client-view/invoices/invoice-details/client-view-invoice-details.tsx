@@ -1,15 +1,17 @@
-import { Card, Descriptions, Flex, Typography, Button, Tag, Divider } from '@/shared/antd-imports';
+import { Card, Descriptions, Flex, Typography, Button, Tag, Divider, Modal, message } from '@/shared/antd-imports';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { durationDateFormat } from '../../../../utils/durationDateFormat';
-import { DownloadOutlined, PrinterOutlined, DollarOutlined } from '@ant-design/icons';
+import { DownloadOutlined, PrinterOutlined, DollarOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useDeleteInvoiceMutation } from '@/api/client-portal/client-portal-api';
 
 const ClientViewInvoiceDetails = () => {
   const { t } = useTranslation('client-view-invoices');
   const { id } = useParams();
   const navigate = useNavigate();
+  const [deleteInvoice, { isLoading: isDeleting }] = useDeleteInvoiceMutation();
 
   // Get invoice details from Redux (replace with API call)
   const invoiceDetails = useAppSelector(state =>
@@ -51,6 +53,39 @@ const ClientViewInvoiceDetails = () => {
     }).format(amount);
   };
 
+  const handleDownloadInvoice = () => {
+    // Using admin-only route that bypasses client portal authentication
+    // Note: clientId parameter is not used by backend, just for route matching
+    window.open(`/api/v1/clients/admin/invoices/${id}/download`, '_blank');
+  };
+
+  const handlePrintInvoice = () => {
+    window.print();
+  };
+
+  const handleEditInvoice = () => {
+    navigate(`/worklenz/client-portal/invoices/${id}/edit`);
+  };
+
+  const handleDeleteInvoice = () => {
+    Modal.confirm({
+      title: t('deleteInvoice', { defaultValue: 'Delete Invoice' }),
+      content: t('confirmDeleteInvoice', { defaultValue: 'Are you sure you want to delete this invoice? This action cannot be undone.' }),
+      okText: t('delete', { defaultValue: 'Delete' }),
+      okType: 'danger',
+      cancelText: t('cancel', { defaultValue: 'Cancel' }),
+      onOk: async () => {
+        try {
+          await deleteInvoice(id!).unwrap();
+          message.success(t('deleteSuccess', { defaultValue: 'Invoice deleted successfully' }));
+          navigate('/client-portal/invoices');
+        } catch {
+          message.error(t('deleteError', { defaultValue: 'Failed to delete invoice' }));
+        }
+      },
+    });
+  };
+
   return (
     <Flex vertical gap={24} style={{ width: '100%' }}>
       <Flex align="center" justify="space-between">
@@ -58,8 +93,10 @@ const ClientViewInvoiceDetails = () => {
           {t('invoiceDetails')} - {invoiceDetails.invoice_no || 'INV-001'}
         </Typography.Title>
         <Flex gap={8}>
-          <Button icon={<DownloadOutlined />}>{t('download')}</Button>
-          <Button icon={<PrinterOutlined />}>{t('print')}</Button>
+          <Button icon={<DownloadOutlined />} onClick={handleDownloadInvoice}>{t('download')}</Button>
+          <Button icon={<PrinterOutlined />} onClick={handlePrintInvoice}>{t('print')}</Button>
+          <Button icon={<EditOutlined />} onClick={handleEditInvoice}>{t('edit', { defaultValue: 'Edit' })}</Button>
+          <Button icon={<DeleteOutlined />} danger loading={isDeleting} onClick={handleDeleteInvoice}>{t('delete', { defaultValue: 'Delete' })}</Button>
           <Button onClick={() => navigate('/client-portal/invoices')}>{t('backToInvoices')}</Button>
         </Flex>
       </Flex>

@@ -20,6 +20,7 @@ import {
 } from '@/shared/antd-imports';
 import {} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { toggleClientSettingsDrawer } from '../../features/clients-portal/clients/clients-slice';
@@ -28,15 +29,17 @@ import {
   useGetClientProjectsQuery,
   useAssignProjectToClientMutation,
   useRemoveProjectFromClientMutation,
-  useGetProjectsQuery,
 } from '../../api/client-portal/client-portal-api';
-import { useState } from 'react';
+import { useGetProjectsQuery } from '../../api/projects/projects.v1.api.service';
+import { useState, useMemo } from 'react';
 import { colors } from '../../styles/colors';
+import { IProjectViewModel } from '../../types/project/projectViewModel.types';
 
 const { Option } = Select;
 
 const ClientSettingsDrawer = () => {
   const { t } = useTranslation('client-portal-clients');
+  const navigate = useNavigate();
 
   const { isClientSettingsDrawerOpen, selectedClientId } = useAppSelector(
     state => state.clientsPortalReducer.clientsReducer
@@ -48,7 +51,11 @@ const ClientSettingsDrawer = () => {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   // RTK Query hooks - only load data when drawer is open
-  const { data: clientDetails, isLoading: isLoadingClient } = useGetClientDetailsQuery(
+  const { 
+    data: clientDetails, 
+    isLoading: isLoadingClient,
+    refetch: refetchClientDetails 
+  } = useGetClientDetailsQuery(
     selectedClientId!,
     {
       skip: !selectedClientId,
@@ -70,8 +77,22 @@ const ClientSettingsDrawer = () => {
 
   const isLoadingProjects = isLoadingClient;
 
-  const { data: availableProjects, isLoading: isLoadingAvailableProjects } = useGetProjectsQuery(
-    undefined,
+  // Fetch available projects using RTK Query - get all projects for the team
+  const { 
+    data: availableProjects, 
+    isLoading: isLoadingAvailableProjects,
+    error: projectsError 
+  } = useGetProjectsQuery(
+    {
+      index: 1,
+      size: 1000, // Large size to get all projects
+      field: 'name',
+      order: 'ascend',
+      search: null,
+      filter: null,
+      statuses: null,
+      categories: null,
+    },
     {
       skip: !isClientSettingsDrawerOpen,
     }
@@ -92,6 +113,8 @@ const ClientSettingsDrawer = () => {
 
       message.success(t('projectAssignedSuccessMessage') || 'Project assigned successfully');
       setSelectedProjectId(null);
+      // Refetch client details to update the project list
+      refetchClientDetails();
       refetchClientProjects();
     } catch (error: any) {
       message.error(
@@ -118,14 +141,36 @@ const ClientSettingsDrawer = () => {
   };
 
   // Get available projects (excluding already assigned ones)
-  const getAvailableProjects = () => {
-    if (!availableProjects?.body?.projects || !clientProjects?.projects) return [];
+  const getAvailableProjects = useMemo(() => {
+    // Check response structure - projects API returns IServerResponse<IProjectsViewModel>
+    // Structure: response.body.data (array) and response.body.total
+    const projectsData = availableProjects?.body?.data;
+    
+    if (!projectsData || !Array.isArray(projectsData) || projectsData.length === 0) {
+      return [];
+    }
 
-    const assignedProjectIds = clientProjects.projects.map(p => p.id);
-    return availableProjects.body.projects.filter(
-      project => !assignedProjectIds.includes(project.id)
-    );
-  };
+    // Get list of project IDs already assigned to this client
+    const assignedProjectIds = clientProjects?.projects?.map(p => p.id).filter((id): id is string => !!id) || [];
+    
+    return projectsData
+      .filter((project: IProjectViewModel) => {
+        // Must have id and name
+        if (!project.id || !project.name) return false;
+        
+        // Exclude if already assigned to this client
+        if (assignedProjectIds.includes(project.id)) return false;
+        
+        // Exclude if already assigned to another client (client_id is set and not null)
+        if (project.client_id) return false;
+        
+        return true;
+      })
+      .map((project: IProjectViewModel) => ({
+        id: project.id!,
+        name: project.name,
+      }));
+  }, [availableProjects, clientProjects]);
 
   // Table columns for assigned projects
   const projectColumns = [
@@ -170,7 +215,16 @@ const ClientSettingsDrawer = () => {
       render: (_: any, record: any) => (
         <Flex gap={8} align="center">
           <Tooltip title={t('viewProjectTooltip') || 'View Project'}>
-            <Button type="link" icon={<EyeOutlined />} size="small">
+            <Button
+              type="link"
+              icon={<EyeOutlined />}
+              size="small"
+              onClick={() => {
+                if (record.id) {
+                  navigate(`/worklenz/projects/${record.id}?tab=tasks-list&pinned_tab=tasks-list`);
+                }
+              }}
+            >
               {t('viewButton') || 'View'}
             </Button>
           </Tooltip>
@@ -248,7 +302,7 @@ const ClientSettingsDrawer = () => {
                   filterOption={(input, option) =>
                     (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                   }
-                  options={getAvailableProjects().map(project => ({
+                  options={getAvailableProjects.map(project => ({
                     label: project.name,
                     value: project.id,
                   }))}

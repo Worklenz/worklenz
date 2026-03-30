@@ -6,17 +6,19 @@ import adminCenterRoutes from './admin-center-routes';
 import { useAuthService } from '@/hooks/useAuth';
 import { Navigate, useLocation } from 'react-router-dom';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
+import ChunkErrorHandler from '@/utils/chunk-error-handler';
+import { isTeamLeadRole } from '@/types/roles/role.types';
 
-// Lazy load page components for better code splitting
-const HomePage = lazy(() => import('@/pages/home/HomePage'));
-const ProjectList = lazy(() => import('@/pages/projects/project-list'));
-const Schedule = lazy(() => import('@/pages/schedule/schedule'));
-const TeamLeadReports = lazy(() => import('@/pages/team-lead-reports/team-lead-reports'));
+// Lazy load page components for better code splitting with chunk error handling
+const HomePage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/home/HomePage'), 'HomePage'));
+const ProjectList = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/projects/project-list'), 'ProjectList'));
+const Schedule = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/schedule/schedule'), 'Schedule'));
+const TeamLeadReports = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/team-lead-reports/team-lead-reports'), 'TeamLeadReports'));
 
-const ProjectView = lazy(() => import('@/pages/projects/projectView/project-view'));
-const Unauthorized = lazy(() => import('@/pages/unauthorized/unauthorized'));
-const GanttDemoPage = lazy(() => import('@/pages/GanttDemoPage'));
-const LicenseExpiredPage = lazy(() => import('@/pages/license-expired/LicenseExpired'));
+const ProjectView = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/projects/projectView/project-view'), 'ProjectView'));
+const Unauthorized = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/unauthorized/unauthorized'), 'Unauthorized'));
+const GanttDemoPage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/GanttDemoPage'), 'GanttDemoPage'));
+const LicenseExpiredPage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/license-expired/LicenseExpired'), 'LicenseExpiredPage'));
 
 // Define AdminGuard component with defensive programming
 const AdminGuard = ({ children }: { children: React.ReactNode }) => {
@@ -65,13 +67,11 @@ const TeamLeadGuard = ({ children }: { children: React.ReactNode }) => {
     }
 
     const currentSession = authService.getCurrentSession();
-    const isOwnerOrAdmin = authService.isOwnerOrAdmin();
     
-    // For now, allow access to all non-admin users as a temporary fix
-    // TODO: Implement proper Team Lead role detection in session
-    const isTeamLead = !isOwnerOrAdmin && currentSession && !currentSession.owner && !currentSession.is_admin;
+    // Check if user has Team Lead role using role_name field
+    const hasTeamLeadRole = currentSession?.role_name ? isTeamLeadRole(currentSession.role_name) : false;
 
-    if (!isTeamLead) {
+    if (!hasTeamLeadRole) {
       return <Navigate to="/worklenz/unauthorized" replace />;
     }
 

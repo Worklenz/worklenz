@@ -47,6 +47,40 @@
   "yes": "Sim",
   "no": "Não",
   "alreadyImportedRateCardMessage": "Uma tabela de preços já foi importada. Limpe todas as tabelas de preços importadas para adicionar uma nova.",
+
+  "noCurrenciesFound": "Nenhuma moeda encontrada",
+  "unknownProject": "Projeto Desconhecido",
+
+  "messages": {
+    "projectIdNotFound": "ID do projeto não encontrado",
+    "financeDataExportedSuccessfully": "Dados financeiros exportados com sucesso",
+    "failedToExportFinanceData": "Falha ao exportar dados financeiros",
+    "noPermissionToChangeCurrency": "Você não tem permissão para alterar a moeda do projeto",
+    "projectCurrencyUpdatedSuccessfully": "Moeda do projeto atualizada com sucesso",
+    "failedToUpdateProjectCurrency": "Falha ao atualizar a moeda do projeto",
+    "noPermissionToChangeBudget": "Você não tem permissão para alterar o orçamento do projeto",
+    "pleaseEnterValidBudgetAmount": "Por favor, insira um valor de orçamento válido",
+    "projectBudgetUpdatedSuccessfully": "Orçamento do projeto atualizado com sucesso",
+    "failedToUpdateProjectBudget": "Falha ao atualizar o orçamento do projeto"
+  },
+
+  "alerts": {
+    "businessPlanRequired": {
+      "message": "Plano de Negócios Necessário",
+      "description": "Os recursos financeiros do projeto estão disponíveis apenas nos planos Business e Enterprise. Atualize seu plano para acessar esses recursos."
+    },
+    "limitedAccess": {
+      "message": "Acesso Limitado",
+      "financeDescription": "Você pode visualizar dados financeiros, mas não pode editar custos fixos. Apenas gerentes de projeto, administradores de equipe e proprietários de equipe podem fazer alterações.",
+      "ratecardDescription": "Você pode visualizar dados da tabela de preços, mas não pode editar taxas ou gerenciar atribuições de membros. Apenas gerentes de projeto, administradores de equipe e proprietários de equipe podem fazer alterações."
+    }
+  },
+
+  "tooltips": {
+    "availableOnlyOnBusinessPlan": "Disponível apenas no plano Business",
+    "budgetCalculationSettings": "Configurações de Orçamento e Cálculo"
+  },
+
   "budgetOverviewTooltips": {
     "manualBudget": "Valor do orçamento manual do projeto definido pelo gerente do projeto",
     "totalActualCost": "Custo total real incluindo custos fixos",
@@ -81,6 +115,7 @@
     "projectBudget": "Orçamento do Projeto",
     "projectBudgetTooltip": "Orçamento total alocado para este projeto",
     "currency": "Moeda",
+    "currencyPlaceholder": "Selecione a moeda",
     "costCalculationMethod": "Método de Cálculo de Custo",
     "calculationMethod": "Método de Cálculo",
     "workingHoursPerDay": "Horas de Trabalho por Dia",

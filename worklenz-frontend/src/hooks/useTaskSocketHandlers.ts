@@ -86,6 +86,7 @@ export const useTaskSocketHandlers = () => {
   const { loadingAssignees, taskGroups } = useAppSelector((state: any) => state.taskReducer);
   const { projectId } = useAppSelector((state: any) => state.projectReducer);
   const currentGroupingV3 = useAppSelector(selectCurrentGroupingV3);
+  const enhancedKanbanGroupBy = useAppSelector((state: any) => state.enhancedKanbanReducer.groupBy);
 
   // Memoize socket event handlers
   const handleAssigneesUpdate = useCallback(
@@ -188,9 +189,8 @@ export const useTaskSocketHandlers = () => {
         dispatch(updateTaskLabel(labels)),
         dispatch(setTaskLabels(labels)),
         labels.is_new && dispatch(fetchLabels()),
-        // Remove unnecessary refetches - real-time updates handle this
-        // dispatch(fetchLabels()),
-        // projectId && dispatch(fetchLabelsByProject(projectId)),
+        // When a new label is created, update the labels filter dropdown by fetching project labels
+        labels.is_new && projectId && dispatch(fetchLabelsByProject(projectId)),
       ]);
 
       // Update enhanced kanban slice
@@ -203,17 +203,16 @@ export const useTaskSocketHandlers = () => {
     (response: ITaskListStatusChangeResponse) => {
       if (!response) return;
 
-      console.log('[DEBUG] Task status change response:', {
-        taskId: response.id,
-        completed_at: response.completed_at,
-        statusCategory: response.statusCategory,
-      });
-
       if (response.completed_deps === false) {
         alertService.error(
           'Task is not completed',
           'Please complete the task dependencies before proceeding'
         );
+        // CRITICAL FIX: Prevent any UI updates when dependencies are not met
+        // Refetch tasks to revert any optimistic updates
+        if (projectId) {
+          dispatch(fetchTasksV3(projectId));
+        }
         return;
       }
 
@@ -260,24 +259,19 @@ export const useTaskSocketHandlers = () => {
             // If task doesn't exist in Redux, create minimal task object
             id: response.id,
             status: response.status_id || newStatusValue,
+            priority: '', // Add required priority field
             progress: typeof response.complete_ratio === 'number' ? response.complete_ratio : 0,
             complete_ratio: response.complete_ratio,
             completedAt: response.completed_at,
             completed_at: response.completed_at,
             updatedAt: new Date().toISOString(),
+            created_at: new Date().toISOString(), // Add required created_at field
+            updated_at: new Date().toISOString(), // Add required updated_at field
             title: '',
             name: '',
           } as Task);
 
       dispatch(updateTask(taskUpdate));
-
-      console.log('[DEBUG] Updated task in Redux:', {
-        taskId: response.id,
-        completedAt: response.completed_at,
-        completed_at: response.completed_at,
-        currentTaskBefore: currentTask?.completedAt,
-        taskExists: !!currentTask,
-      });
 
       // Handle group movement ONLY if grouping by status and task exists
       if (currentTask && groups && groups.length > 0 && currentGrouping === 'status') {
@@ -450,12 +444,12 @@ export const useTaskSocketHandlers = () => {
               })
             );
           } else if (!targetGroup && response.priority_id) {
-            console.log('🔧 Target priority group not found for priority:', newPriorityValue);
+            // Target priority group not found
           } else {
-            console.log('🔧 No group movement needed for priority change');
+            // No group movement needed for priority change
           }
         } else {
-          console.log('🔧 Not grouped by priority, skipping group movement');
+          // Not grouped by priority, skipping group movement
         }
       }
     },
@@ -602,17 +596,17 @@ export const useTaskSocketHandlers = () => {
                 })
               );
             } else if (!targetGroup && newPhaseValue) {
-              console.log('🔧 Target phase group not found for phase:', newPhaseValue);
+              // Target phase group not found
             } else {
-              console.log('🔧 No group movement needed for phase change');
+              // No group movement needed for phase change
             }
-          } else {
-            console.log('🔧 Not grouped by phase, skipping group movement');
           }
+        } else {
+          // Not grouped by phase, skipping group movement
         }
       }
     },
-    [dispatch, currentGroupingV3, projectId]
+    [dispatch, currentGroupingV3]
   );
 
   const handleStartDateChange = useCallback(
@@ -714,15 +708,19 @@ export const useTaskSocketHandlers = () => {
 
   const handleNewTaskReceived = useCallback(
     (response: any) => {
+      // Update BOTH task-management slice (for task list) AND enhanced kanban slice
+      // They should work independently with their own grouping settings
+      
       handleTaskReceivedUtil(response, {
         dispatch,
-        currentGroupingV3,
+        currentGroupingV3: currentGroupingV3,
+        enhancedKanbanGroupBy: enhancedKanbanGroupBy,
         trackEvent: trackMixpanelEvent,
         subtaskEventName: evt_project_task_list_create_subtask,
         taskEventName: evt_project_task_create,
       });
     },
-    [dispatch, trackMixpanelEvent, currentGroupingV3]
+    [dispatch, trackMixpanelEvent, currentGroupingV3, enhancedKanbanGroupBy]
   );
 
   const handleTaskProgressUpdated = useCallback(
@@ -802,20 +800,31 @@ export const useTaskSocketHandlers = () => {
   );
 
   const handleCustomColumnUpdate = useCallback(
-    (data: { task_id: string; column_key: string; value: string }) => {
-      if (!data || !data.task_id || !data.column_key) return;
+    (
+      data:
+        | string
+        | {
+            task_id: string;
+            column_key: string;
+            value: string | number | boolean | string[] | null;
+          }
+    ) => {
+      const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+
+      if (!parsedData || !parsedData.task_id || !parsedData.column_key) return;
 
       // Update the task-management slice for task-list-v2 components
-      const currentTask = store.getState().taskManagement.entities[data.task_id];
+      const currentTask = store.getState().taskManagement.entities[parsedData.task_id];
       if (currentTask) {
         const updatedCustomColumnValues = {
           ...currentTask.custom_column_values,
-          [data.column_key]: data.value,
+          [parsedData.column_key]: parsedData.value,
         };
 
         const updatedTask: Task = {
           ...currentTask,
           custom_column_values: updatedCustomColumnValues,
+          updatedAt: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
 
@@ -829,6 +838,37 @@ export const useTaskSocketHandlers = () => {
   const handleTaskAssigneesChange = useCallback((data: { assigneeIds: string[] }) => {
     if (!data || !data.assigneeIds) return;
   }, []);
+
+  // Handler for billable status changes
+  const handleBillableChange = useCallback(
+    (data: { id: string; billable: boolean; error?: string }) => {
+      if (!data || data.error) return;
+
+      // Update the task drawer if this task is currently open
+      const state = store.getState();
+      const currentTaskId = state.taskDrawerReducer?.selectedTaskId;
+      
+      if (currentTaskId === data.id) {
+        // Import the action dynamically to avoid circular dependencies
+        import('@/features/task-drawer/task-drawer.slice').then(({ setTaskBillable }) => {
+          dispatch(setTaskBillable({ id: data.id, billable: data.billable }));
+        });
+      }
+
+      // Update the task-management slice for task-list-v2 components
+      const currentTask = state.taskManagement.entities[data.id];
+      if (currentTask) {
+        const updatedTask: Task = {
+          ...currentTask,
+          billable: data.billable,
+          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        dispatch(updateTask(updatedTask));
+      }
+    },
+    [dispatch]
+  );
 
   // Handler for timer start events
   const handleTimerStart = useCallback(
@@ -904,9 +944,6 @@ export const useTaskSocketHandlers = () => {
       try {
         if (!Array.isArray(data) || data.length === 0) return;
 
-        // DEBUG: Log the data received from the backend
-        console.log('[TASK_SORT_ORDER_CHANGE] Received data:', data);
-
         // Get canonical lists from Redux
         const state = store.getState();
         const priorityList = state.priorityReducer?.priorities || [];
@@ -961,6 +998,14 @@ export const useTaskSocketHandlers = () => {
     [dispatch]
   );
 
+  // Handler for PROJECT_UPDATES_AVAILABLE event (e.g., task deletion)
+  const handleProjectUpdatesAvailable = useCallback(() => {
+    // Refresh task list when project updates are available (includes task deletion, creation, etc.)
+    if (projectId) {
+      dispatch(fetchTasksV3(projectId));
+    }
+  }, [dispatch, projectId]);
+
   // Register socket event listeners
   useEffect(() => {
     if (!socket) return;
@@ -968,6 +1013,7 @@ export const useTaskSocketHandlers = () => {
     const eventHandlers = [
       { event: SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), handler: handleAssigneesUpdate },
       { event: SocketEvents.TASK_ASSIGNEES_CHANGE.toString(), handler: handleTaskAssigneesChange },
+      { event: SocketEvents.TASK_BILLABLE_CHANGE.toString(), handler: handleBillableChange },
       { event: SocketEvents.TASK_LABELS_CHANGE.toString(), handler: handleLabelsChange },
       { event: SocketEvents.CREATE_LABEL.toString(), handler: handleLabelsChange },
       { event: SocketEvents.TASK_STATUS_CHANGE.toString(), handler: handleTaskStatusChange },
@@ -999,6 +1045,10 @@ export const useTaskSocketHandlers = () => {
       { event: SocketEvents.TASK_TIMER_START.toString(), handler: handleTimerStart },
       { event: SocketEvents.TASK_TIMER_STOP.toString(), handler: handleTimerStop },
       { event: SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), handler: handleTaskSortOrderChange },
+      {
+        event: SocketEvents.PROJECT_UPDATES_AVAILABLE.toString(),
+        handler: handleProjectUpdatesAvailable,
+      },
     ];
 
     // Register all event listeners
@@ -1016,6 +1066,7 @@ export const useTaskSocketHandlers = () => {
     socket,
     handleAssigneesUpdate,
     handleTaskAssigneesChange,
+    handleBillableChange,
     handleLabelsChange,
     handleTaskStatusChange,
     handleTaskProgress,
@@ -1033,5 +1084,6 @@ export const useTaskSocketHandlers = () => {
     handleTimerStart,
     handleTimerStop,
     handleTaskSortOrderChange,
+    handleProjectUpdatesAvailable,
   ]);
 };

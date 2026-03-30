@@ -13,6 +13,7 @@ import { useGetProjectWorkloadQuery, useGetWorkloadMembersQuery } from '@/api/pr
 import projectWorkloadApi from '@/api/project-workload/project-workload.api.service';
 import { setWorkloadView, setDateRange } from '@/features/project-workload/projectWorkloadSlice';
 import dayjs from 'dayjs';
+import './project-view-workload.css'; // Import CSS file
 
 type WorkloadView = 'chart' | 'calendar' | 'table';
 
@@ -82,63 +83,27 @@ const ProjectViewWorkload = React.memo(() => {
       };
       dispatch(setDateRange(defaultRange));
     }
-  }, [dateRange.startDate, dateRange.endDate, dispatch]); // Run when date range is missing
-
-  // Debug logging and state monitoring
-  useEffect(() => {
-    console.log('ProjectViewWorkload State:', {
-      projectId,
-      dateRange,
-      isLoading: finalLoading,
-      isFetching: finalFetching,
-      hasData: !!finalData,
-      dataLength: finalData?.members?.length || finalData?.body?.length || 0,
-      error: finalError,
-      usingFallback: error && fallbackData,
-    });
-  }, [projectId, dateRange, finalLoading, finalFetching, finalData, finalError, error, fallbackData]);
+  }, [dateRange.startDate, dateRange.endDate, dispatch]);
 
   // Force refetch when projectId or dateRange changes
   useEffect(() => {
     if (projectId) {
-      console.log('Project or date range changed, refetching workload data for:', projectId);
-      // Small delay to ensure component is fully mounted and state is updated
-      const timeoutId = setTimeout(() => {
-        finalRefetch();
-      }, 100);
-      return () => clearTimeout(timeoutId);
+      finalRefetch();
     }
   }, [projectId, dateRange.startDate, dateRange.endDate, finalRefetch]);
 
-  // Retry mechanism for failed loads
   const handleRetry = useCallback(() => {
-    console.log('Manual retry triggered');
     finalRefetch();
   }, [finalRefetch]);
 
-  // Enhanced refetch handler with debugging
   const handleRefresh = useCallback(() => {
-    console.log('=== REFRESH TRIGGERED ===');
-    console.log('Current state:', {
-      projectId,
-      dateRange,
-      isLoading: finalLoading,
-      isFetching: finalFetching,
-      hasData: !!finalData,
-      error: finalError
-    });
-    
     try {
-      // Invalidate cache first to ensure fresh data
       dispatch(projectWorkloadApi.util.invalidateTags(['ProjectWorkload']));
-      
-      // Force a fresh refetch
       finalRefetch();
-      console.log('Refetch completed successfully');
     } catch (error) {
-      console.error('Error calling refetch:', error);
+      console.error('Error refreshing workload:', error);
     }
-  }, [finalRefetch, projectId, dateRange, finalLoading, finalFetching, finalData, finalError, dispatch]);
+  }, [finalRefetch, dispatch]);
 
   // Memoize the content to prevent unnecessary re-renders
   const memoizedContent = useMemo(() => {
@@ -237,13 +202,15 @@ const ProjectViewWorkload = React.memo(() => {
   return (
     <Flex
       vertical
-      gap={16}
       style={{
-        height: '100%',
-        padding: '16px 0',
+        height: 'calc(100vh - 220px)', // Adjust based on your header height
+        paddingLeft: '24px',
+        paddingRight: '24px',
+        paddingTop: '16px',
       }}
     >
-      <Flex justify="space-between" align="center" wrap="wrap" gap={16}>
+      {/* Fixed Header Section - View Tabs and Filters */}
+      <Flex justify="space-between" align="center" wrap="wrap" gap={16} style={{ marginBottom: '16px' }}>
         <Segmented
           value={localView}
           onChange={handleViewChange}
@@ -260,18 +227,35 @@ const ProjectViewWorkload = React.memo(() => {
         />
       </Flex>
 
-      {finalLoading || finalFetching ? <Skeleton active paragraph={{ rows: 4 }} style={{ paddingTop: 16 }} /> : <>
-        <WorkloadOverview data={finalData as any} isLoading={finalLoading} />
-
-        <Card
+      {/* Scrollable Content Section */}
+      <div 
+        className="workload-scroll-container" 
+        style={{ 
+          flex: 1,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+        }}
+      >
+        <Flex
+          vertical
+          gap={16}
           style={{
-            flex: 1,
-            overflow: 'auto',
+            paddingBottom: '24px',
           }}
         >
-          {renderContent()}
-        </Card>
-      </>}
+          {finalLoading || finalFetching ? (
+            <Skeleton active paragraph={{ rows: 4 }} style={{ paddingTop: 16 }} />
+          ) : (
+            <>
+              <WorkloadOverview data={finalData as any} isLoading={finalLoading} />
+
+              <Card>
+                {renderContent()}
+              </Card>
+            </>
+          )}
+        </Flex>
+      </div>
     </Flex>
   );
 });

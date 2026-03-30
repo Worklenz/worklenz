@@ -1,5 +1,6 @@
 {
   "rename": "重命名",
+  "renameStatus": "重命名状态",
   "delete": "删除",
   "addTask": "添加任务",
   "addSectionButton": "添加部分",

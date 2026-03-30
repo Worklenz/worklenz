@@ -96,6 +96,8 @@ export const reportingProjectsApiService = {
       project_managers?: string;
       teams?: string;
       archived?: boolean;
+      index?: number;
+      size?: number;
     }
   ): Promise<IServerResponse<{
     groups: Array<{

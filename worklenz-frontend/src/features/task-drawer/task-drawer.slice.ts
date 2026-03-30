@@ -48,12 +48,18 @@ export const fetchTask = createAsyncThunk(
   }
 );
 
+const resetTimeLogEditing = {
+  isEditing: false,
+  logBeingEdited: null,
+};
+
 const taskDrawerSlice = createSlice({
   name: 'taskDrawer',
   initialState,
   reducers: {
     setSelectedTaskId: (state, action) => {
       state.selectedTaskId = action.payload;
+      state.timeLogEditing = resetTimeLogEditing; // ← reset when switching tasks
     },
     setShowTaskDrawer: (state, action) => {
       state.showTaskDrawer = action.payload;
@@ -65,6 +71,7 @@ const taskDrawerSlice = createSlice({
       state.loadingTask = action.payload;
     },
     setTaskStatus: (state, action: PayloadAction<ITaskListStatusChangeResponse>) => {
+      if (!action.payload) return;
       const { status_id, color_code, id: taskId, color_code_dark } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
         state.taskFormViewModel.task.status_id = status_id;
@@ -73,18 +80,21 @@ const taskDrawerSlice = createSlice({
       }
     },
     setStartDate: (state, action: PayloadAction<IProjectTask>) => {
+      if (!action.payload) return;
       const { start_date, id: taskId } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
         state.taskFormViewModel.task.start_date = start_date;
       }
     },
     setTaskEndDate: (state, action: PayloadAction<IProjectTask>) => {
+      if (!action.payload) return;
       const { end_date, id: taskId } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
         state.taskFormViewModel.task.end_date = end_date;
       }
     },
     setTaskAssignee: (state, action: PayloadAction<IProjectTask>) => {
+      if (!action.payload) return;
       const { assignees, id: taskId, names } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
         state.taskFormViewModel.task.assignees = (assignees || []).map(m => m.team_member_id);
@@ -92,12 +102,20 @@ const taskDrawerSlice = createSlice({
       }
     },
     setTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
+      if (!action.payload) return;
       const { priority_id, id: taskId } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
         state.taskFormViewModel.task.priority_id = priority_id;
       }
     },
+    setTaskPhase: (state, action: PayloadAction<{ phase_id: string | null; id: string }>) => {
+      const { phase_id, id: taskId } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        state.taskFormViewModel.task.phase_id = phase_id;
+      }
+    },
     setTaskLabels: (state, action: PayloadAction<ILabelsChangeResponse>) => {
+      if (!action.payload) return;
       const { all_labels, id: taskId } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
         state.taskFormViewModel.task.labels = all_labels || [];
@@ -122,9 +140,40 @@ const taskDrawerSlice = createSlice({
         task_id: string;
       }>
     ) => {
+      if (!action.payload) return;
       const { schedule_id, task_id } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === task_id) {
         state.taskFormViewModel.task.schedule_id = schedule_id;
+      }
+    },
+    setTaskBillable: (
+      state,
+      action: PayloadAction<{
+        id: string;
+        billable: boolean;
+      }>
+    ) => {
+      if (!action.payload) return;
+      const { id, billable } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === id) {
+        state.taskFormViewModel.task.billable = billable;
+      }
+    },
+    setTaskCustomColumnValue: (
+      state,
+      action: PayloadAction<{
+        taskId: string;
+        columnKey: string;
+        value: string | number | boolean | string[] | null;
+      }>
+    ) => {
+      const { taskId, columnKey, value } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        if (!state.taskFormViewModel.task.custom_column_values) {
+          state.taskFormViewModel.task.custom_column_values = {};
+        }
+
+        state.taskFormViewModel.task.custom_column_values[columnKey] = value;
       }
     },
     setNavigationContext: (
@@ -145,6 +194,7 @@ const taskDrawerSlice = createSlice({
         const nextIndex = currentIndex + 1;
         state.selectedTaskId = taskIds[nextIndex];
         state.navigationContext.currentIndex = nextIndex;
+        state.timeLogEditing = resetTimeLogEditing; // ← reset when switching tasks
       }
     },
     navigateToPreviousTask: state => {
@@ -154,10 +204,10 @@ const taskDrawerSlice = createSlice({
         const prevIndex = currentIndex - 1;
         state.selectedTaskId = taskIds[prevIndex];
         state.navigationContext.currentIndex = prevIndex;
+        state.timeLogEditing = resetTimeLogEditing; // ← reset when switching tasks
       }
     },
     syncNavigationIndex: state => {
-      // Sync the current index with the selected task ID
       if (!state.navigationContext || !state.selectedTaskId) return;
       const { taskIds } = state.navigationContext;
       const actualIndex = taskIds.indexOf(state.selectedTaskId);
@@ -193,10 +243,13 @@ export const {
   setTaskEndDate,
   setTaskAssignee,
   setTaskPriority,
+  setTaskPhase,
   setTaskLabels,
   setTaskSubscribers,
   setTimeLogEditing,
   setTaskRecurringSchedule,
+  setTaskBillable,
+  setTaskCustomColumnValue,
   setNavigationContext,
   navigateToNextTask,
   navigateToPreviousTask,

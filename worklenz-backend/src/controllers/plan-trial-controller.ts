@@ -4,6 +4,7 @@ import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { PlanTrialService } from "../services/plan-trial-service";
+import { AppSumoLtdEntitlementService } from "../services/appsumo-ltd-entitlement-service";
 
 export default class PlanTrialController extends WorklenzControllerBase {
   /**
@@ -12,13 +13,38 @@ export default class PlanTrialController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async checkBusinessTrialEligibility(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const userId = req.user?.id;
+    const userId = req.user?.owner_id || req.user?.id;
 
     if (!userId) {
       return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
     }
 
     try {
+      const unlockCount = AppSumoLtdEntitlementService.getBusinessUnlockCodeCount();
+      const entitlement = await AppSumoLtdEntitlementService.getEntitlementForUser(userId);
+
+      // AppSumo LTD users should not use Business trials:
+      // - < 5 codes: they should buy/redeem more codes to unlock Business
+      // - >= 5 codes: Business is already unlocked
+      if (entitlement.is_ltd) {
+        await PlanTrialService.cancelPlanTrialByTier(
+          userId,
+          "BUSINESS_LARGE",
+          entitlement.redeemed_codes_count >= unlockCount
+            ? "appsumo_ltd_business_unlocked"
+            : "appsumo_ltd_not_eligible_for_business_trial"
+        );
+
+        return res.status(200).send(
+          new ServerResponse(true, {
+            can_start_trial: false,
+            redeemed_codes_count: entitlement.redeemed_codes_count,
+            required_codes_for_business: unlockCount,
+            appsumo_business_eligible: entitlement.appsumo_business_eligible,
+          })
+        );
+      }
+
       const trialInfo = await PlanTrialService.getPlanTrialInfo(userId, "BUSINESS_LARGE");
 
       return res.status(200).send(new ServerResponse(true, trialInfo));
@@ -33,18 +59,35 @@ export default class PlanTrialController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async startBusinessTrial(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const userId = req.user?.id;
+    const userId = req.user?.owner_id || req.user?.id;
     const organizationId = req.user?.organization_id;
 
-    console.log("DEBUG: startBusinessTrial - userId:", userId, "organizationId:", organizationId);
-    console.log("DEBUG: startBusinessTrial - req.user:", req.user ? "exists" : "null");
-
     if (!userId || !organizationId) {
-      console.log("DEBUG: startBusinessTrial - Missing userId or organizationId");
       return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
     }
 
     try {
+      const unlockCount = AppSumoLtdEntitlementService.getBusinessUnlockCodeCount();
+      const entitlement = await AppSumoLtdEntitlementService.getEntitlementForUser(userId);
+
+      if (entitlement.is_ltd) {
+        await PlanTrialService.cancelPlanTrialByTier(
+          userId,
+          "BUSINESS_LARGE",
+          "appsumo_ltd_not_eligible_for_business_trial"
+        );
+
+        if (entitlement.redeemed_codes_count >= unlockCount) {
+          return res
+            .status(400)
+            .send(new ServerResponse(false, null, "Business plan is already unlocked for your AppSumo account"));
+        }
+
+        return res
+          .status(403)
+          .send(new ServerResponse(false, null, `Redeem ${unlockCount} AppSumo codes to unlock Business plan features`));
+      }
+
       // Check if user is already on a paid business plan
       // Note: We'll check subscription status from the session or database
       // For now, allow trial regardless of current plan
@@ -78,14 +121,29 @@ export default class PlanTrialController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async getTrialStatus(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const userId = req.user?.id;
+    const userId = req.user?.owner_id || req.user?.id;
 
     if (!userId) {
       return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
     }
 
     try {
-      const activeTrial = await PlanTrialService.getActivePlanTrial(userId);
+      const unlockCount = AppSumoLtdEntitlementService.getBusinessUnlockCodeCount();
+      const entitlement = await AppSumoLtdEntitlementService.getEntitlementForUser(userId);
+
+      let activeTrial = await PlanTrialService.getActivePlanTrial(userId);
+
+      // If an AppSumo LTD user somehow has an active Business trial, auto-cancel it.
+      if (entitlement.is_ltd && activeTrial?.tier_name === "BUSINESS_LARGE") {
+        await PlanTrialService.cancelPlanTrialByTier(
+          userId,
+          "BUSINESS_LARGE",
+          entitlement.redeemed_codes_count >= unlockCount
+            ? "appsumo_ltd_business_unlocked"
+            : "appsumo_ltd_not_eligible_for_business_trial"
+        );
+        activeTrial = null;
+      }
 
       return res.status(200).send(new ServerResponse(true, {
         has_active_trial: !!activeTrial,

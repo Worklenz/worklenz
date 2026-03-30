@@ -16,7 +16,6 @@ interface AddTaskRowProps {
     width: string;
     isSticky?: boolean;
   }>;
-  onTaskAdded: (rowId: string) => void;
   rowId: string; // Unique identifier for this add task row
   autoFocus?: boolean; // Whether this row should auto-focus on mount
 }
@@ -28,7 +27,6 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
     groupValue,
     projectId,
     visibleColumns,
-    onTaskAdded,
     rowId,
     autoFocus = false,
   }) => {
@@ -85,8 +83,10 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
         if (socket && connected) {
           socket.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
           setTaskName('');
-          // Keep the input active and notify parent to create new row
-          onTaskAdded(rowId);
+          // Keep the input focused and ready for the next task - don't create new rows
+          setTimeout(() => {
+            inputRef.current?.focus();
+          }, 100);
           // Task refresh will be handled by socket response listener
         } else {
           console.warn('Socket not connected, unable to create task');
@@ -102,8 +102,6 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
       socket,
       connected,
       currentSession,
-      onTaskAdded,
-      rowId,
     ]);
 
     const handleCancel = useCallback(() => {
@@ -123,8 +121,27 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
     );
 
     const renderColumn = useCallback(
-      (columnId: string, width: string) => {
-        const baseStyle = { width };
+      (columnId: string, width: string, index: number, isSticky?: boolean) => {
+        // Calculate left position for sticky columns
+        let leftPosition = 0;
+        if (isSticky) {
+          for (let i = 0; i < index; i++) {
+            const prevColumn = visibleColumns[i];
+            if (prevColumn.isSticky) {
+              leftPosition += parseInt(prevColumn.width.replace('px', ''));
+            }
+          }
+        }
+
+        const baseStyle = {
+          width,
+          ...(isSticky && {
+            position: 'sticky' as const,
+            left: leftPosition,
+            zIndex: 10,
+            backgroundColor: 'inherit',
+          }),
+        };
 
         switch (columnId) {
           case 'dragHandle':
@@ -184,13 +201,15 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
             );
         }
       },
-      [isAdding, taskName, handleAddTask, handleCancel, handleKeyDown, t]
+      [isAdding, taskName, handleAddTask, handleCancel, handleKeyDown, t, visibleColumns]
     );
 
     return (
       <div className="flex items-center min-w-max px-1 py-0.5 hover:bg-gray-50 dark:hover:bg-gray-800 min-h-[36px]">
         {visibleColumns.map((column, index) => (
-          <React.Fragment key={column.id}>{renderColumn(column.id, column.width)}</React.Fragment>
+          <React.Fragment key={column.id}>
+            {renderColumn(column.id, column.width, index, column.isSticky)}
+          </React.Fragment>
         ))}
       </div>
     );

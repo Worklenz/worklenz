@@ -24,7 +24,10 @@
   "lastUpdatedColumn": "Última Atualização",
   "lastupdatedColumn": "Última Atualização",
   "reporterColumn": "Reportador",
+  "moveColumnHandle": "Mover coluna",
   "dueTimeColumn": "Hora de Vencimento",
+  "activeParentBadge": "Pai ativo",
+  "activeParentTooltip": "A tarefa pai não está arquivada",
   "todoSelectorText": "A Fazer",
   "doingSelectorText": "Fazendo",
   "doneSelectorText": "Feito",
@@ -38,6 +41,7 @@
 
   "addTaskText": "Adicionar Tarefa",
   "addSubTaskText": "+ Adicionar Subtarefa",
+  "addSubTaskInputPlaceholder": "Digite o nome da subtarefa e pressione Enter para salvar",
   "noTasksInGroup": "Nenhuma tarefa neste grupo",
   "dropTaskHere": "Soltar tarefa aqui",
   "addTaskInputPlaceholder": "Digite sua tarefa e pressione enter",
@@ -56,7 +60,7 @@
   "pendingInvitation": "Convite Pendente",
 
   "contextMenu": {
-    "duplicateTask":"Tarefa duplicada",
+    "duplicateTask": "Tarefa duplicada",
     "assignToMe": "Atribuir a mim",
     "copyLink": "Copiar link da tarefa",
     "linkCopied": "Link copiado para a área de transferência",
@@ -91,6 +95,19 @@
     "peopleField": "Campo de pessoas",
     "noDate": "Sem data",
     "unsupportedField": "Tipo de campo não suportado",
+    "datePlaceholder": "Definir data",
+    "numberPlaceholder": "0",
+    "percentagePlaceholder": "0%",
+    "selectOption": "Selecionar opção",
+    "noOptionsAvailable": "Nenhuma opção disponível",
+    "updating": "Atualizando...",
+    "peopleDropdown": {
+      "searchMembers": "Pesquisar membros...",
+      "pending": "Pendente",
+      "loadingMembers": "Carregando membros...",
+      "noMembersFound": "Nenhum membro encontrado",
+      "inviteMember": "Convidar membro"
+    },
 
     "modal": {
       "addFieldTitle": "Adicionar campo",
@@ -115,6 +132,7 @@
 
     "fieldTypes": {
       "people": "Pessoas",
+      "text": "Texto",
       "number": "Número",
       "date": "Data",
       "selection": "Seleção",

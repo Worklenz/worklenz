@@ -24,6 +24,9 @@
   "paymentMethod": "Método de Pago",
   "status": "Estado",
   "ltdUsers": "Puedes agregar hasta {{ltd_users}} usuarios.",
+  "appsumoBusinessUnlockTitle": "Desbloquea el plan Business con 5 códigos de AppSumo",
+  "appsumoBusinessUnlockDescription": "Canjea {{required}} códigos de AppSumo para desbloquear automáticamente las funciones del plan Business. Has canjeado {{count}} de {{required}} códigos.",
+  "redeemAnotherCode": "Canjear otro código",
 
   "drawerTitle": "Canjear Código",
   "label": "Canjear Código",
@@ -120,6 +123,8 @@
   "errorSwitchingPricingModel": "Error al cambiar el modelo de precios",
   "switchTo": "Cambiar a",
   "pricing": "precios",
+  "managementUrl": "URL de gestión",
+  "updateCardDetails": "Actualizar datos de la tarjeta",
 
   "upgradeToUnlockFeatures": "Actualizar para desbloquear funciones premium",
   "currentPlanLimits": "El plan actual incluye:",

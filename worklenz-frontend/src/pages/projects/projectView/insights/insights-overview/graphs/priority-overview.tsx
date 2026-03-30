@@ -78,11 +78,17 @@ const PriorityOverview = () => {
   };
 
   const data = {
-    labels: stats.map(stat => stat.name),
+    labels: stats.map(stat => stat.name || 'No Priority'),
     datasets: [
       {
         label: 'Tasks',
-        data: stats.map(stat => stat.data),
+        data: stats.map(stat => {
+          // Handle case where data might be an array or contain null
+          if (Array.isArray(stat.data)) {
+            return stat.data.filter(d => d !== null)[0] || 0;
+          }
+          return stat.data || 0;
+        }),
         backgroundColor: stats.map(stat => stat.color),
       },
     ],

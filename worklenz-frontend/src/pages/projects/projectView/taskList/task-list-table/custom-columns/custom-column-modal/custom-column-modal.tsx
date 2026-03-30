@@ -148,6 +148,12 @@ const CustomColumnModal = () => {
       disabled: false,
     },
     {
+      key: 'text',
+      value: 'text',
+      label: t('customColumns.fieldTypes.text'),
+      disabled: false,
+    },
+    {
       key: 'number',
       value: 'number',
       label: t('customColumns.fieldTypes.number'),
@@ -353,11 +359,7 @@ const CustomColumnModal = () => {
 
   return (
     <Modal
-      title={
-        customColumnModalType === 'create'
-          ? t('customColumns.modal.addFieldTitle')
-          : t('customColumns.modal.editFieldTitle')
-      }
+      title={t('customColumns.modal.addFieldTitle')}
       centered
       open={isCustomColumnModalOpen}
       onCancel={() => {

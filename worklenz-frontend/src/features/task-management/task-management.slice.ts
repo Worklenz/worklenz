@@ -62,6 +62,7 @@ const initialState: TaskManagementState = {
   entities: {},
   loading: false,
   error: null,
+  loadedProjectId: null,
   groups: [],
   grouping: undefined,
   selectedPriorities: [],
@@ -76,7 +77,7 @@ const initialState: TaskManagementState = {
   sortField: '',
   sortOrder: 'ASC',
   isOpenDuplicateTaskModal: false,
-  duplicateTask: {}
+  duplicateTask: {},
 };
 
 // Async thunk to fetch tasks from API
@@ -203,6 +204,7 @@ export const fetchTasks = createAsyncThunk(
           comments_count: task.comments_count || 0,
           attachments_count: task.attachments_count || 0,
           has_dependencies: task.has_dependencies || false,
+          has_subscribers: task.has_subscribers || false,
           schedule_id: task.schedule_id || null,
           reporter: task.reporter || undefined,
         }))
@@ -270,21 +272,10 @@ export const fetchTasksV3 = createAsyncThunk(
 
       const response = await tasksApiService.getTaskListV3(config);
 
-      // Ensure tasks are properly normalized
-      const tasks: Task[] = response.body.allTasks.map((task: any) => {
+      const normalizeTask = (task: any): Task => {
         const now = new Date().toISOString();
 
-        // Debug log to check if completedAt is in the API response
-        if (task.completedAt || task.completed_at) {
-          console.log('[DEBUG fetchTasksV3] Task with completed date:', {
-            id: task.id,
-            title: task.title,
-            completedAt: task.completedAt,
-            completed_at: task.completed_at,
-          });
-        }
-
-        const transformedTask = {
+        const transformedTask: Task = {
           id: task.id,
           task_key: task.task_key || task.key || '',
           title: task.title && task.title.trim() ? task.title.trim() : DEFAULT_TASK_NAME,
@@ -337,10 +328,15 @@ export const fetchTasksV3 = createAsyncThunk(
           updated_at: task.updatedAt || task.updated_at || now,
           completed_at: task.completedAt || task.completed_at || undefined,
           order: typeof task.sort_order === 'number' ? task.sort_order : 0,
-          sub_tasks: task.sub_tasks || [],
+          sub_tasks: (task.sub_tasks || []).map((subtask: any) => normalizeTask(subtask)),
           sub_tasks_count: task.sub_tasks_count || 0,
-          show_sub_tasks: task.show_sub_tasks || false,
+          // Auto-expand tasks that have filtered children (descendants matching the filter)
+          show_sub_tasks: task.show_sub_tasks || task.has_filtered_children || false,
+          has_filtered_children: task.has_filtered_children || false,
           parent_task_id: task.parent_task_id || undefined,
+          parent_task_container_id: task.parent_task_container_id || undefined,
+          is_parent_container: !!task.is_parent_container,
+          parent_task_not_archived: !!task.parent_task_not_archived,
           weight: task.weight || 0,
           color: task.color || undefined,
           statusColor: task.statusColor || undefined,
@@ -348,15 +344,25 @@ export const fetchTasksV3 = createAsyncThunk(
           comments_count: task.comments_count || 0,
           attachments_count: task.attachments_count || 0,
           has_dependencies: task.has_dependencies || false,
+          has_subscribers: task.has_subscribers || false,
           schedule_id: task.schedule_id || null,
           reporter: task.reporter || undefined,
         };
 
         return transformedTask;
-      });
+      };
+
+      const tasks: Task[] = response.body.allTasks.map((task: any) => normalizeTask(task));
+
+      const flattenedTasks: Task[] = [];
+      const visitTask = (currentTask: Task) => {
+        flattenedTasks.push(currentTask);
+        (currentTask.sub_tasks || []).forEach(visitTask);
+      };
+      tasks.forEach(visitTask);
 
       return {
-        allTasks: tasks,
+        allTasks: flattenedTasks,
         groups: response.body.groups,
         grouping: response.body.grouping,
         totalTasks: response.body.totalTasks,
@@ -375,7 +381,11 @@ export const fetchTasksV3 = createAsyncThunk(
 export const fetchSubTasks = createAsyncThunk(
   'taskManagement/fetchSubTasks',
   async (
-    { taskId, projectId }: { taskId: string; projectId: string },
+    {
+      taskId,
+      projectId,
+      parentTaskIdForQuery,
+    }: { taskId: string; projectId: string; parentTaskIdForQuery?: string },
     { rejectWithValue, getState }
   ) => {
     try {
@@ -397,10 +407,11 @@ export const fetchSubTasks = createAsyncThunk(
 
       // Get search value from taskManagement slice
       const searchValue = state.taskManagement.search || '';
+      const archivedState = state.taskManagement.archived;
 
       const config: ITaskListConfigV2 = {
         id: projectId,
-        archived: false,
+        archived: archivedState,
         group: currentGrouping || '',
         field: '',
         order: '',
@@ -411,7 +422,7 @@ export const fetchSubTasks = createAsyncThunk(
         isSubtasksInclude: false,
         labels: selectedLabels,
         priorities: selectedPriorities,
-        parent_task: taskId,
+        parent_task: parentTaskIdForQuery || taskId,
       };
 
       const response = await tasksApiService.getTaskListV3(config);
@@ -444,10 +455,21 @@ export const refreshTaskProgress = createAsyncThunk(
 
 export const duplicateTask = createAsyncThunk(
   'taskManagement/duplicateTask',
-  async ({projectId, taskId, duplicateOptions}: {projectId: string, taskId: string, duplicateOptions: any },{ rejectWithValue }) => {
+  async (
+    {
+      projectId,
+      taskId,
+      duplicateOptions,
+    }: { projectId: string; taskId: string; duplicateOptions: any },
+    { rejectWithValue }
+  ) => {
     try {
       // console.log('Duplicate Task Thunk', projectId, taskId, duplicateOptions);
-      const response = await duplicateTaskApiService.duplicate({task_id: taskId, project_id: projectId, options: duplicateOptions});
+      const response = await duplicateTaskApiService.duplicate({
+        task_id: taskId,
+        project_id: projectId,
+        options: duplicateOptions,
+      });
       return response;
     } catch (error) {
       logger.error('Failed to duplicate task', error);
@@ -536,14 +558,18 @@ export const updateTaskWithSubtasks = createAsyncThunk(
 export const fetchTaskListColumns = createAsyncThunk(
   'taskManagement/fetchTaskListColumns',
   async (projectId: string, { dispatch }) => {
-    const [standardColumns, customColumns] = await Promise.all([
+    const [standardColumns, customColumnsAction] = await Promise.all([
       tasksApiService.fetchTaskListColumns(projectId),
       dispatch(fetchCustomColumns(projectId)),
     ]);
 
+    // Extract the actual payload from the dispatched action
+    // Use unwrap() or check if payload exists
+    const customColumns = customColumnsAction.payload || [];
+
     return {
       standard: standardColumns.body,
-      custom: customColumns.payload,
+      custom: Array.isArray(customColumns) ? customColumns : [],
     };
   }
 );
@@ -637,11 +663,7 @@ const taskManagementSlice = createSlice({
       const updatedTask = action.payload;
       const oldTask = state.entities[updatedTask.id];
 
-      if (
-        oldTask &&
-        state.grouping?.id === IGroupBy.STATUS &&
-        oldTask.status !== updatedTask.status
-      ) {
+      if (oldTask && state.grouping === IGroupBy.STATUS && oldTask.status !== updatedTask.status) {
         // Remove from old status group
         const oldGroup = state.groups.find(group => group.id === oldTask.status);
         if (oldGroup) {
@@ -655,8 +677,42 @@ const taskManagementSlice = createSlice({
         }
       }
     },
-    deleteTask: (state, action: PayloadAction<string>) => {
-      const taskId = action.payload;
+    deleteTask: (state, action: PayloadAction<string | { taskId: string; parentTaskId?: string }>) => {
+      // Handle both string and object payload
+      const taskId = typeof action.payload === 'string' ? action.payload : action.payload.taskId;
+      const parentTaskId = typeof action.payload === 'object' ? action.payload.parentTaskId : undefined;
+      
+      const task = state.entities[taskId];
+      
+      // Determine the parent task ID (from payload or from task entity)
+      const actualParentTaskId = parentTaskId || task?.parent_task_id;
+      
+      // If this is a subtask, update the parent task
+      if (actualParentTaskId) {
+        const parent = state.entities[actualParentTaskId];
+        if (parent) {
+          // Remove from parent's sub_tasks array
+          if (parent.sub_tasks) {
+            parent.sub_tasks = parent.sub_tasks.filter(subtask => subtask.id !== taskId);
+          }
+          // Decrement parent's sub_tasks_count
+          parent.sub_tasks_count = Math.max((parent.sub_tasks_count || 0) - 1, 0);
+        }
+      }
+
+      // Fallback: remove from any parent/container that currently holds this task in sub_tasks.
+      // This handles synthetic archived parent containers where parent_task_id may not match entity key.
+      for (const entityId of Object.keys(state.entities)) {
+        const candidateParent = state.entities[entityId];
+        if (!candidateParent?.sub_tasks || candidateParent.sub_tasks.length === 0) continue;
+        const before = candidateParent.sub_tasks.length;
+        candidateParent.sub_tasks = candidateParent.sub_tasks.filter(subtask => subtask.id !== taskId);
+        if (candidateParent.sub_tasks.length !== before) {
+          candidateParent.sub_tasks_count = Math.max(candidateParent.sub_tasks.length, 0);
+        }
+      }
+      
+      // Delete the task from entities
       delete state.entities[taskId];
       state.ids = state.ids.filter(id => id !== taskId);
       state.groups = state.groups.map(group => ({
@@ -779,7 +835,7 @@ const taskManagementSlice = createSlice({
           group.taskIds = newTasks;
 
           // Update order for affected tasks using the appropriate sort field
-          const sortField = getSortOrderField(state.grouping?.id);
+          const sortField = getSortOrderField(state.grouping);
           newTasks.forEach((id, index) => {
             if (newEntities[id]) {
               newEntities[id] = { ...newEntities[id], [sortField]: index };
@@ -807,7 +863,7 @@ const taskManagementSlice = createSlice({
           // This will be handled by the socket event handler after backend confirmation.
 
           // Update order for affected tasks in both groups using the appropriate sort field
-          const sortField = getSortOrderField(state.grouping?.id);
+          const sortField = getSortOrderField(state.grouping);
           sourceGroup.taskIds.forEach((id, index) => {
             if (newEntities[id]) newEntities[id] = { ...newEntities[id], [sortField]: index };
           });
@@ -857,6 +913,7 @@ const taskManagementSlice = createSlice({
     resetTaskManagement: state => {
       state.loading = false;
       state.error = null;
+      state.loadedProjectId = null;
       state.groups = [];
       state.grouping = undefined;
       state.selectedPriorities = [];
@@ -888,9 +945,14 @@ const taskManagementSlice = createSlice({
     },
     createSubtask: (
       state,
-      action: PayloadAction<{ parentTaskId: string; name: string; projectId: string }>
+      action: PayloadAction<{
+        parentTaskId: string;
+        name: string;
+        projectId: string;
+        reporterName?: string; // Add optional reporter name for optimistic update
+      }>
     ) => {
-      const { parentTaskId, name, projectId } = action.payload;
+      const { parentTaskId, name, projectId, reporterName } = action.payload;
       const parent = state.entities[parentTaskId];
       if (parent) {
         // Create a temporary subtask - the real one will come from the socket
@@ -923,6 +985,7 @@ const taskManagementSlice = createSlice({
           sub_tasks_count: 0,
           show_sub_tasks: false,
           isTemporary: true, // Mark as temporary
+          reporter: reporterName || '', // Include reporter for optimistic update
         };
 
         // Add temporary subtask for immediate UI feedback
@@ -1062,6 +1125,7 @@ const taskManagementSlice = createSlice({
       })
       .addCase(fetchTasksV3.fulfilled, (state, action) => {
         state.loading = false;
+        state.loadedProjectId = action.meta.arg;
         const { allTasks, groups, grouping } = action.payload;
 
         // Preserve existing timer state from old tasks before replacing
@@ -1135,13 +1199,16 @@ const taskManagementSlice = createSlice({
             parent_task_id: parentTaskId,
             is_sub_task: true,
             sub_tasks_count: subtask.sub_tasks_count || 0, // Use actual count from backend
-            show_sub_tasks: false,
+            // Auto-expand subtasks that have filtered children
+            show_sub_tasks: subtask.has_filtered_children || false,
+            has_filtered_children: subtask.has_filtered_children || false,
             // Add indicator fields for icons
             comments_count: subtask.comments_count || 0,
             has_subscribers: subtask.has_subscribers || false,
             attachments_count: subtask.attachments_count || 0,
             has_dependencies: subtask.has_dependencies || false,
             schedule_id: subtask.schedule_id || null,
+            reporter: subtask.reporter || undefined, // Add reporter field mapping
           }));
 
           // Update parent task with subtasks
@@ -1162,7 +1229,9 @@ const taskManagementSlice = createSlice({
         const { taskId } = action.meta.arg;
         state.loadingSubtasks[taskId] = false;
         state.error =
-          action.error.message || action.payload || 'Failed to fetch subtasks. Please try again.';
+          action.error.message ||
+          (action.payload as string) ||
+          'Failed to fetch subtasks. Please try again.';
       })
       .addCase(fetchTasks.pending, state => {
         state.loading = true;
@@ -1198,11 +1267,14 @@ const taskManagementSlice = createSlice({
           index: 1,
           pinned: true,
         });
-        // Process custom columns
-        const customColumns = (action.payload as { custom: any[] }).custom.map((col: any) => ({
-          ...col,
-          isCustom: true,
-        }));
+        // Process custom columns with safety check
+        const customPayload = action.payload.custom;
+        const customColumns = Array.isArray(customPayload)
+          ? customPayload.map((col: any) => ({
+              ...col,
+              isCustom: true,
+            }))
+          : [];
 
         // Merge columns
         state.columns = [...standardColumns, ...customColumns];
@@ -1280,74 +1352,8 @@ export const {
 } = taskManagementSlice.actions;
 
 // Export the selectors
-export const selectAllTasks = (state: RootState) => state.taskManagement.entities;
-
-// Memoized selector to prevent unnecessary re-renders
-export const selectAllTasksArray = createSelector([selectAllTasks], entities =>
-  Object.values(entities)
-);
-export const selectTaskById = (state: RootState, taskId: string) =>
-  state.taskManagement.entities[taskId];
-export const selectTaskIds = (state: RootState) => state.taskManagement.ids;
-export const selectGroups = (state: RootState) => state.taskManagement.groups;
-export const selectGrouping = (state: RootState) => state.taskManagement.grouping;
-export const selectLoading = (state: RootState) => state.taskManagement.loading;
-export const selectError = (state: RootState) => state.taskManagement.error;
-export const selectSelectedPriorities = (state: RootState) =>
-  state.taskManagement.selectedPriorities;
-export const selectSearch = (state: RootState) => state.taskManagement.search;
-export const selectSortField = (state: RootState) => state.taskManagement.sortField;
-export const selectSortOrder = (state: RootState) => state.taskManagement.sortOrder;
-export const selectSort = (state: RootState) => ({
-  field: state.taskManagement.sortField,
-  order: state.taskManagement.sortOrder,
-});
-export const selectSubtaskLoading = (state: RootState, taskId: string) =>
-  state.taskManagement.loadingSubtasks[taskId] || false;
-
-// Memoized selectors to prevent unnecessary re-renders
-export const selectTasksByStatus = createSelector(
-  [selectAllTasksArray, (_state: RootState, status: string) => status],
-  (tasks, status) => tasks.filter(task => task.status === status)
-);
-
-export const selectTasksByPriority = createSelector(
-  [selectAllTasksArray, (_state: RootState, priority: string) => priority],
-  (tasks, priority) => tasks.filter(task => task.priority === priority)
-);
-
-export const selectTasksByPhase = createSelector(
-  [selectAllTasksArray, (_state: RootState, phase: string) => phase],
-  (tasks, phase) => tasks.filter(task => task.phase === phase)
-);
-
-// Add archived selector
-export const selectArchived = (state: RootState) => state.taskManagement.archived;
+// Export the selectors from the new file to avoid circular dependencies
+export * from './task-management.selectors';
 
 // Export the reducer as default
 export default taskManagementSlice.reducer;
-
-// V3 API selectors - no processing needed, data is pre-processed by backend
-export const selectTaskGroupsV3 = (state: RootState) => state.taskManagement.groups;
-export const selectCurrentGroupingV3 = (state: RootState) => state.grouping.currentGrouping;
-
-// Column-related selectors
-export const selectColumns = (state: RootState) => state.taskManagement.columns;
-export const selectCustomColumns = (state: RootState) => state.taskManagement.customColumns;
-export const selectLoadingColumns = (state: RootState) => state.taskManagement.loadingColumns;
-
-// Helper selector to check if columns are in sync with local fields
-export const selectColumnsInSync = (state: RootState) => {
-  const columns = state.taskManagement.columns;
-  const fields = state.taskManagementFields || [];
-
-  if (columns.length === 0 || fields.length === 0) return true;
-
-  return !fields.some(field => {
-    const backendColumn = columns.find(c => c.key === field.key);
-    if (backendColumn) {
-      return (backendColumn.pinned ?? false) !== field.visible;
-    }
-    return false;
-  });
-};

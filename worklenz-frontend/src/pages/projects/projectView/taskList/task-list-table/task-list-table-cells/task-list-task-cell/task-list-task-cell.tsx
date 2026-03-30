@@ -65,6 +65,7 @@ const TaskListTaskCell = ({
   }, [editTaskName]);
 
   const handleToggleExpansion = (taskId: string) => {
+    if (task.is_parent_container) return;
     if (task.sub_tasks_count && task.sub_tasks_count > 0 && !task.sub_tasks) {
       dispatch(fetchSubTasks({ taskId, projectId }));
     }
@@ -174,8 +175,16 @@ const TaskListTaskCell = ({
           {!editTaskName && (
             <Typography.Text
               ellipsis={{ tooltip: task.name }}
-              onClick={() => setEditTaskName(true)}
-              style={{ cursor: 'pointer', width: 'auto', maxWidth: '350px' }}
+              onClick={() => {
+                if (!task.is_parent_container) {
+                  setEditTaskName(true);
+                }
+              }}
+              style={{
+                cursor: task.is_parent_container ? 'default' : 'pointer',
+                width: 'auto',
+                maxWidth: '350px',
+              }}
             >
               {task.name}
             </Typography.Text>
@@ -200,6 +209,25 @@ const TaskListTaskCell = ({
         {!editTaskName &&
           renderSubtasksCountLabel(task.id || '', isSubTask, task.sub_tasks_count || 0)}
 
+        {task.parent_task_not_archived ? (
+          <Tooltip
+            title={t('activeParentTooltip', { defaultValue: 'Parent task is not archived' })}
+          >
+            <Typography.Text
+              style={{
+                fontSize: 11,
+                lineHeight: 1.6,
+                padding: '0 6px',
+                borderRadius: 10,
+                border: '1px solid #d9d9d9',
+              }}
+              aria-label={t('activeParentTooltip', { defaultValue: 'Parent task is not archived' })}
+            >
+              {t('activeParentBadge', { defaultValue: 'Active parent' })}
+            </Typography.Text>
+          </Tooltip>
+        ) : null}
+
         {task?.comments_count ? (
           <CommentOutlined type="secondary" style={{ fontSize: 14 }} />
         ) : null}
@@ -215,7 +243,7 @@ const TaskListTaskCell = ({
         ) : null}
 
         {task?.schedule_id ? (
-          <Tooltip title="Recurring Task">
+          <Tooltip title={t('indicators.tooltips.recurring', { defaultValue: 'Recurring task' })}>
             <RetweetOutlined type="secondary" style={{ fontSize: 14 }} />
           </Tooltip>
         ) : null}
@@ -226,6 +254,7 @@ const TaskListTaskCell = ({
           type="text"
           icon={<ExpandAltOutlined />}
           onClick={() => {
+            if (task.is_parent_container) return;
             if (onOpenTask) {
               onOpenTask(task.id || '');
             } else {
@@ -234,6 +263,7 @@ const TaskListTaskCell = ({
               dispatch(setShowTaskDrawer(true));
             }
           }}
+          disabled={task.is_parent_container}
           style={{
             backgroundColor: colors.transparent,
             padding: 0,

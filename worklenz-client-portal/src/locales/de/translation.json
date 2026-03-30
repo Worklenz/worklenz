@@ -125,6 +125,8 @@
     "email_already_registered_title": "E-Mail bereits registriert",
     "email_already_registered_message": "Ein Benutzer mit dieser E-Mail existiert bereits. Bitte melden Sie sich stattdessen an.",
     "invalid_credentials": "Ungültige E-Mail oder Passwort",
+    "invalid_credentials_title": "Ungültige Anmeldedaten",
+    "invalid_credentials_message": "Ungültige E-Mail oder Passwort",
     "token_required": "Token erforderlich",
     "token_invalid": "Ungültiger oder abgelaufener Token",
     "invitation_invalid": "Ungültige oder abgelaufene Einladung",
@@ -136,7 +138,7 @@
     "network_error": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung.",
     "server_error": "Serverfehler. Bitte versuchen Sie es später erneut.",
     "worklenz_account_found_title": "Worklenz-Konto gefunden",
-    "worklenz_account_found_message": "Diese E-Mail ist bereits mit einem Worklenz-Konto registriert. Bitte verwenden Sie Ihr Worklenz-Passwort, um sich für das Kundenportal anzumelden."
+    "worklenz_account_found_message": "Diese E-Mail ist bereits mit einem Worklenz-Konto registriert. Bitte verwenden Sie Ihr bestehendes Worklenz-Kontopasswort, um sich für das Kundenportal anzumelden."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -202,6 +204,7 @@
     "createFirst": "Erstellen Sie Ihre erste Anfrage",
     "errorLoading": "Fehler beim Laden der Anfragen",
     "errorLoadingDescription": "Fehler beim Laden der Anfragen. Bitte versuchen Sie es erneut.",
+    "requestNotFoundDescription": "Das angeforderte Element konnte nicht gefunden werden oder Sie haben keinen Zugriff darauf.",
     "showingRange": "{{start}}-{{end}} von {{total}} Anfragen",
     "pending": "Ausstehend",
     "accepted": "Akzeptiert",
@@ -260,6 +263,9 @@
     "loadingQuestions": "Fragen werden geladen...",
     "enterAnswer": "Geben Sie Ihre Antwort ein",
     "noComments": "Noch keine Kommentare. Starten Sie das Gespräch!",
+    "startConversation": "Starten Sie das Gespräch, indem Sie unten einen Kommentar hinzufügen",
+    "requestCompletedNoComments": "Diese Anfrage wurde abgeschlossen. Kommentare sind deaktiviert.",
+    "requestRejectedNoComments": "Diese Anfrage wurde abgelehnt. Kommentare sind deaktiviert.",
     "teamMember": "Team",
     "client": "Kunde",
     "pressEnterToSend": "Enter zum Senden, Shift+Enter für neue Zeile"
@@ -290,6 +296,7 @@
     "title": "Chats",
     "description": "Kommunizieren Sie mit Ihren Dienstleistern",
     "conversations": "Konversationen",
+    "chatTitle": "Chat - {{date}}",
     "chatMessages": "Chat-Nachrichten",
     "selectConversation": "Wählen Sie eine Konversation",
     "selectToStart": "Wählen Sie eine Konversation, um zu chatten",
