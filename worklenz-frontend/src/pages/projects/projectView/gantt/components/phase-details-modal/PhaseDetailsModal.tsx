@@ -327,7 +327,7 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
   return (
     <Modal
       title={
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3" style={{ paddingRight: '40px' }}>  {/* 👈 add paddingRight */}
           <ColorPicker
             value={localPhase.color || token.colorPrimary}
             onChangeComplete={color => handleFieldSave('color', color.toHexString())}
@@ -343,8 +343,17 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
               onBlur={() => handleFieldSave('name', editedValues.name)}
               onKeyDown={e => e.key === 'Escape' && handleFieldCancel()}
               className="font-semibold text-lg"
-              style={{ border: 'none', padding: 0, background: 'transparent' }}
+              maxLength={50}
               autoFocus
+              suffix={
+                <span style={{
+                  fontSize: '11px',
+                  color: (editedValues.name || localPhase.name || '').length >= 50 ? '#ff4d4f' : '#8c8c8c',
+                }}>
+                  {(editedValues.name || localPhase.name || '').length}/50
+                </span>
+              }
+              style={{ width: '700px' }}  
             />
           ) : (
             <Title
