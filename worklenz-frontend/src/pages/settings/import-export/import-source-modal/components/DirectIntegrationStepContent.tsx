@@ -38,14 +38,8 @@ interface DirectIntegrationStepContentProps {
   setSelectedJiraProject: React.Dispatch<React.SetStateAction<string>>;
   persistAsanaSelection: (projectId: string, workspaceId?: string, projectName?: string) => Promise<void>;
   selectedProject: string;
-  spaceType: string;
-  setSpaceType: React.Dispatch<React.SetStateAction<string>>;
   spaceName: string;
   setSpaceName: React.Dispatch<React.SetStateAction<string>>;
-  showAdvancedSpaceOptions: boolean;
-  setShowAdvancedSpaceOptions: React.Dispatch<React.SetStateAction<boolean>>;
-  spaceTemplate: string;
-  setSpaceTemplate: React.Dispatch<React.SetStateAction<string>>;
   reviewSubScreen: 'main' | 'hierarchy' | 'fieldMapping';
   setReviewSubScreen: React.Dispatch<React.SetStateAction<'main' | 'hierarchy' | 'fieldMapping'>>;
   hierarchyCount: number;
@@ -97,14 +91,8 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
     setSelectedJiraProject,
     persistAsanaSelection,
     selectedProject,
-    spaceType,
-    setSpaceType,
     spaceName,
     setSpaceName,
-    showAdvancedSpaceOptions,
-    setShowAdvancedSpaceOptions,
-    spaceTemplate,
-    setSpaceTemplate,
     reviewSubScreen,
     setReviewSubScreen,
     hierarchyCount,
@@ -305,84 +293,32 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
       <div style={{ display: 'flex', justifyContent: 'center' }}>
         <div style={directContainerStyle}>
           <Typography.Title level={3} style={{ marginBottom: 8 }}>
-            {t('importStep.setupSpaceTitle', 'Set up a space in Worklenz')}
+            {t('importStep.setupProjectTitle', { defaultValue: 'Set up a project in Worklenz' })}
           </Typography.Title>
           <Typography.Paragraph style={{ color: themeToken.colorTextSecondary }}>
-            {t('importStep.setupSpaceDesc', {
+            {t('importStep.setupProjectDesc', {
               defaultValue:
-                "Your team's data from {{source}} will be imported into this space. Check if you're selecting the right Worklenz space, template, and space type as these options can't be modified later. All fields are required.",
+                "Your team's data from {{source}} will be imported into a new project. Check the project name before continuing.",
               source: source.label || 'your app',
             })}
           </Typography.Paragraph>
           <div style={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>
             <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>
-              {t('importStep.worklenzSpace', 'Worklenz space')}
-            </label>
-            <Select
-              style={{ width: '100%', marginBottom: 16 }}
-              value={spaceType}
-              onChange={setSpaceType}
-              options={[
-                { value: 'business', label: t('importStep.businessSpace', 'Business space') },
-                { value: 'software', label: t('importStep.softwareSpace', 'Software space') },
-              ]}
-            />
-            <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>
-              {t('importStep.spaceName', 'Space name')}
+              {t('importStep.projectNameLabel', { defaultValue: 'Project name' })}
             </label>
             <Input
               style={{ width: '100%', marginBottom: 8 }}
-              placeholder={t('importStep.spaceNamePlaceholder', {
-                defaultValue: 'Enter a space name',
+              placeholder={t('importStep.projectNamePlaceholder', {
+                defaultValue: 'Enter a project name',
               })}
               value={spaceName}
               onChange={e => setSpaceName(e.target.value)}
             />
             <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 10, fontSize: 12 }}>
-              {t('importStep.requiredFieldsHint', {
-                defaultValue: 'Required now: Worklenz space and space name.',
+              {t('importStep.requiredProjectNameHint', {
+                defaultValue: 'Required now: project name.',
               })}
             </Typography.Text>
-
-            <Button
-              type="link"
-              style={{ padding: 0, height: 'auto' }}
-              onClick={() => setShowAdvancedSpaceOptions(v => !v)}
-            >
-              {showAdvancedSpaceOptions
-                ? t('importStep.showLess', { defaultValue: 'Show less' })
-                : t('importStep.showMore', { defaultValue: 'Show more' })}
-            </Button>
-
-            {showAdvancedSpaceOptions && (
-              <div
-                style={{
-                  marginTop: 12,
-                  border: `1px solid ${themeToken.colorBorderSecondary}`,
-                  borderRadius: themeToken.borderRadius,
-                  padding: 12,
-                  background: themeToken.colorBgContainer,
-                }}
-              >
-                <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>
-                  {t('importStep.template', { defaultValue: 'Template' })}
-                </label>
-                <Select
-                  style={{ width: '100%' }}
-                  value={spaceTemplate}
-                  onChange={setSpaceTemplate}
-                  options={[
-                    { value: 'scrum', label: t('importStep.templateScrum', 'Scrum') },
-                    { value: 'kanban', label: t('importStep.templateKanban', 'Kanban') },
-                  ]}
-                />
-                <Typography.Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
-                  {t('importStep.templateHint', {
-                    defaultValue: 'Optional. Keep the default template and continue.',
-                  })}
-                </Typography.Text>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -394,7 +330,7 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
       const reviewCards = [
         {
           key: 'hierarchy',
-          title: t('importStep.spaceHierarchy', 'Space hierarchy'),
+          title: t('importStep.projectHierarchy', { defaultValue: 'Project hierarchy' }),
           description:
             hierarchyCount > 0
               ? t('importStep.hierarchyLevelsMapped', {
@@ -435,7 +371,7 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
             defaultValue: 'Import all members from {{source}} project',
             source: source.label || 'source',
           }),
-          description: t('importStep.importMembersDesc', 'Brings collaborators into the Worklenz space'),
+          description: t('importStep.importMembersDesc', { defaultValue: 'Brings collaborators into the Worklenz project' }),
           iconBg: '#0f9d58',
           icon: <TeamOutlined style={{ color: '#fff' }} />,
           action: undefined,
@@ -464,7 +400,7 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                 "We've mapped your project and you're ready to import. Here's how the {{source}} data will be imported into the {{target}} project. Learn more about the project setup",
                 {
                   source: source.label || 'source',
-                  target: spaceName || t('importStep.defaultSpaceName', 'Imported space'),
+                  target: spaceName || t('importStep.defaultProjectName', { defaultValue: 'Imported project' }),
                 }
               )}
             </Typography.Paragraph>
@@ -549,7 +485,7 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
             </div>
 
             <Typography.Title level={3} style={{ margin: '0 0 4px' }}>
-              {t('importStep.spaceHierarchy', 'Space hierarchy')}
+              {t('importStep.projectHierarchy', { defaultValue: 'Project hierarchy' })}
             </Typography.Title>
             <Typography.Paragraph style={{ marginBottom: 16, color: themeToken.colorTextSecondary }}>
               {t(
