@@ -65,14 +65,19 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
 
     // Get active filters from Redux (enhancedKanbanReducer)
     const activeFilters = useAppSelector(state => ({
-      members: state.enhancedKanbanReducer?.taskAssignees?.filter((m: any) => m.selected).map((m: any) => m.id) || [],
-      labels: state.enhancedKanbanReducer?.labels?.filter((l: any) => l.selected).map((l: any) => l.id) || [],
-      priorities: state.enhancedKanbanReducer?.priorities || []
+      members:
+        state.enhancedKanbanReducer?.taskAssignees
+          ?.filter((m: any) => m.selected)
+          .map((m: any) => m.id) || [],
+      labels:
+        state.enhancedKanbanReducer?.labels?.filter((l: any) => l.selected).map((l: any) => l.id) ||
+        [],
+      priorities: state.enhancedKanbanReducer?.priorities || [],
     }));
 
     // Get all priorities to create ID-to-name mapping
     const allPriorities = useAppSelector(state => state.priorityReducer?.priorities || []);
-    
+
     // Create priority ID to name mapping
     const priorityIdToName = React.useMemo(() => {
       const map: Record<string, string> = {};
@@ -173,9 +178,9 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
       if (!task.sub_tasks || task.sub_tasks.length === 0) return [];
 
       // If no filters are active, show all subtasks
-      const hasActiveFilters = 
-        activeFilters.members.length > 0 || 
-        activeFilters.labels.length > 0 || 
+      const hasActiveFilters =
+        activeFilters.members.length > 0 ||
+        activeFilters.labels.length > 0 ||
         activeFilters.priorities.length > 0;
 
       if (!hasActiveFilters) {
@@ -187,7 +192,7 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
         // Check member filter
         if (activeFilters.members.length > 0) {
           const hasMatchingMember = subtask.assignees?.some((a: any) => {
-            const assigneeId = typeof a === 'string' ? a : (a.team_member_id || a.id);
+            const assigneeId = typeof a === 'string' ? a : a.team_member_id || a.id;
             return activeFilters.members.includes(assigneeId);
           });
           if (!hasMatchingMember) return false;
@@ -195,7 +200,7 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
 
         // Check label filter
         if (activeFilters.labels.length > 0) {
-          const hasMatchingLabel = subtask.labels?.some((l: any) => 
+          const hasMatchingLabel = subtask.labels?.some((l: any) =>
             activeFilters.labels.includes(l.id)
           );
           if (!hasMatchingLabel) return false;
@@ -206,7 +211,7 @@ const EnhancedKanbanTaskCard: React.FC<EnhancedKanbanTaskCardProps> = React.memo
           const filterPriorityNames = activeFilters.priorities
             .map(id => priorityIdToName[id])
             .filter(Boolean);
-          
+
           if (!filterPriorityNames.includes(subtask.priority)) {
             return false;
           }

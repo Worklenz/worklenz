@@ -95,7 +95,7 @@ export class SentryErrorBoundary extends Component<Props, State> {
               title="Something went wrong"
               subTitle="We're sorry, but something unexpected happened. Our team has been notified and is working on a fix."
               extra={[
-                <Button type="primary" key="home" onClick={() => window.location.href = '/'}>
+                <Button type="primary" key="home" onClick={() => (window.location.href = '/')}>
                   Go Home
                 </Button>,
                 <Button key="retry" onClick={this.handleReset}>
@@ -103,7 +103,7 @@ export class SentryErrorBoundary extends Component<Props, State> {
                 </Button>,
               ]}
             />
-            
+
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <div className="mt-6 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
                 <h3 className="text-sm font-medium text-red-800 dark:text-red-200 mb-2">
@@ -111,11 +111,9 @@ export class SentryErrorBoundary extends Component<Props, State> {
                 </h3>
                 <details className="text-xs text-red-600 dark:text-red-400">
                   <summary className="cursor-pointer font-mono">Stack Trace</summary>
-                  <pre className="mt-2 whitespace-pre-wrap break-all">
-                    {this.state.error.stack}
-                  </pre>
+                  <pre className="mt-2 whitespace-pre-wrap break-all">{this.state.error.stack}</pre>
                 </details>
-                
+
                 {this.state.errorInfo && (
                   <details className="text-xs text-red-600 dark:text-red-400 mt-2">
                     <summary className="cursor-pointer font-mono">Component Stack</summary>
@@ -147,7 +145,7 @@ export const withErrorBoundary = <P extends object>(
   );
 
   WrappedComponent.displayName = `withErrorBoundary(${Component.displayName || Component.name})`;
-  
+
   return WrappedComponent;
 };
 

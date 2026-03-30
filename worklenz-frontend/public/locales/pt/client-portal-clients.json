@@ -213,6 +213,12 @@
     "not_invited": "Não Convidado",
     "expired": "Expirado"
   },
+  "portalStatusHelp": {
+    "active": "Ativo: O cliente aceitou e pode acessar o portal.",
+    "invited": "Convidado: O convite foi enviado e ainda está válido, mas ainda não foi aceito.",
+    "notInvited": "Não convidado: Nenhum convite foi enviado ainda.",
+    "expired": "Expirado: O convite anterior expirou e deve ser reenviado."
+  },
 
   "inviteToPortalTooltip": "Convidar para o Portal",
   "resendInviteEmailTooltip": "Reenviar Email de Convite",

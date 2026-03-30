@@ -44,10 +44,7 @@ export const ProjectRateCell: React.FC<{
     [record.id, record.favorite, toggleFavoriteProject]
   );
 
-  const starColor = useMemo(
-    () => (isFavorite ? colors.yellow : colors.lightGray),
-    [isFavorite]
-  );
+  const starColor = useMemo(() => (isFavorite ? colors.yellow : colors.lightGray), [isFavorite]);
 
   return (
     <ConfigProvider wave={{ disabled: true }}>

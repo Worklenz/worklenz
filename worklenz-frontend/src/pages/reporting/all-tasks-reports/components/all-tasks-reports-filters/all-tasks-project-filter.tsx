@@ -1,5 +1,14 @@
 import { memo, useState, useEffect, useMemo, useRef } from 'react';
-import { Button, Card, Checkbox, Dropdown, Flex, Input, Typography, Spin } from '@/shared/antd-imports';
+import {
+  Button,
+  Card,
+  Checkbox,
+  Dropdown,
+  Flex,
+  Input,
+  Typography,
+  Spin,
+} from '@/shared/antd-imports';
 import { CaretDownFilled, SearchOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -50,7 +59,7 @@ const AllTasksProjectFilter = () => {
         );
 
         const responses = await Promise.all(projectPromises);
-        
+
         // Combine all projects and deduplicate by id
         const allProjects: IProject[] = [];
         const projectIds = new Set<string>();
@@ -90,9 +99,9 @@ const AllTasksProjectFilter = () => {
     // Check if projects list actually changed
     const previousProjectIds = new Set(previousProjectsRef.current.map(p => p.id));
     const currentProjectIds = new Set(projects.map(p => p.id));
-    
+
     // Only clear if the projects list changed (not just a re-render)
-    const projectsChanged = 
+    const projectsChanged =
       previousProjectIds.size !== currentProjectIds.size ||
       [...previousProjectIds].some(id => !currentProjectIds.has(id)) ||
       [...currentProjectIds].some(id => !previousProjectIds.has(id));
@@ -103,8 +112,8 @@ const AllTasksProjectFilter = () => {
         projectId => !availableProjectIds.has(projectId)
       );
       if (invalidSelectedProjects.length > 0) {
-        const validSelectedProjects = selectedProjects.filter(
-          projectId => availableProjectIds.has(projectId)
+        const validSelectedProjects = selectedProjects.filter(projectId =>
+          availableProjectIds.has(projectId)
         );
         dispatch(setSelectedProjects(validSelectedProjects));
       }
@@ -129,7 +138,9 @@ const AllTasksProjectFilter = () => {
     <Card className="custom-card" styles={{ body: { padding: 8, width: 280 } }}>
       <Flex vertical gap={8}>
         <Input
-          placeholder={t('searchPlaceholder', { defaultValue: 'Search by task name, key, or description' })}
+          placeholder={t('searchPlaceholder', {
+            defaultValue: 'Search by task name, key, or description',
+          })}
           prefix={<SearchOutlined />}
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}

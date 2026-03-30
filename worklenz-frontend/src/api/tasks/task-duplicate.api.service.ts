@@ -9,7 +9,7 @@ const taskDuplicateApiService = {
   ): Promise<IServerResponse<ITaskDuplicateRequest>> => {
     const response = await apiClient.post(`${API_BASE_URL}/task-duplicate/duplicate`, data);
     return response.data;
-  }
+  },
 };
 
 export default taskDuplicateApiService;

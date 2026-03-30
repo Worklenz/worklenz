@@ -47,7 +47,9 @@ export function SlackManageModal({
           <span className="text-xl">⚠️</span>
           <div className="flex-1">
             <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-200 mb-1">
-              {t('instructions.inviteBot.title', { defaultValue: "Don't forget to invite the bot!" })}
+              {t('instructions.inviteBot.title', {
+                defaultValue: "Don't forget to invite the bot!",
+              })}
             </h4>
             <p className="text-sm text-amber-800 dark:text-amber-300 mb-2">
               {t('instructions.inviteBot.description', {
@@ -59,7 +61,9 @@ export function SlackManageModal({
               /invite @Worklenz
             </code>
             <p className="text-xs text-amber-700 dark:text-amber-400 mt-2 mb-0">
-              {t('instructions.inviteBot.note', { defaultValue: 'This only needs to be done once per channel.' })}
+              {t('instructions.inviteBot.note', {
+                defaultValue: 'This only needs to be done once per channel.',
+              })}
             </p>
           </div>
         </div>
@@ -69,8 +73,10 @@ export function SlackManageModal({
       {channels.length === 0 && (
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
           <p className="text-sm text-blue-800 dark:text-blue-200 m-0">
-            💡 {t('instructions.getStarted', {
-              defaultValue: 'Get started by adding a channel configuration to receive notifications from your projects.',
+            💡{' '}
+            {t('instructions.getStarted', {
+              defaultValue:
+                'Get started by adding a channel configuration to receive notifications from your projects.',
             })}
           </p>
         </div>

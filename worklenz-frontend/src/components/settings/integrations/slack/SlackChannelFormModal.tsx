@@ -91,7 +91,7 @@ export function SlackChannelFormModal({
   const { t } = useTranslation('settings/slack-integration');
   const [messageApi, contextHolder] = message.useMessage();
   const [refreshing, setRefreshing] = useState(false);
-  
+
   // Project search and pagination state
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
@@ -100,35 +100,40 @@ export function SlackChannelFormModal({
   const [projectsSearch, setProjectsSearch] = useState('');
   const projectsPageSize = 20;
   const scrollPositionRef = useRef(0);
-  
-  const notificationOptions = NOTIFICATION_TYPE_DEFINITIONS.map(({ value, labelKey, defaultValue }) => ({
-    value,
-    label: t(labelKey, { defaultValue }),
-  }));
+
+  const notificationOptions = NOTIFICATION_TYPE_DEFINITIONS.map(
+    ({ value, labelKey, defaultValue }) => ({
+      value,
+      label: t(labelKey, { defaultValue }),
+    })
+  );
 
   // Load projects with pagination
-  const loadProjects = useCallback(async (page: number, search: string, append = false) => {
-    try {
-      setProjectsLoading(true);
-      const response = await apiClient.get<ApiResponse<Project[]>>('/api/v1/projects', {
-        params: {
-          size: projectsPageSize,
-          index: page,
-          search: search || undefined,
-        },
-      });
-      
-      const newProjects = response.data?.body?.data || [];
-      const total = response.data?.body?.total || 0;
-      
-      setProjects(prev => append ? [...prev, ...newProjects] : newProjects);
-      setProjectsTotal(total);
-    } catch (error) {
-      messageApi.error(t('errors.loadProjectsFailed'));
-    } finally {
-      setProjectsLoading(false);
-    }
-  }, [messageApi, t]);
+  const loadProjects = useCallback(
+    async (page: number, search: string, append = false) => {
+      try {
+        setProjectsLoading(true);
+        const response = await apiClient.get<ApiResponse<Project[]>>('/api/v1/projects', {
+          params: {
+            size: projectsPageSize,
+            index: page,
+            search: search || undefined,
+          },
+        });
+
+        const newProjects = response.data?.body?.data || [];
+        const total = response.data?.body?.total || 0;
+
+        setProjects(prev => (append ? [...prev, ...newProjects] : newProjects));
+        setProjectsTotal(total);
+      } catch (error) {
+        messageApi.error(t('errors.loadProjectsFailed'));
+      } finally {
+        setProjectsLoading(false);
+      }
+    },
+    [messageApi, t]
+  );
 
   // Handle project search
   const handleProjectSearch = (value: string) => {
@@ -143,7 +148,7 @@ export function SlackChannelFormModal({
     const scrollTop = target.scrollTop;
     const scrollHeight = target.scrollHeight;
     const clientHeight = target.clientHeight;
-    
+
     // Check if scrolling down and near bottom
     if (scrollTop > scrollPositionRef.current && scrollTop + clientHeight >= scrollHeight - 50) {
       const hasMore = projects.length < projectsTotal;
@@ -153,7 +158,7 @@ export function SlackChannelFormModal({
         loadProjects(nextPage, projectsSearch, true);
       }
     }
-    
+
     scrollPositionRef.current = scrollTop;
   };
 
@@ -214,7 +219,7 @@ export function SlackChannelFormModal({
             disabled={!!editingChannel}
             loading={projectsLoading}
             notFoundContent={projectsLoading ? <Spin size="small" /> : null}
-            dropdownRender={(menu) => (
+            dropdownRender={menu => (
               <>
                 {menu}
                 {projectsLoading && projects.length > 0 && (
@@ -223,7 +228,9 @@ export function SlackChannelFormModal({
                   </div>
                 )}
                 {!projectsLoading && projects.length < projectsTotal && (
-                  <div style={{ textAlign: 'center', padding: '8px', color: '#999', fontSize: '12px' }}>
+                  <div
+                    style={{ textAlign: 'center', padding: '8px', color: '#999', fontSize: '12px' }}
+                  >
                     {t('modal.scrollForMore', { defaultValue: 'Scroll for more...' })}
                   </div>
                 )}
@@ -241,7 +248,14 @@ export function SlackChannelFormModal({
         <Form.Item
           name="slackChannelId"
           label={
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                width: '100%',
+              }}
+            >
               <span>{t('modal.slackChannel', { defaultValue: 'Slack Channel' })}</span>
               <Button
                 type="link"

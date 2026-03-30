@@ -29,9 +29,9 @@ export const AssignManagerDrawer: React.FC<AssignManagerDrawerProps> = ({
       teamMembersApiService.get(1, 1000, 'name', 'asc', '', true).then(response => {
         if (response.done) {
           // Filter for Team Leads only and exclude the member being assigned
-          const teamLeads = response.body.data?.filter(m => 
-            m.id !== member?.id && m.role_name === 'Team Lead'
-          ) || [];
+          const teamLeads =
+            response.body.data?.filter(m => m.id !== member?.id && m.role_name === 'Team Lead') ||
+            [];
           setManagers(teamLeads);
         }
         setLoading(false);
@@ -94,9 +94,7 @@ export const AssignManagerDrawer: React.FC<AssignManagerDrawerProps> = ({
               description={
                 <Flex align="center" gap={8} style={{ marginTop: 8 }}>
                   <Tag color="blue">{member.current_team_lead_name}</Tag>
-                  <Typography.Text type="secondary">
-                    {t('currently_assigned_to')}
-                  </Typography.Text>
+                  <Typography.Text type="secondary">{t('currently_assigned_to')}</Typography.Text>
                 </Flex>
               }
               type="info"

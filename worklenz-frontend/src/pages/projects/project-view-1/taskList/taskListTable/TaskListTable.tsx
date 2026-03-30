@@ -13,6 +13,7 @@ import { deselectAll } from '@features/projects/bulkActions/bulkActionSlice';
 import { useTranslation } from 'react-i18next';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { HolderOutlined } from '@/shared/antd-imports';
+import CompletedDateCell from './taskListTableCells/CompletedDateCell';
 import { useColumnResize } from '@/hooks/useColumnResize';
 import { COLUMN_MIN_WIDTH, COLUMN_MAX_WIDTH } from '@/hooks/useColumnResizeHandler';
 import { updateColumnWidth } from '@features/projects/singleProject/taskListColumns/taskColumnsSlice';
@@ -275,7 +276,7 @@ const TaskListTable = ({
 
       // completed date column
       case 'completedDate':
-        return <div></div>;
+        return <CompletedDateCell completedDate={task.completed_at || null} />;
 
       // created date column
       case 'createdDate':

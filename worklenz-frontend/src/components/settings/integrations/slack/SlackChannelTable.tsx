@@ -1,6 +1,13 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Table, Tag, DeleteOutlined, EditOutlined, ReloadOutlined } from '@/shared/antd-imports';
+import {
+  Button,
+  Table,
+  Tag,
+  DeleteOutlined,
+  EditOutlined,
+  ReloadOutlined,
+} from '@/shared/antd-imports';
 import type { TableColumnsType } from '@/shared/antd-imports';
 import type { ISlackChannelConfig } from '@api/slack/slack.api.service';
 

@@ -31,7 +31,10 @@ import {
   setSelectOrDeselectMember,
 } from '@/features/reporting/time-reports/time-reports-overview.slice';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
-import { teamLeadMembersApiService, TeamLeadWithMembers } from '@/api/reporting/team-lead-members.api.service';
+import {
+  teamLeadMembersApiService,
+  TeamLeadWithMembers,
+} from '@/api/reporting/team-lead-members.api.service';
 import { isCurrentUserAdmin } from '@/utils/team-lead-utils';
 
 // Removed unused interface - using TeamLeadWithMembers from API service instead
@@ -62,7 +65,7 @@ const Members: React.FC = () => {
     try {
       setLoadingTeamLeads(true);
       setTeamLeadError(null);
-      
+
       // Try the new Team Lead API first
       try {
         const response = await teamLeadMembersApiService.getTeamLeadsWithManagedMembers();
@@ -77,10 +80,10 @@ const Members: React.FC = () => {
       // Fallback: Get team leads from team members API
       const fallbackResponse = await teamMembersApiService.get(1, 1000, 'name', 'asc', '');
       if (fallbackResponse.done && fallbackResponse.body?.data) {
-        const teamLeadMembers = fallbackResponse.body.data.filter(member => 
-          member.role_name?.toLowerCase() === 'team lead'
+        const teamLeadMembers = fallbackResponse.body.data.filter(
+          member => member.role_name?.toLowerCase() === 'team lead'
         );
-        
+
         // Create fallback data structure with empty managed members
         const fallbackTeamLeads: TeamLeadWithMembers[] = teamLeadMembers.map(tl => ({
           team_lead_id: tl.id || '',
@@ -89,9 +92,9 @@ const Members: React.FC = () => {
           team_lead_avatar_url: tl.avatar_url,
           managed_members: [], // Empty - filtering won't work yet
         }));
-        
+
         setTeamLeadsWithMembers(fallbackTeamLeads);
-        
+
         if (fallbackTeamLeads.length === 0) {
           setTeamLeadError('No Team Leads found in your organization');
         }
@@ -133,8 +136,10 @@ const Members: React.FC = () => {
   }, [membersByTeamLead]);
 
   // Check if all options are selected (from filtered members)
-  const isAllSelected = membersByTeamLead.length > 0 && membersByTeamLead.every(member => member.selected);
-  const isNoneSelected = membersByTeamLead.length > 0 && !membersByTeamLead.some(member => member.selected);
+  const isAllSelected =
+    membersByTeamLead.length > 0 && membersByTeamLead.every(member => member.selected);
+  const isNoneSelected =
+    membersByTeamLead.length > 0 && !membersByTeamLead.some(member => member.selected);
 
   // Apply search filter to the team-lead-filtered members
   const filteredMembers = membersByTeamLead.filter(member =>
@@ -168,7 +173,7 @@ const Members: React.FC = () => {
   const handleSelectAllChange = (e: CheckboxChangeEvent) => {
     const isChecked = e.target.checked;
     setSelectAll(isChecked);
-    
+
     // Apply to filtered members only
     membersByTeamLead.forEach(member => {
       dispatch(setSelectOrDeselectMember({ id: member.id, selected: isChecked }));
@@ -179,7 +184,7 @@ const Members: React.FC = () => {
   const handleSelectAllClick = () => {
     const newValue = !isAllSelected;
     setSelectAll(newValue);
-    
+
     // Apply to filtered members only
     membersByTeamLead.forEach(member => {
       dispatch(setSelectOrDeselectMember({ id: member.id, selected: newValue }));
@@ -189,7 +194,7 @@ const Members: React.FC = () => {
   // Handle clear all
   const handleClearAll = () => {
     setSelectAll(false);
-    
+
     // Apply to filtered members only
     membersByTeamLead.forEach(member => {
       dispatch(setSelectOrDeselectMember({ id: member.id, selected: false }));
@@ -200,18 +205,18 @@ const Members: React.FC = () => {
   const handleTeamLeadChange = (teamLeadId: string | null) => {
     setSelectedTeamLead(teamLeadId);
     setSearchText(''); // Clear search when changing team lead filter
-    
+
     // First, deselect all members
     dispatch(setSelectOrDeselectAllMembers(false));
-    
+
     // Then select only the relevant members
-    const targetMembers = teamLeadId 
+    const targetMembers = teamLeadId
       ? members.filter(member => {
           const teamLead = teamLeadsWithMembers.find(tl => tl.team_lead_id === teamLeadId);
           return teamLead?.managed_members.some(m => m.member_id === member.id);
         })
       : members;
-      
+
     targetMembers.forEach(member => {
       dispatch(setSelectOrDeselectMember({ id: member.id, selected: true }));
     });
@@ -224,22 +229,24 @@ const Members: React.FC = () => {
   };
 
   const getButtonText = () => {
-    const selectedTeamLeadName = teamLeadsWithMembers.find(tl => tl.team_lead_id === selectedTeamLead)?.team_lead_name;
-    
+    const selectedTeamLeadName = teamLeadsWithMembers.find(
+      tl => tl.team_lead_id === selectedTeamLead
+    )?.team_lead_name;
+
     if (isNoneSelected) {
       if (selectedTeamLeadName) {
         return `${selectedTeamLeadName}'s ${t('teamMembers')}`;
       }
       return t('members');
     }
-    
+
     if (isAllSelected) {
       if (selectedTeamLeadName) {
         return `All ${selectedTeamLeadName}'s ${t('teamMembers')}`;
       }
       return `All ${t('members')}`;
     }
-    
+
     if (selectedTeamLeadName) {
       return `${selectedTeamLeadName}'s ${t('teamMembers')} (${activeFiltersCount})`;
     }
@@ -285,30 +292,30 @@ const Members: React.FC = () => {
           {/* Team Lead Filter - Only show for Admins */}
           {isAdmin && (
             <div style={{ padding: '4px 8px', flexShrink: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                <Typography.Text 
-                  style={{ 
-                    fontSize: '11px', 
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}
+              >
+                <Typography.Text
+                  style={{
+                    fontSize: '11px',
                     color: colors.headerText,
-                    fontWeight: 500
+                    fontWeight: 500,
                   }}
                 >
                   {t('filterByTeamLead')}
                 </Typography.Text>
-                {loadingTeamLeads && (
-                  <Spin size="small" style={{ fontSize: '10px' }} />
-                )}
+                {loadingTeamLeads && <Spin size="small" style={{ fontSize: '10px' }} />}
                 {teamLeadError && (
                   <Tooltip title={teamLeadError}>
-                    <Button 
-                      type="link" 
-                      size="small" 
+                    <Button
+                      type="link"
+                      size="small"
                       onClick={handleRetryTeamLeads}
-                      style={{ 
-                        fontSize: '10px', 
-                        height: 'auto', 
+                      style={{
+                        fontSize: '10px',
+                        height: 'auto',
                         padding: '0 4px',
-                        color: colors.errorColor
+                        color: colors.errorColor,
                       }}
                     >
                       Retry
@@ -330,13 +337,15 @@ const Members: React.FC = () => {
                   }
                 />
               ) : teamLeadsWithMembers.length === 0 && !loadingTeamLeads ? (
-                <div style={{ 
-                  padding: '12px',
-                  textAlign: 'center',
-                  color: colors.headerText,
-                  fontSize: '11px'
-                }}>
-                  <Empty 
+                <div
+                  style={{
+                    padding: '12px',
+                    textAlign: 'center',
+                    color: colors.headerText,
+                    fontSize: '11px',
+                  }}
+                >
+                  <Empty
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                     description="No Team Leads found"
                     style={{ margin: 0 }}
@@ -355,31 +364,70 @@ const Members: React.FC = () => {
                   optionLabelProp="title"
                 >
                   <Select.Option key="all" value={null} title={t('allMembers')}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '2px 0' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '2px 0',
+                      }}
+                    >
                       <Badge count={members.length} size="small" color="default">
-                        <Avatar size={16} icon={<FilterOutlined />} style={{ backgroundColor: '#f0f0f0', color: '#666' }} />
+                        <Avatar
+                          size={16}
+                          icon={<FilterOutlined />}
+                          style={{ backgroundColor: '#f0f0f0', color: '#666' }}
+                        />
                       </Badge>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: '12px', fontWeight: 500 }}>{t('allMembers')}</div>
-                        <div style={{ fontSize: '10px', color: colors.headerText, lineHeight: 1.2 }}>{t('noFilter')}</div>
+                        <div
+                          style={{ fontSize: '10px', color: colors.headerText, lineHeight: 1.2 }}
+                        >
+                          {t('noFilter')}
+                        </div>
                       </div>
                     </div>
                   </Select.Option>
                   {teamLeadsWithMembers.map(tl => (
-                    <Select.Option key={tl.team_lead_id} value={tl.team_lead_id} title={tl.team_lead_name}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '2px 0' }}>
+                    <Select.Option
+                      key={tl.team_lead_id}
+                      value={tl.team_lead_id}
+                      title={tl.team_lead_name}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '2px 0',
+                        }}
+                      >
                         <Badge count={tl.managed_members.length} size="small" color="blue">
                           <Avatar src={tl.team_lead_avatar_url} size={16}>
                             {tl.team_lead_name.charAt(0)}
                           </Avatar>
                         </Badge>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '12px', fontWeight: 500 }}>{tl.team_lead_name}</div>
-                          <div style={{ fontSize: '10px', color: colors.headerText, lineHeight: 1.2 }}>
-                            {tl.managed_members.length} managed {tl.managed_members.length === 1 ? 'member' : 'members'}
+                          <div style={{ fontSize: '12px', fontWeight: 500 }}>
+                            {tl.team_lead_name}
+                          </div>
+                          <div
+                            style={{ fontSize: '10px', color: colors.headerText, lineHeight: 1.2 }}
+                          >
+                            {tl.managed_members.length} managed{' '}
+                            {tl.managed_members.length === 1 ? 'member' : 'members'}
                           </div>
                         </div>
-                        <Tag color="blue" style={{ fontSize: '8px', margin: 0, padding: '0 4px', lineHeight: '14px' }}>
+                        <Tag
+                          color="blue"
+                          style={{
+                            fontSize: '8px',
+                            margin: 0,
+                            padding: '0 4px',
+                            lineHeight: '14px',
+                          }}
+                        >
                           {t('teamLead')}
                         </Tag>
                       </div>
@@ -392,35 +440,55 @@ const Members: React.FC = () => {
 
           {/* Show selected Team Lead info */}
           {selectedTeamLead && (
-            <div style={{ 
-              padding: '6px 8px', 
-              background: isDark ? 'linear-gradient(135deg, #1a237e 0%, #283593 100%)' : 'linear-gradient(135deg, #e8eaf6 0%, #f3e5f5 100%)',
-              margin: '4px',
-              borderRadius: '6px',
-              border: `1px solid ${isDark ? '#3949ab' : '#d1c4e9'}`,
-              position: 'relative'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <Avatar 
-                  src={teamLeadsWithMembers.find(tl => tl.team_lead_id === selectedTeamLead)?.team_lead_avatar_url} 
+            <div
+              style={{
+                padding: '6px 8px',
+                background: isDark
+                  ? 'linear-gradient(135deg, #1a237e 0%, #283593 100%)'
+                  : 'linear-gradient(135deg, #e8eaf6 0%, #f3e5f5 100%)',
+                margin: '4px',
+                borderRadius: '6px',
+                border: `1px solid ${isDark ? '#3949ab' : '#d1c4e9'}`,
+                position: 'relative',
+              }}
+            >
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}
+              >
+                <Avatar
+                  src={
+                    teamLeadsWithMembers.find(tl => tl.team_lead_id === selectedTeamLead)
+                      ?.team_lead_avatar_url
+                  }
                   size={20}
                 >
-                  {teamLeadsWithMembers.find(tl => tl.team_lead_id === selectedTeamLead)?.team_lead_name?.charAt(0)}
+                  {teamLeadsWithMembers
+                    .find(tl => tl.team_lead_id === selectedTeamLead)
+                    ?.team_lead_name?.charAt(0)}
                 </Avatar>
                 <div style={{ flex: 1 }}>
-                  <Typography.Text style={{ 
-                    fontSize: '12px', 
-                    fontWeight: 600,
-                    color: isDark ? '#e8eaf6' : '#3f51b5'
-                  }}>
-                    {teamLeadsWithMembers.find(tl => tl.team_lead_id === selectedTeamLead)?.team_lead_name}
+                  <Typography.Text
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: isDark ? '#e8eaf6' : '#3f51b5',
+                    }}
+                  >
+                    {
+                      teamLeadsWithMembers.find(tl => tl.team_lead_id === selectedTeamLead)
+                        ?.team_lead_name
+                    }
                   </Typography.Text>
-                  <div style={{ 
-                    fontSize: '10px', 
-                    color: isDark ? '#c5cae9' : '#5c6bc0',
-                    marginTop: '1px'
-                  }}>
-                    {membersByTeamLead.length} {membersByTeamLead.length === 1 ? 'member' : 'members'} • {activeFiltersCount} selected
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      color: isDark ? '#c5cae9' : '#5c6bc0',
+                      marginTop: '1px',
+                    }}
+                  >
+                    {membersByTeamLead.length}{' '}
+                    {membersByTeamLead.length === 1 ? 'member' : 'members'} • {activeFiltersCount}{' '}
+                    selected
                   </div>
                 </div>
                 <Button
@@ -432,23 +500,24 @@ const Members: React.FC = () => {
                     height: '20px',
                     width: '20px',
                     padding: 0,
-                    color: isDark ? '#c5cae9' : '#5c6bc0'
+                    color: isDark ? '#c5cae9' : '#5c6bc0',
                   }}
                 >
                   ×
                 </Button>
               </div>
-              
+
               {/* Show warning if using fallback mode (no managed members data) */}
-              {teamLeadsWithMembers.find(tl => tl.team_lead_id === selectedTeamLead)?.managed_members.length === 0 && (
+              {teamLeadsWithMembers.find(tl => tl.team_lead_id === selectedTeamLead)
+                ?.managed_members.length === 0 && (
                 <Alert
                   message={t('fallbackModeWarning')}
                   type="warning"
                   showIcon
-                  style={{ 
+                  style={{
                     fontSize: '10px',
                     margin: '4px 0 0 0',
-                    padding: '4px 8px'
+                    padding: '4px 8px',
                   }}
                 />
               )}
@@ -545,12 +614,7 @@ const Members: React.FC = () => {
         </div>
       )}
     >
-      <Badge 
-        count={selectedTeamLead ? 1 : 0} 
-        size="small" 
-        color="blue"
-        offset={[-6, 6]}
-      >
+      <Badge count={selectedTeamLead ? 1 : 0} size="small" color="blue" offset={[-6, 6]}>
         <Button
           loading={loadingMembers}
           style={{
@@ -566,7 +630,9 @@ const Members: React.FC = () => {
             backgroundColor: selectedTeamLead ? (isDark ? '#001529' : '#f6ffed') : colors.buttonBg,
             borderRadius: '8px',
             padding: '4px 12px',
-            boxShadow: selectedTeamLead ? `0 2px 4px ${isDark ? 'rgba(24, 144, 255, 0.2)' : 'rgba(24, 144, 255, 0.1)'}` : 'none',
+            boxShadow: selectedTeamLead
+              ? `0 2px 4px ${isDark ? 'rgba(24, 144, 255, 0.2)' : 'rgba(24, 144, 255, 0.1)'}`
+              : 'none',
           }}
           onMouseEnter={e => {
             if (!selectedTeamLead) {
@@ -586,9 +652,7 @@ const Members: React.FC = () => {
             }}
           />
           <span>{getButtonText()}</span>
-          {loadingTeamLeads && isAdmin && (
-            <Spin size="small" style={{ marginLeft: '4px' }} />
-          )}
+          {loadingTeamLeads && isAdmin && <Spin size="small" style={{ marginLeft: '4px' }} />}
           <CaretDownFilled
             style={{
               fontSize: '10px',

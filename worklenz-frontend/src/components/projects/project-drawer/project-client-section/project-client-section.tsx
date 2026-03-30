@@ -36,11 +36,21 @@ const ProjectClientSection = ({
   const dispatch = useAppDispatch();
   const [searchTerm, setSearchTerm] = useState<string>('');
 
+  const getClientDisplayName = (client: { company_name?: string; name?: string }) => {
+    const companyName = client.company_name?.trim();
+    if (companyName) {
+      return companyName;
+    }
+
+    return client.name?.trim() || '';
+  };
+
   const clientOptions = [
     ...(clients.data?.map((client, index) => ({
       key: index,
       value: client.id,
-      label: safeTextDisplay(client.name),
+      label: safeTextDisplay(getClientDisplayName(client)),
+      displayName: getClientDisplayName(client),
     })) || []),
     ...(searchTerm && clients.data?.length === 0 && !loadingClients
       ? [
@@ -71,7 +81,7 @@ const ProjectClientSection = ({
       return;
     }
     form.setFieldsValue({
-      client_name: option.label,
+      client_name: option.displayName || option.label,
       client_id: option.value,
     });
   };

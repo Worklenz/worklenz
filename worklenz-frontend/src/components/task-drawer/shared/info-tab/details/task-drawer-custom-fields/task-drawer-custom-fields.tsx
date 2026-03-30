@@ -194,7 +194,12 @@ const TaskDrawerCustomFields = ({
         return;
       }
 
-      await tasksCustomColumnsService.updateTaskCustomColumnValue(task.id, column.key, value, projectId);
+      await tasksCustomColumnsService.updateTaskCustomColumnValue(
+        task.id,
+        column.key,
+        value,
+        projectId
+      );
     } catch (error) {
       dispatch(
         setTaskCustomColumnValue({
@@ -229,7 +234,9 @@ const TaskDrawerCustomFields = ({
 
   const commitNumberValue = async (column: ITaskCustomColumn, rawValue: ITaskCustomColumnValue) => {
     const hasDraftValue = Object.prototype.hasOwnProperty.call(numberDraftValues, column.key);
-    const nextValue = hasDraftValue ? numberDraftValues[column.key] : formatNumberValue(rawValue, column);
+    const nextValue = hasDraftValue
+      ? numberDraftValues[column.key]
+      : formatNumberValue(rawValue, column);
     const currentValue = formatNumberValue(rawValue, column);
 
     if (nextValue === currentValue) {
@@ -297,9 +304,7 @@ const TaskDrawerCustomFields = ({
             placeholder={t('taskInfoTab.details.customFields.selectDate', {
               defaultValue: 'Select date',
             })}
-            onChange={date =>
-              handleValueChange(column, date ? date.toISOString() : null)
-            }
+            onChange={date => handleValueChange(column, date ? date.toISOString() : null)}
           />
         );
       }
@@ -418,7 +423,9 @@ const TaskDrawerCustomFields = ({
       {visibleSupportedColumns.map(column => (
         <Flex key={column.id} align="center" gap={16}>
           <div style={{ minWidth: 160, flex: '0 0 160px' }}>
-            <Typography.Text type="secondary">{getTaskCustomFieldDisplayName(column)}</Typography.Text>
+            <Typography.Text type="secondary">
+              {getTaskCustomFieldDisplayName(column)}
+            </Typography.Text>
           </div>
           <div style={{ flex: 1 }}>{renderField(column)}</div>
         </Flex>

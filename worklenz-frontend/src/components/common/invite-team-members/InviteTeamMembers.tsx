@@ -115,13 +115,14 @@ const InviteTeamMembers = () => {
       setLinkLoading(true);
       const linkData = {
         job_title_id: selectedJobTitle || undefined,
-        role_name: form.getFieldValue('access') === 'team-lead' 
-          ? ROLE_NAMES.TEAM_LEAD 
-          : form.getFieldValue('access') === 'admin' 
-            ? ROLE_NAMES.ADMIN 
-            : ROLE_NAMES.MEMBER,
+        role_name:
+          form.getFieldValue('access') === 'team-lead'
+            ? ROLE_NAMES.TEAM_LEAD
+            : form.getFieldValue('access') === 'admin'
+              ? ROLE_NAMES.ADMIN
+              : ROLE_NAMES.MEMBER,
         is_admin: form.getFieldValue('access') === 'admin',
-        max_usage: null // Unlimited usage
+        max_usage: null, // Unlimited usage
       };
 
       const res = await teamMembersApiService.generateInvitationLink(linkData);
@@ -154,14 +155,14 @@ const InviteTeamMembers = () => {
 
     try {
       await navigator.clipboard.writeText(invitationLink);
-      
+
       // Track team invitation link copy
       trackMixpanelEvent(evt_team_invite_sent, {
         invite_method: 'copy_link',
         role: form.getFieldValue('access') || 'member',
-        has_job_title: !!selectedJobTitle
+        has_job_title: !!selectedJobTitle,
       });
-      
+
       setLinkCopied(true);
       message.success(
         t('Invitation link copied to clipboard', {
@@ -234,9 +235,9 @@ const InviteTeamMembers = () => {
           invite_method: 'email',
           invite_count: emails.length,
           role: values.access,
-          has_job_title: !!selectedJobTitle
+          has_job_title: !!selectedJobTitle,
         });
-        
+
         form.resetFields();
         setEmails([]);
         setSelectedJobTitle(null);
@@ -269,7 +270,7 @@ const InviteTeamMembers = () => {
       const now = new Date();
       const diffTime = date.getTime() - now.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
+
       if (diffDays > 0) {
         return `${diffDays} day${diffDays > 1 ? 's' : ''}`;
       } else {
@@ -372,7 +373,9 @@ const InviteTeamMembers = () => {
       }),
       children: (
         <Flex vertical gap={16}>
-          {isInviteRestricted && <Typography.Text type="danger">{inviteRestrictedMessage}</Typography.Text>}
+          {isInviteRestricted && (
+            <Typography.Text type="danger">{inviteRestrictedMessage}</Typography.Text>
+          )}
           <div>
             <Typography.Text strong>
               {t('Your Invite Link', {
@@ -399,18 +402,25 @@ const InviteTeamMembers = () => {
                 )
               }
             />
-            {linkExpiry && (() => {
-              const expiryText = formatExpiryDate(linkExpiry);
-              return expiryText === 'Expired' ? (
-                <Typography.Text type="danger" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                  {expiryText}
-                </Typography.Text>
-              ) : (
-                <Typography.Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                  {t('This link will automatically expire in')} {expiryText}.
-                </Typography.Text>
-              );
-            })()}
+            {linkExpiry &&
+              (() => {
+                const expiryText = formatExpiryDate(linkExpiry);
+                return expiryText === 'Expired' ? (
+                  <Typography.Text
+                    type="danger"
+                    style={{ fontSize: 12, marginTop: 4, display: 'block' }}
+                  >
+                    {expiryText}
+                  </Typography.Text>
+                ) : (
+                  <Typography.Text
+                    type="secondary"
+                    style={{ fontSize: 12, marginTop: 4, display: 'block' }}
+                  >
+                    {t('This link will automatically expire in')} {expiryText}.
+                  </Typography.Text>
+                );
+              })()}
           </div>
 
           <Flex gap={8}>
@@ -484,12 +494,7 @@ const InviteTeamMembers = () => {
         ) : null
       }
     >
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={tabItems}
-        size="small"
-      />
+      <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} size="small" />
     </Modal>
   );
 };

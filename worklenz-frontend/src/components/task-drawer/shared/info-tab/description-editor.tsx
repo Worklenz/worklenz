@@ -59,9 +59,10 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
   const processMentions = (content: string): string => {
     if (!content || hasProcessedMentions(content)) return content;
 
-    // Match @username patterns (letters, numbers, underscores, hyphens)
-    const mentionRegex = /@([\w-]+)/g;
-    return content.replace(mentionRegex, '<span class="mentions">@$1</span>');
+    // Match standalone @username patterns (letters, numbers, underscores, hyphens)
+    // and avoid matching the "@domain" part of email addresses like name@example.com.
+    const mentionRegex = /(^|[^\w.+-])@([\w-]+)/g;
+    return content.replace(mentionRegex, '$1<span class="mentions">@$2</span>');
   };
 
   // Load TinyMCE script only when editor is opened
@@ -224,7 +225,11 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
             </div>
           )}
           {isTinyMCELoaded && (
-            <Suspense fallback={<div>{t('description.loadingEditor', { defaultValue: 'Loading editor...' })}</div>}>
+            <Suspense
+              fallback={
+                <div>{t('description.loadingEditor', { defaultValue: 'Loading editor...' })}</div>
+              }
+            >
               <LazyTinyMCEEditor
                 tinymceScriptSrc="/tinymce/tinymce.min.js"
                 value={content}

@@ -28,9 +28,7 @@ const RequestsTable = () => {
     {
       key: 'title',
       title: t('titleLabel'),
-      render: record => (
-        <Typography.Text>{record.request_data?.title || '-'}</Typography.Text>
-      ),
+      render: record => <Typography.Text>{record.request_data?.title || '-'}</Typography.Text>,
     },
     {
       key: 'serviceName',

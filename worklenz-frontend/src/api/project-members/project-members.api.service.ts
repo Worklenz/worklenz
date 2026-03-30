@@ -70,66 +70,89 @@ export const projectMembersApiService = {
     role_name?: string;
     is_admin?: boolean;
     max_usage?: number | null;
-  }): Promise<IServerResponse<{
-    id: string;
-    token: string;
-    invitation_url: string;
-    project_name: string;
-    expires_at: string;
-    expires_in_days: number;
-    created_at: string;
-  }>> => {
+  }): Promise<
+    IServerResponse<{
+      id: string;
+      token: string;
+      invitation_url: string;
+      project_name: string;
+      expires_at: string;
+      expires_in_days: number;
+      created_at: string;
+    }>
+  > => {
     const response = await apiClient.post<IServerResponse<any>>(`${rootUrl}/invitation-link`, body);
     return response.data;
   },
 
-  getInvitationLinkStatus: async (projectId: string): Promise<IServerResponse<{
-    has_active_link: boolean;
-    invitation_url?: string;
-    expires_at?: string;
-    usage_count?: number;
-    max_usage?: number | null;
-    created_at?: string;
-    access_level?: string;
-    project_name: string;
-  }>> => {
+  getInvitationLinkStatus: async (
+    projectId: string
+  ): Promise<
+    IServerResponse<{
+      has_active_link: boolean;
+      invitation_url?: string;
+      expires_at?: string;
+      usage_count?: number;
+      max_usage?: number | null;
+      created_at?: string;
+      access_level?: string;
+      project_name: string;
+    }>
+  > => {
     const params = new URLSearchParams({ project_id: projectId });
-    const response = await apiClient.get<IServerResponse<any>>(`${rootUrl}/invitation-link/status?${params}`);
+    const response = await apiClient.get<IServerResponse<any>>(
+      `${rootUrl}/invitation-link/status?${params}`
+    );
     return response.data;
   },
 
   revokeInvitationLink: async (projectId: string): Promise<IServerResponse<any>> => {
-    const response = await apiClient.put<IServerResponse<any>>(`${rootUrl}/invitation-link/revoke`, {
-      project_id: projectId
-    });
+    const response = await apiClient.put<IServerResponse<any>>(
+      `${rootUrl}/invitation-link/revoke`,
+      {
+        project_id: projectId,
+      }
+    );
     return response.data;
   },
 
-  validateInvitationLink: async (token: string): Promise<IServerResponse<{
-    project: {
-      id: string;
+  validateInvitationLink: async (
+    token: string
+  ): Promise<
+    IServerResponse<{
+      project: {
+        id: string;
+        name: string;
+        color_code: string;
+        team_name: string;
+        owner_name: string;
+      };
+      invitation: {
+        expires_at: string;
+        access_level: string;
+        job_title_id?: string;
+        role_name: string;
+        is_admin: boolean;
+      };
+    }>
+  > => {
+    const response = await apiClient.get<IServerResponse<any>>(
+      `${rootUrl}/invitation-link/validate/${token}`
+    );
+    return response.data;
+  },
+
+  acceptInvitationByLink: async (
+    token: string,
+    body: {
       name: string;
-      color_code: string;
-      team_name: string;
-      owner_name: string;
-    };
-    invitation: {
-      expires_at: string;
-      access_level: string;
-      job_title_id?: string;
-      role_name: string;
-      is_admin: boolean;
-    };
-  }>> => {
-    const response = await apiClient.get<IServerResponse<any>>(`${rootUrl}/invitation-link/validate/${token}`);
-    return response.data;
-  },
-
-  acceptInvitationByLink: async (token: string, body: {
-    name: string;
-    email: string;
-  }): Promise<IServerResponse<any>> => {
-    const response = await apiClient.post<IServerResponse<any>>(`${rootUrl}/invitation-link/accept/${token}`, body);
+      email: string;
+    }
+  ): Promise<IServerResponse<any>> => {
+    const response = await apiClient.post<IServerResponse<any>>(
+      `${rootUrl}/invitation-link/accept/${token}`,
+      body
+    );
     return response.data;
   },
 };

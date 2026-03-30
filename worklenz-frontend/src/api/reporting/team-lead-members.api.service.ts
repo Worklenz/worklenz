@@ -103,7 +103,9 @@ export const teamLeadMembersApiService = {
    * Get detailed performance data for a specific Team Lead's managed members
    * Returns individual member performance metrics
    */
-  getTeamLeadPerformance: async (teamLeadId: string): Promise<IServerResponse<TeamLeadPerformance[]>> => {
+  getTeamLeadPerformance: async (
+    teamLeadId: string
+  ): Promise<IServerResponse<TeamLeadPerformance[]>> => {
     const response = await apiClient.get<IServerResponse<TeamLeadPerformance[]>>(
       `${rootUrl}/team-lead-performance/${teamLeadId}`
     );

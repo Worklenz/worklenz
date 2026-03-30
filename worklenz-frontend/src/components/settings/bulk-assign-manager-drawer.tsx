@@ -40,9 +40,8 @@ export const BulkAssignManagerDrawer: React.FC<BulkAssignManagerDrawerProps> = (
       if (response.done && response.body.data) {
         // Filter for Team Leads and exclude selected members
         const selectedMemberIds = selectedMembers.map(m => m.id);
-        const availableTeamLeads = response.body.data.filter(member => 
-          member.role_name === 'Team Lead' && 
-          !selectedMemberIds.includes(member.id)
+        const availableTeamLeads = response.body.data.filter(
+          member => member.role_name === 'Team Lead' && !selectedMemberIds.includes(member.id)
         );
         setTeamLeads(availableTeamLeads);
       }
@@ -62,16 +61,16 @@ export const BulkAssignManagerDrawer: React.FC<BulkAssignManagerDrawerProps> = (
     setAssigning(true);
     try {
       const memberIds = selectedMembers.map(member => member.id).filter(Boolean);
-      
+
       await teamManagementApiService.bulkAssignMembers(selectedTeamLead, memberIds);
 
       message.success(
-        t('bulk_assignment_success', { 
+        t('bulk_assignment_success', {
           count: selectedMembers.length,
-          teamLeadName: teamLeads.find(tl => tl.id === selectedTeamLead)?.name 
+          teamLeadName: teamLeads.find(tl => tl.id === selectedTeamLead)?.name,
         })
       );
-      
+
       onAssignmentComplete();
       onClose();
       setSelectedTeamLead(null);
@@ -103,9 +102,7 @@ export const BulkAssignManagerDrawer: React.FC<BulkAssignManagerDrawerProps> = (
       width={500}
       footer={
         <Flex justify="space-between">
-          <Button onClick={handleClose}>
-            {t('cancelText')}
-          </Button>
+          <Button onClick={handleClose}>{t('cancelText')}</Button>
           <Button
             type="primary"
             onClick={handleBulkAssign}
@@ -131,13 +128,13 @@ export const BulkAssignManagerDrawer: React.FC<BulkAssignManagerDrawerProps> = (
             <List
               size="small"
               dataSource={selectedMembers}
-              renderItem={(member) => (
+              renderItem={member => (
                 <List.Item>
                   <List.Item.Meta
                     avatar={
-                      <Avatar 
-                        size={32} 
-                        src={member.avatar_url} 
+                      <Avatar
+                        size={32}
+                        src={member.avatar_url}
                         style={{ backgroundColor: member.color_code }}
                       >
                         {member.name?.charAt(0)}
@@ -146,10 +143,7 @@ export const BulkAssignManagerDrawer: React.FC<BulkAssignManagerDrawerProps> = (
                     title={
                       <Flex gap={8} align="center">
                         <span>{member.name}</span>
-                        <Tag 
-                          color={getRoleColor(member.role_name)} 
-                          style={{ margin: 0 }}
-                        >
+                        <Tag color={getRoleColor(member.role_name)} style={{ margin: 0 }}>
                           {member.role_name}
                         </Tag>
                       </Flex>
@@ -158,21 +152,19 @@ export const BulkAssignManagerDrawer: React.FC<BulkAssignManagerDrawerProps> = (
                   />
                 </List.Item>
               )}
-              style={{ 
-                maxHeight: '200px', 
+              style={{
+                maxHeight: '200px',
                 overflowY: 'auto',
                 border: `1px solid #d9d9d9`,
                 borderRadius: '6px',
-                padding: '8px'
+                padding: '8px',
               }}
             />
           </div>
 
           {/* Team Lead Selection */}
           <div style={{ marginBottom: '1.5rem' }}>
-            <Typography.Title level={5}>
-              {t('select_team_lead')}
-            </Typography.Title>
+            <Typography.Title level={5}>{t('select_team_lead')}</Typography.Title>
             <Select
               style={{ width: '100%' }}
               placeholder={t('select_team_lead_placeholder')}
@@ -195,27 +187,27 @@ export const BulkAssignManagerDrawer: React.FC<BulkAssignManagerDrawerProps> = (
 
           {/* Assignment Preview */}
           {selectedTeamLeadData && (
-            <div style={{ 
-              padding: '1rem',
-              backgroundColor: '#f5f5f5',
-              borderRadius: '6px',
-              border: `1px solid #d9d9d9`
-            }}>
+            <div
+              style={{
+                padding: '1rem',
+                backgroundColor: '#f5f5f5',
+                borderRadius: '6px',
+                border: `1px solid #d9d9d9`,
+              }}
+            >
               <Typography.Title level={5} style={{ margin: 0, marginBottom: '0.5rem' }}>
                 {t('assignment_preview')}
               </Typography.Title>
               <Flex align="center" gap={12}>
-                <Avatar 
-                  size={40} 
+                <Avatar
+                  size={40}
                   src={selectedTeamLeadData.avatar_url}
                   style={{ backgroundColor: selectedTeamLeadData.color_code }}
                 >
                   {selectedTeamLeadData.name?.charAt(0)}
                 </Avatar>
                 <div>
-                  <Typography.Text strong>
-                    {selectedTeamLeadData.name}
-                  </Typography.Text>
+                  <Typography.Text strong>{selectedTeamLeadData.name}</Typography.Text>
                   <br />
                   <Typography.Text type="secondary">
                     {t('will_manage_members', { count: selectedMembers.length })}
@@ -226,15 +218,15 @@ export const BulkAssignManagerDrawer: React.FC<BulkAssignManagerDrawerProps> = (
           )}
 
           {teamLeads.length === 0 && !loading && (
-            <div style={{ 
-              textAlign: 'center', 
-              padding: '2rem',
-              color: '#666' 
-            }}>
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '2rem',
+                color: '#666',
+              }}
+            >
               <UserOutlined style={{ fontSize: '2rem', marginBottom: '1rem' }} />
-              <Typography.Paragraph>
-                {t('no_team_leads_found')}
-              </Typography.Paragraph>
+              <Typography.Paragraph>{t('no_team_leads_found')}</Typography.Paragraph>
               <Typography.Paragraph type="secondary">
                 {t('create_team_leads_first')}
               </Typography.Paragraph>

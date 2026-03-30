@@ -5,7 +5,15 @@ import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { allTasksReportsApiService } from '@/api/reporting/all-tasks-reports.api.service';
 
 // Types
-export type AllTasksGroupBy = 'none' | 'project' | 'status' | 'priority' | 'assignee' | 'dueDate' | 'phase' | 'team';
+export type AllTasksGroupBy =
+  | 'none'
+  | 'project'
+  | 'status'
+  | 'priority'
+  | 'assignee'
+  | 'dueDate'
+  | 'phase'
+  | 'team';
 export type AllTasksViewMode = 'table' | 'board' | 'list';
 export type CompletionStatus = 'all' | 'completed' | 'incomplete' | 'overdue';
 export type DateFilterField = 'due_date' | 'start_date' | 'created_at' | 'completed_at';
@@ -150,13 +158,10 @@ const getSelectedTeamIds = (state: AllTasksReportsState): string[] => {
 };
 
 // Async thunks
-export const fetchAllTasksTeams = createAsyncThunk(
-  'allTasksReports/fetchTeams',
-  async () => {
-    const res = await reportingApiService.getOverviewTeams();
-    return res.body;
-  }
-);
+export const fetchAllTasksTeams = createAsyncThunk('allTasksReports/fetchTeams', async () => {
+  const res = await reportingApiService.getOverviewTeams();
+  return res.body;
+});
 
 export const fetchAllTasks = createAsyncThunk(
   'allTasksReports/fetchAllTasks',

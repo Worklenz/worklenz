@@ -1,12 +1,6 @@
 import { useState } from 'react';
 import { ITaskAttachmentViewModel } from '@/types/tasks/task-attachment-view-model';
-import {
-  Button,
-  Tooltip,
-  Popconfirm,
-  message,
-  dayjs,
-} from '@/shared/antd-imports';
+import { Button, Tooltip, Popconfirm, message, dayjs } from '@/shared/antd-imports';
 import {
   EyeOutlined,
   DownloadOutlined,

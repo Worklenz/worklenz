@@ -1,5 +1,9 @@
 import React from 'react';
-import { useColumnResizeHandler, COLUMN_MIN_WIDTH, COLUMN_MAX_WIDTH } from '@/hooks/useColumnResizeHandler';
+import {
+  useColumnResizeHandler,
+  COLUMN_MIN_WIDTH,
+  COLUMN_MAX_WIDTH,
+} from '@/hooks/useColumnResizeHandler';
 
 interface ColumnResizeHandleProps {
   columnKey: string;
@@ -41,4 +45,3 @@ export const ColumnResizeHandle: React.FC<ColumnResizeHandleProps> = ({
     />
   );
 };
-

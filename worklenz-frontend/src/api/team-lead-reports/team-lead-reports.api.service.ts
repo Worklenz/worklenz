@@ -64,35 +64,39 @@ export interface PerformanceStats {
 
 export const teamLeadReportsApiService = {
   getMyTeamMembers: async (): Promise<IServerResponse<TeamMember[]>> => {
-    const response = await apiClient.get<IServerResponse<TeamMember[]>>(`${rootUrl}/my-team-members`);
+    const response = await apiClient.get<IServerResponse<TeamMember[]>>(
+      `${rootUrl}/my-team-members`
+    );
     return response.data;
   },
 
   getTeamTimeLogsSummary: async (
     startDate?: string,
     endDate?: string
-  ): Promise<IServerResponse<{
-    filteredRows: TimeLogsSummary[];
-    totals: {
-      total_time_logs: string;
-      total_estimated_hours: string;
-      total_utilization: string;
-    };
-  }>> => {
-    const params = new URLSearchParams();
-    if (startDate) params.append('startDate', startDate);
-    if (endDate) params.append('endDate', endDate);
-    
-    const response = await apiClient.get<IServerResponse<{
+  ): Promise<
+    IServerResponse<{
       filteredRows: TimeLogsSummary[];
       totals: {
         total_time_logs: string;
         total_estimated_hours: string;
         total_utilization: string;
       };
-    }>>(
-      `${rootUrl}/team-time-logs-summary${params.toString() ? '?' + params.toString() : ''}`
-    );
+    }>
+  > => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+
+    const response = await apiClient.get<
+      IServerResponse<{
+        filteredRows: TimeLogsSummary[];
+        totals: {
+          total_time_logs: string;
+          total_estimated_hours: string;
+          total_utilization: string;
+        };
+      }>
+    >(`${rootUrl}/team-time-logs-summary${params.toString() ? '?' + params.toString() : ''}`);
     return response.data;
   },
 
@@ -109,7 +113,7 @@ export const teamLeadReportsApiService = {
     });
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
-    
+
     const response = await apiClient.get<IServerResponse<TimeLogsResponse>>(
       `${rootUrl}/member-time-logs/${memberId}?${params.toString()}`
     );
@@ -123,7 +127,7 @@ export const teamLeadReportsApiService = {
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
-    
+
     const response = await apiClient.get<IServerResponse<PerformanceStats[]>>(
       `${rootUrl}/team-performance${params.toString() ? '?' + params.toString() : ''}`
     );

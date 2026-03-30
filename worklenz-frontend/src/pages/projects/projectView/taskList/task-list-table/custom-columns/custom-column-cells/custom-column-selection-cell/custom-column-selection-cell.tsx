@@ -39,6 +39,34 @@ const CustomColumnSelectionCell = ({
         setCurrentSelectionOption(selectedOption);
       }
     }
+
+    const normalizedValue = value?.toString().trim() || '';
+    const normalizedLower = normalizedValue.toLowerCase();
+    const list = Array.isArray(selectionsList) ? selectionsList : [];
+
+    const matchedOption =
+      list.find(option => option.selection_id === normalizedValue) ||
+      list.find(option => option.selection_name?.toLowerCase() === normalizedLower) ||
+      null;
+
+    // Dev-only trace to confirm incoming value vs detected option
+    console.debug('CustomColumnSelectionCell match', {
+      value: normalizedValue,
+      matchedSelectionId: matchedOption?.selection_id,
+      selections: list.map(item => item.selection_id),
+    });
+
+    if (matchedOption) {
+      setCurrentSelectionOption(matchedOption);
+      return;
+    }
+
+    // Fallback so imported values still render even if no matching selection exists yet.
+    setCurrentSelectionOption({
+      selection_id: normalizedValue,
+      selection_name: normalizedValue,
+      selection_color: colors.transparent,
+    });
   }, [value, selectionsList]);
 
   // ensure selectionsList is an array and has valid data

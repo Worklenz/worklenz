@@ -9,7 +9,7 @@ type ProjectUpdateCellProps = {
 const ProjectUpdateCell = ({ updates }: ProjectUpdateCellProps) => {
   // Sanitize content to prevent XSS attacks
   const sanitizedContent = sanitizeHtml(updates || '');
-  
+
   return (
     <Typography.Text
       style={{ cursor: 'pointer' }}

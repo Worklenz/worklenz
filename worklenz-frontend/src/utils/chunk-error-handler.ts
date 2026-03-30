@@ -30,7 +30,7 @@ export class ChunkErrorHandler {
       errorMessage.includes('ChunkLoadError') ||
       errorMessage.includes('Loading CSS chunk') ||
       errorName === 'ChunkLoadError' ||
-      errorName === 'TypeError' && errorMessage.includes('fetch')
+      (errorName === 'TypeError' && errorMessage.includes('fetch'))
     );
   }
 
@@ -123,24 +123,21 @@ export class ChunkErrorHandler {
         if (registration?.active) {
           // Send message to service worker to clear its caches
           const messageChannel = new MessageChannel();
-          registration.active.postMessage(
-            { type: 'CLEAR_CACHE' },
-            [messageChannel.port2]
-          );
+          registration.active.postMessage({ type: 'CLEAR_CACHE' }, [messageChannel.port2]);
         }
       }
 
       // Clear session storage (but preserve critical data)
       const preserveKeys = ['i18nextLng', 'theme'];
       const sessionData: Record<string, string> = {};
-      
+
       preserveKeys.forEach(key => {
         const value = sessionStorage.getItem(key);
         if (value) sessionData[key] = value;
       });
 
       sessionStorage.clear();
-      
+
       // Restore preserved data
       Object.entries(sessionData).forEach(([key, value]) => {
         sessionStorage.setItem(key, value);
@@ -176,14 +173,14 @@ export class ChunkErrorHandler {
             `ChunkErrorHandler: Failed to load ${componentName}, attempting recovery`,
             error
           );
-          
+
           // Handle the error
           await this.handleChunkError(error);
-          
+
           // This will never return as we reload the page
           throw error;
         }
-        
+
         // Re-throw non-chunk errors
         throw error;
       }

@@ -213,13 +213,27 @@ const NotifyMemberSelector = ({ task, t }: NotifyMemberSelectorProps) => {
       <Flex gap={8}>
         <Avatars members={subscribers || []} />
         <Tooltip title={t('common:upgrade-plan')} placement="top">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }} onClick={() => dispatch(toggleUpgradeModal())}>
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+            onClick={() => dispatch(toggleUpgradeModal())}
+          >
             <Button
               type="dashed"
               shape="circle"
               size="small"
               disabled
-              icon={<PlusOutlined style={{ fontSize: 12, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }} />}
+              icon={
+                <PlusOutlined
+                  style={{
+                    fontSize: 12,
+                    width: 22,
+                    height: 22,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                />
+              }
             />
             <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
           </div>

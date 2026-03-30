@@ -83,7 +83,8 @@ const ClientTeamsDrawer = () => {
   const [inviteTeamMember, { isLoading: isInvitingMember }] = useInviteTeamMemberMutation();
   const [removeTeamMember, { isLoading: isRemovingMember }] = useRemoveTeamMemberMutation();
   const [resendInvitation, { isLoading: isResending }] = useResendTeamInvitationMutation();
-  const [generateInvitationLink, { isLoading: isGeneratingLink }] = useGenerateClientInvitationLinkMutation();
+  const [generateInvitationLink, { isLoading: isGeneratingLink }] =
+    useGenerateClientInvitationLinkMutation();
 
   // Generate invitation link when drawer opens or client changes
   useEffect(() => {
@@ -96,7 +97,7 @@ const ClientTeamsDrawer = () => {
       try {
         setIsLoadingInvitationLink(true);
         const result = await generateInvitationLink({ clientId: selectedClientId }).unwrap();
-        
+
         // Handle existing user case - show portal URL instead of invitation link
         if (result.body?.isExistingUser && result.body?.portalUrl) {
           setInvitationLink(result.body.portalUrl);
@@ -110,10 +111,15 @@ const ClientTeamsDrawer = () => {
         console.error('Failed to generate invitation link:', error);
         setInvitationLink('');
         // Don't show error if it's just missing email - that's handled elsewhere
-        const errorData = error?.data?.body || error?.data || error?.response?.data?.body || error?.response?.data;
+        const errorData =
+          error?.data?.body || error?.data || error?.response?.data?.body || error?.response?.data;
         const errorCode = errorData?.errorCode;
         if (errorCode !== 'EMAIL_REQUIRED') {
-          message.error(error?.data?.message || t('inviteLinkGeneratedError') || 'Failed to generate invitation link');
+          message.error(
+            error?.data?.message ||
+              t('inviteLinkGeneratedError') ||
+              'Failed to generate invitation link'
+          );
         }
       } finally {
         setIsLoadingInvitationLink(false);
@@ -307,16 +313,16 @@ const ClientTeamsDrawer = () => {
                   invitationLink
                     ? invitationLink
                     : isLoadingInvitationLink || isGeneratingLink
-                    ? t('loadingText') || 'Loading...'
-                    : ''
+                      ? t('loadingText') || 'Loading...'
+                      : ''
                 }
                 readOnly
                 style={{ flex: 1 }}
                 disabled={isLoadingInvitationLink || isGeneratingLink || !invitationLink}
               />
-              <Button 
-                type="default" 
-                icon={<CopyOutlined />} 
+              <Button
+                type="default"
+                icon={<CopyOutlined />}
                 onClick={copyLinkToClipboard}
                 disabled={!invitationLink || isLoadingInvitationLink || isGeneratingLink}
                 loading={isLoadingInvitationLink || isGeneratingLink}

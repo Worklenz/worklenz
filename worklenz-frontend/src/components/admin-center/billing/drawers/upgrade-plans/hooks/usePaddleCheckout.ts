@@ -10,7 +10,12 @@ import { setSession } from '@/utils/session-helper';
 import { fetchBillingInfo, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { IPaddlePlans, SUBSCRIPTION_STATUS } from '@/shared/constants';
 import { PlanType, BillingFrequency, PricingData } from '../types';
-import { TEAM_SIZE_THRESHOLD, MAX_TEAM_SIZE, PADDLE_CHECKOUT_DELAY, PADDLE_SCRIPT_URL } from '../constants';
+import {
+  TEAM_SIZE_THRESHOLD,
+  MAX_TEAM_SIZE,
+  PADDLE_CHECKOUT_DELAY,
+  PADDLE_SCRIPT_URL,
+} from '../constants';
 import logger from '@/utils/errorLogger';
 import {
   MixpanelBillingEvents,
@@ -64,9 +69,18 @@ export function usePaddleCheckout(options: UsePaddleCheckoutOptions) {
 
   const handlePaddleCallback = (data: any) => {
     const {
-      getUserType, billingInfo, isAppSumoUser, teamSize, getCurrentPlanType,
-      selectedPlanType, billingFrequency, getEffectivePricingModel, currentSession,
-      isLicenseExpired, getPlanRank, trackMixpanelEvent,
+      getUserType,
+      billingInfo,
+      isAppSumoUser,
+      teamSize,
+      getCurrentPlanType,
+      selectedPlanType,
+      billingFrequency,
+      getEffectivePricingModel,
+      currentSession,
+      isLicenseExpired,
+      getPlanRank,
+      trackMixpanelEvent,
     } = optionsRef.current;
 
     switch (data.event) {
@@ -87,7 +101,9 @@ export function usePaddleCheckout(options: UsePaddleCheckoutOptions) {
           plan_type: selectedPlanType as MixpanelPlanType,
           billing_frequency: billingFrequency as MixpanelBillingFrequency,
           checkout_amount: data.checkout?.recurring_totals?.total || 0,
-          pricing_model: getEffectivePricingModel(selectedPlanType as 'pro' | 'business' | 'enterprise') as PricingModel,
+          pricing_model: getEffectivePricingModel(
+            selectedPlanType as 'pro' | 'business' | 'enterprise'
+          ) as PricingModel,
           discount_applied: isAppSumoUser,
           discount_percentage: isAppSumoUser ? 50 : undefined,
           success: true,
@@ -128,7 +144,8 @@ export function usePaddleCheckout(options: UsePaddleCheckoutOptions) {
         message.success('Subscription updated successfully!');
         setPaddleLoading(true);
 
-        authApiService.verify()
+        authApiService
+          .verify()
           .then(authorizeResponse => {
             if (authorizeResponse.authenticated) {
               setSession(authorizeResponse.user);
@@ -174,7 +191,9 @@ export function usePaddleCheckout(options: UsePaddleCheckoutOptions) {
           plan_type: selectedPlanType as MixpanelPlanType,
           billing_frequency: billingFrequency as MixpanelBillingFrequency,
           checkout_amount: 0,
-          pricing_model: getEffectivePricingModel(selectedPlanType as 'pro' | 'business' | 'enterprise') as PricingModel,
+          pricing_model: getEffectivePricingModel(
+            selectedPlanType as 'pro' | 'business' | 'enterprise'
+          ) as PricingModel,
           discount_applied: isAppSumoUser,
           discount_percentage: isAppSumoUser ? 50 : undefined,
           success: false,
@@ -198,7 +217,9 @@ export function usePaddleCheckout(options: UsePaddleCheckoutOptions) {
       if (data.sandbox) Paddle.Environment.set('sandbox');
       Paddle.Setup({
         vendor: parseInt(data.vendor_id),
-        eventCallback: (eventData: any) => { void handlePaddleCallback(eventData); },
+        eventCallback: (eventData: any) => {
+          void handlePaddleCallback(eventData);
+        },
       });
       Paddle.Checkout.open(data.params);
     } catch (error) {
@@ -222,9 +243,18 @@ export function usePaddleCheckout(options: UsePaddleCheckoutOptions) {
     script.src = PADDLE_SCRIPT_URL;
     script.type = 'text/javascript';
     script.async = true;
-    script.onload = () => { configurePaddle(data); };
+    script.onload = () => {
+      configurePaddle(data);
+    };
     script.onerror = () => {
-      const { getUserType, billingInfo, getCurrentPlanType, isAppSumoUser, teamSize, trackMixpanelEvent } = optionsRef.current;
+      const {
+        getUserType,
+        billingInfo,
+        getCurrentPlanType,
+        isAppSumoUser,
+        teamSize,
+        trackMixpanelEvent,
+      } = optionsRef.current;
       setPaddleLoading(false);
       setPaddleError('Failed to load Paddle checkout');
       message.error('Failed to load payment processor');
@@ -243,10 +273,20 @@ export function usePaddleCheckout(options: UsePaddleCheckoutOptions) {
 
   const upgradeToPaddlePlan = async (planId: string) => {
     const {
-      selectedPlanType, billingFrequency, teamSize, billingInfo, isAppSumoUser,
-      isFreeUser, currentSession, getUserType, getCurrentPlanType,
-      getEffectivePricingModel, calculateAnnualTotal, calculateMonthlyTotal,
-      getPlanRank, trackMixpanelEvent,
+      selectedPlanType,
+      billingFrequency,
+      teamSize,
+      billingInfo,
+      isAppSumoUser,
+      isFreeUser,
+      currentSession,
+      getUserType,
+      getCurrentPlanType,
+      getEffectivePricingModel,
+      calculateAnnualTotal,
+      calculateMonthlyTotal,
+      getPlanRank,
+      trackMixpanelEvent,
     } = optionsRef.current;
 
     try {
@@ -255,7 +295,9 @@ export function usePaddleCheckout(options: UsePaddleCheckoutOptions) {
       setPaddleError(null);
       setLoadingPlanType(selectedPlanType);
 
-      const effectivePricingModel = getEffectivePricingModel(selectedPlanType as 'pro' | 'business' | 'enterprise');
+      const effectivePricingModel = getEffectivePricingModel(
+        selectedPlanType as 'pro' | 'business' | 'enterprise'
+      );
 
       const checkoutProps: CheckoutEventProps = {
         user_type: getUserType,
@@ -267,15 +309,21 @@ export function usePaddleCheckout(options: UsePaddleCheckoutOptions) {
         plan_id: planId,
         plan_type: selectedPlanType as MixpanelPlanType,
         billing_frequency: billingFrequency as MixpanelBillingFrequency,
-        checkout_amount: billingFrequency === 'annual'
-          ? parseFloat(calculateAnnualTotal(selectedPlanType as 'pro' | 'business' | 'enterprise'))
-          : parseFloat(calculateMonthlyTotal(selectedPlanType as 'pro' | 'business' | 'enterprise')),
+        checkout_amount:
+          billingFrequency === 'annual'
+            ? parseFloat(
+                calculateAnnualTotal(selectedPlanType as 'pro' | 'business' | 'enterprise')
+              )
+            : parseFloat(
+                calculateMonthlyTotal(selectedPlanType as 'pro' | 'business' | 'enterprise')
+              ),
         pricing_model: effectivePricingModel as PricingModel,
         discount_applied: isAppSumoUser,
         discount_percentage: isAppSumoUser ? 50 : undefined,
       };
 
-      if (isAppSumoUser) trackMixpanelEvent(MixpanelBillingEvents.APPSUMO_UPGRADE_INITIATED, checkoutProps);
+      if (isAppSumoUser)
+        trackMixpanelEvent(MixpanelBillingEvents.APPSUMO_UPGRADE_INITIATED, checkoutProps);
       trackMixpanelEvent(MixpanelBillingEvents.CHECKOUT_INITIATED, checkoutProps);
 
       const shouldUseUpgradeAPI =
@@ -288,7 +336,11 @@ export function usePaddleCheckout(options: UsePaddleCheckoutOptions) {
 
       if (shouldUseUpgradeAPI) {
         const apiPricingModel = effectivePricingModel === 'base_plan' ? 'regular' : 'per_user';
-        const res = await billingApiService.upgradeToPaidPlan(planId, apiPricingModel as 'per_user' | 'regular', teamSize);
+        const res = await billingApiService.upgradeToPaidPlan(
+          planId,
+          apiPricingModel as 'per_user' | 'regular',
+          teamSize
+        );
         if (res.done) {
           initializePaddle(res.body);
         } else {
@@ -353,7 +405,8 @@ export function usePaddleCheckout(options: UsePaddleCheckoutOptions) {
   };
 
   const continueWithPaddlePlan = async (planType?: 'pro' | 'business' | 'enterprise') => {
-    const { teamSize, billingFrequency, pricingData, onSetSelectedPlanType, selectedPlanType } = optionsRef.current;
+    const { teamSize, billingFrequency, pricingData, onSetSelectedPlanType, selectedPlanType } =
+      optionsRef.current;
 
     if (teamSize >= MAX_TEAM_SIZE) {
       message.info('Please contact sales for custom pricing on large teams');
@@ -377,19 +430,27 @@ export function usePaddleCheckout(options: UsePaddleCheckoutOptions) {
 
       const getPlanIdForType = (type: typeof targetPlanType) => {
         if (type === 'pro') {
-          const useSmallPlan = teamSize <= TEAM_SIZE_THRESHOLD &&
+          const useSmallPlan =
+            teamSize <= TEAM_SIZE_THRESHOLD &&
             pricingData.pro_small &&
-            (isAnnual ? pricingData.pro_small.annual_plan_id : pricingData.pro_small.monthly_plan_id);
+            (isAnnual
+              ? pricingData.pro_small.annual_plan_id
+              : pricingData.pro_small.monthly_plan_id);
           const planData = useSmallPlan ? pricingData.pro_small : pricingData.pro;
           return isAnnual ? planData?.annual_plan_id : planData?.monthly_plan_id;
         } else if (type === 'business') {
-          const useSmallPlan = teamSize <= TEAM_SIZE_THRESHOLD &&
+          const useSmallPlan =
+            teamSize <= TEAM_SIZE_THRESHOLD &&
             pricingData.business_small &&
-            (isAnnual ? pricingData.business_small.annual_plan_id : pricingData.business_small.monthly_plan_id);
+            (isAnnual
+              ? pricingData.business_small.annual_plan_id
+              : pricingData.business_small.monthly_plan_id);
           const planData = useSmallPlan ? pricingData.business_small : pricingData.business;
           return isAnnual ? planData?.annual_plan_id : planData?.monthly_plan_id;
         } else if (type === 'enterprise') {
-          return isAnnual ? pricingData.enterprise?.annual_plan_id : pricingData.enterprise?.monthly_plan_id;
+          return isAnnual
+            ? pricingData.enterprise?.annual_plan_id
+            : pricingData.enterprise?.monthly_plan_id;
         }
         return null;
       };
@@ -421,5 +482,11 @@ export function usePaddleCheckout(options: UsePaddleCheckoutOptions) {
     }
   };
 
-  return { switchingToPaddlePlan, paddleLoading, paddleError, loadingPlanType, continueWithPaddlePlan };
+  return {
+    switchingToPaddlePlan,
+    paddleLoading,
+    paddleError,
+    loadingPlanType,
+    continueWithPaddlePlan,
+  };
 }

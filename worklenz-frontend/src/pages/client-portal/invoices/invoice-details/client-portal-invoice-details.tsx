@@ -38,17 +38,20 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 import { FileImageOutlined, FilePdfOutlined } from '@ant-design/icons';
-import { 
+import {
   useGetInvoiceDetailsQuery,
   useSendInvoiceMutation,
   useMarkInvoiceAsPaidMutation,
   useDeleteInvoiceMutation,
 } from '@/api/client-portal/client-portal-api';
 import InvoicePreviewModal from './invoice-preview-modal';
+import config from '@/config/env';
+import { API_BASE_URL } from '@/shared/constants';
 
 const { Title, Text } = Typography;
 
-const getInvoiceDownloadUrl = (invoiceId: string) => `/api/v1/clients/portal/invoices/${invoiceId}/download`;
+const getInvoiceDownloadUrl = (invoiceId: string) =>
+  `${config.apiUrl.replace(/\/$/, '')}${API_BASE_URL}/clients/portal/invoices/${invoiceId}/download`;
 
 const ClientPortalInvoiceDetails: React.FC = () => {
   const { invoiceId } = useParams<{ invoiceId: string }>();
@@ -62,11 +65,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
   const [markAsPaid, { isLoading: isMarkingPaid }] = useMarkInvoiceAsPaidMutation();
   const [deleteInvoice, { isLoading: isDeleting }] = useDeleteInvoiceMutation();
 
-  const {
-    data,
-    isLoading,
-    error,
-  } = useGetInvoiceDetailsQuery(invoiceId as string, {
+  const { data, isLoading, error } = useGetInvoiceDetailsQuery(invoiceId as string, {
     skip: !invoiceId,
   });
 
@@ -128,7 +127,11 @@ const ClientPortalInvoiceDetails: React.FC = () => {
   const handleSendInvoice = async () => {
     try {
       await sendInvoice(invoiceId!).unwrap();
-      message.success(t('sendInvoice', { defaultValue: 'Send Invoice' }) + ' ' + t('createInvoiceSuccessMessage', { defaultValue: 'Invoice sent successfully' }));
+      message.success(
+        t('sendInvoice', { defaultValue: 'Send Invoice' }) +
+          ' ' +
+          t('createInvoiceSuccessMessage', { defaultValue: 'Invoice sent successfully' })
+      );
     } catch (error) {
       message.error(t('createInvoiceErrorMessage', { defaultValue: 'Failed to send invoice' }));
     }
@@ -138,15 +141,21 @@ const ClientPortalInvoiceDetails: React.FC = () => {
   const handleMarkAsPaid = async () => {
     Modal.confirm({
       title: t('markAsPaid.title', { defaultValue: 'Mark as Paid' }),
-      content: t('markAsPaid.confirm', { defaultValue: 'Are you sure you want to mark this invoice as paid?' }),
+      content: t('markAsPaid.confirm', {
+        defaultValue: 'Are you sure you want to mark this invoice as paid?',
+      }),
       okText: t('markAsPaid.okText', { defaultValue: 'Mark as Paid' }),
       cancelText: t('markAsPaid.cancelText', { defaultValue: 'Cancel' }),
       onOk: async () => {
         try {
           await markAsPaid(invoiceId!).unwrap();
-          message.success(t('markAsPaid.success', { defaultValue: 'Invoice marked as paid successfully' }));
+          message.success(
+            t('markAsPaid.success', { defaultValue: 'Invoice marked as paid successfully' })
+          );
         } catch (error) {
-          message.error(t('markAsPaid.failure', { defaultValue: 'Failed to mark invoice as paid' }));
+          message.error(
+            t('markAsPaid.failure', { defaultValue: 'Failed to mark invoice as paid' })
+          );
         }
       },
     });
@@ -162,14 +171,18 @@ const ClientPortalInvoiceDetails: React.FC = () => {
   const handleDeleteInvoice = async () => {
     Modal.confirm({
       title: t('deleteInvoice.title', { defaultValue: 'Delete Invoice' }),
-      content: t('deleteInvoice.confirm', { defaultValue: 'Are you sure you want to delete this invoice? This action cannot be undone.' }),
+      content: t('deleteInvoice.confirm', {
+        defaultValue: 'Are you sure you want to delete this invoice? This action cannot be undone.',
+      }),
       okText: t('deleteInvoice.okText', { defaultValue: 'Delete' }),
       okType: 'danger',
       cancelText: t('deleteInvoice.cancelText', { defaultValue: 'Cancel' }),
       onOk: async () => {
         try {
           await deleteInvoice(invoiceId!).unwrap();
-          message.success(t('deleteInvoice.success', { defaultValue: 'Invoice deleted successfully' }));
+          message.success(
+            t('deleteInvoice.success', { defaultValue: 'Invoice deleted successfully' })
+          );
           navigate('/worklenz/client-portal/invoices');
         } catch (error) {
           message.error(t('deleteInvoice.failure', { defaultValue: 'Failed to delete invoice' }));
@@ -200,7 +213,9 @@ const ClientPortalInvoiceDetails: React.FC = () => {
         <Result
           status="error"
           title={t('errorLoadingInvoice', { defaultValue: 'Error Loading Invoice' })}
-          subTitle={t('errorLoadingInvoiceDescription', { defaultValue: 'Unable to load invoice details. Please try again.' })}
+          subTitle={t('errorLoadingInvoiceDescription', {
+            defaultValue: 'Unable to load invoice details. Please try again.',
+          })}
           extra={
             <Button type="primary" onClick={() => navigate(-1)}>
               {t('backToInvoices', { defaultValue: 'Back to Invoices' })}
@@ -229,10 +244,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
               <Title level={4} style={{ margin: 0 }}>
                 {invoice.invoiceNumber}
               </Title>
-              <Tag
-                icon={statusConfig.icon}
-                color={statusConfig.color as any}
-              >
+              <Tag icon={statusConfig.icon} color={statusConfig.color as any}>
                 {getStatusText(invoice.status)}
               </Tag>
             </Flex>
@@ -247,16 +259,13 @@ const ClientPortalInvoiceDetails: React.FC = () => {
             {t('previewInvoice', { defaultValue: 'Preview Invoice' })}
           </Button>
           {invoice.status !== 'paid' && (
-            <Button 
-              icon={<EditOutlined />} 
-              onClick={handleEditInvoice}
-            >
+            <Button icon={<EditOutlined />} onClick={handleEditInvoice}>
               {t('editInvoice', { defaultValue: 'Edit' })}
             </Button>
           )}
           {invoice.status === 'draft' && (
-            <Button 
-              icon={<SendOutlined />} 
+            <Button
+              icon={<SendOutlined />}
               type="primary"
               onClick={handleSendInvoice}
               loading={isSending}
@@ -265,7 +274,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
             </Button>
           )}
           {invoice.status === 'sent' && (
-            <Button 
+            <Button
               icon={<CheckCircleOutlined />}
               onClick={handleMarkAsPaid}
               loading={isMarkingPaid}
@@ -274,8 +283,8 @@ const ClientPortalInvoiceDetails: React.FC = () => {
             </Button>
           )}
           {invoice.status !== 'paid' && (
-            <Button 
-              icon={<DeleteOutlined />} 
+            <Button
+              icon={<DeleteOutlined />}
               danger
               onClick={handleDeleteInvoice}
               loading={isDeleting}
@@ -284,10 +293,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
             </Button>
           )}
           <Tooltip title={t('downloadInvoice', { defaultValue: 'Download Invoice' })}>
-            <Button
-              icon={<DownloadOutlined />}
-              onClick={handleDownloadInvoice}
-            />
+            <Button icon={<DownloadOutlined />} onClick={handleDownloadInvoice} />
           </Tooltip>
         </Space>
       </Flex>
@@ -390,12 +396,32 @@ const ClientPortalInvoiceDetails: React.FC = () => {
                       {t('serviceDescription', { defaultValue: 'Service Description' })}
                     </Text>
                     <Card size="small" style={{ backgroundColor: 'var(--ant-color-bg-layout)' }}>
-                      <div 
-                        dangerouslySetInnerHTML={{ 
+                      <div
+                        dangerouslySetInnerHTML={{
                           __html: DOMPurify.sanitize(invoice.request.service.description, {
-                            ALLOWED_TAGS: ['p', 'br', 'strong', 'b', 'i', 'em', 'u', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'span', 'div'],
-                            ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style']
-                          })
+                            ALLOWED_TAGS: [
+                              'p',
+                              'br',
+                              'strong',
+                              'b',
+                              'i',
+                              'em',
+                              'u',
+                              'ul',
+                              'ol',
+                              'li',
+                              'h1',
+                              'h2',
+                              'h3',
+                              'h4',
+                              'h5',
+                              'h6',
+                              'a',
+                              'span',
+                              'div',
+                            ],
+                            ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'],
+                          }),
                         }}
                         style={{ maxHeight: 200, overflow: 'auto' }}
                       />
@@ -425,18 +451,25 @@ const ClientPortalInvoiceDetails: React.FC = () => {
         {/* Sidebar */}
         <Col xs={24} lg={8}>
           {/* Payment Status Card */}
-          <Card title={t('paymentDetails', { defaultValue: 'Payment Details' })} style={{ marginBottom: 24 }}>
+          <Card
+            title={t('paymentDetails', { defaultValue: 'Payment Details' })}
+            style={{ marginBottom: 24 }}
+          >
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
               <Flex justify="space-between">
                 <Text type="secondary">{t('sentAt', { defaultValue: 'Sent At' })}</Text>
                 <Text>
-                  {invoice.sentAt ? formatDate(invoice.sentAt) : t('notSentYet', { defaultValue: 'Not sent yet' })}
+                  {invoice.sentAt
+                    ? formatDate(invoice.sentAt)
+                    : t('notSentYet', { defaultValue: 'Not sent yet' })}
                 </Text>
               </Flex>
               <Flex justify="space-between">
                 <Text type="secondary">{t('paidAt', { defaultValue: 'Paid At' })}</Text>
                 <Text>
-                  {invoice.paidAt ? formatDate(invoice.paidAt) : t('notPaidYet', { defaultValue: 'Not paid yet' })}
+                  {invoice.paidAt
+                    ? formatDate(invoice.paidAt)
+                    : t('notPaidYet', { defaultValue: 'Not paid yet' })}
                 </Text>
               </Flex>
               <Divider style={{ margin: '12px 0' }} />
@@ -449,7 +482,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
 
           {/* Payment Proof Card */}
           {invoice.status === 'paid' && invoice.paymentProofUrl && (
-            <Card 
+            <Card
               title={
                 <Flex align="center" gap={8}>
                   <FileImageOutlined />
@@ -461,8 +494,11 @@ const ClientPortalInvoiceDetails: React.FC = () => {
               <Space direction="vertical" style={{ width: '100%' }} size="middle">
                 <Flex vertical gap={12}>
                   {(() => {
-                    const fileExtension = invoice.paymentProofUrl?.split('.').pop()?.toLowerCase() || '';
-                    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(fileExtension);
+                    const fileExtension =
+                      invoice.paymentProofUrl?.split('.').pop()?.toLowerCase() || '';
+                    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(
+                      fileExtension
+                    );
                     const isPdf = fileExtension === 'pdf';
 
                     if (isImage) {
@@ -479,7 +515,7 @@ const ClientPortalInvoiceDetails: React.FC = () => {
                             }}
                             preview={{
                               visible: paymentProofPreviewOpen,
-                              onVisibleChange: (visible) => setPaymentProofPreviewOpen(visible),
+                              onVisibleChange: visible => setPaymentProofPreviewOpen(visible),
                             }}
                             onClick={() => setPaymentProofPreviewOpen(true)}
                           />

@@ -220,7 +220,7 @@ const taskDrawerSlice = createSlice({
     },
   },
   extraReducers: builder => {
-    builder.addCase(fetchTask.pending, state => {
+    (builder.addCase(fetchTask.pending, state => {
       state.loadingTask = true;
     }),
       builder.addCase(fetchTask.fulfilled, (state, action) => {
@@ -229,7 +229,7 @@ const taskDrawerSlice = createSlice({
       }),
       builder.addCase(fetchTask.rejected, (state, action) => {
         state.loadingTask = false;
-      });
+      }));
   },
 });
 

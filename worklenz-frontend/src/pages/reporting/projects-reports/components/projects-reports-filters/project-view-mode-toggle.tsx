@@ -47,13 +47,7 @@ const ProjectViewModeToggle = () => {
     },
   ];
 
-  return (
-    <Segmented
-      value={viewMode}
-      onChange={handleViewModeChange}
-      options={options}
-    />
-  );
+  return <Segmented value={viewMode} onChange={handleViewModeChange} options={options} />;
 };
 
 export default memo(ProjectViewModeToggle);

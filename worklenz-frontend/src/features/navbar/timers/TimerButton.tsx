@@ -11,7 +11,11 @@ import {
 } from '@/shared/antd-imports';
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { taskTimeLogsApiService, IRunningTimer, IRecentTimeLog } from '@/api/tasks/task-time-logs.api.service';
+import {
+  taskTimeLogsApiService,
+  IRunningTimer,
+  IRecentTimeLog,
+} from '@/api/tasks/task-time-logs.api.service';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
@@ -415,8 +419,13 @@ const TimerButton = () => {
                             {isHovered ? (
                               <NavbarTimer
                                 taskId={log.task_id}
-                                isRunning={runningTimers.some(timer => timer.task_id === log.task_id)}
-                                startTime={runningTimers.find(timer => timer.task_id === log.task_id)?.start_time}
+                                isRunning={runningTimers.some(
+                                  timer => timer.task_id === log.task_id
+                                )}
+                                startTime={
+                                  runningTimers.find(timer => timer.task_id === log.task_id)
+                                    ?.start_time
+                                }
                                 onTimerChange={fetchTimerData}
                               />
                             ) : (
@@ -503,9 +512,7 @@ const TimerButton = () => {
       >
         <Tooltip title={t('timerButton.runningTimers')}>
           <Button
-            style={
-              { height: '62px', width: '60px' }
-            }
+            style={{ height: '62px', width: '60px' }}
             type="text"
             icon={
               hasRunningTimers() ? (

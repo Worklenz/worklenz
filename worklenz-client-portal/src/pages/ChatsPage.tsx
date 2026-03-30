@@ -113,12 +113,38 @@ const ChatsPage: React.FC = () => {
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedChat) return;
+    if (!newMessage.trim()) return;
 
     try {
       setIsSending(true);
+      let chatId = selectedChat;
+
+      // Allow clients to initiate the first conversation when none exists
+      if (!chatId) {
+        const createResponse: ApiResponse<any> = await clientPortalAPI.createChat({
+          subject: t('chats.title'),
+          message: newMessage.trim(),
+          recipientType: 'team',
+          recipientId: 'organization'
+        });
+
+        if (createResponse.done && createResponse.body?.chatId) {
+          const dateMatch = String(createResponse.body.chatId).match(/\d{4}-\d{2}-\d{2}$/);
+          chatId = dateMatch ? dateMatch[0] : String(createResponse.body.chatId);
+          setSelectedChat(chatId);
+          setNewMessage('');
+          message.success(t('chats.messageSentSuccess'));
+          await loadChats();
+          await loadMessages(chatId);
+          return;
+        }
+
+        message.error(t('chats.messageSendError'));
+        return;
+      }
+
       // selectedChat is the date in YYYY-MM-DD format
-      const response: ApiResponse<any> = await clientPortalAPI.sendMessage(selectedChat, {
+      const response: ApiResponse<any> = await clientPortalAPI.sendMessage(chatId, {
         message: newMessage.trim(),
         messageType: 'text'
       });
@@ -128,7 +154,7 @@ const ChatsPage: React.FC = () => {
         setNewMessage('');
         message.success(t('chats.messageSentSuccess'));
         // Reload messages to get updated list
-        await loadMessages(selectedChat);
+        await loadMessages(chatId);
       } else {
         message.error(t('chats.messageSendError'));
       }
@@ -349,73 +375,65 @@ const ChatsPage: React.FC = () => {
             }
           }}
         >
-          {selectedChat ? (
-            <>
-              {/* Messages Area */}
-              <div 
-                style={{ 
-                  flex: 1, 
-                  padding: 16, 
-                  overflowY: 'auto',
-                  backgroundColor: theme === 'dark' ? '#141414' : '#fafafa'
-                }}
-              >
-                <Spin spinning={isMessagesLoading}>
-                  {messages.length > 0 ? (
-                    <>
-                      {messages.map(renderMessage)}
-                      <div ref={messagesEndRef} />
-                    </>
-                  ) : (
-                    <div style={{ textAlign: 'center', padding: '50px' }}>
-                      <Text type="secondary">{t('chats.noMessagesYet')}</Text>
-                    </div>
-                  )}
-                </Spin>
-              </div>
-
-              <Divider style={{ margin: 0 }} />
-
-              {/* Message Input */}
-              <div style={{ padding: 16 }}>
-                <Space.Compact style={{ width: '100%' }}>
-                  <TextArea
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder={t('chats.typeMessage')}
-                    autoSize={{ minRows: 1, maxRows: 4 }}
-                    style={{ flex: 1 }}
-                  />
-                  <Upload
-                    beforeUpload={handleFileUpload}
-                    showUploadList={false}
-                    accept="*"
-                  >
-                    <Button icon={<PaperClipOutlined />} />
-                  </Upload>
-                  <Button 
-                    type="primary" 
-                    icon={<SendOutlined />}
-                    onClick={sendMessage}
-                    loading={isSending}
-                    disabled={!newMessage.trim()}
-                  >
-                    {t('chats.send')}
-                  </Button>
-                </Space.Compact>
-              </div>
-            </>
-          ) : (
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              height: '100%'
-            }}>
-              <Text type="secondary">{t('chats.selectToStart')}</Text>
+          <>
+            {/* Messages Area */}
+            <div 
+              style={{ 
+                flex: 1, 
+                padding: 16, 
+                overflowY: 'auto',
+                backgroundColor: theme === 'dark' ? '#141414' : '#fafafa'
+              }}
+            >
+              <Spin spinning={isMessagesLoading}>
+                {selectedChat && messages.length > 0 ? (
+                  <>
+                    {messages.map(renderMessage)}
+                    <div ref={messagesEndRef} />
+                  </>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '50px' }}>
+                    <Text type="secondary">
+                      {selectedChat ? t('chats.noMessagesYet') : t('chats.selectToStart')}
+                    </Text>
+                  </div>
+                )}
+              </Spin>
             </div>
-          )}
+
+            <Divider style={{ margin: 0 }} />
+
+            {/* Message Input */}
+            <div style={{ padding: 16 }}>
+              <Space.Compact style={{ width: '100%' }}>
+                <TextArea
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder={t('chats.typeMessage')}
+                  autoSize={{ minRows: 1, maxRows: 4 }}
+                  style={{ flex: 1 }}
+                />
+                <Upload
+                  beforeUpload={handleFileUpload}
+                  showUploadList={false}
+                  accept="*"
+                  disabled={!selectedChat}
+                >
+                  <Button icon={<PaperClipOutlined />} disabled={!selectedChat} />
+                </Upload>
+                <Button 
+                  type="primary" 
+                  icon={<SendOutlined />}
+                  onClick={sendMessage}
+                  loading={isSending}
+                  disabled={!newMessage.trim()}
+                >
+                  {t('chats.send')}
+                </Button>
+              </Space.Compact>
+            </div>
+          </>
         </Card>
       </div>
     </Flex>

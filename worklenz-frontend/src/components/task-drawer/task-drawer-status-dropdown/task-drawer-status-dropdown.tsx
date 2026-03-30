@@ -72,7 +72,7 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId }: TaskDrawerStatusDr
           trackMixpanelEvent(evt_task_completed, {
             task_id: task.id,
             project_id: task.project_id,
-            status_id: data.status_id
+            status_id: data.status_id,
           });
         }
         // Update task-management slice for task-list-v2
@@ -82,7 +82,10 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId }: TaskDrawerStatusDr
             updateTask({
               ...currentTask,
               status: data.status_id || currentTask.status,
-              progress: typeof data.complete_ratio === 'number' ? data.complete_ratio : currentTask.progress,
+              progress:
+                typeof data.complete_ratio === 'number'
+                  ? data.complete_ratio
+                  : currentTask.progress,
               complete_ratio: data.complete_ratio,
               updatedAt: new Date().toISOString(),
             })

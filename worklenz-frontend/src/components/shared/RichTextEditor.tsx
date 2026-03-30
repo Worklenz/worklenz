@@ -37,8 +37,7 @@ export default function RichTextEditor({
           content_css: themeMode === 'dark' ? 'dark' : 'default',
           placeholder: placeholder,
           plugins: ['lists', 'link', 'autolink'],
-          toolbar:
-            'blocks | bold italic underline | bullist numlist | link | removeformat',
+          toolbar: 'blocks | bold italic underline | bullist numlist | link | removeformat',
           content_style: `
             body {
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;

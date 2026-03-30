@@ -44,7 +44,11 @@ const ProfileSettings = () => {
 
   // New states for preview functionality
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [pendingFile, setPendingFile] = useState<{ base64: string; name: string; size: number } | null>(null);
+  const [pendingFile, setPendingFile] = useState<{
+    base64: string;
+    name: string;
+    size: number;
+  } | null>(null);
   const [isPreviewModalVisible, setIsPreviewModalVisible] = useState(false);
 
   const [imageUrl, setImageUrl] = useState<string>();
@@ -65,7 +69,7 @@ const ProfileSettings = () => {
 
     try {
       const base64 = await getBase64(file);
-      
+
       // Store the file data and preview for user confirmation
       setPendingFile({
         base64: base64 as string,
@@ -87,29 +91,29 @@ const ProfileSettings = () => {
     if (!pendingFile) return;
 
     setUploading(true);
-    
+
     try {
       const res = await taskAttachmentsApiService.createAvatarAttachment({
         file: pendingFile.base64,
         file_name: pendingFile.name,
         size: pendingFile.size,
       });
-      
+
       if (res.done) {
         trackMixpanelEvent(evt_settings_profile_picture_update);
-        
+
         // Update session with the latest data from API response
         const updatedUser = {
           ...currentSession,
           avatar_url: res.body.url,
-          updated_at: res.body.updated_at || new Date().toISOString()
+          updated_at: res.body.updated_at || new Date().toISOString(),
         };
         setSession(updatedUser);
         dispatch(setUser(updatedUser));
-        
+
         // Update local image URL
         setImageUrl(res.body.url);
-        
+
         // Close modal and clear pending data
         setIsPreviewModalVisible(false);
         setPendingFile(null);
@@ -192,12 +196,12 @@ const ProfileSettings = () => {
       if (res.done) {
         trackMixpanelEvent(evt_settings_profile_name_change, { newName: name });
         dispatch(changeUserName(name));
-        
+
         // Update session with the latest data from API response
         const updatedUser = {
           ...currentSession,
           ...res.body,
-          updated_at: res.body.updated_at || new Date().toISOString()
+          updated_at: res.body.updated_at || new Date().toISOString(),
         };
         setSession(updatedUser);
         dispatch(setUser(updatedUser));
@@ -226,7 +230,10 @@ const ProfileSettings = () => {
             style={{ width: '100%', maxWidth: 350 }}
           >
             <Form.Item>
-              <Tooltip title={t('avatarTooltip') || 'Click to upload an avatar'} placement="topLeft">
+              <Tooltip
+                title={t('avatarTooltip') || 'Click to upload an avatar'}
+                placement="topLeft"
+              >
                 {avatarPreview}
                 <input
                   ref={fileInputRef}

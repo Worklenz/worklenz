@@ -36,7 +36,7 @@ export const formatSecondsToHoursMinutes = (totalSeconds: number): string => {
   if (hours > 0) {
     return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h 0m`;
   }
-  
+
   return `${minutes}m`;
 };
 
@@ -54,7 +54,7 @@ export const formatSecondsToCompactHoursMinutes = (totalSeconds: number): string
   const parts = [];
   if (hours > 0) parts.push(`${hours}h`);
   if (minutes > 0) parts.push(`${minutes}m`);
-  
+
   return parts.length > 0 ? parts.join(' ') : '0m';
 };
 

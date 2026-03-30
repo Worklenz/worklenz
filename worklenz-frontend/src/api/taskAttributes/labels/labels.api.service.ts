@@ -45,9 +45,7 @@ export const labelsApiService = {
   },
 
   deleteById: async (labelId: string, force: boolean = false): Promise<IServerResponse<void>> => {
-    const url = force 
-      ? `${rootUrl}/team/${labelId}?force=true`
-      : `${rootUrl}/team/${labelId}`;
+    const url = force ? `${rootUrl}/team/${labelId}?force=true` : `${rootUrl}/team/${labelId}`;
     const response = await apiClient.delete<IServerResponse<void>>(url);
     return response.data;
   },

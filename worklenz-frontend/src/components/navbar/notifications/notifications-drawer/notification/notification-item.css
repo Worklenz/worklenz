@@ -411,8 +411,8 @@
 }
 
 /* Dark mode hover - lighter blue for better contrast */
-[data-theme='dark'] .worklenz-notification .ant-btn-link:hover,
-[data-theme='dark'] .worklenz-notification .ant-btn-link:focus,
+[data-theme="dark"] .worklenz-notification .ant-btn-link:hover,
+[data-theme="dark"] .worklenz-notification .ant-btn-link:focus,
 .dark-mode .worklenz-notification .ant-btn-link:hover,
 .dark-mode .worklenz-notification .ant-btn-link:focus {
   color: #69b1ff !important; /* Lighter blue that contrasts well with dark background */
@@ -427,12 +427,12 @@
 }
 
 /* Ensure the button text is visible in dark mode */
-[data-theme='dark'] .worklenz-notification .ant-btn-link {
+[data-theme="dark"] .worklenz-notification .ant-btn-link {
   color: #1677ff; /* Or whatever your primary color is */
 }
 
 /* Optional: Add a subtle background on hover for better visibility */
-[data-theme='dark'] .worklenz-notification .ant-btn-link:hover {
+[data-theme="dark"] .worklenz-notification .ant-btn-link:hover {
   background-color: rgba(105, 177, 255, 0.1);
   text-decoration: underline;
 }

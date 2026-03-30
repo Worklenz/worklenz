@@ -273,9 +273,9 @@ export const fetchEnhancedKanbanGroups = createAsyncThunk(
 
       // Use V3 API for better performance and consistency with TaskListV2
       const response = await tasksApiService.getTaskListV3(config);
-      
+
       // Transform V3 response to ITaskListGroup[] format expected by the kanban board
-      const transformedGroups: ITaskListGroup[] = response.body.groups.map((group: any) => 
+      const transformedGroups: ITaskListGroup[] = response.body.groups.map((group: any) =>
         transformV3GroupToTaskListGroup(group, projectId)
       );
 
@@ -372,7 +372,7 @@ export const fetchBoardSubTasks = createAsyncThunk(
   ) => {
     try {
       const state = getState() as RootState;
-      
+
       // Get active filters from enhancedKanbanReducer
       const selectedLabels = state.enhancedKanbanReducer.labels
         .filter((l: any) => l.selected && l.id)
@@ -412,7 +412,7 @@ export const fetchBoardSubTasks = createAsyncThunk(
 
       const response = await tasksApiService.getTaskListV3(config);
       const tasks = response.body.allTasks || [];
-      
+
       // Transform V3 API response back to IProjectTask format expected by BoardSubTaskCard
       const transformedTasks: IProjectTask[] = tasks.map((task: any) => ({
         id: task.id,
@@ -443,7 +443,6 @@ export const fetchBoardSubTasks = createAsyncThunk(
         created_at: task.createdAt || task.created_at,
         updated_at: task.updatedAt || task.updated_at,
       } as IProjectTask));
-      
       return transformedTasks;
     } catch (error) {
       logger.error('Fetch Enhanced Board Sub Tasks', error);
@@ -1018,39 +1017,43 @@ const enhancedKanbanSlice = createSlice({
 
     addTaskToGroup: (state, action) => {
       const { sectionId, task } = action.payload;
-      
+
       // First try exact match
       let group = state.taskGroups.find(g => g.id === sectionId);
-      
+
       // If not found and this is for priority/phase grouping, try fallback logic
       if (!group) {
         const currentGrouping = state.groupBy;
-        
+
         if (currentGrouping === IGroupBy.PRIORITY) {
           // For priority grouping, try to find by priority_id or priority name
-          group = state.taskGroups.find(g => 
-            g.id === task.priority_id || 
-            g.name?.toLowerCase() === (task.priority || '').toLowerCase() ||
-            (sectionId === 'Unmapped' && g.name === 'Unmapped')
+          group = state.taskGroups.find(
+            g =>
+              g.id === task.priority_id ||
+              g.name?.toLowerCase() === (task.priority || '').toLowerCase() ||
+              (sectionId === 'Unmapped' && g.name === 'Unmapped')
           );
         } else if (currentGrouping === IGroupBy.PHASE) {
           // For phase grouping, try to find by phase_id or phase name
-          group = state.taskGroups.find(g => 
-            g.id === task.phase_id || 
-            g.name?.toLowerCase() === (task.phase_name || '').toLowerCase() ||
-            (sectionId === 'Unmapped' && g.name === 'Unmapped')
+          group = state.taskGroups.find(
+            g =>
+              g.id === task.phase_id ||
+              g.name?.toLowerCase() === (task.phase_name || '').toLowerCase() ||
+              (sectionId === 'Unmapped' && g.name === 'Unmapped')
           );
         }
-        
+
         // Last resort: if still not found and we have an unmapped group, use it
         if (!group && sectionId === 'Unmapped') {
           group = state.taskGroups.find(g => g.name === 'Unmapped');
         }
       }
-      
+
       if (group) {
         // Transform task to IProjectTask format if needed
-        const transformedTask = task.id ? task : transformV3TaskToProjectTask(task, task.project_id || '');
+        const transformedTask = task.id
+          ? task
+          : transformV3TaskToProjectTask(task, task.project_id || '');
         group.tasks.push(transformedTask);
         // Update cache
         state.taskCache[transformedTask.id!] = transformedTask;

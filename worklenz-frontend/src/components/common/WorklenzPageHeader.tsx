@@ -17,12 +17,7 @@ const WorklenzPageHeader: React.FC<WorklenzPageHeaderProps> = ({
   className,
 }) => {
   return (
-    <Flex
-      className={className}
-      align="center"
-      justify="space-between"
-      style={style}
-    >
+    <Flex className={className} align="center" justify="space-between" style={style}>
       <div>
         {title && (
           <Typography.Title level={4} style={{ margin: 0 }}>

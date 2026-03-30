@@ -29,7 +29,10 @@ import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { RootState } from '@/app/store';
-import { toggleUpgradeModal, fetchOrganizationDetails } from '@/features/admin-center/admin-center.slice';
+import {
+  toggleUpgradeModal,
+  fetchOrganizationDetails,
+} from '@/features/admin-center/admin-center.slice';
 import { isTeamLeadRole } from '@/types/roles/role.types';
 import { ConnectionStatusIndicator } from '@/components/connection-status/ConnectionStatusIndicator';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
@@ -149,13 +152,17 @@ const Navbar = () => {
               placement="bottom"
             >
               <span style={{ cursor: 'pointer', fontWeight: 600 }}>
-                {t(route.name, { defaultValue: route.name.charAt(0).toUpperCase() + route.name.slice(1) })}
+                {t(route.name, {
+                  defaultValue: route.name.charAt(0).toUpperCase() + route.name.slice(1),
+                })}
                 <CrownOutlined style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }} />
               </span>
             </Tooltip>
           ) : (
             <Link to={route.path} style={{ fontWeight: 600 }}>
-              {t(route.name, { defaultValue: route.name.charAt(0).toUpperCase() + route.name.slice(1) })}
+              {t(route.name, {
+                defaultValue: route.name.charAt(0).toUpperCase() + route.name.slice(1),
+              })}
             </Link>
           ),
         };
@@ -174,43 +181,46 @@ const Navbar = () => {
     }
   }, [currentRoute, current]);
 
-  const handleMenuClick = useCallback((menuInfo: { key: string }) => {
-    const { key } = menuInfo;
-    const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
-    const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
+  const handleMenuClick = useCallback(
+    (menuInfo: { key: string }) => {
+      const { key } = menuInfo;
+      const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+      const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
 
-    const clickedRoute = navRoutesList.find(r => {
-      const routeKey = r.path.split('/').pop() || r.name;
-      return routeKey === key || r.name === key;
-    });
+      const clickedRoute = navRoutesList.find(r => {
+        const routeKey = r.path.split('/').pop() || r.name;
+        return routeKey === key || r.name === key;
+      });
 
-    if (clickedRoute) {
-      if (clickedRoute.name === 'client-portal') {
-        trackMixpanelEvent('client_portal_nav_clicked', {
-          source: 'navbar',
-          user_type: isFreePlan ? 'free' : currentSession?.subscription_type?.toLowerCase(),
-          is_admin: isOwnerOrAdmin,
-        });
-      }
-
-      const isBusinessRoute = clickedRoute.businessPlanRequired;
-      const isFreePlanRoute = !clickedRoute.freePlanFeature;
-      const shouldOpenModal =
-        (isBusinessRoute && !hasBusinessAccess) || (isFreePlanRoute && isFreePlan);
-
-      if (shouldOpenModal) {
-        if (isLicenseExpired && clickedRoute.name === 'client-portal') {
-          trackMixpanelEvent(evt_paywall_hit, {
-            feature_blocked: 'client_portal',
-            user_type: currentSession?.subscription_type?.toLowerCase(),
-            trial_expired: true,
+      if (clickedRoute) {
+        if (clickedRoute.name === 'client-portal') {
+          trackMixpanelEvent('client_portal_nav_clicked', {
             source: 'navbar',
+            user_type: isFreePlan ? 'free' : currentSession?.subscription_type?.toLowerCase(),
+            is_admin: isOwnerOrAdmin,
           });
         }
-        dispatch(toggleUpgradeModal());
+
+        const isBusinessRoute = clickedRoute.businessPlanRequired;
+        const isFreePlanRoute = !clickedRoute.freePlanFeature;
+        const shouldOpenModal =
+          (isBusinessRoute && !hasBusinessAccess) || (isFreePlanRoute && isFreePlan);
+
+        if (shouldOpenModal) {
+          if (isLicenseExpired && clickedRoute.name === 'client-portal') {
+            trackMixpanelEvent(evt_paywall_hit, {
+              feature_blocked: 'client_portal',
+              user_type: currentSession?.subscription_type?.toLowerCase(),
+              trial_expired: true,
+              source: 'navbar',
+            });
+          }
+          dispatch(toggleUpgradeModal());
+        }
       }
-    }
-  }, [currentSession, navRoutesList, trackMixpanelEvent, isOwnerOrAdmin, dispatch]);
+    },
+    [currentSession, navRoutesList, trackMixpanelEvent, isOwnerOrAdmin, dispatch]
+  );
 
   return (
     <Col

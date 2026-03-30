@@ -476,10 +476,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                   onMouseLeave={e => {
                     if (isOwnerOrAdmin) {
                       Object.assign(e.currentTarget.style, {
-                        background: getThemeAwareColor(
-                          'rgba(255,255,255,0.9)',
-                          'rgba(0,0,0,0.7)'
-                        ),
+                        background: getThemeAwareColor('rgba(255,255,255,0.9)', 'rgba(0,0,0,0.7)'),
                         color: getThemeAwareColor(
                           token.colorTextSecondary,
                           token.colorTextTertiary

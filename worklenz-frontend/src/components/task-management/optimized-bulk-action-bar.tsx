@@ -61,6 +61,7 @@ interface OptimizedBulkActionBarProps {
   onBulkDuplicate?: () => void;
   onBulkExport?: () => void;
   onBulkSetDueDate?: (date: string) => void;
+  onBulkSetStartDate?: (date: string) => void; // NEW
 }
 
 // Performance-optimized memoized action button component
@@ -179,6 +180,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     onBulkDuplicate,
     onBulkExport,
     onBulkSetDueDate,
+    onBulkSetStartDate, // NEW
   }) => {
     const { t } = useTranslation(['tasks/task-table-bulk-actions', 'task-management']);
     const { t: tCommon } = useTranslation('common');
@@ -192,7 +194,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     const labelsList = useAppSelector(state => state.taskLabelsReducer.labels);
     const members = useAppSelector(state => state.teamMembersReducer.teamMembers);
     const tasks = useAppSelector(state => state.taskManagement.entities);
-    
+
     // Add archived selector as requested
     const archived = useAppSelector(state => state.taskManagement.archived);
 
@@ -210,6 +212,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
       duplicate: false,
       export: false,
       dueDate: false,
+      startDate: false, // NEW
     });
 
     // Labels dropdown state
@@ -222,6 +225,9 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
 
     // Due date dropdown state
     const [dueDateDropdownOpen, setDueDateDropdownOpen] = useState(false);
+
+    // Start date dropdown state — NEW
+    const [startDateDropdownOpen, setStartDateDropdownOpen] = useState(false);
 
     // Task template state
     const [showDrawer, setShowDrawer] = useState(false);
@@ -387,7 +393,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
       // Convert Task objects to IProjectTask format for template creation
       const projectTasks: IProjectTask[] = selectedTaskObjects.map((task: any) => ({
         id: task.id,
-        name: task.title, // Always use title as the name
+        name: task.title,
         task_key: task.task_key,
         status: task.status,
         status_id: task.status,
@@ -417,7 +423,6 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
         sort_order: task.order,
       }));
 
-      // Update the bulkActionReducer with selected tasks
       dispatch(selectTasks(projectTasks));
       setShowDrawer(true);
     }, [selectedTaskObjects, dispatch, isFree]);
@@ -506,7 +511,6 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
         dispatch(toggleUpgradeModal());
         return;
       }
-
       updateLoadingState('archive', true);
       try {
         await onBulkArchive?.();
@@ -557,10 +561,47 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
       [onBulkSetDueDate, updateLoadingState]
     );
 
-    // Due date dropdown open change handler
     const onDueDateDropdownOpenChange = useCallback((open: boolean) => {
       setDueDateDropdownOpen(open);
     }, []);
+
+    // Start date change handler — NEW
+    const handleStartDateChange = useCallback(
+      async (date: Dayjs | null) => {
+        updateLoadingState('startDate', true);
+        try {
+          const dateString = date ? date.format('YYYY-MM-DD') : '';
+          await onBulkSetStartDate?.(dateString);
+          setStartDateDropdownOpen(false);
+        } finally {
+          updateLoadingState('startDate', false);
+        }
+      },
+      [onBulkSetStartDate, updateLoadingState]
+    );
+
+    const onStartDateDropdownOpenChange = useCallback((open: boolean) => {
+      setStartDateDropdownOpen(open);
+    }, []);
+
+    // Shared button style helper to avoid repetition
+    const makeButtonStyle = useCallback(
+      (colorOverride?: string): React.CSSProperties => ({
+        background: 'transparent',
+        color: colorOverride ?? (isDarkMode ? '#e5e7eb' : '#374151'),
+        border: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '6px',
+        height: '32px',
+        width: '32px',
+        fontSize: '14px',
+        borderRadius: '6px',
+        transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+      }),
+      [isDarkMode]
+    );
 
     // Memoized styles for better performance
     const containerStyle = useMemo(
@@ -604,7 +645,17 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
       [isDarkMode]
     );
 
-    // Remove translation loading check since we're using simple load-as-you-go approach
+    const datePickerDropdownStyle = useMemo(
+      () => ({
+        padding: '8px',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        borderRadius: '8px',
+        boxShadow: isDarkMode
+          ? '0 4px 12px rgba(0, 0, 0, 0.3)'
+          : '0 4px 12px rgba(0, 0, 0, 0.1)',
+      }),
+      [isDarkMode]
+    );
 
     if (!totalSelected || Number(totalSelected) < 1) {
       return null;
@@ -638,35 +689,19 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           }}
         />
 
-        {/* Actions in same order as original component */}
+        {/* Actions */}
         <Space size={2}>
           {/* Change Status */}
           <Tooltip title={t('CHANGE_STATUS')} placement="top">
             <Dropdown
-              menu={{
-                items: statusMenuItems,
-                onClick: handleStatusMenuClick,
-              }}
+              menu={{ items: statusMenuItems, onClick: handleStatusMenuClick }}
               trigger={['click']}
               placement="top"
               arrow
             >
               <Button
                 icon={<RetweetOutlined />}
-                style={{
-                  background: 'transparent',
-                  color: isDarkMode ? '#e5e7eb' : '#374151',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '6px',
-                  height: '32px',
-                  width: '32px',
-                  fontSize: '14px',
-                  borderRadius: '6px',
-                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
+                style={makeButtonStyle()}
                 size="small"
                 type="text"
                 loading={loadingStates.status}
@@ -677,30 +712,14 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           {/* Change Priority */}
           <Tooltip title={t('CHANGE_PRIORITY')} placement="top">
             <Dropdown
-              menu={{
-                items: priorityMenuItems,
-                onClick: handlePriorityMenuClick,
-              }}
+              menu={{ items: priorityMenuItems, onClick: handlePriorityMenuClick }}
               trigger={['click']}
               placement="top"
               arrow
             >
               <Button
                 icon={<FlagOutlined />}
-                style={{
-                  background: 'transparent',
-                  color: isDarkMode ? '#e5e7eb' : '#374151',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '6px',
-                  height: '32px',
-                  width: '32px',
-                  fontSize: '14px',
-                  borderRadius: '6px',
-                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
+                style={makeButtonStyle()}
                 size="small"
                 type="text"
                 loading={loadingStates.priority}
@@ -711,30 +730,14 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           {/* Change Phase */}
           <Tooltip title={t('CHANGE_PHASE')} placement="top">
             <Dropdown
-              menu={{
-                items: phaseMenuItems,
-                onClick: handlePhaseMenuClick,
-              }}
+              menu={{ items: phaseMenuItems, onClick: handlePhaseMenuClick }}
               trigger={['click']}
               placement="top"
               arrow
             >
               <Button
                 icon={<BulbOutlined />}
-                style={{
-                  background: 'transparent',
-                  color: isDarkMode ? '#e5e7eb' : '#374151',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '6px',
-                  height: '32px',
-                  width: '32px',
-                  fontSize: '14px',
-                  borderRadius: '6px',
-                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
+                style={makeButtonStyle()}
                 size="small"
                 type="text"
                 loading={loadingStates.phase}
@@ -758,20 +761,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
             >
               <Button
                 icon={<TagsOutlined />}
-                style={{
-                  background: 'transparent',
-                  color: isDarkMode ? '#e5e7eb' : '#374151',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '6px',
-                  height: '32px',
-                  width: '32px',
-                  fontSize: '14px',
-                  borderRadius: '6px',
-                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
+                style={makeButtonStyle()}
                 size="small"
                 type="text"
                 loading={loadingStates.labels}
@@ -800,23 +790,45 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
             >
               <Button
                 icon={<UsergroupAddOutlined />}
-                style={{
-                  background: 'transparent',
-                  color: isDarkMode ? '#e5e7eb' : '#374151',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '6px',
-                  height: '32px',
-                  width: '32px',
-                  fontSize: '14px',
-                  borderRadius: '6px',
-                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
+                style={makeButtonStyle()}
                 size="small"
                 type="text"
                 loading={loadingStates.assignMembers}
+              />
+            </Dropdown>
+          </Tooltip>
+
+          {/* Set Start Date — NEW */}
+          <Tooltip
+            title={t('SET_START_DATE', { defaultValue: 'Set Start Date' })}
+            placement="top"
+          >
+            <Dropdown
+              open={startDateDropdownOpen}
+              onOpenChange={onStartDateDropdownOpenChange}
+              trigger={['click']}
+              placement="top"
+              arrow
+              dropdownRender={() => (
+                <div style={datePickerDropdownStyle}>
+                  <DatePicker
+                    open
+                    onChange={handleStartDateChange}
+                    style={{ width: '100%' }}
+                    getPopupContainer={trigger => trigger.parentElement || document.body}
+                    allowClear
+                    placeholder={t('SET_START_DATE', { defaultValue: 'Set Start Date' })}
+                  />
+                </div>
+              )}
+            >
+              <Button
+                icon={<CalendarOutlined />}
+                style={makeButtonStyle()}
+                className="bulk-action-start-date-btn"
+                size="small"
+                type="text"
+                loading={loadingStates.startDate}
               />
             </Dropdown>
           </Tooltip>
@@ -830,16 +842,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
               placement="top"
               arrow
               dropdownRender={() => (
-                <div
-                  style={{
-                    padding: '8px',
-                    background: isDarkMode ? '#1f2937' : '#ffffff',
-                    borderRadius: '8px',
-                    boxShadow: isDarkMode
-                      ? '0 4px 12px rgba(0, 0, 0, 0.3)'
-                      : '0 4px 12px rgba(0, 0, 0, 0.1)',
-                  }}
-                >
+                <div style={datePickerDropdownStyle}>
                   <DatePicker
                     open
                     onChange={handleDueDateChange}
@@ -853,20 +856,8 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
             >
               <Button
                 icon={<CalendarOutlined />}
-                style={{
-                  background: 'transparent',
-                  color: isDarkMode ? '#e5e7eb' : '#374151',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '6px',
-                  height: '32px',
-                  width: '32px',
-                  fontSize: '14px',
-                  borderRadius: '6px',
-                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
+                style={makeButtonStyle()}
+                className="bulk-action-due-date-btn"
                 size="small"
                 type="text"
                 loading={loadingStates.dueDate}
@@ -875,32 +866,19 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           </Tooltip>
 
           {/* Archive */}
-          <Tooltip 
+          <Tooltip
             title={
-              isFree && !archived 
-                ? tCommon('upgrade-plan') 
-                : archived 
-                  ? t('Unarchive') 
+              isFree && !archived
+                ? tCommon('upgrade-plan')
+                : archived
+                  ? t('Unarchive')
                   : t('Archive')
-            } 
+            }
             placement="top"
           >
             <Button
               icon={<InboxOutlined />}
-              style={{
-                background: 'transparent',
-                color: isDarkMode ? '#e5e7eb' : '#374151',
-                border: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '6px',
-                height: '32px',
-                width: '32px',
-                fontSize: '14px',
-                borderRadius: '6px',
-                transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-              }}
+              style={makeButtonStyle()}
               size="small"
               type="text"
               loading={loadingStates.archive}
@@ -927,7 +905,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
             />
           </Popconfirm>
 
-          {/* More Options (Create Task Template) - Only for owners/admins */}
+          {/* More Options — Only for owners/admins */}
           {isOwnerOrAdmin && (
             <Tooltip title={t('moreOptions')} placement="top">
               <Dropdown
@@ -939,7 +917,9 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
                       label: (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span>{t('createTaskTemplate')}</span>
-                          {isFree && <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />}
+                          {isFree && (
+                            <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
+                          )}
                         </div>
                       ),
                       onClick: handleOpenTemplateDrawer,
@@ -951,20 +931,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
               >
                 <Button
                   icon={<MoreOutlined />}
-                  style={{
-                    background: 'transparent',
-                    color: isDarkMode ? '#e5e7eb' : '#374151',
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '6px',
-                    height: '32px',
-                    width: '32px',
-                    fontSize: '14px',
-                    borderRadius: '6px',
-                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                  }}
+                  style={makeButtonStyle()}
                   size="small"
                   type="text"
                 />

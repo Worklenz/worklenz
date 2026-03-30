@@ -315,8 +315,9 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
     // 3. If it's the same task but local state is empty (cleanup ran when drawer closed)
     const isDifferentTask = selectedTaskId !== prevTaskIdRef.current;
     const isDataMissing = !taskFormViewModel || !taskFormViewModel.task;
-    const isLocalStateMissing = taskAttachments.length === 0 || subTasks.length === 0 || taskDependencies.length === 0;
-    
+    const isLocalStateMissing =
+      taskAttachments.length === 0 || subTasks.length === 0 || taskDependencies.length === 0;
+
     if (!isDifferentTask && !isDataMissing && !isLocalStateMissing) {
       // Same task and data is already loaded, skip fetch
       return;

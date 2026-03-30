@@ -82,4 +82,11 @@ export const taskListBulkActionsApiService = {
     const response = await apiClient.put(`${rootUrl}/due-date?project=${projectId}`, body);
     return response.data;
   },
+  changeStartDate: async (
+    body: IBulkTasksDueDateChangeRequest,
+    projectId: string
+  ): Promise<IServerResponse<{ updated_count: number }>> => {
+    const response = await apiClient.put(`${rootUrl}/start-date?project=${projectId}`, body);
+    return response.data;
+  },
 };

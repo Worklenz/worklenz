@@ -1,5 +1,15 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
-import { Card, Input, Flex, Checkbox, Button, Typography, Space, Form, message } from '@/shared/antd-imports';
+import {
+  Card,
+  Input,
+  Flex,
+  Checkbox,
+  Button,
+  Typography,
+  Space,
+  Form,
+  message,
+} from '@/shared/antd-imports';
 import { Rule } from 'antd/es/form';
 
 import { LockOutlined, UserOutlined } from '@/shared/antd-imports';
@@ -78,7 +88,7 @@ const LoginPage: React.FC = () => {
 
     if (teamId || userId || projectId) {
       setUrlParams({ teamId, userId, projectId });
-      
+
       // Store project ID for redirect after login
       if (projectId) {
         localStorage.setItem(WORKLENZ_REDIRECT_PROJ_KEY, projectId);
@@ -102,7 +112,7 @@ const LoginPage: React.FC = () => {
       navigate('/worklenz/setup');
       return;
     }
-    
+
     // Verify auth status with the extracted params
     const checkAuth = async () => {
       try {
@@ -111,17 +121,17 @@ const LoginPage: React.FC = () => {
         if (session?.authenticated) {
           setSession(session.user);
           dispatch(setUser(session.user));
-          
+
           // Check if user came from invitation link
           if (teamId) {
             // For already logged-in users, try to switch to the invited team
             try {
               // Step 1: Set the invited team as active
               await dispatch(setActiveTeam(teamId)).unwrap();
-              
+
               // Step 2: Verify authentication again to ensure session is updated with new team
               const updatedSession = await dispatch(verifyAuthentication()).unwrap();
-              
+
               if (updatedSession?.authenticated) {
                 // Step 3: Redirect based on whether there's a project ID
                 if (projectId) {
@@ -140,7 +150,7 @@ const LoginPage: React.FC = () => {
               // Could not switch team - user is not a team member yet
               // Redirect to home with message to accept invitation
               message.info('Please check your notifications to accept the team invitation.');
-              
+
               setTimeout(() => {
                 window.location.href = '/worklenz/home';
               }, 2000);
@@ -157,7 +167,7 @@ const LoginPage: React.FC = () => {
         logger.error('Failed to verify authentication status', error);
       }
     };
-    
+
     void checkAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - only run once on mount
@@ -216,13 +226,13 @@ const LoginPage: React.FC = () => {
     try {
       trackMixpanelEvent(evt_login_page_login);
       trackMixpanelEvent(evt_login_with_google_click);
-      
+
       // Include invitation parameters in Google OAuth redirect
       const params = new URLSearchParams();
       if (urlParams.teamId) params.append('team', urlParams.teamId);
       if (urlParams.userId) params.append('teamMember', urlParams.userId);
       if (urlParams.projectId) params.append('project', urlParams.projectId);
-      
+
       const queryString = params.toString();
       const url = `${import.meta.env.VITE_API_URL}/secure/google${queryString ? `?${queryString}` : ''}`;
       window.location.href = url;
@@ -235,13 +245,13 @@ const LoginPage: React.FC = () => {
     try {
       trackMixpanelEvent(evt_login_page_login);
       trackMixpanelEvent(evt_login_with_apple_click);
-      
+
       // Include invitation parameters in Apple OAuth redirect
       const params = new URLSearchParams();
       if (urlParams.teamId) params.append('team', urlParams.teamId);
       if (urlParams.userId) params.append('teamMember', urlParams.userId);
       if (urlParams.projectId) params.append('project', urlParams.projectId);
-      
+
       const queryString = params.toString();
       const url = `${import.meta.env.VITE_API_URL}/secure/apple${queryString ? `?${queryString}` : ''}`;
       window.location.href = url;

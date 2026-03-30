@@ -25,90 +25,112 @@ const ProjectDatesCell = memo(({ projectId, startDate, endDate }: ProjectDatesCe
   const startDayjs = startDate ? dayjs(startDate) : null;
   const endDayjs = endDate ? dayjs(endDate) : null;
   const { socket, connected } = useSocket();
-  
+
   // Active date picker state - similar to task DatePickerColumn
   const [activeDatePicker, setActiveDatePicker] = useState<'start' | 'end' | null>(null);
 
-  const handleStartDateChangeResponse = useCallback((data: { project_id: string; start_date: string }) => {
-    try {
-      // FIX: Use 'id' instead of 'project_id' to match Redux slice expectations
-      dispatch(setProjectStartDate({
-        id: data.project_id,
-        start_date: data.start_date // Backend now returns YYYY-MM-DD format
-      }));
-    } catch (error) {
-      logger.error('Error updating start date:', error);
-    }
-  }, [dispatch]);
-
-  const handleEndDateChangeResponse = useCallback((data: { project_id: string; end_date: string }) => {
-    try {
-      // FIX: Use 'id' instead of 'project_id' to match Redux slice expectations
-      dispatch(setProjectEndDate({
-        id: data.project_id,
-        end_date: data.end_date // Backend now returns YYYY-MM-DD format
-      }));
-    } catch (error) {
-      logger.error('Error updating end date:', error);
-    }
-  }, [dispatch]);
-
-  const handleStartDateChange = useCallback((date: Dayjs | null) => {
-    try {
-      if (!socket) {
-        throw new Error('Socket connection not available');
+  const handleStartDateChangeResponse = useCallback(
+    (data: { project_id: string; start_date: string }) => {
+      try {
+        // FIX: Use 'id' instead of 'project_id' to match Redux slice expectations
+        dispatch(
+          setProjectStartDate({
+            id: data.project_id,
+            start_date: data.start_date, // Backend now returns YYYY-MM-DD format
+          })
+        );
+      } catch (error) {
+        logger.error('Error updating start date:', error);
       }
-      // FIX: Send date in YYYY-MM-DD format consistently like tasks, including timezone info
-      socket.emit(
-        SocketEvents.PROJECT_START_DATE_CHANGE.toString(),
-        JSON.stringify({
-          project_id: projectId,
-          start_date: date?.format('YYYY-MM-DD'),
-          time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        })
-      );
-      
-      // Close the date picker after selection - like tasks
-      setActiveDatePicker(null);
-    } catch (error) {
-      logger.error('Error sending start date change:', error);
-    }
-  }, [socket, projectId]);
+    },
+    [dispatch]
+  );
 
-  const handleEndDateChange = useCallback((date: Dayjs | null) => {
-    try {
-      if (!socket) {
-        throw new Error('Socket connection not available');
+  const handleEndDateChangeResponse = useCallback(
+    (data: { project_id: string; end_date: string }) => {
+      try {
+        // FIX: Use 'id' instead of 'project_id' to match Redux slice expectations
+        dispatch(
+          setProjectEndDate({
+            id: data.project_id,
+            end_date: data.end_date, // Backend now returns YYYY-MM-DD format
+          })
+        );
+      } catch (error) {
+        logger.error('Error updating end date:', error);
       }
-      // FIX: Send date in YYYY-MM-DD format consistently like tasks, including timezone info
-      socket.emit(
-        SocketEvents.PROJECT_END_DATE_CHANGE.toString(),
-        JSON.stringify({
-          project_id: projectId,
-          end_date: date?.format('YYYY-MM-DD'),
-          time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        })
-      );
-      
-      // Close the date picker after selection - like tasks
-      setActiveDatePicker(null);
-    } catch (error) {
-      logger.error('Error sending end date change:', error);
-    }
-  }, [socket, projectId]);
+    },
+    [dispatch]
+  );
+
+  const handleStartDateChange = useCallback(
+    (date: Dayjs | null) => {
+      try {
+        if (!socket) {
+          throw new Error('Socket connection not available');
+        }
+        // FIX: Send date in YYYY-MM-DD format consistently like tasks, including timezone info
+        socket.emit(
+          SocketEvents.PROJECT_START_DATE_CHANGE.toString(),
+          JSON.stringify({
+            project_id: projectId,
+            start_date: date?.format('YYYY-MM-DD'),
+            time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          })
+        );
+
+        // Close the date picker after selection - like tasks
+        setActiveDatePicker(null);
+      } catch (error) {
+        logger.error('Error sending start date change:', error);
+      }
+    },
+    [socket, projectId]
+  );
+
+  const handleEndDateChange = useCallback(
+    (date: Dayjs | null) => {
+      try {
+        if (!socket) {
+          throw new Error('Socket connection not available');
+        }
+        // FIX: Send date in YYYY-MM-DD format consistently like tasks, including timezone info
+        socket.emit(
+          SocketEvents.PROJECT_END_DATE_CHANGE.toString(),
+          JSON.stringify({
+            project_id: projectId,
+            end_date: date?.format('YYYY-MM-DD'),
+            time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          })
+        );
+
+        // Close the date picker after selection - like tasks
+        setActiveDatePicker(null);
+      } catch (error) {
+        logger.error('Error sending end date change:', error);
+      }
+    },
+    [socket, projectId]
+  );
 
   // Handle clear date - similar to task DatePickerColumn
-  const handleClearStartDate = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    handleStartDateChange(null);
-  }, [handleStartDateChange]);
+  const handleClearStartDate = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleStartDateChange(null);
+    },
+    [handleStartDateChange]
+  );
 
-  const handleClearEndDate = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    handleEndDateChange(null);
-  }, [handleEndDateChange]);
+  const handleClearEndDate = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleEndDateChange(null);
+    },
+    [handleEndDateChange]
+  );
 
   // Handle open date picker - similar to task DatePickerColumn
   const handleOpenStartDatePicker = useCallback(() => {

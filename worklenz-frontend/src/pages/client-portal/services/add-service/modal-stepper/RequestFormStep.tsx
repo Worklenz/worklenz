@@ -1,16 +1,5 @@
-import {
-  QuestionCircleOutlined,
-  BulbOutlined,
-} from '@ant-design/icons';
-import {
-  Button,
-  Flex,
-  Form,
-  Input,
-  Select,
-  Typography,
-  theme,
-} from '@/shared/antd-imports';
+import { QuestionCircleOutlined, BulbOutlined } from '@ant-design/icons';
+import { Button, Flex, Form, Input, Select, Typography, theme } from '@/shared/antd-imports';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {

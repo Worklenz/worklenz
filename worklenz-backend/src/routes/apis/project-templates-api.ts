@@ -1,5 +1,6 @@
 import express from "express";
 import ProjectTemplatesController from "../../controllers/project-templates/pt-templates-controller";
+import OnboardingController from "../../controllers/onboarding-controller";
 import safeControllerFunction from "../../shared/safe-controller-function";
 
 const projectTemplatesApiRouter = express.Router();
@@ -10,7 +11,7 @@ projectTemplatesApiRouter.get(
 );
 projectTemplatesApiRouter.post(
   "/setup",
-  safeControllerFunction(ProjectTemplatesController.setupAccount)
+  safeControllerFunction(OnboardingController.setupAccountFromTemplate)
 );
 
 // worklenz templates

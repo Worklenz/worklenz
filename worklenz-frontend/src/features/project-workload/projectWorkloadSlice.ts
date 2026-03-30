@@ -103,7 +103,10 @@ const projectWorkloadSlice = createSlice({
     toggleWorkingDay: (state, action: PayloadAction<keyof typeof initialState.workingDays>) => {
       state.workingDays[action.payload] = !state.workingDays[action.payload];
     },
-    setAlertThresholds: (state, action: PayloadAction<Partial<typeof initialState.alertThresholds>>) => {
+    setAlertThresholds: (
+      state,
+      action: PayloadAction<Partial<typeof initialState.alertThresholds>>
+    ) => {
       state.alertThresholds = { ...state.alertThresholds, ...action.payload };
     },
     resetWorkloadState: () => initialState,

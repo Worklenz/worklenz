@@ -1,6 +1,15 @@
-import { Button, Dropdown, Flex, Input, InputRef, MenuProps, Skeleton, message } from '@/shared/antd-imports';
+import {
+  Button,
+  Dropdown,
+  Flex,
+  Input,
+  InputRef,
+  MenuProps,
+  Skeleton,
+  message,
+} from '@/shared/antd-imports';
 import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
-import { EllipsisOutlined, CopyOutlined, DeleteOutlined  } from '@/shared/antd-imports';
+import { EllipsisOutlined, CopyOutlined, DeleteOutlined } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 
 import './task-drawer-header.css';
@@ -135,7 +144,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
   };
 
   // Menu click handler
-  const handleMenuClick: MenuProps['onClick'] = (e) => {
+  const handleMenuClick: MenuProps['onClick'] = e => {
     if (e.key === 'copy-link') {
       handleCopyTaskLink();
     } else if (e.key === 'delete') {
@@ -241,7 +250,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
             </p>
           )}
         </Flex>
-        
+
         {/* Task Navigation - Show only if navigation context exists */}
         {!isSubTask && navigationContext && navigationContext.taskIds.length > 1 && (
           <TaskDrawerNavigation

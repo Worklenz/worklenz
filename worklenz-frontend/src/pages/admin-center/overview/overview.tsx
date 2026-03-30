@@ -25,9 +25,8 @@ const Overview: React.FC = () => {
   const dispatch = useAppDispatch();
 
   const { trackMixpanelEvent } = useMixpanelTracking();
-  const { organization, organizationAdmins, loadingOrganizationAdmins, billingInfo } = useAppSelector(
-    (state: RootState) => state.adminCenterReducer
-  );
+  const { organization, organizationAdmins, loadingOrganizationAdmins, billingInfo } =
+    useAppSelector((state: RootState) => state.adminCenterReducer);
 
   const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);
   const { t } = useTranslation('admin-center/overview');
@@ -72,9 +71,10 @@ const Overview: React.FC = () => {
         <Card
           style={{
             borderRadius: '8px',
-            boxShadow: themeMode === 'dark'
-              ? '0 2px 8px rgba(0, 0, 0, 0.3)'
-              : '0 2px 8px rgba(0, 0, 0, 0.06)',
+            boxShadow:
+              themeMode === 'dark'
+                ? '0 2px 8px rgba(0, 0, 0, 0.3)'
+                : '0 2px 8px rgba(0, 0, 0, 0.06)',
           }}
         >
           <Typography.Title level={4} style={{ margin: 0, marginBottom: 20 }}>
@@ -114,9 +114,10 @@ const Overview: React.FC = () => {
         <Card
           style={{
             borderRadius: '8px',
-            boxShadow: themeMode === 'dark'
-              ? '0 2px 8px rgba(0, 0, 0, 0.3)'
-              : '0 2px 8px rgba(0, 0, 0, 0.06)',
+            boxShadow:
+              themeMode === 'dark'
+                ? '0 2px 8px rgba(0, 0, 0, 0.3)'
+                : '0 2px 8px rgba(0, 0, 0, 0.06)',
           }}
         >
           <Typography.Title level={4} style={{ margin: 0, marginBottom: 16 }}>

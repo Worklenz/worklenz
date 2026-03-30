@@ -431,14 +431,14 @@ body.gantt-dragging * {
 
 /* Phase bar gradient overlay for depth */
 .gantt-phase-bar::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   background: linear-gradient(
-    180deg, 
+    180deg,
     rgba(255, 255, 255, 0.2) 0%,
     rgba(255, 255, 255, 0.1) 50%,
     rgba(0, 0, 0, 0.1) 100%
@@ -455,9 +455,15 @@ body.gantt-dragging * {
 
 /* Phase bar hover animation */
 @keyframes phaseBarPulse {
-  0% { box-shadow: 0 4px 12px rgba(var(--phase-color), 0.3); }
-  50% { box-shadow: 0 4px 12px rgba(var(--phase-color), 0.5); }
-  100% { box-shadow: 0 4px 12px rgba(var(--phase-color), 0.3); }
+  0% {
+    box-shadow: 0 4px 12px rgba(var(--phase-color), 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 12px rgba(var(--phase-color), 0.5);
+  }
+  100% {
+    box-shadow: 0 4px 12px rgba(var(--phase-color), 0.3);
+  }
 }
 
 .gantt-phase-bar:hover > div {
@@ -554,14 +560,14 @@ body.gantt-dragging * {
 }
 
 /* Dark mode scrollbar */
-[data-theme='dark'] .gantt-scroll-container {
+[data-theme="dark"] .gantt-scroll-container {
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
-[data-theme='dark'] .gantt-scroll-container::-webkit-scrollbar-thumb {
+[data-theme="dark"] .gantt-scroll-container::-webkit-scrollbar-thumb {
   background-color: rgba(255, 255, 255, 0.2);
 }
 
-[data-theme='dark'] .gantt-scroll-container::-webkit-scrollbar-thumb:hover {
+[data-theme="dark"] .gantt-scroll-container::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.3);
 }

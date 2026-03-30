@@ -189,7 +189,7 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
       requestAnimationFrame(() => {
         calculateDropdownPosition();
       });
-      
+
       document.addEventListener('mousedown', handleClickOutside);
 
       // Recalculate on window resize or scroll using throttled version
@@ -200,7 +200,7 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
         document.removeEventListener('mousedown', handleClickOutside);
         window.removeEventListener('resize', throttledCalculatePosition);
         window.removeEventListener('scroll', throttledCalculatePosition, true);
-        
+
         // Cancel any pending animation frame
         if (rafIdRef.current !== null) {
           cancelAnimationFrame(rafIdRef.current);

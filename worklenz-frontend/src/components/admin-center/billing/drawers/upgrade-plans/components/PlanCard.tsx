@@ -38,7 +38,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
         flexDirection: 'column',
         height: '100%',
         padding: '12px',
-      }
+      },
     }}
     onClick={() => onPlanSelect(planType)}
     hoverable
@@ -56,7 +56,9 @@ export const PlanCard: React.FC<PlanCardProps> = ({
       <Typography.Title level={4} style={{ marginBottom: 4 }}>
         {title}
       </Typography.Title>
-      <Typography.Text type="secondary" style={{ fontSize: '12px' }}>{description}</Typography.Text>
+      <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+        {description}
+      </Typography.Text>
     </div>
 
     {priceDisplay}
@@ -74,7 +76,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
         type="primary"
         block
         size="middle"
-        onClick={(e) => {
+        onClick={e => {
           e.stopPropagation();
           onPrimaryAction();
         }}

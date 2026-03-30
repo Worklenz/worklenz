@@ -3751,6 +3751,7 @@ BEGIN
                  project_id,
                  created_at,
                  updated_at,
+                 completed_at,
                  status_id,
                  parent_task_id,
                  sort_order,

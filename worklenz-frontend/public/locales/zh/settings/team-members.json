@@ -91,5 +91,6 @@
   "managerTooltip": "分配团队负责人来管理此成员。只有成员可以被分配给经理。",
   "selectManagerPlaceholder": "选择团队负责人作为经理",
   "manager_removed_successfully": "经理分配已成功移除",
-  "updateError": "更新团队成员失败。请重试。"
+  "updateError": "更新团队成员失败。请重试。",
+  "noTeamLeadsAvailable": "没有可用的团队负责人"
 }

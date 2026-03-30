@@ -81,7 +81,7 @@
 
 .trial-feature-icon:hover {
   transform: scale(1.1);
-  background: rgba(255,255,255,0.3) !important;
+  background: rgba(255, 255, 255, 0.3) !important;
 }
 
 .trial-cta-button {
@@ -90,13 +90,13 @@
 }
 
 .trial-cta-button::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
   transition: left 0.5s ease;
 }
 
@@ -109,7 +109,7 @@
 }
 
 .countdown-wrapper::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -5px;
   left: 50%;

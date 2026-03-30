@@ -4,7 +4,10 @@ import ChatList from '../chat-list';
 import ChatBox from './chat-box';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useGetOrganizationChatsQuery, clientPortalApi } from '../../../../../api/client-portal/client-portal-api';
+import {
+  useGetOrganizationChatsQuery,
+  clientPortalApi,
+} from '../../../../../api/client-portal/client-portal-api';
 import { useTranslation } from 'react-i18next';
 import { MessageOutlined, ReloadOutlined, InboxOutlined } from '@ant-design/icons';
 import NewChatModal from '@components/client-portal/NewChatModal';
@@ -32,19 +35,18 @@ interface ChatBoxWrapperProps {
   setIsNewChatModalOpen?: (open: boolean) => void;
 }
 
-const ChatBoxWrapper = ({ 
-  isNewChatModalOpen: propIsNewChatModalOpen, 
-  setIsNewChatModalOpen: propSetIsNewChatModalOpen 
+const ChatBoxWrapper = ({
+  isNewChatModalOpen: propIsNewChatModalOpen,
+  setIsNewChatModalOpen: propSetIsNewChatModalOpen,
 }: ChatBoxWrapperProps = {}) => {
   const [openedChatId, setOpenedChatId] = useState<string | null>(null);
   const [internalIsNewChatModalOpen, setInternalIsNewChatModalOpen] = useState(false);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const dispatch = useAppDispatch();
-  
+
   // Use prop if provided, otherwise use internal state
-  const isNewChatModalOpen = propIsNewChatModalOpen !== undefined 
-    ? propIsNewChatModalOpen 
-    : internalIsNewChatModalOpen;
+  const isNewChatModalOpen =
+    propIsNewChatModalOpen !== undefined ? propIsNewChatModalOpen : internalIsNewChatModalOpen;
   const setIsNewChatModalOpen = propSetIsNewChatModalOpen || setInternalIsNewChatModalOpen;
 
   const { t } = useTranslation('client-portal-chats');
@@ -54,10 +56,13 @@ const ChatBoxWrapper = ({
     isLoading,
     error,
     refetch,
-  } = useGetOrganizationChatsQuery({}, {
-    refetchOnMountOrArgChange: true,
-    skip: false,
-  });
+  } = useGetOrganizationChatsQuery(
+    {},
+    {
+      refetchOnMountOrArgChange: true,
+      skip: false,
+    }
+  );
 
   const localChatList = useAppSelector(state => state.clientsPortalReducer.chatsReducer.chatList);
 
@@ -65,7 +70,7 @@ const ChatBoxWrapper = ({
     try {
       // Handle the API response - it could be an array directly or wrapped
       let chatsArray: any[] = [];
-      
+
       if (Array.isArray(apiChatsData)) {
         chatsArray = apiChatsData;
       } else if (apiChatsData && typeof apiChatsData === 'object') {
@@ -93,7 +98,7 @@ const ChatBoxWrapper = ({
               }
             }
           }
-          
+
           return {
             id: chat.id || '',
             name: chat.clientName || chat.title || chat.participants?.join(', ') || 'Unknown',

@@ -63,7 +63,7 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
   const fieldsRaw = useSelector((state: RootState) => state.taskManagementFields);
   const columns = useSelector(selectColumns);
   const projectId = useAppSelector(state => state.projectReducer.projectId);
-  const fields = Array.isArray(fieldsRaw) ? fieldsRaw : (fieldsRaw?.fields || []);
+  const fields = Array.isArray(fieldsRaw) ? fieldsRaw : fieldsRaw?.fields || [];
   const sortedFields = useMemo(() => [...fields].sort((a, b) => a.order - b.order), [fields]);
   const [open, setOpen] = React.useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -100,9 +100,9 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
   const fieldsTitle = useMemo(() => {
     return visibleCount > 0
       ? t('fieldsWithCount', {
-        count: visibleCount,
-        defaultValue: 'Fields: {{count}}',
-      })
+          count: visibleCount,
+          defaultValue: 'Fields: {{count}}',
+        })
       : t('fieldsText', { defaultValue: 'Fields' });
   }, [visibleCount, t]);
 
@@ -115,11 +115,12 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
         className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out
-          ${visibleCount > 0
-            ? isDarkMode
-              ? 'bg-gray-600 text-white border-gray-500'
-              : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
-            : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
+          ${
+            visibleCount > 0
+              ? isDarkMode
+                ? 'bg-gray-600 text-white border-gray-500'
+                : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
+              : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
           hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
           ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
@@ -175,20 +176,22 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
                       className={`
                         w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded
                         transition-colors duration-150 text-left
-                        ${isSelected
-                          ? isDarkMode
-                            ? 'text-white font-semibold'
-                            : 'text-gray-800 font-semibold'
-                          : `${themeClasses.optionText} ${themeClasses.optionHover}`
+                        ${
+                          isSelected
+                            ? isDarkMode
+                              ? 'text-white font-semibold'
+                              : 'text-gray-800 font-semibold'
+                            : `${themeClasses.optionText} ${themeClasses.optionHover}`
                         }
                       `}
                     >
                       <div
                         className={`
                           flex items-center justify-center w-3.5 h-3.5 border rounded
-                          ${isSelected
-                            ? 'bg-gray-600 border-gray-600 text-white'
-                            : 'border-gray-300 dark:border-gray-600'
+                          ${
+                            isSelected
+                              ? 'bg-gray-600 border-gray-600 text-white'
+                              : 'border-gray-300 dark:border-gray-600'
                           }
                         `}
                       >

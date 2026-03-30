@@ -3,7 +3,11 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import projectFilesApiService from '@/api/projects/project-files.api.service';
 import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
 import logger from '@/utils/errorLogger';
-import type { ProjectFile, ProjectFilesSortField, ProjectFilesSortOrder } from '@/types/projects/project-files.types';
+import type {
+  ProjectFile,
+  ProjectFilesSortField,
+  ProjectFilesSortOrder,
+} from '@/types/projects/project-files.types';
 import type { PaginationConfig, SortConfig, StorageUsage } from '../types';
 
 export const useProjectFiles = () => {
@@ -25,7 +29,7 @@ export const useProjectFiles = () => {
 
   const fetchFiles = useCallback(async () => {
     if (!projectId) return;
-    
+
     try {
       setLoading(true);
       const response = await projectFilesApiService.list(projectId, {
@@ -49,7 +53,15 @@ export const useProjectFiles = () => {
     } finally {
       setLoading(false);
     }
-  }, [projectId, paginationConfig.pageIndex, paginationConfig.pageSize, sorter.field, sorter.order, searchValue, refreshTimestamp]);
+  }, [
+    projectId,
+    paginationConfig.pageIndex,
+    paginationConfig.pageSize,
+    sorter.field,
+    sorter.order,
+    searchValue,
+    refreshTimestamp,
+  ]);
 
   const handleSearch = (value: string) => {
     setPaginationConfig(prev => ({ ...prev, pageIndex: 1 }));

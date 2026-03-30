@@ -347,12 +347,18 @@ const ClientPortalEditService = () => {
 
           <div style={{ flex: 1, overflow: 'auto' }}>
             {current === 0 && (
-              <ServiceDetailsStep setCurrent={setCurrent} service={service} setService={setService} />
+              <ServiceDetailsStep
+                setCurrent={setCurrent}
+                service={service}
+                setService={setService}
+              />
             )}
             {current === 1 && (
               <RequestFormStep setCurrent={setCurrent} service={service} setService={setService} />
             )}
-            {current === 2 && <PreviewAndSubmitStep setCurrent={setCurrent} service={service} isEdit={true} />}
+            {current === 2 && (
+              <PreviewAndSubmitStep setCurrent={setCurrent} service={service} isEdit={true} />
+            )}
           </div>
         </div>
       </Card>

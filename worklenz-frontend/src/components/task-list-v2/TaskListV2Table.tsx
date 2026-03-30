@@ -660,11 +660,7 @@ const TaskListV2Section: React.FC = () => {
 
   // Function to update custom column values
   const updateTaskCustomColumnValue = useCallback(
-    (
-      taskId: string,
-      columnKey: string,
-      value: string | number | boolean | string[] | null
-    ) => {
+    (taskId: string, columnKey: string, value: string | number | boolean | string[] | null) => {
       try {
         if (!urlProjectId) {
           console.error('Project ID is missing');
@@ -1119,22 +1115,22 @@ const TaskListV2Section: React.FC = () => {
                           // Create resize indicator line
                           const indicator = document.createElement('div');
                           indicator.className = 'column-resize-indicator';
-                          
+
                           // Ensure the container has position relative for absolute positioning
                           const originalPosition = tableContainer.style.position;
                           if (!originalPosition || originalPosition === 'static') {
                             tableContainer.style.position = 'relative';
                           }
-                          
+
                           // Calculate the full scrollable height to span entire table
                           const scrollHeight = tableContainer.scrollHeight;
                           const scrollTop = tableContainer.scrollTop;
-                          
+
                           // Set indicator to span from current scroll position to end of content
                           // Use fixed positioning from top of visible area to bottom of scrollable content
                           indicator.style.top = '0px';
                           indicator.style.height = `${scrollHeight}px`;
-                          
+
                           tableContainer.appendChild(indicator);
 
                           // Create tooltip
@@ -1172,15 +1168,15 @@ const TaskListV2Section: React.FC = () => {
                               minWidth,
                               Math.min(maxWidth, startWidth + diff)
                             );
-
                             // Update CSS variable once - all elements update together
                             document.documentElement.style.setProperty(
                               `--col-width-${columnId}`,
                               `${newWidth}px`
                             );
-
-                            // Update indicator and tooltip
-                            updateIndicator(moveEvent.clientX, newWidth);
+                            // FIX: clamp indicator X to match clamped width so the
+                            // blue line stops at the min/max boundary
+                            const clampedClientX = startX + (newWidth - startWidth);
+                            updateIndicator(clampedClientX, newWidth);
                           };
 
                           const handleMouseUp = (upEvent: MouseEvent) => {
@@ -1212,7 +1208,7 @@ const TaskListV2Section: React.FC = () => {
                             document.body.style.cursor = '';
                             document.body.style.userSelect = '';
                             document.body.classList.remove('column-resizing');
-                            
+
                             // Restore original position style
                             if (originalPosition) {
                               tableContainer.style.position = originalPosition;
@@ -1474,8 +1470,7 @@ const TaskListV2Section: React.FC = () => {
                       .slice(0, groupIndex)
                       .reduce((sum, c) => sum + c, 0);
                     const indexInGroup = index - groupOffset;
-                    const isFirstInGroup =
-                      indexInGroup === 0 && !('isAddTaskRow' in item);
+                    const isFirstInGroup = indexInGroup === 0 && !('isAddTaskRow' in item);
 
                     const isOverThisTask =
                       activeId && overId === item.id && !('isAddTaskRow' in item);
@@ -1560,6 +1555,7 @@ const TaskListV2Section: React.FC = () => {
                 onBulkDuplicate={() => bulkActions.handleBulkDuplicate(selectedTaskIds)}
                 onBulkExport={() => bulkActions.handleBulkExport(selectedTaskIds)}
                 onBulkSetDueDate={date => bulkActions.handleBulkSetDueDate(date, selectedTaskIds)}
+                onBulkSetStartDate={date => bulkActions.handleBulkSetStartDate(date, selectedTaskIds)}
               />
             </div>
           )}

@@ -17,11 +17,11 @@ import { fetchBillingInfo } from '@/features/admin-center/admin-center.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
-import { 
-  MixpanelBillingEvents, 
+import {
+  MixpanelBillingEvents,
   UpgradeButtonEventProps,
   PricingModalEventProps,
-  UserType 
+  UserType,
 } from '@/types/mixpanel-events.types';
 
 // PricingModal removed in favor of global UpgradePlans modal
@@ -317,11 +317,11 @@ const UpgradePlanButton: React.FC<UpgradePlanButtonProps> = ({
 
   return (
     <>
-      {(
+      {
         <Tooltip title={getTooltipContent()} placement="bottom">
           {button}
         </Tooltip>
-      )}
+      }
 
       {/* Global UpgradePlans modal is handled in layout; no local modal here */}
     </>

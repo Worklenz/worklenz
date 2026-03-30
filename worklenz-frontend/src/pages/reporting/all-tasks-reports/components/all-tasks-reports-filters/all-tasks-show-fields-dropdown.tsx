@@ -4,9 +4,7 @@ import { CaretDownFilled } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import {
-  toggleColumnVisibility,
-} from '@/features/reporting/allTasksReports/all-tasks-reports-slice';
+import { toggleColumnVisibility } from '@/features/reporting/allTasksReports/all-tasks-reports-slice';
 
 const AllTasksShowFieldsDropdown = () => {
   const { t } = useTranslation('reporting-all-tasks');

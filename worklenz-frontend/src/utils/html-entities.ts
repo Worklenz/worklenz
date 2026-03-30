@@ -5,7 +5,7 @@
 /**
  * Decodes HTML entities back to their original characters
  * This is the counterpart to the backend's sanitizePlainText() function
- * 
+ *
  * @param text - Text that may contain HTML entities
  * @returns Decoded text with HTML entities converted back to readable characters
  */
@@ -23,7 +23,7 @@ export function decodeHtmlEntities(text: string | undefined): string {
 /**
  * Safe text display that decodes HTML entities
  * Use this for displaying text that was sanitized on the backend
- * 
+ *
  * @param text - Text that may contain HTML entities
  * @returns Decoded text safe for display
  */
@@ -42,13 +42,13 @@ export const HTML_ENTITY_MAP: Record<string, string> = {
   '&quot;': '"',
   '&lt;': '<',
   '&gt;': '>',
-  '&apos;': "'"
+  '&apos;': "'",
 };
 
 /**
  * Alternative decoding method using string replacement
  * Use this as a fallback when DOM methods are not available
- * 
+ *
  * @param text - Text that may contain HTML entities
  * @returns Decoded text using string replacement
  */
@@ -62,6 +62,6 @@ export function decodeHtmlEntitiesFallback(text: string): string {
     const regex = new RegExp(entity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
     decoded = decoded.replace(regex, char);
   });
-  
+
   return decoded;
 }

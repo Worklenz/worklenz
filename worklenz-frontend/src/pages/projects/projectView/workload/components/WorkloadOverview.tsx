@@ -45,7 +45,7 @@ const calculateWorkingDaysInPeriod = (
 ): number => {
   const start = new Date(startDate);
   const end = new Date(endDate);
-  
+
   if (end < start) return 0;
 
   const workingDays = workingDaysConfig || {
@@ -68,11 +68,11 @@ const calculateWorkingDaysInPeriod = (
   while (currentDate <= end) {
     const dayOfWeek = currentDate.getDay();
     const dayName = dayMapping[dayOfWeek];
-    
+
     if (workingDays[dayName]) {
       workingDaysCount++;
     }
-    
+
     currentDate.setDate(currentDate.getDate() + 1);
   }
 
@@ -82,13 +82,13 @@ const calculateWorkingDaysInPeriod = (
 // Helper function to calculate workload from tasks for a specific date range
 const calculateWorkloadFromTasks = (tasks: any[], startDate?: string, endDate?: string): number => {
   if (!Array.isArray(tasks)) return 0;
-  
+
   let totalHours = 0;
-  
+
   // Use provided date range or default to current/next month
   let startOfPeriod: Date;
   let endOfPeriod: Date;
-  
+
   if (startDate && endDate) {
     startOfPeriod = new Date(startDate);
     endOfPeriod = new Date(endDate);
@@ -100,17 +100,20 @@ const calculateWorkloadFromTasks = (tasks: any[], startDate?: string, endDate?: 
     startOfPeriod = new Date(currentYear, currentMonth, 1);
     endOfPeriod = new Date(currentYear, currentMonth + 2, 0);
   }
-  
+
   tasks.forEach(task => {
     if (task?.start_date && task?.end_date) {
       const startDate = new Date(task.start_date);
       const endDate = new Date(task.end_date);
-      
+
       if (startDate <= endOfPeriod && endDate >= startOfPeriod) {
         const overlapStart = new Date(Math.max(startDate.getTime(), startOfPeriod.getTime()));
         const overlapEnd = new Date(Math.min(endDate.getTime(), endOfPeriod.getTime()));
-        const overlapDays = Math.max(1, Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)));
-        
+        const overlapDays = Math.max(
+          1,
+          Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24))
+        );
+
         const baseHours = Math.min(6, Math.max(3, overlapDays * 0.5));
         totalHours += baseHours;
       }
@@ -123,11 +126,11 @@ const calculateWorkloadFromTasks = (tasks: any[], startDate?: string, endDate?: 
       totalHours += 2;
     }
   });
-  
+
   if (totalHours === 0 && tasks.length > 0) {
     totalHours = Math.min(20, tasks.length * 2);
   }
-  
+
   return Math.round(totalHours);
 };
 
@@ -174,7 +177,10 @@ const calculateSummaryFromRawData = (data: any, startDate?: string, endDate?: st
           // For planned tasks, estimate based on duration
           const start = new Date(task.start_date);
           const end = new Date(task.end_date);
-          const durationDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+          const durationDays = Math.max(
+            1,
+            Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+          );
           memberEstimatedHours += Math.min(8, Math.max(2, durationDays * 2)); // 2-8 hours based on duration
           plannedTasksCount++;
         }
@@ -200,12 +206,13 @@ const calculateSummaryFromRawData = (data: any, startDate?: string, endDate?: st
     const periodCapacity = workingDaysInPeriod * dailyHours;
 
     // Calculate utilization based on actual logged hours vs capacity
-    const utilizationPercentage = periodCapacity > 0 ? Math.round((memberActualHours / periodCapacity) * 100) : 0;
+    const utilizationPercentage =
+      periodCapacity > 0 ? Math.round((memberActualHours / periodCapacity) * 100) : 0;
 
     totalEstimatedHours += memberEstimatedHours;
     totalActualHours += memberActualHours;
     totalCapacity += periodCapacity;
-    totalTasksCount += (member.tasks?.length || 0);
+    totalTasksCount += member.tasks?.length || 0;
 
     if (utilizationPercentage > 100) {
       overallocatedCount++;
@@ -214,7 +221,8 @@ const calculateSummaryFromRawData = (data: any, startDate?: string, endDate?: st
     }
   });
 
-  const averageUtilization = totalCapacity > 0 ? Math.round((totalActualHours / totalCapacity) * 100) : 0;
+  const averageUtilization =
+    totalCapacity > 0 ? Math.round((totalActualHours / totalCapacity) * 100) : 0;
 
   return {
     totalMembers: members.length,
@@ -267,8 +275,9 @@ const WorkloadOverview = ({ data, isLoading }: WorkloadOverviewProps) => {
   }
 
   // Handle both transformed IWorkloadData and raw API response
-  const summary = data?.summary || calculateSummaryFromRawData(data, dateRange.startDate, dateRange.endDate);
-  
+  const summary =
+    data?.summary || calculateSummaryFromRawData(data, dateRange.startDate, dateRange.endDate);
+
   const utilizationColor =
     summary.averageUtilization > 100
       ? token.colorError
@@ -312,7 +321,7 @@ Member Status:
 Includes:
 • Estimated Hours: ${summary.totalEstimatedHours}h
 • Actual Hours Logged: ${summary.totalActualHours}h
-• Progress: ${summary.totalEstimatedHours > 0 ? Math.round((summary.totalActualHours / summary.totalEstimatedHours) * 100) : (summary.totalActualHours > 0 ? 100 : 0)}%`}
+• Progress: ${summary.totalEstimatedHours > 0 ? Math.round((summary.totalActualHours / summary.totalEstimatedHours) * 100) : summary.totalActualHours > 0 ? 100 : 0}%`}
             placement="top"
           >
             <Statistic
@@ -327,7 +336,13 @@ Includes:
             />
           </Tooltip>
           <Progress
-            percent={summary.totalEstimatedHours > 0 ? Math.round((summary.totalActualHours / summary.totalEstimatedHours) * 100) : (summary.totalActualHours > 0 ? 100 : 0)}
+            percent={
+              summary.totalEstimatedHours > 0
+                ? Math.round((summary.totalActualHours / summary.totalEstimatedHours) * 100)
+                : summary.totalActualHours > 0
+                  ? 100
+                  : 0
+            }
             size="small"
             status={summary.totalActualHours > summary.totalEstimatedHours ? 'exception' : 'active'}
           />
@@ -377,7 +392,7 @@ Includes:
             title={t('overview.criticalTasksTooltip', {
               criticalTasks: summary.criticalTasks,
               totalTasks: summary.totalTasks,
-              criticalPercentage: Math.round((summary.criticalTasks / summary.totalTasks) * 100)
+              criticalPercentage: Math.round((summary.criticalTasks / summary.totalTasks) * 100),
             })}
             placement="top"
           >

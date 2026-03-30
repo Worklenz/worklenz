@@ -98,25 +98,34 @@ const AddClientDrawer = () => {
 
       // Check if this is an existing client (backend returns body.existing)
       const responseBody = response?.body || response;
-      
+
       if (responseBody?.existing) {
         // Show warning alert based on invitation status
         if (responseBody.invitationAlreadySent) {
           setAlertMessage({
             type: 'warning',
-            message: t('clientExistsWithInvitationSent', { defaultValue: 'A client with this email already exists and an invitation has already been sent.' })
+            message: t('clientExistsWithInvitationSent', {
+              defaultValue:
+                'A client with this email already exists and an invitation has already been sent.',
+            }),
           });
         } else {
           setAlertMessage({
             type: 'warning',
-            message: t('clientExistsNoInvitation', { defaultValue: 'A client with this email already exists. You can send them an invitation from the clients list.' })
+            message: t('clientExistsNoInvitation', {
+              defaultValue:
+                'A client with this email already exists. You can send them an invitation from the clients list.',
+            }),
           });
         }
       } else {
         // New client created successfully
         setAlertMessage({
           type: 'success',
-          message: t('createClientSuccessMessage', { defaultValue: 'Client created successfully! Share the organization invite link to give them portal access.' })
+          message: t('createClientSuccessMessage', {
+            defaultValue:
+              'Client created successfully! Share the organization invite link to give them portal access.',
+          }),
         });
         window.setTimeout(() => {
           handleClose();
@@ -134,13 +143,13 @@ const AddClientDrawer = () => {
       if (isCsrfError) {
         setAlertMessage({
           type: 'error',
-          message: t('csrfError', { defaultValue: 'Security token expired. Please try again.' })
+          message: t('csrfError', { defaultValue: 'Security token expired. Please try again.' }),
         });
         refreshCsrfToken().catch(() => {});
       } else {
         setAlertMessage({
           type: 'error',
-          message: getCreateClientErrorMessage(errorMessage, t)
+          message: getCreateClientErrorMessage(errorMessage, t),
         });
       }
     }
@@ -187,20 +196,39 @@ const AddClientDrawer = () => {
         )}
         <Form form={form} layout="vertical" onFinish={handleFormSubmit} autoComplete="off">
           <Divider orientation="left" style={{ marginTop: 0 }}>
-            <Typography.Text strong>{t('basicInformationSection', { defaultValue: 'Basic Information' })}</Typography.Text>
+            <Typography.Text strong>
+              {t('basicInformationSection', { defaultValue: 'Basic Information' })}
+            </Typography.Text>
           </Divider>
 
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item
                 name="name"
-                label={t('clientNameLabel') || 'Client Name'}
+                label={t('recordNameLabel', { defaultValue: 'Record Name (Internal)' })}
                 rules={[
-                  { required: true, message: t('clientNameRequired') || 'Please enter client name' },
-                  { min: 2, message: t('clientNameMinLength') || 'At least 2 characters' },
+                  {
+                    required: true,
+                    message:
+                      t('recordNameRequired', { defaultValue: 'Please enter an internal record name' }) ||
+                      'Please enter an internal record name',
+                  },
+                  {
+                    min: 2,
+                    message:
+                      t('recordNameMinLength', {
+                        defaultValue: 'Record name must be at least 2 characters',
+                      }) || 'Record name must be at least 2 characters',
+                  },
                 ]}
               >
-                <Input placeholder={t('clientNamePlaceholder') || 'Enter client name'} />
+                <Input
+                  placeholder={
+                    t('recordNamePlaceholder', {
+                      defaultValue: 'Enter internal record name',
+                    }) || 'Enter internal record name'
+                  }
+                />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
@@ -219,19 +247,48 @@ const AddClientDrawer = () => {
 
           <Row gutter={16}>
             <Col xs={24} md={12}>
-              <Form.Item name="company_name" label={t('companyNameLabel') || 'Company Name'}>
-                <Input placeholder={t('companyNamePlaceholder') || 'Enter company name'} />
+              <Form.Item
+                name="company_name"
+                label={t('clientCompanyLabel', { defaultValue: 'Client / Company' })}
+                rules={[
+                  {
+                    required: true,
+                    message:
+                      t('clientCompanyRequired', {
+                        defaultValue: 'Please enter the client company name',
+                      }) || 'Please enter the client company name',
+                  },
+                ]}
+              >
+                <Input
+                  placeholder={
+                    t('clientCompanyPlaceholder', {
+                      defaultValue: 'Enter client company name',
+                    }) || 'Enter client company name'
+                  }
+                />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
               <Form.Item
                 name="contact_person"
-                label={t('contactPersonLabel', { defaultValue: 'Contact Person' })}
+                label={t('primaryContactLabel', { defaultValue: 'Primary Contact (POC)' })}
+                rules={[
+                  {
+                    required: true,
+                    message:
+                      t('primaryContactRequired', {
+                        defaultValue: 'Please enter a primary contact person',
+                      }) || 'Please enter a primary contact person',
+                  },
+                ]}
               >
                 <Input
-                  placeholder={t('contactPersonPlaceholder', {
-                    defaultValue: 'Enter contact person name',
-                  })}
+                  placeholder={
+                    t('primaryContactPlaceholder', {
+                      defaultValue: 'Enter primary contact (POC) name',
+                    }) || 'Enter primary contact (POC) name'
+                  }
                 />
               </Form.Item>
             </Col>
@@ -265,10 +322,7 @@ const AddClientDrawer = () => {
                 ]}
               >
                 <PhoneInput
-                  onCountryChange={country => form.setFieldValue('phone_country_code', country)}
-                  placeholder={
-                    t('phonePlaceholder', { defaultValue: 'Enter phone number' })
-                  }
+                  placeholder={t('phonePlaceholder', { defaultValue: 'Enter phone number' })}
                 />
               </Form.Item>
               <Form.Item name="phone_country_code" hidden>
@@ -278,11 +332,15 @@ const AddClientDrawer = () => {
           </Row>
 
           <Divider orientation="left">
-            <Typography.Text strong>{t('contactInformationSection', { defaultValue: 'Contact Information' })}</Typography.Text>
+            <Typography.Text strong>
+              {t('contactInformationSection', { defaultValue: 'Contact Information' })}
+            </Typography.Text>
           </Divider>
 
           <Form.Item name="address_line_1" label={t('addressLine1Label') || 'Street Address'}>
-            <Input placeholder={t('addressLine1Placeholder') || 'Enter street address (optional)'} />
+            <Input
+              placeholder={t('addressLine1Placeholder') || 'Enter street address (optional)'}
+            />
           </Form.Item>
 
           <Row gutter={16}>
