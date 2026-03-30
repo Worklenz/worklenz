@@ -34,11 +34,13 @@ export function useUpdateChecker(options: UseUpdateCheckerOptions = {}): UseUpda
   const [lastChecked, setLastChecked] = React.useState<Date | null>(null);
   const [showUpdateNotification, setShowUpdateNotification] = React.useState(false);
   const [updateDismissed, setUpdateDismissed] = React.useState(false);
+  const isCheckingRef = React.useRef(false);
 
   // Check for updates function
   const checkForUpdates = React.useCallback(async () => {
-    if (!serviceWorkerCheckUpdates || isChecking) return;
+    if (!serviceWorkerCheckUpdates || isCheckingRef.current) return;
 
+    isCheckingRef.current = true;
     setIsChecking(true);
     try {
       const hasUpdates = await serviceWorkerCheckUpdates();
@@ -52,9 +54,10 @@ export function useUpdateChecker(options: UseUpdateCheckerOptions = {}): UseUpda
     } catch (error) {
       console.error('Error checking for updates:', error);
     } finally {
+      isCheckingRef.current = false;
       setIsChecking(false);
     }
-  }, [serviceWorkerCheckUpdates, isChecking, showNotificationOnUpdate, updateDismissed]);
+  }, [serviceWorkerCheckUpdates, showNotificationOnUpdate, updateDismissed]);
 
   // Dismiss update notification
   const dismissUpdate = React.useCallback(() => {
@@ -106,7 +109,7 @@ export function useUpdateChecker(options: UseUpdateCheckerOptions = {}): UseUpda
     if (!enableAutoCheck) return;
 
     const handleFocus = () => {
-      if (swManager && !isChecking) {
+      if (swManager) {
         // Check for updates when window regains focus
         setTimeout(() => {
           checkForUpdates();
@@ -118,7 +121,7 @@ export function useUpdateChecker(options: UseUpdateCheckerOptions = {}): UseUpda
     return () => {
       window.removeEventListener('focus', handleFocus);
     };
-  }, [enableAutoCheck, swManager, isChecking, checkForUpdates]);
+  }, [enableAutoCheck, swManager, checkForUpdates]);
 
   // Reset dismissed state when new update is found
   React.useEffect(() => {

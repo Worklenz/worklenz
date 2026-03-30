@@ -186,7 +186,6 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
 
     setStep(0);
     setReviewSubScreen('main');
-    setShowAdvancedSpaceOptions(false);
     setAuthCompleted(!authNeeded);
     setMondayToken('');
     setSelectedWorkspace('');
@@ -208,8 +207,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     setCsvText('');
     setCsvRows([]);
     setSpaceName(activeSource.label ? `${activeSource.label} import` : '');
-    setSpaceType('software');
-    setSpaceTemplate('scrum');
+    setSpaceType('');
+    setSpaceTemplate('');
     setIsImporting(false);
     setFieldMappingRows([]);
     setHierarchyRows([]);
@@ -238,12 +237,12 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     integrationType === 'direct'
       ? [
         tt('steps.selectList', 'Select list'),
-        tt('steps.createSpace', 'Create space'),
+        tt('steps.createProject', 'Create project'),
         tt('steps.reviewImport', 'Review Details & Import'),
       ]
       : [
         tt('steps.uploadCsv', 'Upload CSV'),
-        tt('steps.setupSpace', 'Set up space'),
+        tt('steps.setupProject', 'Set up project'),
         tt('steps.mapFields', 'Map fields'),
         tt('steps.mapValues', 'Map values'),
         tt('steps.moveUsers', 'Move users'),
@@ -260,7 +259,6 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   // Toggles for review details
   const [importMembers, setImportMembers] = React.useState(true);
   const [importAttachments, setImportAttachments] = React.useState(true);
-  const [showAdvancedSpaceOptions, setShowAdvancedSpaceOptions] = React.useState(false);
 
   const [fieldMappingRows, setFieldMappingRows] = React.useState<
     Array<{ source_field: string; target_field: string; required?: boolean; include?: boolean }>
@@ -296,8 +294,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const [isImporting, setIsImporting] = React.useState<boolean>(false);
   const [autoMappingRunning, setAutoMappingRunning] = React.useState(false);
   const [spaceName, setSpaceName] = React.useState<string>('');
-  const [spaceType, setSpaceType] = React.useState<string>('software');
-  const [spaceTemplate, setSpaceTemplate] = React.useState<string>('scrum');
+  const [spaceType, setSpaceType] = React.useState<string>('');
+  const [spaceTemplate, setSpaceTemplate] = React.useState<string>('');
   const [defaultProjectStatusId, setDefaultProjectStatusId] = React.useState<string | null>(null);
   const [worklenzStatuses, setWorklenzStatuses] = React.useState<IProjectStatus[]>([]);
 
@@ -941,14 +939,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   setSelectedJiraProject={setSelectedJiraProject}
                   persistAsanaSelection={persistAsanaSelection}
                   selectedProject={selectedProject}
-                  spaceType={spaceType}
-                  setSpaceType={setSpaceType}
                   spaceName={spaceName}
                   setSpaceName={setSpaceName}
-                  showAdvancedSpaceOptions={showAdvancedSpaceOptions}
-                  setShowAdvancedSpaceOptions={setShowAdvancedSpaceOptions}
-                  spaceTemplate={spaceTemplate}
-                  setSpaceTemplate={setSpaceTemplate}
                   reviewSubScreen={reviewSubScreen}
                   setReviewSubScreen={setReviewSubScreen}
                   hierarchyCount={hierarchyCount}

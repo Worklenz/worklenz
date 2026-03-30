@@ -44,14 +44,8 @@ interface ImportStepContentProps {
   setSelectedJiraProject: React.Dispatch<React.SetStateAction<string>>;
   persistAsanaSelection: (projectId: string, workspaceId?: string, projectName?: string) => Promise<void>;
   selectedProject: string;
-  spaceType: string;
-  setSpaceType: React.Dispatch<React.SetStateAction<string>>;
   spaceName: string;
   setSpaceName: React.Dispatch<React.SetStateAction<string>>;
-  showAdvancedSpaceOptions: boolean;
-  setShowAdvancedSpaceOptions: React.Dispatch<React.SetStateAction<boolean>>;
-  spaceTemplate: string;
-  setSpaceTemplate: React.Dispatch<React.SetStateAction<string>>;
   reviewSubScreen: 'main' | 'hierarchy' | 'fieldMapping';
   setReviewSubScreen: React.Dispatch<React.SetStateAction<'main' | 'hierarchy' | 'fieldMapping'>>;
   hierarchyCount: number;
@@ -135,14 +129,8 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
     setSelectedJiraProject,
     persistAsanaSelection,
     selectedProject,
-    spaceType,
-    setSpaceType,
     spaceName,
     setSpaceName,
-    showAdvancedSpaceOptions,
-    setShowAdvancedSpaceOptions,
-    spaceTemplate,
-    setSpaceTemplate,
     reviewSubScreen,
     setReviewSubScreen,
     hierarchyCount,
@@ -221,14 +209,8 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
         setSelectedJiraProject={setSelectedJiraProject}
         persistAsanaSelection={persistAsanaSelection}
         selectedProject={selectedProject}
-        spaceType={spaceType}
-        setSpaceType={setSpaceType}
         spaceName={spaceName}
         setSpaceName={setSpaceName}
-        showAdvancedSpaceOptions={showAdvancedSpaceOptions}
-        setShowAdvancedSpaceOptions={setShowAdvancedSpaceOptions}
-        spaceTemplate={spaceTemplate}
-        setSpaceTemplate={setSpaceTemplate}
         reviewSubScreen={reviewSubScreen}
         setReviewSubScreen={setReviewSubScreen}
         hierarchyCount={hierarchyCount}
@@ -263,10 +245,6 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
           csvSettingsOpen={csvSettingsOpen}
           setCsvSettingsOpen={setCsvSettingsOpen}
           sourceLabel={sourceLabel || t('importStep.yourApp', { defaultValue: 'your app' })}
-          spaceType={spaceType}
-          setSpaceType={setSpaceType}
-          spaceTemplate={spaceTemplate}
-          setSpaceTemplate={setSpaceTemplate}
           spaceName={spaceName}
           setSpaceName={setSpaceName}
         />

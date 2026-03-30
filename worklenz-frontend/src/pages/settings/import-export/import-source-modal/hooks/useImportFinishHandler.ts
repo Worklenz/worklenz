@@ -102,7 +102,7 @@ export const useImportFinishHandler = ({
   React.useCallback(async () => {
     if (integrationType === 'direct') {
       if (!spaceName.trim()) {
-        message.error(t('importStep.spaceNameRequired', 'Please enter a space name.'));
+        message.error(t('importStep.projectNameRequired', { defaultValue: 'Please enter a project name.' }));
         return;
       }
 
@@ -390,7 +390,7 @@ export const useImportFinishHandler = ({
     }
 
     if (!spaceName.trim()) {
-      message.error(t('importStep.spaceNameRequired', 'Please enter a space name.'));
+      message.error(t('importStep.projectNameRequired', { defaultValue: 'Please enter a project name.' }));
       return;
     }
 
@@ -504,4 +504,3 @@ export const useImportFinishHandler = ({
     userEmails,
     workTypeMapping,
   ]);
-

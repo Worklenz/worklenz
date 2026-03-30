@@ -24,10 +24,6 @@ interface CsvSetupStepsContentProps {
   csvSettingsOpen: boolean;
   setCsvSettingsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   sourceLabel: string;
-  spaceType: string;
-  setSpaceType: React.Dispatch<React.SetStateAction<string>>;
-  spaceTemplate: string;
-  setSpaceTemplate: React.Dispatch<React.SetStateAction<string>>;
   spaceName: string;
   setSpaceName: React.Dispatch<React.SetStateAction<string>>;
 }
