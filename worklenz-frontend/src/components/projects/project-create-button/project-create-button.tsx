@@ -18,6 +18,7 @@ import {
 } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import ProjectImportModal from '@/pages/projects/projectView/ProjectImportModal';
+import { projectsApi } from '@/api/projects/projects.v1.api.service';
 interface CreateProjectButtonProps {
   className?: string;
 }
@@ -87,7 +88,8 @@ const CreateProjectButton: React.FC<CreateProjectButtonProps> = ({ className }) 
         const res = await projectTemplatesApiService.createFromWorklenzTemplate({
           template_id: currentTemplateId,
         });
-        if (res.done) {
+        if (res.done && res.body.project_id) {
+          dispatch(projectsApi.util.invalidateTags([{ type: 'Projects', id: 'LIST' }]));
           navigate(
             `/worklenz/projects/${res.body.project_id}?tab=tasks-list&pinned_tab=tasks-list`
           );
@@ -96,7 +98,8 @@ const CreateProjectButton: React.FC<CreateProjectButtonProps> = ({ className }) 
         const res = await projectTemplatesApiService.createFromCustomTemplate({
           template_id: currentTemplateId,
         });
-        if (res.done) {
+        if (res.done && res.body.project_id) {
+          dispatch(projectsApi.util.invalidateTags([{ type: 'Projects', id: 'LIST' }]));
           navigate(
             `/worklenz/projects/${res.body.project_id}?tab=tasks-list&pinned_tab=tasks-list`
           );
