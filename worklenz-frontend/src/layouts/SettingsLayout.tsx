@@ -15,7 +15,7 @@ const SettingsLayout = () => {
           <Flex className="w-full max-w-60">
             <SettingsSidebar />
           </Flex>
-          <Flex className="w-full">
+          <Flex className="w-full"style={{ minWidth: 0, overflow: 'auto' }}>
             <Outlet />
           </Flex>
         </Flex>
