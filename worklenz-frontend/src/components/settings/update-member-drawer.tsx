@@ -167,13 +167,15 @@ const UpdateMemberDrawer = ({
       const body: ITeamMemberCreateRequest = {
         job_title: form.getFieldValue('jobTitle'),
         emails: [teamMember.email],
-        is_admin: values.access === 'admin',
+        is_admin: values.access === 'admin' || values.access === 'owner',
         role_name:
-          values.access === 'team-lead'
-            ? ROLE_NAMES.TEAM_LEAD
-            : values.access === 'admin'
-              ? ROLE_NAMES.ADMIN
-              : ROLE_NAMES.MEMBER,
+          values.access === 'owner'
+            ? ROLE_NAMES.OWNER
+            : values.access === 'team-lead'
+              ? ROLE_NAMES.TEAM_LEAD
+              : values.access === 'admin'
+                ? ROLE_NAMES.ADMIN
+                : ROLE_NAMES.MEMBER,
       };
 
       const res = await teamMembersApiService.update(selectedMemberId, body);
@@ -201,11 +203,14 @@ const UpdateMemberDrawer = ({
 
         // Update role_name in parent component
         const newRoleName =
-          values.access === 'team-lead'
-            ? 'Team Lead'
-            : values.access === 'admin'
-              ? 'Admin'
-              : 'Member';
+
+          values.access === 'owner'
+            ? 'Owner'
+            : values.access === 'team-lead'
+              ? 'Team Lead'
+              : values.access === 'admin'
+                ? 'Admin'
+                : 'Member';
         onRoleUpdate?.(selectedMemberId, newRoleName);
         onJobTitleUpdate?.(selectedMemberId, resolvedJobTitle);
 
