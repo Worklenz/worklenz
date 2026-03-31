@@ -103,7 +103,14 @@ const ProjectTemplatesSettings = () => {
         columns={columns}
         dataSource={projectTemplates}
         size="small"
-        pagination={{ size: 'small' }}
+        // ✅ FIXED: added pageSize, showSizeChanger and showTotal for full pagination support
+        pagination={{
+          size: 'small',
+          pageSize: 10,
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50'],
+          showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} templates`,
+        }}
         rowClassName={(_, index) =>
           `no-border-row ${index % 2 === 0 ? '' : themeMode === 'dark' ? 'dark-alternate-row-color' : 'alternate-row-color'}`
         }
