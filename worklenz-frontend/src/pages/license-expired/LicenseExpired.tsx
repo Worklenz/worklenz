@@ -88,7 +88,7 @@ const LicenseExpired = () => {
         setIsContactingSupport(false);
       }
     } else {
-      navigate('worklenz/admin-center/billing');
+      navigate('/worklenz/admin-center/billing');
     }
   };
 
