@@ -9,10 +9,22 @@ import {
   S3Client
 } from "@aws-sdk/client-s3";
 import {isProduction, isTestServer, log_error} from "./utils";
-import {BUCKET, REGION, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_URL} from "./constants";
+import {BUCKET, REGION, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_URL, S3_ENDPOINT} from "./constants";
 import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
 import mime from "mime";
 
+
+// Parse the external endpoint URL from S3_URL for generating public links
+const getPublicEndpointFromUrl = () => {
+  try {
+    if (!S3_URL) return undefined;
+    const url = new URL(S3_URL);
+    return `${url.protocol}//${url.host}`;
+  } catch (error) {
+    log_error(error);
+    return undefined;
+  }
+};
 
 const s3Client = new S3Client({
   region: REGION,
@@ -20,7 +32,7 @@ const s3Client = new S3Client({
     accessKeyId: S3_ACCESS_KEY_ID || "",
     secretAccessKey: S3_SECRET_ACCESS_KEY || "",
   },
-  endpoint: S3_URL,
+  endpoint: S3_ENDPOINT || getPublicEndpointFromUrl(),
   forcePathStyle: true,
 });
 
@@ -57,6 +69,11 @@ export async function uploadBuffer(buffer: Buffer, type: string, location: strin
     };
 
     await s3Client.send(new PutObjectCommand(bucketParams));
+
+    const publicEndpointUrl = getPublicEndpointFromUrl();
+    if (publicEndpointUrl) {
+      return `${publicEndpointUrl}/${BUCKET}/${location}`;
+    }
     return `${S3_URL}/${location}`;
   } catch (error) {
     log_error(error);
@@ -72,8 +89,7 @@ export async function uploadBase64(base64Data: string, location: string) {
 
     if (!type) return null;
 
-    await uploadBuffer(buffer, type, location);
-    return `${S3_URL}/${location}`;
+    return await uploadBuffer(buffer, type, location);
   } catch (error) {
     log_error(error);
   }

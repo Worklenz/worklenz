@@ -30,19 +30,20 @@ import {
   S3_ACCESS_KEY_ID,
   S3_SECRET_ACCESS_KEY,
   S3_URL,
+  S3_ENDPOINT,
   STORAGE_PROVIDER,
 } from "./constants";
 
-// Parse the endpoint URL from S3_URL if it exists
-const getEndpointFromUrl = () => {
+// Parse the external endpoint URL from S3_URL for generating public links
+const getPublicEndpointFromUrl = () => {
   try {
     if (!S3_URL) return undefined;
     
-    // Extract the endpoint URL (e.g., http://minio:9000 from http://minio:9000/bucket)
+    // Extract the public endpoint URL (e.g., http://localhost:9000 from http://localhost:9000/bucket)
     const url = new URL(S3_URL);
     return `${url.protocol}//${url.host}`;
   } catch (error) {
-    console.warn("Error parsing S3_URL:", error);
+    log_error(error);
     return undefined;
   }
 };
@@ -54,13 +55,13 @@ const s3Client = new S3Client({
     accessKeyId: S3_ACCESS_KEY_ID || "",
     secretAccessKey: S3_SECRET_ACCESS_KEY || "",
   },
-  endpoint: getEndpointFromUrl(),
+  endpoint: S3_ENDPOINT || getPublicEndpointFromUrl(),
   forcePathStyle: true, // Required for MinIO
 });
 
 // Log the storage configuration
 console.log(`Storage provider initialized: ${STORAGE_PROVIDER}`);
-console.log(`Using endpoint: ${getEndpointFromUrl() || "AWS default"}`);
+console.log(`Using endpoint: ${S3_ENDPOINT || getPublicEndpointFromUrl() || "AWS default"}`);
 console.log(`Bucket: ${BUCKET}`);
 
 // Initialize Azure Blob Storage Client
@@ -158,10 +159,10 @@ async function uploadBufferToS3(
     await s3Client.send(new PutObjectCommand(bucketParams));
     
     // Create proper URL depending on whether we're using S3 or MinIO
-    const endpointUrl = getEndpointFromUrl();
-    if (endpointUrl) {
+    const publicEndpointUrl = getPublicEndpointFromUrl();
+    if (publicEndpointUrl) {
       // For MinIO or custom S3 endpoint
-      return `${endpointUrl}/${BUCKET}/${location}`;
+      return `${publicEndpointUrl}/${BUCKET}/${location}`;
     }
     
     // For standard AWS S3
