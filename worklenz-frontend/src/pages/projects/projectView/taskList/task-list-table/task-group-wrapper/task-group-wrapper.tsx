@@ -59,7 +59,7 @@ import {
   setTaskSubscribers,
 } from '@/features/task-drawer/task-drawer.slice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
-
+import { updateTask } from '@/features/task-management/task-management.slice';
 import TaskListTableWrapper from '@/pages/projects/projectView/taskList/task-list-table/task-list-table-wrapper/task-list-table-wrapper';
 
 import TaskTemplateDrawer from '@/components/task-templates/task-template-drawer';
@@ -572,7 +572,7 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
 
         updatedTasks.forEach((task, index) => {
           taskUpdates.push({
-            task_id: task.id,
+            task_id: task.id!,
             sort_order: index + 1, // 1-based indexing
           });
         });
@@ -592,7 +592,7 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
         // Add updates for source group
         updatedSourceTasks.forEach((task, index) => {
           taskUpdates.push({
-            task_id: task.id,
+            task_id: task.id!,
             sort_order: index + 1,
           });
         });
@@ -756,7 +756,10 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
             name={taskGroup.name}
             groupBy={groupBy}
             statusCategory={taskGroup.category_id}
-            color={themeMode === 'dark' ? taskGroup.color_code_dark : taskGroup.color_code}
+            color={(()=>{
+              const raw=themeMode==='dark'? taskGroup.color_code_dark:taskGroup.color_code;
+              return raw?.length===9? raw.slice(0,7):raw;
+            })()}
             activeId={activeId}
           />
         ))}
