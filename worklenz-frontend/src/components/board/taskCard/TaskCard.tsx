@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from 'react';
 import {
   DatePicker,
@@ -38,6 +39,8 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { getUserSession } from '@/utils/session-helper';
 import { safeTextDisplay } from '@/utils/html-entities';
+import { ALPHA_CHANNEL } from '@/shared/constants';
+import { colors } from '@/styles/colors';
 
 interface taskProps {
   task: IProjectTask;
@@ -152,8 +155,6 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
     },
   ];
 
-  // const progress = (task.subTasks?.length || 0 + 1 )/ (task.subTasks?.length || 0 + 1)
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -187,8 +188,19 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
               {task.labels?.length ? (
                 <>
                   {task.labels.slice(0, 2).map((label, index) => (
-                    <Tag key={index} style={{ marginRight: '4px' }} color={label.color_code}>
-                      <span style={{ color: themeMode === 'dark' ? '#383838' : '' }}>
+                    <Tag
+                      key={index}
+                      style={{ marginRight: '4px' }}
+                      // FIX: Use ALPHA_CHANNEL (transparent bg) consistent with CustomColorLabel
+                      color={label.color_code + ALPHA_CHANNEL}
+                    >
+                      {/* FIX: Mirror CustomColorLabel text color logic for light/dark consistency */}
+                      <span
+                        style={{
+                          color:
+                            themeMode === 'dark' ? 'rgba(255, 255, 255, 0.85)' : colors.darkGray,
+                        }}
+                      >
                         {label.name}
                       </span>
                     </Tag>
@@ -244,7 +256,6 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
           </div>
 
           {/* Subtask Section */}
-
           <div>
             <div
               style={{
