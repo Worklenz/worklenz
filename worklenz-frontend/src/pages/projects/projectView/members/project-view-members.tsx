@@ -301,7 +301,7 @@ const ProjectViewMembers = () => {
             <Tooltip title={t('refreshButtonTooltip')}>
               <Button
                 shape="circle"
-                icon={<SyncOutlined />}
+                icon={<SyncOutlined spin={isLoading}/>}
                 onClick={() => void getProjectMembers()}
               />
             </Tooltip>
