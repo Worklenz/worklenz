@@ -317,6 +317,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
         if (p.value === 0) map[p.id] = 'low';
         if (p.value === 1) map[p.id] = 'medium';
         if (p.value === 2) map[p.id] = 'high';
+        if (p.value === 3) map[p.id] = 'critical';
       });
       return map;
     }, [allPriorities]);
