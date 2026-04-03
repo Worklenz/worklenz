@@ -1,6 +1,7 @@
 {
   "rename": "Rename",
   "renameStatus": "Rename Status",
+  "renamePhase": "Rename Phase",
   "delete": "Delete",
   "addTask": "Add Task",
   "addSectionButton": "Add Section",
