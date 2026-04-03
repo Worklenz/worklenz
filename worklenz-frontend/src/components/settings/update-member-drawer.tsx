@@ -162,18 +162,19 @@ const UpdateMemberDrawer = ({
 
   const handleFormSubmit = async (values: any) => {
     if (!selectedMemberId || !teamMember?.email) return;
+    const accessValue = form.getFieldValue('access') ?? values.access;
 
     try {
       const body: ITeamMemberCreateRequest = {
         job_title: form.getFieldValue('jobTitle'),
         emails: [teamMember.email],
-        is_admin: values.access === 'admin' || values.access === 'owner',
+        is_admin: accessValue === 'admin' || accessValue === 'owner',
         role_name:
-          values.access === 'owner'
+          accessValue === 'owner'
             ? ROLE_NAMES.OWNER
-            : values.access === 'team-lead'
+            : accessValue === 'team-lead'
               ? ROLE_NAMES.TEAM_LEAD
-              : values.access === 'admin'
+              : accessValue === 'admin'
                 ? ROLE_NAMES.ADMIN
                 : ROLE_NAMES.MEMBER,
       };
@@ -203,12 +204,11 @@ const UpdateMemberDrawer = ({
 
         // Update role_name in parent component
         const newRoleName =
-
-          values.access === 'owner'
+          accessValue === 'owner'
             ? 'Owner'
-            : values.access === 'team-lead'
+            : accessValue === 'team-lead'
               ? 'Team Lead'
-              : values.access === 'admin'
+              : accessValue === 'admin'
                 ? 'Admin'
                 : 'Member';
         onRoleUpdate?.(selectedMemberId, newRoleName);
