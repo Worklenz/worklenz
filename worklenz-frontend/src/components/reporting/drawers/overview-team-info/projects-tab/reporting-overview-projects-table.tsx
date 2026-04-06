@@ -87,7 +87,6 @@ const ReportingOverviewProjectsTable = ({
         width: 300,
         sorter: true,
         defaultSortOrder: order === 'asc' ? 'ascend' : 'descend',
-        fixed: 'left' as const,
         onCell: record => ({
           onClick: () => handleDrawerOpen(record as IRPTProject),
         }),
@@ -325,6 +324,7 @@ const ReportingOverviewProjectsTable = ({
           pageSizeOptions: PAGE_SIZE_OPTIONS,
         }}
         scroll={{ x: 'max-content' }}
+        style={{ maxWidth: '100%' }} 
         loading={isLoading}
         onChange={handleTableChange}
         rowKey={record => record.id}
