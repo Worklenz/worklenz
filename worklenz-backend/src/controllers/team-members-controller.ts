@@ -523,7 +523,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
-   @HandleExceptions()
+  @HandleExceptions()
   public static async updateMemberName(
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
@@ -543,37 +543,46 @@ export default class TeamMembersController extends WorklenzControllerBase {
         .send(new ServerResponse(false, null, "Team not found."));
     }
  
-    // Update the name on the users table for the user linked to this team member.
-    // Falls back to updating the email_invitations name for pending (uninvited) members.
-    const q = `
-      UPDATE users
-      SET name = $1
-      WHERE id = (
-        SELECT user_id
-        FROM team_members
-        WHERE id = $2
-          AND team_id = $3
-          AND user_id IS NOT NULL
-      )
-      RETURNING id;
+    const trimmedName = name.trim();
+ 
+    // First, resolve whether this team member has a linked user account
+    // or is still a pending invitation (no user_id yet).
+    // This mirrors exactly what team_member_info_view does:
+    //   COALESCE(u.name, email_invitations.name)
+    const resolveQ = `
+      SELECT tm.user_id
+      FROM team_members tm
+      WHERE tm.id = $1
+        AND tm.team_id = $2;
     `;
+    const resolveResult = await db.query(resolveQ, [id, req.user.team_id]);
  
-    const result = await db.query(q, [
-      name.trim(),
-      id,
-      req.user.team_id,
-    ]);
+    if (resolveResult.rowCount === 0) {
+      return res
+        .status(200)
+        .send(new ServerResponse(false, null, "Team member not found."));
+    }
  
-    // If no user row was updated the member is still a pending invitation —
-    // update the display name stored in email_invitations instead.
-    if (result.rowCount === 0) {
-      const inviteQ = `
+    // eslint-disable-next-line prefer-destructuring
+    const { user_id } = resolveResult.rows[0];
+ 
+    if (user_id) {
+      // Active member — update users.name (what the view reads via COALESCE first branch)
+      const updateUserQ = `
+        UPDATE users
+        SET name = $1
+        WHERE id = $2;
+      `;
+      await db.query(updateUserQ, [trimmedName, user_id]);
+    } else {
+      // Pending invitation — update email_invitations.name (COALESCE fallback branch)
+      const updateInviteQ = `
         UPDATE email_invitations
         SET name = $1
         WHERE team_member_id = $2
           AND team_id = $3;
       `;
-      await db.query(inviteQ, [name.trim(), id, req.user.team_id]);
+      await db.query(updateInviteQ, [trimmedName, id, req.user.team_id]);
     }
  
     return res

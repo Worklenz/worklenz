@@ -66,6 +66,7 @@ const TeamMembersSettings = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [selectedMemberRole, setSelectedMemberRole] = useState<string | null>(null);
+  const [selectedMemberName, setSelectedMemberName] = useState<string | null>(null);
   const [selectedMembers, setSelectedMembers] = useState<ITeamMemberViewModel[]>([]);
   const [isBulkAssignDrawerVisible, setBulkAssignDrawerVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -157,48 +158,19 @@ const TeamMembersSettings = () => {
     getTeamMembers().finally(() => setIsLoading(false));
   }, [getTeamMembers]);
 
-  const currentUser = auth.getCurrentSession();
-  const currentUserRoleName: string | undefined = (currentUser as unknown as { role_name?: string })
-    ?.role_name;
-  const effectiveRole = (currentUserRoleName || auth.role || '').toLowerCase();
-  const canManageUser = useCallback(
-    (targetRole: string | undefined) => {
-      if (currentUser?.is_admin && !currentUser?.owner) {
-        return targetRole?.toLowerCase() !== 'owner';
-      }
-      return canManageUserRole(effectiveRole, targetRole, currentUser?.owner);
-    },
-    [effectiveRole, currentUser?.owner, currentUser?.is_admin]
-  );
-  const isPrivilegedUser =
-    !!currentUser?.owner || ['admin', 'owner', 'team lead'].includes(effectiveRole);
-
   const handleMemberClick = useCallback(
-    (memberId: string, roleName?: string) => {
+    (memberId: string, roleName?: string, memberName?: string) => {
       // Don't open the drawer if we're currently editing a name inline
       if (editingNameId) return;
       setSelectedMemberId(memberId);
       setSelectedMemberRole(roleName || null);
+      setSelectedMemberName(memberName || null);
       dispatch(toggleUpdateMemberDrawer());
     },
     [dispatch, editingNameId]
   );
 
   // ── Inline name editing helpers ──────────────────────────────────────────
-
-  const startEditingName = useCallback(
-    (e: React.MouseEvent, record: ITeamMemberViewModel) => {
-      // Only owners and admins can edit names
-      if (!isPrivilegedUser) return;
-      // Pending invitations have no confirmed name to edit yet
-      if (record.pending_invitation) return;
-
-      e.stopPropagation();
-      setEditingNameId(record.id || null);
-      setEditingNameValue(record.name || '');
-    },
-    [isPrivilegedUser]
-  );
 
   const commitNameEdit = useCallback(
     async (memberId: string) => {
@@ -347,6 +319,36 @@ const TeamMembersSettings = () => {
     return getRoleColor(role || '');
   }, []);
 
+  const currentUser = auth.getCurrentSession();
+  const currentUserRoleName: string | undefined = (currentUser as unknown as { role_name?: string })
+    ?.role_name;
+  const effectiveRole = (currentUserRoleName || auth.role || '').toLowerCase();
+  const canManageUser = useCallback(
+    (targetRole: string | undefined) => {
+      if (currentUser?.is_admin && !currentUser?.owner) {
+        return targetRole?.toLowerCase() !== 'owner';
+      }
+      return canManageUserRole(effectiveRole, targetRole, currentUser?.owner);
+    },
+    [effectiveRole, currentUser?.owner, currentUser?.is_admin]
+  );
+  const isPrivilegedUser =
+    !!currentUser?.owner || ['admin', 'owner', 'team lead'].includes(effectiveRole);
+
+  const startEditingName = useCallback(
+    (e: React.MouseEvent, record: ITeamMemberViewModel) => {
+      // Only owners and admins can edit names
+      if (!isPrivilegedUser) return;
+      // Pending invitations have no confirmed name to edit yet
+      if (record.pending_invitation) return;
+
+      e.stopPropagation();
+      setEditingNameId(record.id || null);
+      setEditingNameValue(record.name || '');
+    },
+    [isPrivilegedUser]
+  );
+
   const getActionMenuItems = useCallback(
     (record: ITeamMemberViewModel): MenuProps['items'] => {
       const canManage = canManageUser(record.role_name);
@@ -412,7 +414,7 @@ const TeamMembersSettings = () => {
                 gap: 8,
               }}
               // Open drawer when clicking non-editable parts of the row
-              onClick={() => !isEditing && handleMemberClick(record.id || '', record.role_name)}
+              onClick={() => !isEditing && handleMemberClick(record.id || '', record.role_name, record.name)}
             >
               <Avatar
                 size={28}
@@ -475,7 +477,7 @@ const TeamMembersSettings = () => {
         title: t('projectsColumn'),
         sorter: true,
         onCell: (record: ITeamMemberViewModel) => ({
-          onClick: () => handleMemberClick(record.id || '', record.role_name),
+          onClick: () => handleMemberClick(record.id || '', record.role_name, record.name),
           style: { cursor: 'pointer' },
         }),
         render: (_, record: ITeamMemberViewModel) => (
@@ -488,7 +490,7 @@ const TeamMembersSettings = () => {
         title: t('emailColumn'),
         sorter: true,
         onCell: (record: ITeamMemberViewModel) => ({
-          onClick: () => handleMemberClick(record.id || '', record.role_name),
+          onClick: () => handleMemberClick(record.id || '', record.role_name, record.name),
           style: { cursor: 'pointer' },
         }),
         render: (_, record: ITeamMemberViewModel) => (
@@ -508,7 +510,7 @@ const TeamMembersSettings = () => {
         title: t('jobTitleColumn'),
         sorter: true,
         onCell: (record: ITeamMemberViewModel) => ({
-          onClick: () => handleMemberClick(record.id || '', record.role_name),
+          onClick: () => handleMemberClick(record.id || '', record.role_name, record.name),
           style: { cursor: 'pointer' },
         }),
         render: (_, record: ITeamMemberViewModel) => (
@@ -525,7 +527,7 @@ const TeamMembersSettings = () => {
         title: t('teamAccessColumn'),
         sorter: true,
         onCell: (record: ITeamMemberViewModel) => ({
-          onClick: () => handleMemberClick(record.id || '', record.role_name),
+          onClick: () => handleMemberClick(record.id || '', record.role_name, record.name),
           style: { cursor: 'pointer' },
         }),
         render: (_, record: ITeamMemberViewModel) => (
@@ -802,6 +804,7 @@ const TeamMembersSettings = () => {
       {createPortal(
         <UpdateMemberDrawer
           selectedMemberId={selectedMemberId}
+          selectedMemberName={selectedMemberName}
           onRoleUpdate={handleRoleUpdate}
           onJobTitleUpdate={handleJobTitleUpdate}
           initialRoleName={selectedMemberRole || undefined}
