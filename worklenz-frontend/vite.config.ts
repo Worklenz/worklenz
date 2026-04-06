@@ -193,7 +193,6 @@ export default defineConfig(({ command, mode }) => {
             charts: ['chart.js', 'react-chartjs-2', 'chartjs-plugin-datalabels'],
             gantt: ['gantt-task-react'],
             'pdf-export': ['html2canvas', 'jspdf'],
-            editor: ['tinymce', '@tinymce/tinymce-react'],
             socket: ['socket.io-client'],
             i18n: [
               'i18next',
@@ -252,8 +251,6 @@ export default defineConfig(({ command, mode }) => {
         'gantt-task-react',
         'html2canvas',
         'jspdf',
-        'tinymce',
-        '@tinymce/tinymce-react',
         'socket.io-client',
         'i18next',
         'react-i18next',

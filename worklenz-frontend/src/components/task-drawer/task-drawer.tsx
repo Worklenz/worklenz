@@ -258,6 +258,8 @@ const TaskDrawer = () => {
   const drawerProps = {
     open: showTaskDrawer,
     onClose: handleOnClose,
+    maskClosable: false,
+    mask: false,
     // FIX: afterOpenChange fires after the close animation completes.
     // This is where we safely wipe Redux task state — see handleAfterOpenChange.
     afterOpenChange: handleAfterOpenChange,

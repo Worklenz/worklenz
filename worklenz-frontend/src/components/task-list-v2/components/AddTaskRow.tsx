@@ -1,6 +1,7 @@
 import React, { useState, useCallback, memo, useRef, useEffect } from 'react';
 import { Input } from '@/shared/antd-imports';
 import { PlusOutlined } from '@/shared/antd-imports';
+import { ArrowsAltOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -18,11 +19,29 @@ interface AddTaskRowProps {
   }>;
   rowId: string; // Unique identifier for this add task row
   autoFocus?: boolean; // Whether this row should auto-focus on mount
+  isActive?: boolean;
+  onActivate?: () => void;
+  onDeactivate?: () => void;
+  onTaskCreated?: (task: any, options?: { openDrawer: boolean }) => void;
+  isInsertMode?: boolean;
 }
 
 const AddTaskRow: React.FC<AddTaskRowProps> = memo(
-  ({ groupId, groupType, groupValue, projectId, visibleColumns, rowId, autoFocus = false }) => {
-    const [isAdding, setIsAdding] = useState(autoFocus);
+  ({
+    groupId,
+    groupType,
+    groupValue,
+    projectId,
+    visibleColumns,
+    rowId,
+    autoFocus = false,
+    isActive = false,
+    onActivate,
+    onDeactivate,
+    onTaskCreated,
+    isInsertMode = false,
+  }) => {
+    const [isAdding, setIsAdding] = useState(autoFocus || isActive);
     const [taskName, setTaskName] = useState('');
     const inputRef = useRef<any>(null);
     const { socket, connected } = useSocket();
@@ -41,15 +60,29 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
       }
     }, [autoFocus]);
 
+    useEffect(() => {
+      if (isActive) {
+        setIsAdding(true);
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 50);
+      }
+    }, [isActive]);
+
     // The global socket handler (useTaskSocketHandlers) will handle task addition
     // No need for local socket listener to avoid duplicate additions
 
-    const handleAddTask = useCallback(() => {
-      if (!taskName.trim() || !currentSession) return;
+    const handleAddTask = useCallback(
+      (openDrawer: boolean = false) => {
+      if (!currentSession) return;
+      const normalizedTaskName =
+        taskName.trim() ||
+        (openDrawer ? t('untitledTaskName', { defaultValue: 'Untitled Task' }) : '');
+      if (!normalizedTaskName) return;
 
       try {
         const body: any = {
-          name: taskName.trim(),
+          name: normalizedTaskName,
           project_id: projectId,
           reporter_id: currentSession.id,
           team_id: currentSession.team_id,
@@ -74,6 +107,11 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
 
         if (socket && connected) {
           socket.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
+          socket.once(SocketEvents.QUICK_TASK.toString(), (task: any) => {
+            if (task?.id && onTaskCreated) {
+              onTaskCreated(task, { openDrawer });
+            }
+          });
           setTaskName('');
           // Keep the input focused and ready for the next task - don't create new rows
           setTimeout(() => {
@@ -86,22 +124,43 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
       } catch (error) {
         console.error('Error creating task:', error);
       }
-    }, [taskName, projectId, groupType, groupValue, socket, connected, currentSession]);
+      },
+      [
+        taskName,
+        projectId,
+        groupType,
+        groupValue,
+        socket,
+        connected,
+        currentSession,
+        onTaskCreated,
+        t,
+      ]
+    );
 
     const handleCancel = useCallback(() => {
       if (taskName.trim() === '') {
         setTaskName('');
         setIsAdding(false);
+        onDeactivate?.();
       }
-    }, [taskName]);
+    }, [taskName, onDeactivate]);
 
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent) => {
         if (e.key === 'Escape') {
+          e.preventDefault();
+          if (taskName.trim() !== '') {
+            setTaskName('');
+            return;
+          }
           handleCancel();
+        } else if (e.key === 'Enter' && e.shiftKey) {
+          e.preventDefault();
+          handleAddTask(true);
         }
       },
-      [handleCancel]
+      [handleCancel, taskName, handleAddTask]
     );
 
     const renderColumn = useCallback(
@@ -151,30 +210,49 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
 
                   {!isAdding ? (
                     <button
-                      onClick={() => setIsAdding(true)}
-                      className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors h-full"
+                      onClick={() => {
+                        onActivate?.();
+                        setIsAdding(true);
+                      }}
+                      className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors h-full w-full px-2"
                     >
                       <PlusOutlined className="text-xs" />
-                      {t('addTaskText')}
+                      {isInsertMode
+                        ? t('insertTaskText', { defaultValue: 'Insert Task' })
+                        : t('addTaskText', { defaultValue: 'Add Task' })}
                     </button>
                   ) : (
-                    <Input
-                      ref={inputRef}
-                      value={taskName}
-                      onChange={e => setTaskName(e.target.value)}
-                      onPressEnter={handleAddTask}
-                      onBlur={handleCancel}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Type task name and press Enter to save"
-                      className="w-full h-full border-none shadow-none bg-transparent"
-                      style={{
-                        height: '100%',
-                        minHeight: '32px',
-                        padding: '4px 8px',
-                        fontSize: '14px',
-                      }}
-                      autoFocus
-                    />
+                    <div className="flex items-center w-full h-full gap-1 pr-1">
+                      <Input
+                        ref={inputRef}
+                        value={taskName}
+                        onChange={e => setTaskName(e.target.value)}
+                        onPressEnter={() => handleAddTask(false)}
+                        onBlur={handleCancel}
+                        onKeyDown={handleKeyDown}
+                        placeholder={t('addTaskInputPlaceholder', {
+                          defaultValue: 'Type task name and press Enter to save',
+                        })}
+                        className="w-full h-full border-none shadow-none bg-transparent"
+                        style={{
+                          height: '100%',
+                          minHeight: '32px',
+                          padding: '4px 8px',
+                          fontSize: '14px',
+                        }}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => handleAddTask(true)}
+                        className="h-7 w-7 shrink-0 rounded border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-300 dark:hover:border-blue-500 transition-colors flex items-center justify-center"
+                        title={t('openTask', { defaultValue: 'Open task' })}
+                        aria-label={t('openTask', { defaultValue: 'Open task' })}
+                      >
+                        <ArrowsAltOutlined className="text-xs" />
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -185,7 +263,17 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
             );
         }
       },
-      [isAdding, taskName, handleAddTask, handleCancel, handleKeyDown, t, visibleColumns]
+      [
+        isAdding,
+        taskName,
+        handleAddTask,
+        handleCancel,
+        handleKeyDown,
+        t,
+        visibleColumns,
+        onActivate,
+        isInsertMode,
+      ]
     );
 
     return (

@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { HolderOutlined } from '@/shared/antd-imports';
+import { PlusOutlined } from '@/shared/antd-imports';
 import '../../pages/projects/project-view-1/taskList/taskListTable/column-resize.css';
 
 // Redux hooks and selectors
@@ -64,6 +65,13 @@ import {
 } from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
+import {
+  fetchTask as fetchTaskDrawer,
+  setNavigationContext,
+  setSelectedTaskId,
+  setShowTaskDrawer,
+} from '@/features/task-drawer/task-drawer.slice';
+import { useAuthService } from '@/hooks/useAuth';
 
 // Components
 import TaskRowWithSubtasks from './TaskRowWithSubtasks';
@@ -203,6 +211,32 @@ const EmptyGroupMessage: React.FC<{ visibleColumns: any[]; isDarkMode?: boolean 
   );
 };
 
+const InsertTaskDivider: React.FC<{
+  onInsert: () => void;
+  title: string;
+}> = ({ onInsert, title }) => {
+  return (
+    <div className="group absolute inset-x-0 top-0 h-2 -translate-y-1/2 z-20">
+      <div className="relative h-full w-full">
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-blue-400 dark:border-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <button
+          type="button"
+          onMouseDown={e => e.preventDefault()}
+          onClick={e => {
+            e.stopPropagation();
+            onInsert();
+          }}
+          className="absolute left-8 top-1/2 -translate-y-1/2 h-4 w-4 rounded-full border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900 text-[10px] text-blue-600 dark:text-blue-300 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity flex items-center justify-center shadow-sm"
+          title={title}
+          aria-label={title}
+        >
+          <PlusOutlined />
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const SortableHeader: React.FC<{
   column: any;
   isDropTarget: boolean;
@@ -261,6 +295,7 @@ const TaskListV2Section: React.FC = () => {
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { t } = useTranslation('task-list-table');
   const { socket, connected } = useSocket();
+  const currentSession = useAuthService().getCurrentSession();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDarkMode = themeMode === 'dark';
 
@@ -278,6 +313,7 @@ const TaskListV2Section: React.FC = () => {
   const isOpenDuplicateTaskModal = useAppSelector(
     state => state.taskManagement.isOpenDuplicateTaskModal
   );
+  const { selectedTaskId, showTaskDrawer } = useAppSelector(state => state.taskDrawerReducer);
 
   const fields = useAppSelector(state => state.taskManagementFields?.fields) || [];
   const columns = useAppSelector(selectColumns);
@@ -310,6 +346,11 @@ const TaskListV2Section: React.FC = () => {
   });
   const [activeColumnId, setActiveColumnId] = useState<string | null>(null);
   const [overColumnId, setOverColumnId] = useState<string | null>(null);
+  const [activeAddRowsByGroup, setActiveAddRowsByGroup] = useState<Record<string, boolean>>({});
+  const [insertAnchor, setInsertAnchor] = useState<{
+    groupId: string;
+    afterTaskId: string | null;
+  } | null>(null);
 
   // Configure sensors for drag and drop
   const sensors = useSensors(
@@ -658,6 +699,115 @@ const TaskListV2Section: React.FC = () => {
     [dispatch]
   );
 
+  const navigationTaskIds = useMemo(() => {
+    return groups.flatMap(group => group.taskIds);
+  }, [groups]);
+
+  const openDrawerForTask = useCallback(
+    (taskId: string) => {
+      if (!urlProjectId || !taskId) return;
+      if (showTaskDrawer && selectedTaskId === taskId) return;
+
+      const currentIndex = navigationTaskIds.indexOf(taskId);
+
+      dispatch(
+        setNavigationContext({
+          taskIds: navigationTaskIds,
+          currentIndex: currentIndex >= 0 ? currentIndex : 0,
+          sourceView: 'task-list',
+          projectId: urlProjectId,
+        })
+      );
+      dispatch(setSelectedTaskId(taskId));
+      dispatch(setShowTaskDrawer(true));
+      dispatch(fetchTaskDrawer({ taskId, projectId: urlProjectId }));
+    },
+    [dispatch, navigationTaskIds, selectedTaskId, showTaskDrawer, urlProjectId]
+  );
+
+  const handleActivateAddRow = useCallback((groupId: string) => {
+    setActiveAddRowsByGroup(prev => ({ ...prev, [groupId]: true }));
+  }, []);
+
+  const handleDeactivateAddRow = useCallback(
+    (groupId: string) => {
+      setActiveAddRowsByGroup(prev => ({ ...prev, [groupId]: false }));
+      setInsertAnchor(current => (current?.groupId === groupId ? null : current));
+    },
+    [setInsertAnchor]
+  );
+
+  const emitSortOrderUpdate = useCallback(
+    (groupId: string, orderedGroupTaskIds: string[], createdTask: Task) => {
+      if (!socket || !connected || !urlProjectId) return;
+
+      const updatedGroups = groups.map(group => ({
+        ...group,
+        taskIds: group.id === groupId ? orderedGroupTaskIds : [...group.taskIds],
+      }));
+
+      const taskUpdates: Array<{ task_id: string; sort_order: number }> = [];
+      let currentSortOrder = 0;
+
+      updatedGroups.forEach(group => {
+        group.taskIds.forEach(taskId => {
+          taskUpdates.push({ task_id: taskId, sort_order: currentSortOrder });
+          currentSortOrder += 1;
+        });
+      });
+
+      socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), {
+        project_id: urlProjectId,
+        group_by: currentGrouping || 'status',
+        task_updates: taskUpdates,
+        from_group: groupId,
+        to_group: groupId,
+        task: {
+          id: createdTask.id,
+          project_id: urlProjectId,
+          status: createdTask.status || '',
+          priority: createdTask.priority || '',
+        },
+        team_id: currentSession?.team_id || '',
+      });
+    },
+    [connected, socket, urlProjectId, groups, currentGrouping, currentSession?.team_id]
+  );
+
+  const handleTaskCreated = useCallback(
+    (task: Task, groupId: string, openDrawer: boolean, insertedAfterTaskId?: string | null) => {
+      if (!task?.id) return;
+
+      setActiveAddRowsByGroup(prev => ({ ...prev, [groupId]: true }));
+
+      if (insertedAfterTaskId) {
+        setInsertAnchor({ groupId, afterTaskId: task.id });
+        setTimeout(() => {
+          const targetGroup = groups.find(group => group.id === groupId);
+          if (!targetGroup) return;
+
+          const taskIds = targetGroup.taskIds.includes(task.id)
+            ? [...targetGroup.taskIds]
+            : [...targetGroup.taskIds, task.id];
+
+          const filteredIds = taskIds.filter(id => id !== task.id);
+          const anchorIndex = filteredIds.indexOf(insertedAfterTaskId);
+          const insertIndex = anchorIndex >= 0 ? anchorIndex + 1 : filteredIds.length;
+          filteredIds.splice(insertIndex, 0, task.id);
+
+          emitSortOrderUpdate(groupId, filteredIds, task);
+        }, 50);
+      } else {
+        setInsertAnchor(current => (current?.groupId === groupId ? null : current));
+      }
+
+      if (showTaskDrawer || openDrawer) {
+        openDrawerForTask(task.id);
+      }
+    },
+    [emitSortOrderUpdate, groups, openDrawerForTask, showTaskDrawer]
+  );
+
   // Function to update custom column values
   const updateTaskCustomColumnValue = useCallback(
     (taskId: string, columnKey: string, value: string | number | boolean | string[] | null) => {
@@ -779,26 +929,34 @@ const TaskListV2Section: React.FC = () => {
         originalIndex: allTasks.indexOf(task),
       }));
 
-      // Get add task rows for this group
-      const addTaskItems = !isCurrentGroupCollapsed
-        ? [
-            // Single add task row per group - reused for all tasks
-            {
-              id: `add-task-${group.id}-0`,
-              isAddTaskRow: true,
-              groupId: group.id,
-              groupType: currentGrouping || 'status',
-              groupValue: group.id, // Send the UUID that backend expects
-              projectId: urlProjectId,
-              rowId: `add-task-${group.id}-0`,
-              autoFocus: false,
-            },
-          ]
-        : [];
+      const addTaskItem = {
+        id: `add-task-${group.id}-0`,
+        isAddTaskRow: true,
+        groupId: group.id,
+        groupType: currentGrouping || 'status',
+        groupValue: group.id, // Send the UUID that backend expects
+        projectId: urlProjectId,
+        rowId: `add-task-${group.id}-0`,
+        autoFocus: false,
+        isInsertMode: insertAnchor?.groupId === group.id && !!insertAnchor?.afterTaskId,
+        insertAfterTaskId:
+          insertAnchor?.groupId === group.id ? (insertAnchor.afterTaskId ?? null) : null,
+      };
 
-      const itemsWithAddTask = !isCurrentGroupCollapsed
-        ? [...tasksForVirtuoso, ...addTaskItems]
-        : tasksForVirtuoso;
+      let itemsWithAddTask = tasksForVirtuoso;
+      if (!isCurrentGroupCollapsed) {
+        if (insertAnchor?.groupId === group.id && insertAnchor.afterTaskId) {
+          const anchorIndex = tasksForVirtuoso.findIndex(task => task.id === insertAnchor.afterTaskId);
+          if (anchorIndex >= 0) {
+            itemsWithAddTask = [...tasksForVirtuoso];
+            itemsWithAddTask.splice(anchorIndex + 1, 0, addTaskItem as any);
+          } else {
+            itemsWithAddTask = [...tasksForVirtuoso, addTaskItem as any];
+          }
+        } else {
+          itemsWithAddTask = [...tasksForVirtuoso, addTaskItem as any];
+        }
+      }
 
       const groupData = {
         ...group,
@@ -811,7 +969,7 @@ const TaskListV2Section: React.FC = () => {
       currentTaskIndex += itemsWithAddTask.length;
       return groupData;
     });
-  }, [groups, allTasks, collapsedGroups, currentGrouping, urlProjectId]);
+  }, [groups, allTasks, collapsedGroups, currentGrouping, urlProjectId, insertAnchor]);
 
   const virtuosoGroupCounts = useMemo(() => {
     return virtuosoGroups.map(group => group.count);
@@ -866,6 +1024,18 @@ const TaskListV2Section: React.FC = () => {
             visibleColumns={visibleColumns}
             rowId={item.rowId}
             autoFocus={item.autoFocus}
+            isActive={!!activeAddRowsByGroup[item.groupId]}
+            isInsertMode={!!item.isInsertMode}
+            onActivate={() => handleActivateAddRow(item.groupId)}
+            onDeactivate={() => handleDeactivateAddRow(item.groupId)}
+            onTaskCreated={(task, options) =>
+              handleTaskCreated(
+                task,
+                item.groupId,
+                !!options?.openDrawer,
+                item.insertAfterTaskId || null
+              )
+            }
           />
         );
       }
@@ -880,7 +1050,16 @@ const TaskListV2Section: React.FC = () => {
         />
       );
     },
-    [virtuosoItems, visibleColumns, urlProjectId, updateTaskCustomColumnValue]
+    [
+      virtuosoItems,
+      visibleColumns,
+      urlProjectId,
+      updateTaskCustomColumnValue,
+      activeAddRowsByGroup,
+      handleActivateAddRow,
+      handleDeactivateAddRow,
+      handleTaskCreated,
+    ]
   );
 
   // Render column headers
@@ -1465,12 +1644,19 @@ const TaskListV2Section: React.FC = () => {
                   itemContent={(index, groupIndex) => {
                     const item = virtuosoItems[index];
                     if (!item) return <div />;
+                    const group = virtuosoGroups[groupIndex];
 
                     const groupOffset = virtuosoGroupCounts
                       .slice(0, groupIndex)
                       .reduce((sum, c) => sum + c, 0);
                     const indexInGroup = index - groupOffset;
                     const isFirstInGroup = indexInGroup === 0 && !('isAddTaskRow' in item);
+                    const previousItem = indexInGroup > 0 ? group?.tasks?.[indexInGroup - 1] : null;
+                    const showInsertDivider =
+                      indexInGroup > 0 &&
+                      !('isAddTaskRow' in item) &&
+                      previousItem &&
+                      !('isAddTaskRow' in previousItem);
 
                     const isOverThisTask =
                       activeId && overId === item.id && !('isAddTaskRow' in item);
@@ -1478,12 +1664,24 @@ const TaskListV2Section: React.FC = () => {
                     const showAfter = isOverThisTask && dropPosition === 'after';
 
                     return (
-                      <div style={{ minWidth: 'max-content' }}>
+                      <div style={{ minWidth: 'max-content' }} className="relative">
                         {showBefore && (
                           <DropSpacer
                             isVisible={true}
                             visibleColumns={visibleColumns}
                             isDarkMode={isDarkMode}
+                          />
+                        )}
+                        {showInsertDivider && previousItem && (
+                          <InsertTaskDivider
+                            title={t('insertTaskText', { defaultValue: 'Insert Task' })}
+                            onInsert={() => {
+                              setInsertAnchor({
+                                groupId: group.id,
+                                afterTaskId: previousItem.id,
+                              });
+                              setActiveAddRowsByGroup(prev => ({ ...prev, [group.id]: true }));
+                            }}
                           />
                         )}
                         {renderTask(index, isFirstInGroup)}
