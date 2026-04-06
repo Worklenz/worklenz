@@ -25,7 +25,7 @@ import {
   Typography,
 } from '@/shared/antd-imports';
 import { createPortal } from 'react-dom';
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -65,7 +65,7 @@ const TeamMembersSettings = () => {
   const [model, setModel] = useState<ITeamMembersViewModel>({ total: 0, data: [] });
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
-  const [selectedMemberRole, setSelectedMemberRole] = useState<string | null>(null); // Add this
+  const [selectedMemberRole, setSelectedMemberRole] = useState<string | null>(null);
   const [selectedMembers, setSelectedMembers] = useState<ITeamMemberViewModel[]>([]);
   const [isBulkAssignDrawerVisible, setBulkAssignDrawerVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -75,6 +75,15 @@ const TeamMembersSettings = () => {
     field: 'name',
     order: 'asc',
   });
+
+  // ── Inline name editing state ────────────────────────────────────────────
+  // Which row is currently being edited (by member id)
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  // Live value of the name input
+  const [editingNameValue, setEditingNameValue] = useState<string>('');
+  // Prevents blur from double-committing after Enter/Escape
+  const committingRef = useRef(false);
+  // ────────────────────────────────────────────────────────────────────────
 
   const getTeamMembers = useCallback(async () => {
     try {
@@ -148,14 +157,119 @@ const TeamMembersSettings = () => {
     getTeamMembers().finally(() => setIsLoading(false));
   }, [getTeamMembers]);
 
+  const currentUser = auth.getCurrentSession();
+  const currentUserRoleName: string | undefined = (currentUser as unknown as { role_name?: string })
+    ?.role_name;
+  const effectiveRole = (currentUserRoleName || auth.role || '').toLowerCase();
+  const canManageUser = useCallback(
+    (targetRole: string | undefined) => {
+      if (currentUser?.is_admin && !currentUser?.owner) {
+        return targetRole?.toLowerCase() !== 'owner';
+      }
+      return canManageUserRole(effectiveRole, targetRole, currentUser?.owner);
+    },
+    [effectiveRole, currentUser?.owner, currentUser?.is_admin]
+  );
+  const isPrivilegedUser =
+    !!currentUser?.owner || ['admin', 'owner', 'team lead'].includes(effectiveRole);
+
   const handleMemberClick = useCallback(
     (memberId: string, roleName?: string) => {
+      // Don't open the drawer if we're currently editing a name inline
+      if (editingNameId) return;
       setSelectedMemberId(memberId);
       setSelectedMemberRole(roleName || null);
       dispatch(toggleUpdateMemberDrawer());
     },
-    [dispatch]
+    [dispatch, editingNameId]
   );
+
+  // ── Inline name editing helpers ──────────────────────────────────────────
+
+  const startEditingName = useCallback(
+    (e: React.MouseEvent, record: ITeamMemberViewModel) => {
+      // Only owners and admins can edit names
+      if (!isPrivilegedUser) return;
+      // Pending invitations have no confirmed name to edit yet
+      if (record.pending_invitation) return;
+
+      e.stopPropagation();
+      setEditingNameId(record.id || null);
+      setEditingNameValue(record.name || '');
+    },
+    [isPrivilegedUser]
+  );
+
+  const commitNameEdit = useCallback(
+    async (memberId: string) => {
+      committingRef.current = true;
+      const trimmed = editingNameValue.trim();
+
+      if (trimmed) {
+        try {
+          // Optimistically update the local model for instant feedback
+          setModel(prev => ({
+            ...prev,
+            data: prev.data?.map(m => (m.id === memberId ? { ...m, name: trimmed } : m)),
+          }));
+
+          const res = await teamMembersApiService.updateMemberName(memberId, trimmed);
+
+          // Always refresh from server so the persisted value (from team_member_info_view)
+          // is what's shown — the optimistic update above just prevents a visible flash
+          if (res.done) {
+            await getTeamMembers();
+          } else {
+            // API returned done: false — revert to server state
+            await getTeamMembers();
+          }
+        } catch (err) {
+          console.error('Failed to update member name', err);
+          // Revert on any error
+          await getTeamMembers();
+        }
+      }
+
+      setEditingNameId(null);
+      setEditingNameValue('');
+      setTimeout(() => {
+        committingRef.current = false;
+      }, 0);
+    },
+    [editingNameValue, getTeamMembers]
+  );
+
+  const cancelNameEdit = useCallback(() => {
+    committingRef.current = true;
+    setEditingNameId(null);
+    setEditingNameValue('');
+    setTimeout(() => {
+      committingRef.current = false;
+    }, 0);
+  }, []);
+
+  const handleNameBlur = useCallback(
+    (memberId: string) => {
+      if (committingRef.current) return;
+      commitNameEdit(memberId);
+    },
+    [commitNameEdit]
+  );
+
+  const handleNameKeyDown = useCallback(
+    (e: React.KeyboardEvent, memberId: string) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        commitNameEdit(memberId);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelNameEdit();
+      }
+    },
+    [commitNameEdit, cancelNameEdit]
+  );
+
+  // ────────────────────────────────────────────────────────────────────────
 
   const handleBulkAssignManager = () => {
     setBulkAssignDrawerVisible(true);
@@ -191,14 +305,11 @@ const TeamMembersSettings = () => {
 
   const handleTableChange = useCallback(
     (newPagination: any, filters: any, sorter: any) => {
-      // Extract field - ensure it's always a single string, not an array
       let field = 'name';
       if (sorter.field) {
-        // If sorter.field is an array, take the first element, otherwise use it as-is
         field = Array.isArray(sorter.field) ? sorter.field[0] : sorter.field;
       }
 
-      // Extract order - if no order specified, maintain current order or default to 'asc'
       const order = sorter.order ? (sorter.order === 'ascend' ? 'asc' : 'desc') : pagination.order;
 
       setPagination(prev => ({
@@ -236,23 +347,6 @@ const TeamMembersSettings = () => {
     return getRoleColor(role || '');
   }, []);
 
-  const currentUser = auth.getCurrentSession();
-  const currentUserRoleName: string | undefined = (currentUser as unknown as { role_name?: string })
-    ?.role_name;
-  const effectiveRole = (currentUserRoleName || auth.role || '').toLowerCase();
-  const canManageUser = useCallback(
-    (targetRole: string | undefined) => {
-      // Admin users should have the same permissions as owners (except for other owners)
-      if (currentUser?.is_admin && !currentUser?.owner) {
-        return targetRole?.toLowerCase() !== 'owner';
-      }
-      return canManageUserRole(effectiveRole, targetRole, currentUser?.owner);
-    },
-    [effectiveRole, currentUser?.owner, currentUser?.is_admin]
-  );
-  const isPrivilegedUser =
-    !!currentUser?.owner || ['admin', 'owner', 'team lead'].includes(effectiveRole);
-
   const getActionMenuItems = useCallback(
     (record: ITeamMemberViewModel): MenuProps['items'] => {
       const canManage = canManageUser(record.role_name);
@@ -272,7 +366,6 @@ const TeamMembersSettings = () => {
           disabled: !canManage,
           onClick: () => {
             if (canManage) {
-              // We need to handle the popconfirm separately for this action
               return;
             }
           },
@@ -285,7 +378,6 @@ const TeamMembersSettings = () => {
           danger: true,
           onClick: () => {
             if (canManage && record.id) {
-              // We need to handle the popconfirm separately for this action
               return;
             }
           },
@@ -305,35 +397,77 @@ const TeamMembersSettings = () => {
         title: t('nameColumn'),
         defaultSortOrder: 'ascend',
         sorter: true,
-        onCell: (record: ITeamMemberViewModel) => ({
-          onClick: () => handleMemberClick(record.id || '', record.role_name),
-          style: { cursor: 'pointer' },
-        }),
-        render: (_, record: ITeamMemberViewModel) => (
-          <Typography.Text
-            style={{
-              textTransform: 'capitalize',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-            }}
-          >
-            <Avatar
-              size={28}
-              src={record.avatar_url}
-              style={{ backgroundColor: record.color_code }}
+        // Row-level click is handled inside the cell to avoid conflicts with inline editing
+        render: (_, record: ITeamMemberViewModel) => {
+          const isEditing = editingNameId === record.id;
+          const isPending = record.pending_invitation;
+          const canEdit = isPrivilegedUser && !isPending;
+
+          return (
+            <Typography.Text
+              style={{
+                textTransform: 'capitalize',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+              // Open drawer when clicking non-editable parts of the row
+              onClick={() => !isEditing && handleMemberClick(record.id || '', record.role_name)}
             >
-              {record.name?.charAt(0)}
-            </Avatar>
-            {record.name}
-            {record.is_online && <Badge color={colors.limeGreen} />}
-            {!record.active && (
-              <Typography.Text style={{ color: colors.vibrantOrange, fontWeight: 500 }}>
-                {t('deactivatedText')}
-              </Typography.Text>
-            )}
-          </Typography.Text>
-        ),
+              <Avatar
+                size={28}
+                src={record.avatar_url}
+                style={{ backgroundColor: record.color_code }}
+              >
+                {record.name?.charAt(0)}
+              </Avatar>
+
+              {isEditing ? (
+                // ── Inline edit input ──
+                <Input
+                  autoFocus
+                  size="small"
+                  value={editingNameValue}
+                  style={{ width: 160, textTransform: 'none' }}
+                  onChange={e => setEditingNameValue(e.target.value)}
+                  onBlur={() => handleNameBlur(record.id || '')}
+                  onKeyDown={e => handleNameKeyDown(e, record.id || '')}
+                  onClick={e => e.stopPropagation()}
+                />
+              ) : (
+                // ── Display name (click to edit if privileged) ──
+                <Tooltip
+                  title={
+                    canEdit
+                      ? t('clickToEditName', { defaultValue: 'Click name to edit' })
+                      : isPending
+                        ? t('pendingInvitationText')
+                        : undefined
+                  }
+                  mouseEnterDelay={0.6}
+                >
+                  <span
+                    style={{
+                      cursor: canEdit ? 'text' : 'pointer',
+                      borderBottom: canEdit ? '1px dashed #d9d9d9' : 'none',
+                      paddingBottom: canEdit ? 1 : 0,
+                    }}
+                    onClick={e => canEdit && startEditingName(e, record)}
+                  >
+                    {record.name}
+                  </span>
+                </Tooltip>
+              )}
+
+              {record.is_online && <Badge color={colors.limeGreen} />}
+              {!record.active && (
+                <Typography.Text style={{ color: colors.vibrantOrange, fontWeight: 500 }}>
+                  {t('deactivatedText')}
+                </Typography.Text>
+              )}
+            </Typography.Text>
+          );
+        },
       },
       {
         key: 'projects_count',
@@ -367,7 +501,8 @@ const TeamMembersSettings = () => {
             )}
           </div>
         ),
-      },{
+      },
+      {
         key: 'job_title',
         dataIndex: 'job_title',
         title: t('jobTitleColumn'),
@@ -378,7 +513,9 @@ const TeamMembersSettings = () => {
         }),
         render: (_, record: ITeamMemberViewModel) => (
           <Typography.Text>
-            {record.job_title || <Typography.Text type="secondary">Select a Job Title</Typography.Text>}
+            {record.job_title || (
+              <Typography.Text type="secondary">Select a Job Title</Typography.Text>
+            )}
           </Typography.Text>
         ),
       },
@@ -457,7 +594,6 @@ const TeamMembersSettings = () => {
 
           const menuItems = getActionMenuItems(record);
 
-          // Create custom menu items with popconfirms for status and delete actions
           const customMenuItems =
             menuItems?.map(item => {
               if (item?.key === 'status') {
@@ -523,6 +659,11 @@ const TeamMembersSettings = () => {
       handleStatusChange,
       handleDeleteMember,
       handleMemberClick,
+      editingNameId,
+      editingNameValue,
+      startEditingName,
+      handleNameBlur,
+      handleNameKeyDown,
     ]
   );
 
@@ -555,9 +696,9 @@ const TeamMembersSettings = () => {
                 title={
                   isInviteRestricted
                     ? tCommon('license-expired-subtitle', {
-                      defaultValue:
-                        'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
-                    })
+                        defaultValue:
+                          'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
+                      })
                     : ''
                 }
               >
