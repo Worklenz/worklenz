@@ -151,7 +151,7 @@ BEGIN
     INSERT INTO organizations (user_id, organization_name, contact_number, contact_number_secondary, trial_in_progress,
                                trial_expire_date, subscription_status, license_type_id)
     VALUES (_user_id, COALESCE(TRIM((_body ->> 'team_name')::TEXT), _name), NULL, NULL, TRUE, CURRENT_DATE + INTERVAL '9999 days',
-            'trialling', (SELECT id FROM sys_license_types WHERE key = 'TRAIL'))
+            'trialing', (SELECT id FROM sys_license_types WHERE key = 'TRAIL'))
     RETURNING id INTO _organization_id;
 
     -- Insert default organization working days if not exists
@@ -290,7 +290,7 @@ BEGIN
                NULL,
                TRUE,
                CURRENT_DATE + INTERVAL '9999 days',
-               'trialling',
+               'trialing',
                (SELECT id FROM sys_license_types WHERE key = 'TRAIL')
            )
     RETURNING id INTO _organization_id;
