@@ -1,6 +1,15 @@
-import { memo, useEffect, useState, useCallback } from 'react';
-import { Button, Card, Checkbox, Dropdown, Flex, Typography, Tag, Spin } from '@/shared/antd-imports';
-import { CaretDownFilled } from '@/shared/antd-imports';
+import { memo, useState, useEffect, useMemo } from 'react';
+import {
+  Button,
+  Card,
+  Checkbox,
+  Dropdown,
+  Flex,
+  Input,
+  Typography,
+  Spin,
+} from '@/shared/antd-imports';
+import { CaretDownFilled, SearchOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -21,38 +30,42 @@ const AllTasksPhaseFilter = () => {
 
   const [phases, setPhases] = useState<ITaskPhase[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Fetch phases for all selected projects, deduplicated by name
   useEffect(() => {
     const fetchPhases = async () => {
-      if (!selectedProjects.length) {
+      if (selectedProjects.length === 0) {
         setPhases([]);
         return;
       }
 
       setLoading(true);
       try {
-        const results = await Promise.all(
+        const responses = await Promise.all(
           selectedProjects.map(projectId =>
-            phasesApiService.getPhasesByProjectId(projectId).then((res: { body: any; }) => res.body || [])
+            phasesApiService.getPhasesByProjectId(projectId)
           )
         );
 
-        // Merge and deduplicate by name (case-insensitive)
+        // Merge and deduplicate by id
         const seen = new Set<string>();
         const merged: ITaskPhase[] = [];
-        for (const phaseList of results) {
-          for (const phase of phaseList) {
-            const key = phase.name?.toLowerCase() ?? '';
-            if (!seen.has(key)) {
-              seen.add(key);
-              merged.push(phase);
-            }
+
+        responses.forEach(response => {
+          if (response.done && response.body) {
+            response.body.forEach((phase: ITaskPhase) => {
+              if (phase.id && !seen.has(phase.id)) {
+                seen.add(phase.id);
+                merged.push(phase);
+              }
+            });
           }
-        }
+        });
+
         setPhases(merged);
-      } catch (e) {
-        console.error('Failed to fetch phases', e);
+      } catch (error) {
+        console.error('Error fetching phases:', error);
+        setPhases([]);
       } finally {
         setLoading(false);
       }
@@ -61,25 +74,46 @@ const AllTasksPhaseFilter = () => {
     fetchPhases();
   }, [selectedProjects]);
 
-  const handleToggle = useCallback(
-    (phaseId: string) => {
-      const updated = selectedPhases.includes(phaseId)
-        ? selectedPhases.filter(id => id !== phaseId)
-        : [...selectedPhases, phaseId];
-      dispatch(setSelectedPhases(updated));
-      dispatch(fetchAllTasks());
-    },
-    [dispatch, selectedPhases]
+  // Clear selected phases that no longer exist when projects change
+  useEffect(() => {
+    if (phases.length === 0 && selectedPhases.length > 0) {
+      dispatch(setSelectedPhases([]));
+      return;
+    }
+    const availableIds = new Set(phases.map(p => p.id));
+    const invalid = selectedPhases.filter(id => !availableIds.has(id));
+    if (invalid.length > 0) {
+      dispatch(setSelectedPhases(selectedPhases.filter(id => availableIds.has(id))));
+    }
+  }, [phases]);
+
+  const filteredPhases = phases.filter(p =>
+    p.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleClearAll = useCallback(() => {
+  const handleToggle = (phaseId: string) => {
+    const updated = selectedPhases.includes(phaseId)
+      ? selectedPhases.filter(id => id !== phaseId)
+      : [...selectedPhases, phaseId];
+    dispatch(setSelectedPhases(updated));
+    dispatch(fetchAllTasks());
+  };
+
+  const handleClearAll = () => {
     dispatch(setSelectedPhases([]));
     dispatch(fetchAllTasks());
-  }, [dispatch]);
+  };
 
   const dropdownContent = (
-    <Card className="custom-card" styles={{ body: { padding: 8, width: 220 } }}>
+    <Card className="custom-card" styles={{ body: { padding: 8, width: 280 } }}>
       <Flex vertical gap={8}>
+        <Input
+          placeholder={t('searchPhases', { defaultValue: 'Search phases...' })}
+          prefix={<SearchOutlined />}
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          allowClear
+        />
         <Flex justify="flex-end">
           <Button type="link" size="small" onClick={handleClearAll}>
             {t('clearAll', { defaultValue: 'Clear All' })}
@@ -87,26 +121,34 @@ const AllTasksPhaseFilter = () => {
         </Flex>
 
         {loading ? (
-          <Flex justify="center" style={{ padding: 12 }}>
+          <Flex justify="center" style={{ padding: 16 }}>
             <Spin size="small" />
           </Flex>
-        ) : phases.length === 0 ? (
+        ) : filteredPhases.length === 0 ? (
           <Typography.Text type="secondary" style={{ padding: '4px 8px', fontSize: 12 }}>
             {selectedProjects.length === 0
               ? t('selectProjectFirst', { defaultValue: 'Select a project to see phases' })
               : t('noPhases', { defaultValue: 'No phases found' })}
           </Typography.Text>
         ) : (
-          <Flex vertical gap={4}>
-            {phases.map(phase => (
+          <Flex vertical gap={4} style={{ maxHeight: 200, overflowY: 'auto' }}>
+            {filteredPhases.map(phase => (
               <Checkbox
                 key={phase.id}
                 checked={selectedPhases.includes(phase.id || '')}
                 onChange={() => handleToggle(phase.id || '')}
               >
-                <Tag color={phase.color_code} style={{ margin: 0 }}>
+                <Flex align="center" gap={8}>
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      backgroundColor: phase.color_code || '#1890ff',
+                    }}
+                  />
                   {phase.name}
-                </Tag>
+                </Flex>
               </Checkbox>
             ))}
           </Flex>
