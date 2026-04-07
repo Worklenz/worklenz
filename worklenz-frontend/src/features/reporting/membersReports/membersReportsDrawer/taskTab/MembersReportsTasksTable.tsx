@@ -41,7 +41,6 @@ const MembersReportsTasksTable = ({ tasksData, loading }: MembersReportsTasksTab
         </Flex>
       ),
       width: 260,
-      fixed: 'left' as const,
     },
     {
       key: 'project',
