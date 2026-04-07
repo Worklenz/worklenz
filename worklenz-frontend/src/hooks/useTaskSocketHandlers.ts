@@ -69,6 +69,7 @@ import {
   setTaskPriority,
   setTaskStatus,
   setTaskSubscribers,
+  updateSelectedTaskName,
 } from '@/features/task-drawer/task-drawer.slice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import { useMixpanelTracking } from './useMixpanelTracking';
@@ -112,6 +113,8 @@ export const useTaskSocketHandlers = () => {
           };
           dispatch(updateTask(updatedTask));
         }
+
+        dispatch(updateSelectedTaskName({ id: data.id, name: data.name }));
       }
 
       // Update the old task slice (for backward compatibility)

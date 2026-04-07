@@ -464,7 +464,10 @@ if (!isProduction()) {
       }),
     );
 
-    console.log("📚 Swagger UI available at http://localhost:5000/api-docs");
+    const swaggerPort = process.env.PORT || "3000";
+    console.log(
+      `📚 Swagger UI available at http://localhost:${swaggerPort}/api-docs`,
+    );
   } catch (error) {
     console.error("Failed to load OpenAPI documentation:", error);
   }

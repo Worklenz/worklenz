@@ -17,8 +17,15 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   toggleTaskExpansion,
   fetchSubTasks,
+  selectGroups,
 } from '@/features/task-management/task-management.slice';
-import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import {
+  fetchTask as fetchTaskDrawer,
+  setNavigationContext,
+  setSelectedTaskId,
+  setShowTaskDrawer,
+} from '@/features/task-drawer/task-drawer.slice';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useTranslation } from 'react-i18next';
@@ -58,6 +65,8 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
     const { t } = useTranslation('task-list-table');
     const inputRef = useRef<InputRef>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const groups = useAppSelector(selectGroups);
+    const { showTaskDrawer, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
 
     const [contextMenuVisible, setContextMenuVisible] = useState(false);
     const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
@@ -130,6 +139,26 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
       setContextMenuVisible(false);
     }, []);
 
+    const handleOpenTaskInDrawer = useCallback(() => {
+      if (!task.id) return;
+      if (showTaskDrawer && selectedTaskId === task.id) return;
+
+      const taskIds = groups.flatMap(group => group.taskIds);
+      const currentIndex = taskIds.indexOf(task.id);
+
+      dispatch(
+        setNavigationContext({
+          taskIds,
+          currentIndex: currentIndex >= 0 ? currentIndex : 0,
+          sourceView: 'task-list',
+          projectId,
+        })
+      );
+      dispatch(setSelectedTaskId(task.id));
+      dispatch(setShowTaskDrawer(true));
+      dispatch(fetchTaskDrawer({ taskId: task.id, projectId }));
+    }, [dispatch, groups, projectId, selectedTaskId, showTaskDrawer, task.id]);
+
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
         if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
@@ -151,6 +180,11 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
       <div
         className="relative flex items-center group pl-1 border-r border-b border-t border-gray-200 dark:border-gray-700"
         style={{ width, height: '40px', minHeight: '40px' }}
+        onClick={() => {
+          if (showTaskDrawer && !editTaskName && !task.is_parent_container) {
+            handleOpenTaskInDrawer();
+          }
+        }}
       >
         {editTaskName ? (
           <div className="flex-1" style={{ height: '40px' }} ref={wrapperRef}>
@@ -162,6 +196,13 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
               autoFocus
               onPressEnter={handleTaskNameSave}
               onBlur={handleTaskNameSave}
+              onKeyDown={e => {
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  onTaskNameChange(task.title || task.name || '');
+                  onEditTaskName(false);
+                }
+              }}
               className="text-sm"
               style={{
                 width: '100%',
@@ -329,8 +370,7 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
               className="pointer-events-none group-hover:pointer-events-auto focus-visible:pointer-events-auto opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all duration-200 px-3 py-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-solid border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer rounded-md shadow-sm hover:shadow-md flex items-center gap-1 absolute right-2 inset-y-0 my-auto h-fit"
               onClick={e => {
                 e.stopPropagation();
-                dispatch(setSelectedTaskId(task.id));
-                dispatch(setShowTaskDrawer(true));
+                handleOpenTaskInDrawer();
               }}
             >
               <ArrowsAltOutlined />

@@ -37,6 +37,22 @@ import {
 } from '@/api/reporting/team-lead-members.api.service';
 import { isCurrentUserAdmin } from '@/utils/team-lead-utils';
 
+const AVATAR_COLORS = [
+  '#f56a00', '#7265e6', '#ffbf00', '#00a2ae',
+  '#52c41a', '#eb2f96', '#722ed1', '#fa541c',
+  '#13c2c2', '#faad14', '#a0d911', '#eb4034',
+  '#9254de', '#36cfc9', '#d4380d', '#389e0d',
+];
+
+const getAvatarColor = (name: string = '', colorCode?: string): string => {
+  if (colorCode) return colorCode;
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) * (i + 1) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+};
+
 // Removed unused interface - using TeamLeadWithMembers from API service instead
 
 const Members: React.FC = () => {
@@ -574,42 +590,55 @@ const Members: React.FC = () => {
 
           <Divider style={{ margin: '2px 0', flexShrink: 0 }} />
 
-          {/* Items */}
+        {/* Items */}
           <div
             style={{
               overflowY: 'auto',
               flex: 1,
             }}
           >
-            {filteredMembers.map(member => (
-              <div
-                key={member.id}
-                style={{
-                  padding: '4px 8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  transition: 'background-color 0.2s',
-                }}
-              >
-                <Avatar src={member.avatar_url} alt={member.name} size="small" />
-                <Checkbox
-                  onClick={e => e.stopPropagation()}
-                  checked={member.selected}
-                  onChange={e => handleCheckboxChange(member.id, e.target.checked)}
-                  style={{ fontSize: '14px' }}
+            {filteredMembers.map(member => {
+              const hasAvatar = !!member.avatar_url && member.avatar_url.trim() !== '';
+              return (
+                <div
+                  key={member.id}
+                  style={{
+                    padding: '4px 8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    cursor: 'pointer',
+                    borderRadius: '4px',
+                    transition: 'background-color 0.2s',
+                  }}
                 >
-                  <span style={{ marginLeft: '2px', fontSize: '14px' }}>{member.name}</span>
-                </Checkbox>
-                {member.selected && (
-                  <CheckCircleFilled
-                    style={{ color: colors.successColor, fontSize: '10px', marginLeft: 'auto' }}
-                  />
-                )}
-              </div>
-            ))}
+                  <Avatar
+                    src={hasAvatar ? member.avatar_url : undefined}
+                    size="small"
+                    style={
+                      !hasAvatar
+                        ? { backgroundColor: getAvatarColor(member.name, member.color_code), fontSize: '12px' }
+                        : undefined
+                    }
+                  >
+                    {!hasAvatar ? member.name?.charAt(0).toUpperCase() : null}
+                  </Avatar>
+                  <Checkbox
+                    onClick={e => e.stopPropagation()}
+                    checked={member.selected}
+                    onChange={e => handleCheckboxChange(member.id, e.target.checked)}
+                    style={{ fontSize: '14px' }}
+                  >
+                    <span style={{ marginLeft: '2px', fontSize: '14px' }}>{member.name}</span>
+                  </Checkbox>
+                  {member.selected && (
+                    <CheckCircleFilled
+                      style={{ color: colors.successColor, fontSize: '10px', marginLeft: 'auto' }}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

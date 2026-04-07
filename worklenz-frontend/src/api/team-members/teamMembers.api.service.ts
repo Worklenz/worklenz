@@ -59,6 +59,11 @@ export const teamMembersApiService = {
     return response.data;
   },
 
+  updateMemberName: async (id: string, name: string): Promise<IServerResponse<any>> => {
+    const response = await apiClient.put<IServerResponse<any>>(`${rootUrl}/${id}/name`, { name });
+    return response.data;
+  },
+
   delete: async (id: string): Promise<IServerResponse<any>> => {
     const response = await apiClient.delete<IServerResponse<any>>(`${rootUrl}/${id}`);
     return response.data;

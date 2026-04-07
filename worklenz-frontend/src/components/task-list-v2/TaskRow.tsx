@@ -40,8 +40,10 @@ const TaskRow: React.FC<TaskRowProps> = memo(
     // Get task data and selection state from Redux
     const task = useAppSelector(state => selectTaskById(state, taskId));
     const isSelected = useAppSelector(state => selectIsTaskSelected(state, taskId));
+    const drawerSelectedTaskId = useAppSelector(state => state.taskDrawerReducer.selectedTaskId);
     const themeMode = useAppSelector(state => state.themeReducer.mode);
     const isDarkMode = themeMode === 'dark';
+    const isDrawerActive = drawerSelectedTaskId === taskId;
     const safeTask = useMemo(
       () =>
         task || {
@@ -142,7 +144,9 @@ const TaskRow: React.FC<TaskRowProps> = memo(
         style={{ ...style, height: '40px' }}
         className={`flex items-center min-w-max px-1 border-t border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
           isDragging ? 'opacity-50' : ''
-        } ${isOver && !isDragging ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+        } ${isOver && !isDragging ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${
+          isDrawerActive ? 'bg-blue-50 dark:bg-blue-900/25' : ''
+        }`}
       >
         {visibleColumns.map((column, index) => {
           const rowBackgrounds = {
