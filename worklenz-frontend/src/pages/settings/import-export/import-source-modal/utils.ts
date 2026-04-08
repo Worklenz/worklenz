@@ -1,5 +1,29 @@
 const AUTO_DELIMITER_CANDIDATES = [',', ';', '\t', '|'];
 
+/**
+ * Decodes an ArrayBuffer to a string using the given encoding label.
+ * Uses TextDecoder which correctly handles UTF-16 BOMs (unlike FileReader.readAsText).
+ * Falls back to UTF-8 if the label is unrecognised.
+ */
+export const decodeBuffer = (buffer: ArrayBuffer, encoding: string): string => {
+  // TextDecoder uses WHATWG encoding labels — map our select values to them
+  const labelMap: Record<string, string> = {
+    'UTF-16': 'utf-16',
+    'UTF-16BE': 'utf-16be',
+    'UTF-16LE': 'utf-16le',
+    'UTF-8': 'utf-8',
+    'US-ASCII': 'windows-1252', // ASCII is a subset; windows-1252 is the WHATWG superset
+    'ISO-8859-1': 'iso-8859-1',
+  };
+  const label = labelMap[encoding] ?? encoding;
+  try {
+    return new TextDecoder(label).decode(buffer);
+  } catch {
+    // Unknown label — fall back to UTF-8
+    return new TextDecoder('utf-8').decode(buffer);
+  }
+};
+
 const detectDelimiter = (text: string) => {
   const sampleLine = text
     .replace(/^\uFEFF/, '')

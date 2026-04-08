@@ -46,7 +46,7 @@ interface UseImportFinishHandlerArgs {
   csvColumns: string[];
   includeInImport: Record<string, boolean>;
   fieldMappings: Record<string, string>;
-  workTypeMapping: Record<string, string>;
+  statusValueMapping: Record<string, string>;
   csvUserRows: string[];
   userEmails: Record<string, string>;
   ensureImportJob: () => Promise<ImportJob>;
@@ -92,7 +92,7 @@ export const useImportFinishHandler = ({
   csvColumns,
   includeInImport,
   fieldMappings,
-  workTypeMapping,
+  statusValueMapping,
   csvUserRows,
   userEmails,
   ensureImportJob,
@@ -425,7 +425,7 @@ export const useImportFinishHandler = ({
         await saveImportFields(activeJob.id, mappedFields);
       }
 
-      const mappedValues = Object.entries(workTypeMapping)
+      const mappedValues = Object.entries(statusValueMapping)
         .filter(([, target]) => !!target)
         .map(([sourceValue, targetWorktype]) => ({
           source_value: sourceValue,
@@ -502,5 +502,5 @@ export const useImportFinishHandler = ({
     trelloToken,
     tt,
     userEmails,
-    workTypeMapping,
+    statusValueMapping,
   ]);

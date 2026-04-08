@@ -22,6 +22,7 @@ interface IAllTasksRequest {
   assignees?: string[];
   labels?: string[];
   phases?: string[];
+  clients?: string[];
   dateField?: "due_date" | "start_date" | "created_at" | "completed_at";
   dateFrom?: string | null;
   dateTo?: string | null;
@@ -123,6 +124,13 @@ export default class ReportingAllTasksController extends ReportingControllerBase
     if (body.phases && body.phases.length > 0) {
       const { clause, params } = SqlHelper.buildInClause(body.phases, values.length + 1);
       clauses.push(`EXISTS (SELECT 1 FROM task_phase tp WHERE tp.task_id = t.id AND tp.phase_id IN (${clause}))`);
+      values.push(...params);
+    }
+
+    // Clients filter 
+    if (body.clients && body.clients.length > 0) {
+      const { clause, params } = SqlHelper.buildInClause(body.clients, values.length + 1);
+      clauses.push(`t.project_id IN (SELECT id FROM projects WHERE client_id IN (${clause}))`);
       values.push(...params);
     }
 
@@ -308,6 +316,7 @@ export default class ReportingAllTasksController extends ReportingControllerBase
       { header: "Estimated Time", key: "estimated_time", width: 20 },
       { header: "Logged Time", key: "logged_time", width: 20 },
       { header: "Overlogged Time", key: "overlogged_time", width: 20 },
+      { header: "Client", key: "client", width: 25 },
     ];
 
     // Add data
@@ -326,7 +335,8 @@ export default class ReportingAllTasksController extends ReportingControllerBase
         created_at: task.created_at ? moment(task.created_at).format("YYYY-MM-DD") : "-",
         estimated_time: task.total_time_string,
         logged_time: task.time_spent_string,
-        overlogged_time: task.overlogged_time_string || "-"
+        overlogged_time: task.overlogged_time_string || "-",
+        client: task.client_name || "-",
       });
     }
 
@@ -412,6 +422,10 @@ export default class ReportingAllTasksController extends ReportingControllerBase
         (SELECT phase_id FROM task_phase WHERE task_id = t.id LIMIT 1) AS phase_id,
         (SELECT pp.name FROM project_phases pp WHERE pp.id = (SELECT phase_id FROM task_phase WHERE task_id = t.id LIMIT 1)) AS phase_name,
         (SELECT pp.color_code FROM project_phases pp WHERE pp.id = (SELECT phase_id FROM task_phase WHERE task_id = t.id LIMIT 1)) AS phase_color,
+
+        -- Client info (ADD THIS)
+        (SELECT c.name FROM clients c 
+        WHERE c.id = (SELECT client_id FROM projects WHERE id = t.project_id)) AS client_name,
         
         -- Assignees (using team_member_info_view)
         (SELECT COALESCE(JSON_AGG(

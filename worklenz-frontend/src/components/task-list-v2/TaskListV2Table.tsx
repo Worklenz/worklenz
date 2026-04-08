@@ -39,6 +39,7 @@ import {
   selectError,
   fetchTasksV3,
   fetchTaskListColumns,
+  reorderTasks,
   selectColumns,
   selectCustomColumns,
   selectLoadingColumns,
@@ -782,21 +783,25 @@ const TaskListV2Section: React.FC = () => {
 
       if (insertedAfterTaskId) {
         setInsertAnchor({ groupId, afterTaskId: task.id });
-        setTimeout(() => {
-          const targetGroup = groups.find(group => group.id === groupId);
-          if (!targetGroup) return;
+        const targetGroup = groups.find(group => group.id === groupId);
+        if (!targetGroup) return;
 
-          const taskIds = targetGroup.taskIds.includes(task.id)
-            ? [...targetGroup.taskIds]
-            : [...targetGroup.taskIds, task.id];
+        const taskIds = targetGroup.taskIds.includes(task.id)
+          ? [...targetGroup.taskIds]
+          : [...targetGroup.taskIds, task.id];
 
-          const filteredIds = taskIds.filter(id => id !== task.id);
-          const anchorIndex = filteredIds.indexOf(insertedAfterTaskId);
-          const insertIndex = anchorIndex >= 0 ? anchorIndex + 1 : filteredIds.length;
-          filteredIds.splice(insertIndex, 0, task.id);
+        const filteredIds = taskIds.filter(id => id !== task.id);
+        const anchorIndex = filteredIds.indexOf(insertedAfterTaskId);
+        const insertIndex = anchorIndex >= 0 ? anchorIndex + 1 : filteredIds.length;
+        filteredIds.splice(insertIndex, 0, task.id);
 
-          emitSortOrderUpdate(groupId, filteredIds, task);
-        }, 50);
+        // Keep realtime UI consistent immediately (before backend/socket round-trip finishes).
+        dispatch(reorderTasks({ groupId, taskIds: filteredIds }));
+        emitSortOrderUpdate(groupId, filteredIds, task);
+
+        // Insert-mode is one-shot: close the inline input to avoid visible re-anchoring jumps.
+        setActiveAddRowsByGroup(prev => ({ ...prev, [groupId]: false }));
+        setInsertAnchor(current => (current?.groupId === groupId ? null : current));
       } else {
         setInsertAnchor(current => (current?.groupId === groupId ? null : current));
       }
@@ -805,7 +810,7 @@ const TaskListV2Section: React.FC = () => {
         openDrawerForTask(task.id);
       }
     },
-    [emitSortOrderUpdate, groups, openDrawerForTask, showTaskDrawer]
+    [dispatch, emitSortOrderUpdate, groups, openDrawerForTask, showTaskDrawer]
   );
 
   // Function to update custom column values
@@ -1026,6 +1031,7 @@ const TaskListV2Section: React.FC = () => {
             autoFocus={item.autoFocus}
             isActive={!!activeAddRowsByGroup[item.groupId]}
             isInsertMode={!!item.isInsertMode}
+            insertAfterTaskId={item.insertAfterTaskId || null}
             onActivate={() => handleActivateAddRow(item.groupId)}
             onDeactivate={() => handleDeactivateAddRow(item.groupId)}
             onTaskCreated={(task, options) =>
@@ -1033,7 +1039,7 @@ const TaskListV2Section: React.FC = () => {
                 task,
                 item.groupId,
                 !!options?.openDrawer,
-                item.insertAfterTaskId || null
+                options?.insertAfterTaskId || null
               )
             }
           />

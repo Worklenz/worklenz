@@ -40,6 +40,7 @@ import {
   addTask,
   addTaskToGroup,
   updateTask,
+  reorderTasks,
   moveTaskToGroup,
   moveTaskBetweenGroups,
   selectCurrentGroupingV3,
@@ -953,13 +954,18 @@ export const useTaskSocketHandlers = () => {
         const phaseList = state.phaseReducer?.phaseList || [];
         const statusList = state.taskStatusReducer?.status || [];
 
+        const nextOrderByTaskId = new Map<string, number>();
+
         // The backend sends an array of tasks with updated sort orders and possibly grouping fields
         data.forEach((taskData: any) => {
           const currentTask = state.taskManagement.entities[taskData.id];
           if (currentTask) {
+            const nextOrder = taskData.current_sort_order ?? taskData.sort_order ?? currentTask.order;
+            nextOrderByTaskId.set(taskData.id, nextOrder);
+
             let updatedTask: Task = {
               ...currentTask,
-              order: taskData.sort_order || taskData.current_sort_order || currentTask.order,
+              order: nextOrder,
               updatedAt: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             };
@@ -992,6 +998,22 @@ export const useTaskSocketHandlers = () => {
             }
 
             dispatch(updateTask(updatedTask));
+          }
+        });
+
+        const groups = state.taskManagement.groups || [];
+        groups.forEach((group: any) => {
+          if (!Array.isArray(group?.taskIds) || group.taskIds.length < 2) return;
+
+          const sortedTaskIds = [...group.taskIds].sort((taskIdA: string, taskIdB: string) => {
+            const orderA = nextOrderByTaskId.get(taskIdA) ?? state.taskManagement.entities[taskIdA]?.order ?? 0;
+            const orderB = nextOrderByTaskId.get(taskIdB) ?? state.taskManagement.entities[taskIdB]?.order ?? 0;
+            return orderA - orderB;
+          });
+
+          const hasOrderChanged = sortedTaskIds.some((taskId, index) => taskId !== group.taskIds[index]);
+          if (hasOrderChanged) {
+            dispatch(reorderTasks({ taskIds: sortedTaskIds, groupId: group.id }));
           }
         });
       } catch (error) {

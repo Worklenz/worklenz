@@ -22,8 +22,12 @@ interface AddTaskRowProps {
   isActive?: boolean;
   onActivate?: () => void;
   onDeactivate?: () => void;
-  onTaskCreated?: (task: any, options?: { openDrawer: boolean }) => void;
+  onTaskCreated?: (
+    task: any,
+    options?: { openDrawer: boolean; insertAfterTaskId?: string | null }
+  ) => void;
   isInsertMode?: boolean;
+  insertAfterTaskId?: string | null;
 }
 
 const AddTaskRow: React.FC<AddTaskRowProps> = memo(
@@ -40,6 +44,7 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
     onDeactivate,
     onTaskCreated,
     isInsertMode = false,
+    insertAfterTaskId = null,
   }) => {
     const [isAdding, setIsAdding] = useState(autoFocus || isActive);
     const [taskName, setTaskName] = useState('');
@@ -106,10 +111,14 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
         }
 
         if (socket && connected) {
+          const targetInsertAfterTaskId = insertAfterTaskId || null;
           socket.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
           socket.once(SocketEvents.QUICK_TASK.toString(), (task: any) => {
             if (task?.id && onTaskCreated) {
-              onTaskCreated(task, { openDrawer });
+              onTaskCreated(task, {
+                openDrawer,
+                insertAfterTaskId: targetInsertAfterTaskId,
+              });
             }
           });
           setTaskName('');
@@ -134,6 +143,7 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
         connected,
         currentSession,
         onTaskCreated,
+        insertAfterTaskId,
         t,
       ]
     );

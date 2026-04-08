@@ -8,6 +8,7 @@ import CustomTableTitle from '@/components/CustomTableTitle';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 
+
 type MembersReportsTasksTableProps = {
   tasksData: any[];
   loading: boolean;
@@ -41,7 +42,8 @@ const MembersReportsTasksTable = ({ tasksData, loading }: MembersReportsTasksTab
         </Flex>
       ),
       width: 260,
-      fixed: 'left' as const,
+      className: 'sticky-task-column',
+      fixed: 'left',
     },
     {
       key: 'project',

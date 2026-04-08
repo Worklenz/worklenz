@@ -107,6 +107,9 @@ export interface CustomFieldValuePlan {
 
 interface ImportedJiraComment {
   author?: string;
+  authorDisplayName?: string | null;
+  authorEmail?: string | null;
+  authorAccountId?: string | null;
   created?: string | null;
   body?: string;
 }
@@ -1571,11 +1574,14 @@ class ImportsService {
       const targetTeamId = projectRows[0]?.team_id || null;
 
       const teamMemberEmailMap = new Map<string, string>();
+      const teamMemberUserMap = new Map<string, string>();
+      const teamMemberUserIdByEmailMap = new Map<string, string>();
       const teamMemberNameMap = new Map<string, string>();
       const loadTeamMemberEmails = async () => {
         if (!targetTeamId) return [] as any[];
         const { rows } = await client.query(
           `SELECT tm.id,
+              tm.user_id,
               LOWER(COALESCE(u.email, ei.email)) AS email,
               COALESCE(
                 u.name,
@@ -1594,6 +1600,12 @@ class ImportsService {
         rows.forEach((row) => {
           if (row?.email) {
             teamMemberEmailMap.set(row.email, row.id);
+            if (row?.user_id) {
+              teamMemberUserIdByEmailMap.set(row.email, row.user_id);
+            }
+          }
+          if (row?.user_id) {
+            teamMemberUserMap.set(row.user_id, row.id);
           }
           if (row?.name) {
             const normalizedName = row.name.toString().trim().toLowerCase();
@@ -1614,7 +1626,7 @@ class ImportsService {
         creatorTeamMemberId = creatorRows[0]?.id || null;
       }
 
-      const ensureAssigneeTeamMembers = async () => {
+      const ensureSourceTeamMembers = async () => {
         if (!targetTeamId) return;
         const pendingEmails = new Set<string>();
         staged.forEach((task: StageTaskRow) => {
@@ -1622,11 +1634,23 @@ class ImportsService {
             typeof task.assignee_source_id === "string"
               ? task.assignee_source_id.trim()
               : "";
-          if (!candidate || !candidate.includes("@")) return;
-          const normalized = candidate.toLowerCase();
-          if (!teamMemberEmailMap.has(normalized)) {
-            pendingEmails.add(normalized);
+          if (candidate && candidate.includes("@")) {
+            const normalized = candidate.toLowerCase();
+            if (!teamMemberEmailMap.has(normalized)) {
+              pendingEmails.add(normalized);
+            }
           }
+          const comments = parseImportedArray<ImportedJiraComment>(
+            task.raw,
+            "__jira_comments"
+          );
+          comments.forEach((comment) => {
+            const email = (comment?.authorEmail || "").trim().toLowerCase();
+            if (!email || !email.includes("@")) return;
+            if (!teamMemberEmailMap.has(email)) {
+              pendingEmails.add(email);
+            }
+          });
         });
         if (!pendingEmails.size) return;
         await client.query("SELECT create_team_member($1) AS new_members;", [
@@ -1636,12 +1660,15 @@ class ImportsService {
           }),
         ]);
         teamMemberEmailMap.clear();
+        teamMemberUserMap.clear();
+        teamMemberUserIdByEmailMap.clear();
+        teamMemberNameMap.clear();
         const refreshedMembers = await loadTeamMemberEmails();
         hydrateTeamMemberEmails(refreshedMembers);
       };
 
       if (shouldImportMembers) {
-        await ensureAssigneeTeamMembers();
+        await ensureSourceTeamMembers();
       }
 
       const labelNameMap = new Map<string, string>();
@@ -2293,11 +2320,40 @@ class ImportsService {
           );
           if (!content) continue;
           const createdAt = safeDate(comment?.created || null);
+          const sourceAccountId = (comment?.authorAccountId || "").trim();
+          const sourceEmail = (comment?.authorEmail || "").trim().toLowerCase();
+          const mappedUserId =
+            (sourceAccountId ? assigneeMap.get(sourceAccountId) : null) ||
+            (sourceAccountId ? assigneeMap.get(sourceAccountId.toLowerCase()) : null) ||
+            (sourceEmail ? assigneeMap.get(sourceEmail) : null) ||
+            null;
+          const mappedTeamMemberId = mappedUserId
+            ? teamMemberUserMap.get(mappedUserId) || null
+            : null;
+          const emailTeamMemberId = sourceEmail
+            ? teamMemberEmailMap.get(sourceEmail) || null
+            : null;
+
+          let commentUserId = job.created_by;
+          let commentTeamMemberId = creatorTeamMemberId;
+
+          if (mappedUserId && mappedTeamMemberId) {
+            commentUserId = mappedUserId;
+            commentTeamMemberId = mappedTeamMemberId;
+          } else if (sourceEmail && emailTeamMemberId) {
+            const resolvedUserId =
+              teamMemberUserIdByEmailMap.get(sourceEmail) || null;
+            if (resolvedUserId) {
+              commentUserId = resolvedUserId;
+              commentTeamMemberId = emailTeamMemberId;
+            }
+          }
+
           const result = await client.query(
             `INSERT INTO task_comments (user_id, team_member_id, task_id, created_at, updated_at)
              VALUES ($1, $2, $3, COALESCE($4::timestamptz, NOW()), COALESCE($4::timestamptz, NOW()))
              RETURNING id`,
-            [job.created_by, creatorTeamMemberId, taskId, createdAt]
+            [commentUserId, commentTeamMemberId, taskId, createdAt]
           );
           const commentId = result.rows?.[0]?.id || null;
           if (!commentId) continue;

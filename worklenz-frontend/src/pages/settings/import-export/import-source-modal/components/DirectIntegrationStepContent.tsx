@@ -1,5 +1,21 @@
 import React from 'react';
-import { ApartmentOutlined, ArrowLeftOutlined, Button, Card, Input, PaperClipOutlined, RightOutlined, SearchOutlined, Select, Switch, TableOutlined, TeamOutlined, Typography } from '@/shared/antd-imports';
+import {
+  ApartmentOutlined,
+  ArrowLeftOutlined,
+  Button,
+  Card,
+  InfoCircleOutlined,
+  Input,
+  PaperClipOutlined,
+  RightOutlined,
+  SearchOutlined,
+  Select,
+  Switch,
+  TableOutlined,
+  TeamOutlined,
+  Tooltip,
+  Typography
+} from '@/shared/antd-imports';
 
 interface DirectIntegrationStepContentProps {
   step: number;
@@ -117,6 +133,24 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
     padding: 32,
   };
 
+  const renderLabelWithTooltip = (label: string, tooltip: string, ariaLabel: string) => (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+      }}
+    >
+      <span>{label}</span>
+      <Tooltip title={tooltip}>
+        <InfoCircleOutlined
+          aria-label={ariaLabel}
+          style={{ color: themeToken.colorPrimary, cursor: 'help' }}
+        />
+      </Tooltip>
+    </span>
+  );
+
   if (step === 0) {
     const workspaceOptions =
       lowerKey === 'asana'
@@ -153,13 +187,18 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
             {t('importStep.selectList', { defaultValue: 'Select a source' })}
           </Typography.Title>
           <Typography.Paragraph style={{ color: themeToken.colorTextSecondary }}>
-            {t('importStep.selectListHelp', {
-              defaultValue:
-                "Select the workspace and list/board you'd like to import data from. Required fields are marked with an asterisk.",
-            })}
+            {isJira
+              ? t('importStep.jiraSelectProjectHelp', {
+                  defaultValue:
+                    'Select the Jira site and project you would like to import from. Required fields are marked with an asterisk.',
+                })
+              : t('importStep.selectListHelp', {
+                  defaultValue:
+                    "Select the workspace and list/board you'd like to import data from. Required fields are marked with an asterisk.",
+                })}
           </Typography.Paragraph>
           <div style={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>
-            {lowerKey !== 'monday' && lowerKey !== 'jira' && lowerKey !== 'trello' && (
+            {!isJira && lowerKey !== 'monday' && lowerKey !== 'trello' && (
               <>
                 <label>{t('importStep.workspaceLabel', 'Workspace *')}</label>
                 <Select
@@ -179,7 +218,16 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
             {isJira && (
               <>
                 <label style={{ display: 'block', marginBottom: 4 }}>
-                  {t('importStep.jiraDomain', 'Domain')}
+                  {renderLabelWithTooltip(
+                    t('importStep.jiraDomain', { defaultValue: 'Domain' }),
+                    t('importStep.jiraDomainSelectionTooltip', {
+                      defaultValue:
+                        'This is the Jira site you authenticated with. The project list below comes from this domain.',
+                    }),
+                    t('importStep.jiraDomainSelectionTooltipAriaLabel', {
+                      defaultValue: 'Information about the Jira domain field',
+                    })
+                  )}
                 </label>
                 <Typography.Text
                   style={{
@@ -197,7 +245,16 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
               {lowerKey === 'monday' || lowerKey === 'trello'
                 ? t('importStep.boardLabel', 'Board *')
                 : isJira
-                  ? t('importStep.jiraProjectLabel', 'Project *')
+                  ? renderLabelWithTooltip(
+                      t('importStep.jiraProjectLabel', { defaultValue: 'Project *' }),
+                      t('importStep.jiraProjectSelectionTooltip', {
+                        defaultValue:
+                          'Choose the Jira project to import. We use this selection to fetch issues, fields, and mappings for the import.',
+                      }),
+                      t('importStep.jiraProjectSelectionTooltipAriaLabel', {
+                        defaultValue: 'Information about the Jira project selector',
+                      })
+                    )
                   : t('importStep.projectLabel', 'List/Project *')}
             </label>
             {lowerKey === 'monday' ? (
@@ -447,6 +504,70 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                 </Card>
               ))}
             </div>
+            <div
+              style={{
+                marginTop: 14,
+                borderRadius: 12,
+                border: `1px solid ${themeToken.colorBorder}`,
+                background: themeToken.colorFillQuaternary || themeToken.colorBgContainer,
+                padding: '14px 16px',
+              }}
+            >
+              <Typography.Text style={{ color: themeToken.colorText, fontWeight: 600 }}>
+                {t('importStep.importLimitationsTitle', {
+                  defaultValue: 'Import limitations',
+                })}
+              </Typography.Text>
+              <Typography.Paragraph style={{ color: themeToken.colorTextSecondary, margin: '6px 0 10px' }}>
+                {t('importStep.importLimitationsDescription', {
+                  defaultValue: 'Heads up before importing from {{source}}:',
+                  source: source.label || 'your source',
+                })}
+              </Typography.Paragraph>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {(
+                  lowerKey === 'jira'
+                    ? [
+                      t('importStep.limitationsJiraCommentFormat', {
+                        defaultValue: 'Rich-text comments are imported as plain text when advanced formatting is not supported.',
+                      }),
+                      t('importStep.limitationsJiraAttachmentPermission', {
+                        defaultValue: 'Attachments can be skipped if source file permissions or URLs are inaccessible.',
+                      }),
+                      t('importStep.limitationsJiraUserAttribution', {
+                        defaultValue: 'Comment and assignee attribution depends on matching users by email or mapped identity.',
+                      }),
+                    ]
+                    : lowerKey === 'asana'
+                      ? [
+                        t('importStep.limitationsAsanaSections', {
+                          defaultValue: 'Section values are mapped to statuses and may require manual refinement.',
+                        }),
+                        t('importStep.limitationsAsanaLikes', {
+                          defaultValue: 'Likes are imported as field values; reactions do not create social activity in Worklenz.',
+                        }),
+                        t('importStep.limitationsAsanaUsers', {
+                          defaultValue: 'Users who are not added to the team remain unresolved in assignee and reporter mappings.',
+                        }),
+                      ]
+                      : [
+                        t('importStep.limitationsGenericMapping', {
+                          defaultValue: 'Field mappings may require manual adjustment after import.',
+                        }),
+                        t('importStep.limitationsGenericUsers', {
+                          defaultValue: 'Unmatched users remain unresolved until they are added and mapped in Worklenz.',
+                        }),
+                        t('importStep.limitationsGenericAttachments', {
+                          defaultValue: 'Attachment import depends on source permissions and provider API availability.',
+                        }),
+                      ]
+                ).map((item, index) => (
+                  <Typography.Text key={`${item}-${index}`} style={{ color: themeToken.colorTextSecondary }}>
+                    • {item}
+                  </Typography.Text>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       );
@@ -583,6 +704,12 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
         "We've automatically mapped your {{source}} data into system and custom fields in Worklenz. You can customize some fields that have other compatible field types. More about field mapping.",
         { source: source.label || 'source' }
       );
+      const panelBg = themeToken.colorBgContainer;
+      const panelBorder = themeToken.colorBorder;
+      const panelShadow = '0 10px 40px rgba(38,132,255,0.08)';
+      const sectionBg = themeToken.colorBgElevated;
+      const headerBg = themeToken.colorFillAlter;
+      const rowAltBg = themeToken.colorFillQuaternary;
 
       return (
         <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -593,11 +720,11 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
               minWidth: 820,
               height: 657.26,
               minHeight: 657.26,
-              background: '#f5f8ff',
+              background: panelBg,
               borderRadius: 10,
-              border: '1px solid #e4ecfb',
+              border: `1px solid ${panelBorder}`,
               padding: '14px 32px 40px',
-              boxShadow: '0 10px 40px rgba(38,132,255,0.08)',
+              boxShadow: panelShadow,
               display: 'flex',
               flexDirection: 'column',
               gap: 8,
@@ -607,7 +734,13 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
               <a
                 href="#"
-                style={{ color: '#2684ff', display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 600 }}
+                style={{
+                  color: themeToken.colorPrimary,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontWeight: 600,
+                }}
                 onClick={e => {
                   e.preventDefault();
                   setReviewSubScreen('main');
@@ -620,7 +753,16 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
             </div>
 
             <div>
-              <Typography.Title level={3} style={{ margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Typography.Title
+                level={3}
+                style={{
+                  margin: '0 0 8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  color: themeToken.colorTextHeading,
+                }}
+              >
                 {fieldMappingTitle}
               </Typography.Title>
               <Typography.Paragraph style={{ margin: 0, color: themeToken.colorTextSecondary }}>
@@ -632,15 +774,21 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
               <Input
                 placeholder={t('importStep.searchFields', 'Search fields')}
                 prefix={<SearchOutlined />}
-                style={{ width: '100%', maxWidth: 560, background: '#fff', borderColor: '#e1e7f5' }}
+                style={{
+                  width: '100%',
+                  maxWidth: 560,
+                  background: sectionBg,
+                  borderColor: panelBorder,
+                  color: themeToken.colorText,
+                }}
               />
             </div>
 
             <div
               style={{
-                background: '#fff',
+                background: sectionBg,
                 borderRadius: 12,
-                border: '1px solid #e5ecf8',
+                border: `1px solid ${panelBorder}`,
                 boxShadow: '0 6px 22px rgba(38,132,255,0.06)',
                 overflow: 'hidden',
                 display: 'flex',
@@ -655,8 +803,8 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                   gridTemplateColumns: '1.2fr 1.5fr 150px',
                   alignItems: 'center',
                   padding: '12px 14px',
-                  background: '#f7f9fc',
-                  color: '#5a6475',
+                  background: headerBg,
+                  color: themeToken.colorTextSecondary,
                   fontWeight: 600,
                   fontSize: 13,
                 }}
@@ -693,17 +841,19 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                     return (
                       <div
                         key={`${row.source_field}-${idx}`}
-                        style={{
+                      style={{
                           display: 'grid',
                           gridTemplateColumns: '1.2fr 1.5fr 150px',
                           alignItems: 'center',
                           gap: 12,
                           padding: '12px 14px',
-                          background: idx % 2 === 0 ? '#fff' : '#f9fbff',
-                          borderTop: idx === 0 ? '1px solid #eef3fb' : '1px solid #eef3fb',
+                          background: idx % 2 === 0 ? sectionBg : rowAltBg,
+                          borderTop: `1px solid ${panelBorder}`,
                         }}
                       >
-                        <span style={{ color: '#1f2a44', paddingLeft: 2, fontWeight: 600 }}>{row.source_field}</span>
+                        <span style={{ color: themeToken.colorText, paddingLeft: 2, fontWeight: 600 }}>
+                          {row.source_field}
+                        </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <Select
                             value={row.target_field}
@@ -720,8 +870,8 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                           {row.required && (
                             <span
                               style={{
-                                background: '#f0f4ff',
-                                color: '#2c3c67',
+                                background: themeToken.colorInfoBg,
+                                color: themeToken.colorInfoText,
                                 fontSize: 10,
                                 borderRadius: 6,
                                 padding: '2px 6px',
