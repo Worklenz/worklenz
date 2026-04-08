@@ -33,7 +33,6 @@ import './project-view.css';
 import { resetTaskListData } from '@/features/tasks/tasks.slice';
 import { resetBoardData } from '@/features/board/board-slice';
 import { resetTaskManagement } from '@/features/task-management/task-management.slice';
-import { setActiveTeam } from '@/features/teams/teamSlice';
 import { resetGrouping } from '@/features/task-management/grouping.slice';
 import { resetSelection } from '@/features/task-management/selection.slice';
 import { resetFields, setProjectContext } from '@/features/task-management/taskListFields.slice';
@@ -264,68 +263,9 @@ const ProjectView = React.memo(() => {
 
               // Check if it's a 403 error (access denied)
               if (payload?.statusCode === 403) {
-                // Check if user needs to switch teams (backend has already verified project access)
-                // The backend only sets requiresTeamSwitch=true if the user actually has access to the project
-                if (payload.requiresTeamSwitch && payload.projectTeamId) {
-                  console.log(
-                    'Project belongs to different team, switching teams...',
-                    payload.projectTeamId
-                  );
-
-                  // Show message that we're switching teams (only once)
-                  if (!hasShownErrorRef.current) {
-                    hasShownErrorRef.current = true;
-                    message.info(
-                      t('Switching to project team...', {
-                        defaultValue: 'Switching to project team...',
-                      })
-                    );
-                  }
-
-                  try {
-                    // Switch to the project's team
-                    const switchResult = await dispatch(setActiveTeam(payload.projectTeamId));
-
-                    if (setActiveTeam.fulfilled.match(switchResult)) {
-                      // Team switched successfully, reload the page to refresh session
-                      message.success(
-                        t('Team switched successfully', {
-                          defaultValue: 'Team switched successfully',
-                        })
-                      );
-
-                      // Reload the page to get new session with correct team
-                      window.location.reload();
-                      return;
-                    } else {
-                      // Team switch failed
-                      if (!hasShownErrorRef.current) {
-                        hasShownErrorRef.current = true;
-                        message.error(
-                          t('Failed to switch teams', {
-                            defaultValue: 'Failed to switch teams',
-                          })
-                        );
-                      }
-                      navigate('/worklenz/projects');
-                      return;
-                    }
-                  } catch (switchError) {
-                    console.error('Error switching teams:', switchError);
-                    if (!hasShownErrorRef.current) {
-                      hasShownErrorRef.current = true;
-                      message.error(
-                        t('Failed to switch teams', {
-                          defaultValue: 'Failed to switch teams',
-                        })
-                      );
-                    }
-                    navigate('/worklenz/projects');
-                    return;
-                  }
-                }
-
                 // Access denied (user doesn't have access to the project)
+                // Note: Backend now handles team switching automatically, so if we get 403,
+                // it means the user truly doesn't have access
                 console.log('Access denied to project:', projectId);
                 if (!hasShownErrorRef.current) {
                   hasShownErrorRef.current = true;
