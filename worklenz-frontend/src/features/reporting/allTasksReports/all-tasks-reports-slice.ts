@@ -68,6 +68,7 @@ interface AllTasksReportsState {
   selectedAssignees: string[];
   selectedLabels: string[];
   selectedPhases: string[];
+  selectedClients: string[];
 
   // Date filter
   dateFilterField: DateFilterField;
@@ -136,6 +137,7 @@ const initialState: AllTasksReportsState = {
   selectedAssignees: [],
   selectedLabels: [],
   selectedPhases: [],
+  selectedClients: [],
 
   // Date filter
   dateFilterField: 'due_date',
@@ -181,6 +183,7 @@ export const fetchAllTasks = createAsyncThunk(
       assignees: state.selectedAssignees,
       labels: state.selectedLabels,
       phases: state.selectedPhases,
+      clients: state.selectedClients,
       dateField: state.dateFilterField,
       dateFrom: state.dateFrom,
       dateTo: state.dateTo,
@@ -320,6 +323,21 @@ const allTasksReportsSlice = createSlice({
       state.index = 1;
     },
 
+    // Clients filter
+    setSelectedClients: (state, action: PayloadAction<string[]>) => {
+      state.selectedClients = action.payload;
+      state.index = 1;
+    },
+    toggleClient: (state, action: PayloadAction<string>) => {
+      const index = state.selectedClients.indexOf(action.payload);
+      if (index >= 0) {
+        state.selectedClients.splice(index, 1);
+      } else {
+        state.selectedClients.push(action.payload);
+      }
+      state.index = 1;
+    },
+
     // Date filter
     setDateFilterField: (state, action: PayloadAction<DateFilterField>) => {
       state.dateFilterField = action.payload;
@@ -388,6 +406,7 @@ const allTasksReportsSlice = createSlice({
       state.selectedAssignees = [];
       state.selectedLabels = [];
       state.selectedPhases = [];
+      state.selectedClients = [];
       state.dateFrom = null;
       state.dateTo = null;
       state.includeArchived = false;
@@ -475,6 +494,8 @@ export const {
   collapseAllGroups,
   resetAllFilters,
   resetState,
+  setSelectedClients, 
+  toggleClient,
 } = allTasksReportsSlice.actions;
 
 export default allTasksReportsSlice.reducer;

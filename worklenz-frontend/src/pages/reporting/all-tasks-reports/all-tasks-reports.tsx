@@ -51,6 +51,7 @@ const AllTasksReports = () => {
           assignees: state.selectedAssignees,
           labels: state.selectedLabels,
           phases: state.selectedPhases,
+          clients: state.selectedClients,
           dateField: state.dateFilterField,
           dateFrom: state.dateFrom,
           dateTo: state.dateTo,

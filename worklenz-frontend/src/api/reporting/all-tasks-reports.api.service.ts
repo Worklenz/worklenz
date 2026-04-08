@@ -18,6 +18,7 @@ export interface IAllTasksReportRequest {
   assignees?: string[];
   labels?: string[];
   phases?: string[];
+  clients?: string[];
   dateField?: 'due_date' | 'start_date' | 'created_at' | 'completed_at';
   dateFrom?: string | null;
   dateTo?: string | null;

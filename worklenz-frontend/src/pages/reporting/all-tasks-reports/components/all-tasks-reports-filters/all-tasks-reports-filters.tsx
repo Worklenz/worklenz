@@ -17,6 +17,7 @@ import {
 } from '@/features/reporting/allTasksReports/all-tasks-reports-slice';
 import './all-tasks-reports-filters.css';
 import AllTasksPhaseFilter from './all-tasks-phase-filter';
+import AllTasksClientFilter from './all-tasks-client-filter';
 
 const AllTasksReportsFilters = () => {
   const dispatch = useAppDispatch();
@@ -39,6 +40,7 @@ const AllTasksReportsFilters = () => {
         <AllTasksPriorityFilter />
         <AllTasksAssigneeFilter />
         <AllTasksPhaseFilter />
+        <AllTasksClientFilter />
       </Flex>
     ),
     []
