@@ -328,15 +328,26 @@ apiClient.interceptors.response.use(
         const token = teamInviteMatch[1];
         invitationRedirectService.storePendingInvitation(token, 'team', currentPath);
         console.log('[API] Stored team invitation context before 401 redirect');
+        alertService.warning('Authentication Required', 'Please log in to accept this team invitation');
+        // Add delay so user can see the warning message
+        setTimeout(() => {
+          window.location.href = '/auth/login';
+        }, 2000);
       } else if (projectInviteMatch) {
         const token = projectInviteMatch[1];
         invitationRedirectService.storePendingInvitation(token, 'project', currentPath);
         console.log('[API] Stored project invitation context before 401 redirect');
+        alertService.warning('Authentication Required', 'Please log in to accept this project invitation');
+        // Add delay so user can see the warning message
+        setTimeout(() => {
+          window.location.href = '/auth/login';
+        }, 2000);
+      } else {
+        alertService.error('Session Expired', 'Please log in again');
+        // Redirect immediately for non-invitation pages
+        window.location.href = '/auth/login';
       }
 
-      alertService.error('Session Expired', 'Please log in again');
-      // Redirect to login page or trigger re-authentication
-      window.location.href = '/auth/login';
       return Promise.reject(error);
     }
 

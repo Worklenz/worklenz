@@ -244,7 +244,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         tt('steps.uploadCsv', 'Upload CSV'),
         tt('steps.setupProject', 'Set up project'),
         tt('steps.mapFields', 'Map fields'),
-        tt('steps.mapValues', 'Map values'),
+        tt('steps.mapValues', 'Map statuses'),
         tt('steps.moveUsers', 'Move users'),
         tt('steps.reviewDetails', 'Review details'),
       ];
@@ -283,8 +283,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const [searchValue, setSearchValue] = React.useState<string>('');
   const [filter, setFilter] = React.useState<string>('all');
 
-  // Work type mapping step
-  const [workTypeMapping, setWorkTypeMapping] = React.useState<Record<string, string>>({});
+  // Status value mapping step
+  const [statusValueMapping, setStatusValueMapping] = React.useState<Record<string, string>>({});
 
   // Move users step state
   const [addUsers, setAddUsers] = React.useState<boolean>(true);
@@ -370,7 +370,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const {
     statusColumnKey,
     statusValues,
-    workTypeOptions,
+    statusOptions,
     csvUserRows,
     mappedFieldCount,
     modalDims,
@@ -583,7 +583,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     csvColumns,
     includeInImport,
     fieldMappings,
-    workTypeMapping,
+    statusValueMapping,
     csvUserRows,
     userEmails,
     ensureImportJob,
@@ -973,9 +973,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   filter={filter}
                   setFilter={setFilter}
                   statusColumnKey={statusColumnKey}
-                  workTypeOptions={workTypeOptions}
-                  workTypeMapping={workTypeMapping}
-                  setWorkTypeMapping={setWorkTypeMapping}
+                  statusOptions={statusOptions}
+                  statusValueMapping={statusValueMapping}
+                  setStatusValueMapping={setStatusValueMapping}
                   csvUserRows={csvUserRows}
                   userEmails={userEmails}
                   setUserEmails={setUserEmails}

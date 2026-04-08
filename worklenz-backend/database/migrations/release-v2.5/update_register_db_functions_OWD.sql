@@ -1,5 +1,5 @@
 -- Register user
-create function register_user(_body json) returns json
+CREATE OR REPLACE FUNCTION register_user(_body json) returns json
     language plpgsql
 as
 $$
@@ -123,7 +123,7 @@ alter function register_user(json) owner to postgres;
 
 
 -- Google Register user
-create function register_google_user(_body json) returns json
+CREATE OR REPLACE FUNCTION register_google_user(_body json) returns json
     language plpgsql
 as
 $$
@@ -234,7 +234,7 @@ alter function register_google_user(json) owner to postgres;
 
 
 -- Apple Register user
-create function register_apple_user(_body json) returns json
+CREATE OR REPLACE FUNCTION register_apple_user(_body json) returns json
     language plpgsql
 as
 $$

@@ -1,12 +1,12 @@
 import React from 'react';
 import { FixedSizeList, ListChildComponentProps } from 'react-window';
 import {
-  AutoComplete,
   Card,
   Checkbox,
   Collapse,
   InboxOutlined,
   Input,
+  PlusOutlined,
   Select,
   Switch,
   TableOutlined,
@@ -17,6 +17,16 @@ import {
 
 const MOVE_USERS_ROW_HEIGHT = 52;
 const MOVE_USERS_MAX_LIST_HEIGHT = 420;
+const CREATE_CUSTOM_FIELD_PREFIX = '__create_custom__:';
+
+const toCustomFieldKey = (value: string): string => {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return normalized ? normalized : 'custom_field';
+};
 
 interface WorkTypeOption {
   key: string;
@@ -60,9 +70,9 @@ interface CsvMappingStepsContentProps {
   filter: string;
   setFilter: React.Dispatch<React.SetStateAction<string>>;
   statusColumnKey?: string;
-  workTypeOptions: WorkTypeOption[];
-  workTypeMapping: Record<string, string>;
-  setWorkTypeMapping: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  statusOptions: WorkTypeOption[];
+  statusValueMapping: Record<string, string>;
+  setStatusValueMapping: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   csvUserRows: string[];
   userEmails: Record<string, string>;
   setUserEmails: React.Dispatch<React.SetStateAction<Record<string, string>>>;
@@ -134,9 +144,9 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
   filter,
   setFilter,
   statusColumnKey,
-  workTypeOptions,
-  workTypeMapping,
-  setWorkTypeMapping,
+  statusOptions,
+  statusValueMapping,
+  setStatusValueMapping,
   csvUserRows,
   userEmails,
   setUserEmails,
@@ -186,23 +196,6 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
     return map;
   }, [worklenzFieldOptions]);
 
-  const fieldValueByLabel = React.useMemo(() => {
-    const map = new Map<string, string>();
-    worklenzFieldOptions.forEach(option => {
-      map.set(option.label, option.value);
-    });
-    return map;
-  }, [worklenzFieldOptions]);
-
-  const autocompleteOptions = React.useMemo(
-    () =>
-      worklenzFieldOptions.map(option => ({
-        value: option.label,
-        label: option.label,
-      })),
-    [worklenzFieldOptions]
-  );
-
   const knownTargetKeys = React.useMemo(() => {
     const known = new Set<string>();
     worklenzFieldOptions.forEach(option => {
@@ -211,6 +204,33 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
     });
     return known;
   }, [worklenzFieldOptions]);
+
+  const buildMappingOptions = React.useCallback(
+    (columnName: string) => {
+      const createLabel = t('importStep.createCustomFieldFromColumn', {
+        defaultValue: 'Create custom field "{{column}}"',
+        column: columnName,
+      });
+
+      return [
+        ...worklenzFieldOptions.map(option => ({
+          value: option.value,
+          label: option.label,
+        })),
+        {
+          value: `${CREATE_CUSTOM_FIELD_PREFIX}${columnName}`,
+          label: (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <PlusOutlined />
+              {createLabel}
+            </span>
+          ),
+          searchLabel: createLabel.toLowerCase(),
+        },
+      ];
+    },
+    [t, worklenzFieldOptions]
+  );
 
   if (step === 2) {
     return (
@@ -382,23 +402,38 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
                     const normalizedStored = storedValue.toLowerCase().replace(/[^a-z0-9]/g, '');
                     const isCustomFieldCandidate =
                       !!normalizedStored && !knownTargetKeys.has(normalizedStored);
+                    const mappingOptions = buildMappingOptions(col);
                     return (
                       <>
-                        <AutoComplete
-                          placeholder={t('importStep.selectOrTypeField', {
-                            defaultValue: 'Select or type a field to map',
+                        <Select
+                          showSearch
+                          placeholder={t('importStep.selectFieldToMap', {
+                            defaultValue: 'Select a field to map',
                           })}
                           style={{ width: '100%' }}
-                          value={displayValue}
-                          onChange={val => {
-                            const normalized = fieldValueByLabel.get(val) || val;
-                            setFieldMappings(m => ({ ...m, [col]: normalized }));
+                          value={storedValue || undefined}
+                          optionFilterProp="searchLabel"
+                          onChange={value => {
+                            if ((value as string).startsWith(CREATE_CUSTOM_FIELD_PREFIX)) {
+                              const customFieldName = (value as string).slice(CREATE_CUSTOM_FIELD_PREFIX.length).trim();
+                              const normalizedCustomField = toCustomFieldKey(customFieldName);
+                              setFieldMappings(m => ({ ...m, [col]: normalizedCustomField }));
+                              setIncludeInImport(i => ({ ...i, [col]: true }));
+                              return;
+                            }
+                            setFieldMappings(m => ({ ...m, [col]: value as string }));
                           }}
-                          options={autocompleteOptions}
+                          options={[
+                            ...(storedValue && !mappingOptions.some(option => option.value === storedValue)
+                              ? [{ value: storedValue, label: displayValue, searchLabel: displayValue.toLowerCase() }]
+                              : []),
+                            ...mappingOptions,
+                          ]}
                           allowClear
-                          filterOption={(inputValue, option) =>
-                            option?.label?.toLowerCase().includes(inputValue.toLowerCase()) || false
-                          }
+                          filterOption={(inputValue, option) => {
+                            const searchValue = String(option?.searchLabel || '').toLowerCase();
+                            return searchValue.includes(inputValue.toLowerCase());
+                          }}
                         />
                         {isCustomFieldCandidate && (
                           <Typography.Text
@@ -436,7 +471,7 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
     const filteredValues = statusValues.filter(
       value =>
         value.toLowerCase().includes(searchValue.toLowerCase()) &&
-        (filter === 'all' || (filter === 'mapped' ? workTypeMapping[value] : !workTypeMapping[value]))
+        (filter === 'all' || (filter === 'mapped' ? statusValueMapping[value] : !statusValueMapping[value]))
     );
 
     const emptyValuesMessage = statusColumnKey
@@ -446,15 +481,20 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
     return (
       <div style={{ width: '100%' }}>
         <Typography.Title level={3} style={{ color: palette.text, marginBottom: 8 }}>
-          {t('importStep.mapValues', 'Map values to work types')}
+          {t('importStep.mapValues', 'Map values to statuses')}
         </Typography.Title>
         <Typography.Paragraph style={{ color: palette.textSecondary, marginBottom: 16 }}>
           {t(
             'importStep.mapValuesHelp',
             'Build more structure into your space by mapping values in your Status column to Worklenz statuses.'
           )}{' '}
-          <a href="#" style={{ color: palette.primary }}>
-            {t('importStep.mapValuesDocs', 'Read about mapping work types')}
+          <a
+            href="https://worklenz.com/blog/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: palette.primary }}
+          >
+            {t('importStep.mapValuesDocs', 'Read about mapping statuses')}
           </a>
         </Typography.Paragraph>
         <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
@@ -503,7 +543,7 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
           <span style={{ flex: 1 }}></span>
           <span style={{ flex: 2, display: 'flex', alignItems: 'center' }}>
             <TableOutlined style={{ marginRight: 8, color: palette.primary }} />
-            {t('importStep.worklenzWorkTypes', { defaultValue: 'Worklenz work types' })}
+            {t('importStep.worklenzWorkTypes', { defaultValue: 'Worklenz statuses' })}
           </span>
         </div>
 
@@ -530,10 +570,10 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
               </span>
               <span style={{ flex: 2 }}>
                 <Select
-                  value={workTypeMapping[value] || undefined}
-                  onChange={val => setWorkTypeMapping(m => ({ ...m, [value]: val }))}
+                  value={statusValueMapping[value] || undefined}
+                  onChange={val => setStatusValueMapping(m => ({ ...m, [value]: val }))}
                   placeholder={t('importStep.selectWorkType', {
-                    defaultValue: 'Select work type',
+                    defaultValue: 'Select status',
                   })}
                   style={{
                     width: '100%',
@@ -552,14 +592,14 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
                           fontSize: 13,
                         }}
                       >
-                        MAP TO A SUGGESTED WORK TYPE
+                        MAP TO A SUGGESTED STATUS
                       </div>
                       {menu}
                       <div style={{ borderTop: `1px solid ${palette.border}`, margin: '8px 0' }} />
                       <div
                         style={{ padding: '8px 12px', color: palette.primary, cursor: 'pointer' }}
                         onClick={() => {
-                          setWorkTypeMapping(m => {
+                          setStatusValueMapping(m => {
                             const copy = { ...m };
                             delete copy[value];
                             return copy;
@@ -572,7 +612,7 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
                   )}
                   optionLabelProp="label"
                 >
-                  {workTypeOptions.map(wt => (
+                  {statusOptions.map(wt => (
                     <Select.Option key={wt.key} value={wt.key} label={wt.label}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {wt.icon}

@@ -1,5 +1,21 @@
 import React from 'react';
-import { ApartmentOutlined, ArrowLeftOutlined, Button, Card, Input, PaperClipOutlined, RightOutlined, SearchOutlined, Select, Switch, TableOutlined, TeamOutlined, Typography } from '@/shared/antd-imports';
+import {
+  ApartmentOutlined,
+  ArrowLeftOutlined,
+  Button,
+  Card,
+  InfoCircleOutlined,
+  Input,
+  PaperClipOutlined,
+  RightOutlined,
+  SearchOutlined,
+  Select,
+  Switch,
+  TableOutlined,
+  TeamOutlined,
+  Tooltip,
+  Typography
+} from '@/shared/antd-imports';
 
 interface DirectIntegrationStepContentProps {
   step: number;
@@ -117,6 +133,24 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
     padding: 32,
   };
 
+  const renderLabelWithTooltip = (label: string, tooltip: string, ariaLabel: string) => (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+      }}
+    >
+      <span>{label}</span>
+      <Tooltip title={tooltip}>
+        <InfoCircleOutlined
+          aria-label={ariaLabel}
+          style={{ color: themeToken.colorPrimary, cursor: 'help' }}
+        />
+      </Tooltip>
+    </span>
+  );
+
   if (step === 0) {
     const workspaceOptions =
       lowerKey === 'asana'
@@ -153,13 +187,18 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
             {t('importStep.selectList', { defaultValue: 'Select a source' })}
           </Typography.Title>
           <Typography.Paragraph style={{ color: themeToken.colorTextSecondary }}>
-            {t('importStep.selectListHelp', {
-              defaultValue:
-                "Select the workspace and list/board you'd like to import data from. Required fields are marked with an asterisk.",
-            })}
+            {isJira
+              ? t('importStep.jiraSelectProjectHelp', {
+                  defaultValue:
+                    'Select the Jira site and project you would like to import from. Required fields are marked with an asterisk.',
+                })
+              : t('importStep.selectListHelp', {
+                  defaultValue:
+                    "Select the workspace and list/board you'd like to import data from. Required fields are marked with an asterisk.",
+                })}
           </Typography.Paragraph>
           <div style={{ width: '100%', maxWidth: 720, margin: '0 auto' }}>
-            {lowerKey !== 'monday' && lowerKey !== 'jira' && lowerKey !== 'trello' && (
+            {!isJira && lowerKey !== 'monday' && lowerKey !== 'trello' && (
               <>
                 <label>{t('importStep.workspaceLabel', 'Workspace *')}</label>
                 <Select
@@ -179,7 +218,16 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
             {isJira && (
               <>
                 <label style={{ display: 'block', marginBottom: 4 }}>
-                  {t('importStep.jiraDomain', 'Domain')}
+                  {renderLabelWithTooltip(
+                    t('importStep.jiraDomain', { defaultValue: 'Domain' }),
+                    t('importStep.jiraDomainSelectionTooltip', {
+                      defaultValue:
+                        'This is the Jira site you authenticated with. The project list below comes from this domain.',
+                    }),
+                    t('importStep.jiraDomainSelectionTooltipAriaLabel', {
+                      defaultValue: 'Information about the Jira domain field',
+                    })
+                  )}
                 </label>
                 <Typography.Text
                   style={{
@@ -197,7 +245,16 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
               {lowerKey === 'monday' || lowerKey === 'trello'
                 ? t('importStep.boardLabel', 'Board *')
                 : isJira
-                  ? t('importStep.jiraProjectLabel', 'Project *')
+                  ? renderLabelWithTooltip(
+                      t('importStep.jiraProjectLabel', { defaultValue: 'Project *' }),
+                      t('importStep.jiraProjectSelectionTooltip', {
+                        defaultValue:
+                          'Choose the Jira project to import. We use this selection to fetch issues, fields, and mappings for the import.',
+                      }),
+                      t('importStep.jiraProjectSelectionTooltipAriaLabel', {
+                        defaultValue: 'Information about the Jira project selector',
+                      })
+                    )
                   : t('importStep.projectLabel', 'List/Project *')}
             </label>
             {lowerKey === 'monday' ? (
@@ -446,6 +503,70 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                   </div>
                 </Card>
               ))}
+            </div>
+            <div
+              style={{
+                marginTop: 14,
+                borderRadius: 12,
+                border: `1px solid ${themeToken.colorBorder}`,
+                background: themeToken.colorFillQuaternary || themeToken.colorBgContainer,
+                padding: '14px 16px',
+              }}
+            >
+              <Typography.Text style={{ color: themeToken.colorText, fontWeight: 600 }}>
+                {t('importStep.importLimitationsTitle', {
+                  defaultValue: 'Import limitations',
+                })}
+              </Typography.Text>
+              <Typography.Paragraph style={{ color: themeToken.colorTextSecondary, margin: '6px 0 10px' }}>
+                {t('importStep.importLimitationsDescription', {
+                  defaultValue: 'Heads up before importing from {{source}}:',
+                  source: source.label || 'your source',
+                })}
+              </Typography.Paragraph>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {(
+                  lowerKey === 'jira'
+                    ? [
+                      t('importStep.limitationsJiraCommentFormat', {
+                        defaultValue: 'Rich-text comments are imported as plain text when advanced formatting is not supported.',
+                      }),
+                      t('importStep.limitationsJiraAttachmentPermission', {
+                        defaultValue: 'Attachments can be skipped if source file permissions or URLs are inaccessible.',
+                      }),
+                      t('importStep.limitationsJiraUserAttribution', {
+                        defaultValue: 'Comment and assignee attribution depends on matching users by email or mapped identity.',
+                      }),
+                    ]
+                    : lowerKey === 'asana'
+                      ? [
+                        t('importStep.limitationsAsanaSections', {
+                          defaultValue: 'Section values are mapped to statuses and may require manual refinement.',
+                        }),
+                        t('importStep.limitationsAsanaLikes', {
+                          defaultValue: 'Likes are imported as field values; reactions do not create social activity in Worklenz.',
+                        }),
+                        t('importStep.limitationsAsanaUsers', {
+                          defaultValue: 'Users who are not added to the team remain unresolved in assignee and reporter mappings.',
+                        }),
+                      ]
+                      : [
+                        t('importStep.limitationsGenericMapping', {
+                          defaultValue: 'Field mappings may require manual adjustment after import.',
+                        }),
+                        t('importStep.limitationsGenericUsers', {
+                          defaultValue: 'Unmatched users remain unresolved until they are added and mapped in Worklenz.',
+                        }),
+                        t('importStep.limitationsGenericAttachments', {
+                          defaultValue: 'Attachment import depends on source permissions and provider API availability.',
+                        }),
+                      ]
+                ).map((item, index) => (
+                  <Typography.Text key={`${item}-${index}`} style={{ color: themeToken.colorTextSecondary }}>
+                    • {item}
+                  </Typography.Text>
+                ))}
+              </div>
             </div>
           </div>
         </div>
