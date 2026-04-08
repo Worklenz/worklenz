@@ -285,6 +285,8 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
           t={t}
           themeToken={themeToken}
           spaceName={spaceName}
+          providerKey={lowerKey}
+          sourceLabel={sourceLabel}
           fieldMappings={fieldMappings}
           csvColumns={csvColumns}
           statusValueMapping={statusValueMapping}

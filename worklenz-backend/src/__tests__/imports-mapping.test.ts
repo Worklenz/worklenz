@@ -50,4 +50,22 @@ describe("mapRawToTaskFields", () => {
     expect(result.patch).toEqual({});
     expect(result.customValues).toEqual([]);
   });
+
+  it("keeps unknown target fields as custom columns", () => {
+    const raw = { "Customer Tier": "Enterprise" };
+    const mappings: FieldMappingRow[] = [
+      { source_field: "Customer Tier", target_field: "customer_tier", include: true },
+    ];
+
+    const result = mapRawToTaskFields(raw, mappings);
+
+    expect(result.patch).toEqual({});
+    expect(result.customValues).toEqual([
+      {
+        columnKey: "customertier",
+        columnName: "Customer Tier",
+        value: "Enterprise",
+      },
+    ]);
+  });
 });

@@ -12,6 +12,8 @@ interface CsvReviewStepContentProps {
   t: (key: string, defaultValueOrOptions?: any, options?: any) => string;
   themeToken: any;
   spaceName: string;
+  providerKey: string;
+  sourceLabel: string;
   fieldMappings: Record<string, string>;
   csvColumns: string[];
   statusValueMapping: Record<string, string>;
@@ -25,6 +27,8 @@ export const CsvReviewStepContent: React.FC<CsvReviewStepContentProps> = ({
   t,
   themeToken,
   spaceName,
+  providerKey,
+  sourceLabel,
   fieldMappings,
   csvColumns,
   statusValueMapping,
@@ -42,6 +46,48 @@ export const CsvReviewStepContent: React.FC<CsvReviewStepContentProps> = ({
     return addUsers && !!email && email.includes('@');
   }).length;
   const workItems = csvRows.length;
+  const limitationItems = React.useMemo(() => {
+    const lowerProvider = (providerKey || '').toLowerCase();
+    if (lowerProvider === 'jira') {
+      return [
+        t('importStep.limitationsJiraCommentFormat', {
+          defaultValue: 'Rich-text comments are imported as plain text when advanced formatting is not supported.',
+        }),
+        t('importStep.limitationsJiraAttachmentPermission', {
+          defaultValue: 'Attachments can be skipped if source file permissions or URLs are inaccessible.',
+        }),
+        t('importStep.limitationsJiraUserAttribution', {
+          defaultValue: 'Comment and assignee attribution depends on matching users by email or mapped identity.',
+        }),
+      ];
+    }
+
+    if (lowerProvider === 'asana') {
+      return [
+        t('importStep.limitationsAsanaSections', {
+          defaultValue: 'Section values are mapped to statuses and may require manual refinement.',
+        }),
+        t('importStep.limitationsAsanaLikes', {
+          defaultValue: 'Likes are imported as field values; reactions do not create social activity in Worklenz.',
+        }),
+        t('importStep.limitationsAsanaUsers', {
+          defaultValue: 'Users who are not added to the team remain unresolved in assignee and reporter mappings.',
+        }),
+      ];
+    }
+
+    return [
+      t('importStep.limitationsCsvFormatting', {
+        defaultValue: 'CSV formulas and visual formatting are not imported; only cell values are used.',
+      }),
+      t('importStep.limitationsCsvDates', {
+        defaultValue: 'Date parsing uses detected formats and may need manual field/status adjustments after import.',
+      }),
+      t('importStep.limitationsCsvUsers', {
+        defaultValue: 'User references without valid emails stay unassigned until users are matched in Worklenz.',
+      }),
+    ];
+  }, [providerKey, t]);
 
   const handleDownloadConfig = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
@@ -204,6 +250,35 @@ export const CsvReviewStepContent: React.FC<CsvReviewStepContentProps> = ({
         {t('importStep.downloadConfigurationSuffix', {
           defaultValue: 'to use the same space preferences in your next import.',
         })}
+      </div>
+      <div
+        style={{
+          marginTop: 20,
+          maxWidth: 600,
+          borderRadius: 12,
+          border: `1px solid ${themeToken.colorBorder}`,
+          background: themeToken.colorFillQuaternary || themeToken.colorBgContainer,
+          padding: '14px 16px',
+        }}
+      >
+        <Typography.Text style={{ color: themeToken.colorText, fontWeight: 600 }}>
+          {t('importStep.importLimitationsTitle', {
+            defaultValue: 'Import limitations',
+          })}
+        </Typography.Text>
+        <Typography.Paragraph style={{ color: themeToken.colorTextSecondary, margin: '6px 0 10px' }}>
+          {t('importStep.importLimitationsDescription', {
+            defaultValue: 'Heads up before importing from {{source}}:',
+            source: sourceLabel || 'your source',
+          })}
+        </Typography.Paragraph>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {limitationItems.map((item, index) => (
+            <Typography.Text key={`${item}-${index}`} style={{ color: themeToken.colorTextSecondary }}>
+              • {item}
+            </Typography.Text>
+          ))}
+        </div>
       </div>
     </div>
   );
