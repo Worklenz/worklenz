@@ -37,22 +37,6 @@ import {
 } from '@/api/reporting/team-lead-members.api.service';
 import { isCurrentUserAdmin } from '@/utils/team-lead-utils';
 
-const AVATAR_COLORS = [
-  '#f56a00', '#7265e6', '#ffbf00', '#00a2ae',
-  '#52c41a', '#eb2f96', '#722ed1', '#fa541c',
-  '#13c2c2', '#faad14', '#a0d911', '#eb4034',
-  '#9254de', '#36cfc9', '#d4380d', '#389e0d',
-];
-
-const getAvatarColor = (name: string = '', colorCode?: string): string => {
-  if (colorCode) return colorCode;
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) * (i + 1) + ((hash << 5) - hash);
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-};
-
 // Removed unused interface - using TeamLeadWithMembers from API service instead
 
 const Members: React.FC = () => {
@@ -598,6 +582,7 @@ const Members: React.FC = () => {
             }}
           >
             {filteredMembers.map(member => {
+              
               const hasAvatar = !!member.avatar_url && member.avatar_url.trim() !== '';
               return (
                 <div
@@ -615,11 +600,11 @@ const Members: React.FC = () => {
                   <Avatar
                     src={hasAvatar ? member.avatar_url : undefined}
                     size="small"
-                    style={
-                      !hasAvatar
-                        ? { backgroundColor: getAvatarColor(member.name, member.color_code), fontSize: '12px' }
-                        : undefined
-                    }
+                   style={
+  !hasAvatar
+    ? { backgroundColor: member.color_code?.slice(0, 7), fontSize: '12px' }
+    : undefined
+}
                   >
                     {!hasAvatar ? member.name?.charAt(0).toUpperCase() : null}
                   </Avatar>
