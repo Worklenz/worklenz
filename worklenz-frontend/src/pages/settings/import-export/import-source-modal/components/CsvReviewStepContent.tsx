@@ -14,7 +14,7 @@ interface CsvReviewStepContentProps {
   spaceName: string;
   fieldMappings: Record<string, string>;
   csvColumns: string[];
-  workTypeMapping: Record<string, string>;
+  statusValueMapping: Record<string, string>;
   csvUserRows: string[];
   userEmails: Record<string, string>;
   addUsers: boolean;
@@ -27,7 +27,7 @@ export const CsvReviewStepContent: React.FC<CsvReviewStepContentProps> = ({
   spaceName,
   fieldMappings,
   csvColumns,
-  workTypeMapping,
+  statusValueMapping,
   csvUserRows,
   userEmails,
   addUsers,
@@ -36,12 +36,28 @@ export const CsvReviewStepContent: React.FC<CsvReviewStepContentProps> = ({
   const reviewSpaceName = spaceName || t('importStep.defaultProjectName', 'Imported project');
   const mappedFields = Object.values(fieldMappings).filter(Boolean).length;
   const totalFields = csvColumns.length;
-  const workTypes = Object.values(workTypeMapping).filter(Boolean).length || 1;
+  const workTypes = Object.values(statusValueMapping).filter(Boolean).length || 1;
   const usersCount = csvUserRows.filter(user => {
     const email = (userEmails[user] || '').trim();
     return addUsers && !!email && email.includes('@');
   }).length;
   const workItems = csvRows.length;
+
+  const handleDownloadConfig = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const config = {
+      spaceName: reviewSpaceName,
+      fieldMappings,
+      statusValueMapping,
+    };
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'worklenz-import-config.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
   const cardStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
@@ -121,14 +137,14 @@ export const CsvReviewStepContent: React.FC<CsvReviewStepContentProps> = ({
           <div>
             <div style={{ color: themeToken.colorText, fontWeight: 600, fontSize: 18 }}>
               {t('importStep.reviewWorkTypesCardTitle', {
-                defaultValue: '{{count}} work type',
+                defaultValue: '{{count}} status',
                 count: workTypes,
               })}
             </div>
             <div style={{ color: themeToken.colorTextSecondary, fontSize: 15 }}>
               {t('importStep.reviewWorkTypesCardDescription', {
                 defaultValue:
-                  'If values are not mapped to Worklenz work types, all work items are mapped to Task (level 0) by default.',
+                  'If values are not mapped to Worklenz statuses, all tasks are mapped to Task (level 0) by default.',
               })}
             </div>
           </div>
@@ -167,25 +183,20 @@ export const CsvReviewStepContent: React.FC<CsvReviewStepContentProps> = ({
           <div>
             <div style={{ color: themeToken.colorText, fontWeight: 600, fontSize: 18 }}>
               {t('importStep.reviewWorkItemsCardTitle', {
-                defaultValue: '{{count}} work items',
+                defaultValue: '{{count}} tasks',
                 count: workItems,
               })}
             </div>
             <div style={{ color: themeToken.colorTextSecondary, fontSize: 15 }}>
               {t('importStep.reviewWorkItemsCardDescription', {
-                defaultValue: 'Each row of the CSV data will be imported as a work item.',
-              })}{' '}
-              <a href="#" style={{ color: themeToken.colorPrimary }}>
-                {t('importStep.reviewWorkItemsDocs', {
-                  defaultValue: 'What is a work item?',
-                })}
-              </a>
+                defaultValue: 'Each row of the CSV data will be imported as a task.',
+              })}
             </div>
           </div>
         </div>
       </div>
       <div style={{ marginTop: 32, color: themeToken.colorTextSecondary, fontSize: 15 }}>
-        <a href="#" style={{ color: themeToken.colorTextSecondary, textDecoration: 'underline' }}>
+        <a href="#" onClick={handleDownloadConfig} style={{ color: themeToken.colorTextSecondary, textDecoration: 'underline' }}>
           {t('importStep.downloadConfiguration', {
             defaultValue: 'Download a configuration file',
           })}
