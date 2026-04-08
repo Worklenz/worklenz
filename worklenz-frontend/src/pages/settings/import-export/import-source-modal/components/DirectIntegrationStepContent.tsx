@@ -704,6 +704,12 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
         "We've automatically mapped your {{source}} data into system and custom fields in Worklenz. You can customize some fields that have other compatible field types. More about field mapping.",
         { source: source.label || 'source' }
       );
+      const panelBg = themeToken.colorBgContainer;
+      const panelBorder = themeToken.colorBorder;
+      const panelShadow = '0 10px 40px rgba(38,132,255,0.08)';
+      const sectionBg = themeToken.colorBgElevated;
+      const headerBg = themeToken.colorFillAlter;
+      const rowAltBg = themeToken.colorFillQuaternary;
 
       return (
         <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -714,11 +720,11 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
               minWidth: 820,
               height: 657.26,
               minHeight: 657.26,
-              background: '#f5f8ff',
+              background: panelBg,
               borderRadius: 10,
-              border: '1px solid #e4ecfb',
+              border: `1px solid ${panelBorder}`,
               padding: '14px 32px 40px',
-              boxShadow: '0 10px 40px rgba(38,132,255,0.08)',
+              boxShadow: panelShadow,
               display: 'flex',
               flexDirection: 'column',
               gap: 8,
@@ -728,7 +734,13 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
               <a
                 href="#"
-                style={{ color: '#2684ff', display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 600 }}
+                style={{
+                  color: themeToken.colorPrimary,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontWeight: 600,
+                }}
                 onClick={e => {
                   e.preventDefault();
                   setReviewSubScreen('main');
@@ -741,7 +753,16 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
             </div>
 
             <div>
-              <Typography.Title level={3} style={{ margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Typography.Title
+                level={3}
+                style={{
+                  margin: '0 0 8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  color: themeToken.colorTextHeading,
+                }}
+              >
                 {fieldMappingTitle}
               </Typography.Title>
               <Typography.Paragraph style={{ margin: 0, color: themeToken.colorTextSecondary }}>
@@ -753,15 +774,21 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
               <Input
                 placeholder={t('importStep.searchFields', 'Search fields')}
                 prefix={<SearchOutlined />}
-                style={{ width: '100%', maxWidth: 560, background: '#fff', borderColor: '#e1e7f5' }}
+                style={{
+                  width: '100%',
+                  maxWidth: 560,
+                  background: sectionBg,
+                  borderColor: panelBorder,
+                  color: themeToken.colorText,
+                }}
               />
             </div>
 
             <div
               style={{
-                background: '#fff',
+                background: sectionBg,
                 borderRadius: 12,
-                border: '1px solid #e5ecf8',
+                border: `1px solid ${panelBorder}`,
                 boxShadow: '0 6px 22px rgba(38,132,255,0.06)',
                 overflow: 'hidden',
                 display: 'flex',
@@ -776,8 +803,8 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                   gridTemplateColumns: '1.2fr 1.5fr 150px',
                   alignItems: 'center',
                   padding: '12px 14px',
-                  background: '#f7f9fc',
-                  color: '#5a6475',
+                  background: headerBg,
+                  color: themeToken.colorTextSecondary,
                   fontWeight: 600,
                   fontSize: 13,
                 }}
@@ -814,17 +841,19 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                     return (
                       <div
                         key={`${row.source_field}-${idx}`}
-                        style={{
+                      style={{
                           display: 'grid',
                           gridTemplateColumns: '1.2fr 1.5fr 150px',
                           alignItems: 'center',
                           gap: 12,
                           padding: '12px 14px',
-                          background: idx % 2 === 0 ? '#fff' : '#f9fbff',
-                          borderTop: idx === 0 ? '1px solid #eef3fb' : '1px solid #eef3fb',
+                          background: idx % 2 === 0 ? sectionBg : rowAltBg,
+                          borderTop: `1px solid ${panelBorder}`,
                         }}
                       >
-                        <span style={{ color: '#1f2a44', paddingLeft: 2, fontWeight: 600 }}>{row.source_field}</span>
+                        <span style={{ color: themeToken.colorText, paddingLeft: 2, fontWeight: 600 }}>
+                          {row.source_field}
+                        </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <Select
                             value={row.target_field}
@@ -841,8 +870,8 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                           {row.required && (
                             <span
                               style={{
-                                background: '#f0f4ff',
-                                color: '#2c3c67',
+                                background: themeToken.colorInfoBg,
+                                color: themeToken.colorInfoText,
                                 fontSize: 10,
                                 borderRadius: 6,
                                 padding: '2px 6px',

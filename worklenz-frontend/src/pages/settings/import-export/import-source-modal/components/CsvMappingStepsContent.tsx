@@ -232,6 +232,21 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
     [t, worklenzFieldOptions]
   );
 
+  const filteredColumns = React.useMemo(() => {
+    const normalizedSearch = searchValue.trim().toLowerCase();
+
+    return csvColumns.filter(columnName => {
+      const matchesSearch =
+        normalizedSearch.length === 0 || columnName.toLowerCase().includes(normalizedSearch);
+
+      const isMapped = !!fieldMappings[columnName];
+      const matchesFilter =
+        filter === 'all' || (filter === 'mapped' ? isMapped : !isMapped);
+
+      return matchesSearch && matchesFilter;
+    });
+  }, [csvColumns, fieldMappings, filter, searchValue]);
+
   if (step === 2) {
     return (
       <div style={{ width: '100%' }}>
@@ -324,6 +339,8 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
             placeholder={t('importStep.searchCsvColumns', {
               defaultValue: 'Search columns in CSV',
             })}
+            value={searchValue}
+            onChange={e => setSearchValue(e.target.value)}
             style={{
               width: 260,
               background: palette.inputBg,
@@ -331,7 +348,7 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
               border: `1px solid ${palette.border}`,
             }}
           />
-          <Select defaultValue="all" style={{ width: 120 }}>
+          <Select value={filter} onChange={setFilter} style={{ width: 120 }}>
             <Select.Option value="all">
               {t('importStep.fieldsFilterAll', { defaultValue: 'Fields: All' })}
             </Select.Option>
@@ -381,8 +398,14 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
                 defaultValue: 'Upload a CSV file to map fields.',
               })}
             </div>
+          ) : filteredColumns.length === 0 ? (
+            <div style={{ color: palette.textMuted, margin: '24px 0' }}>
+              {t('importStep.noMatchingColumns', {
+                defaultValue: 'No columns match your search or filter.',
+              })}
+            </div>
           ) : (
-            csvColumns.map(col => (
+            filteredColumns.map(col => (
               <div
                 key={col}
                 style={{

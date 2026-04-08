@@ -67,7 +67,6 @@ export const getThemeConfig = (currentTheme: 'light' | 'dark'): ThemeConfig => (
     Table: {
       borderRadius: 8,
       headerBg: currentTheme === 'dark' ? '#1f1f1f' : '#fafafa',
-      rowHoverBg: currentTheme === 'dark' ? '#000' : '#edebf0',
     },
     Statistic: {
       contentFontSize: 28,
