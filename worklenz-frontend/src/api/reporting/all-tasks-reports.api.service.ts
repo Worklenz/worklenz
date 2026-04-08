@@ -18,6 +18,7 @@ export interface IAllTasksReportRequest {
   assignees?: string[];
   labels?: string[];
   phases?: string[];
+  clients?: string[];
   dateField?: 'due_date' | 'start_date' | 'created_at' | 'completed_at';
   dateFrom?: string | null;
   dateTo?: string | null;
@@ -53,12 +54,23 @@ export interface IAllTasksReportResponse {
   groups?: IAllTasksGroup[];
 }
 
+export interface IPhase {
+  id: string;
+  name: string;
+}
+
 export const allTasksReportsApiService = {
   getAllTasks: async (
     body: IAllTasksReportRequest
   ): Promise<IServerResponse<IAllTasksReportResponse>> => {
     const url = `${rootUrl}/all-tasks`;
     const response = await apiClient.post<IServerResponse<IAllTasksReportResponse>>(url, body);
+    return response.data;
+  },
+
+  getAllPhases: async (teams: string[], projects: string[]): Promise<IServerResponse<IPhase[]>> => {
+    const url = `${rootUrl}/all-tasks/phases`;
+    const response = await apiClient.post<IServerResponse<IPhase[]>>(url, { teams, projects });
     return response.data;
   },
 
