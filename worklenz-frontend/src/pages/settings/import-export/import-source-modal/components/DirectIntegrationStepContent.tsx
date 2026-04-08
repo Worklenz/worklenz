@@ -4,6 +4,7 @@ import {
   ArrowLeftOutlined,
   Button,
   Card,
+  Flex,
   InfoCircleOutlined,
   Input,
   PaperClipOutlined,
@@ -124,11 +125,56 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
     setFieldMappingRows,
   } = props;
 
+  const humanizeFieldKey = React.useCallback((raw: string) => {
+    // Fallback for custom/unrecognized field keys: "startDate" -> "Start Date", "due_date" -> "Due date".
+    const spaced = String(raw || '')
+      .replace(/[_-]+/g, ' ')
+      .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+      .replace(/([a-zA-Z])([0-9])/g, '$1 $2')
+      .replace(/([0-9])([a-zA-Z])/g, '$1 $2')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!spaced) return raw;
+    return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+  }, []);
+
+  const CREATE_CUSTOM_FIELD_PREFIX = '__create_custom__:';
+  const toCustomFieldKey = React.useCallback((name: string) => {
+    const normalized = String(name || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+    return normalized ? normalized : 'custom_field';
+  }, []);
+
+  const worklenzFieldLabelByValue = React.useMemo(() => {
+    return new Map(worklenzFieldOptions.map(option => [option.value, option.label]));
+  }, [worklenzFieldOptions]);
+
+  const recommendedTargets = React.useMemo(() => {
+    return new Set([
+      'key',
+      'description',
+      'status',
+      'assignees',
+      'labels',
+      'priority',
+      'progress',
+      'startDate',
+      'dueDate',
+    ]);
+  }, []);
+
+  const [fieldMappingSearchValue, setFieldMappingSearchValue] = React.useState('');
+  const [showIncludedOnly, setShowIncludedOnly] = React.useState(true);
+
   const directContainerStyle = {
     width: '100%',
     maxWidth: 820,
     margin: '0 auto',
-    background: themeToken.colorPrimaryBg,
+    background: themeToken.colorBgContainer,
     borderRadius: 12,
     padding: 32,
   };
@@ -401,7 +447,9 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
           iconBg: '#1f6feb',
           icon: <ApartmentOutlined style={{ color: '#fff' }} />,
           action: () => setReviewSubScreen('hierarchy'),
-          control: <RightOutlined style={{ color: '#9ca3af', fontSize: 16 }} />,
+          control: (
+            <RightOutlined style={{ color: themeToken.colorTextSecondary, fontSize: 16 }} />
+          ),
         },
         {
           key: 'fieldMapping',
@@ -420,7 +468,9 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
           iconBg: '#6e56cf',
           icon: <TableOutlined style={{ color: '#fff' }} />,
           action: () => setReviewSubScreen('fieldMapping'),
-          control: <RightOutlined style={{ color: '#9ca3af', fontSize: 16 }} />,
+          control: (
+            <RightOutlined style={{ color: themeToken.colorTextSecondary, fontSize: 16 }} />
+          ),
         },
         {
           key: 'importMembers',
@@ -469,9 +519,6 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                   onClick={card.action}
                   style={{
                     borderRadius: 12,
-                    background: '#fff',
-                    boxShadow: '0 12px 34px rgba(38,132,255,0.12)',
-                    border: '1px solid #e8eef9',
                     cursor: card.action ? 'pointer' : 'default',
                   }}
                   bodyStyle={{ padding: 14 }}
@@ -574,6 +621,11 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
     }
 
     if (reviewSubScreen === 'hierarchy') {
+      const panelBg = themeToken.colorBgContainer;
+      const panelBorder = themeToken.colorBorder;
+      const subtleFill = themeToken.colorFillQuaternary || themeToken.colorFillSecondary;
+      const subtleBorder = themeToken.colorBorderSecondary || themeToken.colorBorder;
+
       return (
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <div
@@ -581,8 +633,9 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
               width: '100%',
               maxWidth: 820,
               minHeight: 469,
-              background: '#2684FF08',
+              background: panelBg,
               borderRadius: 10,
+              border: `1px solid ${panelBorder}`,
               padding: '40px 40px 20px',
               display: 'flex',
               flexDirection: 'column',
@@ -592,7 +645,11 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
               <a
                 href="#"
-                style={{ color: '#2684FF', display: 'inline-flex', alignItems: 'center' }}
+                style={{
+                  color: themeToken.colorPrimary,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                }}
                 onClick={e => {
                   e.preventDefault();
                   setReviewSubScreen('main');
@@ -620,20 +677,20 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                 style={{
                   padding: '8px 14px',
                   borderRadius: 8,
-                  background: '#F8C7C7',
-                  color: '#b11e1e',
+                  background: themeToken.colorErrorBg,
+                  color: themeToken.colorErrorText,
                   fontWeight: 600,
                 }}
               >
                 {source.label}
               </span>
-              <span style={{ fontSize: 16, color: '#111' }}>→</span>
+              <span style={{ fontSize: 16, color: themeToken.colorText }}>→</span>
               <span
                 style={{
                   padding: '8px 14px',
                   borderRadius: 8,
-                  background: '#C8D9F4',
-                  color: '#0b3c91',
+                  background: themeToken.colorInfoBg,
+                  color: themeToken.colorInfoText,
                   fontWeight: 700,
                 }}
               >
@@ -643,10 +700,9 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
 
             <div
               style={{
-                background: '#fff',
+                background: panelBg,
                 borderRadius: 12,
-                border: '1px solid #e8eef9',
-                boxShadow: '0 8px 26px rgba(38,132,255,0.12)',
+                border: `1px solid ${subtleBorder}`,
                 padding: 6,
                 display: 'flex',
                 flexDirection: 'column',
@@ -662,13 +718,17 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                     alignItems: 'center',
                     gap: 12,
                     padding: '12px 14px',
-                    background: '#fff',
+                    background: subtleFill,
                     borderRadius: 10,
-                    border: '1px solid #eef3fb',
+                    border: `1px solid ${subtleBorder}`,
                   }}
                 >
-                  <div style={{ color: '#1f2a44', fontWeight: 600, fontSize: 15 }}>{row.source_level}</div>
-                  <RightOutlined style={{ color: '#9ca3af', fontSize: 12 }} />
+                  <div style={{ color: themeToken.colorText, fontWeight: 600, fontSize: 15 }}>
+                    {row.source_level}
+                  </div>
+                  <RightOutlined
+                    style={{ color: themeToken.colorTextSecondary, fontSize: 12 }}
+                  />
                   <Select
                     value={row.target_level}
                     style={{ width: '100%' }}
@@ -706,10 +766,27 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
       );
       const panelBg = themeToken.colorBgContainer;
       const panelBorder = themeToken.colorBorder;
-      const panelShadow = '0 10px 40px rgba(38,132,255,0.08)';
       const sectionBg = themeToken.colorBgElevated;
       const headerBg = themeToken.colorFillAlter;
       const rowAltBg = themeToken.colorFillQuaternary;
+
+      const normalizedSearch = fieldMappingSearchValue.trim().toLowerCase();
+      const visibleRows = fieldMappingRows
+        .map((row, index) => ({ row, index }))
+        .filter(({ row }) => {
+          const isIncluded = row.required ? true : row.include !== false;
+          if (showIncludedOnly && !isIncluded) return false;
+          if (!normalizedSearch) return true;
+
+          const targetLabel =
+            worklenzFieldLabelByValue.get(row.target_field) ||
+            humanizeFieldKey(row.target_field || '');
+          return (
+            String(row.source_field || '').toLowerCase().includes(normalizedSearch) ||
+            String(row.target_field || '').toLowerCase().includes(normalizedSearch) ||
+            String(targetLabel || '').toLowerCase().includes(normalizedSearch)
+          );
+        });
 
       return (
         <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -724,7 +801,6 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
               borderRadius: 10,
               border: `1px solid ${panelBorder}`,
               padding: '14px 32px 40px',
-              boxShadow: panelShadow,
               display: 'flex',
               flexDirection: 'column',
               gap: 8,
@@ -770,10 +846,20 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
               </Typography.Paragraph>
             </div>
 
-            <div style={{ marginTop: 20, marginBottom: 16 }}>
+            <Flex
+              style={{ marginTop: 20, marginBottom: 16 }}
+              align="center"
+              justify="space-between"
+              gap={12}
+              wrap
+            >
               <Input
                 placeholder={t('importStep.searchFields', 'Search fields')}
                 prefix={<SearchOutlined />}
+                value={fieldMappingSearchValue}
+                allowClear
+                onChange={e => setFieldMappingSearchValue(e.target.value)}
+                aria-label={t('importStep.searchFields', { defaultValue: 'Search fields' })}
                 style={{
                   width: '100%',
                   maxWidth: 560,
@@ -782,14 +868,31 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                   color: themeToken.colorText,
                 }}
               />
-            </div>
+              <Flex align="center" gap={12} wrap>
+                <Switch checked={showIncludedOnly} onChange={setShowIncludedOnly} />
+                <Typography.Text style={{ color: themeToken.colorTextSecondary }}>
+                  {t('importStep.showIncludedOnly', { defaultValue: 'Show included only' })}
+                </Typography.Text>
+                <Button
+                  onClick={() =>
+                    setFieldMappingRows(rows =>
+                      rows.map(row => ({
+                        ...row,
+                        include: !!row.required || recommendedTargets.has(row.target_field),
+                      }))
+                    )
+                  }
+                >
+                  {t('importStep.resetRecommended', { defaultValue: 'Reset to recommended' })}
+                </Button>
+              </Flex>
+            </Flex>
 
             <div
               style={{
                 background: sectionBg,
                 borderRadius: 12,
                 border: `1px solid ${panelBorder}`,
-                boxShadow: '0 6px 22px rgba(38,132,255,0.06)',
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
@@ -833,21 +936,76 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                     WebkitOverflowScrolling: 'touch',
                   }}
                 >
-                  {fieldMappingRows.map((row, idx) => {
-                    const options = [{ value: row.target_field, label: row.target_field }, ...worklenzFieldOptions].filter(
-                      (option, optionIdx, arr) => arr.findIndex(a => a.value === option.value) === optionIdx
-                    );
+                  {visibleRows.map(({ row, index: rowIndex }) => {
+                    const hasKnownLabel = worklenzFieldLabelByValue.has(row.target_field);
+                    const isCustomFieldCandidate =
+                      !!row.target_field && !worklenzFieldLabelByValue.has(row.target_field);
+
+                    const selectedOption =
+                      row.target_field && !hasKnownLabel
+                        ? [
+                            {
+                              value: row.target_field,
+                              label:
+                                worklenzFieldLabelByValue.get(row.target_field) ||
+                                humanizeFieldKey(row.target_field),
+                            },
+                          ]
+                        : [];
+
+                    const systemOptions = worklenzFieldOptions.map(option => ({
+                      value: option.value,
+                      label: option.label,
+                      searchLabel: String(option.label || option.value).toLowerCase(),
+                    }));
+
+                    const customCreateOption = {
+                      value: `${CREATE_CUSTOM_FIELD_PREFIX}${row.source_field}`,
+                      label: t('importStep.createCustomField', {
+                        defaultValue: 'Create custom field: {{name}}',
+                        name: row.source_field,
+                      }),
+                      searchLabel: String(row.source_field || '').toLowerCase(),
+                    };
+
+                    const options = [
+                      ...(selectedOption.length
+                        ? [
+                            {
+                              label: t('importStep.selectedField', {
+                                defaultValue: 'Selected',
+                              }),
+                              options: selectedOption.map(option => ({
+                                ...option,
+                                searchLabel: String(option.label || option.value).toLowerCase(),
+                              })),
+                            },
+                          ]
+                        : []),
+                      {
+                        label: t('importStep.worklenzFields', {
+                          defaultValue: 'Worklenz fields',
+                        }),
+                        options: systemOptions,
+                      },
+                      {
+                        label: t('importStep.customFields', {
+                          defaultValue: 'Custom fields',
+                        }),
+                        options: [customCreateOption],
+                      },
+                    ];
 
                     return (
                       <div
-                        key={`${row.source_field}-${idx}`}
+                        key={`${row.source_field}-${rowIndex}`}
                       style={{
                           display: 'grid',
                           gridTemplateColumns: '1.2fr 1.5fr 150px',
                           alignItems: 'center',
                           gap: 12,
                           padding: '12px 14px',
-                          background: idx % 2 === 0 ? sectionBg : rowAltBg,
+                          background: rowIndex % 2 === 0 ? sectionBg : rowAltBg,
                           borderTop: `1px solid ${panelBorder}`,
                         }}
                       >
@@ -858,15 +1016,40 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                           <Select
                             value={row.target_field}
                             style={{ width: '100%' }}
+                            showSearch
+                            optionFilterProp="searchLabel"
                             options={options}
                             onChange={value =>
                               setFieldMappingRows(rows =>
                                 rows.map((current, currentIdx) =>
-                                  currentIdx === idx ? { ...current, target_field: value as string } : current
+                                  currentIdx === rowIndex
+                                    ? (() => {
+                                        const nextValue = value as string;
+                                        if (nextValue.startsWith(CREATE_CUSTOM_FIELD_PREFIX)) {
+                                          const customFieldName = nextValue
+                                            .slice(CREATE_CUSTOM_FIELD_PREFIX.length)
+                                            .trim();
+                                          const normalized = toCustomFieldKey(customFieldName);
+                                          return {
+                                            ...current,
+                                            target_field: normalized,
+                                            include: true,
+                                          };
+                                        }
+                                        return { ...current, target_field: nextValue };
+                                      })()
+                                    : current
                                 )
                               )
                             }
                           />
+                          {isCustomFieldCandidate && (
+                            <Typography.Text style={{ color: themeToken.colorPrimary, fontSize: 12 }}>
+                              {t('importStep.customFieldWillBeCreated', {
+                                defaultValue: 'Will create custom field',
+                              })}
+                            </Typography.Text>
+                          )}
                           {row.required && (
                             <span
                               style={{
@@ -886,11 +1069,12 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                         </div>
                         <div style={{ textAlign: 'center' }}>
                           <Switch
-                            checked={row.include !== false}
+                            checked={row.required ? true : row.include !== false}
+                            disabled={!!row.required}
                             onChange={checked =>
                               setFieldMappingRows(rows =>
                                 rows.map((current, currentIdx) =>
-                                  currentIdx === idx ? { ...current, include: checked } : current
+                                  currentIdx === rowIndex ? { ...current, include: checked } : current
                                 )
                               )
                             }

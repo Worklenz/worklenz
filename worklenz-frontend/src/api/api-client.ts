@@ -102,6 +102,14 @@ apiClient.interceptors.request.use(
   async config => {
     const requestStart = performance.now();
 
+    // Import operations (auto-map, ingest, commit) can legitimately take longer than our default timeout.
+    // Keep the global timeout low for normal API calls, but relax it for import endpoints.
+    const IMPORT_TIMEOUT_MS = 180_000; // 3 minutes
+    const isImportEndpoint = (config.url || '').includes('/api/v1/imports');
+    if (isImportEndpoint) {
+      config.timeout = Math.max(Number(config.timeout || 0), IMPORT_TIMEOUT_MS);
+    }
+
     // Skip CSRF token for GET requests to /csrf-token endpoint (circular dependency)
     const isCsrfTokenEndpoint = config.url?.includes('/csrf-token');
     const isGetRequest = config.method?.toLowerCase() === 'get';

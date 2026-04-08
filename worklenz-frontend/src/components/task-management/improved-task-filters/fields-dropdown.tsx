@@ -10,6 +10,9 @@ import {
   toggleField,
 } from '@/features/task-management/taskListFields.slice';
 import { selectColumns } from '@/features/task-management/task-management.selectors';
+import { toggleColumnVisibility } from '@/features/task-management/task-management.slice';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 import { ThemeClasses } from './types';
 
 const LOCAL_STORAGE_KEY = 'worklenz.taskManagement.fields';
@@ -31,6 +34,7 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
   const { t } = useTranslation('task-list-filters');
   const { t: tTable } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
+  const { socket } = useSocket();
 
   const getFieldLabel = useCallback(
     (fieldKey: string) => {
@@ -65,6 +69,24 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
   const projectId = useAppSelector(state => state.projectReducer.projectId);
   const fields = Array.isArray(fieldsRaw) ? fieldsRaw : fieldsRaw?.fields || [];
   const sortedFields = useMemo(() => [...fields].sort((a, b) => a.order - b.order), [fields]);
+  const customFields = useMemo(() => {
+    const customColumns = columns.filter(
+      column => !!column.custom_column && !!column.key && column.key !== 'TASK'
+    );
+
+    const uniqueByKey = new Map<string, { key: string; label: string; visible: boolean }>();
+    customColumns.forEach(column => {
+      const key = column.key || '';
+      if (!key || uniqueByKey.has(key)) return;
+      uniqueByKey.set(key, {
+        key,
+        label: column.name || key,
+        visible: !!column.pinned,
+      });
+    });
+
+    return Array.from(uniqueByKey.values());
+  }, [columns]);
   const [open, setOpen] = React.useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -92,9 +114,45 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
 
-  const visibleCount = useMemo(
-    () => sortedFields.filter(field => field.visible).length,
-    [sortedFields]
+  const visibleCount = useMemo(() => {
+    const standardVisible = sortedFields.filter(field => field.visible).length;
+    const customVisible = customFields.filter(field => field.visible).length;
+    return standardVisible + customVisible;
+  }, [sortedFields, customFields]);
+
+  const handleFieldToggle = useCallback(
+    (fieldKey: string, currentVisible: boolean, isCustomField = false) => {
+      if (isCustomField) {
+        // Keep custom field visibility in task-management state and sync via socket event.
+        dispatch(toggleColumnVisibility(fieldKey));
+
+        if (projectId) {
+          const customColumn = columns.find(col => col.key === fieldKey && col.custom_column);
+          if (customColumn?.id) {
+            socket?.emit(SocketEvents.CUSTOM_COLUMN_PINNED_CHANGE.toString(), {
+              column_id: customColumn.id,
+              project_id: projectId,
+              is_visible: !currentVisible,
+            });
+          }
+        }
+        return;
+      }
+
+      dispatch(toggleField(fieldKey));
+
+      if (projectId) {
+        dispatch(
+          syncFieldWithDatabase({
+            projectId,
+            fieldKey,
+            visible: !currentVisible,
+            columns,
+          })
+        );
+      }
+    },
+    [columns, dispatch, projectId, socket]
   );
 
   const fieldsTitle = useMemo(() => {
@@ -153,26 +211,18 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
               </div>
             ) : (
               <div className="p-0.5">
+                <div
+                  className={`px-2 py-1 text-[11px] uppercase tracking-wide ${themeClasses.secondaryText}`}
+                >
+                  {t('standardFieldsSection', { defaultValue: 'Standard fields' })}
+                </div>
                 {sortedFields.map(field => {
                   const isSelected = field.visible;
 
                   return (
                     <button
                       key={field.key}
-                      onClick={() => {
-                        dispatch(toggleField(field.key));
-
-                        if (projectId) {
-                          dispatch(
-                            syncFieldWithDatabase({
-                              projectId,
-                              fieldKey: field.key,
-                              visible: !field.visible,
-                              columns,
-                            })
-                          );
-                        }
-                      }}
+                      onClick={() => handleFieldToggle(field.key, field.visible)}
                       className={`
                         w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded
                         transition-colors duration-150 text-left
@@ -204,6 +254,54 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
                     </button>
                   );
                 })}
+
+                {customFields.length > 0 && (
+                  <>
+                    <div className={`my-1 border-t ${themeClasses.dropdownBorder}`} />
+                    <div
+                      className={`px-2 py-1 text-[11px] uppercase tracking-wide ${themeClasses.secondaryText}`}
+                    >
+                      {t('customFieldsSection', { defaultValue: 'Custom fields' })}
+                    </div>
+                    {customFields.map(field => {
+                      const isSelected = field.visible;
+                      return (
+                        <button
+                          key={field.key}
+                          onClick={() => handleFieldToggle(field.key, field.visible, true)}
+                          className={`
+                            w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded
+                            transition-colors duration-150 text-left
+                            ${
+                              isSelected
+                                ? isDarkMode
+                                  ? 'text-white font-semibold'
+                                  : 'text-gray-800 font-semibold'
+                                : `${themeClasses.optionText} ${themeClasses.optionHover}`
+                            }
+                          `}
+                        >
+                          <div
+                            className={`
+                              flex items-center justify-center w-3.5 h-3.5 border rounded
+                              ${
+                                isSelected
+                                  ? 'bg-gray-600 border-gray-600 text-white'
+                                  : 'border-gray-300 dark:border-gray-600'
+                              }
+                            `}
+                          >
+                            {isSelected && <CheckOutlined className="w-2.5 h-2.5" />}
+                          </div>
+
+                          <div className="flex-1 flex items-center justify-between">
+                            <span className="truncate">{field.label}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </>
+                )}
               </div>
             )}
           </div>

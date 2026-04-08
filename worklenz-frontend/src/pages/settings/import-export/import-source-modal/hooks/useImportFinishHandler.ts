@@ -10,6 +10,7 @@ import {
 } from '@/api/imports';
 import type { ImportJob } from '@/api/imports';
 import { createAndAttachTargetProject, ensureFieldMappingsAreSaved } from '../import-finish-utils';
+import { enqueuePendingImportJob } from '@/components/imports/ImportProgressNotifier';
 
 interface UseImportFinishHandlerArgs {
   integrationType: 'direct' | 'csv';
@@ -152,6 +153,7 @@ export const useImportFinishHandler = ({
 
           const commitProgress = await commitImportJob(job.id);
           if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
+          enqueuePendingImportJob(job.id);
 
           setShowCompletion(false);
           message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
@@ -216,6 +218,7 @@ export const useImportFinishHandler = ({
 
           const commitProgress = await commitImportJob(job.id);
           if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
+          enqueuePendingImportJob(job.id);
 
           setShowCompletion(false);
           message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
@@ -291,6 +294,7 @@ export const useImportFinishHandler = ({
 
           const commitProgress = await commitImportJob(job.id);
           if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
+          enqueuePendingImportJob(job.id);
 
           setShowCompletion(false);
           message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
@@ -366,6 +370,7 @@ export const useImportFinishHandler = ({
 
           const commitProgress = await commitImportJob(job.id);
           if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
+          enqueuePendingImportJob(job.id);
 
           setShowCompletion(false);
           message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
@@ -453,6 +458,7 @@ export const useImportFinishHandler = ({
 
       const commitProgress = await commitImportJob(activeJob.id);
       if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
+      enqueuePendingImportJob(activeJob.id);
 
       setShowCompletion(false);
       message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
