@@ -54,10 +54,12 @@ import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallba
 import ProjectViewSkeleton from './project-view-skeleton';
 import { useTranslation } from 'react-i18next';
 import { useTimerInitialization } from '@/hooks/useTimerInitialization';
-import { useAuthService } from '@/hooks/useAuth';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
 import { evt_paywall_hit } from '@/shared/worklenz-analytics-events';
+import { verifyAuthentication } from '@/features/auth/authSlice';
+import { setUser } from '@/features/user/userSlice';
+import { createAuthService } from '@/services/auth/auth.service';
 
 // Import critical components synchronously to avoid suspense interruptions
 import TaskDrawer from '@components/task-drawer/task-drawer';
@@ -95,8 +97,9 @@ const ProjectView = React.memo(() => {
   useDocumentTitle(selectedProject?.name || t('projectView'));
 
   // Get auth service and current session
-  const authService = useAuthService();
-  const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
+  const authService = createAuthService(navigate);
+  // Don't memoize currentSession - we want it to update when session changes
+  const currentSession = authService.getCurrentSession();
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { isLicenseExpired } = useAuthStatus();
 
@@ -298,6 +301,29 @@ const ProjectView = React.memo(() => {
               navigate('/worklenz/projects');
               return;
             }
+          }
+
+          // After successful project load, refresh session to update team info in UI
+          // This handles cases where backend automatically switched teams
+          try {
+            // Store current team ID before refresh
+            const currentTeamId = currentSession?.team_id;
+            
+            const authResult = await dispatch(verifyAuthentication()).unwrap();
+            if (authResult.authenticated) {
+              dispatch(setUser(authResult.user));
+              authService.setCurrentSession(authResult.user);
+              
+              // Check if team switched - if so, force page reload to update all components
+              const newTeamId = authResult.user?.team_id;
+              if (currentTeamId && newTeamId && currentTeamId !== newTeamId) {
+                window.location.reload();
+                return;
+              }
+            }
+          } catch (authError) {
+            console.error('Failed to refresh session:', authError);
+            // Continue anyway - project is loaded
           }
 
           setIsInitialized(true);
