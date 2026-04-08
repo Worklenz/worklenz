@@ -33,7 +33,6 @@ import './project-view.css';
 import { resetTaskListData } from '@/features/tasks/tasks.slice';
 import { resetBoardData } from '@/features/board/board-slice';
 import { resetTaskManagement } from '@/features/task-management/task-management.slice';
-import { setActiveTeam } from '@/features/teams/teamSlice';
 import { resetGrouping } from '@/features/task-management/grouping.slice';
 import { resetSelection } from '@/features/task-management/selection.slice';
 import { resetFields, setProjectContext } from '@/features/task-management/taskListFields.slice';
@@ -55,10 +54,12 @@ import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallba
 import ProjectViewSkeleton from './project-view-skeleton';
 import { useTranslation } from 'react-i18next';
 import { useTimerInitialization } from '@/hooks/useTimerInitialization';
-import { useAuthService } from '@/hooks/useAuth';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
 import { evt_paywall_hit } from '@/shared/worklenz-analytics-events';
+import { verifyAuthentication } from '@/features/auth/authSlice';
+import { setUser } from '@/features/user/userSlice';
+import { createAuthService } from '@/services/auth/auth.service';
 
 // Import critical components synchronously to avoid suspense interruptions
 import TaskDrawer from '@components/task-drawer/task-drawer';
@@ -96,8 +97,9 @@ const ProjectView = React.memo(() => {
   useDocumentTitle(selectedProject?.name || t('projectView'));
 
   // Get auth service and current session
-  const authService = useAuthService();
-  const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
+  const authService = createAuthService(navigate);
+  // Don't memoize currentSession - we want it to update when session changes
+  const currentSession = authService.getCurrentSession();
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { isLicenseExpired } = useAuthStatus();
 
@@ -264,68 +266,9 @@ const ProjectView = React.memo(() => {
 
               // Check if it's a 403 error (access denied)
               if (payload?.statusCode === 403) {
-                // Check if user needs to switch teams (backend has already verified project access)
-                // The backend only sets requiresTeamSwitch=true if the user actually has access to the project
-                if (payload.requiresTeamSwitch && payload.projectTeamId) {
-                  console.log(
-                    'Project belongs to different team, switching teams...',
-                    payload.projectTeamId
-                  );
-
-                  // Show message that we're switching teams (only once)
-                  if (!hasShownErrorRef.current) {
-                    hasShownErrorRef.current = true;
-                    message.info(
-                      t('Switching to project team...', {
-                        defaultValue: 'Switching to project team...',
-                      })
-                    );
-                  }
-
-                  try {
-                    // Switch to the project's team
-                    const switchResult = await dispatch(setActiveTeam(payload.projectTeamId));
-
-                    if (setActiveTeam.fulfilled.match(switchResult)) {
-                      // Team switched successfully, reload the page to refresh session
-                      message.success(
-                        t('Team switched successfully', {
-                          defaultValue: 'Team switched successfully',
-                        })
-                      );
-
-                      // Reload the page to get new session with correct team
-                      window.location.reload();
-                      return;
-                    } else {
-                      // Team switch failed
-                      if (!hasShownErrorRef.current) {
-                        hasShownErrorRef.current = true;
-                        message.error(
-                          t('Failed to switch teams', {
-                            defaultValue: 'Failed to switch teams',
-                          })
-                        );
-                      }
-                      navigate('/worklenz/projects');
-                      return;
-                    }
-                  } catch (switchError) {
-                    console.error('Error switching teams:', switchError);
-                    if (!hasShownErrorRef.current) {
-                      hasShownErrorRef.current = true;
-                      message.error(
-                        t('Failed to switch teams', {
-                          defaultValue: 'Failed to switch teams',
-                        })
-                      );
-                    }
-                    navigate('/worklenz/projects');
-                    return;
-                  }
-                }
-
                 // Access denied (user doesn't have access to the project)
+                // Note: Backend now handles team switching automatically, so if we get 403,
+                // it means the user truly doesn't have access
                 console.log('Access denied to project:', projectId);
                 if (!hasShownErrorRef.current) {
                   hasShownErrorRef.current = true;
@@ -358,6 +301,29 @@ const ProjectView = React.memo(() => {
               navigate('/worklenz/projects');
               return;
             }
+          }
+
+          // After successful project load, refresh session to update team info in UI
+          // This handles cases where backend automatically switched teams
+          try {
+            // Store current team ID before refresh
+            const currentTeamId = currentSession?.team_id;
+            
+            const authResult = await dispatch(verifyAuthentication()).unwrap();
+            if (authResult.authenticated) {
+              dispatch(setUser(authResult.user));
+              authService.setCurrentSession(authResult.user);
+              
+              // Check if team switched - if so, force page reload to update all components
+              const newTeamId = authResult.user?.team_id;
+              if (currentTeamId && newTeamId && currentTeamId !== newTeamId) {
+                window.location.reload();
+                return;
+              }
+            }
+          } catch (authError) {
+            console.error('Failed to refresh session:', authError);
+            // Continue anyway - project is loaded
           }
 
           setIsInitialized(true);
