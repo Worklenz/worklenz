@@ -507,25 +507,34 @@ const TaskCard: React.FC<TaskCardProps> = memo(
           >
             <div className="task-content">
               <div className="task_labels" style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
-                {task.labels?.map(label => (
-                  <div
-                    key={label.id}
-                    className="task-label"
-                    style={{
-                      backgroundColor: label.color ? `${label.color}69` : undefined,
-                      display: 'inline-block',
-                      borderRadius: '2px',
-                      padding: '0px 4px',
-                      color: themeMode === 'dark' ? '#fff' : '#181818',
-                      fontSize: 10,
-                      marginRight: 4,
-                      whiteSpace: 'nowrap',
-                      minWidth: 0,
-                    }}
-                  >
-                    {label.name}
-                  </div>
-                ))}
+                {task.labels?.map(label => {
+                  const bgColor = label.color_code || label.color || '#000000';
+                  const hex = bgColor.replace('#', '');
+                  const r = parseInt(hex.substring(0, 2), 16);
+                  const g = parseInt(hex.substring(2, 4), 16);
+                  const b = parseInt(hex.substring(4, 6), 16);
+                  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                  const textColor = brightness > 128 ? '#000000' : '#FFFFFF';
+                  return (
+                    <div
+                      key={label.id}
+                      className="task-label"
+                      style={{
+                        backgroundColor: bgColor,
+                        display: 'inline-block',
+                        borderRadius: '2px',
+                        padding: '0px 4px',
+                        color: textColor,
+                        fontSize: 10,
+                        marginRight: 4,
+                        whiteSpace: 'nowrap',
+                        minWidth: 0,
+                      }}
+                    >
+                      {label.name}
+                    </div>
+                  );
+                })}
               </div>
               <div className="task-content" style={{ display: 'flex', alignItems: 'center' }}>
                 {!task.is_parent_container && (
