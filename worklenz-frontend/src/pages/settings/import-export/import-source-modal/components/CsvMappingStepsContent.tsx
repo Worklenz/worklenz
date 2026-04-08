@@ -60,9 +60,9 @@ interface CsvMappingStepsContentProps {
   filter: string;
   setFilter: React.Dispatch<React.SetStateAction<string>>;
   statusColumnKey?: string;
-  workTypeOptions: WorkTypeOption[];
-  workTypeMapping: Record<string, string>;
-  setWorkTypeMapping: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  statusOptions: WorkTypeOption[];
+  statusValueMapping: Record<string, string>;
+  setStatusValueMapping: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   csvUserRows: string[];
   userEmails: Record<string, string>;
   setUserEmails: React.Dispatch<React.SetStateAction<Record<string, string>>>;
@@ -134,9 +134,9 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
   filter,
   setFilter,
   statusColumnKey,
-  workTypeOptions,
-  workTypeMapping,
-  setWorkTypeMapping,
+  statusOptions,
+  statusValueMapping,
+  setStatusValueMapping,
   csvUserRows,
   userEmails,
   setUserEmails,
@@ -436,7 +436,7 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
     const filteredValues = statusValues.filter(
       value =>
         value.toLowerCase().includes(searchValue.toLowerCase()) &&
-        (filter === 'all' || (filter === 'mapped' ? workTypeMapping[value] : !workTypeMapping[value]))
+        (filter === 'all' || (filter === 'mapped' ? statusValueMapping[value] : !statusValueMapping[value]))
     );
 
     const emptyValuesMessage = statusColumnKey
@@ -446,15 +446,20 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
     return (
       <div style={{ width: '100%' }}>
         <Typography.Title level={3} style={{ color: palette.text, marginBottom: 8 }}>
-          {t('importStep.mapValues', 'Map values to work types')}
+          {t('importStep.mapValues', 'Map values to statuses')}
         </Typography.Title>
         <Typography.Paragraph style={{ color: palette.textSecondary, marginBottom: 16 }}>
           {t(
             'importStep.mapValuesHelp',
             'Build more structure into your space by mapping values in your Status column to Worklenz statuses.'
           )}{' '}
-          <a href="#" style={{ color: palette.primary }}>
-            {t('importStep.mapValuesDocs', 'Read about mapping work types')}
+          <a
+            href="https://worklenz.com/blog/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: palette.primary }}
+          >
+            {t('importStep.mapValuesDocs', 'Read about mapping statuses')}
           </a>
         </Typography.Paragraph>
         <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
@@ -503,7 +508,7 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
           <span style={{ flex: 1 }}></span>
           <span style={{ flex: 2, display: 'flex', alignItems: 'center' }}>
             <TableOutlined style={{ marginRight: 8, color: palette.primary }} />
-            {t('importStep.worklenzWorkTypes', { defaultValue: 'Worklenz work types' })}
+            {t('importStep.worklenzWorkTypes', { defaultValue: 'Worklenz statuses' })}
           </span>
         </div>
 
@@ -530,10 +535,10 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
               </span>
               <span style={{ flex: 2 }}>
                 <Select
-                  value={workTypeMapping[value] || undefined}
-                  onChange={val => setWorkTypeMapping(m => ({ ...m, [value]: val }))}
+                  value={statusValueMapping[value] || undefined}
+                  onChange={val => setStatusValueMapping(m => ({ ...m, [value]: val }))}
                   placeholder={t('importStep.selectWorkType', {
-                    defaultValue: 'Select work type',
+                    defaultValue: 'Select status',
                   })}
                   style={{
                     width: '100%',
@@ -552,14 +557,14 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
                           fontSize: 13,
                         }}
                       >
-                        MAP TO A SUGGESTED WORK TYPE
+                        MAP TO A SUGGESTED STATUS
                       </div>
                       {menu}
                       <div style={{ borderTop: `1px solid ${palette.border}`, margin: '8px 0' }} />
                       <div
                         style={{ padding: '8px 12px', color: palette.primary, cursor: 'pointer' }}
                         onClick={() => {
-                          setWorkTypeMapping(m => {
+                          setStatusValueMapping(m => {
                             const copy = { ...m };
                             delete copy[value];
                             return copy;
@@ -572,7 +577,7 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
                   )}
                   optionLabelProp="label"
                 >
-                  {workTypeOptions.map(wt => (
+                  {statusOptions.map(wt => (
                     <Select.Option key={wt.key} value={wt.key} label={wt.label}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {wt.icon}

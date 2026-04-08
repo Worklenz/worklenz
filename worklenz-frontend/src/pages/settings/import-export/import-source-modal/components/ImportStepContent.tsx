@@ -84,9 +84,9 @@ interface ImportStepContentProps {
   filter: string;
   setFilter: React.Dispatch<React.SetStateAction<string>>;
   statusColumnKey?: string;
-  workTypeOptions: Array<{ key: string; label: string; icon: React.ReactNode; level: number }>;
-  workTypeMapping: Record<string, string>;
-  setWorkTypeMapping: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  statusOptions: Array<{ key: string; label: string; icon: React.ReactNode; level: number }>;
+  statusValueMapping: Record<string, string>;
+  setStatusValueMapping: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   csvUserRows: string[];
   userEmails: Record<string, string>;
   setUserEmails: React.Dispatch<React.SetStateAction<Record<string, string>>>;
@@ -163,9 +163,9 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
     filter,
     setFilter,
     statusColumnKey,
-    workTypeOptions,
-    workTypeMapping,
-    setWorkTypeMapping,
+    statusOptions,
+    statusValueMapping,
+    setStatusValueMapping,
     csvUserRows,
     userEmails,
     setUserEmails,
@@ -269,9 +269,9 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
           filter={filter}
           setFilter={setFilter}
           statusColumnKey={statusColumnKey}
-          workTypeOptions={workTypeOptions}
-          workTypeMapping={workTypeMapping}
-          setWorkTypeMapping={setWorkTypeMapping}
+          statusOptions={statusOptions}
+          statusValueMapping={statusValueMapping}
+          setStatusValueMapping={setStatusValueMapping}
           csvUserRows={csvUserRows}
           userEmails={userEmails}
           setUserEmails={setUserEmails}
@@ -287,7 +287,7 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
           spaceName={spaceName}
           fieldMappings={fieldMappings}
           csvColumns={csvColumns}
-          workTypeMapping={workTypeMapping}
+          statusValueMapping={statusValueMapping}
           csvUserRows={csvUserRows}
           userEmails={userEmails}
           addUsers={addUsers}

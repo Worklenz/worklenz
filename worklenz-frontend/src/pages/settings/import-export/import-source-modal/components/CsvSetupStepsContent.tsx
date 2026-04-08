@@ -65,7 +65,12 @@ export const CsvSetupStepsContent: React.FC<CsvSetupStepsContentProps> = ({
               'Start by finding the Download or Export option in your app and export a CSV file.',
           })}
           <br />
-          <a href="#" style={{ color: themeToken.colorPrimary }}>
+          <a
+            href="https://worklenz.com/blog/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: themeToken.colorPrimary }}
+          >
             {t('importStep.structureCsv', { defaultValue: 'Structure the CSV' })}
           </a>{' '}
           {t('importStep.structureCsvSuffix', {
