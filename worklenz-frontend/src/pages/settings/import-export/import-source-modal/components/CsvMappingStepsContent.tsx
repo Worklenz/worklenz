@@ -208,7 +208,7 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
   const buildMappingOptions = React.useCallback(
     (columnName: string) => {
       const createLabel = t('importStep.createCustomFieldFromColumn', {
-        defaultValue: '+ Create custom field "{{column}}"',
+        defaultValue: 'Create custom field "{{column}}"',
         column: columnName,
       });
 

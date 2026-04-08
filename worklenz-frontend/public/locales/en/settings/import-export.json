@@ -147,7 +147,7 @@
     "uploadCsvToMapFields": "Upload a CSV file to map fields.",
     "selectOrTypeField": "Select or type a field to map",
     "selectFieldToMap": "Select a field to map",
-    "createCustomFieldFromColumn": "+ Create custom field \"{{column}}\"",
+    "createCustomFieldFromColumn": "Create custom field \"{{column}}\"",
     "customFieldWillBeCreated": "Will create custom field",
     "fieldsFilterAll": "Fields: All",
     "mapValues": "Map values to statuses",

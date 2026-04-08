@@ -147,7 +147,7 @@
     "uploadCsvToMapFields": "上传 CSV 文件以映射字段。",
     "selectOrTypeField": "选择或输入要映射的字段",
     "selectFieldToMap": "选择要映射的字段",
-    "createCustomFieldFromColumn": "+ 创建自定义字段 \"{{column}}\"",
+    "createCustomFieldFromColumn": "创建自定义字段 \"{{column}}\"",
     "customFieldWillBeCreated": "将创建自定义字段",
     "fieldsFilterAll": "字段：全部",
     "mapValues": "将值映射到状态",

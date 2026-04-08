@@ -147,7 +147,7 @@
     "uploadCsvToMapFields": "Laden Sie eine CSV-Datei hoch, um Felder zuzuordnen.",
     "selectOrTypeField": "Feld auswählen oder eingeben",
     "selectFieldToMap": "Feld zum Zuordnen auswählen",
-    "createCustomFieldFromColumn": "+ Benutzerdefiniertes Feld \"{{column}}\" erstellen",
+    "createCustomFieldFromColumn": "Benutzerdefiniertes Feld \"{{column}}\" erstellen",
     "customFieldWillBeCreated": "Benutzerdefiniertes Feld wird erstellt",
     "fieldsFilterAll": "Felder: Alle",
     "mapValues": "Werte Status zuordnen",

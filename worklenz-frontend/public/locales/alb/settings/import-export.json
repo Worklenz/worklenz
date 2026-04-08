@@ -147,7 +147,7 @@
     "uploadCsvToMapFields": "Ngarkoni një skedar CSV për të hartëzuar fushat.",
     "selectOrTypeField": "Zgjidhni ose shkruani një fushë për të hartëzuar",
     "selectFieldToMap": "Zgjidhni një fushë për ta hartëzuar",
-    "createCustomFieldFromColumn": "+ Krijo fushë të personalizuar \"{{column}}\"",
+    "createCustomFieldFromColumn": "Krijo fushë të personalizuar \"{{column}}\"",
     "customFieldWillBeCreated": "Do të krijohet një fushë e personalizuar",
     "fieldsFilterAll": "Fushat: Të gjitha",
     "mapValues": "Hartëzo vlerat me statuset",

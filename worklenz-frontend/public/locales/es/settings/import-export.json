@@ -147,7 +147,7 @@
     "uploadCsvToMapFields": "Sube un archivo CSV para mapear campos.",
     "selectOrTypeField": "Selecciona o escribe un campo para mapear",
     "selectFieldToMap": "Selecciona un campo para mapear",
-    "createCustomFieldFromColumn": "+ Crear campo personalizado \"{{column}}\"",
+    "createCustomFieldFromColumn": "Crear campo personalizado \"{{column}}\"",
     "customFieldWillBeCreated": "Se creará un campo personalizado",
     "fieldsFilterAll": "Campos: Todos",
     "mapValues": "Mapear valores a estados",
