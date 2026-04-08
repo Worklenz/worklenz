@@ -198,7 +198,9 @@ const transformV3TaskToProjectTask = (task: any, projectId: string): IProjectTas
   progress: task.progress ?? task.complete_ratio ?? 0,
   progress_value: task.progress_value ?? task.complete_ratio ?? 0,
   manual_progress: false,
-  assignees: task.assignees || [],
+  assignees: (task.assignees || []).map((a: any) =>
+    typeof a === 'string' ? { team_member_id: a, id: a, project_member_id: '', name: '' } : a
+  ),
   names: task.assignee_names || task.names || [],
   labels: task.labels || [],
   all_labels: task.all_labels || [],
