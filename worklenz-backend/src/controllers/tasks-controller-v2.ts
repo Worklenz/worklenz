@@ -314,7 +314,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     // Map frontend field names to backend column names
     const fieldMapping: Record<string, string> = {
-      'task_key': "CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no)",
+      'task_key': 'CAST(t.task_no AS INTEGER)',
       'name': 't.name',
       'status': '(SELECT sort_order FROM task_statuses WHERE id = t.status_id)',
       'priority': '(SELECT value FROM task_priorities WHERE id = t.priority_id)',

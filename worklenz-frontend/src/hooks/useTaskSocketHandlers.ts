@@ -712,8 +712,14 @@ export const useTaskSocketHandlers = () => {
 
   const handleNewTaskReceived = useCallback(
     (response: any) => {
-      // Update BOTH task-management slice (for task list) AND enhanced kanban slice
-      // They should work independently with their own grouping settings
+      // Get current sort field from Redux state
+      const sortField = store.getState().taskManagement.sortField;
+
+      // If sorting by task_key, refetch to maintain correct sort order
+      if (sortField === 'task_key' && projectId) {
+        dispatch(fetchTasksV3(projectId));
+        return;
+      }
 
       handleTaskReceivedUtil(response, {
         dispatch,
@@ -724,7 +730,7 @@ export const useTaskSocketHandlers = () => {
         taskEventName: evt_project_task_create,
       });
     },
-    [dispatch, trackMixpanelEvent, currentGroupingV3, enhancedKanbanGroupBy]
+    [dispatch, trackMixpanelEvent, currentGroupingV3, enhancedKanbanGroupBy, projectId]
   );
 
   const handleTaskProgressUpdated = useCallback(
